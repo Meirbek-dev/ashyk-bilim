@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT ensure_app_search_path() AS \"level!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "level!",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "fac37e134d34811ff5ece5f0ccac8e012786f8673ff1b97c8b203911700a68fd"
+}

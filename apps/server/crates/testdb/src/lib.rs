@@ -177,7 +177,7 @@ async fn clone(admin: &mut PgConnection, template: &str, name: &str) {
             )))
             .await
         {
-            Ok(_) => return,
+            Ok(_) => return copy_settings(admin, template, name).await,
             Err(error)
                 if attempt < 20 && error.to_string().contains("being accessed by other users") =>
             {
@@ -185,6 +185,29 @@ async fn clone(admin: &mut PgConnection, template: &str, name: &str) {
             }
             Err(error) => panic!("clone {template} into {name}: {error}"),
         }
+    }
+}
+
+/// `CREATE DATABASE ... TEMPLATE` copies no `ALTER DATABASE ... SET`: the clone gets the template's (the app's
+/// `search_path`, ARCHITECTURE §8 rule 8), like production's database has them, for every connection a test opens.
+async fn copy_settings(admin: &mut PgConnection, template: &str, name: &str) {
+    let settings: Vec<String> = sqlx::query_scalar(
+        "SELECT unnest(s.setconfig) FROM pg_db_role_setting s JOIN pg_database d ON d.oid = s.setdatabase
+          WHERE d.datname = $1 AND s.setrole = 0",
+    )
+    .bind(template)
+    .fetch_all(&mut *admin)
+    .await
+    .expect("read the template's settings");
+    for setting in settings {
+        let (key, value) = setting.split_once('=').expect("a setting is key=value");
+        // The value as Postgres printed it: a list (search_path) must stay unquoted.
+        admin
+            .execute(AssertSqlSafe(format!(
+                "ALTER DATABASE \"{name}\" SET {key} = {value}"
+            )))
+            .await
+            .expect("copy a setting onto the clone");
     }
 }
 

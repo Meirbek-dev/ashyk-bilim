@@ -46,6 +46,30 @@ use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 /// All migrations, embedded at compile time from `apps/server/migrations/`.
 pub static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("../../migrations");
 
+/// Every session's `search_path` (ARCHITECTURE §8 rule 8).
+///
+/// SQL names tables unqualified and they live in `core`, `learning`, `ai`,
+/// `analytics`, `ops`. `public` (the sqlx ledger, extensions, functions) comes first: sqlx creates
+/// its ledger with `CREATE TABLE IF NOT EXISTS`, which looks only in the
+/// first schema. Same text as `app_search_path()` (migration 20261102090000).
+pub const SEARCH_PATH: &str = "public, core, learning, ai, analytics, ops, extensions";
+
+/// Apply the pending migrations, then set [`SEARCH_PATH`] on the database again.
+///
+/// `ensure_app_search_path()`: a database cloned from a template or
+/// restored without `--create` has lost it, and psql, the sqlx CLI and older
+/// binaries rely on it.
+pub async fn migrate(pool: &PgPool) -> Result<()> {
+    MIGRATOR
+        .run(pool)
+        .await
+        .map_err(|e| ab_core::Error::internal("migrate", e))?;
+    sqlx::query_scalar!(r#"SELECT ensure_app_search_path() AS "level!""#)
+        .fetch_one(pool)
+        .await?;
+    Ok(())
+}
+
 /// The process that opens a pool: names its sessions (`application_name`,
 /// seen in `pg_stat_activity`, `pg_stat_statements` and the Postgres log)
 /// and picks its limits (`DatabaseLimits`).
@@ -82,9 +106,9 @@ pub async fn connect(config: &DatabaseConfig, process: Process) -> Result<PgPool
 
 /// [`connect`] with parsed options (tests reuse a test database's options).
 ///
-/// The limits go into the startup packet, so they hold for any role and
-/// override its `ALTER ROLE ... SET` defaults; so does the platform zone
-/// ([`with_platform_zone`]).
+/// The limits, [`SEARCH_PATH`] and the platform zone ([`with_platform_zone`])
+/// go into the startup packet, so they hold for any role and override its
+/// `ALTER ROLE ... SET` defaults.
 pub async fn connect_with(
     options: PgConnectOptions,
     config: &DatabaseConfig,
@@ -108,6 +132,7 @@ pub async fn connect_with(
                 format!("{}s", limits.idle_in_transaction_timeout_secs),
             ),
             ("lock_timeout", format!("{lock}s")),
+            ("search_path", SEARCH_PATH.to_owned()),
         ]);
     let options = with_platform_zone(options);
     let pool = PgPoolOptions::new()

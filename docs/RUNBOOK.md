@@ -146,10 +146,11 @@ that legitimately needs longer statements sets `SET LOCAL statement_timeout` in 
 
 ### 2.6 pgvector into the extensions schema (prepared, not done)
 
-Schema review 43 moves extensions out of `public` before the app tables move into schemas of their own (core,
-learning, ai, analytics, ops: REWRITE 5.7, after this release). db-init already creates an empty `extensions`
+Schema review 43 moves extensions out of `public`; the app tables move into schemas of their own (core,
+learning, ai, analytics, ops: ARCHITECTURE §8 rule 8). db-init already creates an empty `extensions`
 schema (`USAGE` for everyone) in template1 and every app database. Moving pgvector needs the superuser and a
-short window, because sessions opened before keep a search_path without the schema:
+short window: a server from migration 20261102090000 on already has `extensions` on its path, but sessions of
+older binaries and psql sessions opened before keep a search_path without the schema:
 
 ```bash
 dc stop server worker
@@ -159,7 +160,8 @@ done
 dc up -d --wait server worker   # then smoke (0. Conventions)
 ```
 
-`infra/postgres/vector-to-extensions.sql` sets `search_path = "$user", public, extensions` on the roles `ashyq`,
+`infra/postgres/vector-to-extensions.sql` sets `search_path = public, core, learning, ai, analytics, ops, extensions`
+(the app's path, ARCHITECTURE §8 rule 8; a role setting overrides the database one) on the roles `ashyq`,
 `ashyq_app` and `ashyq_ro` (role level: every database, test clones included) and runs
 `ALTER EXTENSION vector SET SCHEMA extensions`: no table is rewritten, `content_chunks.embedding` keeps its type.
 Dev: the same against the dev cluster as its superuser, plus each test database. Back:

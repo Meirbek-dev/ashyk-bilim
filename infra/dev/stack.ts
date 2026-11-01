@@ -11,6 +11,7 @@ import {
   type ServiceSpec,
   alive,
   appRoleFor,
+  copyDatabaseSettings,
   databaseUrl,
   type DbRole,
   devLogin,
@@ -103,6 +104,7 @@ export async function ensureDatabase(env: Record<string, string>, db: string): P
     if (names.has(db)) return false
     const template = names.has('ashyq_seed') ? ' TEMPLATE ashyq_seed' : ''
     await sql.unsafe(`CREATE DATABASE ${db}${template}`)
+    if (template) await copyDatabaseSettings(sql, 'ashyq_seed', db)
     say(`database ${db} created${template ? ' from ashyq_seed' : ''}`)
     return true
   } finally {

@@ -28,6 +28,10 @@
 //! - a deleted account cannot be active again.
 //! - review item 19: a course update links activities through keys; a
 //!   deleted activity leaves the update, an unknown one is refused.
+//! - review 3, item 43: every session finds the tables in their schemas: the
+//!   database carries the search_path (a plain connection, like the previous
+//!   release's, gets it), the server's startup option wins over a stale one,
+//!   and `app_table_schema()` places a table it does not name by its prefix.
 //! - review item 30: a course's tags are a bounded text[], its learnings a
 //!   jsonb array of `{id, text, emoji?}` within the API's bounds.
 //! - review item 36: embeddings are halfvec(1024); a model's nearest-chunk
@@ -2256,4 +2260,122 @@ async fn the_breakdown_is_read_from_the_journal(pool: PgPool) {
         .unwrap();
         assert_eq!(current(previous).await, theirs);
     }
+}
+
+#[ab_testdb::test]
+async fn every_session_gets_the_app_search_path(pool: PgPool) {
+    use sqlx::{ConnectOptions, Connection};
+
+    let path = |sql: &'static str| sqlx::query_scalar::<_, String>(sql);
+    assert_eq!(
+        path("SELECT app_search_path()")
+            .fetch_one(&pool)
+            .await
+            .unwrap(),
+        ab_db::SEARCH_PATH
+    );
+    // A connection without a search_path option (psql, sqlx CLI, the previous release).
+    let options = (*pool.connect_options()).clone();
+    let mut plain = options.connect().await.unwrap();
+    assert_eq!(
+        path("SELECT current_setting('search_path')")
+            .fetch_one(&mut plain)
+            .await
+            .unwrap(),
+        ab_db::SEARCH_PATH
+    );
+    sqlx::query("SELECT count(*) FROM users, courses, submissions, jobs")
+        .execute(&mut plain)
+        .await
+        .unwrap();
+
+    // A database that lost or changed the setting: the server's own option still wins,
+    // and `ashyq migrate` (ensure_app_search_path) puts it back for everyone else.
+    sqlx::raw_sql(
+        "DO $$ BEGIN EXECUTE format('ALTER DATABASE %I SET search_path = public', current_database()); END $$",
+    )
+    .execute(&mut plain)
+    .await
+    .unwrap();
+    plain.close().await.unwrap();
+    let mut stale = options.connect().await.unwrap();
+    assert_eq!(
+        path("SELECT current_setting('search_path')")
+            .fetch_one(&mut stale)
+            .await
+            .unwrap(),
+        "public"
+    );
+    let config = ab_core::config::DatabaseConfig {
+        url: secrecy::SecretString::from("unused: connect_with takes the options"),
+        max_connections: 1,
+        min_connections: 0,
+        limits: ab_core::config::DatabaseLimits::default(),
+    };
+    let server = ab_db::connect_with(options.clone(), &config, ab_db::Process::Serve)
+        .await
+        .unwrap();
+    assert_eq!(
+        path("SELECT current_setting('search_path')")
+            .fetch_one(&server)
+            .await
+            .unwrap(),
+        ab_db::SEARCH_PATH
+    );
+    assert_eq!(
+        path("SELECT ensure_app_search_path()")
+            .fetch_one(&mut stale)
+            .await
+            .unwrap(),
+        "database"
+    );
+    stale.close().await.unwrap();
+    let mut healed = options.connect().await.unwrap();
+    assert_eq!(
+        path("SELECT current_setting('search_path')")
+            .fetch_one(&mut healed)
+            .await
+            .unwrap(),
+        ab_db::SEARCH_PATH
+    );
+}
+
+#[ab_testdb::test]
+async fn app_table_schema_places_tables_by_area(pool: PgPool) {
+    let cases = [
+        ("users", "core"),
+        ("courses", "core"),
+        ("uploads", "core"),
+        ("submissions", "learning"),
+        ("grading_entries", "learning"),
+        ("enrolments", "learning"),
+        ("content_chunks", "ai"),
+        ("ai_runs", "ai"),
+        ("analytics_events", "analytics"),
+        ("analytics_events_202612", "analytics"),
+        ("daily_course_metrics", "analytics"),
+        ("jobs", "ops"),
+        ("auth_audit_log", "ops"),
+        // Tables the mapping does not name: by prefix, else core.
+        ("attempt_files", "learning"),
+        ("assessment_something", "learning"),
+        ("ai_new_ledger", "ai"),
+        ("job_runs", "ops"),
+        ("lesson_notes", "core"),
+    ];
+    for (table, schema) in cases {
+        let got: String = sqlx::query_scalar("SELECT app_table_schema($1)::text")
+            .bind(table)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(got, schema, "{table}");
+    }
+    let schemas: Vec<String> = sqlx::query_scalar(
+        "SELECT nspname::text FROM pg_namespace WHERE nspname = ANY (app_schemas()) ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(schemas, ["ai", "analytics", "core", "learning", "ops"]);
 }

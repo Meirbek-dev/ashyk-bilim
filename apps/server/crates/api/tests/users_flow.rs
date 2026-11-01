@@ -1112,3 +1112,91 @@ async fn profile_document_write_is_version_checked(pool: PgPool) {
     assert_eq!(fresh.status, StatusCode::OK, "{}", fresh.text());
     assert_eq!(fresh.headers[axum::http::header::ETAG], "\"2\"");
 }
+
+// ── Schema review 28: `ashyq admin resolve-email-verified` ──────────────────
+
+#[ab_testdb::test]
+async fn the_email_state_sweep_asks_zitadel_for_unknown_accounts(pool: PgPool) {
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, ResponseTemplate};
+
+    let app = TestApp::spawn(pool).await;
+    let confirmed = app.create_user("confirmed", "c@example.com", &[]).await;
+    let pending = app.create_user("pending", "p@example.com", &[]).await;
+    let gone = app.create_user("gone", "g@example.com", &[]).await;
+    let known = app.create_user("known", "k@example.com", &[]).await;
+    ab_db::identity::set_email_verified(&app.pool, known, false)
+        .await
+        .unwrap();
+    for (zitadel_id, email) in [
+        (
+            "z-confirmed",
+            serde_json::json!({ "email": "c@example.com", "isVerified": true }),
+        ),
+        ("z-pending", serde_json::json!({ "email": "p@example.com" })),
+    ] {
+        Mock::given(method("GET"))
+            .and(path(format!("/v2/users/{zitadel_id}")))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(serde_json::json!({ "user": { "human": { "email": email } } })),
+            )
+            .mount(&app.zitadel)
+            .await;
+    }
+    Mock::given(method("GET"))
+        .and(path("/v2/users/z-gone"))
+        .respond_with(ResponseTemplate::new(404))
+        .mount(&app.zitadel)
+        .await;
+    let zitadel = ab_clients::zitadel::ZitadelClient::new(ab_clients::zitadel::ZitadelConfig {
+        base_url: app.zitadel.uri(),
+        pat: secrecy::SecretString::from("test-pat"),
+    })
+    .unwrap();
+    let state = |user: ab_core::id::UserId| {
+        let pool = app.pool.clone();
+        async move {
+            sqlx::query_as::<_, (Option<bool>, bool)>(
+                "SELECT email_verified, email_verified_at IS NOT NULL FROM users WHERE id = $1",
+            )
+            .bind(user.0)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+        }
+    };
+    let counts =
+        |report: &ab_domain::maintenance::Report| serde_json::to_value(&report.counts).unwrap();
+
+    let dry = ab_domain::maintenance::resolve_email_verified(&app.pool, &zitadel, true)
+        .await
+        .unwrap();
+    assert_eq!(
+        counts(&dry),
+        serde_json::json!({ "unknown": 3, "verified": 1, "not_verified": 1, "failed": 1 })
+    );
+    assert_eq!(
+        state(confirmed).await,
+        (None, false),
+        "a dry run writes nothing"
+    );
+
+    let run = ab_domain::maintenance::resolve_email_verified(&app.pool, &zitadel, false)
+        .await
+        .unwrap();
+    assert_eq!(counts(&run), counts(&dry));
+    assert_eq!(state(confirmed).await, (Some(true), true));
+    assert_eq!(state(pending).await, (Some(false), false));
+    assert_eq!(state(gone).await, (None, false), "Zitadel could not answer");
+    assert_eq!(state(known).await, (Some(false), false));
+
+    let again = ab_domain::maintenance::resolve_email_verified(&app.pool, &zitadel, false)
+        .await
+        .unwrap();
+    assert_eq!(
+        counts(&again),
+        serde_json::json!({ "unknown": 1, "failed": 1 }),
+        "only the account Zitadel could not answer for is asked again"
+    );
+}
