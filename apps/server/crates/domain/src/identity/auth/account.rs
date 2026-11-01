@@ -8,10 +8,15 @@
 //!   ([`ab_db::identity::anonymise_user`]); the Zitadel user is deleted, so
 //!   the login and the address are free again. Staff accounts are closed by
 //!   an admin (courses and roles hang on them).
+//! - Deletion also erases what the platform derived from the person beyond
+//!   their graded work (AI conversations and drafts, mastery, analytics:
+//!   [`ab_db::identity::erase_personal_data`]). `ashyq admin erase-user`
+//!   does the same for any account on a legal erasure request.
 
 use std::time::Duration;
 
 use ab_clients::zitadel::{PasswordSessionOutcome, SessionUser};
+use ab_core::id::UserId;
 use ab_core::language::Language;
 use ab_core::{Error, ErrorCode, FieldError, Result};
 use redis::AsyncCommands;
@@ -52,8 +57,8 @@ fn new_code() -> String {
 }
 
 /// Login placeholder of a deleted account (unique, fits the username rules).
-fn deleted_placeholder(actor: &Actor) -> String {
-    format!("deleted-{}", actor.user_id.0.simple())
+fn deleted_placeholder(user_id: UserId) -> String {
+    format!("deleted-{}", user_id.0.simple())
 }
 
 impl IdentityService {
@@ -290,9 +295,13 @@ impl IdentityService {
         }
         self.confirm_password(actor, password).await?;
         let mut tx = self.pool.begin().await?;
-        let deleted =
-            ab_db::identity::anonymise_user(&mut tx, actor.user_id, &deleted_placeholder(actor))
-                .await?;
+        let deleted = ab_db::identity::anonymise_user(
+            &mut tx,
+            actor.user_id,
+            &deleted_placeholder(actor.user_id),
+        )
+        .await?;
+        ab_db::identity::erase_personal_data(&mut tx, actor.user_id).await?;
         tx.commit().await?;
         if !deleted {
             return Ok(());
@@ -312,6 +321,37 @@ impl IdentityService {
         .await?;
         crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Users).await;
         Ok(())
+    }
+
+    /// `ashyq admin erase-user`: a legal erasure request (RUNBOOK 2.3), any
+    /// account, staff included (their courses stay, unattributed). The row is
+    /// anonymised and disabled, the derived personal data erased, sessions
+    /// end and the Zitadel user goes. Idempotent: an account deleted earlier
+    /// has its derived data erased again. Returns the rows removed.
+    pub async fn erase_account(&self, user_id: UserId) -> Result<u64> {
+        let Some(zitadel_user_id) = ab_db::identity::zitadel_user_id(&self.pool, user_id).await?
+        else {
+            return Err(Error::not_found("user"));
+        };
+        let mut tx = self.pool.begin().await?;
+        ab_db::identity::anonymise_user(&mut tx, user_id, &deleted_placeholder(user_id)).await?;
+        let removed = ab_db::identity::erase_personal_data(&mut tx, user_id).await?;
+        tx.commit().await?;
+        self.sessions.revoke_all(user_id).await?;
+        if let Err(err) = self.zitadel.delete_user(&zitadel_user_id).await {
+            tracing::warn!(%err, %user_id, "zitadel user of an erased account not removed");
+        }
+        ab_db::identity::insert_auth_audit(
+            &self.pool,
+            Some(user_id),
+            "account-erased",
+            None,
+            None,
+            serde_json::json!({ "rows": removed }),
+        )
+        .await?;
+        crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Users).await;
+        Ok(removed)
     }
 
     /// One account mail; without a mailer the code is logged (dev, e2e).

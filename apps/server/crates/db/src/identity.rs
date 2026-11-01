@@ -874,6 +874,137 @@ pub async fn anonymise_user(
     Ok(true)
 }
 
+/// Erases what the platform derived from a person beyond their graded work.
+///
+/// Schema review 2 (REWRITE 5.7): their AI conversations, AI grade drafts and
+/// the corrections quoting them, AI analyses and work embeddings of their
+/// attempts, the runs behind those, AI memory, mastery, analytics rows,
+/// notifications and cached responses go. Submissions, grades and
+/// certificates stay (anonymised through [`anonymise_user`]).
+/// `crates/db/tests/erasure.rs` classifies every key onto `users`.
+/// Returns the number of rows removed.
+pub async fn erase_personal_data(tx: &mut sqlx::PgConnection, user_id: UserId) -> Result<u64> {
+    let uid = user_id.0;
+    let mut removed = 0;
+    removed += erase_attempt_ai(tx, uid).await?;
+    // Threads take their runs and messages; messages in others' threads too.
+    removed += sqlx::query!("DELETE FROM ai_threads WHERE user_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    removed += sqlx::query!("DELETE FROM ai_qa_messages WHERE user_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    removed += sqlx::query!(
+        "DELETE FROM ai_student_memory WHERE student_user_id = $1",
+        uid
+    )
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
+    removed += sqlx::query!("DELETE FROM ai_token_ledger WHERE user_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    removed += sqlx::query!("DELETE FROM mastery_evidence WHERE user_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    removed += sqlx::query!("DELETE FROM concept_mastery WHERE user_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    removed += sqlx::query!("DELETE FROM analytics_events WHERE user_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    removed += sqlx::query!(
+        "DELETE FROM daily_user_course_progress WHERE user_id = $1",
+        uid
+    )
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
+    removed += sqlx::query!("DELETE FROM learner_risk_snapshots WHERE user_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    removed += sqlx::query!("DELETE FROM teacher_interventions WHERE user_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    removed += sqlx::query!("DELETE FROM notifications WHERE user_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    removed += sqlx::query!("DELETE FROM idempotency_keys WHERE user_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    Ok(removed)
+}
+
+/// AI work on the person's attempts: grade drafts (their corrections
+/// cascade), remediation, analyses, work embeddings and the runs behind them.
+async fn erase_attempt_ai(tx: &mut sqlx::PgConnection, uid: uuid::Uuid) -> Result<u64> {
+    let mut removed = 0;
+    // Runs first, while the drafts / analyses / sessions still name them
+    // (their run_id is SET NULL, the runs' events and artifacts cascade).
+    removed += sqlx::query!(
+        "DELETE FROM ai_runs WHERE id IN (
+             SELECT run_id FROM ai_grade_drafts WHERE learner_id = $1
+             UNION SELECT run_id FROM ai_remediation_sessions WHERE student_user_id = $1
+             UNION SELECT a.run_id FROM ai_submission_analyses a
+                    LEFT JOIN submissions s ON s.id = a.submission_id
+                    LEFT JOIN file_submission_attempts f ON f.id = a.file_submission_attempt_id
+                   WHERE s.user_id = $1 OR f.user_id = $1)",
+        uid
+    )
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
+    removed += sqlx::query!("DELETE FROM ai_grade_drafts WHERE learner_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    removed += sqlx::query!(
+        "DELETE FROM ai_remediation_sessions WHERE student_user_id = $1",
+        uid
+    )
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
+    removed += sqlx::query!(
+        "DELETE FROM ai_submission_analyses a
+          WHERE a.submission_id IN (SELECT id FROM submissions WHERE user_id = $1)
+             OR a.file_submission_attempt_id IN (SELECT id FROM file_submission_attempts WHERE user_id = $1)",
+        uid
+    )
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
+    removed += sqlx::query!(
+        "DELETE FROM ai_work_embeddings
+          WHERE subject_id IN (SELECT id FROM submissions WHERE user_id = $1
+                               UNION SELECT id FROM file_submission_attempts WHERE user_id = $1)",
+        uid
+    )
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
+    Ok(removed)
+}
+
+/// The Zitadel user behind an account; `None` for an unknown id.
+pub async fn zitadel_user_id(pool: &PgPool, user_id: UserId) -> Result<Option<String>> {
+    Ok(
+        sqlx::query_scalar!("SELECT zitadel_user_id FROM users WHERE id = $1", user_id.0)
+            .fetch_optional(pool)
+            .await?,
+    )
+}
+
 /// Whether the account was deleted by its owner (never re-enabled).
 pub async fn user_deleted(pool: &PgPool, user_id: UserId) -> Result<bool> {
     let deleted = sqlx::query_scalar!(

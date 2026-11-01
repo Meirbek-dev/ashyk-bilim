@@ -98,6 +98,15 @@ enum AdminCommand {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Legal erasure request (RUNBOOK 2.3): anonymise and disable the account
+    /// `--user <uuid|username>`, erase what the platform derived from the
+    /// person (AI conversations and drafts, mastery, analytics), end its
+    /// sessions and delete its Zitadel user. Grades and certificates stay,
+    /// anonymised. Idempotent.
+    EraseUser {
+        #[arg(long)]
+        user: String,
+    },
     /// D-03: `users.locale` `ru-RU|kk-KZ|en-US` → `ru|kk|en` (needs
     /// migration 20261003000020; responses keep the legacy `locale`).
     MigrateLocales {
@@ -198,6 +207,9 @@ async fn main() -> anyhow::Result<()> {
             command: AdminCommand::SeedE2e { learners },
         } => seed_e2e(config, learners).await,
         Command::Admin {
+            command: AdminCommand::EraseUser { user },
+        } => erase_user(config, &user).await,
+        Command::Admin {
             command:
                 AdminCommand::MigrateEditorDocs {
                     dry_run,
@@ -280,6 +292,21 @@ fn print_report(name: &str, report: &ab_domain::maintenance::Report) -> anyhow::
 }
 
 /// `ashyq admin seed-e2e` - see [`ab_api::seed`].
+async fn erase_user(config: Config, user: &str) -> anyhow::Result<()> {
+    let state = build_state(config).await?;
+    let id = match user.parse::<ab_core::id::UserId>() {
+        Ok(id) => Some(id),
+        Err(_) => ab_db::identity::find_user_id_by_username(&state.pool, user).await?,
+    }
+    .ok_or_else(|| anyhow::anyhow!("no user {user}"))?;
+    let removed = state.identity.erase_account(id).await?;
+    writeln!(
+        std::io::stdout(),
+        "user {id} erased: anonymised, {removed} derived row(s) removed"
+    )?;
+    Ok(())
+}
+
 async fn seed_e2e(config: Config, learners: u16) -> anyhow::Result<()> {
     if config.environment.is_production() {
         anyhow::bail!("seed-e2e refuses to run with AB__ENVIRONMENT=production");

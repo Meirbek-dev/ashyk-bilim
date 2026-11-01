@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM ai_grade_drafts WHERE learner_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8e8889704ea4788d174c1278fc3ae21b46f650e52602970c7acd35dd11e8c685"
+}

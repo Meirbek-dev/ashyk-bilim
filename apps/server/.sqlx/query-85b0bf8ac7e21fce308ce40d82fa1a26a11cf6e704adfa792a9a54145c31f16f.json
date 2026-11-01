@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM ai_work_embeddings\n          WHERE subject_id IN (SELECT id FROM submissions WHERE user_id = $1\n                               UNION SELECT id FROM file_submission_attempts WHERE user_id = $1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "85b0bf8ac7e21fce308ce40d82fa1a26a11cf6e704adfa792a9a54145c31f16f"
+}

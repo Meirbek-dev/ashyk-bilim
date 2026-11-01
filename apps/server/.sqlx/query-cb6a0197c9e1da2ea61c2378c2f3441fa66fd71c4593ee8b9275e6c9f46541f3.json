@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM idempotency_keys WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cb6a0197c9e1da2ea61c2378c2f3441fa66fd71c4593ee8b9275e6c9f46541f3"
+}

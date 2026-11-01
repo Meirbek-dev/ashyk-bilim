@@ -50,12 +50,29 @@ receives no new writes. Restore drills use their own content volume.
 ### 2.3 Erasing a person
 
 The app never deletes a `users` row: an admin disables the account, the person's own
-account deletion anonymises it (`users.deleted_at`). A legal erasure request is done by hand.
-Learning records reference `users` with `ON DELETE RESTRICT` (ARCHITECTURE §8 "Schema
-guarantees"), so a bare `DELETE FROM users` fails while the person has submissions, file attempts,
-code runs, certificates, progress, enrolments, XP or uploads. Prefer anonymising (what self-deletion
-does: the row stays, the name/email/avatar go); grades and certificates others rely on stay valid.
-Only when the records themselves must go, in one transaction after `just backup`:
+account deletion anonymises it (`users.deleted_at`) and erases the derived data listed below.
+A legal erasure request is one command,
+after `just backup`:
+
+```sh
+dc run --rm -T --no-deps server admin erase-user --user <uuid|username>
+```
+
+It does what self-deletion does, for any account (staff included): the row stays with the
+name, email, username and avatar replaced, the account is disabled, its sessions end and its
+Zitadel user is deleted. It also deletes what the platform derived from the person beyond their
+graded work: AI conversations, AI grade drafts and the corrections quoting them, AI analyses,
+work embeddings and remediation of their attempts, AI memory and token ledger, mastery,
+analytics events, daily progress rows, risk snapshots and interventions about them,
+notifications and cached responses. Submissions, grades, certificates, progress and XP stay
+(RESTRICT, ARCHITECTURE §8), pointing at the anonymised row, so course records others rely on
+stay valid. `crates/db/tests/erasure.rs` classifies every key onto `users`; a new one fails
+until it is erased or kept with a reason. The command is idempotent (an account deleted earlier
+has its derived data erased again) and writes an `account-erased` row to `auth_audit_log`.
+Older backups still hold the person until they age out of the restic retention.
+
+Only when the records themselves must go: run `erase-user` first (it removes the derived data), then
+in one transaction after `just backup`:
 
 ```sql
 BEGIN;

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM ai_runs WHERE id IN (\n             SELECT run_id FROM ai_grade_drafts WHERE learner_id = $1\n             UNION SELECT run_id FROM ai_remediation_sessions WHERE student_user_id = $1\n             UNION SELECT a.run_id FROM ai_submission_analyses a\n                    LEFT JOIN submissions s ON s.id = a.submission_id\n                    LEFT JOIN file_submission_attempts f ON f.id = a.file_submission_attempt_id\n                   WHERE s.user_id = $1 OR f.user_id = $1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2efba637c26227f270cb8d1a6c5cfd0e849da80db81f3b4373c42dacc84353ae"
+}

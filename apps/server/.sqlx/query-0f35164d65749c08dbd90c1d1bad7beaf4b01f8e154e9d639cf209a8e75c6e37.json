@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM ai_remediation_sessions WHERE student_user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0f35164d65749c08dbd90c1d1bad7beaf4b01f8e154e9d639cf209a8e75c6e37"
+}
