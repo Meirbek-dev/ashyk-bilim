@@ -61,9 +61,9 @@
   --color-media: var(--media);
   --color-media-foreground: var(--media-foreground);
 
-  /* Type: Inter for reading and UI, Geologica for headings and display numbers, mono; seven sizes, three weights */
-  --font-sans: 'Inter Variable', system-ui, sans-serif;
-  --font-heading: 'Geologica Variable', var(--font-sans);
+  /* Type: the [data-font] set below for reading, UI and headings, one mono; seven sizes, three weights */
+  --font-sans: var(--typeface-sans);
+  --font-heading: var(--typeface-heading);
   --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -229,6 +229,75 @@
 
 :root[data-mode='dark'] {
   color-scheme: dark;
+}
+
+/* Typeface sets (DESIGN 4): html[data-font] from the user's choice, or a preview card in settings. No attribute =
+   Inter for reading and UI, Geologica for headings and display numbers. Every face has all 18 Kazakh letters;
+   all are OFL-1.1 except Ubuntu Sans (Ubuntu Font Licence 1.0, web embedding allowed). */
+:root,
+[data-font='inter'] {
+  --typeface-sans: 'Inter Variable', system-ui, sans-serif;
+  --typeface-heading: 'Geologica Variable', var(--typeface-sans);
+}
+
+[data-font='geist'] {
+  --typeface-sans: 'Geist Variable', system-ui, sans-serif;
+  --typeface-heading: var(--typeface-sans);
+}
+
+/* Optical sizes: small UI text opens up, big headings tighten. */
+[data-font='google'] {
+  --typeface-sans: 'Google Sans Variable', system-ui, sans-serif;
+  --typeface-heading: var(--typeface-sans);
+}
+
+[data-font='plex'] {
+  --typeface-sans: 'IBM Plex Sans Variable', system-ui, sans-serif;
+  --typeface-heading: var(--typeface-sans);
+}
+
+/* Inter with tighter spacing: more fits in tables and long Kazakh words. */
+[data-font='inter-tight'] {
+  --typeface-sans: 'Inter Tight Variable', system-ui, sans-serif;
+  --typeface-heading: var(--typeface-sans);
+}
+
+[data-font='sn-pro'] {
+  --typeface-sans: 'SN Pro Variable', system-ui, sans-serif;
+  --typeface-heading: var(--typeface-sans);
+}
+
+[data-font='rubik'] {
+  --typeface-sans: 'Rubik Variable', system-ui, sans-serif;
+  --typeface-heading: var(--typeface-sans);
+}
+
+[data-font='ubuntu'] {
+  --typeface-sans: 'Ubuntu Sans Variable', system-ui, sans-serif;
+  --typeface-heading: var(--typeface-sans);
+}
+
+/* No italic face: the browser slants the roman for emphasis. */
+[data-font='onest'] {
+  --typeface-sans: 'Onest Variable', system-ui, sans-serif;
+  --typeface-heading: var(--typeface-sans);
+}
+
+[data-font='noto'] {
+  --typeface-sans: 'Noto Sans Variable', system-ui, sans-serif;
+  --typeface-heading: var(--typeface-sans);
+}
+
+/* A serif with optical sizes for long reading; UI and headings use it too. */
+[data-font='literata'] {
+  --typeface-sans: 'Literata Variable', Georgia, serif;
+  --typeface-heading: var(--typeface-sans);
+}
+
+/* The device's own face: nothing to download. */
+[data-font='system'] {
+  --typeface-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  --typeface-heading: var(--typeface-sans);
 }
 
 /* Compact = teacher/admin tables; set by the layout, never by feature classes */

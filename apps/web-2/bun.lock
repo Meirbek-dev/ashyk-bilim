@@ -24,9 +24,19 @@
         "@dnd-kit/dom": "0.5.3",
         "@dnd-kit/helpers": "0.5.3",
         "@dnd-kit/react": "0.5.3",
+        "@fontsource-variable/geist": "5.3.0",
         "@fontsource-variable/geist-mono": "5.3.0",
         "@fontsource-variable/geologica": "5.3.0",
+        "@fontsource-variable/google-sans": "5.3.2",
+        "@fontsource-variable/ibm-plex-sans": "5.3.0",
         "@fontsource-variable/inter": "5.3.0",
+        "@fontsource-variable/inter-tight": "5.3.0",
+        "@fontsource-variable/literata": "5.3.0",
+        "@fontsource-variable/noto-sans": "5.3.0",
+        "@fontsource-variable/onest": "5.3.1",
+        "@fontsource-variable/rubik": "5.3.0",
+        "@fontsource-variable/sn-pro": "5.3.0",
+        "@fontsource-variable/ubuntu-sans": "5.3.0",
         "@inlang/paraglide-js": "2.29.3",
         "@lezer/highlight": "1.2.5",
         "@tanstack/charts": "1.1.0",
@@ -276,11 +286,31 @@
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.12", "", {}, "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="],
 
+    "@fontsource-variable/geist": ["@fontsource-variable/geist@5.3.0", "", {}, "sha512-j0m+vLQuG5XAYoHtGCVu0spvlGreR3EzpECUVzkFmI1mTVnAO38l/NEPDCFgZ177JxzYJCLSmTQibIiYPilGrA=="],
+
     "@fontsource-variable/geist-mono": ["@fontsource-variable/geist-mono@5.3.0", "", {}, "sha512-vBbuwDEo9AkrqADMXOrlAR3DFcJi4/JxeuU43FoiQERnNwsfXNnvxvReZG02cQKmyk4DZkZdBZX3oTDvy2zBAw=="],
 
     "@fontsource-variable/geologica": ["@fontsource-variable/geologica@5.3.0", "", {}, "sha512-N4pGIVYOXkyXDMooL/HeNYWbx7aMxRP+xABgkjZwi6bVeM/GM/cqHdO8UNFQiR5QR52yLI1RrzgKxm0DKWO2wQ=="],
 
+    "@fontsource-variable/google-sans": ["@fontsource-variable/google-sans@5.3.2", "", {}, "sha512-fN+fO2Ffm+n2G5K+UK4ynP5WrWT+M/dbBs9HZaYcgAT5evhefJJH2MlGj8yMz+8slQmhjWAqPJyJ1sELkUM4Uw=="],
+
+    "@fontsource-variable/ibm-plex-sans": ["@fontsource-variable/ibm-plex-sans@5.3.0", "", {}, "sha512-agG8tXFEo0hD9+J7npa4vbbWult52eMLVaQ6WQRlhs/iCAojrMAoejru85W9HTVXHfyUj96KM7gp/KGAS87XaQ=="],
+
     "@fontsource-variable/inter": ["@fontsource-variable/inter@5.3.0", "", {}, "sha512-OupL48va4JNofb97w6NYeF9S7W/kHNKM0Er8Dem5nqi4jeOLrVJDoE8tZEpnMJmtkvNbB1EIPPwHcdkF6b1oUA=="],
+
+    "@fontsource-variable/inter-tight": ["@fontsource-variable/inter-tight@5.3.0", "", {}, "sha512-ZhZZ29sNZ15P1K+cUt13GeBRYON0akgmNiftshUeDLos7X7zGcRgPzt434879Xhq1QbwlW3M/apBMk7jWabwvA=="],
+
+    "@fontsource-variable/literata": ["@fontsource-variable/literata@5.3.0", "", {}, "sha512-1Jw7xvOcoGyB83lxB2nG4bfNbqtX2/TTbdh9sHAOmU064SvmSdulDtA5RBu5JYWf64fdaKX7xU+z3GO1T2bCHA=="],
+
+    "@fontsource-variable/noto-sans": ["@fontsource-variable/noto-sans@5.3.0", "", {}, "sha512-e3ZuxzY9AL2psXPZlhwhnYrHUHv6PMoyK9MQ7croF0CUgURLqu9EMjW7q2FgVLwij1tjLsIHQrnwQ8aUcg4BiA=="],
+
+    "@fontsource-variable/onest": ["@fontsource-variable/onest@5.3.1", "", {}, "sha512-xaaw6G4HDB2/RczsWLD/2bnib4ykmQlTlBUN3GOEOiyErilZukQWVJG95h9zwAy0i8KY+QzDa+COPfqhI72Acw=="],
+
+    "@fontsource-variable/rubik": ["@fontsource-variable/rubik@5.3.0", "", {}, "sha512-yQUf8qle24MJYA+EuauyF+cqjjN6I715nGjitt3sGmwZA0XfA4fWJcLq1C/diREZl4Qzn1E80nLMc0ipC/a4Lg=="],
+
+    "@fontsource-variable/sn-pro": ["@fontsource-variable/sn-pro@5.3.0", "", {}, "sha512-4Xu46ein75l15vAwryh/ChYfBoS1ONBqZsLT9hxRrtBDiGkgfcp0XsJD2Z8ZKmm3fhFaZayww2SIp/AKMl/Jsg=="],
+
+    "@fontsource-variable/ubuntu-sans": ["@fontsource-variable/ubuntu-sans@5.3.0", "", {}, "sha512-SsQHgZOfw7O6S3c8XtObfXIG034nUpPXWdPhjeFRwtfESjALC9wUYeMTXXalutKpk+mFs3V4vRQVJpeJvmZ9iA=="],
 
     "@hey-api/codegen-core": ["@hey-api/codegen-core@0.9.1", "", { "dependencies": { "@hey-api/types": "0.1.4", "ansi-colors": "4.1.3", "c12": "3.3.4", "color-support": "1.1.3" } }, "sha512-s97jL1dgTMuiMHv2BZ1X4Tgd99Mf9GOvGdNqNcGwIMmnR+PgYNoraj4Zvp134MKsNCap/m7k0r0vKKnl56pj4w=="],
 
