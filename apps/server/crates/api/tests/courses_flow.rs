@@ -218,7 +218,13 @@ async fn learnings_round_trip_and_tolerate_legacy_json(pool: PgPool) {
     assert_eq!(kept.as_array().unwrap().len(), 2);
     assert_eq!(kept[0]["id"], "keep-me");
 
-    // Legacy jsonb: non-conforming entries are skipped, never a 500.
+    // Legacy jsonb: non-conforming entries are skipped, never a 500. The
+    // shape check refuses such rows now; a database whose old rows violated
+    // it skipped the check (schema_try_check), which dropping it reproduces.
+    sqlx::query("ALTER TABLE courses DROP CONSTRAINT courses_learnings_check")
+        .execute(&app.pool)
+        .await
+        .unwrap();
     sqlx::query(
         r#"UPDATE courses SET learnings = '[{"id":"a","text":"ok"},{"text":5},"bare",{"id":"b","text":"  "}]',
                               thumbnail_video_key = 'k/v.mp4' WHERE id = $1::uuid"#,

@@ -349,7 +349,9 @@ One migration set for the database `ashyq`. Rules:
 3. **Enums**: `text` + `CHECK` constraint (mirrored by a Rust enum); native PG enums are avoided.
 4. **JSONB policy**: only for genuinely polymorphic payloads — assessment item bodies, submission
    answers/snapshots, activity block content, AI event payloads. Each JSONB column maps to a typed serde shape
-   (`crates/domain/src/wire.rs`) with round-trip tests. Settings scalars and flags are columns.
+   (`crates/domain/src/wire.rs`) with round-trip tests. Settings scalars and flags are columns. A list of short
+   strings is `text[]` with a bounds CHECK (`text_list_ok`: `courses.tags`); a list of records the API replaces
+   whole is a jsonb array with a shape CHECK (`course_learnings_ok`: `courses.learnings` `{id, text, emoji?}`).
 5. FKs always explicit with deliberate `ON DELETE` (mostly `RESTRICT`; `CASCADE` only for owned children like
    items/blocks). No soft-delete convention; archival is a domain status where the domain needs it (courses,
    assessments).

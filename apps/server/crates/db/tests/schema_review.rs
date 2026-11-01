@@ -27,6 +27,8 @@
 //! - a deleted account cannot be active again.
 //! - review item 19: a course update links activities through keys; a
 //!   deleted activity leaves the update, an unknown one is refused.
+//! - review item 30: a course's tags are a bounded text[], its learnings a
+//!   jsonb array of `{id, text, emoji?}` within the API's bounds.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -740,4 +742,36 @@ async fn a_course_update_links_activities_by_key(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(kept, 1, "the update itself stays");
+}
+
+#[ab_testdb::test]
+async fn course_lists_keep_the_api_bounds(pool: PgPool) {
+    let w = world(&pool).await;
+    let skipped: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM schema_skipped_checks
+          WHERE name IN ('courses_tags_check', 'courses_learnings_check')",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(skipped, 0);
+    let set = |sql: &'static str| sqlx::query(sql).bind(w.course).execute(&pool);
+    set("UPDATE courses SET tags = '{Rust,SQL}',
+                learnings = '[{\"id\":\"a\",\"text\":\"T\",\"emoji\":\"x\"},{\"id\":\"b\",\"text\":\"U\"}]'
+          WHERE id = $1")
+    .await
+    .unwrap();
+    for refused in [
+        "UPDATE courses SET tags = '{Rust,rust}' WHERE id = $1",
+        "UPDATE courses SET tags = '{\" padded\"}' WHERE id = $1",
+        "UPDATE courses SET tags = '{\"\"}' WHERE id = $1",
+        "UPDATE courses SET tags = (SELECT array_agg(g::text) FROM generate_series(1, 21) g) WHERE id = $1",
+        "UPDATE courses SET learnings = '[\"raw\"]' WHERE id = $1",
+        "UPDATE courses SET learnings = '{}' WHERE id = $1",
+        "UPDATE courses SET learnings = '[{\"id\":\"a\",\"text\":\" \"}]' WHERE id = $1",
+        "UPDATE courses SET learnings = '[{\"text\":\"no id\"}]' WHERE id = $1",
+        "UPDATE courses SET learnings = '[{\"id\":\"a\",\"text\":\"T\",\"emoji\":1}]' WHERE id = $1",
+    ] {
+        assert!(set(refused).await.is_err(), "{refused}");
+    }
 }
