@@ -91,6 +91,7 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("learner_risk_snapshots", "teacher_user_id", SETTING),
     ("learner_risk_snapshots", "user_id", ERASED),
     ("mastery_evidence", "user_id", ERASED),
+    ("notification_opt_outs", "user_id", SETTING),
     ("notification_preferences", "user_id", SETTING),
     ("notifications", "user_id", ERASED),
     ("resource_authors", "user_id", SETTING),

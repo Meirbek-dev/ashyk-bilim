@@ -404,8 +404,10 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `final` runs stay), event logs of finished AI runs 180. Time-ordered append tables carry BRIN indexes on their
   timestamp for these sweeps and the analytics prune.
 - **Growing value lists are lookup tables**: `notifications.kind` → `notification_kinds`, `uploads.purpose` →
-  `upload_purposes` (a new kind or purpose is one `INSERT` in a migration); `notification_preferences.disabled`
-  is checked against `notification_kinds` by a trigger. Short fixed lists stay CHECKs.
+  `upload_purposes` (a new kind or purpose is one `INSERT` in a migration). A user's switched-off kinds are
+  `notification_opt_outs (user_id, kind)` rows with a key onto `notification_kinds`; until the contract migration
+  triggers mirror them into the old `notification_preferences.disabled` array the previous release reads and
+  writes. Short fixed lists stay CHECKs.
 - **Permission parts are columns**: `role_permissions.resource/action/scope` are generated from the grant
   string (shape-checked like `Grant::parse`); `is_course_staff` reads them through a partial index, so its
   role branch is two index probes per call.

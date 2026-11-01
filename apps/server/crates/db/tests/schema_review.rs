@@ -19,7 +19,7 @@
 //!   journals: a drifted profile is fixed, a sound one is left alone.
 //! - item 18: notification kinds and upload purposes are lookup tables; every
 //!   kind the code sends is a row, and an unknown kind or purpose is refused
-//!   (also inside a preference's `disabled` list).
+//!   (also as a notification opt-out).
 //! - review 2, items 11-12: both grade journals guard the whole row: only a
 //!   grade's published_at changes, a file grade never changes, and a file
 //!   grade goes only with its attempt.
@@ -454,9 +454,9 @@ async fn kinds_and_purposes_are_lookup_rows(pool: PgPool) {
             "bogus",
         ),
         (
-            "INSERT INTO notification_preferences (user_id, disabled) VALUES ($1, $2::text[])              ON CONFLICT (user_id) DO UPDATE SET disabled = EXCLUDED.disabled",
-            "{course_update}",
-            "{course_update,bogus}",
+            "INSERT INTO notification_opt_outs (user_id, kind) VALUES ($1, $2)",
+            "course_update",
+            "bogus",
         ),
         (
             "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes)              VALUES ($1, $2, 'public', uuidv7()::text, 'image/png', 1)",
@@ -850,4 +850,91 @@ async fn a_parent_cannot_change_course_under_its_children(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(course, w.course);
+}
+
+/// Review 3, item 26: switched-off kinds are rows; until the contract
+/// migration a write to either the rows (this release) or the old
+/// `notification_preferences.disabled` array (the previous one) shows up on
+/// the other side.
+#[ab_testdb::test]
+async fn notification_opt_outs_mirror_the_old_array(pool: PgPool) {
+    use ab_core::id::UserId;
+    let w = world(&pool).await;
+    let user = UserId(w.user);
+    ab_db::notifications::set_disabled_types(
+        &pool,
+        user,
+        &[
+            NotificationType::CourseUpdate,
+            NotificationType::DiscussionReply,
+        ],
+    )
+    .await
+    .unwrap();
+    let kinds = ab_db::notifications::disabled_types(&pool, user)
+        .await
+        .unwrap();
+    assert_eq!(kinds.len(), 2);
+    ab_db::notifications::set_disabled_types(&pool, user, &[NotificationType::DiscussionReply])
+        .await
+        .unwrap();
+    assert_eq!(
+        ab_db::notifications::disabled_types(&pool, user)
+            .await
+            .unwrap(),
+        vec![NotificationType::DiscussionReply]
+    );
+
+    let old_table: Option<String> =
+        sqlx::query_scalar("SELECT to_regclass('notification_preferences')::text")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    if old_table.is_none() {
+        return; // contracted: nothing left to mirror
+    }
+    let array: Vec<String> =
+        sqlx::query_scalar("SELECT disabled FROM notification_preferences WHERE user_id = $1")
+            .bind(w.user)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        array,
+        ["discussion_reply"],
+        "the previous release reads the array"
+    );
+    // The previous release writes the array: the rows follow.
+    sqlx::query(
+        "UPDATE notification_preferences SET disabled = '{course_update}' WHERE user_id = $1",
+    )
+    .bind(w.user)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        ab_db::notifications::disabled_types(&pool, user)
+            .await
+            .unwrap(),
+        vec![NotificationType::CourseUpdate]
+    );
+    // A user without learning records still goes, opt-outs and all.
+    let gone = user_with_opt_out(&pool).await;
+    sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(gone)
+        .execute(&pool)
+        .await
+        .unwrap();
+}
+
+async fn user_with_opt_out(pool: &PgPool) -> uuid::Uuid {
+    let id = user(pool, "quiet").await;
+    ab_db::notifications::set_disabled_types(
+        pool,
+        ab_core::id::UserId(id),
+        &[NotificationType::CourseUpdate],
+    )
+    .await
+    .unwrap();
+    id
 }

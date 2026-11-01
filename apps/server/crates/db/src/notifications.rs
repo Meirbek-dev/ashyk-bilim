@@ -31,8 +31,8 @@ pub async fn insert_many(
            SELECT DISTINCT r.user_id, $2::text, $3::jsonb, $4::text
            FROM unnest($1::uuid[]) AS r(user_id)
            JOIN users u ON u.id = r.user_id AND u.status = 'active'
-           WHERE NOT EXISTS (SELECT 1 FROM notification_preferences p
-                             WHERE p.user_id = r.user_id AND $2 = ANY (p.disabled))
+           WHERE NOT EXISTS (SELECT 1 FROM notification_opt_outs o
+                             WHERE o.user_id = r.user_id AND o.kind = $2)
              -- A link into a course or activity deleted meanwhile is not sent (the
              -- generated course_id / activity_id columns are foreign keys).
              AND ($3::jsonb->>'course_id' IS NULL
@@ -74,9 +74,8 @@ pub async fn upsert_work_submitted(
                SELECT DISTINCT r.user_id
                FROM unnest($1::uuid[]) AS r(user_id)
                JOIN users u ON u.id = r.user_id AND u.status = 'active'
-               WHERE NOT EXISTS (SELECT 1 FROM notification_preferences p
-                                 WHERE p.user_id = r.user_id
-                                   AND 'work_submitted' = ANY (p.disabled))),
+               WHERE NOT EXISTS (SELECT 1 FROM notification_opt_outs o
+                                 WHERE o.user_id = r.user_id AND o.kind = 'work_submitted')),
            folded AS (
                DELETE FROM notifications n USING recipients r
                WHERE n.user_id = r.user_id AND n.kind = 'work_submitted'
@@ -186,32 +185,52 @@ pub async fn mark_all_read(pool: &PgPool, user_id: UserId) -> Result<u64> {
 
 pub async fn disabled_types(pool: &PgPool, user_id: UserId) -> Result<Vec<NotificationType>> {
     let disabled = sqlx::query_scalar!(
-        "SELECT disabled FROM notification_preferences WHERE user_id = $1",
+        "SELECT kind FROM notification_opt_outs WHERE user_id = $1 ORDER BY kind",
         user_id.0
     )
-    .fetch_optional(pool)
-    .await?
-    .unwrap_or_default();
+    .fetch_all(pool)
+    .await?;
     Ok(disabled
         .iter()
         .filter_map(|k| NotificationType::parse(k))
         .collect())
 }
 
+/// Replace the user's switched-off kinds (`notification_opt_outs`; a
+/// trigger mirrors them into `notification_preferences.disabled` for the
+/// previous release until the contract migration).
 pub async fn set_disabled_types(
     pool: &PgPool,
     user_id: UserId,
     disabled: &[NotificationType],
 ) -> Result<()> {
     let disabled: Vec<&str> = disabled.iter().map(|k| k.as_str()).collect();
+    let mut tx = pool.begin().await?;
+    // Two saves of the same user's switches run one after the other, so the
+    // last one wins whole instead of mixing rows of both.
     sqlx::query!(
-        r#"INSERT INTO notification_preferences (user_id, disabled) VALUES ($1, $2::text[])
-           ON CONFLICT (user_id) DO UPDATE SET disabled = EXCLUDED.disabled"#,
+        "SELECT pg_advisory_xact_lock(hashtextextended('notification-opt-outs:' || $1::uuid::text, 0))",
+        user_id.0
+    )
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query!(
+        "DELETE FROM notification_opt_outs WHERE user_id = $1 AND kind <> ALL ($2::text[])",
         user_id.0,
         &disabled as &[&str],
     )
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
+    sqlx::query!(
+        r#"INSERT INTO notification_opt_outs (user_id, kind)
+           SELECT $1, k FROM unnest($2::text[]) AS k
+           ON CONFLICT DO NOTHING"#,
+        user_id.0,
+        &disabled as &[&str],
+    )
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
     Ok(())
 }
 

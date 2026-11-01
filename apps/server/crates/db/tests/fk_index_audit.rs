@@ -51,6 +51,12 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ("grading_entries", "graded_by", "users", ACTOR),
     ("item_feedback", "graded_by", "users", ACTOR),
     ("learner_risk_snapshots", "teacher_user_id", "users", ACTOR),
+    (
+        "notification_opt_outs",
+        "kind",
+        "notification_kinds",
+        LOOKUP,
+    ),
     ("notifications", "kind", "notification_kinds", LOOKUP),
     ("uploads", "purpose", "upload_purposes", LOOKUP),
     ("usergroups", "creator_id", "users", ACTOR),
