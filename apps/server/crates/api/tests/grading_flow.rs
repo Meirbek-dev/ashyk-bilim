@@ -4241,12 +4241,14 @@ async fn publish_dropped_after_the_commit_still_projects(pool: PgPool) {
         quiz_with_essay(&app, &teacher, &chapter_id, serde_json::json!({})).await;
     let state_path = format!("/api/v2/courses/{course_id}/learner-state");
     let row_published = async |sub: &str| {
-        sqlx::query_scalar::<_, String>("SELECT status FROM submissions WHERE id = $1")
-            .bind(uuid::Uuid::parse_str(sub).unwrap())
-            .fetch_one(&app.pool)
-            .await
-            .unwrap()
-            == "published"
+        sqlx::query_scalar::<_, ab_core::assessments::SubmissionStatus>(
+            "SELECT status FROM submissions WHERE id = $1",
+        )
+        .bind(uuid::Uuid::parse_str(sub).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+            == ab_core::assessments::SubmissionStatus::Published
     };
     let learner_score = async |who: &MintedSession| {
         app.get_as(who, &state_path).await.json()["outline"][0]["activities"][0]["score"].as_f64()

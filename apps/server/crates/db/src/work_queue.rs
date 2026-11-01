@@ -133,7 +133,7 @@ pub async fn list_teacher_grading_work(
                                      AND NOT is_course_staff(r.course_id, r.user_id))
                  THEN p.teacher_action_required
                  ELSE EXISTS (SELECT 1 FROM submissions s
-                              WHERE s.id = p.latest_submission_id AND s.status = 'pending')
+                              WHERE s.id = p.latest_submission_id AND s.status IN ('submitted', 'pending'))
                    OR EXISTS (SELECT 1 FROM file_submission_attempts fa
                               JOIN file_submissions f ON f.id = fa.file_submission_id
                               WHERE f.activity_id = p.activity_id AND fa.user_id = p.user_id

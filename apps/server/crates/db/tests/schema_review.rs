@@ -68,6 +68,9 @@
 //!   a rename shows at once, and the activity cannot change its type.
 //! - review 2, item 4: each distinct (items, policy) pair handed in is one
 //!   numbered, frozen assessment version; a hand-in names it once.
+//! - review 2, item 2: attempts share one status vocabulary (`submitted`,
+//!   `released`); a new spelling is accepted and reads back as the same
+//!   status, and until the contract it is stored in the previous spelling.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -141,7 +144,7 @@ async fn submission(pool: &PgPool, w: &World, number: i32, preview: bool) -> sql
     sqlx::query_scalar(
         "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
                                   preview, submitted_at, items_snapshot, policy_snapshot)
-         VALUES ($1, $2, $3, 'pending', $4, $5, now(), '{}', '{}') RETURNING id",
+         VALUES ($1, $2, $3, 'submitted', $4, $5, now(), '{}', '{}') RETURNING id",
     )
     .bind(w.assessment)
     .bind(w.course)
@@ -432,7 +435,7 @@ async fn integrity_checks_exist_and_bite(pool: PgPool) {
     let w = world(&pool).await;
     for bad in [
         "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number, status)
-         VALUES ($1, $2, $3, 7, 'pending')",
+         VALUES ($1, $2, $3, 7, 'submitted')",
         "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number, final_score)
          VALUES ($1, $2, $3, 8, 100.5)",
         "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number, answers)
@@ -1618,7 +1621,7 @@ async fn a_handed_in_attempt_keeps_its_snapshots(pool: PgPool) {
     .fetch_one(&pool)
     .await
     .unwrap();
-    let hand_in = "UPDATE submissions SET status = 'pending', submitted_at = now() WHERE id = $1";
+    let hand_in = "UPDATE submissions SET status = 'submitted', submitted_at = now() WHERE id = $1";
 
     // Without snapshots the hand-in fails at commit.
     let mut tx = pool.begin().await.unwrap();
@@ -1797,4 +1800,85 @@ async fn a_hand_in_names_one_frozen_assessment_version(pool: PgPool) {
         .execute(&pool)
         .await;
     assert!(moved.is_err(), "a hand-in names its version once");
+}
+
+#[ab_testdb::test]
+async fn attempts_share_one_status_vocabulary(pool: PgPool) {
+    use ab_core::assessments::{FileAttemptStatus, SubmissionStatus};
+    let w = world(&pool).await;
+    let expand: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'submissions_status_previous_spelling')",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let sub = submission(&pool, &w, 1, false).await.unwrap();
+    let stored = async |sql: &'static str, id: Uuid| -> String {
+        sqlx::query_scalar(sql)
+            .bind(id)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+    };
+    let read = "SELECT status FROM submissions WHERE id = $1";
+    assert_eq!(
+        stored(read, sub).await,
+        if expand { "pending" } else { "submitted" }
+    );
+    let status: SubmissionStatus = sqlx::query_scalar(read)
+        .bind(sub)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(status, SubmissionStatus::Pending);
+    assert_eq!(status.as_str(), "pending", "the API keeps its spelling");
+    sqlx::query("UPDATE submissions SET status = $2 WHERE id = $1")
+        .bind(sub)
+        .bind(SubmissionStatus::Published)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        stored(read, sub).await,
+        if expand { "published" } else { "released" }
+    );
+
+    let task: Uuid = sqlx::query_scalar(
+        "INSERT INTO file_submissions (activity_id, course_id) VALUES ($1, $2) RETURNING id",
+    )
+    .bind(w.activity)
+    .bind(w.course)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let attempt: Uuid = sqlx::query_scalar(
+        "INSERT INTO file_submission_attempts (file_submission_id, course_id, user_id, status, submitted_at)
+         VALUES ($1, $2, $3, 'released', now()) RETURNING id",
+    )
+    .bind(task)
+    .bind(w.course)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let attempt_read = "SELECT status FROM file_submission_attempts WHERE id = $1";
+    assert_eq!(
+        stored(attempt_read, attempt).await,
+        if expand { "published" } else { "released" }
+    );
+    let status: FileAttemptStatus = sqlx::query_scalar(attempt_read)
+        .bind(attempt)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(status, FileAttemptStatus::Published);
+
+    for bad in [
+        "UPDATE submissions SET status = 'done' WHERE id = $1",
+        "UPDATE file_submission_attempts SET status = 'pending' WHERE id = $1",
+    ] {
+        let id = if bad.contains("file_") { attempt } else { sub };
+        let refused = sqlx::query(bad).bind(id).execute(&pool).await;
+        assert!(refused.is_err(), "{bad}");
+    }
 }

@@ -2063,7 +2063,7 @@ async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
         held.text()
     );
 
-    sqlx::query("UPDATE submissions SET status = 'published' WHERE id = $1")
+    sqlx::query("UPDATE submissions SET status = 'released' WHERE id = $1")
         .bind(submission_id)
         .execute(&pool)
         .await
@@ -2106,8 +2106,8 @@ async fn exam_and_code_challenge_common_failures_use_the_catalogued_codes(pool: 
             "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
                                       final_score, is_late, submitted_at, graded_at,
                                       items_snapshot, policy_snapshot)
-             VALUES ($1, $2, $3, 'pending', 1, NULL, false, now(), NULL, '{}', '{}'),
-                    ($1, $2, $4, 'published', 1, 80, true, now(), now(), '{}', '{}')",
+             VALUES ($1, $2, $3, 'submitted', 1, NULL, false, now(), NULL, '{}', '{}'),
+                    ($1, $2, $4, 'released', 1, 80, true, now(), now(), '{}', '{}')",
         )
         .bind(id)
         .bind(course_uuid)
@@ -2760,7 +2760,7 @@ async fn exam_common_failures_name_the_missed_questions(pool: PgPool) {
             "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
                                       final_score, grading, submitted_at, graded_at,
                                       items_snapshot, policy_snapshot)
-             VALUES ($1, $2, $3, 'published', 1, $4, $5, now(), now(), '{}', '{}')",
+             VALUES ($1, $2, $3, 'released', 1, $4, $5, now(), now(), '{}', '{}')",
         )
         .bind(exam_id)
         .bind(course_uuid)

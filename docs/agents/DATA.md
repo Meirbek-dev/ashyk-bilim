@@ -22,11 +22,11 @@ Every table, column, key and foreign key with the table's purpose: `docs/agents/
 | course teacher / author           | `resource_authors` (`course_id`, `user_id`, `authorship`, `status`)                  |
 | quiz, exam, code challenge        | `assessments` (`activity_id`, `lifecycle`; title/kind = the activity's) + `assessment_items` (`body` json) |
 | code statement, tests, languages  | `assessment_items.body`: `prompt`, `tests[]`, `languages[]`, `time_limit_seconds`     |
-| attempt (quiz, exam, code)        | `submissions` (`status` draft / pending / graded / published / returned)            |
+| attempt (quiz, exam, code)        | `submissions` (`status` draft / submitted / graded / released / returned; until contract B2 the rows still say `pending` / `published`, the API always does) |
 | what an attempt answered against  | `submissions.items_snapshot` / `policy_snapshot`, `assessment_version_id` -> `assessment_versions` |
 | a grade and its history           | `grading_entries` (journal, latest id = current) = `submissions.final_score` / `grading` |
 | code "Run"                        | `code_runs` (+ `code_run_cases`, `verdict`)                                          |
-| file task, its hand-ins           | `file_submissions` (`lifecycle`, `instructions`) + `file_submission_attempts` (`status`) |
+| file task, its hand-ins           | `file_submissions` (`lifecycle`, `instructions`) + `file_submission_attempts` (`status`, same words as `submissions`) |
 | lesson media                      | `activities.content->>'filename'` (video, PDF), `blocks.content` (page blocks)       |
 | role, permission                  | `user_roles` -> `roles` (`slug`); permissions in `role_permissions`                 |
 | group                             | `usergroups`, `usergroup_members`, `usergroup_courses`                               |

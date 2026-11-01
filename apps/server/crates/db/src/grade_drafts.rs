@@ -452,7 +452,7 @@ pub async fn pending_works(pool: &PgPool, activity_id: ActivityId) -> Result<Vec
         r#"SELECT s.id AS "subject_id!", false AS "is_file!", s.user_id AS "learner_id!: UserId",
                   s.version AS "version!"
            FROM submissions s JOIN assessments a ON a.id = s.assessment_id
-           WHERE a.activity_id = $1 AND s.status = 'pending' AND NOT s.preview
+           WHERE a.activity_id = $1 AND s.status IN ('submitted', 'pending') AND NOT s.preview
            UNION ALL
            SELECT t.id, true, t.user_id, t.version
            FROM file_submission_attempts t JOIN file_submissions f ON f.id = t.file_submission_id
@@ -478,7 +478,7 @@ pub async fn pending_work(pool: &PgPool, subject_id: uuid::Uuid) -> Result<Optio
                   s.id AS "subject_id!", false AS "is_file!", s.user_id AS "learner_id!: UserId",
                   s.version AS "version!"
            FROM submissions s JOIN assessments a ON a.id = s.assessment_id
-           WHERE s.id = $1 AND s.status = 'pending' AND NOT s.preview
+           WHERE s.id = $1 AND s.status IN ('submitted', 'pending') AND NOT s.preview
            UNION ALL
            SELECT c.course_id, f.activity_id, t.id, true, t.user_id, t.version
            FROM file_submission_attempts t
@@ -560,7 +560,7 @@ pub async fn feedback_hours(
                UNION ALL
                SELECT t.submitted_at,
                       (SELECT min(e.created_at) FROM file_grading_entries e
-                       WHERE e.attempt_id = t.id AND e.status = 'published')
+                       WHERE e.attempt_id = t.id AND e.status IN ('released', 'published'))
                FROM file_submission_attempts t JOIN file_submissions f ON f.id = t.file_submission_id
                WHERE f.course_id = $1 AND NOT t.preview AND t.submitted_at IS NOT NULL
            ) w
@@ -635,7 +635,7 @@ pub async fn graded_submission_parts(
            JOIN users u ON u.id = s.user_id
            CROSS JOIN LATERAL jsonb_array_elements(COALESCE(s.grading -> 'items', '[]'::jsonb)) gi
            JOIN assessment_items i ON i.id = (gi->>'item_id')::uuid AND i.kind IN ('open_text', 'form')
-           WHERE a.activity_id = $1 AND NOT s.preview AND s.status IN ('graded', 'published')
+           WHERE a.activity_id = $1 AND NOT s.preview AND s.status IN ('graded', 'released', 'published')
              AND COALESCE((gi->>'needs_manual_review')::boolean, false) = false"#,
         activity_id.0
     )
@@ -658,7 +658,7 @@ pub async fn graded_file_attempts(
            FROM file_submission_attempts t
            JOIN file_submissions f ON f.id = t.file_submission_id
            JOIN users u ON u.id = t.user_id
-           WHERE f.activity_id = $1 AND NOT t.preview AND t.status IN ('graded', 'published')
+           WHERE f.activity_id = $1 AND NOT t.preview AND t.status IN ('graded', 'released', 'published')
              AND t.final_score IS NOT NULL"#,
         activity_id.0
     )

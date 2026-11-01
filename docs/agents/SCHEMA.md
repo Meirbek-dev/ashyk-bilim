@@ -93,7 +93,7 @@ UI word and ready queries: `DATA.md`. Rules behind the shapes: `docs/ARCHITECTUR
 - [`role_permissions`](#role_permissions): A permission grant of a role; resource/action/scope are generated from the grant string
 - [`roles`](#roles): A role: built-in (is_system, display_name_key/description_key) or custom (display_name/description)
 - [`schema_skipped_checks`](#schema_skipped_checks): CHECK constraints a migration could not add because existing rows violate them (RUNBOOK 2.4)
-- [`submissions`](#submissions): An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> pending -> graded -> published / returned
+- [`submissions`](#submissions): An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> submitted -> graded -> released / returned (pending / published until contract B2)
 - [`teacher_interventions`](#teacher_interventions): An action a teacher logged for an at-risk learner and its outcome
 - [`trail_runs`](#trail_runs): A learner's legacy course run (status, data); membership is enrolments since schema review 3
 - [`trail_steps`](#trail_steps): Legacy per-activity step inside a trail run; completions is the progress fact since schema review 3
@@ -2071,7 +2071,7 @@ CHECK constraints a migration could not add because existing rows violate them (
 
 ## submissions
 
-An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> pending -> graded -> published / returned. preview rows are staff test runs.
+An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> submitted -> graded -> released / returned (pending / published until contract B2). preview rows are staff test runs.
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |

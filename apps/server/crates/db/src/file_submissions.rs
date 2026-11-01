@@ -568,7 +568,7 @@ pub async fn grade_attempt(
            FROM u"#,
         id.0,
         expected_version,
-        grade.status.as_str(),
+        grade.status.stored(),
         grade.final_score,
         grade.feedback,
         grade.rubric_scores,
@@ -693,7 +693,7 @@ pub async fn list_for_review(
                   ELSE 0 END AS key
                   FROM file_submission_attempts c WHERE c.id = $4) ck ON true
            WHERE a.file_submission_id = $1 AND a.status <> 'draft' AND NOT a.preview
-             AND ($2::text IS NULL OR a.status = $2)
+             AND ($2::text[] IS NULL OR a.status = ANY($2))
              AND ($3::text IS NULL OR u.username ILIKE $3 ESCAPE '\' OR u.display_name ILIKE $3 ESCAPE '\'
                   OR u.email ILIKE $3 ESCAPE '\')
              AND ($4::uuid IS NULL OR (k.key, a.id) < (ck.key, $4))
@@ -703,7 +703,7 @@ pub async fn list_for_review(
            ORDER BY k.key DESC, a.id DESC
            LIMIT $5"#,
         file_submission_id.0,
-        q.status.map(FileAttemptStatus::as_str),
+        q.status.map(FileAttemptStatus::stored_spellings) as _,
         pattern.as_deref(),
         q.cursor.map(|c| c.0),
         q.limit,
@@ -737,7 +737,7 @@ pub async fn review_counts(
         r#"SELECT count(*) AS "total!",
                   count(*) FILTER (WHERE status = 'submitted') AS "submitted!",
                   count(*) FILTER (WHERE status = 'graded') AS "graded!",
-                  count(*) FILTER (WHERE status = 'published') AS "published!",
+                  count(*) FILTER (WHERE status IN ('released', 'published')) AS "published!",
                   count(*) FILTER (WHERE status = 'returned') AS "returned!",
                   count(*) FILTER (WHERE is_late) AS "late!"
            FROM file_submission_attempts a
@@ -768,7 +768,7 @@ pub async fn graded_scores(
 ) -> Result<Vec<f64>> {
     let scores = sqlx::query_scalar!(
         r#"SELECT final_score::float8 AS "final_score!" FROM file_submission_attempts a
-           WHERE a.file_submission_id = $1 AND a.status IN ('graded', 'published')
+           WHERE a.file_submission_id = $1 AND a.status IN ('graded', 'released', 'published')
              AND a.final_score IS NOT NULL AND NOT a.preview
              AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
                   WHERE m.usergroup_id = $2 AND m.user_id = a.user_id))"#,
@@ -788,10 +788,10 @@ pub async fn list_ids_in_status(
 ) -> Result<Vec<(FileAttemptId, i64)>> {
     let rows = sqlx::query!(
         r#"SELECT id AS "id: FileAttemptId", version FROM file_submission_attempts
-           WHERE file_submission_id = $1 AND status = $2 AND NOT preview
+           WHERE file_submission_id = $1 AND status = ANY($2) AND NOT preview
            ORDER BY id"#,
         file_submission_id.0,
-        status.as_str()
+        status.stored_spellings() as _
     )
     .fetch_all(pool)
     .await?;

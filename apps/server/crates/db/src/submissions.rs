@@ -380,7 +380,7 @@ pub async fn persist_submit<'e>(
            WHERE id = $1 AND status = 'draft'
              AND draft_version = $14 AND violation_count = $15"#,
         id.0,
-        o.status.as_str(),
+        o.status.stored(),
         o.answers,
         o.grading,
         o.auto_score,
@@ -418,7 +418,7 @@ pub async fn teacher_save<'e, E: sqlx::PgExecutor<'e>>(
                graded_at = now(), version = version + 1
            WHERE id = $1 AND version = $5"#,
         id.0,
-        status.as_str(),
+        status.stored(),
         grading,
         final_score,
         expected_version
@@ -428,7 +428,7 @@ pub async fn teacher_save<'e, E: sqlx::PgExecutor<'e>>(
     Ok(updated.rows_affected() == 1)
 }
 
-/// Bulk release: flip graded → published carrying the entry's final score.
+/// Bulk release: flip graded → released carrying the entry's final score.
 /// `false` = the row moved on since the snapshot (BUG-226: a concurrent
 /// save or return wins; the caller skips the row).
 pub async fn mark_published<'e, E: sqlx::PgExecutor<'e>>(
@@ -438,7 +438,7 @@ pub async fn mark_published<'e, E: sqlx::PgExecutor<'e>>(
     final_score: f64,
 ) -> Result<bool> {
     let updated = sqlx::query!(
-        r#"UPDATE submissions SET status = 'published', final_score = $2::float8, version = version + 1
+        r#"UPDATE submissions SET status = 'released', final_score = $2::float8, version = version + 1
            WHERE id = $1 AND version = $3"#,
         id.0,
         final_score,
@@ -678,7 +678,7 @@ pub async fn gradebook_members(
              AND (NOT $6
                   OR EXISTS (SELECT 1 FROM submissions s
                              WHERE s.course_id = $1 AND s.user_id = t.user_id AND NOT s.preview
-                               AND s.status IN ('pending', 'graded'))
+                               AND s.status IN ('submitted', 'pending', 'graded'))
                   OR EXISTS (SELECT 1 FROM file_submission_attempts fa
                              WHERE fa.course_id = $1 AND fa.user_id = t.user_id AND NOT fa.preview
                                AND fa.status IN ('submitted', 'graded')))
@@ -721,7 +721,7 @@ pub async fn gradebook_cells(
                WHERE s.course_id = $1 AND s.status <> 'draft' AND NOT s.preview
                UNION ALL
                SELECT fa.user_id, f.activity_id, NULL::uuid, NULL::uuid, f.id, fa.id,
-                      CASE WHEN fa.status = 'submitted' THEN 'pending' ELSE fa.status END,
+                      fa.status,
                       fa.attempt_number, fa.final_score, fa.is_late, NULL::timestamptz,
                       fa.submitted_at, fa.graded_at
                FROM file_submission_attempts fa
@@ -735,11 +735,11 @@ pub async fn gradebook_cells(
                   c.attempt_id AS "attempt_id?: FileAttemptId",
                   c.status AS "status!: SubmissionStatus", c.attempt_number AS "attempt_number!",
                   1::bigint AS "attempts!",
-                  CASE WHEN c.status IN ('pending', 'graded') THEN c.attempt_number END
+                  CASE WHEN c.status IN ('submitted', 'pending', 'graded') THEN c.attempt_number END
                       AS "pending_attempt?",
-                  CASE WHEN c.status IN ('pending', 'graded')
+                  CASE WHEN c.status IN ('submitted', 'pending', 'graded')
                        THEN COALESCE(c.submission_id, c.attempt_id) END AS "pending_attempt_id?",
-                  CASE WHEN c.status IN ('pending', 'graded') THEN c.status END
+                  CASE WHEN c.status IN ('submitted', 'pending', 'graded') THEN c.status END
                       AS "pending_attempt_status?: SubmissionStatus",
                   c.final_score::float8 AS "final_score?", c.is_late AS "is_late!",
                   (extract(epoch FROM c.due_at_override))::bigint AS "due_at_override?",
@@ -885,7 +885,7 @@ pub async fn list_for_review(
                   WHEN 'attempt_number' THEN s.attempt_number::float8
                   ELSE coalesce(extract(epoch FROM s.submitted_at)::float8, 0) END AS key) k
            WHERE s.assessment_id = $1 AND s.status <> 'draft' AND NOT s.preview
-             AND ($2::text IS NULL OR s.status = $2)
+             AND ($2::text[] IS NULL OR s.status = ANY($2))
              AND (NOT $3 OR s.is_late)
              AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\' OR u.display_name ILIKE $4 ESCAPE '\')
              AND ($5::uuid IS NULL OR (k.key, s.id) < ($9::float8, $5))
@@ -894,7 +894,7 @@ pub async fn list_for_review(
            ORDER BY k.key DESC, s.id DESC
            LIMIT $6"#,
         assessment_id.0,
-        status.map(SubmissionStatus::as_str),
+        status.map(SubmissionStatus::stored_spellings) as _,
         late_only,
         pattern.as_deref(),
         cursor.map(|(_, id)| id.0),
@@ -927,9 +927,9 @@ pub async fn stats(
 ) -> Result<SubmissionStats> {
     let row = sqlx::query!(
         r#"SELECT count(*) FILTER (WHERE status <> 'draft') AS "total!",
-                  count(*) FILTER (WHERE status = 'pending') AS "pending!",
+                  count(*) FILTER (WHERE status IN ('submitted', 'pending')) AS "pending!",
                   count(*) FILTER (WHERE status = 'graded') AS "graded!",
-                  count(*) FILTER (WHERE status = 'published') AS "published!",
+                  count(*) FILTER (WHERE status IN ('released', 'published')) AS "published!",
                   count(*) FILTER (WHERE status = 'returned') AS "returned!",
                   count(*) FILTER (WHERE status <> 'draft' AND is_late) AS "late!"
            FROM submissions s WHERE assessment_id = $1 AND NOT preview
@@ -958,7 +958,7 @@ pub async fn graded_scores(
 ) -> Result<Vec<f64>> {
     let scores = sqlx::query_scalar!(
         r#"SELECT final_score::float8 AS "final_score!" FROM submissions s
-           WHERE assessment_id = $1 AND status IN ('graded', 'published')
+           WHERE assessment_id = $1 AND status IN ('graded', 'released', 'published')
              AND final_score IS NOT NULL AND NOT preview
              AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
                   WHERE m.usergroup_id = $2 AND m.user_id = s.user_id))"#,
@@ -995,7 +995,7 @@ pub async fn list_releasable(
                   items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM submissions WHERE assessment_id = $1 AND status IN ('graded', 'published')
+           FROM submissions WHERE assessment_id = $1 AND status IN ('graded', 'released', 'published')
              AND NOT preview ORDER BY id"#,
         assessment_id.0
     )

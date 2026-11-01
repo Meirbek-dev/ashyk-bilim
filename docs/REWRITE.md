@@ -787,12 +787,10 @@ in the order it can be done, each step a forward migration on the current schema
       penalty are percentages of 100, a teacher's override is a percentage): decide how an override given in
       percent rounds to points (scale 2 drifts up to `0.5 / max_points` %), then add `raw_points` /
       `final_points` to `grading_entries`/`submissions`, write both for a release, generate the percentage.
-    - *One status vocabulary* (item 2): `draft → submitted → graded → released → returned`. Storage first,
-      API names unchanged: an expand release reads both spellings (`pending`/`submitted`,
-      `published`/`released`) and writes the old; the contract release writes the new, rewrites the rows
-      and narrows the CHECKs. Every SQL literal on `status` (also in progress/analytics/work-queue queries)
-      moves in the expand release: a missed literal fails silently, not at compile time. Best done with the
-      pipeline merge below, which rewrites those queries anyway.
+    - *One status vocabulary* (item 2): done (ARCHITECTURE §8 "One attempt status vocabulary"); the
+      contract `20261103070000` rewrites the rows (journal `file_grading_entries` included) and narrows the
+      CHECKs. Left: the Rust variants keep their API names (`SubmissionStatus::Pending` = stored
+      `submitted`); with the pipeline merge the two enums become one.
     - *One overrides table* (item 3) falls out of the merge: `file_submission_overrides` rows become
       `assessment_overrides` rows of the assignment's assessment (`due_at_override`, `note` = `reason`).
       Before the merge the only arc-free shape is per activity, which the merge would undo.
