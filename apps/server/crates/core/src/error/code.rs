@@ -60,6 +60,7 @@ error_codes! {
     ActivityNotReady => ("activity-not-ready", 409, "Activity is not ready to publish"),
     ActivityMediaMissing => ("activity-media-missing", 409, "Add the lesson's file or link before publishing it"),
     ActivityHasLearnerWork => ("activity-has-learner-work", 409, "Learners have handed in work here: unpublish it instead of deleting"),
+    CourseHasLearnerWork => ("course-has-learner-work", 409, "Learners have work in this course: confirm that it is deleted with the course"),
     CourseNotReady => ("course-not-ready", 422, "Course has publish blockers"),
     CourseArchived => ("course-archived", 409, "Course is archived"),
     // Files

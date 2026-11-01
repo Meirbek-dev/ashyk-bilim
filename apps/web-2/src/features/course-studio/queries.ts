@@ -5,6 +5,7 @@ import { contributorsOptions, setUpdates, updatesOptions } from '#/features/cour
 import { ApiError } from '#/shared/api/errors'
 import {
   courseArchivePreviewOptions,
+  courseDeletionPreviewOptions,
   courseDetailOptions,
   courseLifecycleMutation,
   courseReadinessOptions,
@@ -79,6 +80,8 @@ export const readinessOptions = (id: CourseId) => courseReadinessOptions(byId(id
 /** The course's analytics summary (default 28-day window): the `overview` pulse, for callers with analytics. */
 export const pulseOptions = (id: CourseId) => courseDetailOptions(byId(id))
 export const archivePreviewOptions = (id: CourseId) => courseArchivePreviewOptions(byId(id))
+// What deleting the course takes with it (learner work, issued certificates): only callers who may delete it read it.
+export const deletionPreviewOptions = (id: CourseId) => courseDeletionPreviewOptions(byId(id))
 export const courseGroupsOptions = (id: CourseId) => groupsForCourseOptions(byId(id))
 export const certificationsOptions = (id: CourseId) => listCourseCertificationsOptions(byId(id))
 export { contributorsOptions, updatesOptions }
@@ -98,12 +101,16 @@ export async function ensureWorkspace(queryClient: QueryClient, id: CourseId) {
   return course
 }
 
-/** Loader of `settings`: the certificate configuration, and the archive preview when the course can be archived. */
+/**
+ * Loader of `settings`: the certificate configuration, the archive preview when the course can be archived and the
+ * deletion preview when it can be deleted.
+ */
 export async function ensureCourseSettings(queryClient: QueryClient, id: CourseId) {
   const course = await queryClient.query({ ...courseOptions(id), staleTime: 'static' })
   await Promise.all([
     queryClient.query({ ...certificationsOptions(id), staleTime: 'static' }),
     can(course, 'archive') ? queryClient.query({ ...archivePreviewOptions(id), staleTime: 'static' }) : null,
+    can(course, 'delete') ? queryClient.query({ ...deletionPreviewOptions(id), staleTime: 'static' }) : null,
   ])
 }
 
@@ -180,14 +187,24 @@ export const deleteCourseOptions = () => ({ ...deleteCourseMutation(), meta: { i
 
 /**
  * One action on several courses (B-CST-45): a request per course, side by side; a refusal (not ready to publish, a
- * stale version) counts as failed instead of stopping the rest. The lists are read again after.
+ * stale version, learner work without `acknowledged`) counts as failed instead of stopping the rest. The lists are
+ * read again after.
  */
 export const bulkCoursesOptions = () => ({
-  mutationFn: async ({ courses, action }: { courses: readonly Course[]; action: BulkAction }) => {
+  mutationFn: async ({
+    courses,
+    action,
+    acknowledged,
+  }: {
+    courses: readonly Course[]
+    action: BulkAction
+    acknowledged?: boolean
+  }) => {
+    const ack = acknowledged ? { query: { acknowledge_learner_work: true } } : {}
     const results = await Promise.allSettled(
       courses.map(course =>
         action === 'delete'
-          ? deleteCourse({ ...byId(course.id), headers: { 'If-Match': course.version }, throwOnError: true })
+          ? deleteCourse({ ...byId(course.id), ...ack, headers: { 'If-Match': course.version }, throwOnError: true })
           : courseLifecycle({ ...byId(course.id), body: { action }, throwOnError: true }),
       ),
     )

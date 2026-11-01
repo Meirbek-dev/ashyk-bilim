@@ -1,4 +1,4 @@
-import { finishPages } from '../fixtures/test'
+import { finishPages, withLearnerWork } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 import type { Page } from '@playwright/test'
 
@@ -172,7 +172,7 @@ export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
       if (info.status === 'passed') await finishPages(page.context())
     } finally {
       for (const id of groups) await deleteGroup({ client: api, path: { group_id: id }, headers: teacher })
-      await deleteCourse({ client: api, path: { course_id: courseId }, headers: teacher })
+      await deleteCourse({ client: api, query: withLearnerWork, path: { course_id: courseId }, headers: teacher })
     }
   },
   fileTask: async ({ baseURL, seed, page }, use, info) => {
@@ -222,7 +222,7 @@ export const test = base.extend<{ graded: Graded; fileTask: FileTask }>({
       })
       if (info.status === 'passed') await finishPages(page.context())
     } finally {
-      await deleteCourse({ client: api, path: { course_id: courseId }, headers: teacher })
+      await deleteCourse({ client: api, query: withLearnerWork, path: { course_id: courseId }, headers: teacher })
     }
   },
 })

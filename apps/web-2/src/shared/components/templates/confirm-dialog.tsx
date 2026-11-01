@@ -1,5 +1,5 @@
 import { useHydrated } from '@tanstack/react-router'
-import { useEffect, useLayoutEffect, useRef, type ReactElement } from 'react'
+import { useEffect, useLayoutEffect, useRef, type ReactElement, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { SubmitButton } from '#/shared/components/submit-button'
@@ -32,6 +32,10 @@ type ConfirmDialogProps = {
   onConfirm?: (() => void) | undefined
   pending: boolean
   error: unknown
+  /** What the confirmation needs besides the sentence (a warning with an acknowledgement box), above the error. */
+  children?: ReactNode
+  /** The confirm button waits (an acknowledgement not given yet, a preview still loading). */
+  confirmDisabled?: boolean | undefined
 }
 
 const CONTROLS = 'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled)'
@@ -116,6 +120,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{consequence}</AlertDialogDescription>
         </AlertDialogHeader>
+        {props.children}
         {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
         <AlertDialogFooter>
           <AlertDialogCancel ref={cancel} variant="ghost">
@@ -125,6 +130,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
             <SubmitButton
               variant="destructive"
               pending={pending}
+              disabled={props.confirmDisabled}
               onClick={() => {
                 confirmed.current = true
                 onConfirm()

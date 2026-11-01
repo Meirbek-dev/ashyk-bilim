@@ -691,14 +691,38 @@ impl CoursesService {
         })
     }
 
-    pub async fn delete(&self, actor: &Actor, id: CourseId) -> Result<()> {
+    async fn deletable(&self, actor: &Actor, id: CourseId) -> Result<Course> {
         let course = self.get(actor, id).await?;
         if !Self::may_delete(actor, &course) {
             return Err(Error::forbidden("no delete access to this course"));
         }
+        Ok(course)
+    }
+
+    /// What deleting the course would take from learners: the numbers of the delete dialog, whose
+    /// acknowledgement box appears when any is non-zero (owner decision 2026-11-01).
+    pub async fn deletion_preview(
+        &self,
+        actor: &Actor,
+        id: CourseId,
+    ) -> Result<ab_db::catalog::CourseLearnerWork> {
+        self.deletable(actor, id).await?;
+        ab_db::catalog::course_learner_work(&self.pool, id).await
+    }
+
+    /// Delete the course with its history. With learner work in it the caller must have acknowledged
+    /// that the work goes too (`acknowledged`), else 409 `course-has-learner-work`; archive keeps it.
+    pub async fn delete(&self, actor: &Actor, id: CourseId, acknowledged: bool) -> Result<()> {
+        self.deletable(actor, id).await?;
         // BUG-209: the cascade drops the rows; the thumbnail and block
         // uploads are released inside the same statement.
-        ab_db::catalog::delete_course(&self.pool, id, UNREFERENCED_GRACE.as_secs_f64()).await?;
+        ab_db::catalog::delete_course(
+            &self.pool,
+            id,
+            acknowledged,
+            UNREFERENCED_GRACE.as_secs_f64(),
+        )
+        .await?;
         Ok(())
     }
 }

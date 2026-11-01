@@ -109,6 +109,22 @@ pub async fn latest_for_activity(pool: &PgPool, activity_id: ActivityId) -> Resu
     Ok(rows)
 }
 
+/// Display names (or usernames) of `users`, for report rows that carry only ids.
+pub async fn learner_names(
+    pool: &PgPool,
+    users: &[uuid::Uuid],
+) -> Result<std::collections::HashMap<UserId, String>> {
+    let rows = sqlx::query!(
+        r#"SELECT u.id AS "id: UserId",
+                  COALESCE(NULLIF(trim(u.display_name), ''), u.username) AS "name!"
+             FROM users u WHERE u.id = ANY($1)"#,
+        users
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows.into_iter().map(|r| (r.id, r.name)).collect())
+}
+
 /// The live (queued or ready) draft of a work.
 pub async fn live_for_subject(
     conn: &mut PgConnection,

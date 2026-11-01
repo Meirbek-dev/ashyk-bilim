@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 // UX-168: the dash table row «Удалить» opens the same confirm as the course
 // card - nothing is deleted until the dialog's action is clicked.
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
 import { describe, expect, it, vi } from 'vite-plus/test'
@@ -22,17 +23,26 @@ vi.mock('@/hooks/useSession', () => ({
 }))
 vi.mock('@/features/trail/hooks/useTrail', () => ({ useTrailCurrent: () => ({ data: undefined }) }))
 vi.mock('@services/courses/course-delete', () => ({ deleteCourseFromBackend: vi.fn(async () => {}) }))
+vi.mock('@/lib/api/generated/courses/courses', async importOriginal => ({
+  ...(await importOriginal<object>()),
+  getCourseDeletionPreviewQueryOptions: (courseId: string) => ({
+    queryKey: ['deletion-preview', courseId],
+    queryFn: async () => ({ learners: 0, submissions: 0, file_attempts: 0, certificates: 0 }),
+  }),
+}))
 
 describe('UX-168 dash row delete', () => {
   it('asks before deleting, then deletes on confirm', async () => {
     const onOptimisticDelete = vi.fn()
     render(
-      <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
-        <CourseRowActions
-          course={{ course_uuid: 'c1', name: 'Курс', creator_id: 'me' }}
-          onOptimisticDelete={onOptimisticDelete}
-        />
-      </NextIntlClientProvider>,
+      <QueryClientProvider client={new QueryClient()}>
+        <NextIntlClientProvider locale="ru" messages={ruMessages} timeZone="UTC">
+          <CourseRowActions
+            course={{ course_uuid: 'c1', name: 'Курс', creator_id: 'me' }}
+            onOptimisticDelete={onOptimisticDelete}
+          />
+        </NextIntlClientProvider>
+      </QueryClientProvider>,
     )
     fireEvent.click(
       screen.getByRole('button', { name: ruMessages.DashPage.CourseManagement.Dashboard.rowActions.menuLabel }),
@@ -42,8 +52,11 @@ describe('UX-168 dash row delete', () => {
     expect(deleteCourseFromBackend).not.toHaveBeenCalled()
     expect(onOptimisticDelete).not.toHaveBeenCalled()
 
-    fireEvent.click(screen.getByText(ruMessages.Components.CourseThumbnail.deleteButtonText))
-    await waitFor(() => expect(deleteCourseFromBackend).toHaveBeenCalledWith('c1'))
-    expect(onOptimisticDelete).toHaveBeenCalledWith(['c1'])
+    // The confirm waits for the deletion preview (all zero here: no acknowledgement needed).
+    const confirm = screen.getByRole('button', { name: ruMessages.Components.CourseThumbnail.deleteButtonText })
+    await waitFor(() => expect(confirm).toBeEnabled())
+    fireEvent.click(confirm)
+    await waitFor(() => expect(deleteCourseFromBackend).toHaveBeenCalledWith('c1', { acknowledgeLearnerWork: false }))
+    await waitFor(() => expect(onOptimisticDelete).toHaveBeenCalledWith(['c1']))
   })
 })

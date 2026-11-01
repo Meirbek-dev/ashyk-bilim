@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
 import { page } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
-import type { LearnerMastery, LearnerMasteryDetail } from '#/shared/api/gen/types.gen'
+import type { LearnerMastery, LearnerMasteryDetail, ScopeCapabilities } from '#/shared/api/gen/types.gen'
 import { renderInRouter } from '#/shared/components/testing'
 
 import { CourseSearch } from './course-search'
@@ -42,9 +42,18 @@ const mastery: LearnerMastery = {
 
 afterEach(() => vi.unstubAllGlobals())
 
-async function render(reply: () => Response, ui = <MyConcepts courseId={courseId} />) {
-  vi.stubGlobal('fetch', () => Promise.resolve(reply()))
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+// What the block asked the server; its reads have settled when `settled()` turns true.
+let asked: string[] = []
+let client = new QueryClient()
+const settled = () => asked.length > 0 && client.isFetching() === 0
+
+async function render(reply: (request: Request) => Response, ui = <MyConcepts courseId={courseId} />) {
+  asked = []
+  vi.stubGlobal('fetch', (request: Request) => {
+    asked.push(new URL(request.url).pathname)
+    return Promise.resolve(reply(request))
+  })
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const host = await renderInRouter(
     <QueryClientProvider client={client}>
       <p>{m.concepts_title()}</p>
@@ -102,6 +111,26 @@ describe('LearnerSheet', () => {
   })
 })
 
+// The course page's AI capabilities (the panel's query) decide whether the search box is there at all.
+const capabilities = (search: boolean): ScopeCapabilities => ({
+  available: true,
+  context: null,
+  context_visibility: 'student',
+  features: [{ key: 'semantic_search_enabled', enabled: search, reason: search ? null : 'disabled' }],
+  modes: ['ask'],
+  reason: null,
+  restricted: false,
+  role: 'student',
+  surface: 'course-page',
+})
+const aiOff = () =>
+  Response.json(
+    { type: 'about:blank', title: 'Unavailable', status: 503, code: 'ai-disabled', detail: 'off' },
+    { status: 503, headers: { 'content-type': 'application/problem+json' } },
+  )
+const searchReply = (search: boolean, reply: () => Response) => (request: Request) =>
+  new URL(request.url).pathname.includes('/ai/capabilities/scope/') ? Response.json(capabilities(search)) : reply()
+
 describe('CourseSearch', () => {
   test('B-CON-12 the passages found: where they are, linked into the player, and the passage', async () => {
     const hit = {
@@ -114,7 +143,10 @@ describe('CourseSearch', () => {
       source_id: quiz.id,
       source_type: 'activity',
     }
-    const screen = await render(() => Response.json([hit]), <CourseSearch courseId={courseId} />)
+    const screen = await render(
+      searchReply(true, () => Response.json([hit])),
+      <CourseSearch courseId={courseId} />,
+    )
     await screen.getByRole('searchbox', { name: m.concepts_search_label() }).fill('half')
     await screen.getByRole('button', { name: m.concepts_search_submit() }).click()
     await expect
@@ -123,15 +155,23 @@ describe('CourseSearch', () => {
     await expect.element(screen.getByText(hit.excerpt)).toBeVisible()
   })
 
-  test('B-CON-12 with the feature off one quiet line, no error', async () => {
-    const screen = await render(
-      () =>
-        Response.json(
-          { type: 'about:blank', title: 'Unavailable', status: 503, code: 'ai-disabled', detail: 'off' },
-          { status: 503, headers: { 'content-type': 'application/problem+json' } },
-        ),
-      <CourseSearch courseId={courseId} />,
-    )
+  test('B-CON-12 without semantic_search_enabled in the capabilities there is no search box', async () => {
+    const screen = await render(searchReply(false, aiOff), <CourseSearch courseId={courseId} />)
+    await expect.poll(settled).toBe(true)
+    expect(asked).toEqual([`/api/v2/ai/capabilities/scope/${courseId}`])
+    await expect.element(screen.getByRole('heading', { name: m.concepts_search_title() })).not.toBeInTheDocument()
+    await expect.element(screen.getByRole('searchbox')).not.toBeInTheDocument()
+  })
+
+  test('B-CON-12 capabilities that cannot load: no search box and no error', async () => {
+    const screen = await render(aiOff, <CourseSearch courseId={courseId} />)
+    await expect.poll(settled).toBe(true)
+    await expect.element(screen.getByRole('searchbox')).not.toBeInTheDocument()
+    await expect.element(screen.getByText(m.errors_ai_disabled())).not.toBeInTheDocument()
+  })
+
+  test('B-CON-12 switched off after the capabilities were read: one quiet line on a search, no error', async () => {
+    const screen = await render(searchReply(true, aiOff), <CourseSearch courseId={courseId} />)
     await screen.getByRole('searchbox', { name: m.concepts_search_label() }).fill('half')
     await screen.getByRole('button', { name: m.concepts_search_submit() }).click()
     await expect.element(screen.getByText(m.concepts_search_off())).toBeVisible()

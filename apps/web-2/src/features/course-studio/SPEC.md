@@ -1,6 +1,6 @@
 # course-studio
 
-Операции: listCourses, createCourse, getCourse, updateCourse, courseLifecycle, courseReadiness, courseArchivePreview, getCurriculum, createChapter, updateChapter, deleteChapter, moveChapter, createActivity, createAssessment, createFileSubmission, getActivity, updateActivity, deleteActivity, moveActivity, createBlock, groupsForCourse, listGroups, addGroupCourses, removeGroupCourses, addContributor, updateContributor, removeContributor, createCourseUpdate, editCourseUpdate, deleteCourseUpdate, listCourseCertifications, createCertification, updateCertification, deleteCertification, listCourseLearners, enrollCourseLearners, removeCourseLearner, deleteCourse
+Операции: listCourses, createCourse, getCourse, updateCourse, courseLifecycle, courseReadiness, courseArchivePreview, courseDeletionPreview, getCurriculum, createChapter, updateChapter, deleteChapter, moveChapter, createActivity, createAssessment, createFileSubmission, getActivity, updateActivity, deleteActivity, moveActivity, createBlock, groupsForCourse, listGroups, addGroupCourses, removeGroupCourses, addContributor, updateContributor, removeContributor, createCourseUpdate, editCourseUpdate, deleteCourseUpdate, listCourseCertifications, createCertification, updateCertification, deleteCertification, listCourseLearners, enrollCourseLearners, removeCourseLearner, deleteCourse
 
 Рабочее место курса `/teach/courses/$courseId/{overview,content,learners,team,settings,publish}` и студия
 активности `/teach/courses/$courseId/activities/$activityId/{edit,settings}`. Вкладки `gradebook`,
@@ -17,7 +17,7 @@
 - B-CST-04 Рабочее место: обложка баннером, название курса, метка статуса и 9 вкладок-маршрутов (с «Понятиями» и «ИИ-проверкой», docs/AI-FIRST.md 5); курс без `update` и `restore` в
   `allowed_actions` - «Вы не в команде этого курса» на том же адресе (страница курса, «Мои курсы»); неизвестный id - «Курс не найден».
 - B-CST-44 Архивный курс: под названием «В архиве с <дата>, только для чтения», при `restore` - ссылка «Восстановить».
-- B-CST-45 Список курсов: флажки и общие действия выбранным (опубликовать, снять, архивировать, восстановить, удалить - у каждого число курсов, которым оно разрешено), подтверждение, итог «Готово: N, не удалось: M».
+- B-CST-45 Список курсов: флажки и общие действия выбранным (опубликовать, снять, архивировать, восстановить, удалить - у каждого число курсов, которым оно разрешено), подтверждение, итог «Готово: N, не удалось: M». Удаление суммирует `deletion-preview` курсов (сбой - как нули): есть работы - предупреждение и флажок B-CST-52 для всех (до него и пока предпросмотры читаются кнопка недоступна); 409 без флажка - «не удалось».
 - B-CST-05 `overview`: готовность к публикации с сервера - блокеры и замечания по кодам, у каждого ссылка туда, где
   исправить (активность - её студия, обложка и сертификат - `settings`, «нет опубликованных активностей» -
   `content`); без блокеров - «Курс готов к публикации» и ссылка на `publish`; у опубликованного - только «Что ещё улучшить».
@@ -39,8 +39,7 @@
   восстановить, - «Открыть настройки курса», соавтору - кто может восстановить.
 - B-CST-13 `learners`: кто видит курс - опубликованный находят и записываются все вошедшие, черновик видят только
   команда и связанные группы; группы курса с числом участников.
-- B-CST-14 «Связать группы»: выбор из групп с `manage_courses`; «Отвязать» - подтверждение с названием группы; список
-  групп обновляется сразу.
+- B-CST-14 «Связать группы»: выбор из групп с `manage_courses`; «Отвязать» - подтверждение с названием группы; список групп обновляется сразу.
 - B-CST-15 `team`: создатель и соавторы с ролью; заявки (`pending`) - отдельным списком; отключённые соавторы
   (`inactive`, их делал старый веб) - третьим списком с «Вернуть в команду» (`status: active`) и «Убрать из команды»;
   без `manage_contributors` - только просмотр. Отключать соавтора новый веб не предлагает: «Убрать» покрывает это.
@@ -89,6 +88,9 @@
   именем: запись и прогресс уходят, работы остаются; после - сообщение и строки без него.
 - B-CST-36 `settings`, «Удаление курса» (при `delete` в `allowed_actions`): необратимо и каскадом, поэтому кнопка
   подтверждения доступна только после ввода названия курса (фокус на «Отмена»); после - сообщение и список курсов.
+- B-CST-52 Курс с работами учащихся (решение 2026-11-01): окно читает `deletion-preview`; ненулевое число - предупреждение
+  (учащиеся, работы, работы с файлом, сертификаты, чьи коды перестанут работать; совет архивировать) и обязательный флажок «Я понимаю…»; `acknowledge_learner_work=true` уходит только с ним. Нули - как B-CST-36.
+- B-CST-53 409 `course-has-learner-work` (работы пришли после предпросмотра): текст ошибки, предпросмотр читается заново.
 - B-CST-37 Секция «Сертификат»: «Предпросмотр PDF» показывает во фрейме того же источника образец, напечатанный
   сервером (`GET /certifications/{id}/preview.pdf?lang=` языка интерфейса); сохранённая правка перерисовывает его.
 - B-CST-38 Удаление курса, главы, сертификата и объявления уходит с `If-Match: version`; 412 - текст в окне подтверждения.

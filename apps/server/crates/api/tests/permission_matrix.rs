@@ -448,6 +448,7 @@ const MATRIX: &[(&str, &str, u8)] = &[
     ("GET", "/api/v2/courses/{course_id}", MEMBER),
     ("PATCH", "/api/v2/courses/{course_id}", STAFF),
     ("GET", "/api/v2/courses/{course_id}/archive-preview", STAFF),
+    ("GET", "/api/v2/courses/{course_id}/deletion-preview", STAFF),
     ("GET", "/api/v2/courses/{course_id}/assessments", MEMBER),
     // The caller's own certificates in a course they belong to (an admin is
     // no member: 403, BUG-276).

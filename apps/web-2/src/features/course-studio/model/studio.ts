@@ -10,6 +10,7 @@ import type {
   Block,
   Contributor,
   ContributorRole,
+  CourseDeletionPreview,
   FinalizedUpload,
   MediaContent,
   ReadinessItem,
@@ -280,3 +281,19 @@ export function mediaPreview(type: 'video' | 'document', source: { key: string; 
     name: source.name.split('/').pop() || source.name,
   }
 }
+
+/** Deleting the course takes learner work with it (any count of the deletion preview): the teacher acknowledges it. */
+export const hasLearnerWork = (preview: CourseDeletionPreview): boolean =>
+  preview.learners + preview.submissions + preview.file_attempts + preview.certificates > 0
+
+/** The bulk delete's preview (B-CST-45): the counts of every course summed; a course whose preview failed adds nothing. */
+export const sumDeletionPreviews = (previews: readonly (CourseDeletionPreview | undefined)[]): CourseDeletionPreview =>
+  previews.reduce<CourseDeletionPreview>(
+    (sum, one) => ({
+      learners: sum.learners + (one?.learners ?? 0),
+      submissions: sum.submissions + (one?.submissions ?? 0),
+      file_attempts: sum.file_attempts + (one?.file_attempts ?? 0),
+      certificates: sum.certificates + (one?.certificates ?? 0),
+    }),
+    { learners: 0, submissions: 0, file_attempts: 0, certificates: 0 },
+  )

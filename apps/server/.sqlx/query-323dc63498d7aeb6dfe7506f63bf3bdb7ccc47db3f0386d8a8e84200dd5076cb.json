@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH work AS (\n               SELECT u.user_id, true AS quiz FROM activities a\n               JOIN assessments s ON s.activity_id = a.id\n               JOIN submissions u ON u.assessment_id = s.id\n               WHERE a.course_id = $1 AND NOT u.preview\n               UNION ALL\n               SELECT t.user_id, false FROM activities a\n               JOIN file_submissions f ON f.activity_id = a.id\n               JOIN file_submission_attempts t ON t.file_submission_id = f.id\n               WHERE a.course_id = $1 AND NOT t.preview\n           ), learners AS (\n               SELECT d.user_id FROM (SELECT DISTINCT user_id FROM work OFFSET 0) d\n               WHERE NOT is_course_staff($1, d.user_id)\n           )\n           SELECT (SELECT count(*) FROM learners) AS \"learners!\",\n                  (SELECT count(*) FROM work w JOIN learners l USING (user_id) WHERE w.quiz) AS \"submissions!\",\n                  (SELECT count(*) FROM work w JOIN learners l USING (user_id) WHERE NOT w.quiz)\n                      AS \"file_attempts!\",\n                  (SELECT count(*) FROM certificate_users cu\n                   JOIN certifications c ON c.id = cu.certification_id\n                   WHERE c.course_id = $1) AS \"certificates!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "learners!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "submissions!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "file_attempts!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "certificates!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "323dc63498d7aeb6dfe7506f63bf3bdb7ccc47db3f0386d8a8e84200dd5076cb"
+}

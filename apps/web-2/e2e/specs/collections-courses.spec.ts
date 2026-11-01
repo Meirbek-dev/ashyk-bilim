@@ -5,7 +5,7 @@ import { createClient, createConfig } from '#/shared/api/gen/client'
 import { createCollection, createCourse, deleteCollection, deleteCourse } from '#/shared/api/gen/sdk.gen'
 
 import { expect, test } from '../fixtures/seed'
-import { finishPages } from '../fixtures/test'
+import { finishPages, withLearnerWork } from '../fixtures/test'
 
 const ru = { locale: 'ru' } as const
 
@@ -68,7 +68,12 @@ test('B-COL-16 saving a public collection whose courses are all closed warns tha
   await expect(page.getByText(m.collections_hidden_warning({}, ru))).toBeVisible()
   await finishPages(page.context())
   await deleteCollection({ client: api, path: { collection_id: own.id }, headers })
-  await deleteCourse({ client: api, path: { course_id: course.id }, headers })
+  await deleteCourse({
+    client: api,
+    query: withLearnerWork,
+    path: { course_id: course.id },
+    headers,
+  })
 })
 
 const PIXEL = Buffer.from(

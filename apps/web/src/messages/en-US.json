@@ -4284,7 +4284,6 @@
         "rowActions": {
           "menuLabel": "Course actions",
           "delete": "Delete",
-          "deleteError": "Unable to delete course.",
           "deleteSuccess": "Course deleted.",
           "movePrivate": "Move to private",
           "openCurriculum": "Open curriculum",
@@ -4895,6 +4894,51 @@
         "unsavedDialogStay": "Stay here",
         "unsavedDialogTitle": "Leave with unsaved changes?",
         "unsavedChangesWarning": "You have unsaved course changes. Leave this workspace?"
+      },
+      "DeleteLearnerWork": {
+        "title": "Learners have work in this course",
+        "learners": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} learner with work in the course",
+              "count_plural=*": "{count_number} learners with work in the course"
+            }
+          }
+        ],
+        "submissions": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} submission (quizzes, exams, code tasks)",
+              "count_plural=*": "{count_number} submissions (quizzes, exams, code tasks)"
+            }
+          }
+        ],
+        "fileAttempts": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} file attempt",
+              "count_plural=*": "{count_number} file attempts"
+            }
+          }
+        ],
+        "certificates": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} issued certificate: its verification code stops working",
+              "count_plural=*": "{count_number} issued certificates: their verification codes stop working"
+            }
+          }
+        ],
+        "archiveInstead": "All of it is deleted together with the course for good. To keep the work, grades and certificates, archive the course instead.",
+        "acknowledge": "I understand that learners' work, grades and certificates will be deleted together with the course"
       },
       "Archive": {
         "archiveAction": "Archive",
@@ -8190,6 +8234,7 @@
       "self-disable": "You cannot disable your own account.",
       "activity-media-missing": "Add the lesson's file or link, then publish it.",
       "activity-has-learner-work": "Learners have submitted work here, so it can’t be deleted. Unpublish (hide) it instead; their submissions are kept.",
+      "course-has-learner-work": "Learners have work in this course: confirm that it is deleted with the course.",
       "discussion-enrollment-required": "Enroll in the course to post in its discussion.",
       "activity-not-ready": "Publish the assessment or file-submission settings first, then the activity.",
       "course-not-ready": "Resolve every readiness blocker before publishing the course.",

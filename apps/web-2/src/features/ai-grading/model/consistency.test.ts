@@ -74,7 +74,16 @@ describe('B-AIG-09 consistency labels', () => {
 
 describe('B-AIG-07 B-AIG-08 gaps', () => {
   test('B-AIG-07 a teacher grade above the draft is a positive gap', () => {
-    expect(disagreementGap({ ai_score: 40, final_score: 75, draft_id: 'd', learner_id: 'u', subject_id: 's' })).toBe(35)
+    expect(
+      disagreementGap({
+        ai_score: 40,
+        final_score: 75,
+        draft_id: 'd',
+        learner_id: 'u',
+        learner_name: 'L',
+        subject_id: 's',
+      }),
+    ).toBe(35)
   })
 
   test('B-AIG-08 drift offset is shown in percentage points, negative when the AI grades higher', () => {

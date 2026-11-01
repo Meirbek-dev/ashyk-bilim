@@ -4067,7 +4067,6 @@
         "rowActions": {
           "menuLabel": "Курс әрекеттері",
           "delete": "Жою",
-          "deleteError": "Курсты жою мүмкін болмады.",
           "deleteSuccess": "Курс жойылды.",
           "movePrivate": "Жабық ету",
           "openCurriculum": "Оқу жоспарын ашу",
@@ -4600,6 +4599,51 @@
         "unsavedDialogStay": "Осында қалу",
         "unsavedDialogTitle": "Сақталмаған өзгерістермен шығу керек пе?",
         "unsavedChangesWarning": "Курста сақталмаған өзгерістер бар. Осы жұмыс кеңістігінен шығу керек пе?"
+      },
+      "DeleteLearnerWork": {
+        "title": "Курста оқушылардың жұмыстары бар",
+        "learners": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} оқушының курста жұмысы бар",
+              "count_plural=*": "{count_number} оқушының курста жұмысы бар"
+            }
+          }
+        ],
+        "submissions": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} тапсырылған жұмыс (тесттер, емтихандар, код тапсырмалары)",
+              "count_plural=*": "{count_number} тапсырылған жұмыс (тесттер, емтихандар, код тапсырмалары)"
+            }
+          }
+        ],
+        "fileAttempts": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} файл тапсыру әрекеті",
+              "count_plural=*": "{count_number} файл тапсыру әрекеті"
+            }
+          }
+        ],
+        "certificates": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} берілген сертификат: оның тексеру коды жұмыс істемей қалады",
+              "count_plural=*": "{count_number} берілген сертификат: олардың тексеру кодтары жұмыс істемей қалады"
+            }
+          }
+        ],
+        "archiveInstead": "Мұның бәрі курспен бірге біржола жойылады. Жұмыстарды, бағаларды және сертификаттарды сақтау үшін курсты жоюдың орнына мұрағаттаңыз.",
+        "acknowledge": "Оқушылардың жұмыстары, бағалары және сертификаттары курспен бірге жойылатынын түсінемін"
       },
       "Archive": {
         "archiveAction": "Мұрағатқа",
@@ -7776,6 +7820,7 @@
       "self-disable": "Өз аккаунтыңызды өшіре алмайсыз.",
       "activity-media-missing": "Сабақтың файлын немесе сілтемесін қосып, содан кейін жариялаңыз.",
       "activity-has-learner-work": "Оқушылар мұнда жұмыс тапсырған, сондықтан жоюға болмайды. Жариялаудан алыңыз (жасырыңыз): жұмыстар сақталады.",
+      "course-has-learner-work": "Курста білім алушылардың жұмыстары бар: олардың курспен бірге жойылатынын растаңыз.",
       "discussion-enrollment-required": "Талқылауда жазу үшін курсқа тіркеліңіз.",
       "activity-not-ready": "Алдымен тестті немесе файл тапсыру тапсырмасының баптауларын, содан кейін белсенділіктің өзін жариялаңыз.",
       "course-not-ready": "Курсты жарияламас бұрын дайындықтың барлық бөгет мәселелерін шешіңіз.",

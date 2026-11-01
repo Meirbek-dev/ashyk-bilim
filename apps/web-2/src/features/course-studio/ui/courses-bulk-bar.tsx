@@ -9,7 +9,10 @@ import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
 import { BULK_ACTIONS, type BulkAction, bulkTargets } from '../model/bulk'
+import { hasLearnerWork } from '../model/studio'
 import { bulkCoursesOptions } from '../queries'
+import { LearnerWorkWarning } from './learner-work-warning'
+import { useDeletionWork } from './use-deletion-work'
 
 const verbs: Record<BulkAction, () => string> = {
   publish: m.studio_publish,
@@ -23,13 +26,16 @@ type BulkBarProps = { selected: readonly Course[]; onDone: () => void }
 
 /**
  * What the selected courses can go through together (B-CST-45): each action counts the courses that allow it, asks
- * first, and reports how many went through.
+ * first, and reports how many went through. Deleting courses with learner work asks for the acknowledgement first.
  */
 export function CoursesBulkBar({ selected, onDone }: BulkBarProps) {
   const [action, setAction] = useState<BulkAction | null>(null)
+  const [acknowledged, setAcknowledged] = useState(false)
   const bulk = useMutation(bulkCoursesOptions())
-  if (selected.length === 0) return null
   const targets = action ? bulkTargets(selected, action) : []
+  const work = useDeletionWork(targets, action === 'delete')
+  const needsAck = action === 'delete' && hasLearnerWork(work.preview)
+  if (selected.length === 0) return null
   return (
     // Sticky under the top bar (h-14): a phone scrolls the list while picking, the actions stay in reach.
     <div className="sticky top-14 z-10 -my-2 flex flex-wrap items-center gap-2 bg-background py-2">
@@ -45,20 +51,24 @@ export function CoursesBulkBar({ selected, onDone }: BulkBarProps) {
       <ConfirmDialog
         open={action !== null}
         onOpenChange={open => {
-          if (!open) setAction(null)
+          if (open) return
+          setAction(null)
+          setAcknowledged(false)
         }}
         title={action ? m.studio_bulk_confirm({ action: verbs[action](), count: formatNumber(targets.length) }) : ''}
         consequence={action === 'delete' ? m.studio_course_delete_hint() : m.studio_bulk_consequence()}
         confirmLabel={action ? verbs[action]() : ''}
         pending={bulk.isPending}
         error={bulk.error}
+        confirmDisabled={work.loading || (needsAck && !acknowledged)}
         onConfirm={() =>
           action &&
           bulk.mutate(
-            { courses: targets, action },
+            { courses: targets, action, acknowledged: needsAck && acknowledged },
             {
               onSuccess: result => {
                 setAction(null)
+                setAcknowledged(false)
                 toast.add({
                   title: m.studio_bulk_done({ done: formatNumber(result.done), failed: formatNumber(result.failed) }),
                 })
@@ -67,7 +77,11 @@ export function CoursesBulkBar({ selected, onDone }: BulkBarProps) {
             },
           )
         }
-      />
+      >
+        {needsAck ? (
+          <LearnerWorkWarning preview={work.preview} acknowledged={acknowledged} onAcknowledge={setAcknowledged} />
+        ) : null}
+      </ConfirmDialog>
     </div>
   )
 }

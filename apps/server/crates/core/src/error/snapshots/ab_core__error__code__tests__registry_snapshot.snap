@@ -83,6 +83,10 @@ expression: registry
     409,
     "Course is archived"
   ],
+  "course-has-learner-work": [
+    409,
+    "Learners have work in this course: confirm that it is deleted with the course"
+  ],
   "course-not-ready": [
     422,
     "Course has publish blockers"

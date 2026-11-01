@@ -1590,7 +1590,7 @@ async fn deletes_release_submitted_file_uploads(pool: PgPool) {
         let path = match target {
             "activity" => format!("/api/v2/activities/{activity_id}"),
             "chapter" => format!("/api/v2/chapters/{chapter_id}"),
-            _ => format!("/api/v2/courses/{course_id}"),
+            _ => format!("/api/v2/courses/{course_id}?acknowledge_learner_work=true"),
         };
         let deleted = app.delete_as(&deleter, &path).await;
         if target != "course" {

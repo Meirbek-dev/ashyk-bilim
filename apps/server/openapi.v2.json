@@ -5900,6 +5900,34 @@
         ],
         "type": "object"
       },
+      "CourseDeletionPreview": {
+        "description": "What deleting the course takes from learners (`GET /courses/{id}/deletion-preview`, who may\ndelete it). Any non-zero count means the delete needs `acknowledge_learner_work=true`.",
+        "properties": {
+          "certificates": {
+            "description": "Issued certificates of the course; their verification codes stop resolving.",
+            "type": "integer"
+          },
+          "file_attempts": {
+            "description": "Their file attempts.",
+            "type": "integer"
+          },
+          "learners": {
+            "description": "People outside the course staff with work in it.",
+            "type": "integer"
+          },
+          "submissions": {
+            "description": "Their quiz / exam / code submissions (staff previews never count).",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "learners",
+          "submissions",
+          "file_attempts",
+          "certificates"
+        ],
+        "type": "object"
+      },
       "CourseGradingPayload": {
         "description": "A grade change or hand-in: `submission_id` (assessments) or\n`attempt_id` (file submissions).",
         "properties": {
@@ -7565,6 +7593,9 @@
           "learner_id": {
             "$ref": "#/components/schemas/UserId"
           },
+          "learner_name": {
+            "type": "string"
+          },
           "subject_id": {
             "format": "uuid",
             "type": "string"
@@ -7574,6 +7605,7 @@
           "draft_id",
           "subject_id",
           "learner_id",
+          "learner_name",
           "ai_score",
           "final_score"
         ],
@@ -8572,6 +8604,7 @@
           "activity-not-ready",
           "activity-media-missing",
           "activity-has-learner-work",
+          "course-has-learner-work",
           "course-not-ready",
           "course-archived",
           "unsupported-media-type",
@@ -31806,6 +31839,15 @@
                 "null"
               ]
             }
+          },
+          {
+            "description": "The caller confirmed that learners' work, grades and certificates are deleted with the course.\nNeeded only while the course has any (see the deletion preview); without it such a delete is\n409 `course-has-learner-work`.",
+            "in": "query",
+            "name": "acknowledge_learner_work",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -31832,6 +31874,16 @@
             },
             "description": "Unknown or inaccessible"
           },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Learner work without `acknowledge_learner_work`"
+          },
           "412": {
             "content": {
               "application/problem+json": {
@@ -31843,7 +31895,7 @@
             "description": "Stale `If-Match`"
           }
         },
-        "summary": "Delete a course and everything under it (cascades).",
+        "summary": "Delete a course and everything under it (cascades). While learners have work in it, the caller\nmust pass `acknowledge_learner_work=true`.",
         "tags": [
           "courses"
         ]
@@ -33133,6 +33185,58 @@
           }
         },
         "summary": "Chapters with nested activities, in course order. Unpublished\nactivities are listed for course editors only.",
+        "tags": [
+          "courses"
+        ]
+      }
+    },
+    "/api/v2/courses/{course_id}/deletion-preview": {
+      "get": {
+        "operationId": "course_deletion_preview",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseDeletionPreview"
+                }
+              }
+            },
+            "description": "Deletion preview"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No delete access"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible"
+          }
+        },
+        "summary": "What deleting the course would take from learners - the numbers of the delete dialog (who may\ndelete the course). Any non-zero count: the dialog asks for an acknowledgement.",
         "tags": [
           "courses"
         ]

@@ -18,6 +18,7 @@ const messages: Record<ErrorCode, () => string> = {
   'activity-not-ready': m.errors_activity_not_ready,
   'activity-media-missing': m.errors_activity_media_missing,
   'activity-has-learner-work': m.errors_activity_has_learner_work,
+  'course-has-learner-work': m.errors_course_has_learner_work,
   'course-not-ready': m.errors_course_not_ready,
   'course-archived': m.errors_course_archived,
   'unsupported-media-type': m.errors_unsupported_media_type,

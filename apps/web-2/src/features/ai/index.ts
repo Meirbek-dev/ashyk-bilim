@@ -17,7 +17,17 @@ export const RemediationGate = lazy(() =>
 )
 
 // Route-side helpers: no UI at runtime.
-export { evalsOptions, prefetchPanel, runsOptions, settingsOptions, usageSummaryOptions } from './queries'
+export {
+  capabilitiesOptions,
+  evalsOptions,
+  prefetchPanel,
+  runsOptions,
+  settingsOptions,
+  usageSummaryOptions,
+} from './queries'
+// A learner AI entry point on another feature's screen (the course material search on `concepts`) shows only while
+// the scope's capabilities have its feature on.
+export { featureOn } from './model/ai'
 // A run started from another feature's screen (the concept mapper on `concepts`): the same lifecycle and progress line.
 export { useAiRun } from './ui/use-ai-run'
 export { RunStatus as RunProgress } from './ui/run-status'

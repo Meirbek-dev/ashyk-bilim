@@ -582,13 +582,8 @@ The review's guarantees that landed are in ARCHITECTURE §8 "Schema guarantees".
 in the order it can be done, each step a forward migration on the current schema (no rewrite needed first).
 "Done when" is the test that proves it.
 
-1. **Course delete keeps learner records** (item 3; owner: QUESTIONS Q-2026-11-01-1). Domain guard in
-   `catalog::courses::delete`: any `submissions`, `file_submission_attempts` (not preview), `grading_entries` or
-   `certificate_users` row for the course → 409 `course-has-learner-work` ("archive it instead"); new
-   `ErrorCode`, contract regeneration, both webs show the message. Then re-key `submissions`, `grading_entries`,
-   `file_submission_attempts`, `certificate_users` (via `certifications`) from `ON DELETE CASCADE` to `RESTRICT`,
-   and `certifications.course_id` too; drop them from `cascade_audit.rs`. Done when: deleting a course with one
-   graded attempt answers 409 and the row survives; an empty course still deletes.
+1. **Course delete with learner work** (item 3): decided 2026-11-01 - allowed after the teacher acknowledges it
+   (COURSE_ARCHIVING 6.2); the cascade from `courses` stays. Nothing left here.
 2. **AI run coherence** (item 6, AI-owned tables): `schema_try_check('ai_runs', 'ai_runs_finished_at_check',
    $$status NOT IN ('succeeded','failed','aborted') OR completed_at IS NOT NULL$$)` once the AI work settles
    the status set.

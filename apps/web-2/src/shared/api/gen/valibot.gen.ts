@@ -937,6 +937,17 @@ export const vCourseArchivePreview = v.object({
     ungraded_submissions: v.pipe(v.number(), v.integer())
 });
 
+/**
+ * What deleting the course takes from learners (`GET /courses/{id}/deletion-preview`, who may
+ * delete it). Any non-zero count means the delete needs `acknowledge_learner_work=true`.
+ */
+export const vCourseDeletionPreview = v.object({
+    certificates: v.pipe(v.number(), v.integer()),
+    file_attempts: v.pipe(v.number(), v.integer()),
+    learners: v.pipe(v.number(), v.integer()),
+    submissions: v.pipe(v.number(), v.integer())
+});
+
 export const vCourseId = v.pipe(v.string(), v.uuid());
 
 export const vActivity = v.object({
@@ -1396,6 +1407,7 @@ export const vErrorCode = v.picklist([
     'activity-not-ready',
     'activity-media-missing',
     'activity-has-learner-work',
+    'course-has-learner-work',
     'course-not-ready',
     'course-archived',
     'unsupported-media-type',
@@ -5189,6 +5201,7 @@ export const vDisagreementView = v.object({
     draft_id: vGradeDraftId,
     final_score: v.number(),
     learner_id: vUserId,
+    learner_name: v.string(),
     subject_id: v.pipe(v.string(), v.uuid())
 });
 
@@ -8569,6 +8582,10 @@ export const vDeleteCoursePath = v.object({
     course_id: vCourseId
 });
 
+export const vDeleteCourseQuery = v.object({
+    acknowledge_learner_work: v.optional(v.boolean())
+});
+
 /**
  * Deleted
  */
@@ -8839,6 +8856,15 @@ export const vGetCurriculumPath = v.object({
  * Ordered chapters + activities
  */
 export const vGetCurriculumResponse = vCurriculum;
+
+export const vCourseDeletionPreviewPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * Deletion preview
+ */
+export const vCourseDeletionPreviewResponse = vCourseDeletionPreview;
 
 export const vListDiscussionsPath = v.object({
     course_id: vCourseId

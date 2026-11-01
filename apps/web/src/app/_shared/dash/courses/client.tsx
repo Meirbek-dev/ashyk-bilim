@@ -44,6 +44,14 @@ import CourseThumbnail, { CourseDeleteDialog } from '@components/Objects/Thumbna
 import { CourseArchiveDialog, CourseRestoreDialog } from '@components/Dashboard/Courses/CourseArchiveDialog'
 import { setCourseArchived, updateCourseAccess } from '@services/courses/course-writes'
 import { deleteCourseFromBackend, duplicateCourse } from '@services/courses/course-delete'
+import {
+  CourseLearnerWorkWarning,
+  hasLearnerWork,
+  learnerWorkFromError,
+  sumLearnerWork,
+  useCourseDeletionPreviews,
+} from '@components/Dashboard/Courses/CourseLearnerWorkWarning'
+import type { LearnerWork } from '@components/Dashboard/Courses/CourseLearnerWorkWarning'
 import { useApiError } from '@/hooks/useApiError'
 import { useTrailCurrent } from '@/features/trail/hooks/useTrail'
 import { Actions, Resources, Scopes } from '@/components/Security'
@@ -112,6 +120,8 @@ function CoursesHome({
   const [selectedCourseUuids, setSelectedCourseUuids] = useState<string[]>([])
   const [isBulkPending, startBulkTransition] = useTransition()
   const [pendingBulkAction, setPendingBulkAction] = useState<BulkActionKind | null>(null)
+  const [bulkLearnerWorkAcknowledged, setBulkLearnerWorkAcknowledged] = useState(false)
+  const [bulkLearnerWorkConflict, setBulkLearnerWorkConflict] = useState<LearnerWork | null>(null)
   const [optimisticCourses, removeOptimisticCourses] = useOptimistic(
     courses,
     (state: ManageableCourse[], deletedUuids: string[]) => state.filter(c => !deletedUuids.includes(c.course_uuid)),
@@ -292,28 +302,68 @@ function CoursesHome({
     })
   }
 
-  const runBulkDelete = () => {
+  const bulkDeleteTargets = useMemo(
+    () => selectedCourses.filter(course => canDeleteCourse(course)),
+    [canDeleteCourse, selectedCourses],
+  )
+  const bulkDeletePreview = useCourseDeletionPreviews(
+    bulkDeleteTargets.map(course => course.course_uuid),
+    pendingBulkAction === 'delete',
+  )
+  const bulkLearnerWork =
+    bulkLearnerWorkConflict ?? (hasLearnerWork(bulkDeletePreview.learnerWork) ? bulkDeletePreview.learnerWork : null)
+
+  const openBulkAction = (action: BulkActionKind) => {
+    setBulkLearnerWorkAcknowledged(false)
+    setBulkLearnerWorkConflict(null)
+    setPendingBulkAction(action)
+  }
+
+  const runBulkDelete = (acknowledgeLearnerWork: boolean) => {
     if (!(selectedCourses.length > 0)) {
       return
     }
 
-    const targetCourses = selectedCourses.filter(course => canDeleteCourse(course))
+    const targetCourses = bulkDeleteTargets
     if (targetCourses.length === 0) {
       toast.error(t('errors.cannotDeleteSelection'))
       return
     }
 
     startBulkTransition(async () => {
-      removeOptimisticCourses(targetCourses.map(c => c.course_uuid))
-      const results = await Promise.allSettled(targetCourses.map(course => deleteCourseFromBackend(course.course_uuid)))
+      const results = await Promise.allSettled(
+        targetCourses.map(course => deleteCourseFromBackend(course.course_uuid, { acknowledgeLearnerWork })),
+      )
 
-      const successCount = results.filter(result => result.status === 'fulfilled').length
-      const failedCount = targetCourses.length - successCount
+      const deletedUuids: string[] = []
+      const conflicts: { courseUuid: string; learnerWork: LearnerWork }[] = []
+      targetCourses.forEach((course, index) => {
+        const result = results[index]
+        if (result?.status === 'fulfilled') {
+          deletedUuids.push(course.course_uuid)
+          return
+        }
+        const learnerWork = learnerWorkFromError(result?.reason)
+        if (learnerWork) conflicts.push({ courseUuid: course.course_uuid, learnerWork })
+      })
+      const failedCount = targetCourses.length - deletedUuids.length - conflicts.length
 
-      if (successCount > 0) {
-        toast.success(t('toasts.deleted', { count: successCount }))
+      if (deletedUuids.length > 0) {
+        toast.success(t('toasts.deleted', { count: deletedUuids.length }))
+        startBulkTransition(() => {
+          removeOptimisticCourses(deletedUuids)
+          router.refresh()
+        })
+      }
+
+      if (conflicts.length > 0) {
+        // Learner work arrived after the preview: ask again, for exactly those courses.
+        setSelectedCourseUuids(conflicts.map(conflict => conflict.courseUuid))
+        setBulkLearnerWorkAcknowledged(false)
+        setBulkLearnerWorkConflict(sumLearnerWork(conflicts.map(conflict => conflict.learnerWork)))
+        setPendingBulkAction('delete')
+      } else if (deletedUuids.length > 0) {
         setSelectedCourseUuids([])
-        router.refresh()
       }
 
       if (failedCount > 0) {
@@ -344,7 +394,7 @@ function CoursesHome({
 
     if (pendingBulkAction === 'delete') {
       setPendingBulkAction(null)
-      runBulkDelete()
+      runBulkDelete(bulkLearnerWork !== null && bulkLearnerWorkAcknowledged)
     }
   }
 
@@ -401,7 +451,7 @@ function CoursesHome({
             size="sm"
             variant="outline"
             disabled={isBulkPending || !selectedCourses.some(course => canManageCourse(course))}
-            onClick={() => setPendingBulkAction('restore')}
+            onClick={() => openBulkAction('restore')}
           >
             {t('bulk.restore')}
           </Button>
@@ -412,7 +462,7 @@ function CoursesHome({
               size="sm"
               variant="outline"
               disabled={isBulkPending || !selectedCourses.some(course => canManageCourse(course))}
-              onClick={() => setPendingBulkAction('publish')}
+              onClick={() => openBulkAction('publish')}
             >
               {t('bulk.publish')}
             </Button>
@@ -421,7 +471,7 @@ function CoursesHome({
               size="sm"
               variant="outline"
               disabled={isBulkPending || !selectedCourses.some(course => canManageCourse(course))}
-              onClick={() => setPendingBulkAction('private')}
+              onClick={() => openBulkAction('private')}
             >
               {t('bulk.movePrivate')}
             </Button>
@@ -430,7 +480,7 @@ function CoursesHome({
               size="sm"
               variant="outline"
               disabled={isBulkPending || !selectedCourses.some(course => canManageCourse(course))}
-              onClick={() => setPendingBulkAction('archive')}
+              onClick={() => openBulkAction('archive')}
             >
               {t('bulk.archive')}
             </Button>
@@ -450,7 +500,7 @@ function CoursesHome({
           size="sm"
           variant="destructive"
           disabled={isBulkPending || !selectedCourses.some(course => canDeleteCourse(course))}
-          onClick={() => setPendingBulkAction('delete')}
+          onClick={() => openBulkAction('delete')}
         >
           {t('bulk.delete')}
         </Button>
@@ -817,11 +867,24 @@ function CoursesHome({
             <AlertDialogTitle>{bulkActionMeta?.title}</AlertDialogTitle>
             <AlertDialogDescription>{bulkActionMeta?.description}</AlertDialogDescription>
           </AlertDialogHeader>
+          {pendingBulkAction === 'delete' && bulkLearnerWork ? (
+            <CourseLearnerWorkWarning
+              learnerWork={bulkLearnerWork}
+              acknowledged={bulkLearnerWorkAcknowledged}
+              onAcknowledgedChange={setBulkLearnerWorkAcknowledged}
+              disabled={isBulkPending}
+            />
+          ) : null}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isBulkPending} />
             <AlertDialogAction
               variant={bulkActionMeta?.variant}
-              disabled={isBulkPending || !bulkActionMeta}
+              disabled={
+                isBulkPending ||
+                !bulkActionMeta ||
+                (pendingBulkAction === 'delete' &&
+                  (bulkDeletePreview.isPending || (bulkLearnerWork !== null && !bulkLearnerWorkAcknowledged)))
+              }
               onClick={confirmBulkAction}
             >
               {bulkActionMeta?.confirmLabel}
@@ -876,19 +939,15 @@ export function CourseRowActions({
     })
   }
 
-  const handleDelete = () => {
+  // The dialog stays open until the server answers (a 409 `course-has-learner-work` turns into its warning),
+  // so the row hides only after the delete succeeded, until the refresh drops it.
+  const handleDelete = async (options: { acknowledgeLearnerWork: boolean }) => {
     if (!canDeleteCourse) return
-
-    setIsDeleteDialogOpen(false)
-    startTransition(async () => {
+    await deleteCourseFromBackend(course.course_uuid, options)
+    toast.success(t('rowActions.deleteSuccess'))
+    startTransition(() => {
       onOptimisticDelete([course.course_uuid])
-      try {
-        await deleteCourseFromBackend(course.course_uuid)
-        toast.success(t('rowActions.deleteSuccess'))
-        router.refresh()
-      } catch (error) {
-        toastApiError(error, { fallback: t('rowActions.deleteError') })
-      }
+      router.refresh()
     })
   }
 
@@ -970,8 +1029,8 @@ export function CourseRowActions({
       <CourseDeleteDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
+        courseUuid={course.course_uuid}
         courseName={course.name}
-        isPending={isPending}
         onConfirm={handleDelete}
       />
       {lifecycleDialog === 'archive' ? (

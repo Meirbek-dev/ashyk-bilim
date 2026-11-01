@@ -192,6 +192,7 @@ pub struct DisagreementView {
     pub draft_id: GradeDraftId,
     pub subject_id: uuid::Uuid,
     pub learner_id: UserId,
+    pub learner_name: String,
     pub ai_score: f64,
     pub final_score: f64,
 }
@@ -911,19 +912,25 @@ impl AiService {
             }
         }
         let pairs = self.similar_graded(activity_id, &parts).await?;
-        let disagreements = drafts
+        let disagreeing: Vec<&ab_db::grade_drafts::DraftRow> = drafts
             .iter()
             .filter(|d| d.status == "applied")
-            .filter_map(|d| {
-                let ai = d.calibrated_score?;
-                let fin = d.final_score?;
-                ((ai - fin).abs() > 100.0 * DISAGREE).then(|| DisagreementView {
-                    draft_id: d.id,
-                    subject_id: d.subject_id(),
-                    learner_id: d.learner_id,
-                    ai_score: ai,
-                    final_score: fin,
-                })
+            .filter(|d| match (d.calibrated_score, d.final_score) {
+                (Some(ai), Some(fin)) => (ai - fin).abs() > 100.0 * DISAGREE,
+                _ => false,
+            })
+            .collect();
+        let ids: Vec<uuid::Uuid> = disagreeing.iter().map(|d| d.learner_id.0).collect();
+        let names = ab_db::grade_drafts::learner_names(&self.pool, &ids).await?;
+        let disagreements = disagreeing
+            .into_iter()
+            .map(|d| DisagreementView {
+                draft_id: d.id,
+                subject_id: d.subject_id(),
+                learner_id: d.learner_id,
+                learner_name: names.get(&d.learner_id).cloned().unwrap_or_default(),
+                ai_score: d.calibrated_score.unwrap_or_default(),
+                final_score: d.final_score.unwrap_or_default(),
             })
             .collect();
         let corrections =

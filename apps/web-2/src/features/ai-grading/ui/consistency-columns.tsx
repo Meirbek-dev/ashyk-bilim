@@ -1,8 +1,5 @@
-import { Link as RouterLink } from '@tanstack/react-router'
-
 import { m } from '#/paraglide/messages'
 import type { DisagreementView, DriftView, SimilarPairView, WorkRef } from '#/shared/api/gen/types.gen'
-import { buttonVariants } from '#/shared/components/button-variants'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { Link } from '#/shared/components/link'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
@@ -54,9 +51,19 @@ export const pairColumns = (ids: Ids, labels: Labels): DataColumn<SimilarPairVie
 
 export const disagreementColumns = (ids: Ids): DataColumn<DisagreementView>[] => [
   {
+    id: 'learner',
+    header: m.ai_grading_col_learner(),
+    priority: 1,
+    cell: row => (
+      <Link to={REVIEW} params={{ ...ids, submissionId: row.subject_id }} search={{}} variant="text">
+        {row.learner_name}
+      </Link>
+    ),
+  },
+  {
     id: 'scores',
     header: m.ai_grading_col_scores(),
-    priority: 1,
+    priority: 2,
     cell: row => (
       <span className="tabular-nums">
         {m.ai_grading_scores({ ai: percent(row.ai_score), teacher: percent(row.final_score) })}
@@ -68,22 +75,6 @@ export const disagreementColumns = (ids: Ids): DataColumn<DisagreementView>[] =>
     header: m.ai_grading_col_gap(),
     priority: 2,
     cell: row => <span className="tabular-nums">{points(disagreementGap(row))}</span>,
-  },
-  {
-    id: 'action',
-    header: m.ai_grading_col_action(),
-    priority: 2,
-    action: true,
-    cell: row => (
-      <RouterLink
-        className={buttonVariants({ variant: 'outline' })}
-        to={REVIEW}
-        params={{ ...ids, submissionId: row.subject_id }}
-        search={{}}
-      >
-        {m.ai_grading_open_work()}
-      </RouterLink>
-    ),
   },
 ]
 

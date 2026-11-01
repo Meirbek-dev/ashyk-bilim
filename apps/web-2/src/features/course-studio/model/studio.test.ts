@@ -12,6 +12,8 @@ import {
   certificateFieldsSchema,
   createPlan,
   fileContent,
+  hasLearnerWork,
+  sumDeletionPreviews,
   mediaPreview,
   mediaSource,
   groupReadiness,
@@ -267,5 +269,28 @@ describe('media', () => {
       name: 'v.mp4',
     })
     expect(mediaSource({ activity_sub_type: 'document_pdf', content: {} })).toEqual({ kind: 'none' })
+  })
+})
+
+describe('course deletion', () => {
+  test('B-CST-52 any learner work, issued certificates included, needs the acknowledgement; none does not', () => {
+    const none = { learners: 0, submissions: 0, file_attempts: 0, certificates: 0 }
+    expect(hasLearnerWork(none)).toBe(false)
+    expect(hasLearnerWork({ ...none, certificates: 1 })).toBe(true)
+    expect(hasLearnerWork({ ...none, file_attempts: 2 })).toBe(true)
+  })
+})
+
+describe('bulk course deletion', () => {
+  test('B-CST-45 the previews of the deleted courses are summed; a failed one adds nothing', () => {
+    const one = { learners: 2, submissions: 5, file_attempts: 1, certificates: 0 }
+    const two = { learners: 1, submissions: 0, file_attempts: 0, certificates: 3 }
+    expect(sumDeletionPreviews([one, undefined, two])).toEqual({
+      learners: 3,
+      submissions: 5,
+      file_attempts: 1,
+      certificates: 3,
+    })
+    expect(hasLearnerWork(sumDeletionPreviews([undefined]))).toBe(false)
   })
 })

@@ -1,4 +1,4 @@
-import { finishPages, expectReread } from '../fixtures/test'
+import { finishPages, withLearnerWork, expectReread } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import type { Page } from '@playwright/test'
@@ -88,7 +88,7 @@ const test = base.extend<{ handedIn: HandedIn }>({
       })
       if (info.status === 'passed') await finishPages(page.context())
     } finally {
-      await deleteCourse({ client: api, path: { course_id: course.id }, headers: teacher })
+      await deleteCourse({ client: api, query: withLearnerWork, path: { course_id: course.id }, headers: teacher })
     }
   },
 })

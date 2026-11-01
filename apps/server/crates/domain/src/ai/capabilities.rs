@@ -31,6 +31,19 @@ pub enum Surface {
 /// challenges, custom activities).
 const RESTRICTED_ACTIVITY_TYPES: &[&str] = &["exam", "code_challenge", "custom"];
 
+/// The per-feature flags a scope reports (`ScopeCapabilities.features`).
+const SCOPE_FEATURES: [AiFeature; 9] = [
+    AiFeature::CourseQa,
+    AiFeature::StudyCompanion,
+    AiFeature::CourseAnalysis,
+    AiFeature::SubmissionAnalysis,
+    AiFeature::Remediation,
+    AiFeature::LectureAuthoring,
+    AiFeature::SemanticSearch,
+    AiFeature::ConceptGraph,
+    AiFeature::GradingAssistant,
+];
+
 #[derive(Debug, Clone)]
 pub struct FeatureCapability {
     pub feature: AiFeature,
@@ -169,17 +182,10 @@ impl AiService {
         };
 
         let switches = self.feature_switches().await?;
-        let features = [
-            AiFeature::CourseQa,
-            AiFeature::StudyCompanion,
-            AiFeature::CourseAnalysis,
-            AiFeature::SubmissionAnalysis,
-            AiFeature::Remediation,
-            AiFeature::LectureAuthoring,
-        ]
-        .into_iter()
-        .map(|f| self.feature_capability(&switches, f))
-        .collect();
+        let features = SCOPE_FEATURES
+            .into_iter()
+            .map(|f| self.feature_capability(&switches, f))
+            .collect();
 
         // No provider and no draft answers: every AI call would answer 503, so the panel says so up front.
         let ai_enabled = self.config.ai_enabled

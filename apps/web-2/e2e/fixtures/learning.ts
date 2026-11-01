@@ -1,4 +1,4 @@
-import { finishPages } from './test'
+import { finishPages, withLearnerWork } from './test'
 import { randomUUID } from 'node:crypto'
 
 import { createClient, createConfig } from '#/shared/api/gen/client'
@@ -116,7 +116,8 @@ export const test = base.extend<{
     try {
       if (info.status === 'passed') await finishPages(page.context())
     } finally {
-      for (const id of made) await deleteCourse({ client: api, path: { course_id: id }, headers })
+      for (const id of made)
+        await deleteCourse({ client: api, query: withLearnerWork, path: { course_id: id }, headers })
     }
   },
   learner: async ({ api, baseURL, context }, use) => {

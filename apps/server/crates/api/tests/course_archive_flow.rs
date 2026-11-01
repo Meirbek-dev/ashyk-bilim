@@ -1638,7 +1638,8 @@ async fn archived_course_is_read_only_for_everyone(pool: PgPool) {
         .await;
     assert_eq!(dropped.status, StatusCode::OK, "{}", dropped.text());
 
-    // 8. Delete keeps its own gate: the maintainer cannot, the creator can.
+    // 8. Delete keeps its own gate: the maintainer cannot, the creator can once the learner work
+    // is acknowledged.
     let path = format!("/api/v2/courses/{course_id}");
     assert_eq!(
         app.delete_as(&maintainer, &path).await.status,
@@ -1646,6 +1647,12 @@ async fn archived_course_is_read_only_for_everyone(pool: PgPool) {
     );
     assert_eq!(
         app.delete_as(&teacher, &path).await.status,
+        StatusCode::CONFLICT
+    );
+    assert_eq!(
+        app.delete_as(&teacher, &format!("{path}?acknowledge_learner_work=true"))
+            .await
+            .status,
         StatusCode::NO_CONTENT
     );
     assert_eq!(

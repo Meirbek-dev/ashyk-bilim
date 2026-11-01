@@ -2014,6 +2014,29 @@ export type CourseDataGap = {
 };
 
 /**
+ * What deleting the course takes from learners (`GET /courses/{id}/deletion-preview`, who may
+ * delete it). Any non-zero count means the delete needs `acknowledge_learner_work=true`.
+ */
+export type CourseDeletionPreview = {
+    /**
+     * Issued certificates of the course; their verification codes stop resolving.
+     */
+    certificates: number;
+    /**
+     * Their file attempts.
+     */
+    file_attempts: number;
+    /**
+     * People outside the course staff with work in it.
+     */
+    learners: number;
+    /**
+     * Their quiz / exam / code submissions (staff previews never count).
+     */
+    submissions: number;
+};
+
+/**
  * A grade change or hand-in: `submission_id` (assessments) or
  * `attempt_id` (file submissions).
  */
@@ -2672,6 +2695,7 @@ export type DisagreementView = {
     draft_id: GradeDraftId;
     final_score: number;
     learner_id: UserId;
+    learner_name: string;
     subject_id: string;
 };
 
@@ -3040,7 +3064,7 @@ export type Enrollments = {
 /**
  * Stable, closed set of machine-readable error codes.
  */
-export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'activity-media-missing' | 'activity-has-learner-work' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'account-has-roles' | 'account-deleted' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'enrollment-required' | 'discussion-enrollment-required' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable' | 'concept-cycle';
+export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'activity-media-missing' | 'activity-has-learner-work' | 'course-has-learner-work' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'account-has-roles' | 'account-deleted' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'enrollment-required' | 'discussion-enrollment-required' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable' | 'concept-cycle';
 
 export type EvalDashboard = {
     evals: EvalSummary;
@@ -12996,7 +13020,14 @@ export type DeleteCourseData = {
          */
         course_id: CourseId;
     };
-    query?: never;
+    query?: {
+        /**
+         * The caller confirmed that learners' work, grades and certificates are deleted with the course.
+         * Needed only while the course has any (see the deletion preview); without it such a delete is
+         * 409 `course-has-learner-work`.
+         */
+        acknowledge_learner_work?: boolean;
+    };
     url: '/api/v2/courses/{course_id}';
 };
 
@@ -13009,6 +13040,10 @@ export type DeleteCourseErrors = {
      * Unknown or inaccessible
      */
     404: Problem;
+    /**
+     * Learner work without `acknowledge_learner_work`
+     */
+    409: Problem;
     /**
      * Stale `If-Match`
      */
@@ -13800,6 +13835,40 @@ export type GetCurriculumResponses = {
 };
 
 export type GetCurriculumResponse = GetCurriculumResponses[keyof GetCurriculumResponses];
+
+export type CourseDeletionPreviewData = {
+    body?: never;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/deletion-preview';
+};
+
+export type CourseDeletionPreviewErrors = {
+    /**
+     * No delete access
+     */
+    403: Problem;
+    /**
+     * Unknown or inaccessible
+     */
+    404: Problem;
+};
+
+export type CourseDeletionPreviewError = CourseDeletionPreviewErrors[keyof CourseDeletionPreviewErrors];
+
+export type CourseDeletionPreviewResponses = {
+    /**
+     * Deletion preview
+     */
+    200: CourseDeletionPreview;
+};
+
+export type CourseDeletionPreviewResponse = CourseDeletionPreviewResponses[keyof CourseDeletionPreviewResponses];
 
 export type ListDiscussionsData = {
     body?: never;

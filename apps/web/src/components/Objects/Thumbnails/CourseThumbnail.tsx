@@ -17,7 +17,7 @@ import {
 import { buildCourseWorkspacePath, isCourseArchived, isCourseAuthor, isCourseCreator } from '@/lib/course-management'
 import { CourseArchiveDialog, CourseRestoreDialog } from '@components/Dashboard/Courses/CourseArchiveDialog'
 import { CourseStatusBadge } from '@components/Dashboard/Courses/courseWorkflowUi'
-import { useMemo, useState, useTransition, useSyncExternalStore } from 'react'
+import { useMemo, useState, useSyncExternalStore } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { formatDate } from '@/lib/date'
 import { cn } from '@/lib/utils'
@@ -56,6 +56,13 @@ import Link from '@components/ui/AppLink'
 import { getCourseThumbnailMediaDirectory } from '@services/media/media'
 import { deleteCourseFromBackend } from '@services/courses/course-delete'
 import { useApiError } from '@/hooks/useApiError'
+import {
+  CourseLearnerWorkWarning,
+  hasLearnerWork,
+  learnerWorkFromError,
+  useCourseDeletionPreviews,
+} from '@components/Dashboard/Courses/CourseLearnerWorkWarning'
+import type { LearnerWork } from '@components/Dashboard/Courses/CourseLearnerWorkWarning'
 import { getAbsoluteUrl } from '@services/config/config'
 
 // ============================================================================
@@ -296,23 +303,64 @@ const CourseActions: FC<CourseActionsProps> = ({
   )
 }
 
-/** The course-delete confirm — every delete entry point goes through it (UX-168). */
+/**
+ * The course-delete confirm - every single-course delete goes through it (UX-168). It reads the deletion preview
+ * when it opens: learner work (submissions, file attempts, certificates) is listed and the confirm stays disabled
+ * until the user acknowledges it goes with the course; only then the delete carries `acknowledge_learner_work`.
+ * `onConfirm` deletes and throws on failure; the dialog closes on success, turns a 409 `course-has-learner-work`
+ * (work arrived after the preview) into the same warning and toasts anything else.
+ */
 export function CourseDeleteDialog({
   open,
   onOpenChange,
+  courseUuid,
   courseName,
-  isPending,
   onConfirm,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  courseUuid: string
   courseName: string
-  isPending: boolean
-  onConfirm: () => void
+  onConfirm: (options: { acknowledgeLearnerWork: boolean }) => Promise<void>
 }) {
   const t = useTranslations('Components.CourseThumbnail')
+  const { toastApiError } = useApiError()
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [acknowledged, setAcknowledged] = useState(false)
+  const [conflict, setConflict] = useState<LearnerWork | null>(null)
+  const [wasOpen, setWasOpen] = useState(open)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) {
+      setAcknowledged(false)
+      setConflict(null)
+    }
+  }
+  const preview = useCourseDeletionPreviews([courseUuid], open)
+  const learnerWork = conflict ?? (hasLearnerWork(preview.learnerWork) ? preview.learnerWork : null)
+  const needsAcknowledgement = learnerWork !== null
+
+  const handleConfirm = async () => {
+    setIsDeleting(true)
+    try {
+      await onConfirm({ acknowledgeLearnerWork: needsAcknowledgement && acknowledged })
+      setIsDeleting(false)
+      onOpenChange(false)
+    } catch (error) {
+      setIsDeleting(false)
+      const arrived = learnerWorkFromError(error)
+      if (arrived) {
+        setConflict(arrived)
+        setAcknowledged(false)
+      } else {
+        onOpenChange(false)
+        toastApiError(error, { fallback: t('toastDeleteError') })
+      }
+    }
+  }
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={next => (isDeleting ? undefined : onOpenChange(next))}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogMedia className="bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400">
@@ -321,10 +369,22 @@ export function CourseDeleteDialog({
           <AlertDialogTitle>{t('deleteConfirmationTitle', { courseName })}</AlertDialogTitle>
           <AlertDialogDescription>{t('deleteConfirmationMessage')}</AlertDialogDescription>
         </AlertDialogHeader>
+        {learnerWork ? (
+          <CourseLearnerWorkWarning
+            learnerWork={learnerWork}
+            acknowledged={acknowledged}
+            onAcknowledgedChange={setAcknowledged}
+            disabled={isDeleting}
+          />
+        ) : null}
         <AlertDialogFooter>
-          <AlertDialogCancel />
-          <AlertDialogAction variant="destructive" onClick={onConfirm} disabled={isPending}>
-            {isPending ? (
+          <AlertDialogCancel disabled={isDeleting} />
+          <AlertDialogAction
+            variant="destructive"
+            onClick={() => void handleConfirm()}
+            disabled={isDeleting || preview.isPending || (needsAcknowledgement && !acknowledged)}
+          >
+            {isDeleting ? (
               <div className="flex items-center gap-2">
                 <Loader2 className="size-4 animate-spin" />
                 {t('deleting')}
@@ -341,7 +401,7 @@ export function CourseDeleteDialog({
 
 interface AdminMenuProps {
   course: Course
-  onDelete: () => Promise<void>
+  onDelete: (options: { acknowledgeLearnerWork: boolean }) => Promise<void>
 }
 
 const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
@@ -350,7 +410,6 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
   const { can, user: _thumbnailUser } = useSession()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [lifecycleDialog, setLifecycleDialog] = useState<'archive' | 'restore' | null>(null)
-  const [isPending, startTransition] = useTransition()
   const currentUserId = _thumbnailUser?.id
   const isArchived = isCourseArchived(course)
 
@@ -374,13 +433,6 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
     ...(canManage ? ['manage'] : []),
     ...(canDelete ? ['delete'] : []),
   ]
-
-  const handleDelete = () => {
-    startTransition(async () => {
-      await onDelete()
-      setIsDeleteDialogOpen(false)
-    })
-  }
 
   const courseIdClean = removeCoursePrefix(course.course_uuid)
 
@@ -437,9 +489,9 @@ const AdminMenu: FC<AdminMenuProps> = ({ course, onDelete }) => {
       <CourseDeleteDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
+        courseUuid={courseIdClean}
         courseName={course.name || ''}
-        isPending={isPending}
-        onConfirm={handleDelete}
+        onConfirm={onDelete}
       />
       {lifecycleDialog === 'archive' ? (
         <CourseArchiveDialog
@@ -478,7 +530,6 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
   const tCta = useTranslations('Courses.CoursesActions')
   const locale = useLocale()
   const router = useRouter()
-  const { toastApiError } = useApiError()
   const { user: currentUser, isAuthenticated, can } = useSession()
   const hasMounted = useSyncExternalStore(
     emptySubscribe,
@@ -537,18 +588,12 @@ const CourseThumbnail: FC<CourseThumbnailProps> = ({
     can(Resources.ASSESSMENT, Actions.AUTHOR, Scopes.APP) ||
     can(Resources.ASSESSMENT, Actions.AUTHOR, Scopes.ALL)
 
-  const handleDelete = async () => {
-    const toastId = toast.loading(t('deleting'))
-    try {
-      await deleteCourseFromBackend(course.course_uuid || '')
-      toast.success(t('toastDeleteSuccess'))
-      router.refresh()
-    } catch (error) {
-      // A 403 reads «нет прав», not «попробуйте снова» (UX-166).
-      toastApiError(error, { fallback: t('toastDeleteError') })
-    } finally {
-      toast.dismiss(toastId)
-    }
+  // Throws on failure: the confirm dialog shows the learner-work warning on a 409 and toasts the rest
+  // (a 403 reads «нет прав», not «попробуйте снова», UX-166).
+  const handleDelete = async (options: { acknowledgeLearnerWork: boolean }) => {
+    await deleteCourseFromBackend(course.course_uuid || '', options)
+    toast.success(t('toastDeleteSuccess'))
+    router.refresh()
   }
 
   return (

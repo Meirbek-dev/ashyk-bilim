@@ -10,10 +10,10 @@ use axum::response::Response;
 use crate::detach::detached;
 use crate::dto::courses::{
     AddContributorRequest, Contributor, Course, CourseArchivePreview, CourseAuthor,
-    CourseLifecycleRequest, CourseListItem, CourseListProgress, CourseListQuery, CoursePage,
-    CourseReadiness, CourseTeachingStats, CourseUpdate, CreateCourseRequest,
-    CreateCourseUpdateRequest, DuplicateCourseRequest, EditCourseUpdateRequest,
-    UpdateContributorRequest, UpdateCourseRequest,
+    CourseDeletionPreview, CourseLifecycleRequest, CourseListItem, CourseListProgress,
+    CourseListQuery, CoursePage, CourseReadiness, CourseTeachingStats, CourseUpdate,
+    CreateCourseRequest, CreateCourseUpdateRequest, DeleteCourseQuery, DuplicateCourseRequest,
+    EditCourseUpdateRequest, UpdateContributorRequest, UpdateCourseRequest,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{
@@ -633,13 +633,40 @@ pub async fn course_archive_preview(
     ))
 }
 
-/// Delete a course and everything under it (cascades).
+/// What deleting the course would take from learners - the numbers of the delete dialog (who may
+/// delete the course). Any non-zero count: the dialog asks for an acknowledgement.
+#[utoipa::path(
+    get,
+    path = "/courses/{course_id}/deletion-preview",
+    tag = "courses",
+    params(("course_id" = CourseId, Path, description = "Course id")),
+    responses(
+        (status = 200, description = "Deletion preview", body = CourseDeletionPreview),
+        (status = 403, description = "No delete access", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Unknown or inaccessible", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn course_deletion_preview(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path(id): Path<CourseId>,
+) -> ApiResult<Json<CourseDeletionPreview>> {
+    Ok(Json(
+        state.courses.deletion_preview(&actor, id).await?.into(),
+    ))
+}
+
+/// Delete a course and everything under it (cascades). While learners have work in it, the caller
+/// must pass `acknowledge_learner_work=true`.
 #[utoipa::path(
     delete,
     path = "/courses/{course_id}",
     tag = "courses",
     params(("course_id" = CourseId, Path, description = "Course id"),
         ("If-Match" = Option<i32>, Header, description = "Row `version`; stale -> 412"),
+        DeleteCourseQuery,
     ),
     responses(
         (status = 412, description = "Stale `If-Match`", body = Problem,
@@ -649,20 +676,24 @@ pub async fn course_archive_preview(
          content_type = "application/problem+json"),
         (status = 404, description = "Unknown or inaccessible", body = Problem,
          content_type = "application/problem+json"),
+        (status = 409, description = "Learner work without `acknowledge_learner_work`", body = Problem,
+         content_type = "application/problem+json"),
     )
 )]
 pub async fn delete_course(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
+    Query(query): Query<DeleteCourseQuery>,
     headers: HeaderMap,
 ) -> ApiResult<StatusCode> {
     require_if_match_gated(&state.pool, Versioned::Course(id), &headers, async {
         state.courses.get(&actor, id).await.map(|_| ())
     })
     .await?;
+    let acknowledged = query.acknowledge_learner_work.unwrap_or(false);
     detached(async move {
-        state.courses.delete(&actor, id).await?;
+        state.courses.delete(&actor, id, acknowledged).await?;
         Ok(StatusCode::NO_CONTENT)
     })
     .await

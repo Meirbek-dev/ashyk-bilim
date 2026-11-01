@@ -21,7 +21,7 @@ export function byPriority<T extends { priority?: Level | null }>(items: readonl
   return items.map((item, index) => ({ item, index })).toSorted((a, b) => rank(a.item) - rank(b.item))
 }
 
-const featureOn = (caps: ScopeCapabilities, key: string) =>
+export const featureOn = (caps: ScopeCapabilities, key: string) =>
   caps.features.some(feature => feature.key === key && feature.enabled)
 
 /**

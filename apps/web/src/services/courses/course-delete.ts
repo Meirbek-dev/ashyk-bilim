@@ -5,9 +5,16 @@ import { Course } from '@/lib/api/generated/zod'
 import { stripEntityPrefix } from '@/hooks/courses/courseKeys'
 import { revalidateCourse } from '@services/courses/courses'
 
-export async function deleteCourseFromBackend(course_uuid: string): Promise<void> {
+/**
+ * `DELETE /courses/{id}`. A course with learner work answers 409 `course-has-learner-work` (details: the
+ * `CourseDeletionPreview` counts) unless `acknowledgeLearnerWork` is set - only after the user ticked the box.
+ */
+export async function deleteCourseFromBackend(
+  course_uuid: string,
+  { acknowledgeLearnerWork = false }: { acknowledgeLearnerWork?: boolean } = {},
+): Promise<void> {
   const id = stripEntityPrefix(course_uuid)
-  await apiJson(`courses/${id}`, { method: 'DELETE' })
+  await apiJson(`courses/${id}${acknowledgeLearnerWork ? '?acknowledge_learner_work=true' : ''}`, { method: 'DELETE' })
   await revalidateCourse(id)
 }
 

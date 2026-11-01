@@ -547,7 +547,77 @@ pub async fn course_archive_preview(
 /// every block/upload write uses). With every activity locked no block can
 /// be added or removed under the delete, and the release counts exactly the
 /// block rows the DELETE returned.
-pub async fn delete_course(pool: &PgPool, id: CourseId, grace_secs: f64) -> Result<bool> {
+/// What deleting a course takes with it from learners (staff and previews never count).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct CourseLearnerWork {
+    pub learners: i64,
+    pub submissions: i64,
+    pub file_attempts: i64,
+    pub certificates: i64,
+}
+
+impl CourseLearnerWork {
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.submissions == 0 && self.file_attempts == 0 && self.certificates == 0
+    }
+}
+
+/// Learner work in a course: what deleting it takes from learners.
+///
+/// Non-preview submissions and file attempts by people outside the course staff, and issued
+/// certificates. `is_course_staff` runs once per distinct author (`OFFSET 0`, see
+/// [`activities_with_learner_work`]).
+pub async fn course_learner_work<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: CourseId,
+) -> Result<CourseLearnerWork> {
+    let row = sqlx::query!(
+        r#"WITH work AS (
+               SELECT u.user_id, true AS quiz FROM activities a
+               JOIN assessments s ON s.activity_id = a.id
+               JOIN submissions u ON u.assessment_id = s.id
+               WHERE a.course_id = $1 AND NOT u.preview
+               UNION ALL
+               SELECT t.user_id, false FROM activities a
+               JOIN file_submissions f ON f.activity_id = a.id
+               JOIN file_submission_attempts t ON t.file_submission_id = f.id
+               WHERE a.course_id = $1 AND NOT t.preview
+           ), learners AS (
+               SELECT d.user_id FROM (SELECT DISTINCT user_id FROM work OFFSET 0) d
+               WHERE NOT is_course_staff($1, d.user_id)
+           )
+           SELECT (SELECT count(*) FROM learners) AS "learners!",
+                  (SELECT count(*) FROM work w JOIN learners l USING (user_id) WHERE w.quiz) AS "submissions!",
+                  (SELECT count(*) FROM work w JOIN learners l USING (user_id) WHERE NOT w.quiz)
+                      AS "file_attempts!",
+                  (SELECT count(*) FROM certificate_users cu
+                   JOIN certifications c ON c.id = cu.certification_id
+                   WHERE c.course_id = $1) AS "certificates!""#,
+        id.0
+    )
+    .fetch_one(db)
+    .await?;
+    Ok(CourseLearnerWork {
+        learners: row.learners,
+        submissions: row.submissions,
+        file_attempts: row.file_attempts,
+        certificates: row.certificates,
+    })
+}
+
+/// Delete a course with everything under it.
+///
+/// While learners have work in it (`course_learner_work`) the delete needs `acknowledged` (the
+/// teacher confirmed that their work goes too), else 409 `course-has-learner-work` with the counts.
+/// The check runs after the course's assessments and file tasks are locked, so a hand-in racing the
+/// delete cannot slip past an unacknowledged one.
+pub async fn delete_course(
+    pool: &PgPool,
+    id: CourseId,
+    acknowledged: bool,
+    grace_secs: f64,
+) -> Result<bool> {
     let mut tx = pool.begin().await?;
     let Some(thumbnail) = sqlx::query_scalar!(
         "SELECT thumbnail_image_key FROM courses WHERE id = $1 FOR UPDATE",
@@ -570,6 +640,33 @@ pub async fn delete_course(pool: &PgPool, id: CourseId, grace_secs: f64) -> Resu
     )
     .fetch_all(&mut *tx)
     .await?;
+    if !acknowledged {
+        sqlx::query_scalar!(
+            "SELECT id FROM assessments WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
+            &activities
+        )
+        .fetch_all(&mut *tx)
+        .await?;
+        sqlx::query_scalar!(
+            "SELECT id FROM file_submissions WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
+            &activities
+        )
+        .fetch_all(&mut *tx)
+        .await?;
+        let work = course_learner_work(&mut *tx, id).await?;
+        if !work.is_empty() {
+            return Err(ab_core::Error::app_with_details(
+                ab_core::ErrorCode::CourseHasLearnerWork,
+                "learners have work in this course; confirm that it is deleted with the course",
+                serde_json::json!({
+                    "learners": work.learners,
+                    "submissions": work.submissions,
+                    "file_attempts": work.file_attempts,
+                    "certificates": work.certificates,
+                }),
+            ));
+        }
+    }
     crate::file_submissions::delete_files_releasing(&mut tx, &activities, grace_secs).await?;
     delete_blocks_releasing(&mut tx, &activities, None, grace_secs).await?;
     if let Some(key) = thumbnail {

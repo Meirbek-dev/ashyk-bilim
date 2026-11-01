@@ -1,4 +1,4 @@
-import { finishPages } from '../fixtures/test'
+import { finishPages, withLearnerWork } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import { createClient, createConfig } from '#/shared/api/gen/client'
@@ -91,7 +91,8 @@ export const test = base.extend<{ studio: Studio }>({
     try {
       if (info.status === 'passed') await finishPages(browserPage.context())
     } finally {
-      for (const { id, headers } of made) await deleteCourse({ client: api, path: { course_id: id }, headers })
+      for (const { id, headers } of made)
+        await deleteCourse({ client: api, query: withLearnerWork, path: { course_id: id }, headers })
     }
   },
 })

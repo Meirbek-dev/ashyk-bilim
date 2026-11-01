@@ -51,6 +51,7 @@
   "errors_validation_failed": "Check the highlighted fields and try again.",
   "errors_unsafe_url": "Changes not saved: the document has a link or embed that is not allowed. A link must be a full address (https://…); an embed must come from an outside service, not from this site.",
   "errors_activity_has_learner_work": "Learners have submitted work here, so it can’t be deleted. Unpublish (hide) it instead; their submissions are kept.",
+  "errors_course_has_learner_work": "Learners have submissions in this course: confirm that they are deleted with the course.",
   "errors_account_has_roles": "Teacher and admin accounts are deleted by a platform admin. Please contact them.",
   "errors_account_deleted": "Its owner deleted this account, so it cannot be enabled again."
 }

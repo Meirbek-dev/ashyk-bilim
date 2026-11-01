@@ -36,6 +36,7 @@ import {
   ContributorPage,
   Course,
   CourseArchivePreview,
+  CourseDeletionPreview,
   CourseId,
   CourseLifecycleRequest,
   CoursePage,
@@ -49,6 +50,7 @@ import {
   CreateCourseRequest,
   CreateCourseUpdateRequest,
   Curriculum,
+  DeleteCourseParams,
   DuplicateCourseRequest,
   EditCourseUpdateRequest,
   ListContributorsPageParams,
@@ -1873,16 +1875,33 @@ export const useCreateCourse = <TError = ErrorType<Problem>, TContext = unknown>
 ): UseMutationResult<Awaited<ReturnType<typeof createCourse>>, TError, CreateCourseMutationVariables, TContext> => {
   return useMutation(getCreateCourseMutationOptions(options), queryClient)
 }
-export const getDeleteCourseUrl = (courseId: CourseId) => {
-  return `/api/v2/courses/${courseId}`
+export const getDeleteCourseUrl = (courseId: CourseId, params?: DeleteCourseParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : stringifyQueryParam(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/v2/courses/${courseId}?${stringifiedParams}`
+    : `/api/v2/courses/${courseId}`
 }
 
 /**
- * @summary Delete a course and everything under it (cascades).
+ * @summary Delete a course and everything under it (cascades). While learners have work in it, the caller
+must pass `acknowledge_learner_work=true`.
  */
-export const deleteCourse = async (courseId: CourseId, options?: Parameters<typeof orvalMutator>[1]): Promise<void> => {
+export const deleteCourse = async (
+  courseId: CourseId,
+  params?: DeleteCourseParams,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<void> => {
   return orvalMutator<void>(
-    getDeleteCourseUrl(courseId),
+    getDeleteCourseUrl(courseId, params),
     {
       ...options,
       method: 'DELETE',
@@ -1913,9 +1932,9 @@ export const getDeleteCourseMutationOptions = <TError = ErrorType<Problem>, TCon
     Awaited<ReturnType<typeof deleteCourse>>,
     DeleteCourseMutationVariables
   > = props => {
-    const { courseId } = props ?? {}
+    const { courseId, params } = props ?? {}
 
-    return deleteCourse(courseId, requestOptions)
+    return deleteCourse(courseId, params, requestOptions)
   }
 
   return { mutationFn, ...mutationOptions }
@@ -1924,10 +1943,11 @@ export const getDeleteCourseMutationOptions = <TError = ErrorType<Problem>, TCon
 export type DeleteCourseMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCourse>>>
 
 export type DeleteCourseMutationError = ErrorType<Problem>
-export type DeleteCourseMutationVariables = { courseId: CourseId }
+export type DeleteCourseMutationVariables = { courseId: CourseId; params?: DeleteCourseParams }
 
 /**
- * @summary Delete a course and everything under it (cascades).
+ * @summary Delete a course and everything under it (cascades). While learners have work in it, the caller
+must pass `acknowledge_learner_work=true`.
  */
 export const useDeleteCourse = <TError = ErrorType<Problem>, TContext = unknown>(
   options?: {
@@ -3545,6 +3565,223 @@ export function useGetCurriculumSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getGetCurriculumSuspenseQueryOptions(courseId, options)
+
+  const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getCourseDeletionPreviewUrl = (courseId: CourseId) => {
+  return `/api/v2/courses/${courseId}/deletion-preview`
+}
+
+/**
+ * @summary What deleting the course would take from learners - the numbers of the delete dialog (who may
+delete the course). Any non-zero count: the dialog asks for an acknowledgement.
+ */
+export const courseDeletionPreview = async (
+  courseId: CourseId,
+  options?: Parameters<typeof orvalMutator>[1],
+): Promise<CourseDeletionPreview> => {
+  return orvalMutator<CourseDeletionPreview>(
+    getCourseDeletionPreviewUrl(courseId),
+    {
+      ...options,
+      method: 'GET',
+    },
+    CourseDeletionPreview,
+  )
+}
+
+export const getCourseDeletionPreviewQueryKey = (courseId: CourseId) => {
+  return [`/api/v2/courses/${courseId}/deletion-preview`] as const
+}
+
+export const getCourseDeletionPreviewQueryOptions = <
+  TData = Awaited<ReturnType<typeof courseDeletionPreview>>,
+  TError = ErrorType<Problem>,
+>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseDeletionPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getCourseDeletionPreviewQueryKey(courseId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof courseDeletionPreview>>> = ({ signal }) =>
+    courseDeletionPreview(courseId, { signal, ...requestOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseId !== null && courseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof courseDeletionPreview>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type CourseDeletionPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof courseDeletionPreview>>>
+export type CourseDeletionPreviewQueryError = ErrorType<Problem>
+
+export function useCourseDeletionPreview<
+  TData = Awaited<ReturnType<typeof courseDeletionPreview>>,
+  TError = ErrorType<Problem>,
+>(
+  courseId: CourseId,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseDeletionPreview>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof courseDeletionPreview>>,
+          TError,
+          Awaited<ReturnType<typeof courseDeletionPreview>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseDeletionPreview<
+  TData = Awaited<ReturnType<typeof courseDeletionPreview>>,
+  TError = ErrorType<Problem>,
+>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseDeletionPreview>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof courseDeletionPreview>>,
+          TError,
+          Awaited<ReturnType<typeof courseDeletionPreview>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseDeletionPreview<
+  TData = Awaited<ReturnType<typeof courseDeletionPreview>>,
+  TError = ErrorType<Problem>,
+>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseDeletionPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary What deleting the course would take from learners - the numbers of the delete dialog (who may
+delete the course). Any non-zero count: the dialog asks for an acknowledgement.
+ */
+
+export function useCourseDeletionPreview<
+  TData = Awaited<ReturnType<typeof courseDeletionPreview>>,
+  TError = ErrorType<Problem>,
+>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof courseDeletionPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCourseDeletionPreviewQueryOptions(courseId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export const getCourseDeletionPreviewSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof courseDeletionPreview>>,
+  TError = ErrorType<Problem>,
+>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseDeletionPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getCourseDeletionPreviewQueryKey(courseId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof courseDeletionPreview>>> = ({ signal }) =>
+    courseDeletionPreview(courseId, { signal, ...requestOptions })
+
+  return queryOptionsBuilder({
+    queryKey,
+    ...queryOptions,
+    queryFn: queryOptions?.queryFn ?? queryFn,
+  }) as UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseDeletionPreview>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  } & { throwOnError?: ((this: never, error: TError) => boolean) & { readonly __inferenceOnly: never } }
+}
+
+export type CourseDeletionPreviewSuspenseQueryResult = NonNullable<Awaited<ReturnType<typeof courseDeletionPreview>>>
+export type CourseDeletionPreviewSuspenseQueryError = ErrorType<Problem>
+
+export function useCourseDeletionPreviewSuspense<
+  TData = Awaited<ReturnType<typeof courseDeletionPreview>>,
+  TError = ErrorType<Problem>,
+>(
+  courseId: CourseId,
+  options: {
+    query: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseDeletionPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseDeletionPreviewSuspense<
+  TData = Awaited<ReturnType<typeof courseDeletionPreview>>,
+  TError = ErrorType<Problem>,
+>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseDeletionPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCourseDeletionPreviewSuspense<
+  TData = Awaited<ReturnType<typeof courseDeletionPreview>>,
+  TError = ErrorType<Problem>,
+>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseDeletionPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary What deleting the course would take from learners - the numbers of the delete dialog (who may
+delete the course). Any non-zero count: the dialog asks for an acknowledgement.
+ */
+
+export function useCourseDeletionPreviewSuspense<
+  TData = Awaited<ReturnType<typeof courseDeletionPreview>>,
+  TError = ErrorType<Problem>,
+>(
+  courseId: CourseId,
+  options?: {
+    query?: Partial<UseSuspenseQueryOptions<Awaited<ReturnType<typeof courseDeletionPreview>>, TError, TData>>
+    request?: SecondParameter<typeof orvalMutator>
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getCourseDeletionPreviewSuspenseQueryOptions(courseId, options)
 
   const query = useSuspenseQuery(queryOptions, queryClient) as UseSuspenseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>

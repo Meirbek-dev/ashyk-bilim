@@ -157,6 +157,9 @@ export const test = base.extend({
   },
 })
 
+/** Cleanup deletes a course with the learner work the test made: the server wants that acknowledged. */
+export const withLearnerWork = { acknowledge_learner_work: true } as const
+
 /** Inspect before deleting test data, then stop live readers before cleanup emits events. */
 export async function finishPages(context: BrowserContext): Promise<void> {
   for (const page of context.pages()) {

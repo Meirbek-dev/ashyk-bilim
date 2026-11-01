@@ -113,6 +113,7 @@ export const CourseGradingStreamEvent = zod
             'activity-not-ready',
             'activity-media-missing',
             'activity-has-learner-work',
+            'course-has-learner-work',
             'course-not-ready',
             'course-archived',
             'unsupported-media-type',

@@ -153,8 +153,15 @@ describe('an activity’s grading consistency', () => {
     await expect.element(screen.getByText(m.ai_grading_points({ value: '30' })).first()).toBeInTheDocument()
   })
 
-  test('B-AIG-07 a disagreement shows the AI and the teacher grade and opens the work', async () => {
-    const row = { ai_score: 40, final_score: 75, draft_id: 'd', learner_id: 'u', subject_id: 's9' }
+  test('B-AIG-07 a disagreement names the learner (linked to the work) with the AI and the teacher grade', async () => {
+    const row = {
+      ai_score: 40,
+      final_score: 75,
+      draft_id: 'd',
+      learner_id: 'u',
+      learner_name: 'Дана',
+      subject_id: 's9',
+    }
     const screen = await renderInRouter(
       <DataTable
         label={m.ai_grading_disagreements_title()}
@@ -165,7 +172,7 @@ describe('an activity’s grading consistency', () => {
     )
     await expect.element(screen.getByText(m.ai_grading_points({ value: '+35' })).first()).toBeInTheDocument()
     await expect
-      .element(screen.getByRole('link', { name: m.ai_grading_open_work() }).first())
+      .element(screen.getByRole('link', { name: 'Дана' }).first())
       .toHaveAttribute('href', `/teach/courses/${COURSE}/activities/${ACTIVITY}/submissions/s9`)
   })
 

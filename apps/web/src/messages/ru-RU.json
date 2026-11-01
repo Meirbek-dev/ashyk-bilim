@@ -4365,7 +4365,6 @@
         "rowActions": {
           "menuLabel": "Действия с курсом",
           "delete": "Удалить",
-          "deleteError": "Не удалось удалить курс.",
           "deleteSuccess": "Курс удалён.",
           "movePrivate": "Сделать приватным",
           "openCurriculum": "Открыть учебный план",
@@ -4997,6 +4996,59 @@
         "unsavedDialogStay": "Остаться",
         "unsavedDialogTitle": "Покинуть с несохранёнными изменениями?",
         "unsavedChangesWarning": "У вас есть несохранённые изменения в курсе. Покинуть это рабочее пространство?"
+      },
+      "DeleteLearnerWork": {
+        "title": "В курсе есть работы учащихся",
+        "learners": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} учащийся с работами в курсе",
+              "count_plural=few": "{count_number} учащихся с работами в курсе",
+              "count_plural=many": "{count_number} учащихся с работами в курсе",
+              "count_plural=*": "{count_number} учащихся с работами в курсе"
+            }
+          }
+        ],
+        "submissions": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} сданная работа (тесты, экзамены, задачи с кодом)",
+              "count_plural=few": "{count_number} сданные работы (тесты, экзамены, задачи с кодом)",
+              "count_plural=many": "{count_number} сданных работ (тесты, экзамены, задачи с кодом)",
+              "count_plural=*": "{count_number} сданных работ (тесты, экзамены, задачи с кодом)"
+            }
+          }
+        ],
+        "fileAttempts": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} попытка сдачи файлов",
+              "count_plural=few": "{count_number} попытки сдачи файлов",
+              "count_plural=many": "{count_number} попыток сдачи файлов",
+              "count_plural=*": "{count_number} попыток сдачи файлов"
+            }
+          }
+        ],
+        "certificates": [
+          {
+            "declarations": ["input count", "local count_plural = count: plural", "local count_number = count: number"],
+            "selectors": ["count_plural"],
+            "match": {
+              "count_plural=one": "{count_number} выданный сертификат: его код проверки перестанет работать",
+              "count_plural=few": "{count_number} выданных сертификата: их коды проверки перестанут работать",
+              "count_plural=many": "{count_number} выданных сертификатов: их коды проверки перестанут работать",
+              "count_plural=*": "{count_number} выданных сертификатов: их коды проверки перестанут работать"
+            }
+          }
+        ],
+        "archiveInstead": "Всё это удалится вместе с курсом без возможности восстановления. Чтобы сохранить работы, оценки и сертификаты, архивируйте курс вместо удаления.",
+        "acknowledge": "Я понимаю, что работы, оценки и сертификаты учащихся будут удалены вместе с курсом"
       },
       "Archive": {
         "archiveAction": "В архив",
@@ -8307,6 +8359,7 @@
       "self-disable": "Нельзя отключить собственный аккаунт.",
       "activity-media-missing": "Добавьте файл или ссылку урока, затем опубликуйте его.",
       "activity-has-learner-work": "Учащиеся уже сдали здесь работы, поэтому удалить нельзя. Снимите с публикации (скройте): работы сохранятся.",
+      "course-has-learner-work": "В курсе есть работы учащихся: подтвердите, что они удаляются вместе с курсом.",
       "discussion-enrollment-required": "Запишитесь на курс, чтобы писать в обсуждении.",
       "activity-not-ready": "Сначала опубликуйте тест или настройки задания с отправкой файла, затем саму активность.",
       "course-not-ready": "Устраните все блокирующие проблемы готовности, прежде чем публиковать курс.",

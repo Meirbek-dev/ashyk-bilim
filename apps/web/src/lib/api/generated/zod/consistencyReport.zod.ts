@@ -14,6 +14,7 @@ export const ConsistencyReport = zod.object({
       draft_id: zod.uuid(),
       final_score: zod.number(),
       learner_id: zod.uuid(),
+      learner_name: zod.string(),
       subject_id: zod.uuid(),
     }),
   ),

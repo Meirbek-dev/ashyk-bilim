@@ -155,6 +155,42 @@ impl From<ab_domain::catalog::courses::ArchivePreview> for CourseArchivePreview 
     }
 }
 
+/// What deleting the course takes from learners (`GET /courses/{id}/deletion-preview`, who may
+/// delete it). Any non-zero count means the delete needs `acknowledge_learner_work=true`.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CourseDeletionPreview {
+    /// People outside the course staff with work in it.
+    pub learners: i64,
+    /// Their quiz / exam / code submissions (staff previews never count).
+    pub submissions: i64,
+    /// Their file attempts.
+    pub file_attempts: i64,
+    /// Issued certificates of the course; their verification codes stop resolving.
+    pub certificates: i64,
+}
+
+impl From<ab_db::catalog::CourseLearnerWork> for CourseDeletionPreview {
+    fn from(w: ab_db::catalog::CourseLearnerWork) -> Self {
+        Self {
+            learners: w.learners,
+            submissions: w.submissions,
+            file_attempts: w.file_attempts,
+            certificates: w.certificates,
+        }
+    }
+}
+
+/// `DELETE /courses/{id}` options.
+#[derive(Debug, Default, Deserialize, ToSchema, utoipa::IntoParams)]
+#[serde(deny_unknown_fields)]
+#[into_params(parameter_in = Query)]
+pub struct DeleteCourseQuery {
+    /// The caller confirmed that learners' work, grades and certificates are deleted with the course.
+    /// Needed only while the course has any (see the deletion preview); without it such a delete is
+    /// 409 `course-has-learner-work`.
+    pub acknowledge_learner_work: Option<bool>,
+}
+
 /// One "What you'll learn" entry.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CourseLearning {
