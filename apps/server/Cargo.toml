@@ -57,7 +57,7 @@ jiff = { version = "0.2.38", features = ["serde", "tzdb-bundle-always"] }
 
 # Document text extraction (AI pre-grading of submitted files)
 zip = { version = "9.2.0", default-features = false, features = ["deflate"] }
-quick-xml = "0.41.0"
+quick-xml = "0.42.0"
 pdf-extract = "0.12.1"
 
 # Serde & validation
