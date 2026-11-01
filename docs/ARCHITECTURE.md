@@ -429,7 +429,12 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   see transactions.
 - Migrations: `sqlx migrate` embedded via `migrate!()`; `ashyq migrate` runs them explicitly (compose one-shot
   `server-migrate`, run by bootstrap and deploy; never on boot). A migration on `origin/main` is never edited
-  (pre-commit hook); add a new one (`just new migration <name>`).
+  (pre-commit hook); add a new one (`just new migration <name>`). The set is never squashed: production's
+  `_sqlx_migrations` ledger holds every version.
+- Data fixes are not migrations: a migration holds schema, the backfill of what it adds and the repair a new
+  constraint needs (marked `-- data-fix: <rule>` when it touches rows of an existing table, `migration_rules.rs`).
+  A correction of existing data for its own sake is an idempotent `ashyq admin` command with `--dry-run`
+  (`migrate-themes`, `migrate-locales`), run by hand after a backup, so it can be rehearsed on a copy and re-run.
 
 ## 9. Background jobs (`ab_db::queue` + `ab-jobs`)
 

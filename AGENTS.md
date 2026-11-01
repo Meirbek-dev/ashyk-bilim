@@ -34,7 +34,8 @@
 ## Rules
 
 - Work on `main` with direct commits, or on a `wt/<name>` worktree branch landed by `just wt land` (no PRs).
-- Never edit an applied migration; add a new one.
+- Never edit an applied migration; add a new one. Data fixes are `ashyq admin` commands, not migrations
+  (`apps/server/AGENTS.md`).
 - Never commit `.env`, `server.env`, `temp-restore/`, keys or tokens.
 - Dependency updates come from Renovate (`renovate.json5`): `renovate/*` branches land on `main` by themselves once CI
   is green; majors and stateful images (Postgres, Redis, Zitadel, RustFS, go-judge, restic) wait as PRs. Its
