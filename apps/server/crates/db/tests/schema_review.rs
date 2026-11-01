@@ -8,8 +8,9 @@
 //!   either removes the notifications that link into it.
 //! - item 24: the retention sweep deletes old operational logs and keeps
 //!   learner work (graded code-run output, live jobs).
-//! - item 1: a row repeating its parent's course_id cannot disagree with it,
-//!   and follows a parent that changes course.
+//! - item 1: a row repeating its parent's course_id cannot disagree with it;
+//!   review 3, item 23: a parent's course change is refused while it has
+//!   children (ON UPDATE RESTRICT).
 //! - item 5: sibling positions are unique at commit; a reorder inside one
 //!   transaction passes through duplicates.
 //! - items 6, 7, 28: the coherence / bounds / shape checks exist (none was
@@ -802,4 +803,51 @@ async fn every_submission_or_file_attempt_arc_names_exactly_one(pool: PgPool) {
         unchecked.is_empty(),
         "arc without a CHECK num_nonnulls(..) = 1: {unchecked:?}"
     );
+}
+
+/// Review 3, item 23: a parent's course never changes under its children:
+/// every composite `(parent_id, course_id)` key is ON UPDATE RESTRICT (or NO
+/// ACTION, which refuses too), so moving a chapter (or activity, assessment,
+/// post) to another course is refused instead of silently carrying learner
+/// work along.
+#[ab_testdb::test]
+async fn a_parent_cannot_change_course_under_its_children(pool: PgPool) {
+    let cascading: Vec<String> = sqlx::query_scalar(
+        "SELECT conname::text FROM pg_constraint c
+          WHERE c.contype = 'f' AND cardinality(c.conkey) > 1 AND c.confupdtype NOT IN ('r', 'a')
+            AND EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.conrelid
+                         AND a.attnum = ANY (c.conkey) AND a.attname = 'course_id')
+          ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert!(
+        cascading.is_empty(),
+        "course-scoped keys that follow an update: {cascading:?}"
+    );
+
+    let w = world(&pool).await;
+    let other: Uuid =
+        sqlx::query_scalar("INSERT INTO courses (name) VALUES ('other') RETURNING id")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    for parent in [
+        "UPDATE chapters SET course_id = $1 WHERE id = (SELECT chapter_id FROM activities WHERE id = $2)",
+        "UPDATE activities SET course_id = $1 WHERE id = $2",
+    ] {
+        let moved = sqlx::query(parent)
+            .bind(other)
+            .bind(w.activity)
+            .execute(&pool)
+            .await;
+        assert!(moved.is_err(), "{parent}");
+    }
+    let course: Uuid = sqlx::query_scalar("SELECT course_id FROM assessments WHERE id = $1")
+        .bind(w.assessment)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(course, w.course);
 }

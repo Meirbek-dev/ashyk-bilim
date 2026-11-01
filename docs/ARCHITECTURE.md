@@ -377,7 +377,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **A copied `course_id` cannot drift.** Chapters, activities, assessments, file tasks and posts carry
   `UNIQUE (id, course_id)`; their children reference `(parent_id, course_id)` (activities → chapters,
   assessments/file tasks/progress/trail steps → activities, submissions → assessments, file attempts → file
-  tasks, replies → posts) with `ON UPDATE CASCADE`, keeping the old constraint names.
+  tasks, replies → posts), keeping the old constraint names. They are `ON UPDATE RESTRICT`
+  (`20261102010800`): no feature moves a parent to another course (activities move only between chapters of
+  their course), so such a change is refused while children exist instead of rewriting learner work.
 - **Sibling positions are unique** per course (chapters), chapter (activities), assessment (items) and
   collection (courses), `DEFERRABLE INITIALLY DEFERRED` so a reorder inside one transaction may pass through
   duplicates; `>= 1`. Two concurrent appends that both took `MAX(position) + 1` get 409 `conflict` (retry).
