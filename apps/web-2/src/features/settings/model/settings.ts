@@ -5,7 +5,7 @@ import { locales } from '#/paraglide/runtime'
 import { ApiError } from '#/shared/api/errors'
 import { vChangeEmailRequest, vUpdateProfileRequest } from '#/shared/api/gen/valibot.gen'
 import { checkUpload, maxUploadBytes } from '#/shared/api/upload'
-import { MODES } from '#/shared/lib/appearance'
+import { FONTS, MODES } from '#/shared/lib/appearance'
 import type { GamificationSettings, SessionSummary } from '#/shared/api/gen/types.gen'
 
 const MB = 1024 * 1024
@@ -21,8 +21,13 @@ export function avatarProblem(file: { size: number; type: string }): string | nu
     : m.settings_avatar_wrong_type()
 }
 
-/** The appearance form: theme slug, mode and interface language. */
-export const vAppearance = v.object({ theme: v.string(), mode: v.picklist(MODES), locale: v.picklist(locales) })
+/** The appearance form: theme slug, mode, font set and interface language. */
+export const vAppearance = v.object({
+  theme: v.string(),
+  mode: v.picklist(MODES),
+  font: v.picklist(FONTS),
+  locale: v.picklist(locales),
+})
 
 /**
  * The theme the picker starts on: the profile's, when it is one of the shipped themes (an unknown legacy slug is

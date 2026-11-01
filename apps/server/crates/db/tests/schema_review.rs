@@ -45,9 +45,10 @@
 //!   on new rows; it validates after the repair.
 //! - review 3, item 20: every submission / file-attempt arc table names
 //!   exactly one of the two.
-//! - lane C, item 17: one platform day (Asia/Almaty): `platform_date` and
-//!   `platform_day_start` cut days at local midnight, and a date binds as
-//!   `date` both ways.
+//! - lane C, item 17: one platform day (`AB__SERVER__TIME_ZONE`, default
+//!   Asia/Almaty): `platform_date` and `platform_day_start` cut days at the
+//!   midnight of the zone the pool passes as `ab.time_zone`, and a `Day`
+//!   binds as `date`.
 //! - lane C, item 11: membership is an `enrolments` row; the previous
 //!   release's trail-run writes are mirrored into it until the contract.
 //! - lane C, items 14/15: course_progress derives its percent and the
@@ -1318,7 +1319,7 @@ async fn user_with_opt_out(pool: &PgPool) -> uuid::Uuid {
 
 #[ab_testdb::test]
 async fn the_platform_day_is_almatys(pool: PgPool) {
-    use ab_core::time::Date;
+    use ab_core::time::Day;
     let (before, after, start): (String, String, String) = sqlx::query_as(
         "SELECT platform_date('2026-11-01 18:59:59Z')::text,
                 platform_date('2026-11-01 19:00:00Z')::text,
@@ -1332,14 +1333,38 @@ async fn the_platform_day_is_almatys(pool: PgPool) {
         ("2026-11-01", "2026-11-02")
     );
     assert_eq!(start, "2026-11-01 19:00");
-    // A date binds and decodes as Postgres `date` (binary on the wire).
-    let day = Date::parse("2024-02-29").unwrap();
-    let (text, back): (String, Date) = sqlx::query_as("SELECT $1::text, $1")
+    // A day binds as Postgres `date` (binary on the wire).
+    let day: Day = "2024-02-29".parse().unwrap();
+    let text: String = sqlx::query_scalar("SELECT $1::date::text")
         .bind(day)
         .fetch_one(&pool)
         .await
         .unwrap();
-    assert_eq!((text.as_str(), back), ("2024-02-29", day));
+    assert_eq!(text, "2024-02-29");
+
+    // The zone is the session's `ab.time_zone`, which the pool sets from the
+    // config (the default here); without it SQL keeps Asia/Almaty.
+    let mut conn = pool.acquire().await.unwrap();
+    let zone: String = sqlx::query_scalar("SELECT current_setting('ab.time_zone')")
+        .fetch_one(&mut *conn)
+        .await
+        .unwrap();
+    assert_eq!(zone, "Asia/Almaty");
+    let at_utc_evening = "SELECT platform_date('2026-11-01 20:00:00Z')::text";
+    for (setting, date) in [("UTC", "2026-11-01"), ("", "2026-11-02")] {
+        sqlx::query("SELECT set_config('ab.time_zone', $1, false)")
+            .bind(setting)
+            .execute(&mut *conn)
+            .await
+            .unwrap();
+        let got: String = sqlx::query_scalar(at_utc_evening)
+            .fetch_one(&mut *conn)
+            .await
+            .unwrap();
+        assert_eq!(got, date, "ab.time_zone = {setting:?}");
+    }
+    // The connection goes back to the pool with a changed zone: close it.
+    conn.close().await.unwrap();
 }
 
 #[ab_testdb::test]

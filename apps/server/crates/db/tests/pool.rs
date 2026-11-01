@@ -1,6 +1,7 @@
 //! Review 3, item 39: the pool sets session limits and a name on connect
 //! (startup options, so any role gets them and they win over the role's
 //! `ALTER ROLE ... SET`); migrate and admin run without a statement limit.
+//! The platform zone goes in the same way (`ab.time_zone`).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::config::{DatabaseConfig, DatabaseLimits};
@@ -45,6 +46,12 @@ async fn the_pool_names_its_sessions_and_bounds_them(pool: PgPool) {
             "7s".into()
         )
     );
+    // The platform zone rides along for SQL's platform day (default config).
+    let zone: Option<String> = sqlx::query_scalar("SELECT current_setting('ab.time_zone', true)")
+        .fetch_one(&worker)
+        .await
+        .unwrap();
+    assert_eq!(zone.as_deref(), Some("Asia/Almaty"));
     let timed_out = sqlx::query("SELECT pg_sleep(2)")
         .execute(
             &ab_db::connect_with(

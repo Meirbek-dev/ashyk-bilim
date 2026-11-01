@@ -445,12 +445,16 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   are re-derived from `xp_transactions` / `gamification_completions`.
 - **No import artefacts**: the `etl_*` tables and every `legacy_uuid` except `blocks.legacy_uuid` (lesson
   content still links blocks by it) were dropped at T+32d.
-- **One platform day** (Asia/Almaty, `20261102030000_platform_day.sql`): `platform_date(ts)` and
-  `platform_day_start(date)` decide the XP daily cap, the login/learning streaks (in the UPDATE itself), the
-  login bonus key and the rollup/risk snapshot dates; the zone lives only in `platform_time_zone()`. Dates
-  bind as `date` (`ab_core::time::Date`, `day as _` in `query!`). Today's XP (`daily_xp_earned` in the API)
-  is summed from `xp_transactions` at read time, never stored (the column is written for the previous release
-  until the lane C contract drops it).
+- **One platform day in SQL too** (§16 `AB__SERVER__TIME_ZONE`; `20261102030000_platform_day.sql`,
+  `20261102061000_platform_time_zone_setting.sql`): Rust decides dates with `ab_core::time::Day` (rollup/risk
+  snapshot dates, the login bonus key; bound as `date`, `day as _` in `query!`); SQL that compares stored
+  instants with today calls `platform_date(ts)` / `platform_day_start(date)` (today's XP, the login/learning
+  streaks decided in the UPDATE itself, rollup retention). Their zone, `platform_time_zone()`, is the session
+  setting `ab.time_zone`, which every pool passes from the config at connect (`ab_db::with_platform_zone`, the
+  test pools too); a session without it (psql, `just db sql`) uses `Asia/Almaty`. The functions are STABLE:
+  never use them in an index or a generated column. Today's XP (`daily_xp_earned` in the API) is summed from
+  `xp_transactions` at read time, never stored (the column is written for the previous release until the lane C
+  contract drops it).
 - **Membership is an `enrolments` row** (`20261102030100_enrolments.sql`, REWRITE 5.6 n5): `(course_id, user_id)` PK,
   written with the trail run in the same transaction (join, enrol by a roster manager, a first mark) and deleted on
   leave / removal; every member predicate (`has_trail_run`, `course_members`, `takes_assessments`, the work queue,
@@ -761,6 +765,10 @@ Read their app-specific `AGENTS.md` for client conventions and `docs/INFRA.md` f
   `..._LOCK_TIMEOUT_SECS`; 0 = off) and `application_name` `ashyq-serve|worker|admin|migrate`. `ashyq migrate`
   runs without statement and lock limits, `ashyq admin` without a statement limit; a job that needs longer
   statements sets `SET LOCAL statement_timeout` in its own transaction.
+- One platform time zone, `AB__SERVER__TIME_ZONE` (IANA name, default `Asia/Almaty`; the tz database is bundled
+  into the binary): the XP daily cap, login/learning streaks, the daily login bonus and analytics rollup dates
+  turn over at its midnight (`ab_core::time::Day`, which binds as Postgres `date`). Instants stay `timestamptz`;
+  dashboards bucket by the zone the client sends.
 - Data migrations that rewrite stored shapes (`ashyq admin migrate-editor-docs`, `migrate-themes`,
   `migrate-locales`) are idempotent commands with `--dry-run`, not SQL migrations: they run against live data on
   the operator's schedule (`docs/STAGE-2-CUTOVER.md`).

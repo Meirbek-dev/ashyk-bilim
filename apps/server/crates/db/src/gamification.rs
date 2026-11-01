@@ -12,8 +12,9 @@ pub struct ProfileRow {
     pub user_id: UserId,
     pub total_xp: i32,
     pub level: i32,
-    /// XP awarded since the platform day began (Asia/Almaty midnight),
-    /// summed from `xp_transactions` at read time; admin awards count.
+    /// XP awarded since the platform day began (`platform_day_start` in SQL,
+    /// the configured zone), summed from `xp_transactions` at read time;
+    /// admin awards count.
     pub daily_xp_earned: i32,
     pub login_streak: i32,
     pub learning_streak: i32,
@@ -214,7 +215,7 @@ pub async fn record_award(
     Ok(Recorded::New(row))
 }
 
-/// Move one streak by the platform day (Asia/Almaty).
+/// Move one streak by the platform day (`platform_date` in SQL).
 ///
 /// The same day keeps it (at least 1), the next day extends it, a gap or no
 /// previous touch resets it to 1. Decided in the UPDATE itself, so parallel
@@ -265,14 +266,6 @@ pub async fn touch_streak(
         .map(|r| (r.current, r.longest)),
     };
     Ok(row)
-}
-
-/// Days from 1970-01-01 to today's platform date: the login bonus key.
-pub async fn platform_day_number(pool: &PgPool) -> Result<i32> {
-    let day = sqlx::query_scalar!(r#"SELECT platform_date(now()) - DATE '1970-01-01' AS "day!""#)
-        .fetch_one(pool)
-        .await?;
-    Ok(day)
 }
 
 /// Count a first completion (`kind` = `activity` | `course`) whatever the

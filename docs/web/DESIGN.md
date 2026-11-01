@@ -80,11 +80,11 @@ behind it; it never colors a title, a row or a card background.
 
 ## 4. Typography
 
-- Sans: `@fontsource-variable/inter@5.3.0` (OFL-1.1), `wght.css` + `wght-italic.css`: 18/18 Kazakh letters
-  (`cyrillic` + `cyrillic-ext`) in roman and italic, `tnum` present; Onest and Golos Text lack the italic.
-- Heading (`font-heading`, every `h1`-`h3` by base style, big numbers): `@fontsource-variable/geologica@5.3.0`
-  (OFL-1.1), 18/18 Kazakh letters; Unbounded and Manrope were rejected (no қ, ң).
-- Mono: `@fontsource-variable/geist-mono@5.3.0` (OFL-1.1): 18/18 Kazakh letters (JetBrains Mono lacks 12).
+- Default set: Inter (reading, UI; roman + italic), Geologica (`font-heading`: every `h1`-`h3`, big numbers); Geist
+  Mono for code in every set. Others, one family each: `geist`, `google`, `plex`, `inter-tight`, `sn-pro`, `rubik`,
+  `ubuntu`, `onest` (no italic), `noto`, `literata` (serif), `system`. Picked in /settings/appearance: cookie `ab_font`
+  (this browser), SSR `html[data-font]`, tokens.css maps it to `--typeface-*`. Each face: 18/18 Kazakh letters and
+  tabular digits checked in the shipped woff2 (fail: Manrope, Unbounded, Wix Madefor, Sofia Sans, JetBrains Mono).
 - Weights: `font-normal` (body), `font-medium` (labels, buttons, table headers), `font-semibold` (headings).
 - Numbers that line up (tables, scores, timers, counters) use `tabular-nums`.
 - Never all-caps or letter-spaced text. Width at most `max-w-prose` for reading and 80ch for forms.

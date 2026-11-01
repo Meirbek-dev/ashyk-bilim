@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use ab_core::assessments::{StreakKind, XpSource};
 use ab_core::id::{UserId, XpTransactionId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
+use ab_core::time::Day;
 use ab_core::{Error, ErrorCode, FieldError, Result};
 use ab_db::gamification::{
     ConfigRow, LeaderboardRow, NewTransaction, ProfileRow, Recorded, TransactionRow,
@@ -153,12 +154,12 @@ pub struct Dashboard {
     pub daily_xp: DailyXp,
 }
 
-/// Today's XP against the daily cap, as `award` judges it (the platform day,
-/// Asia/Almaty; admin awards excluded from the cap but counted, like the
-/// stored total).
+/// Today's XP against the daily cap, as `award` judges it (platform day, admin awards
+/// excluded from the cap but counted, like the stored total).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DailyXp {
-    /// XP earned since the platform day began (`ProfileRow::daily_xp_earned`).
+    /// XP earned since the platform day's midnight (`ProfileRow::daily_xp_earned`,
+    /// summed from the ledger at read time).
     pub earned_today: i32,
     /// The effective cap; `None` when unlimited.
     pub limit: Option<i32>,
@@ -312,7 +313,7 @@ impl GamificationService {
     }
 
     /// Legacy `update_streak`: same day keeps, next day extends, a gap
-    /// resets - days are platform days (Asia/Almaty), decided in SQL.
+    /// resets - days are platform days ([`Day`]), decided in SQL.
     pub async fn record_streak(&self, user_id: UserId, kind: StreakKind) -> Result<StreakUpdate> {
         ab_db::gamification::ensure_profile(&self.pool, user_id).await?;
         let (current, longest) = ab_db::gamification::touch_streak(&self.pool, user_id, kind)
@@ -550,7 +551,7 @@ impl GamificationService {
 
 /// Best-effort side effects other slices call; failures are logged.
 pub mod hooks {
-    use super::{AwardRequest, GamificationService, StreakKind, XpSource};
+    use super::{AwardRequest, Day, GamificationService, StreakKind, XpSource};
     use ab_core::assessments::AssessmentKind;
     use ab_core::id::{ActivityId, CourseId, SubmissionId, UserId};
     use sqlx::PgPool;
@@ -672,14 +673,10 @@ pub mod hooks {
             "login_streak",
             service.record_streak(user_id, StreakKind::Login).await,
         );
-        // The key is the platform day's number, so one bonus per Almaty day.
-        let day = match ab_db::gamification::platform_day_number(pool).await {
-            Ok(day) => day.to_string(),
-            Err(err) => {
-                log_err::<()>("login_bonus", Err(err));
-                return;
-            }
-        };
+        // The day as days since 1970-01-01 (the bonus key since before the platform zone).
+        let day = Day::today()
+            .days_since(Day(jiff::civil::date(1970, 1, 1)))
+            .to_string();
         log_err(
             "login_bonus",
             service

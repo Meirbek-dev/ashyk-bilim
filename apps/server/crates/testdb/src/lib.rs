@@ -60,7 +60,8 @@ where
             // Like `#[sqlx::test]`: no test takes the whole cluster.
             .max_connections(5)
             .idle_timeout(Some(Duration::from_secs(1)))
-            .connect_lazy_with(master.clone().database(&name));
+            // The session gets the platform zone like a server pool (`ab.time_zone`).
+            .connect_lazy_with(ab_db::with_platform_zone(master.clone().database(&name)));
         test(pool.clone()).await;
         pool.close().await;
         drop_database(&mut admin, &name).await;

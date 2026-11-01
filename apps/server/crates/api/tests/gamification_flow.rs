@@ -473,8 +473,9 @@ async fn parallel_awards_respect_the_daily_cap(pool: PgPool) {
     assert_eq!((total, profile.daily_xp_earned, ledger), (400, 400, 400));
 }
 
-/// REWRITE 5.7 n2: the daily cap, the streaks and the login bonus count
-/// platform days (midnight Asia/Almaty, `platform_date`), not UTC days.
+/// The daily cap, the streaks and the login bonus count platform days
+/// (midnight Asia/Almaty, the default zone), not UTC days; SQL's
+/// `platform_date` and Rust's `Day` agree on them.
 #[ab_testdb::test]
 async fn the_platform_day_starts_at_almaty_midnight(pool: PgPool) {
     use ab_core::assessments::{StreakKind, XpSource};
@@ -541,17 +542,13 @@ async fn the_platform_day_starts_at_almaty_midnight(pool: PgPool) {
     assert_eq!(streak_after("0 seconds").await, 4);
     assert_eq!(streak_after("1 day 1 second").await, 1);
 
-    // The login bonus is keyed by the platform day's number.
-    let day: i32 = sqlx::query_scalar("SELECT platform_date(now()) - DATE '1970-01-01'")
+    // SQL's day (the ledger, the streaks) is Rust's (the login bonus key,
+    // rollup dates): the pool hands the configured zone to the session.
+    let sql_today: String = sqlx::query_scalar("SELECT platform_date(now())::text")
         .fetch_one(&pool)
         .await
         .unwrap();
-    assert_eq!(
-        ab_db::gamification::platform_day_number(&pool)
-            .await
-            .unwrap(),
-        day
-    );
+    assert_eq!(sql_today, ab_core::time::Day::today().to_string());
 }
 
 /// UX-172: one rank rule - competition rank (ties share, the next skips) on

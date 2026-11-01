@@ -5,6 +5,26 @@
 @import '@fontsource-variable/inter/wght-italic.css';
 @import '@fontsource-variable/geologica/wght.css';
 @import '@fontsource-variable/geist-mono/wght.css';
+/* The other [data-font] sets (tokens.css): a face is downloaded only when the page uses it. */
+@import '@fontsource-variable/geist/wght.css';
+@import '@fontsource-variable/geist/wght-italic.css';
+@import '@fontsource-variable/google-sans/opsz.css';
+@import '@fontsource-variable/google-sans/opsz-italic.css';
+@import '@fontsource-variable/ibm-plex-sans/wght.css';
+@import '@fontsource-variable/ibm-plex-sans/wght-italic.css';
+@import '@fontsource-variable/inter-tight/wght.css';
+@import '@fontsource-variable/inter-tight/wght-italic.css';
+@import '@fontsource-variable/sn-pro/wght.css';
+@import '@fontsource-variable/sn-pro/wght-italic.css';
+@import '@fontsource-variable/rubik/wght.css';
+@import '@fontsource-variable/rubik/wght-italic.css';
+@import '@fontsource-variable/ubuntu-sans/wght.css';
+@import '@fontsource-variable/ubuntu-sans/wght-italic.css';
+@import '@fontsource-variable/onest/wght.css';
+@import '@fontsource-variable/noto-sans/wght.css';
+@import '@fontsource-variable/noto-sans/wght-italic.css';
+@import '@fontsource-variable/literata/opsz.css';
+@import '@fontsource-variable/literata/opsz-italic.css';
 @import './tokens.css';
 
 /* The stock kit's dark: follows the mode attribute, not only the media query: an explicit data-mode="dark", or the

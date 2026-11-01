@@ -56,6 +56,7 @@ pub fn test_config() -> Config {
             cors_origins: vec![],
             web_url: None,
             web_links: ab_core::links::LinkScheme::Legacy,
+            time_zone: ab_core::time::DEFAULT_TIME_ZONE.into(),
         },
         database: DatabaseConfig {
             url: SecretString::from("postgres://injected-pool-unused"),

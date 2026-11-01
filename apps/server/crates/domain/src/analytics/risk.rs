@@ -419,7 +419,7 @@ pub async fn enrich_risk_rows(
     let mut course_ids: Vec<CourseId> = rows.iter().map(|r| r.course_id).collect();
     course_ids.sort_unstable();
     course_ids.dedup();
-    let before = ab_db::analytics::platform_date_at(pool, Some(generated_at)).await?;
+    let before = ab_core::time::Day::of_unix(generated_at);
     let previous: HashMap<(CourseId, UserId), (RiskLevel, f64)> =
         ab_db::analytics::previous_risk_snapshots(pool, &course_ids, before)
             .await?

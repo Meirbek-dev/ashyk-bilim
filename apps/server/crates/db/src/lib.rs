@@ -83,7 +83,8 @@ pub async fn connect(config: &DatabaseConfig, process: Process) -> Result<PgPool
 /// [`connect`] with parsed options (tests reuse a test database's options).
 ///
 /// The limits go into the startup packet, so they hold for any role and
-/// override its `ALTER ROLE ... SET` defaults.
+/// override its `ALTER ROLE ... SET` defaults; so does the platform zone
+/// ([`with_platform_zone`]).
 pub async fn connect_with(
     options: PgConnectOptions,
     config: &DatabaseConfig,
@@ -108,6 +109,7 @@ pub async fn connect_with(
             ),
             ("lock_timeout", format!("{lock}s")),
         ]);
+    let options = with_platform_zone(options);
     let pool = PgPoolOptions::new()
         .max_connections(config.max_connections)
         .min_connections(config.min_connections)
@@ -115,6 +117,22 @@ pub async fn connect_with(
         .connect_with(options)
         .await?;
     Ok(pool)
+}
+
+/// Pass the platform zone to the session as `ab.time_zone`.
+///
+/// SQL that needs the platform day (`platform_date()`,
+/// `platform_day_start()`) reads it through `platform_time_zone()`, so Rust
+/// ([`ab_core::time::Day`], `AB__SERVER__TIME_ZONE`) and SQL cut days at the
+/// same midnight. A session without it (psql, `just db sql`) falls back to
+/// `Asia/Almaty`. Every pool goes through here, the test pools of
+/// `ab-testdb` too.
+#[must_use]
+pub fn with_platform_zone(options: PgConnectOptions) -> PgConnectOptions {
+    match ab_core::time::time_zone().iana_name() {
+        Some(zone) => options.options([("ab.time_zone", zone)]),
+        None => options,
+    }
 }
 
 /// Cheap connectivity probe for readiness checks.

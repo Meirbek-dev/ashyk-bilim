@@ -4,8 +4,9 @@
 //! The read models are computed in the domain over an in-memory context
 //! loaded for a set of course ids, so every query here is static,
 //! compile-checked SQL over `= ANY($ids)` with optional bounds expressed as
-//! `($n IS NULL OR …)`. Timestamps are epoch seconds; dates travel as
-//! `YYYY-MM-DD` text (sqlx has no `date` type without a calendar crate).
+//! `($n IS NULL OR …)`. Timestamps are epoch seconds; dates bind as
+//! [`Day`] (`date`, unchecked by the macros: `day as _`) and read back as
+//! `YYYY-MM-DD` text.
 
 use ab_core::Result;
 use ab_core::assessments::{
@@ -16,7 +17,7 @@ use ab_core::id::{
     ActivityId, AssessmentId, BulkActionId, ChapterId, CourseId, FileAttemptId, GradingEntryId,
     InterventionId, SavedViewId, SubmissionId, TrailRunId, UserId, UsergroupId,
 };
-use ab_core::time::Date;
+use ab_core::time::Day;
 use sqlx::PgPool;
 
 /// Epoch seconds → `to_timestamp()` argument. Exact below 2^53.
@@ -666,28 +667,11 @@ pub async fn list_bulk_actions_for_assessment(
     Ok(rows)
 }
 
-// ── Platform dates ──────────────────────────────────────────────────────────
-
-/// The platform date (Asia/Almaty, `platform_date`) of an instant; `None`
-/// = now. Rollup rows are labelled with it (REWRITE 5.7 n2).
-pub async fn platform_date_at<'e>(
-    db: impl sqlx::PgExecutor<'e>,
-    unix: Option<i64>,
-) -> Result<Date> {
-    let date = sqlx::query_scalar!(
-        r#"SELECT platform_date(coalesce(to_timestamp($1::bigint), now())) AS "date!: Date""#,
-        unix
-    )
-    .fetch_one(db)
-    .await?;
-    Ok(date)
-}
-
 // ── Rollups: writes ─────────────────────────────────────────────────────────
 
 /// Remove every rollup row for one `YYYY-MM-DD` date so the day can be
 /// rebuilt from scratch inside the caller's transaction.
-pub async fn delete_rollups_for_date(conn: &mut sqlx::PgConnection, date: Date) -> Result<()> {
+pub async fn delete_rollups_for_date(conn: &mut sqlx::PgConnection, date: Day) -> Result<()> {
     sqlx::query!(
         "DELETE FROM daily_teacher_metrics WHERE metric_date = $1",
         date as _
@@ -830,7 +814,7 @@ pub struct TeacherMetricsWrite {
 
 pub async fn insert_teacher_metrics(
     conn: &mut sqlx::PgConnection,
-    date: Date,
+    date: Day,
     generated_at: i64,
     w: &TeacherMetricsWrite,
 ) -> Result<()> {
@@ -894,7 +878,7 @@ pub struct CourseMetricsWrite {
 
 pub async fn insert_course_metrics(
     conn: &mut sqlx::PgConnection,
-    date: Date,
+    date: Day,
     generated_at: i64,
     w: &CourseMetricsWrite,
 ) -> Result<()> {
@@ -954,7 +938,7 @@ pub struct EngagementWrite {
 
 pub async fn insert_engagement(
     conn: &mut sqlx::PgConnection,
-    date: Date,
+    date: Day,
     generated_at: i64,
     w: &EngagementWrite,
 ) -> Result<()> {
@@ -1006,7 +990,7 @@ pub struct AssessmentMetricsWrite {
 
 pub async fn insert_assessment_metrics(
     conn: &mut sqlx::PgConnection,
-    date: Date,
+    date: Day,
     generated_at: i64,
     w: &AssessmentMetricsWrite,
 ) -> Result<()> {
@@ -1072,7 +1056,7 @@ pub struct UserCourseProgressWrite {
 
 pub async fn insert_user_course_progress(
     conn: &mut sqlx::PgConnection,
-    date: Date,
+    date: Day,
     generated_at: i64,
     w: &UserCourseProgressWrite,
 ) -> Result<()> {
@@ -1126,7 +1110,7 @@ pub struct RiskSnapshotWrite {
 
 pub async fn insert_risk_snapshot(
     conn: &mut sqlx::PgConnection,
-    date: Date,
+    date: Day,
     generated_at: i64,
     w: &RiskSnapshotWrite,
 ) -> Result<()> {
@@ -1195,7 +1179,7 @@ pub struct TeacherMetricsRow {
 pub async fn latest_teacher_metrics_before(
     pool: &PgPool,
     teacher_user_id: Option<UserId>,
-    before: Date,
+    before: Day,
 ) -> Result<Option<TeacherMetricsRow>> {
     let row = sqlx::query_as!(
         TeacherMetricsRow,
@@ -1231,7 +1215,7 @@ pub struct CourseMetricsRow {
 pub async fn course_metrics_before(
     pool: &PgPool,
     course_ids: &[CourseId],
-    before: Date,
+    before: Day,
 ) -> Result<Vec<CourseMetricsRow>> {
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
@@ -1264,7 +1248,7 @@ pub struct RiskSnapshotRow {
 pub async fn previous_risk_snapshots(
     pool: &PgPool,
     course_ids: &[CourseId],
-    before: Date,
+    before: Day,
 ) -> Result<Vec<RiskSnapshotRow>> {
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
@@ -1289,7 +1273,7 @@ pub async fn previous_risk_snapshots(
 pub async fn previous_at_risk_count(
     pool: &PgPool,
     course_ids: &[CourseId],
-    before: Date,
+    before: Day,
 ) -> Result<Option<i64>> {
     let ids = uuids(course_ids);
     let row = sqlx::query!(
@@ -1343,7 +1327,7 @@ pub struct RollupCounts {
     pub risk_rows: i64,
 }
 
-pub async fn rollup_counts(pool: &PgPool, date: Date) -> Result<RollupCounts> {
+pub async fn rollup_counts(pool: &PgPool, date: Day) -> Result<RollupCounts> {
     let row = sqlx::query!(
         r#"SELECT
              (SELECT count(*) FROM daily_teacher_metrics WHERE metric_date = $1) AS "teacher_rows!",
