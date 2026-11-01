@@ -37,12 +37,21 @@ pub async fn get_trail(
 ) -> ApiResult<Json<Trail>> {
     let mut trail = Trail::for_actor(state.trail.get(&actor).await?, &actor);
     if query.cursor.is_some() || query.limit.is_some() {
+        // The cursor is the last run's course id; a run id (the cursor
+        // before enrolments) still names its run's course.
+        let cursor = query.cursor.as_deref().map(|c| {
+            trail
+                .runs
+                .iter()
+                .find(|r| r.id.to_string() == c)
+                .map_or_else(|| c.to_owned(), |r| r.course_id.to_string())
+        });
         let (runs, next) = ab_core::page_after(
             std::mem::take(&mut trail.runs),
-            query.cursor.as_deref(),
+            cursor.as_deref(),
             query.limit.unwrap_or(20),
             100,
-            |r| r.id.to_string(),
+            |r| r.course_id.to_string(),
         )?;
         trail.runs = runs;
         trail.next_cursor = next;
@@ -255,26 +264,13 @@ pub async fn list_course_learners(
     Query(query): Query<crate::dto::progress::CourseLearnersQuery>,
 ) -> ApiResult<Json<crate::dto::progress::CourseLearnerPage>> {
     use crate::dto::progress::{CourseLearner, CourseLearnerAction, CourseLearnerPage};
-    let cursor = query
-        .cursor
-        .as_deref()
-        .map(|c| {
-            c.parse().map_err(|_| {
-                ab_core::Error::validation(vec![ab_core::FieldError {
-                    field: "cursor".into(),
-                    code: "invalid".into(),
-                    message: "not a cursor of this list".into(),
-                }])
-            })
-        })
-        .transpose()?;
     let (rows, next) = state
         .trail
         .course_learners(
             &actor,
             id,
             query.q.as_deref(),
-            cursor,
+            query.cursor.as_deref(),
             query.limit.unwrap_or(20),
         )
         .await?;
@@ -303,7 +299,7 @@ pub async fn list_course_learners(
                 },
             })
             .collect(),
-        next_cursor: next.map(|c| c.to_string()),
+        next_cursor: next,
     }))
 }
 

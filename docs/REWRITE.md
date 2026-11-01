@@ -666,9 +666,12 @@ in the order it can be done, each step a forward migration on the current schema
    before the counter goes.
 5. **Enrolments** (item 11): done (ARCHITECTURE §8 "Membership is an `enrolments` row";
    `progress_flow::membership_is_the_enrolment_not_the_trail`, `permission_matrix::the_matrix_holds_with_trails_emptied`).
-   Left: the roster (`list_course_learners`, keyset cursor = trail run id in the API), `GET /trail` and
-   `/enrollments` still list trail runs (their DTOs carry the run id/status); moving them to `enrolments` needs an
-   additive cursor/DTO change. The sync trigger goes in the contract.
+   The roster (keyset `(enrolled_at, user_id)`, cursor `"<µs>.<user id>"`; an old run-id cursor resolves through
+   `trail_runs`), `GET /trail` and `/enrollments` (cursor = course id; a run id still works) read enrolments too
+   (`progress_flow::roster_and_trail_read_enrolments`, review 3 wave 2). The sync trigger goes in the contract.
+   Left: the DTOs' `id` (run / step id, the course / activity id without a row) and `status` come from a LEFT JOIN
+   on `trail_runs` / `trail_steps`, and `legacy_learner_cursor` reads `trail_runs`; both go with the trail tables
+   (n8 step 2).
 6. **One submission pipeline** (item 12). `file_submission_attempts` becomes `submissions` rows of an
    `assessments.kind = 'assignment'` task: map `file_submissions` → `assessments` (policy columns already
    overlap), attempts → `submissions` (files to an `attempt_files` table as in 5.4, grades to `grading_entries`;
@@ -685,13 +688,16 @@ in the order it can be done, each step a forward migration on the current schema
    the lesson projection reads it instead of `trail_steps`, and a trigger mirrors `activity_progress.completed_at`
    of graded kinds (both releases). `maintenance:reconcile` re-projects weekly and logs `changed` and
    `completion_drift` (`ab_db::progress::completion_drift`). Remaining, in order, one release apart:
-   1. Graded writers own their completion: where the projector upserts a graded row
-      (`project_submissions` / `project_file_attempts` results), insert the `completions` row when
-      `completed_at` is set and delete it when cleared, in the same transaction; then a contract drops
-      `activity_progress_sync_completion`.
-   2. `trail_steps` readers move to `completions` (`Trail::hydrate` for `GET /trail`, the `completed_steps`
-      of the user/course rollup, exports and drillthrough); the writers stop inserting steps; a contract drops
-      `trail_steps` (and `trails` / `trail_runs` once n5's roster and listing moved to `enrolments`).
+   1. Done (review 3 wave 2): the projector's graded write calls `sync_graded_completion` in its transaction
+      (`progress_flow::graded_writers_own_their_completions` runs with the trigger off);
+      `20261103071000` (contract C2) drops `activity_progress_sync_completion`.
+   2. Readers done: `Trail::hydrate` lists completions of lesson-type activities as steps (the rollups and
+      drillthrough already read `course_progress` counts, no export reads steps). Left, one release after the
+      contract C2 release (the release before it still reads steps and runs): the writers stop inserting
+      steps and runs (`add_activity`, `lock_member_joined`, `ensure_trail*`, `insert_trail_step`, `drop_run`'s
+      delete), the DTO ids lose their LEFT JOINs (the course / activity id becomes the `id`, already the
+      fallback), `legacy_learner_cursor` goes, and a contract drops `trail_steps`, `trail_runs`, `trails`
+      (with `trail_runs_sync_enrolment` already gone).
    3. `required` per activity: the 5.4 view counts `a.required`, today a projection column
       (`activity_progress.required`, always true for graded kinds and for a new lesson row). Add
       `activities.required boolean NOT NULL DEFAULT true`, backfill from the projection, and have the

@@ -477,19 +477,40 @@ pub struct TrailRunRow {
     pub updated_at: i64,
 }
 
-/// The trail's member runs: a run of a course the owner now staffs is kept
-/// (it counts again once they leave the staff) but not listed (BUG-292).
-pub async fn list_trail_runs(pool: &PgPool, trail_id: TrailId) -> Result<Vec<TrailRunRow>> {
+/// One course the user is enrolled in, as the trail lists it.
+///
+/// The enrolment (the membership, REWRITE 5.6 n5) with the legacy run's id and
+/// status where the run exists (every release still writes one; once the
+/// trail tables go there is none).
+#[derive(Debug, Clone)]
+pub struct EnrolledRunRow {
+    pub course_id: CourseId,
+    pub user_id: UserId,
+    pub run_id: Option<TrailRunId>,
+    /// The run's status, `in_progress` without one.
+    pub status: TrailRunStatus,
+    pub enrolled_at: i64,
+    /// The run's `updated_at`, `enrolled_at` without one.
+    pub updated_at: i64,
+}
+
+/// The user's member enrolments, oldest first: an enrolment in a course the
+/// user now staffs is kept (it counts again once they leave the staff) but
+/// not listed (BUG-292).
+pub async fn list_enrolled_runs(pool: &PgPool, user_id: UserId) -> Result<Vec<EnrolledRunRow>> {
     let rows = sqlx::query_as!(
-        TrailRunRow,
-        r#"SELECT id AS "id: TrailRunId", trail_id AS "trail_id: TrailId",
-                  course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  status AS "status: TrailRunStatus", data,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM trail_runs WHERE trail_id = $1 AND NOT is_course_staff(course_id, user_id)
-           ORDER BY created_at, id"#,
-        trail_id.0
+        EnrolledRunRow,
+        r#"SELECT e.course_id AS "course_id: CourseId", e.user_id AS "user_id: UserId",
+                  r.id AS "run_id?: TrailRunId",
+                  coalesce(r.status, 'in_progress') AS "status!: TrailRunStatus",
+                  (extract(epoch FROM e.enrolled_at))::bigint AS "enrolled_at!",
+                  (extract(epoch FROM coalesce(r.updated_at, e.enrolled_at)))::bigint
+                      AS "updated_at!"
+           FROM enrolments e
+           LEFT JOIN trail_runs r ON r.course_id = e.course_id AND r.user_id = e.user_id
+           WHERE e.user_id = $1 AND NOT is_course_staff(e.course_id, e.user_id)
+           ORDER BY e.enrolled_at, e.course_id"#,
+        user_id.0
     )
     .fetch_all(pool)
     .await?;
@@ -713,33 +734,41 @@ pub async fn delete_trail_run<'e>(
     Ok(deleted.rows_affected() > 0)
 }
 
+/// A lesson-type activity the user completed, as the trail lists it.
+///
+/// The `completions` row with the legacy step's id and teacher fields where
+/// the step exists. Graded kinds are left out: they complete through their
+/// submissions and never had a step.
 #[derive(Debug, Clone)]
-pub struct TrailStepRow {
-    pub id: TrailStepId,
-    pub trail_run_id: TrailRunId,
-    pub trail_id: TrailId,
+pub struct CompletedStepRow {
     pub activity_id: ActivityId,
     pub course_id: CourseId,
-    pub user_id: UserId,
-    pub complete: bool,
+    pub step_id: Option<TrailStepId>,
     pub teacher_verified: bool,
     pub grade: i32,
-    pub data: serde_json::Value,
+    /// The step's `created_at`, else the completion's time.
     pub created_at: i64,
     pub updated_at: i64,
 }
 
-pub async fn list_trail_steps(pool: &PgPool, trail_id: TrailId) -> Result<Vec<TrailStepRow>> {
+pub async fn list_completed_steps(pool: &PgPool, user_id: UserId) -> Result<Vec<CompletedStepRow>> {
     let rows = sqlx::query_as!(
-        TrailStepRow,
-        r#"SELECT id AS "id: TrailStepId", trail_run_id AS "trail_run_id: TrailRunId",
-                  trail_id AS "trail_id: TrailId", activity_id AS "activity_id: ActivityId",
-                  course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  complete, teacher_verified, grade, data,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM trail_steps WHERE trail_id = $1 ORDER BY created_at, id"#,
-        trail_id.0
+        CompletedStepRow,
+        r#"SELECT c.activity_id AS "activity_id: ActivityId", a.course_id AS "course_id: CourseId",
+                  s.id AS "step_id?: TrailStepId",
+                  coalesce(s.teacher_verified, false) AS "teacher_verified!",
+                  coalesce(s.grade, 0) AS "grade!",
+                  (extract(epoch FROM coalesce(s.created_at, c.completed_at)))::bigint
+                      AS "created_at!",
+                  (extract(epoch FROM coalesce(s.updated_at, c.completed_at)))::bigint
+                      AS "updated_at!"
+           FROM completions c
+           JOIN activities a ON a.id = c.activity_id
+           LEFT JOIN trail_steps s ON s.activity_id = c.activity_id AND s.user_id = c.user_id
+           WHERE c.user_id = $1 AND a.activity_type <> 'file_submission'
+             AND NOT EXISTS (SELECT 1 FROM assessments x WHERE x.activity_id = a.id)
+           ORDER BY coalesce(s.created_at, c.completed_at), c.activity_id"#,
+        user_id.0
     )
     .fetch_all(pool)
     .await?;
@@ -795,6 +824,42 @@ pub async fn delete_completion(
     .execute(conn)
     .await?;
     Ok(deleted.rows_affected() == 1)
+}
+
+/// Make a graded activity's `completions` row follow its projection row.
+///
+/// REWRITE 5.6 n8 step 1: present, at the projection's `completed_at`,
+/// while that is set; gone when it is cleared or the row is missing. Call it
+/// right after the projection write, in the same transaction. Lesson-type
+/// completions are the learner's mark and never follow the projection.
+pub async fn sync_graded_completion(
+    conn: &mut PgConnection,
+    activity_id: ActivityId,
+    user_id: UserId,
+) -> Result<()> {
+    sqlx::query!(
+        "INSERT INTO completions (activity_id, user_id, completed_at)
+         SELECT activity_id, user_id, completed_at FROM activity_progress
+         WHERE activity_id = $1 AND user_id = $2 AND completed_at IS NOT NULL
+         ON CONFLICT (activity_id, user_id) DO UPDATE SET completed_at = EXCLUDED.completed_at
+         WHERE completions.completed_at IS DISTINCT FROM EXCLUDED.completed_at",
+        activity_id.0,
+        user_id.0
+    )
+    .execute(&mut *conn)
+    .await?;
+    sqlx::query!(
+        "DELETE FROM completions c
+         WHERE c.activity_id = $1 AND c.user_id = $2
+           AND NOT EXISTS (SELECT 1 FROM activity_progress p
+                           WHERE p.activity_id = c.activity_id AND p.user_id = c.user_id
+                             AND p.completed_at IS NOT NULL)",
+        activity_id.0,
+        user_id.0
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
 }
 
 /// How many completions and projection rows disagree.
@@ -896,7 +961,7 @@ pub async fn course_progress_pcts(
 }
 
 /// The user's progress in each listed course they are a member of
-/// ([`has_trail_run`]'s rule: a run, not staff); `0` before the first
+/// ([`has_trail_run`]'s rule: an enrolment, not staff); `0` before the first
 /// projection lands.
 pub struct MemberProgressRow {
     pub course_id: CourseId,
@@ -912,13 +977,13 @@ pub async fn member_progress(
     let ids: Vec<uuid::Uuid> = course_ids.iter().map(|c| c.0).collect();
     let rows = sqlx::query_as!(
         MemberProgressRow,
-        r#"SELECT tr.course_id AS "course_id!: CourseId",
+        r#"SELECT e.course_id AS "course_id!: CourseId",
                   coalesce(cp.progress_pct, 0) AS "progress_pct!",
                   (extract(epoch FROM cp.completed_at))::bigint AS "completed_at?"
-           FROM trail_runs tr
-           LEFT JOIN course_progress cp ON cp.course_id = tr.course_id AND cp.user_id = tr.user_id
-           WHERE tr.user_id = $1 AND tr.course_id = ANY($2)
-             AND NOT is_course_staff(tr.course_id, tr.user_id)"#,
+           FROM enrolments e
+           LEFT JOIN course_progress cp ON cp.course_id = e.course_id AND cp.user_id = e.user_id
+           WHERE e.user_id = $1 AND e.course_id = ANY($2)
+             AND NOT is_course_staff(e.course_id, e.user_id)"#,
         user_id.0,
         &ids
     )
@@ -944,8 +1009,8 @@ pub async fn teaching_stats(
     let rows = sqlx::query_as!(
         TeachingStatsRow,
         r#"SELECT c.id AS "course_id!: CourseId",
-                  (SELECT count(DISTINCT tr.user_id) FROM trail_runs tr
-                   WHERE tr.course_id = c.id AND NOT is_course_staff(tr.course_id, tr.user_id)) AS "learners!",
+                  (SELECT count(*) FROM enrolments e
+                   WHERE e.course_id = c.id AND NOT is_course_staff(e.course_id, e.user_id)) AS "learners!",
                   (SELECT count(*) FROM activities a WHERE a.course_id = c.id) AS "activities!",
                   (SELECT count(*) FROM submissions s
                    WHERE s.course_id = c.id AND NOT s.preview AND s.status = 'pending')
@@ -981,10 +1046,9 @@ pub async fn published_activity_counts(
     Ok(rows)
 }
 
-/// One member of a course (a trail run) with their progress.
+/// One member of a course (an enrolment) with their progress.
 #[derive(Debug, Clone)]
 pub struct CourseLearnerRow {
-    pub run_id: TrailRunId,
     pub user_id: UserId,
     pub username: String,
     pub display_name: String,
@@ -994,44 +1058,85 @@ pub struct CourseLearnerRow {
     pub completed_at: Option<i64>,
     pub last_activity_at: Option<i64>,
     pub enrolled_at: i64,
+    /// `enrolled_at` in microseconds: the keyset position with `user_id`.
+    pub enrolled_at_us: i64,
 }
 
-/// Newest members first (keyset on the run id, UUIDv7 = join time). `q`
-/// filters on a substring of the username, display name or email. Staff
-/// with a leftover run are no members (BUG-288).
+/// Where a page of [`list_course_learners`] starts: after the member
+/// enrolled at `enrolled_at_us` (microseconds since the epoch) with `user_id`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LearnerCursor {
+    pub enrolled_at_us: i64,
+    pub user_id: UserId,
+}
+
+/// Newest members first (keyset on `(enrolled_at, user_id)`). `q` filters
+/// on a substring of the username, display name or email. Staff with a
+/// leftover enrolment are no members (BUG-288).
 pub async fn list_course_learners(
     pool: &PgPool,
     course_id: CourseId,
     q: Option<&str>,
-    cursor: Option<TrailRunId>,
+    after: Option<LearnerCursor>,
     limit: i64,
 ) -> Result<Vec<CourseLearnerRow>> {
     let pattern = q.map(|q| format!("%{}%", crate::like_escape(q)));
     let rows = sqlx::query_as!(
         CourseLearnerRow,
-        r#"SELECT tr.id AS "run_id: TrailRunId", u.id AS "user_id: UserId", u.username,
+        r#"SELECT u.id AS "user_id: UserId", u.username,
                   u.display_name, u.email, u.avatar_key,
                   cp.progress_pct AS "progress_pct?",
                   (extract(epoch FROM cp.completed_at))::bigint AS "completed_at?",
                   (extract(epoch FROM cp.last_activity_at))::bigint AS "last_activity_at?",
-                  (extract(epoch FROM tr.created_at))::bigint AS "enrolled_at!"
-           FROM trail_runs tr
-           JOIN users u ON u.id = tr.user_id
-           LEFT JOIN course_progress cp ON cp.course_id = tr.course_id AND cp.user_id = tr.user_id
-           WHERE tr.course_id = $1 AND ($2::uuid IS NULL OR tr.id < $2)
-             AND NOT is_course_staff(tr.course_id, tr.user_id)
-             AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\' OR u.display_name ILIKE $4 ESCAPE '\'
-                  OR u.email ILIKE $4 ESCAPE '\')
-           ORDER BY tr.id DESC
-           LIMIT $3"#,
+                  (extract(epoch FROM e.enrolled_at))::bigint AS "enrolled_at!",
+                  (extract(epoch FROM e.enrolled_at) * 1000000)::bigint AS "enrolled_at_us!"
+           FROM enrolments e
+           JOIN users u ON u.id = e.user_id
+           LEFT JOIN course_progress cp ON cp.course_id = e.course_id AND cp.user_id = e.user_id
+           WHERE e.course_id = $1
+             AND ($2::bigint IS NULL
+                  OR (e.enrolled_at, e.user_id)
+                     < ('epoch'::timestamptz + $2 * interval '1 microsecond', $3::uuid))
+             AND NOT is_course_staff(e.course_id, e.user_id)
+             AND ($5::text IS NULL OR u.username ILIKE $5 ESCAPE '\' OR u.display_name ILIKE $5 ESCAPE '\'
+                  OR u.email ILIKE $5 ESCAPE '\')
+           ORDER BY e.enrolled_at DESC, e.user_id DESC
+           LIMIT $4"#,
         course_id.0,
-        cursor.map(|c| c.0),
+        after.map(|c| c.enrolled_at_us),
+        after.map(|c| c.user_id.0),
         limit,
         pattern.as_deref(),
     )
     .fetch_all(pool)
     .await?;
     Ok(rows)
+}
+
+/// A roster cursor of the release before enrolments.
+///
+/// The trail run id of the last member shown, resolved to that member's enrolment keyset (or the
+/// run's own time when the enrolment is gone); `None` for no such run.
+// ponytail: goes with the trail tables, a release after the cursor changed.
+pub async fn legacy_learner_cursor(
+    pool: &PgPool,
+    course_id: CourseId,
+    run_id: TrailRunId,
+) -> Result<Option<LearnerCursor>> {
+    let row = sqlx::query_as!(
+        LearnerCursor,
+        r#"SELECT (extract(epoch FROM coalesce(e.enrolled_at, r.created_at)) * 1000000)::bigint
+                      AS "enrolled_at_us!",
+                  r.user_id AS "user_id: UserId"
+           FROM trail_runs r
+           LEFT JOIN enrolments e ON e.course_id = r.course_id AND e.user_id = r.user_id
+           WHERE r.id = $1 AND r.course_id = $2"#,
+        run_id.0,
+        course_id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
 }
 
 /// A user named by an enrolment identifier, with where they stand on the

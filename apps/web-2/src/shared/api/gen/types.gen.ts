@@ -3036,6 +3036,10 @@ export type Enrollment = {
      */
     course_total_steps: number;
     created_at_unix: UnixTime;
+    /**
+     * The legacy trail run's id (the course id where none exists); page
+     * with `next_cursor`, not this.
+     */
     id: TrailRunId;
     learning_status: LearningStatus;
     next_activity_id: ActivityId | null;
@@ -6850,6 +6854,10 @@ export type TrailRun = {
      */
     course_total_steps: number;
     created_at_unix: UnixTime;
+    /**
+     * The legacy trail run's id (the course id where none exists). The
+     * paging cursor is the course id now; a run id still works as one.
+     */
     id: TrailRunId;
     /**
      * The real state (`status` is always `in_progress`, legacy):
@@ -6883,6 +6891,9 @@ export type TrailStep = {
     course_id: CourseId;
     created_at_unix: UnixTime;
     grade: number;
+    /**
+     * The legacy trail step's id (the activity id where none exists).
+     */
     id: TrailStepId;
     teacher_verified: boolean;
     updated_at_unix: UnixTime;

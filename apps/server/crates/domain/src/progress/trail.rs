@@ -11,7 +11,7 @@ use ab_core::id::{ActivityId, CourseId, UserId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, Result};
 use ab_db::catalog::ActivityRow;
-use ab_db::progress::{TrailRow, TrailRunRow, TrailStepRow};
+use ab_db::progress::{CompletedStepRow, EnrolledRunRow, TrailRow};
 use futures::{StreamExt, TryStreamExt};
 use sqlx::{PgPool, Postgres, Transaction};
 
@@ -32,7 +32,8 @@ pub struct Trail {
 
 #[derive(Debug, Clone)]
 pub struct TrailRun {
-    pub row: TrailRunRow,
+    /// The enrolment (with the legacy run's id where there is one).
+    pub row: EnrolledRunRow,
     pub course: Course,
     /// Published activities in the course.
     pub course_total_steps: i64,
@@ -57,7 +58,8 @@ impl TrailRun {
 
 #[derive(Debug, Clone)]
 pub struct TrailStep {
-    pub row: TrailStepRow,
+    /// The completion (with the legacy step's fields where there is one).
+    pub row: CompletedStepRow,
     pub activity: ActivityRow,
 }
 
@@ -210,6 +212,40 @@ fn activity_not_found(err: Error) -> Error {
     }
 }
 
+/// A `GET /courses/{id}/learners` cursor.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LearnersCursor {
+    Keyset(ab_db::progress::LearnerCursor),
+    /// The previous release's cursor: the last listed member's run id.
+    Run(ab_core::id::TrailRunId),
+}
+
+impl LearnersCursor {
+    fn parse(cursor: &str) -> Result<Self> {
+        if let Some((us, user)) = cursor.split_once('.') {
+            let (Ok(enrolled_at_us), Ok(user)) = (us.parse(), user.parse()) else {
+                return Err(Self::invalid());
+            };
+            return Ok(Self::Keyset(ab_db::progress::LearnerCursor {
+                enrolled_at_us,
+                user_id: UserId(user),
+            }));
+        }
+        cursor
+            .parse()
+            .map(|run| Self::Run(ab_core::id::TrailRunId(run)))
+            .map_err(|_| Self::invalid())
+    }
+
+    fn invalid() -> Error {
+        Error::validation(vec![ab_core::FieldError {
+            field: "cursor".into(),
+            code: "invalid".into(),
+            message: "not a cursor of this list".into(),
+        }])
+    }
+}
+
 impl TrailService {
     #[must_use]
     pub fn new(pool: PgPool, courses: CoursesService, assessments: AssessmentsService) -> Self {
@@ -247,26 +283,23 @@ impl TrailService {
                 runs: Vec::new(),
             });
         }
-        match ab_db::progress::get_trail(&self.pool, actor.user_id).await? {
-            Some(trail) => self.hydrate(actor, trail).await,
-            None => Ok(Trail {
-                row: None,
-                user_id: actor.user_id,
-                runs: Vec::new(),
-            }),
-        }
+        let trail = ab_db::progress::get_trail(&self.pool, actor.user_id).await?;
+        self.hydrate(actor, trail).await
     }
 
+    /// One run per enrolment, one step per completed lesson-type activity
+    /// (REWRITE 5.6 n5, n8: the trail tables only lend their legacy ids).
     /// Runs whose course the caller can no longer see (unpublished under
     /// them, BUG-183) are kept but not listed: they come back on republish
-    /// and `remove_course` still drops them by id.
-    async fn hydrate(&self, actor: &Actor, trail: TrailRow) -> Result<Trail> {
-        let runs = ab_db::progress::list_trail_runs(&self.pool, trail.id).await?;
-        let steps = ab_db::progress::list_trail_steps(&self.pool, trail.id).await?;
+    /// and `remove_course` still drops them by id. `trail` is the caller's
+    /// legacy trail row, if any: the listing does not need it.
+    async fn hydrate(&self, actor: &Actor, trail: Option<TrailRow>) -> Result<Trail> {
+        let user_id = actor.user_id;
+        let runs = ab_db::progress::list_enrolled_runs(&self.pool, user_id).await?;
+        let steps = ab_db::progress::list_completed_steps(&self.pool, user_id).await?;
         let course_ids: Vec<CourseId> = runs.iter().map(|r| r.course_id).collect();
         let totals = ab_db::progress::published_activity_counts(&self.pool, &course_ids).await?;
-        let pcts =
-            ab_db::progress::course_progress_pcts(&self.pool, trail.user_id, &course_ids).await?;
+        let pcts = ab_db::progress::course_progress_pcts(&self.pool, user_id, &course_ids).await?;
         // Each run reads its course, outline and progress (~5 queries): 33 runs in a row took 140 ms of /enrollments
         // and /me/agenda for a real learner. A few at a time, in order.
         // ponytail: per-run queries, batch them by course_ids if trails grow past ~100 runs.
@@ -279,8 +312,8 @@ impl TrailService {
         .try_collect()
         .await?;
         Ok(Trail {
-            user_id: trail.user_id,
-            row: Some(trail),
+            user_id,
+            row: trail,
             runs: out,
         })
     }
@@ -288,8 +321,8 @@ impl TrailService {
     async fn hydrate_run(
         &self,
         actor: &Actor,
-        run: TrailRunRow,
-        steps: &[TrailStepRow],
+        run: EnrolledRunRow,
+        steps: &[CompletedStepRow],
         totals: &[ab_db::progress::CourseStepCountRow],
         pcts: &[ab_db::progress::CourseProgressPctRow],
     ) -> Result<Option<TrailRun>> {
@@ -303,7 +336,7 @@ impl TrailService {
         let next_activity_id = self.next_activity(&run, &activities).await?;
         let run_steps = steps
             .iter()
-            .filter(|s| s.trail_run_id == run.id)
+            .filter(|s| s.course_id == run.course_id)
             .filter_map(|s| {
                 activities
                     .iter()
@@ -333,7 +366,7 @@ impl TrailService {
     /// and «Мои курсы» open the activity the course page names.
     async fn next_activity(
         &self,
-        run: &TrailRunRow,
+        run: &EnrolledRunRow,
         activities: &[ActivityRow],
     ) -> Result<Option<ActivityId>> {
         let chapters = ab_db::catalog::list_chapters(&self.pool, run.course_id).await?;
@@ -394,9 +427,7 @@ impl TrailService {
         self.projector
             .reproject_member(course.id, actor.user_id, true)
             .await?;
-        let trail = ab_db::progress::get_trail(&self.pool, actor.user_id)
-            .await?
-            .ok_or_else(|| Error::not_found("trail"))?;
+        let trail = ab_db::progress::get_trail(&self.pool, actor.user_id).await?;
         self.hydrate(actor, trail).await
     }
 
@@ -423,14 +454,7 @@ impl TrailService {
         {
             return Err(Error::not_found("trail run"));
         }
-        match trail {
-            Some(trail) => self.hydrate(actor, trail).await,
-            None => Ok(Trail {
-                row: None,
-                user_id: actor.user_id,
-                runs: Vec::new(),
-            }),
-        }
+        self.hydrate(actor, trail).await
     }
 
     /// End `user_id`'s membership of a course - the enrolment, the run and
@@ -480,28 +504,39 @@ impl TrailService {
 
     /// The course's members, newest first, with their progress (course
     /// write access: the creator, active authors, platform updaters).
+    /// `cursor` is the previous page's `next_cursor`
+    /// (`"<enrolled_at µs>.<user id>"`, opaque to clients); a bare trail run
+    /// id - the cursor before enrolments - still continues where it left off.
     pub async fn course_learners(
         &self,
         actor: &Actor,
         course_id: CourseId,
         q: Option<&str>,
-        cursor: Option<ab_core::id::TrailRunId>,
+        cursor: Option<&str>,
         limit: i64,
-    ) -> Result<(
-        Vec<ab_db::progress::CourseLearnerRow>,
-        Option<ab_core::id::TrailRunId>,
-    )> {
+    ) -> Result<(Vec<ab_db::progress::CourseLearnerRow>, Option<String>)> {
+        let cursor = cursor.map(LearnersCursor::parse).transpose()?;
         // An archived course still lists its members (read-only).
         let course = self.courses.get(actor, course_id).await?;
         CoursesService::require_write(actor, &course)?;
         let limit = ab_core::page_limit(limit, 100)?;
         let q = q.map(str::trim).filter(|q| !q.is_empty());
+        let after = match cursor {
+            None => None,
+            Some(LearnersCursor::Keyset(after)) => Some(after),
+            Some(LearnersCursor::Run(run_id)) => Some(
+                ab_db::progress::legacy_learner_cursor(&self.pool, course_id, run_id)
+                    .await?
+                    .ok_or_else(LearnersCursor::invalid)?,
+            ),
+        };
         let mut rows =
-            ab_db::progress::list_course_learners(&self.pool, course_id, q, cursor, limit + 1)
+            ab_db::progress::list_course_learners(&self.pool, course_id, q, after, limit + 1)
                 .await?;
         let next = if i64::try_from(rows.len()).unwrap_or(i64::MAX) > limit {
             rows.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
-            rows.last().map(|r| r.run_id)
+            rows.last()
+                .map(|r| format!("{}.{}", r.enrolled_at_us, r.user_id.0))
         } else {
             None
         };
@@ -665,7 +700,7 @@ impl TrailService {
             crate::gamification::hooks::activity_completed(&self.pool, actor.user_id, activity.id)
                 .await;
         }
-        self.hydrate(actor, trail).await
+        self.hydrate(actor, Some(trail)).await
     }
 
     /// Un-mark an activity. Deleting the caller's own step needs no
@@ -679,14 +714,17 @@ impl TrailService {
         let activity = ab_db::catalog::get_activity(&self.pool, activity_id)
             .await?
             .ok_or_else(|| Error::not_found("activity"))?;
-        let trail = ab_db::progress::get_trail(&self.pool, actor.user_id)
-            .await?
-            .ok_or_else(|| Error::not_found("activity"))?;
+        let trail = ab_db::progress::get_trail(&self.pool, actor.user_id).await?;
         if ab_db::progress::has_trail_run(&self.pool, activity.course_id, actor.user_id).await? {
             self.course_open(activity.course_id).await?;
         }
         let mut tx = self.lock(actor.user_id, activity.course_id).await?;
-        let had_step = ab_db::progress::delete_trail_step(&mut *tx, trail.id, activity.id).await?;
+        let had_step = match &trail {
+            Some(trail) => {
+                ab_db::progress::delete_trail_step(&mut *tx, trail.id, activity.id).await?
+            }
+            None => false,
+        };
         let had_completion =
             ab_db::progress::delete_completion(&mut tx, activity.id, actor.user_id).await?;
         if had_step || had_completion {

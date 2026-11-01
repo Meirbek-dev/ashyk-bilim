@@ -2599,6 +2599,142 @@ async fn membership_is_the_enrolment_not_the_trail(pool: PgPool) {
     assert_eq!(rows, 0);
 }
 
+/// REWRITE 5.6 n5 (rest): the roster, `GET /trail` and `/enrollments` read
+/// enrolments and completions. The roster pages newest first on
+/// `(enrolled_at, user_id)`; the previous release's cursor (a trail run id)
+/// still continues after its member, a malformed one is a 422. With the
+/// trail tables emptied the learner still sees every course and completed
+/// lesson; the trail's cursor is the course id, a run id still works.
+#[ab_testdb::test]
+async fn roster_and_trail_read_enrolments(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Roster 101").await;
+    let (second_id, _) = public_course(&app, &teacher, "Roster 102").await;
+    let l1 = lesson(&app, &teacher, &chapter_id, "One").await;
+    lesson(&app, &teacher, &chapter_id, "Two").await;
+    let mut members = Vec::new();
+    for name in ["alice", "bob", "carol"] {
+        let who = learner(&app, name).await;
+        let joined = app
+            .post_as(
+                &who,
+                &format!("/api/v2/trail/courses/{course_id}"),
+                &serde_json::json!({}),
+            )
+            .await;
+        assert_eq!(joined.status, StatusCode::OK, "{}", joined.text());
+        members.push(who);
+    }
+    let roster = |query: String| {
+        let app = &app;
+        let teacher = &teacher;
+        let course_id = &course_id;
+        async move {
+            let page = app
+                .get_as(
+                    teacher,
+                    &format!("/api/v2/courses/{course_id}/learners?{query}"),
+                )
+                .await;
+            assert_eq!(page.status, StatusCode::OK, "{}", page.text());
+            let json = page.json();
+            let users: Vec<String> = json["items"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|i| i["username"].as_str().unwrap().to_owned())
+                .collect();
+            (users, json["next_cursor"].as_str().map(str::to_owned))
+        }
+    };
+    let (first, next) = roster("limit=2".into()).await;
+    assert_eq!(first, ["carol", "bob"]);
+    let next = next.expect("a second page");
+    let (rest, last) = roster(format!("limit=2&cursor={next}")).await;
+    assert_eq!((rest, last), (vec!["alice".to_owned()], None));
+    let bob_run: uuid::Uuid =
+        sqlx::query_scalar("SELECT id FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid")
+            .bind(members[1].user_id.0)
+            .bind(&course_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    let (legacy, _) = roster(format!("limit=2&cursor={bob_run}")).await;
+    assert_eq!(legacy, ["alice"]);
+    for bad in ["nope", "12.nope", &uuid::Uuid::nil().to_string()] {
+        let page = app
+            .get_as(
+                &teacher,
+                &format!("/api/v2/courses/{course_id}/learners?cursor={bad}"),
+            )
+            .await;
+        assert_eq!(
+            page.status,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "{bad}: {}",
+            page.text()
+        );
+    }
+
+    let alice = &members[0];
+    let marked = app
+        .post_as(
+            alice,
+            &format!("/api/v2/trail/activities/{l1}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
+    let joined = app
+        .post_as(
+            alice,
+            &format!("/api/v2/trail/courses/{second_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(joined.status, StatusCode::OK, "{}", joined.text());
+    let first_run: uuid::Uuid =
+        sqlx::query_scalar("SELECT id FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid")
+            .bind(alice.user_id.0)
+            .bind(&course_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    let page = app.get_as(alice, "/api/v2/enrollments?limit=1").await;
+    assert_eq!(page.json()["runs"][0]["id"], first_run.to_string());
+    assert_eq!(page.json()["next_cursor"], course_id.as_str());
+    for cursor in [course_id.clone(), first_run.to_string()] {
+        let page = app
+            .get_as(
+                alice,
+                &format!("/api/v2/enrollments?limit=1&cursor={cursor}"),
+            )
+            .await;
+        assert_eq!(page.json()["runs"][0]["course_id"], second_id.as_str());
+        assert!(page.json()["next_cursor"].is_null());
+    }
+
+    empty_trails(&pool).await;
+    let trail = app.get_as(alice, "/api/v2/trail").await;
+    assert_eq!(trail.status, StatusCode::OK, "{}", trail.text());
+    let runs = trail.json()["runs"].as_array().unwrap().clone();
+    let courses: Vec<&str> = runs
+        .iter()
+        .map(|r| r["course_id"].as_str().unwrap())
+        .collect();
+    assert_eq!(courses, [course_id.as_str(), second_id.as_str()]);
+    // No run or step left: the course and activity ids stand in.
+    assert_eq!(runs[0]["id"], course_id.as_str());
+    assert_eq!(runs[0]["steps"][0]["activity_id"], l1.as_str());
+    assert_eq!(runs[0]["steps"][0]["id"], l1.as_str());
+    assert_eq!(runs[0]["steps"][0]["complete"], true);
+    assert_eq!(runs[0]["steps"].as_array().unwrap().len(), 1);
+    assert!(runs[1]["steps"].as_array().unwrap().is_empty());
+    let (all, _) = roster(String::new()).await;
+    assert_eq!(all, ["carol", "bob", "alice"]);
+}
+
 /// REWRITE 5.6 n8, review item 12: a lesson completion is its `completions`
 /// row. With the trail steps and the projection wiped, the backfill rebuilds
 /// the lesson from the completion; a re-mark is no new completion (no XP
@@ -2686,4 +2822,63 @@ async fn a_lesson_completion_is_the_completions_row(pool: PgPool) {
     .unwrap();
     let drift = ab_db::progress::completion_drift(&pool).await.unwrap();
     assert_eq!(drift, 1);
+}
+
+/// REWRITE 5.6 n8 step 1: a graded activity's projection writer owns its
+/// `completions` row. With the previous release's mirror trigger off (as
+/// after the contract), a published passing grade inserts the completion
+/// at the projection's time, and a re-projection repairs a shifted time and
+/// removes a completion the projection does not hold.
+#[ab_testdb::test]
+async fn graded_writers_own_their_completions(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    sqlx::query("ALTER TABLE activity_progress DISABLE TRIGGER activity_progress_sync_completion")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let teacher = instructor(&app, "teacher").await;
+    let (_course_id, chapter_id) = public_course(&app, &teacher, "Graded 101").await;
+    let (essay, essay_activity, item) = essay_quiz(&app, &teacher, &chapter_id).await;
+    let (_q2, q2_activity, _) = quiz(&app, &teacher, &chapter_id).await;
+    let alice = learner(&app, "alice").await;
+    let completions = || async {
+        sqlx::query_as::<_, (String, bool)>(
+            "SELECT c.activity_id::text,
+                    c.completed_at = p.completed_at AND p.completed_at IS NOT NULL
+             FROM completions c
+             LEFT JOIN activity_progress p USING (activity_id, user_id)
+             WHERE c.user_id = $1 ORDER BY 1",
+        )
+        .bind(alice.user_id.0)
+        .fetch_all(&pool)
+        .await
+        .unwrap()
+    };
+    let sub_id = submit_essay(&app, &alice, &essay, &item).await;
+    assert!(
+        completions().await.is_empty(),
+        "a pending essay completes nothing"
+    );
+    publish_full_marks(&app, &teacher, &sub_id).await;
+    assert_eq!(completions().await, [(essay_activity.clone(), true)]);
+
+    sqlx::query(
+        "UPDATE completions SET completed_at = completed_at - interval '1 day' WHERE user_id = $1",
+    )
+    .bind(alice.user_id.0)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query("INSERT INTO completions (activity_id, user_id) VALUES ($1::uuid, $2)")
+        .bind(&q2_activity)
+        .bind(alice.user_id.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+    ab_domain::progress::ProgressProjector::new(pool.clone())
+        .backfill(None)
+        .await
+        .unwrap();
+    assert_eq!(completions().await, [(essay_activity, true)]);
+    assert_eq!(ab_db::progress::completion_drift(&pool).await.unwrap(), 0);
 }
