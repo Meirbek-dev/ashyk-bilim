@@ -1751,20 +1751,23 @@ A Google identity linked to an account (google_sub), for Google sign-in.
 
 Grade journal of submissions: one row per grading; append-only except published_at (trigger-guarded).
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| submission_id | uuid |  |  |
-| graded_by | uuid | null |  |
-| raw_score | double precision |  |  |
-| penalty_pct | double precision |  | `0` |
-| final_score | double precision | null |  |
-| raw_breakdown | jsonb |  | `'{}'::jsonb` |
-| effective_breakdown | jsonb |  | `'{}'::jsonb` |
-| overall_feedback | text |  | `''::text` |
-| grading_version | integer |  | `1` |
-| published_at | timestamp with time zone | null |  |
-| created_at | timestamp with time zone |  | `now()` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| submission_id | uuid |  |  |  |
+| graded_by | uuid | null |  |  |
+| raw_score | double precision |  |  |  |
+| penalty_pct | double precision |  | `0` |  |
+| final_score | double precision | null |  |  |
+| raw_breakdown | jsonb |  | `'{}'::jsonb` |  |
+| effective_breakdown | jsonb |  | `'{}'::jsonb` |  |
+| overall_feedback | text |  | `''::text` |  |
+| grading_version | integer |  | `1` |  |
+| published_at | timestamp with time zone | null |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| max_points | score_points | null |  | The attempt's assessment_versions.max_points when graded; NULL without a version. |
+| raw_points | score_points | null |  | points_of_percent(raw_score, max_points), set by the database. |
+| final_points | score_points | null |  | points_of_percent(final_score, max_points), set by the database. |
 
 - Primary key `grading_entries_pkey`: `PRIMARY KEY (id)`
 - Foreign key `grading_entries_graded_by_fkey`: `FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL`

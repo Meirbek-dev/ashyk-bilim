@@ -523,6 +523,13 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   before the hand-in's (`assessment_versions::ensure`, per-assessment advisory lock for the number) and names
   it in the hand-in UPDATE; `submissions.assessment_version_id` is then write-once like the snapshots. The
   snapshots stay the record until readers move (REWRITE 5.6 n15).
+- **A grade entry keeps its points** (`20261102070100_grading_points`): `grading_entries.max_points` (the
+  attempt's `assessment_versions.max_points`), `raw_points`, `final_points` (`score_points`) are set by a BEFORE
+  INSERT trigger from the percentages, whoever writes the entry (both releases), and frozen with the row. The rule
+  is `points_of_percent(pct, max) = round(pct × max / 100, 2)` and back `percent_of_points(points, max) =
+  round(points × 100 / max, 2)` (numeric, half away from zero; NULL for max 0): a percentage that passes through
+  points returns within 0.5 / max_points percentage points. A hand-in without a version has no points. The
+  percentage is still what the code writes and reads.
 - **One attempt status vocabulary** (`20261102070000_attempt_status_vocabulary`): submissions and file
   attempts are `draft → submitted → graded → released → returned` in storage. The API keeps `pending` /
   `published` (`attempt_status_enum!` in ab-core: serde and `as_str` are the API spelling, the sqlx encoding

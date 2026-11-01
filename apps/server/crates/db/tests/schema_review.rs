@@ -68,6 +68,9 @@
 //!   a rename shows at once, and the activity cannot change its type.
 //! - review 2, item 4: each distinct (items, policy) pair handed in is one
 //!   numbered, frozen assessment version; a hand-in names it once.
+//! - review 2, item 6: a grade entry keeps its points of the attempt's
+//!   version (`points_of_percent`, two decimals, half away from zero); a
+//!   percentage that goes through points comes back within 0.5 / max_points.
 //! - review 2, item 2: attempts share one status vocabulary (`submitted`,
 //!   `released`); a new spelling is accepted and reads back as the same
 //!   status, and until the contract it is stored in the previous spelling.
@@ -1881,4 +1884,78 @@ async fn attempts_share_one_status_vocabulary(pool: PgPool) {
         let refused = sqlx::query(bad).bind(id).execute(&pool).await;
         assert!(refused.is_err(), "{bad}");
     }
+}
+
+#[ab_testdb::test]
+async fn a_grade_entry_keeps_its_points(pool: PgPool) {
+    let w = world(&pool).await;
+    let id = ab_core::id::AssessmentId(w.assessment);
+    let items = serde_json::json!({ "items": [{ "max_score": 2 }, { "max_score": 1 }] });
+    let version = ab_db::assessment_versions::ensure(&pool, id, &items, &serde_json::json!({}))
+        .await
+        .unwrap();
+    let sub = submission(&pool, &w, 1, false).await.unwrap();
+    sqlx::query("UPDATE submissions SET assessment_version_id = $2 WHERE id = $1")
+        .bind(sub)
+        .bind(version.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let mut tx = pool.begin().await.unwrap();
+    // A writer's own points are ignored: the database derives them.
+    let points: (f64, f64, f64) = sqlx::query_as(
+        "INSERT INTO grading_entries (submission_id, raw_score, final_score, effective_breakdown,
+                                      max_points, raw_points, final_points)
+         VALUES ($1, 100, 33.33, '{}', 50, 50, 50)
+         RETURNING max_points::float8, raw_points::float8, final_points::float8",
+    )
+    .bind(sub)
+    .fetch_one(&mut *tx)
+    .await
+    .unwrap();
+    assert_eq!(points, (3.0, 3.0, 1.0), "round(33.33 * 3 / 100, 2) = 1.00");
+    sqlx::query("UPDATE submissions SET final_score = 33.33, grading = '{}' WHERE id = $1")
+        .bind(sub)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+
+    // Round trip: within 0.5 / max_points percentage points.
+    for (percent, max_points) in [(33.33, 3.0), (66.67, 3.0), (12.34, 7.0), (99.99, 1.0)] {
+        let back: f64 = sqlx::query_scalar(
+            "SELECT percent_of_points(points_of_percent($1::numeric, $2::numeric), $2::numeric)::float8",
+        )
+        .bind(percent)
+        .bind(max_points)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert!(
+            (back - percent).abs() <= 0.5 / max_points + 1e-9,
+            "{percent} of {max_points} came back as {back}"
+        );
+    }
+    let half_up: f64 = sqlx::query_scalar("SELECT points_of_percent(12.5, 0.1)::float8")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(
+        (half_up - 0.01).abs() < 1e-9,
+        "0.0125 rounds half away from zero"
+    );
+
+    // An entry of a hand-in without a version has no points.
+    let legacy = submission(&pool, &w, 2, false).await.unwrap();
+    let mut tx = pool.begin().await.unwrap();
+    let none: Option<f64> = sqlx::query_scalar(
+        "INSERT INTO grading_entries (submission_id, raw_score, final_score, effective_breakdown)
+         VALUES ($1, 80, 80, '{}') RETURNING final_points::float8",
+    )
+    .bind(legacy)
+    .fetch_one(&mut *tx)
+    .await
+    .unwrap();
+    assert_eq!(none, None);
+    tx.rollback().await.unwrap();
 }
