@@ -7,9 +7,12 @@
 //   test-reset [--force]    recreate ashyq_test migrated; drop leftover test databases and templates
 //                           (_ab_test_*, _ab_template_*, _sqlx_test_*; refuses while tests run)
 //   ls                      list databases with their size
-//   sql [--slot N | --db NAME] "<sql>" | -f <file>
+//   sql [--slot N | --db NAME] [--rw] "<sql>" | -f <file>
 //                           run SQL (several statements too) on a slot's database (default slot 0; no slot running:
 //                           DEV_DB): a header and rows, `|`-separated, json as text; `UPDATE 3` for a write.
+//                           Read-only as ashyq_ro (no emails, secrets, IPs: infra/postgres/roles.sql); `--rw` writes
+//                           as the owner. Without ashyq_ro on the cluster (`just dev-up` creates it): the owner in
+//                           read-only transactions.
 //                           Unicode-safe (no psql code page), 127.0.0.1 (localhost costs 2 s per connection here).
 //                           Table map and ready queries: docs/agents/DATA.md.
 //
@@ -23,7 +26,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { databaseUrl, devEnv, readManifest, root } from './lib.ts'
+import { type DbRole, databaseUrl, devEnv, readManifest, root } from './lib.ts'
 
 const TEMPLATE = 'ashyq_seed'
 const TEST_DB = 'ashyq_test'
@@ -127,22 +130,45 @@ const cell = (value: unknown): string =>
         ? JSON.stringify(value)
         : String(value)
 
+/**
+ * One connection (a script's BEGIN ... ROLLBACK must run on the same session; Bun refuses BEGIN on a pool):
+ * ashyq_ro unless `rw`; the owner in read-only transactions while the cluster has no ashyq_ro yet.
+ */
+async function sqlSession(db: string, rw: boolean): Promise<SQL> {
+  const open = (role: DbRole) => new SQL(databaseUrl(env, db, role).replace('@localhost:', '@127.0.0.1:'), { max: 1 })
+  if (rw) return open('owner')
+  if (env['ASHYQ_RO_DB_PASSWORD']) {
+    const ro = open('ro')
+    try {
+      await ro`SELECT 1`
+      return ro
+    } catch {
+      await ro.close()
+    }
+  }
+  process.stderr.write('db: no ashyq_ro login on this cluster (`just dev-up` creates it): owner, read-only\n')
+  const owner = open('owner')
+  await owner.unsafe('SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY')
+  return owner
+}
+
 /** `just db sql`: one result set per statement, printed for reading (and for grep). */
 async function runSql(args: string[]): Promise<void> {
   let db = ''
   let slot = '0'
   let query = ''
+  let rw = false
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]
-    if (arg === '--db') db = args[++i] ?? die('--db needs a name')
+    if (arg === '--rw') rw = true
+    else if (arg === '--db') db = args[++i] ?? die('--db needs a name')
     else if (arg === '--slot') slot = args[++i] ?? die('--slot needs a number')
     else if (arg === '-f') query = readFileSync(args[++i] ?? die('-f needs a file'), 'utf8')
     else query = arg ?? ''
   }
-  if (!query.trim()) die('usage: just db sql [--slot N | --db NAME] "<sql>" | -f <file>')
+  if (!query.trim()) die('usage: just db sql [--slot N | --db NAME] [--rw] "<sql>" | -f <file>')
   db ||= readManifest(slot)?.db ?? env['DEV_DB'] ?? 'ashyq_dev'
-  // One connection: a script's BEGIN ... ROLLBACK must run on the same session (Bun refuses BEGIN on a pool).
-  const sql = new SQL(urlFor(db).replace('@localhost:', '@127.0.0.1:'), { max: 1 })
+  const sql = await sqlSession(db, rw)
   try {
     const result = (await sql.unsafe(query)) as unknown as Record<string, unknown>[] & {
       command?: string
@@ -265,5 +291,7 @@ switch (command) {
     await runSql(process.argv.slice(3))
     break
   default:
-    die('usage: just db template [--from <db>] | fresh <name> | drop <name> | test-reset | ls | sql [--slot N] "<sql>"')
+    die(
+      'usage: just db template [--from <db>] | fresh <name> | drop <name> | test-reset | ls | sql [--slot N] [--rw] "<sql>"',
+    )
 }

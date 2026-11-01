@@ -63,19 +63,12 @@ services:
           cpus: '2.0'
     logging: *logging
 
-  # Roles and databases (infra/postgres/init.sql), idempotent, as the superuser.
+  # Roles and databases (infra/postgres/init.sql), then the least-privilege app roles on template1 and
+  # every app database (roles.sql; skipped while ASHYQ_APP/RO_DB_PASSWORD are unset): infra/postgres/db-init.sh.
+  # Idempotent, as the superuser.
   db-init:
     image: *pg-image
-    entrypoint:
-      - sh
-      - -c
-      - >-
-        exec psql -v ON_ERROR_STOP=1
-        -v ashyq_password="$$ASHYQ_DB_PASSWORD"
-        -v zitadel_password="$$ZITADEL_DB_PASSWORD"
-        -v databases="$$ASHYQ_DATABASES"
-        -v createdb="$$ASHYQ_DB_CREATEDB"
-        -f /init.sql
+    entrypoint: ['sh', '/pg/db-init.sh']
     environment:
       PGHOST: db
       PGDATABASE: postgres
@@ -85,8 +78,10 @@ services:
       ZITADEL_DB_PASSWORD: ${ZITADEL_DB_PASSWORD:?}
       ASHYQ_DATABASES: ${ASHYQ_DATABASES:-ashyq}
       ASHYQ_DB_CREATEDB: ${ASHYQ_DB_CREATEDB:-false}
+      ASHYQ_APP_DB_PASSWORD: ${ASHYQ_APP_DB_PASSWORD:-}
+      ASHYQ_RO_DB_PASSWORD: ${ASHYQ_RO_DB_PASSWORD:-}
     volumes:
-      - ./infra/postgres/init.sql:/init.sql:ro
+      - ./infra/postgres:/pg:ro
     networks: [data-net]
     depends_on:
       db:

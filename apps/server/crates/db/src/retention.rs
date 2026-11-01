@@ -48,12 +48,24 @@ pub async fn sweep(pool: &PgPool, windows: &RetentionConfig) -> Result<Retention
         windows.jobs_succeeded_days,
         windows.jobs_dead_days,
     ));
-    let auth_audit = batched!(sqlx::query!(
-        "DELETE FROM auth_audit_log WHERE id IN (
-             SELECT id FROM auth_audit_log
-             WHERE created_at < now() - make_interval(days => $1) LIMIT 5000)",
-        windows.auth_audit_days,
-    ));
+    // The app role may not delete audit rows: the owner's SECURITY DEFINER function does
+    // (keeps at least 30 days whatever the window; migration 20261102050100).
+    let auth_audit = {
+        let mut total = 0_u64;
+        loop {
+            let n = sqlx::query_scalar!(
+                r#"SELECT prune_auth_audit_log($1, 5000) AS "n!""#,
+                windows.auth_audit_days,
+            )
+            .fetch_one(pool)
+            .await?;
+            let n = u64::try_from(n).unwrap_or(0);
+            total += n;
+            if n < BATCH {
+                break total;
+            }
+        }
+    };
     // Practice runs only (`custom`, `visible`, `reference_check`): a graded
     // run's output stays with its submission.
     let code_run_outputs = batched!(sqlx::query!(

@@ -93,7 +93,7 @@
   `bun install` and cargo target dir), commit there, `just wt land <name>` (rebase, `just check`, fast-forward
   main, remove); `just wt ls`, `just wt rm <name> [--force]`.
 - One command per task: `just stack up|status|logs|restart` (dev stack per slot), `just login-as <user>`,
-  `just db fresh <name>`, `just db sql "<sql>"`, `just check [--wip|--all]`, `just contract`,
+  `just db fresh <name>`, `just db sql "<sql>"` (read-only as `ashyq_ro`, no emails/secrets; `--rw` to write), `just check [--wip|--all]`, `just contract`,
   `just e2e [web2 --changed]`, `just shoot` (screenshots as real accounts), `just restore-media`, `just fmt <files>`,
   `just metrics` (sizes to shrink), `just clean [--deep]` (old stands, logs, cargo incremental caches).
 - Server DB tests clone one migrated template per migration set (`#[ab_testdb::test]`); the suite runs 12 at once on

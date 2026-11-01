@@ -1,7 +1,9 @@
 # Finding real data (dev stack)
 
 Run SQL with `just db sql [--slot N | --db NAME] "<sql>"` (or `-f file.sql`): the slot's database, Unicode-safe,
-`|`-separated with a header. Sign in as anyone with `just login-as <username|email> [slot]`; screenshot pages with
+`|`-separated with a header, read-only as `ashyq_ro` (emails, bios, IPs and secrets are not readable: select named
+columns, find people by `username`); `--rw` runs as the owner for writes and email lookups. Sign in as anyone
+with `just login-as <username|email> [slot]`; screenshot pages with
 `just shoot`. Real data: a slot on a local restored copy (`just stack up 1 --db <name>`, RUNBOOK 5.3); change its rows
 freely, never production's.
 
@@ -35,7 +37,7 @@ A user's id and roles:
 
 ```sql
 select u.id, u.username, string_agg(r.slug, ',') from users u left join user_roles ur on ur.user_id = u.id
-left join roles r on r.id = ur.role_id where u.username = '<login>' or u.email = '<login>'
+left join roles r on r.id = ur.role_id where u.username = '<login>'
 group by 1, 2
 ```
 
@@ -59,10 +61,10 @@ Courses a teacher can edit:
 
 ```sql
 select c.id, c.name from courses c join resource_authors ra on ra.course_id = c.id
-join users u on u.id = ra.user_id where u.email = '<email>' and c.archived_at is null
+join users u on u.id = ra.user_id where u.username = '<login>' and c.archived_at is null
 ```
 
-Make a file task reviewable (published, with instructions and a deadline in 3 days):
+Make a file task reviewable (published, with instructions and a deadline in 3 days; `just db sql --rw`):
 
 ```sql
 update activities set published = true where id = '<activity>';

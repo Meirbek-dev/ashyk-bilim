@@ -18,7 +18,7 @@ justfile              single entry point (`just --list`)
 infra/
   env/                prod.env.example, server.env.example, dev.env, smoke.env, smoke.server.env
   nginx/              nginx.conf, nginx.conf.template, routes.conf, security-headers.conf
-  postgres/           init.sql (db-init job), transfer-ownership.sql (legacy restores only)
+  postgres/           db-init.sh + init.sql + roles.sql (db-init job), transfer-ownership.sql (legacy restores only)
   runner/             Dockerfile (go-judge + the language toolchains), mount.yaml (sandbox mounts)
   storage/            init.sh (storage-init job), cors.json.template, public-policy.json
   host/               backup.service, backup.timer (nightly systemd timer)
@@ -127,9 +127,10 @@ db-init when loaded; `just prod-report` lists the app database's statements by t
 | Role | Superuser | Created by | Used by |
 | --- | --- | --- | --- |
 | `${POSTGRES_USER}` (`cs_mooc` in prod, `postgres` in dev) | yes | initdb on an empty volume | db-init, zitadel-init, backup and pre-deploy dumps (local socket) |
-| `ashyq` | no | db-init, password `ASHYQ_DB_PASSWORD`, only if missing; `CREATEDB` when `ASHYQ_DB_CREATEDB=true` (dev, for test databases) | server, worker, server-migrate |
+| `ashyq` | no | db-init, password `ASHYQ_DB_PASSWORD`, only if missing; `CREATEDB` when `ASHYQ_DB_CREATEDB=true` (dev, for test databases) | server-migrate (owner of every object); server and worker until `server.env` names `ashyq_app` |
 | `zitadel` | no | db-init, password `ZITADEL_DB_PASSWORD`, only if missing | zitadel |
-| `ashyq_app`, `ashyq_ro` | no | `infra/postgres/roles.sql`, by hand; not created anywhere yet | nothing yet: least-privilege server/worker and read-only roles (RUNBOOK 2.5, QUESTIONS Q-2026-11-01-2) |
+| `ashyq_app` | no | db-init (`roles.sql`), password `ASHYQ_APP_DB_PASSWORD`, only if missing and set | server, worker (`server.env`; smoke and e2e stands already): rows only, insert-only journals (RUNBOOK 2.5) |
+| `ashyq_ro` | no | db-init (`roles.sql`), password `ASHYQ_RO_DB_PASSWORD`, only if missing and set | read-only access without contact data or secrets: `just db sql` in dev, `psql -U ashyq_ro` on prod |
 
 | Database | Owner | Notes |
 | --- | --- | --- |
@@ -137,8 +138,10 @@ db-init when loaded; `just prod-report` lists the app database's statements by t
 | `zitadel` | `zitadel` | |
 | `cs_mooc` (`openu` until 2026-10-25) | `cs_mooc` | prod only, legacy; kept, unused, not backed up |
 
-`infra/postgres/init.sql` is idempotent and additive: it never alters an existing role or
-database (password changes are manual, RUNBOOK 3.8). It installs `vector` into
+db-init runs `infra/postgres/db-init.sh`: `init.sql`, then `roles.sql` on `template1` and on each database of
+`ASHYQ_DATABASES` (the least-privilege roles, their timeouts and default privileges; the per-table rules are the
+migration function `apply_role_grants`, RUNBOOK 2.5). `infra/postgres/init.sql` is idempotent and additive: it
+never alters an existing role or database (password changes are manual, RUNBOOK 3.8). It installs `vector` into
 `template1`, because pgvector is not a trusted extension and the non-superuser
 `ashyq` cannot create it; every later database, including per-test ones,
 inherits it.
@@ -180,7 +183,8 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 | Web | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | web |
 | Postgres | `POSTGRES_USER`, `POSTGRES_PASSWORD` | db (initdb only), db-init, zitadel-init |
 | | `PG_LOG_MIN_DURATION_STATEMENT` (default `300` ms) | db slow-query log |
-| | `ASHYQ_DB_PASSWORD`, `ASHYQ_DATABASES` | db-init |
+| | `ASHYQ_DB_PASSWORD`, `ASHYQ_DATABASES` | db-init; server-migrate's owner URL |
+| | `ASHYQ_APP_DB_PASSWORD`, `ASHYQ_RO_DB_PASSWORD` (unset: roles not created) | db-init (`roles.sql`); the app password also in `server.env` |
 | Zitadel | `ZITADEL_MASTERKEY` (exactly 32 chars; losing it loses every account) | zitadel; preflight |
 | | `ZITADEL_DB_PASSWORD` | db-init, zitadel-init, zitadel |
 | | `ZITADEL_PAT_EXPIRATION` | zitadel first-instance setup; preflight expiry check |
@@ -205,7 +209,7 @@ it), `DEV_PG_PORT`, `DEV_REDIS_PORT`, `DEV_ZITADEL_PORT`, `DEV_RUSTFS_PORT`,
 
 | Key | Notes |
 | --- | --- |
-| `AB__DATABASE__URL` | `postgres://ashyq:<ASHYQ_DB_PASSWORD>@db:5432/ashyq` |
+| `AB__DATABASE__URL` | `postgres://ashyq_app:<ASHYQ_APP_DB_PASSWORD>@db:5432/ashyq` (server, worker; server-migrate is overridden to the owner `ashyq` by compose.prod.yaml) |
 | `AB__ZITADEL__PAT` | appended by bootstrap from `zitadel_machinekey/pat.txt` |
 | `AB__GOOGLE__CLIENT_ID`, `AB__GOOGLE__CLIENT_SECRET`, `AB__GOOGLE__REDIRECT_URI` | optional, all or none |
 | `AB__RESEND__API_KEY`, `AB__RESEND__FROM` | optional, all or none (`FROM` has no default) |
@@ -304,7 +308,7 @@ One-shot jobs, chained with `depends_on: service_completed_successfully`:
 | Job | Action |
 | --- | --- |
 | volume-init | `zitadel_machinekey` owned by uid 1000, mode 0700 (Zitadel must write `pat.txt`) |
-| db-init | `infra/postgres/init.sql`: `vector` in `template1`, roles `ashyq`/`zitadel`, databases |
+| db-init | `infra/postgres/db-init.sh`: `vector` in `template1`, `pg_stat_statements` in `postgres`, roles `ashyq`/`zitadel`, databases; `ashyq_app`/`ashyq_ro` and their grants (`roles.sql`) |
 | zitadel-init | `zitadel init` with the superuser login |
 | storage-init | buckets, public-read policy on `ab-public`, CORS for `STORAGE_CORS_ORIGINS` (prod: the public origin), probe object `_probe/smoke.txt` |
 | server-migrate | SQLx migrations (profile `maintenance`, run by bootstrap and deploy) |

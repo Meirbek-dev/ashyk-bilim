@@ -206,13 +206,16 @@ services:
           cpus: '2.0'
     logging: *logging
 
-  # SQLx migrations: `compose run --rm server-migrate` (deploy, bootstrap).
+  # SQLx migrations: `compose run --rm server-migrate` (deploy, bootstrap). Always the owner `ashyq`: server
+  # and worker connect as ashyq_app (server.env), which may not run DDL (RUNBOOK 2.5).
   server-migrate:
     image: *server-image
     command: ['migrate']
     profiles: [maintenance]
     env_file: ${SERVER_ENV_FILE:-./server.env}
-    environment: *server-env
+    environment:
+      <<: *server-env
+      AB__DATABASE__URL: postgres://ashyq:${ASHYQ_DB_PASSWORD:?}@db:5432/ashyq
     networks: [data-net]
     depends_on:
       db:

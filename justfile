@@ -89,7 +89,8 @@ check *args:
 contract:
     @bun infra/dev/contract.ts
 
-# Throwaway databases and SQL: `just db template | fresh <name> | drop <name> | test-reset | ls | sql [--slot N] "<sql>"`.
+# Throwaway databases and SQL: `just db template | fresh <name> | drop <name> | test-reset | ls | sql [--slot N] [--rw] "<sql>"`
+# (sql reads as ashyq_ro: no emails or secrets; --rw writes as the owner).
 db *args:
     @bun infra/dev/db.ts "$@"
 
@@ -260,7 +261,8 @@ web-release-e2e action *args:
 redis-test:
     {{ bash_bin }} infra/tests/redis-persistence.sh
 
-# Infra gates: compose config, shell syntax, nginx, dual-web routing and Redis persistence with backup mounted.
+# Infra gates: compose config, shell syntax, database roles, nginx, dual-web routing and Redis persistence with
+# backup mounted.
 [script]
 ci-infra:
     source infra/scripts/lib.sh
@@ -274,6 +276,8 @@ ci-infra:
     for f in infra/scripts/*.sh infra/storage/*.sh infra/tests/*.sh; do {{ bash_bin }} -n "$f"; done
     log "bash -n ok"
     if [[ -z $CTR ]]; then log "no container runtime: nginx -t skipped"; exit 0; fi
+    # Least-privilege roles on a throwaway Postgres (no network): needs no address pool.
+    {{ bash_bin }} infra/tests/db-roles.sh
     # A shared daemon can run out of bridge subnets (31 default pools, ai-server 2026-10-31): the stack checks below
     # need networks of their own, so they are skipped here and run in hosted CI.
     if ! probe=$("$CTR" network create "ashyq-ci-probe-$$" 2>&1); then

@@ -748,9 +748,9 @@ Decided, not done:
    preloaded by the db command, created in `postgres` by db-init, section `top statements`),
    `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; the pool sets
    `statement_timeout` and `application_name`; Zitadel's role gets a connection limit.
-6. **Journals are protected by privileges too**: the app role loses UPDATE/DELETE on grade and audit journals;
-   retention runs through a SECURITY DEFINER function owned by the schema owner. Lands with the role switch
-   (QUESTIONS Q-2026-11-01-2).
+6. **Journals are protected by privileges too** (done in the repo, 2026-11): `ashyq_app` has INSERT only on
+   grade and audit journals (`apply_role_grants`, migration `20261102050200`); `auth_audit_log` retention runs
+   through the SECURITY DEFINER `prune_auth_audit_log`. Production switches with RUNBOOK 2.5 (a deploy step).
 7. **Analytics events are written in the action's transaction** (`events::record` takes the transaction) and
    carry a `schema_version` in the payload.
 8. **AI retention**: runs, artifacts, Q&A messages and analyses 400 days, like `analytics_events`; an accepted

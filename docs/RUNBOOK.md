@@ -108,19 +108,40 @@ Zero rows is the expected state. For each row: find the offenders (`SELECT id FR
 (<expr>)`), decide the repair (owner call when it changes grades or content), write it as a new
 migration that repairs and calls `schema_try_check` again (the row disappears when the check is added).
 
-### 2.5 Least-privilege app roles (prepared, not switched on)
+### 2.5 Least-privilege app roles
 
-`infra/postgres/roles.sql` creates `ashyq_app` (server + worker: rows only, no DDL/TRUNCATE, statement 120 s,
-idle-in-transaction 60 s, lock 30 s) and `ashyq_ro` (read-only transactions, statement 30 s) with default
-privileges on what `ashyq` creates later. Nothing runs it yet: the switch waits for QUESTIONS Q-2026-11-01-2.
-The procedure once approved (one window, rollback = restore the old `AB__DATABASE__URL`):
+Owner decision 2026-11-01 (Q-2026-11-01-2): the server does not run as the schema owner.
 
-1. `dc exec -T db psql -U "$POSTGRES_USER" -d ashyq -v ON_ERROR_STOP=1 -v app_password=<new> -v ro_password=<new> -v owner=ashyq -f - < infra/postgres/roles.sql`
-   (re-run after restoring onto a new host; it is idempotent).
-2. Keep migrations on the owner: give `server-migrate` its own URL (`AB__DATABASE__URL` with `ashyq` in an
-   `environment:` override, or a second env file); point `server.env` at `ashyq_app`.
-3. Deploy (3.1), then watch `just prod-report --since 1h` for `permission denied` or `statement timeout`.
-   A job that legitimately needs longer statements gets `SET LOCAL statement_timeout` in its own transaction.
+| Role | Connects | May |
+| --- | --- | --- |
+| `ashyq` | `server-migrate` only (compose.prod.yaml builds its URL from `ASHYQ_DB_PASSWORD`) | own every object, run DDL |
+| `ashyq_app` | server, worker, `dc run --rm server admin ...` (server.env `AB__DATABASE__URL`) | rows of every table, no DDL/TRUNCATE; `grading_entries`, `file_grading_entries`, `assessment_audit_events`, `auth_audit_log` insert-only (retention: SECURITY DEFINER `prune_auth_audit_log`); `_sqlx_migrations` read-only; statement 120 s, idle-in-transaction 60 s, lock 30 s |
+| `ashyq_ro` | people and agents reading prod, analytics | read-only transactions (30 s), no `users.email/bio/profile`, `auth_audit_log.ip/user_agent/metadata`, `google_accounts` ids, `platforms.email`, `idempotency_keys` |
+
+db-init (`infra/postgres/db-init.sh`, every `up`) creates the two roles from `ASHYQ_APP_DB_PASSWORD` /
+`ASHYQ_RO_DB_PASSWORD` in `.env` (`roles.sql`; unset = skipped) and re-applies the grants. What each role may touch
+is schema: `apply_role_grants(owner)` of migration `20261102050200` (`infra/tests/db-roles.sh`, in `just ci-infra`,
+checks it). A new journal or secret-bearing table extends its lists with `CREATE OR REPLACE` in its own migration.
+
+Read prod as `ashyq_ro` (local socket, no password):
+
+```bash
+dc exec -T db psql -U ashyq_ro -d ashyq -c 'SELECT count(*) FROM submissions'
+```
+
+Switching production on (one window; not done yet):
+
+1. `.env`: `ASHYQ_APP_DB_PASSWORD` and `ASHYQ_RO_DB_PASSWORD`, each `openssl rand -hex 32`.
+2. `just deploy` of a release that has migration `20261102050200`. db-init creates the roles, server-migrate applies
+   the grants as `ashyq`; the server still connects as `ashyq` (preflight warns). The first deploy with the
+   `pg_stat_statements` / WAL archiving db command recreates the `db` container: Postgres restarts once (seconds).
+3. `dc exec -T db psql -U ashyq_app -d ashyq -c 'SELECT count(*) FROM users'` answers.
+4. `server.env`: `AB__DATABASE__URL=postgres://ashyq_app:<ASHYQ_APP_DB_PASSWORD>@db:5432/ashyq`, then
+   `dc up -d --no-deps --force-recreate server worker`, smoke (0. Conventions), and `just prod-report --since 1h`
+   for `permission denied` or `statement timeout`.
+
+Rollback: `AB__DATABASE__URL` back to `ashyq` and recreate server and worker; the roles and grants can stay. A job
+that legitimately needs longer statements sets `SET LOCAL statement_timeout` in its own transaction.
 
 ## 3. Routine
 

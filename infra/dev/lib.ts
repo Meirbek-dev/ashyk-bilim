@@ -89,12 +89,50 @@ export function webOrigins(ports: { web2: number; web: number }): string[] {
   return [ports.web2, ports.web].flatMap(port => [`http://localhost:${port}`, `http://127.0.0.1:${port}`])
 }
 
-export function databaseUrl(env: Record<string, string>, db: string): string {
-  return `postgres://ashyq:${env['ASHYQ_DB_PASSWORD']}@localhost:${env['DEV_PG_PORT']}/${db}`
+/** Login roles of an app database (infra/postgres/roles.sql): the owner runs migrations, the app role serves. */
+export type DbRole = 'owner' | 'app' | 'ro'
+const ROLE_LOGIN: Record<DbRole, [string, string]> = {
+  owner: ['ashyq', 'ASHYQ_DB_PASSWORD'],
+  app: ['ashyq_app', 'ASHYQ_APP_DB_PASSWORD'],
+  ro: ['ashyq_ro', 'ASHYQ_RO_DB_PASSWORD'],
+}
+
+export function databaseUrl(env: Record<string, string>, db: string, role: DbRole = 'owner'): string {
+  const [user, password] = ROLE_LOGIN[role]
+  return `postgres://${user}:${env[password]}@localhost:${env['DEV_PG_PORT']}/${db}`
+}
+
+/**
+ * `app` once db-init created ashyq_app and granted it `db`'s tables (`just dev-up` runs roles.sql on template1,
+ * ashyq_dev and ashyq_test; a database created later inherits template1's default privileges), else `owner`:
+ * a cluster or a restored copy from before the roles keeps working as before.
+ */
+export async function appRoleFor(env: Record<string, string>, db: string): Promise<DbRole> {
+  if (!env['ASHYQ_APP_DB_PASSWORD']) return 'owner'
+  const sql = new Bun.SQL(databaseUrl(env, db).replace('@localhost:', '@127.0.0.1:'), { max: 1, connectionTimeout: 3 })
+  try {
+    const [row] = await sql`
+      SELECT CASE WHEN NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ashyq_app') THEN false
+                  WHEN to_regclass('public.users') IS NULL THEN true
+                  ELSE has_table_privilege('ashyq_app', 'public.users', 'INSERT') END AS ok`
+    return row?.ok ? 'app' : 'owner'
+  } catch {
+    return 'owner'
+  } finally {
+    await sql.close()
+  }
 }
 
 /** Environment of `ashyq serve` / `worker` / `migrate` / `admin` for one API instance. */
-export function serverEnv(opts: { api: number; redisDb: number; db: string; origins: string[]; webUrl: string }) {
+export function serverEnv(opts: {
+  api: number
+  redisDb: number
+  db: string
+  origins: string[]
+  webUrl: string
+  /** `app` for serve/worker when the role is set up (appRoleFor); migrate and admin commands stay `owner`. */
+  role?: DbRole
+}) {
   const env = devEnv()
   const own = Object.fromEntries(Object.entries(env).filter(([key]) => key.startsWith('AB__') || key === 'RUST_LOG'))
   return {
@@ -102,7 +140,7 @@ export function serverEnv(opts: { api: number; redisDb: number; db: string; orig
     AB__SERVER__PORT: String(opts.api),
     AB__SERVER__CORS_ORIGINS: JSON.stringify(opts.origins),
     AB__SERVER__WEB_URL: opts.webUrl,
-    AB__DATABASE__URL: databaseUrl(env, opts.db),
+    AB__DATABASE__URL: databaseUrl(env, opts.db, opts.role),
     AB__REDIS__URL: `redis://:${env['REDIS_PASSWORD']}@localhost:${env['DEV_REDIS_PORT']}/${opts.redisDb}`,
     NO_COLOR: '1',
   }
