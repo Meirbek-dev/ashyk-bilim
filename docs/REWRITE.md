@@ -761,6 +761,9 @@ Decided, not done:
    `-- contract:` file), `rollback.sh` may skip the "migrations differ" refusal.
 10. **Zitadel in its own Postgres instance** until phase 4 removes it (done in the repo, 2026-11): compose service
     `zitadel-db`, `ZITADEL_DB_HOST`; production moves with `just zitadel-db-move` in a window (RUNBOOK 3.15).
+11. **Schemas** (core, learning, ai, analytics, ops) and an `extensions` schema. Prepared (2026-11): db-init
+    creates the empty `extensions` schema; moving pgvector there is the superuser step of RUNBOOK 2.6. No table
+    has moved; the schemas need the roles' `search_path` (set by that step) and grants per schema.
 
 ## 6. Auth
 

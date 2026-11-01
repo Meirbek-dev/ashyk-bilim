@@ -12,6 +12,11 @@
 -- databases of #[sqlx::test]; the migration's CREATE EXTENSION IF NOT EXISTS no-ops.
 \connect template1
 CREATE EXTENSION IF NOT EXISTS vector;
+-- Schema review 43 (preparation): extensions get a schema of their own, out of the app's namespace. Created empty
+-- in template1 (every later database) and by db-init.sh in each app database; moving pgvector into it is a
+-- superuser step, not done yet (infra/postgres/vector-to-extensions.sql, RUNBOOK 2.6).
+CREATE SCHEMA IF NOT EXISTS extensions;
+GRANT USAGE ON SCHEMA extensions TO PUBLIC;
 \connect postgres
 -- Statement statistics of every database (`just prod-report`), read by the superuser from `postgres`.
 -- Needs shared_preload_libraries (the db command); a server started without it skips this.

@@ -2,7 +2,8 @@
 # Least-privilege roles (infra/postgres/roles.sql, RUNBOOK 2.5) on a throwaway Postgres of the stack's image,
 # no network, removed on exit: db-init as compose runs it, every migration as the owner, then what ashyq_app and
 # ashyq_ro may and may not do - on a fresh install (default privileges), after a re-run of db-init (an existing
-# database), and in a database the owner creates later (template1's defaults). `just ci-infra` runs it.
+# database), in a database the owner creates later (template1's defaults), and after pgvector moved into the
+# extensions schema (infra/postgres/vector-to-extensions.sql, schema review 43). `just ci-infra` runs it.
 source "$(dirname "$0")/../scripts/lib.sh"
 [[ -n $CTR ]] || die "db-roles: no container runtime"
 
@@ -82,6 +83,20 @@ x psql -X -q -U ashyq -d postgres -c 'CREATE DATABASE ashyq_later'
 migrate ashyq_later
 log "db-roles: a database created after db-init (template1's defaults)"
 DB=ashyq_later probe
+
+# Schema review 43 (preparation): db-init's empty extensions schema, then the superuser step that moves pgvector.
+for d in ashyq ashyq_later; do
+  [[ $(x psql -X -U postgres -d "$d" -Atc "SELECT count(*) FROM pg_namespace WHERE nspname = 'extensions'") == 1 ]] ||
+    { log "FAIL: $d has no extensions schema"; failures=$((failures + 1)); }
+done
+x psql -X -q -U postgres -d ashyq -v ON_ERROR_STOP=1 -f /pg/vector-to-extensions.sql >/dev/null
+log "db-roles: pgvector moved to the extensions schema"
+[[ $(x psql -X -U postgres -d ashyq -Atc "SELECT extnamespace::regnamespace FROM pg_extension WHERE extname = 'vector'") == extensions ]] ||
+  { log "FAIL: vector is not in the extensions schema"; failures=$((failures + 1)); }
+check ashyq_app ok "SELECT '[1,2]'::vector <=> '[1,3]'::vector, (SELECT count(embedding <=> embedding) FROM content_chunks)"
+check ashyq_ro ok "SELECT count(embedding <=> embedding) FROM content_chunks"
+check ashyq ok "CREATE TABLE vector_check (v vector(3)); DROP TABLE vector_check"
+probe
 
 ((failures == 0)) || die "db-roles: $failures privilege checks failed"
 log "db-roles ok"

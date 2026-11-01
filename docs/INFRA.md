@@ -127,6 +127,8 @@ SQL text, including any inline literals, is still logged. Startup flags apply to
 existing volumes too; changing them requires recreating the `db` container.
 `pg_stat_statements` is preloaded (top-level statements only) and created in the `postgres` database by
 db-init when loaded; `just prod-report` lists the app database's statements by total time from there.
+db-init also creates an empty `extensions` schema (`USAGE` to `PUBLIC`) in template1 and every app database:
+pgvector still lives in `public` until the superuser step of RUNBOOK 2.6 (`vector-to-extensions.sql`) moves it.
 
 | Role | Superuser | Created by | Used by |
 | --- | --- | --- | --- |

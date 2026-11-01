@@ -143,6 +143,28 @@ Switching production on (one window; not done yet):
 Rollback: `AB__DATABASE__URL` back to `ashyq` and recreate server and worker; the roles and grants can stay. A job
 that legitimately needs longer statements sets `SET LOCAL statement_timeout` in its own transaction.
 
+### 2.6 pgvector into the extensions schema (prepared, not done)
+
+Schema review 43 moves extensions out of `public` before the app tables move into schemas of their own (core,
+learning, ai, analytics, ops: REWRITE 5.7, after this release). db-init already creates an empty `extensions`
+schema (`USAGE` for everyone) in template1 and every app database. Moving pgvector needs the superuser and a
+short window, because sessions opened before keep a search_path without the schema:
+
+```bash
+dc stop server worker
+for d in ashyq template1; do
+  dc exec -T db sh -c "psql -U \"\$POSTGRES_USER\" -d $d -v ON_ERROR_STOP=1 -f /pg/vector-to-extensions.sql"
+done
+dc up -d --wait server worker   # then smoke (0. Conventions)
+```
+
+`infra/postgres/vector-to-extensions.sql` sets `search_path = "$user", public, extensions` on the roles `ashyq`,
+`ashyq_app` and `ashyq_ro` (role level: every database, test clones included) and runs
+`ALTER EXTENSION vector SET SCHEMA extensions`: no table is rewritten, `content_chunks.embedding` keeps its type.
+Dev: the same against the dev cluster as its superuser, plus each test database. Back:
+`ALTER EXTENSION vector SET SCHEMA public` (and `ALTER ROLE ... RESET search_path`) in the same way.
+`infra/tests/db-roles.sh` rehearses it on a migrated throwaway database.
+
 ## 3. Routine
 
 ### 3.1 Deploy
