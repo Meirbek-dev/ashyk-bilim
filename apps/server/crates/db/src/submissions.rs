@@ -7,8 +7,9 @@ use ab_core::assessments::{
     CodeRunStatus, SubmissionStatus, TestVerdict,
 };
 use ab_core::id::{
-    ActivityId, AssessmentId, AssessmentItemId, BulkActionId, CodeRunId, CourseId, FileAttemptId,
-    FileSubmissionId, GradingEntryId, ItemFeedbackId, SubmissionId, UserId, UsergroupId,
+    ActivityId, AssessmentId, AssessmentItemId, AssessmentVersionId, BulkActionId, CodeRunId,
+    CourseId, FileAttemptId, FileSubmissionId, GradingEntryId, ItemFeedbackId, SubmissionId,
+    UserId, UsergroupId,
 };
 use sqlx::PgPool;
 
@@ -351,6 +352,9 @@ pub struct SubmitOutcome<'a> {
     /// (`submissions_handed_in_snapshots`, `submissions_snapshots_frozen`).
     pub items_snapshot: &'a serde_json::Value,
     pub policy_snapshot: &'a serde_json::Value,
+    /// The stored version holding exactly these snapshots
+    /// (`assessment_versions::ensure`).
+    pub assessment_version_id: AssessmentVersionId,
 }
 
 /// Draft → submitted. `false` when the row is no longer a draft (a
@@ -371,7 +375,8 @@ pub async fn persist_submit<'e>(
                graded_at = CASE WHEN $11 THEN now() ELSE NULL END,
                duration_seconds = $12,
                items_snapshot = COALESCE(items_snapshot, $16),
-               policy_snapshot = COALESCE(policy_snapshot, $17)
+               policy_snapshot = COALESCE(policy_snapshot, $17),
+               assessment_version_id = COALESCE(assessment_version_id, $18)
            WHERE id = $1 AND status = 'draft'
              AND draft_version = $14 AND violation_count = $15"#,
         id.0,
@@ -390,7 +395,8 @@ pub async fn persist_submit<'e>(
         o.read_draft_version,
         o.read_violation_count,
         o.items_snapshot,
-        o.policy_snapshot
+        o.policy_snapshot,
+        o.assessment_version_id.0
     )
     .execute(db)
     .await?;

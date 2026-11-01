@@ -438,6 +438,13 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   join them and nothing writes a copy. An activity with an assessment cannot change its type
   (`activities_keep_assessment_type`). Until the contract drops `assessments.title` / `kind`, triggers keep the
   copies equal to the activity for the previous release.
+- **Assessment versions** (`20261102020600_assessment_versions`, first step of REWRITE 5.6 n7): each distinct
+  (items, policy) pair a learner handed in against is one `assessment_versions` row, numbered per assessment,
+  content-addressed (`content_hash` = `assessment_content_hash(items, policy)`, computed by Postgres) and frozen;
+  `max_points` is the items' total `max_score`. The hand-in creates or reuses it in its own short transaction
+  before the hand-in's (`assessment_versions::ensure`, per-assessment advisory lock for the number) and names
+  it in the hand-in UPDATE; `submissions.assessment_version_id` is then write-once like the snapshots. The
+  snapshots stay the record until readers move (REWRITE 5.6 n15).
 - **Code-run verdicts are the platform's own** (`code_run_cases.verdict`, `TestVerdict`: accepted, wrong_answer,
   time_limit, memory_limit, output_limit, compile_error, runtime_error, internal_error). The API's case
   `status_id` is derived from it (`legacy_status_id`, Judge0's numbers that both web clients map); until the

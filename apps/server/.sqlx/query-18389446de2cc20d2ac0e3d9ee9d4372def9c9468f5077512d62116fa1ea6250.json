@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: AssessmentVersionId\" FROM assessment_versions\n           WHERE assessment_id = $1 AND content_hash = assessment_content_hash($2, $3)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AssessmentVersionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_versions",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "18389446de2cc20d2ac0e3d9ee9d4372def9c9468f5077512d62116fa1ea6250"
+}

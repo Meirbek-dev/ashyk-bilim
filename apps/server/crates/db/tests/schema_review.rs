@@ -34,6 +34,8 @@
 //!   entry's; a grade written to only one side fails at commit.
 //! - review 2, item 5: an assessment's title and kind are its activity's;
 //!   a rename shows at once, and the activity cannot change its type.
+//! - review 2, item 4: each distinct (items, policy) pair handed in is one
+//!   numbered, frozen assessment version; a hand-in names it once.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -920,4 +922,52 @@ async fn an_assessment_is_named_and_typed_by_its_activity(pool: PgPool) {
         retyped.is_err(),
         "an activity with an assessment keeps its type"
     );
+}
+
+#[ab_testdb::test]
+async fn a_hand_in_names_one_frozen_assessment_version(pool: PgPool) {
+    let w = world(&pool).await;
+    let id = ab_core::id::AssessmentId(w.assessment);
+    let items = serde_json::json!({ "items": [{ "max_score": 2.5 }, { "max_score": 1 }] });
+    let policy = serde_json::json!({ "max_attempts": 1 });
+    let first = ab_db::assessment_versions::ensure(&pool, id, &items, &policy)
+        .await
+        .unwrap();
+    let same = ab_db::assessment_versions::ensure(&pool, id, &items, &policy)
+        .await
+        .unwrap();
+    assert_eq!(first, same, "the same content is one version");
+    let other = serde_json::json!({ "max_attempts": 2 });
+    let second = ab_db::assessment_versions::ensure(&pool, id, &items, &other)
+        .await
+        .unwrap();
+    let rows: Vec<(i32, f64)> = sqlx::query_as(
+        "SELECT number, max_points::float8 FROM assessment_versions
+         WHERE assessment_id = $1 ORDER BY number",
+    )
+    .bind(w.assessment)
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(rows, vec![(1, 3.5), (2, 3.5)]);
+
+    let frozen = sqlx::query("UPDATE assessment_versions SET policy = '{}' WHERE id = $1")
+        .bind(first.0)
+        .execute(&pool)
+        .await;
+    assert!(frozen.is_err(), "a version never changes");
+
+    let sub = submission(&pool, &w, 1, false).await.unwrap();
+    sqlx::query("UPDATE submissions SET assessment_version_id = $2 WHERE id = $1")
+        .bind(sub)
+        .bind(first.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let moved = sqlx::query("UPDATE submissions SET assessment_version_id = $2 WHERE id = $1")
+        .bind(sub)
+        .bind(second.0)
+        .execute(&pool)
+        .await;
+    assert!(moved.is_err(), "a hand-in names its version once");
 }

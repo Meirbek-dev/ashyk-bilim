@@ -7,6 +7,7 @@
 
 pub mod ai;
 pub mod analytics;
+pub mod assessment_versions;
 pub mod assessments;
 pub mod catalog;
 pub mod certifications;

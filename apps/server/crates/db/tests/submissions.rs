@@ -89,6 +89,9 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
     // Submit happens once; the second attempt sees no draft.
     let grading = serde_json::json!({ "items": [], "needs_manual_review": false });
     let snapshot = serde_json::json!({});
+    let version = ab_db::assessment_versions::ensure(&pool, assessment, &snapshot, &snapshot)
+        .await
+        .unwrap();
     let outcome = SubmitOutcome {
         status: SubmissionStatus::Published,
         answers: &answers,
@@ -106,6 +109,7 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
         read_violation_count: 0,
         items_snapshot: &snapshot,
         policy_snapshot: &snapshot,
+        assessment_version_id: version,
     };
     assert!(
         submissions::persist_submit(&pool, first, outcome)
@@ -129,6 +133,7 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
         read_violation_count: 0,
         items_snapshot: &snapshot,
         policy_snapshot: &snapshot,
+        assessment_version_id: version,
     };
     assert!(
         !submissions::persist_submit(&pool, first, again)

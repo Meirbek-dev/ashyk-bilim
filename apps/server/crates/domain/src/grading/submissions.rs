@@ -1079,6 +1079,14 @@ impl SubmissionsService {
         // start landing during the grade itself precedes the hand-in, as if
         // it had been issued before the submit.
         let (items_snapshot, policy_snapshot) = snapshots(&items, &assessment, &effective);
+        // Its own short transaction, before the hand-in's (BUG-377).
+        let version = ab_db::assessment_versions::ensure(
+            pool,
+            assessment.id,
+            &items_snapshot,
+            &policy_snapshot,
+        )
+        .await?;
         let mut attempts = pool.begin().await?;
         ab_db::submissions::lock_attempts(&mut attempts, assessment.id, submission.user_id).await?;
         let written = ab_db::submissions::persist_submit(
@@ -1103,6 +1111,7 @@ impl SubmissionsService {
                 read_violation_count: submission.violation_count,
                 items_snapshot: &items_snapshot,
                 policy_snapshot: &policy_snapshot,
+                assessment_version_id: version,
             },
         )
         .await?;
