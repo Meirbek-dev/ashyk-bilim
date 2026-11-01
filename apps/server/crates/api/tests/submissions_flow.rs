@@ -579,16 +579,17 @@ async fn batch_release_hides_scores_and_open_text_waits_for_review(pool: PgPool)
     assert_eq!(submitted.json()["status"], "pending");
     assert_eq!(submitted.json()["release_state"], "hidden");
     assert_eq!(submitted.json()["answers"][&items[1]]["text"], "Because.");
-    let (status, graded_at_set, entries): (String, bool, i64) = sqlx::query_as(
-        "SELECT s.status, s.graded_at IS NOT NULL,
+    let (status, graded_at_set, entries): (ab_core::assessments::SubmissionStatus, bool, i64) =
+        sqlx::query_as(
+            "SELECT s.status, s.graded_at IS NOT NULL,
                 (SELECT count(*) FROM grading_entries g WHERE g.submission_id = s.id)
          FROM submissions s WHERE s.id = $1",
-    )
-    .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
-    .fetch_one(&app.pool)
-    .await
-    .unwrap();
-    assert_eq!(status, "pending");
+        )
+        .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(status.as_str(), "pending");
     assert!(!graded_at_set);
     assert_eq!(entries, 0);
 }
@@ -2388,7 +2389,7 @@ async fn timer_sweep_hands_an_ungradable_draft_in_for_review(pool: PgPool) {
             .unwrap();
     }
     let (status, reason, answers, attempts, at_clock_out): (
-        String,
+        ab_core::assessments::SubmissionStatus,
         Option<String>,
         serde_json::Value,
         i32,
