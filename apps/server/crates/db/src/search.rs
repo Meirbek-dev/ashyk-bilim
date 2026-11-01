@@ -279,7 +279,7 @@ pub async fn search_users(
         UserHitRow,
         r#"SELECT id AS "id: UserId", username, display_name, avatar_key
            FROM users
-           WHERE status = 'active'
+           WHERE disabled_at IS NULL
              AND (search_fold(username) LIKE search_fold($1) ESCAPE '\'
                   OR search_fold(display_name) LIKE search_fold($1) ESCAPE '\')
              AND search_matches(username || ' ' || display_name, ARRAY[]::text[], $4, ARRAY[]::text[])

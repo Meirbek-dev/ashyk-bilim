@@ -570,7 +570,7 @@ async fn admin_writes_answer_the_resource_on_request(pool: PgPool) {
     // A deleted account (blank name) comes after every named one, not first.
     let gone = app.create_user("gone", "gone@example.com", &["user"]).await;
     sqlx::query(
-        "UPDATE users SET display_name = '', status = 'disabled', deleted_at = now() WHERE id = $1",
+        "UPDATE users SET display_name = '', disabled_at = now(), deleted_at = now() WHERE id = $1",
     )
     .bind(gone.0)
     .execute(&app.pool)

@@ -584,7 +584,7 @@ async fn roster_enrols_by_email_or_username(pool: PgPool) {
     let carol = app
         .create_user("carol", "carol@example.com", &["user"])
         .await;
-    sqlx::query("UPDATE users SET status = 'disabled' WHERE id = $1")
+    sqlx::query("UPDATE users SET disabled_at = now() WHERE id = $1")
         .bind(carol.0)
         .execute(&pool)
         .await

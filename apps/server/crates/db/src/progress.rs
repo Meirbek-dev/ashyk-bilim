@@ -971,7 +971,7 @@ pub async fn resolve_enrol_targets(
     let rows = sqlx::query_as!(
         EnrolTargetRow,
         r#"SELECT u.id AS "user_id: UserId", u.username, u.display_name, u.email,
-                  u.status = 'active' AS "active!",
+                  u.disabled_at IS NULL AS "active!",
                   EXISTS (SELECT 1 FROM trail_runs tr
                           WHERE tr.course_id = $1 AND tr.user_id = u.id) AS "member!",
                   is_course_staff($1, u.id) AS "staff!"

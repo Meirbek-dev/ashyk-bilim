@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"total!\" FROM users u\n           WHERE ($1::text IS NULL OR u.username ILIKE $1 ESCAPE ''\n                  OR u.display_name ILIKE $1 ESCAPE '' OR u.email ILIKE $1 ESCAPE ''\n                  OR u.organization ILIKE $1 ESCAPE '')\n             AND ($2::text IS NULL OR (u.disabled_at IS NULL) = ($2 = 'active'))\n             AND ($3::text IS NULL OR EXISTS (\n                   SELECT 1 FROM user_roles fr JOIN roles f ON f.id = fr.role_id\n                   WHERE fr.user_id = u.id AND f.slug = $3))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "ddc1949e6c39a60b698d7815af70094778f4dada1aff93fe8183d9e7a32fa7c6"
+}

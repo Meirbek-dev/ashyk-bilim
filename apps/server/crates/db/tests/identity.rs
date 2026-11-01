@@ -163,3 +163,119 @@ async fn audit_ips_are_inet_and_junk_is_null(pool: PgPool) {
         assert_eq!(stored, vec![want.map(str::to_owned); 2], "{ip:?}");
     }
 }
+
+async fn state(pool: &PgPool, id: uuid::Uuid) -> (String, bool, Option<bool>, bool) {
+    sqlx::query_as(
+        "SELECT status, disabled_at IS NOT NULL, email_verified, email_verified_at IS NOT NULL
+         FROM users WHERE id = $1",
+    )
+    .bind(id)
+    .fetch_one(pool)
+    .await
+    .unwrap()
+}
+
+/// Review 3, items 28-29: the account state is `disabled_at` /
+/// `email_verified_at`; until the contract step every write to either the
+/// new columns (this release) or the old `status` / `email_verified` (the
+/// previous one) shows up on the other side, and a deleted account keeps a
+/// `disabled_at`.
+#[ab_testdb::test]
+async fn account_state_timestamps_mirror_the_old_columns(pool: PgPool) {
+    use ab_core::id::UserId;
+    let id = ab_db::identity::create_user_with_default_role(
+        &pool,
+        "z-state",
+        "state",
+        "state@example.com",
+        "S",
+        None,
+        "",
+        false,
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(
+        state(&pool, id.0).await,
+        ("active".into(), false, Some(false), false)
+    );
+
+    // This release writes the new columns.
+    ab_db::identity::set_email_verified(&pool, id, true)
+        .await
+        .unwrap();
+    let mut conn = pool.acquire().await.unwrap();
+    ab_db::identity::set_user_status(&mut conn, id, "disabled")
+        .await
+        .unwrap();
+    assert_eq!(
+        state(&pool, id.0).await,
+        ("disabled".into(), true, Some(true), true)
+    );
+    assert_eq!(
+        ab_db::identity::user_status(&pool, id)
+            .await
+            .unwrap()
+            .as_deref(),
+        Some("disabled")
+    );
+
+    // The previous release writes the old ones.
+    sqlx::query("UPDATE users SET status = 'active', email_verified = false WHERE id = $1")
+        .bind(id.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        state(&pool, id.0).await,
+        ("active".into(), false, Some(false), false)
+    );
+    let profile = ab_db::identity::get_profile(&pool, id)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(profile.email_verified, Some(false));
+    let old: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO users (zitadel_user_id, username, email, status, email_verified)
+         VALUES ('z-old', 'old', 'old@example.com', 'disabled', true) RETURNING id",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        state(&pool, old).await,
+        ("disabled".into(), true, Some(true), true)
+    );
+    // An account older than `email_verified` stays "not known yet".
+    let unknown: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO users (zitadel_user_id, username, email) VALUES ('z-u', 'u', 'u@example.com')
+         RETURNING id",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let profile = ab_db::identity::get_profile(&pool, UserId(unknown))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(profile.email_verified, None);
+
+    // A deleted account is disabled on both sides.
+    let mut tx = pool.begin().await.unwrap();
+    assert!(
+        ab_db::identity::anonymise_user(&mut tx, id, "deleted-x")
+            .await
+            .unwrap()
+    );
+    tx.commit().await.unwrap();
+    assert_eq!(
+        state(&pool, id.0).await,
+        ("disabled".into(), true, Some(true), true)
+    );
+    let revived = sqlx::query("UPDATE users SET disabled_at = NULL WHERE id = $1")
+        .bind(id.0)
+        .execute(&pool)
+        .await;
+    assert!(revived.is_err(), "a deleted account keeps disabled_at");
+}

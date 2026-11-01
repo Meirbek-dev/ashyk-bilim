@@ -683,13 +683,13 @@ async fn a_deleted_account_stays_disabled(pool: PgPool) {
         .bind(id)
         .execute(&pool)
         .await;
-    assert!(active.is_err(), "deleted_at needs status = 'disabled'");
-    sqlx::query("UPDATE users SET status = 'disabled', deleted_at = now() WHERE id = $1")
+    assert!(active.is_err(), "deleted_at needs disabled_at");
+    sqlx::query("UPDATE users SET disabled_at = now(), deleted_at = now() WHERE id = $1")
         .bind(id)
         .execute(&pool)
         .await
         .unwrap();
-    let reenabled = sqlx::query("UPDATE users SET status = 'active' WHERE id = $1")
+    let reenabled = sqlx::query("UPDATE users SET disabled_at = NULL WHERE id = $1")
         .bind(id)
         .execute(&pool)
         .await;

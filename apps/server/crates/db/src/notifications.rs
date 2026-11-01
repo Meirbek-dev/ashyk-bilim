@@ -30,7 +30,7 @@ pub async fn insert_many(
         r#"INSERT INTO notifications (user_id, kind, payload, dedup_key)
            SELECT DISTINCT r.user_id, $2::text, $3::jsonb, $4::text
            FROM unnest($1::uuid[]) AS r(user_id)
-           JOIN users u ON u.id = r.user_id AND u.status = 'active'
+           JOIN users u ON u.id = r.user_id AND u.disabled_at IS NULL
            WHERE NOT EXISTS (SELECT 1 FROM notification_opt_outs o
                              WHERE o.user_id = r.user_id AND o.kind = $2)
              -- A link into a course or activity deleted meanwhile is not sent (the
@@ -73,7 +73,7 @@ pub async fn upsert_work_submitted(
         r#"WITH recipients AS (
                SELECT DISTINCT r.user_id
                FROM unnest($1::uuid[]) AS r(user_id)
-               JOIN users u ON u.id = r.user_id AND u.status = 'active'
+               JOIN users u ON u.id = r.user_id AND u.disabled_at IS NULL
                WHERE NOT EXISTS (SELECT 1 FROM notification_opt_outs o
                                  WHERE o.user_id = r.user_id AND o.kind = 'work_submitted')),
            folded AS (

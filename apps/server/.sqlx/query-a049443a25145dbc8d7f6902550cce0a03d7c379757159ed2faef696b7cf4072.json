@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET email_verified = $2,\n             email_verified_at = CASE WHEN $2 THEN coalesce(email_verified_at, now()) END\n         WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a049443a25145dbc8d7f6902550cce0a03d7c379757159ed2faef696b7cf4072"
+}

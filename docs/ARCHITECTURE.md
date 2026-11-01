@@ -396,7 +396,12 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   from its submission / attempt. The guards compare the whole row, so a new column is frozen too. The one
   extra change is `graded_by` becoming NULL (its `ON DELETE SET NULL`), so a grader can be erased by hand
   (`20261102000100_ledger_grader_erasure.sql`); naming another grader is refused.
-- **A deleted account stays disabled**: `deleted_at IS NULL OR status = 'disabled'` (same migration).
+- **A deleted account stays disabled**: `deleted_at IS NULL OR disabled_at IS NOT NULL`.
+- **Account state is timestamps** (`20261102011100`): `users.disabled_at` (NULL = active) and
+  `users.email_verified_at` (NULL = not confirmed). The old `status` / `email_verified` columns are mirrored both
+  ways by `users_sync_state` for the previous release; `status` goes in a contract migration, `email_verified`
+  stays while it still marks accounts whose state is not known yet (`NULL`, resolved from Zitadel on first read).
+  The API still says `status: active|disabled` and `email_verified: bool`.
 - **Every foreign key has an index led by its columns** (`crates/db/tests/fk_index_audit.rs`); the exceptions are
   actor/audit columns onto `users` (never deleted by the app), each listed with its reason.
 - **Retention** (`maintenance:retention`, daily, windows `AB__RETENTION__*`): succeeded jobs 14 days, failed/dead
