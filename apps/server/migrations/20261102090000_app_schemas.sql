@@ -122,8 +122,12 @@ BEGIN
         WHERE c.relnamespace = 'public'::regnamespace
           AND c.relkind IN ('r', 'p', 'v', 'm', 'S')
           AND c.relname <> '_sqlx_migrations'
+          -- not an extension's member; a sequence owned by a column moves with its table
           AND NOT EXISTS (SELECT FROM pg_depend d
-                          WHERE d.classid = 'pg_class'::regclass AND d.objid = c.oid AND d.deptype IN ('e', 'a', 'i'))
+                          WHERE d.classid = 'pg_class'::regclass AND d.objid = c.oid
+                            AND (d.deptype = 'e'
+                                 OR (c.relkind = 'S' AND d.deptype IN ('a', 'i')
+                                     AND d.refclassid = 'pg_class'::regclass AND d.refobjid <> c.oid)))
         ORDER BY c.relispartition, c.relname
     LOOP
         EXECUTE format('ALTER %s public.%I SET SCHEMA %I',
