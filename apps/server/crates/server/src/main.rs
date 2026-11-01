@@ -205,7 +205,7 @@ async fn main() -> anyhow::Result<()> {
         Command::Admin {
             command: AdminCommand::RestoreCourse { course },
         } => {
-            let pool = ab_db::connect(&config.database).await?;
+            let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
             if !ab_db::catalog::restore_deleted_course(&pool, course).await? {
                 anyhow::bail!("no deleted course {course} (never deleted, or already purged)");
             }
