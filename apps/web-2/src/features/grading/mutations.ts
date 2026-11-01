@@ -34,6 +34,7 @@ import type {
   BulkGradeSummary,
   CourseId,
   DeadlineExtensionRequest,
+  GradeDraftView,
   TeacherSubmission,
 } from '#/shared/api/gen/types.gen'
 
@@ -70,7 +71,8 @@ const statsKey = (work: Work): QueryKey =>
     : fileSubmissionReviewStatsQueryKey({ path: { file_submission_id: work.id } })
 
 // Counts, history, the course gradebook and the teacher inbox change with a grade: read again where shown next.
-// A saved grade closes the work's AI draft (docs/AI-FIRST.md 4.3): the review card and the queue column change too.
+// A saved grade closes the work's AI draft (docs/AI-FIRST.md 4.3): the queue column is read again, the review's own
+// card is closed in place (`closeDraft`), so the page shown does not read it a second time.
 const afterGrade = ({ work, courseId, activityId, submissionId }: ReviewIds): QueryKey[] => [
   statsKey(work),
   work.kind === 'assessment'
@@ -78,14 +80,21 @@ const afterGrade = ({ work, courseId, activityId, submissionId }: ReviewIds): Qu
     : fileGradingHistoryQueryKey({ path: { attempt_id: submissionId } }),
   gradebookInfiniteQueryKey({ path: { course_id: courseId } }),
   workQueueInfiniteQueryKey(),
-  subjectGradeDraftQueryKey({ path: { subject_id: submissionId } }),
   activityGradeDraftsQueryKey({ path: { activity_id: activityId } }),
 ]
+
+/** The server applied the work's live draft with the grade: the review card (shown only for a ready one) goes. */
+const closeDraft = (queryClient: QueryClient, submissionId: string) =>
+  queryClient.setQueryData<GradeDraftView | null>(
+    subjectGradeDraftQueryKey({ path: { subject_id: submissionId } }),
+    draft => (draft?.status === 'ready' ? { ...draft, status: 'applied' } : draft),
+  )
 
 export const saveGradeOptions = (queryClient: QueryClient, ids: ReviewIds) => ({
   ...saveGradeMutation(),
   onSuccess: (saved: TeacherSubmission) => {
     queryClient.setQueryData(reviewSubmissionQueryKey({ path: { submission_id: saved.id } }), saved)
+    closeDraft(queryClient, ids.submissionId)
     patchQueue(queryClient, ids.work, saved)
   },
   meta: { invalidates: afterGrade(ids) },
@@ -95,6 +104,7 @@ export const gradeAttemptOptions = (queryClient: QueryClient, ids: ReviewIds) =>
   ...gradeAttemptMutation(),
   onSuccess: (saved: Attempt) => {
     queryClient.setQueryData(getAttemptQueryKey({ path: { attempt_id: saved.id } }), saved)
+    closeDraft(queryClient, ids.submissionId)
     patchQueue(queryClient, ids.work, saved)
   },
   meta: { invalidates: afterGrade(ids) },

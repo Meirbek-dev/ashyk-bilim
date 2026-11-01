@@ -72,7 +72,7 @@ test('B-CST-33 a new course copied from one of mine opens the copy', async ({ pa
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
 })
 
-test('B-CST-04 the workspace: name, status, 7 tabs; not found; another teacher’s course is no access', async ({
+test('B-CST-04 the workspace: name, status, 9 tabs; not found; another teacher’s course is no access', async ({
   page,
   studio,
 }) => {
@@ -80,7 +80,7 @@ test('B-CST-04 the workspace: name, status, 7 tabs; not found; another teacher�
   await page.goto(tab(course.id, 'overview'))
   await expect(page.getByRole('heading', { level: 1, name: course.name })).toBeVisible()
   const tabs = page.getByRole('navigation', { name: m.ui_sections({}, ru) }).getByRole('link')
-  await expect(tabs).toHaveCount(7)
+  await expect(tabs).toHaveCount(9)
   await expect(tabs.first()).toHaveAttribute('aria-current', 'page')
   expectFailure(page, /^\/teach\/courses\/[^/]+\/overview$/, 404)
   await page.goto(tab(randomUUID(), 'overview'))
