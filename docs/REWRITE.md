@@ -708,6 +708,11 @@ in the order it can be done, each step a forward migration on the current schema
 14. **Permissions** (item 19, rest). `Grant::parse` can read `role_permissions.resource/action/scope`
     directly (the columns exist since 2026-11); a CHECK on `resource` against the Rust enum list would turn the
     enum into a lookup table like `notification_kinds`.
+- **Review queue member test** (found by `query_plans.rs`, 2026-11): `list_teacher_grading_work` asks
+  "is the learner a member" with `EXISTS (trail_runs ... AND NOT is_course_staff(...))` inside a `CASE`; the planner
+  turns it into a hashed scan of every `trail_runs` row, calling `is_course_staff` per enrolment of the platform on
+  each load. Goes with the enrolments table (5): a join on `enrolments (course_id, user_id)`, staff excluded once;
+  then add `trail_runs`/`enrolments` to the case's `no_seq_scan`.
 
 ### 5.7 Schema review 2 (2026-11-01): owner decisions
 
@@ -739,7 +744,8 @@ Decided, not done:
 4. **Learner search and AI context check visibility at query time** (activity published, course not archived,
    the caller's access) instead of the copied `content_chunks.published`, which is dropped (expand/contract).
 5. **Postgres settings as one file** (`infra/postgres/postgresql.conf`): memory sized to the 1 GB container,
-   `random_page_cost = 1.1`, `pg_stat_statements` with a top-by-total-time section in `prod-report`,
+   `random_page_cost = 1.1`, `pg_stat_statements` with a top-by-total-time section in `prod-report` (done:
+   preloaded by the db command, created in `postgres` by db-init, section `top statements`),
    `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; the pool sets
    `statement_timeout` and `application_name`; Zitadel's role gets a connection limit.
 6. **Journals are protected by privileges too**: the app role loses UPDATE/DELETE on grade and audit journals;

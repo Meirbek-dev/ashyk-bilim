@@ -10,6 +10,10 @@
 \connect template1
 CREATE EXTENSION IF NOT EXISTS vector;
 \connect postgres
+-- Statement statistics of every database (`just prod-report`), read by the superuser from `postgres`.
+-- Needs shared_preload_libraries (the db command); a server started without it skips this.
+SELECT 'CREATE EXTENSION IF NOT EXISTS pg_stat_statements'
+WHERE current_setting('shared_preload_libraries') ~ 'pg_stat_statements' \gexec
 
 SELECT format('CREATE ROLE ashyq LOGIN PASSWORD %L', :'ashyq_password')
 WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ashyq') \gexec

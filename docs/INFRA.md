@@ -121,6 +121,8 @@ rotating container log), with timestamp, PID, user, database and application.
 disables it; `0` logs every statement). Bound parameter values are suppressed;
 SQL text, including any inline literals, is still logged. Startup flags apply to
 existing volumes too; changing them requires recreating the `db` container.
+`pg_stat_statements` is preloaded (top-level statements only) and created in the `postgres` database by
+db-init when loaded; `just prod-report` lists the app database's statements by total time from there.
 
 | Role | Superuser | Created by | Used by |
 | --- | --- | --- | --- |

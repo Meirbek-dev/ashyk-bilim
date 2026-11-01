@@ -8,6 +8,8 @@
 //   nginx       5xx per method and route (ids and query strings folded), share of all requests
 //   jobs        failed/dead jobs per kind with the last error
 //   checks      CHECK constraints a migration skipped because old rows violate them (RUNBOOK 2.4)
+//   statements  the app database's statements by total execution time since the last stats reset
+//               (pg_stat_statements; their text has parameters as $n, never values)
 //
 // User ids, emails, IPs and tokens are redacted; each section prints at most 15 rows.
 import { spawnSync } from 'node:child_process'
@@ -122,10 +124,16 @@ function nginx(names: string[]): string[] {
   return [`  ${failed} of ${total} requests answered 5xx (${share} %)`, ...table([...rows.values()])]
 }
 
-function psql(names: string[], sql: string): { rows: string[] } | { error: string } {
+function psql(names: string[], sql: string, database = 'ashyq'): { rows: string[] } | { error: string } {
   const db = names.find(n => /-db-\d+$/.test(n))
   if (!db) return { error: '  no db container' }
-  const out = docker('exec', db, 'sh', '-c', `psql -U "$POSTGRES_USER" -d ashyq -AtF'|' -v ON_ERROR_STOP=1 -c "${sql}"`)
+  const out = docker(
+    'exec',
+    db,
+    'sh',
+    '-c',
+    `psql -U "$POSTGRES_USER" -d ${database} -AtF'|' -v ON_ERROR_STOP=1 -c "${sql}"`,
+  )
   if (out.code !== 0) return { error: `  query failed: ${out.out.trim().slice(0, 300)}` }
   return { rows: out.out.split('\n').filter(Boolean) }
 }
@@ -165,6 +173,33 @@ function checks(names: string[]): string[] {
     : ['  none']
 }
 
+// Where the database time goes: a query that grew a sequential scan climbs this list before anyone notices a page.
+function statements(names: string[]): string[] {
+  const out = psql(
+    names,
+    `SELECT round(s.total_exec_time / 1000)::bigint, s.calls, round(s.mean_exec_time::numeric, 1), s.rows,
+            round(100 * s.shared_blks_hit / greatest(s.shared_blks_hit + s.shared_blks_read, 1)),
+            left(regexp_replace(s.query, '\\s+', ' ', 'g'), 400)
+       FROM pg_stat_statements s JOIN pg_database d ON d.oid = s.dbid
+      WHERE d.datname = 'ashyq' AND s.toplevel
+      ORDER BY s.total_exec_time DESC LIMIT ${ROWS}`,
+    'postgres',
+  )
+  if ('error' in out)
+    return out.error.includes('pg_stat_statements')
+      ? ['  pg_stat_statements is not loaded yet (db command in compose.yaml; recreate db, then just bootstrap)']
+      : [out.error]
+  return out.rows.length
+    ? [
+        '   total s    calls  mean ms     rows  hit %  statement',
+        ...out.rows.map(r => {
+          const [total, calls, mean, rows, hit, query] = r.split('|')
+          return `  ${total?.padStart(8)} ${calls?.padStart(8)} ${mean?.padStart(8)} ${rows?.padStart(8)} ${hit?.padStart(6)}  ${redact(query ?? '').slice(0, 160)}`
+        }),
+      ]
+    : ['  none']
+}
+
 if (import.meta.main) {
   const names = containers()
   if (!names.length) {
@@ -177,6 +212,7 @@ if (import.meta.main) {
     [`nginx 5xx, last ${since}`, nginx(names)],
     [`failed/dead jobs, last ${since}`, jobs(names)],
     ['skipped schema checks', checks(names)],
+    ['top statements by total time (pg_stat_statements)', statements(names)],
   ] as const)
     console.log(`${title}\n${lines.join('\n')}\n`)
 }
