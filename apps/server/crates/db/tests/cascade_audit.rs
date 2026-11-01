@@ -50,6 +50,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         ACTIVITY_DELETE,
     ),
     ("activity_progress", "course_id", "courses", COURSE_DELETE),
+    ("completions", "activity_id", "activities", ACTIVITY_DELETE),
     ("ai_qa_messages", "course_id", "courses", COURSE_DELETE),
     (
         "ai_qa_messages",

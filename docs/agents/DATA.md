@@ -11,7 +11,7 @@ freely, never production's.
 | --------------------------------- | ------------------------------------------------------------------------------------ |
 | course, its picture               | `courses` (`public`, `archived_at`; `thumbnail_image_key` under `/content/<key>`)    |
 | chapter, activity                 | `chapters`, `activities` (`activity_type`, `activity_sub_type`, `published`, `content`) |
-| enrolled learner                  | `enrolments` (`course_id`, `user_id`; staff excluded by `is_course_staff`); the learner's list: `trail_runs`; per activity: `trail_steps`, `activity_progress` |
+| enrolled learner                  | `enrolments` (`course_id`, `user_id`; staff excluded by `is_course_staff`); the learner's list: `trail_runs`; per activity: `completions` (the fact), `activity_progress` (projection), `trail_steps` (legacy marks) |
 | course teacher / author           | `resource_authors` (`course_id`, `user_id`, `authorship`, `status`)                  |
 | quiz, exam, code challenge        | `assessments` (`activity_id`, `kind`, `lifecycle`) + `assessment_items` (`body` json)   |
 | code statement, tests, languages  | `assessment_items.body`: `prompt`, `tests[]`, `languages[]`, `time_limit_seconds`     |

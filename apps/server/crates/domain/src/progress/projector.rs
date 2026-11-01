@@ -270,8 +270,9 @@ impl ProgressProjector {
     // ── Explicit completion (non-submission activities) ─────────────────
 
     /// Mark a lesson/video/document complete (legacy
-    /// `mark_manual_activity_complete`). Assessment and file-submission
-    /// activities are owned by their pipelines and are left alone.
+    /// `mark_manual_activity_complete`): the `completions` row, then its
+    /// projection. Assessment and file-submission activities are owned by
+    /// their pipelines and are left alone.
     ///
     /// Runs on the caller's connection (the trail lock transaction, BUG-220 /
     /// BUG-221): the step and the projection commit together; the caller
@@ -285,6 +286,7 @@ impl ProgressProjector {
         if is_pipeline_owned(&mut *conn, activity).await? {
             return Ok(AfterCommit::default());
         }
+        ab_db::progress::insert_completion(&mut *conn, activity.id, user_id).await?;
         let existing =
             ab_db::progress::get_activity_progress(&mut *conn, activity.id, user_id).await?;
         let write = completed_write(activity, user_id, existing.as_ref(), now_unix());
@@ -298,7 +300,8 @@ impl ProgressProjector {
         })
     }
 
-    /// Undo an explicit completion (same connection rule as `mark_complete`).
+    /// Undo an explicit completion: the `completions` row and its projection
+    /// (same connection rule as `mark_complete`).
     pub async fn unmark_complete(
         &self,
         conn: &mut PgConnection,
@@ -308,6 +311,7 @@ impl ProgressProjector {
         if is_pipeline_owned(&mut *conn, activity).await? {
             return Ok(AfterCommit::default());
         }
+        ab_db::progress::delete_completion(&mut *conn, activity.id, user_id).await?;
         let Some(existing) =
             ab_db::progress::get_activity_progress(&mut *conn, activity.id, user_id).await?
         else {
@@ -817,9 +821,9 @@ async fn projection_for(
     let Some(assessment) =
         ab_db::assessments::get_assessment_by_activity(&mut *conn, activity.id).await?
     else {
-        // Lessons, videos, documents: an explicit completion is a complete
-        // trail step (ETL-migrated steps have no projection row yet).
-        let Some(at) = ab_db::progress::completed_step_at(&mut *conn, activity.id, user_id).await?
+        // Lessons, videos, documents: an explicit completion is a
+        // `completions` row (ETL-migrated ones have no projection row yet).
+        let Some(at) = ab_db::progress::completed_at(&mut *conn, activity.id, user_id).await?
         else {
             return Ok(None);
         };

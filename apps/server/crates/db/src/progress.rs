@@ -746,22 +746,78 @@ pub async fn list_trail_steps(pool: &PgPool, trail_id: TrailId) -> Result<Vec<Tr
     Ok(rows)
 }
 
-/// When `user_id` completed `activity_id` explicitly (a complete trail step),
-/// if they did - the backfill source for non-submission activities.
-pub async fn completed_step_at(
+/// When `user_id` completed `activity_id`, if they did (the `completions`
+/// row) - what the projection of a lesson-type activity reads.
+pub async fn completed_at(
     conn: &mut PgConnection,
     activity_id: ActivityId,
     user_id: UserId,
 ) -> Result<Option<i64>> {
     let at = sqlx::query_scalar!(
-        r#"SELECT (extract(epoch FROM min(created_at)))::bigint
-           FROM trail_steps WHERE activity_id = $1 AND user_id = $2 AND complete"#,
+        r#"SELECT (extract(epoch FROM completed_at))::bigint AS "at!"
+           FROM completions WHERE activity_id = $1 AND user_id = $2"#,
         activity_id.0,
         user_id.0
     )
-    .fetch_one(conn)
+    .fetch_optional(conn)
     .await?;
     Ok(at)
+}
+
+/// Record that `user_id` completed `activity_id` now; `false` when they
+/// already had.
+pub async fn insert_completion(
+    conn: &mut PgConnection,
+    activity_id: ActivityId,
+    user_id: UserId,
+) -> Result<bool> {
+    let inserted = sqlx::query!(
+        "INSERT INTO completions (activity_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        activity_id.0,
+        user_id.0
+    )
+    .execute(conn)
+    .await?;
+    Ok(inserted.rows_affected() == 1)
+}
+
+/// Withdraw a completion; `false` when there was none.
+pub async fn delete_completion(
+    conn: &mut PgConnection,
+    activity_id: ActivityId,
+    user_id: UserId,
+) -> Result<bool> {
+    let deleted = sqlx::query!(
+        "DELETE FROM completions WHERE activity_id = $1 AND user_id = $2",
+        activity_id.0,
+        user_id.0
+    )
+    .execute(conn)
+    .await?;
+    Ok(deleted.rows_affected() == 1)
+}
+
+/// How many completions and projection rows disagree.
+///
+/// A completed `activity_progress` row with no `completions` row, or a
+/// completion whose projection row is missing or not completed.
+/// `maintenance:reconcile` logs it after the re-projection; a month of zeros
+/// is the signal REWRITE 5.6 n8 waits for.
+pub async fn completion_drift(pool: &PgPool) -> Result<i64> {
+    let drift = sqlx::query_scalar!(
+        r#"SELECT
+             (SELECT count(*) FROM activity_progress p
+              WHERE p.completed_at IS NOT NULL
+                AND NOT EXISTS (SELECT 1 FROM completions c
+                                WHERE c.activity_id = p.activity_id AND c.user_id = p.user_id))
+           + (SELECT count(*) FROM completions c
+              WHERE NOT EXISTS (SELECT 1 FROM activity_progress p
+                                WHERE p.activity_id = c.activity_id AND p.user_id = c.user_id
+                                  AND p.completed_at IS NOT NULL)) AS "drift!""#
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(drift)
 }
 
 /// Insert a completed step; `false` when it already existed.

@@ -647,7 +647,11 @@ impl TrailService {
         } else {
             AfterCommit::default()
         };
-        let created = ab_db::progress::insert_trail_step(&mut *tx, &run, activity.id).await?;
+        // The step stays for the trail listing and the previous release;
+        // the completion is the fact and decides whether this mark is new.
+        ab_db::progress::insert_trail_step(&mut *tx, &run, activity.id).await?;
+        let created =
+            ab_db::progress::insert_completion(&mut tx, activity.id, actor.user_id).await?;
         if created {
             hooks = hooks.and(
                 self.projector
@@ -682,7 +686,10 @@ impl TrailService {
             self.course_open(activity.course_id).await?;
         }
         let mut tx = self.lock(actor.user_id, activity.course_id).await?;
-        if ab_db::progress::delete_trail_step(&mut *tx, trail.id, activity.id).await? {
+        let had_step = ab_db::progress::delete_trail_step(&mut *tx, trail.id, activity.id).await?;
+        let had_completion =
+            ab_db::progress::delete_completion(&mut tx, activity.id, actor.user_id).await?;
+        if had_step || had_completion {
             let hooks = self
                 .projector
                 .unmark_complete(&mut tx, &activity, actor.user_id)

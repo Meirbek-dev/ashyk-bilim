@@ -35,6 +35,8 @@
 //! - lane C, item 40: projections and rollups are keyed by their natural key.
 //! - lane C, item 38: the event prune removes events past 400 days and
 //!   keeps the rest, whether or not analytics_events is partitioned.
+//! - lane C, item 12: a completion the previous release projects (or
+//!   clears) in activity_progress is mirrored into completions.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -871,4 +873,51 @@ async fn the_event_prune_keeps_400_days(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(left, 2);
+}
+
+#[ab_testdb::test]
+async fn completions_mirror_the_previous_releases_projection(pool: PgPool) {
+    let w = world(&pool).await;
+    let completions = || async {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM completions WHERE activity_id = $1 AND user_id = $2",
+        )
+        .bind(w.activity)
+        .bind(w.user)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    let write = |sql: &'static str| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query(sql)
+                .bind(w.course)
+                .bind(w.activity)
+                .bind(w.user)
+                .execute(&pool)
+                .await
+                .unwrap();
+        }
+    };
+    write(
+        "INSERT INTO activity_progress (course_id, activity_id, user_id, state)
+         VALUES ($1, $2, $3, 'submitted')",
+    )
+    .await;
+    assert_eq!(completions().await, 0);
+    // A passing grade released: the old binary sets completed_at.
+    write(
+        "UPDATE activity_progress SET state = 'completed', completed_at = now()
+         WHERE course_id = $1 AND activity_id = $2 AND user_id = $3",
+    )
+    .await;
+    assert_eq!(completions().await, 1);
+    // A regrade below the pass mark clears it again.
+    write(
+        "UPDATE activity_progress SET state = 'failed', completed_at = NULL
+         WHERE course_id = $1 AND activity_id = $2 AND user_id = $3",
+    )
+    .await;
+    assert_eq!(completions().await, 0);
 }

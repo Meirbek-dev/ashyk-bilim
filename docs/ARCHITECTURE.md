@@ -425,6 +425,11 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   leave / removal; every member predicate (`has_trail_run`, `course_members`, `takes_assessments`, the work queue,
   analytics, notifications, `course_visible` for archived courses) reads it, never the staff. A trigger mirrors the
   previous release's trail-run inserts/deletes into it until the lane C contract drops it.
+- **A completion is a `completions` row** (`20261102030500_completions.sql`, REWRITE 5.6 n8): `(activity_id,
+  user_id)` PK, `completed_at`. A learner's mark writes it (with the trail step, still kept for the trail listing),
+  un-marking and leaving delete it; the lesson projection reads it, never `trail_steps`. Graded kinds complete
+  through their projection: a trigger on `activity_progress.completed_at` inserts/deletes the row (for both
+  releases), until the grade transaction writes it itself.
 - **`course_progress` derives what follows from it** (`20261102030200_course_progress_derived.sql`): `progress_pct`
   (completed / total, two decimals, numeric rounding) and `certificate_eligible` (every required activity done and
   `completed_at` set; a leaver's `completed_at` is cleared) are set by a BEFORE trigger, never by the code; the

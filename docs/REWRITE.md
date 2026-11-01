@@ -673,10 +673,34 @@ in the order it can be done, each step a forward migration on the current schema
    published; `submissions.assessment_version_id` replaces `items_snapshot`/`policy_snapshot` (backfill: one
    version per distinct snapshot pair, by md5). The 45 `assessments` columns split into identity/lifecycle
    (stay) and policy (move to the version's typed `policy`). Same scheduling constraint as 6.
-8. **Projections** (items 15, 16 long term). `maintenance:reconcile` logs drift weekly now; when it reports
-   zero for a month, replace `course_progress` with the 5.4 view over `completions` and compute
-   gamification totals from the journals in the leaderboard query (an index on `xp_transactions (user_id)`
-   already exists), dropping the counters.
+8. **Projections** (items 15, 16 long term). Done: `completions` is the progress fact
+   (`20261102030500_completions.sql`, ARCHITECTURE §8): lesson marks write it, un-marks and leaves delete it,
+   the lesson projection reads it instead of `trail_steps`, and a trigger mirrors `activity_progress.completed_at`
+   of graded kinds (both releases). `maintenance:reconcile` re-projects weekly and logs `changed` and
+   `completion_drift` (`ab_db::progress::completion_drift`). Remaining, in order, one release apart:
+   1. Graded writers own their completion: where the projector upserts a graded row
+      (`project_submissions` / `project_file_attempts` results), insert the `completions` row when
+      `completed_at` is set and delete it when cleared, in the same transaction; then a contract drops
+      `activity_progress_sync_completion`.
+   2. `trail_steps` readers move to `completions` (`Trail::hydrate` for `GET /trail`, the `completed_steps`
+      of the user/course rollup, exports and drillthrough); the writers stop inserting steps; a contract drops
+      `trail_steps` (and `trails` / `trail_runs` once n5's roster and listing moved to `enrolments`).
+   3. `required` per activity: the 5.4 view counts `a.required`, today a projection column
+      (`activity_progress.required`, always true for graded kinds and for a new lesson row). Add
+      `activities.required boolean NOT NULL DEFAULT true`, backfill from the projection, and have the
+      projector read it.
+   4. When `changed` and `completion_drift` are zero for a month (four weekly runs), add the 5.4 view as
+      `course_progress_v` (enrolments ⨝ published activities ⨝ completions; `progress_pct` and
+      `certificate_eligible` computed in it, `completed_at` = the last completion when all are done) and move
+      every reader to it in one release (`course_progress_pcts`, learner-state, analytics context and
+      rollups, certificate eligibility, the work queue) while the projector still writes the table; compare
+      both in `maintenance:reconcile` for that release. The view reads no score column, so it never blocks
+      an `ALTER COLUMN ... TYPE` on `activity_progress.score`.
+   5. Then the projector stops writing `course_progress`; a contract drops the table and renames the view
+      to `course_progress`. `activity_progress` stays a table (score, attempts, lateness are its own facts
+      until 5.6 n6 folds submissions into `attempts`).
+   Gamification: compute the totals from the journals in the leaderboard query (an index on
+   `xp_transactions (user_id)` already exists), dropping the counters, under the same month-of-zero rule.
 9. **Settings and translations** (item 17). Four mechanisms today: `platforms` columns + `description_kk/_en`,
    `about_kk/_en` (column per language), `activities.settings` / `file_submissions.settings` JSONB,
    `gamification_config` (versioned row), `ai_feature_switches` / `feature_activations`. Target: one typed
