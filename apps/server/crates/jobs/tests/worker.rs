@@ -54,7 +54,14 @@ impl JobHandler for AlwaysFails {
     }
 }
 
-/// Poll the DB until `query` returns the expected count or time out.
+async fn jobs_left(pool: &PgPool) -> i64 {
+    sqlx::query_scalar("SELECT count(*) FROM jobs")
+        .fetch_one(pool)
+        .await
+        .unwrap()
+}
+
+/// Poll the DB until `expected` jobs have `status` or time out.
 async fn wait_for_status(pool: &PgPool, status: &str, expected: i64) {
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
     loop {
@@ -95,7 +102,12 @@ async fn worker_executes_jobs_and_drains_on_cancel(pool: PgPool) {
     let cancel = CancellationToken::new();
     let handle = tokio::spawn(worker.run(cancel.clone()));
 
-    wait_for_status(&pool, "succeeded", 3).await;
+    // A succeeded job is deleted: the queue drains to nothing.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    while hits.load(Ordering::SeqCst) < 3 || jobs_left(&pool).await > 0 {
+        assert!(tokio::time::Instant::now() < deadline, "jobs did not drain");
+        tokio::time::sleep(Duration::from_millis(25)).await;
+    }
     assert_eq!(hits.load(Ordering::SeqCst), 3);
 
     cancel.cancel();

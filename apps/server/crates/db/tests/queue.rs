@@ -27,12 +27,12 @@ async fn enqueue_claim_succeed_roundtrip(pool: PgPool) {
     assert!(queue::claim(&pool, "w2", 10).await.unwrap().is_empty());
 
     assert!(queue::succeed(&pool, &claimed[0]).await.unwrap());
-    let status: String = sqlx::query_scalar("SELECT status FROM jobs WHERE id = $1")
+    let left: i64 = sqlx::query_scalar("SELECT count(*) FROM jobs WHERE id = $1")
         .bind(id)
         .fetch_one(&pool)
         .await
         .unwrap();
-    assert_eq!(status, "succeeded");
+    assert_eq!(left, 0, "a succeeded job leaves the queue table");
 }
 
 #[ab_testdb::test]

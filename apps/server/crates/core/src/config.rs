@@ -67,7 +67,8 @@ pub struct Config {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct RetentionConfig {
-    /// Succeeded jobs.
+    /// Succeeded jobs a previous release kept (the queue deletes a job when
+    /// it succeeds).
     pub jobs_succeeded_days: i32,
     /// Failed / dead-lettered jobs (kept longer for the admin queue view).
     pub jobs_dead_days: i32,

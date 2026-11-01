@@ -398,8 +398,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **A deleted account stays disabled**: `deleted_at IS NULL OR status = 'disabled'` (same migration).
 - **Every foreign key has an index led by its columns** (`crates/db/tests/fk_index_audit.rs`); the exceptions are
   actor/audit columns onto `users` (never deleted by the app), each listed with its reason.
-- **Retention** (`maintenance:retention`, daily, windows `AB__RETENTION__*`): succeeded jobs 14 days, failed/dead
-  jobs 90, `auth_audit_log` 365, stdout/stderr/compile output of practice code runs 180 (verdict rows and graded
+- **Retention** (`maintenance:retention`, daily, windows `AB__RETENTION__*`): a job is deleted when it succeeds
+  (rows a previous release left as `succeeded` go after 14 days), failed/dead jobs 90, `auth_audit_log` 365, stdout/stderr/compile output of practice code runs 180 (verdict rows and graded
   `final` runs stay), event logs of finished AI runs 180. Time-ordered append tables carry BRIN indexes on their
   timestamp for these sweeps and the analytics prune.
 - **Growing value lists are lookup tables**: `notifications.kind` → `notification_kinds`, `uploads.purpose` →
@@ -463,6 +463,8 @@ CREATE TABLE jobs (                        -- migrations/20260816000001_jobs.sql
   deleted when it succeeded and made due at once when it did not. A process that dies between commit and settle
   leaves the job, which the worker runs after the grace. Role grant changes still owe theirs in a second
   transaction (the role tables go with REWRITE 6.3).
+- A succeeded job is deleted at once (`queue::succeed`): dedupe looks only at live jobs and `prod-report` only at
+  failed/dead ones, so the hot table holds live and failed work only.
 - Claim: `FOR UPDATE SKIP LOCKED` batch; wakeup via `LISTEN jobs_new` with a 1s poll fallback; heartbeat every
   15s; a reaper requeues `running` jobs with stale heartbeats; exponential backoff (5s · 2^n, capped at 15 min);
   after `max_attempts` → `dead` with `last_error`. A kind without a handler is dead-lettered. Failed and dead jobs
@@ -486,7 +488,7 @@ CREATE TABLE jobs (                        -- migrations/20260816000001_jobs.sql
   `daily_*` rollup tables plus `learner_risk_snapshots` older than **2 years**, in 5 000-row batches through the
   primary key (`ab_db::analytics::prune_retention`), summarised in one tracing line. Dashboards only ever read the
   last 180 days.
-- Log retention: `maintenance:retention` (daily, `ab_db::retention`) deletes finished jobs, old sign-in audit rows
+- Log retention: `maintenance:retention` (daily, `ab_db::retention`) deletes failed/dead jobs, old sign-in audit rows
   and AI event logs and clears old practice code-run output; windows in §8 "Schema guarantees".
 - Reconciliation: `maintenance:reconcile` (weekly) re-derives gamification totals from their journals and re-projects
   every member's progress, logging what it changed (§8 "Schema guarantees"); a steady non-zero count is a projector

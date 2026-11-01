@@ -7,8 +7,9 @@
 //!   `pg_notify`), so workers wake with no polling latency.
 //! - [`claim`] uses `FOR UPDATE SKIP LOCKED`: concurrent workers never receive
 //!   the same job.
-//! - A claimed job must be resolved with [`succeed`] or [`fail`]; if the worker
-//!   dies, [`reap`] returns stale jobs to the queue (or dead-letters them).
+//! - A claimed job must be resolved with [`succeed`] (deletes it) or [`fail`];
+//!   if the worker dies, [`reap`] returns stale jobs to the queue (or
+//!   dead-letters them).
 //! - `attempts` is the claim generation: only [`claim`] increments it, so the
 //!   resolution UPDATEs match `(id, attempts)` and a stale worker's late result
 //!   (its job reaped and re-claimed meanwhile) is a no-op - they return
@@ -193,14 +194,18 @@ where
     Ok(done.rows_affected() == 1)
 }
 
+/// A succeeded job is deleted (schema review 2 item 37): nothing reads it
+/// (dedupe looks only at live jobs, `prod-report` at failed/dead ones), and
+/// keeping it filled the hot queue table with dead tuples for 14 days.
+/// `succeeded` stays a valid status for rows a previous release left; the
+/// retention sweep removes those.
 /// `false`: the claim was lost (reaped, possibly re-claimed) - nothing changed.
 pub async fn succeed<'e, E>(executor: E, job: &ClaimedJob) -> Result<bool>
 where
     E: sqlx::PgExecutor<'e>,
 {
     let done = sqlx::query(
-        r"UPDATE jobs
-          SET status = 'succeeded', locked_by = NULL, locked_at = NULL, heartbeat_at = NULL
+        r"DELETE FROM jobs
           WHERE id = $1 AND attempts = $2 AND status = 'running'",
     )
     .bind(job.id)
