@@ -54,7 +54,7 @@ probe() {
   check ashyq_ro ok "SELECT username, display_name FROM users"
   check ashyq_ro ok "SELECT event, created_at FROM auth_audit_log"
   check ashyq_ro denied "SELECT email FROM users"
-  check ashyq_ro denied "SELECT ip FROM auth_audit_log"
+  check ashyq_ro denied "SELECT ip_address FROM auth_audit_log"
   check ashyq_ro denied "SELECT * FROM google_accounts"
   check ashyq_ro denied "SELECT * FROM idempotency_keys"
   check ashyq_ro denied "INSERT INTO jobs (kind) VALUES ('x')"

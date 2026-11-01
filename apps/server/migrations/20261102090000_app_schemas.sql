@@ -226,7 +226,7 @@ BEGIN
         FROM (VALUES
             ('users', ARRAY['email', 'bio', 'profile']),
             ('google_accounts', ARRAY['google_sub', 'email']),
-            ('auth_audit_log', ARRAY['ip', 'user_agent', 'metadata']),
+            ('auth_audit_log', ARRAY['ip', 'ip_address', 'user_agent', 'metadata']),
             ('platforms', ARRAY['email']),
             ('idempotency_keys', NULL)
         ) AS x(name, hidden)
