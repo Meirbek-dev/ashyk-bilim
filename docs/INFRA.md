@@ -8,7 +8,7 @@ Operations: `docs/RUNBOOK.md`; design rationale: `docs/DECISIONS.md`.
 ## Layout
 
 ```
-compose.yaml          shared tier: db, redis, zitadel, rustfs, runner (profile runner), init jobs
+compose.yaml          shared tier: db, zitadel-db, redis, zitadel, rustfs, runner (profile runner), init jobs
 compose.prod.yaml     nginx, web, web2 (profile dual-web), server, worker, server-migrate, backup; prod overrides
 compose.dev.yaml      dev overrides: ports on 127.0.0.1, data-net and exec-net not internal
 compose.smoke.yaml    smoke overrides: nginx ports on 127.0.0.1 only
@@ -18,21 +18,24 @@ justfile              single entry point (`just --list`)
 infra/
   env/                prod.env.example, server.env.example, dev.env, smoke.env, smoke.server.env
   nginx/              nginx.conf, nginx.conf.template, routes.conf, security-headers.conf
-  postgres/           db-init.sh + init.sql + roles.sql (db-init job), transfer-ownership.sql (legacy restores only)
+  postgres/           db-init.sh + init.sql + roles.sql + zitadel-db.sql (db-init job), wal-archive.sh,
+                      pitr-base.sh, pitr-prepare.sh (PITR), zitadel-restore.sh + zitadel-counts.sql (Zitadel's
+                      instance), transfer-ownership.sql (legacy restores only)
   runner/             Dockerfile (go-judge + the language toolchains), mount.yaml (sandbox mounts)
   storage/            init.sh (storage-init job), cors.json.template, public-policy.json
   host/               backup.service, backup.timer (nightly systemd timer)
   smoke/stub-web/     stand-in web image for the edge-independence smoke (R-09)
   compose.*-check.yaml  overlays for the ci-infra nginx, dual-web and Redis checks
-  tests/              dual-web.sh, redis-persistence.sh, restore fixtures, development.test.mjs
-  scripts/            lib.sh, bootstrap, deploy, rollback, preflight, smoke, backup, restore,
-                      restore-drill, restore-test, web-e2e, renew-certificate, split-env, doctor
+  tests/              dual-web.sh, redis-persistence.sh, db-roles.sh, pitr.sh, zitadel-db-move.sh, restore
+                      fixtures, development.test.mjs
+  scripts/            lib.sh, bootstrap, deploy, rollback, preflight, smoke, backup, restore, pitr-restore,
+                      zitadel-db-move, restore-drill, restore-test, web-e2e, renew-certificate, split-env, doctor
   dev/                Bun dev tooling behind `just stack|e2e|check|db|wt|...` (RUNBOOK 5)
 .github/workflows/ci.yaml   gates, images, stack smoke, e2e, publish
 ```
 
-Ops recipes: `bootstrap`, `preflight`, `deploy`, `rollback`, `backup`, `restic`, `restore`,
-`restore-drill`. Stacks: `dev-up`, `dev-down`, `dev-reset`, `dev-runner`, `stack-up`, `stack-down`,
+Ops recipes: `bootstrap`, `preflight`, `deploy`, `rollback`, `backup`, `restic`, `restore`, `pitr-restore`,
+`zitadel-db-move`, `restore-drill`; rehearsals `pitr-test`, `zitadel-db-move-test`. Stacks: `dev-up`, `dev-down`, `dev-reset`, `dev-runner`, `stack-up`, `stack-down`,
 `smoke`, `web2-stand-up`/`-seed`/`-e2e`/`-stand-down`, `web-release-e2e`, `restore-test`, `ci-infra`.
 App recipes: `server *args` (`apps/server/justfile`, with `TEST_REDIS_URL` from `dev.env`), `web *args`,
 `web2 *args`.
@@ -77,11 +80,12 @@ makes it non-internal to publish ports), `exec-net` (`internal`; same in dev).
 | worker | prod | edge-net, data-net, exec-net | same env; healthcheck `true`; `stop_grace_period: 60s` |
 | server-migrate | prod, profile `maintenance` | data-net | one-shot `ashyq migrate` |
 | db | shared | data-net | `pgvector/pgvector:0.8.7-pg18-trixie` by digest (trixie = glibc collation of the prod cluster); prod adds the `db_dumps` volume |
-| db-init | shared | data-net | one-shot `init.sql` as the superuser |
+| zitadel-db | shared | data-net | Zitadel's own instance, same image and superuser; holds `zitadel` once `ZITADEL_DB_HOST=zitadel-db` (RUNBOOK 3.15), else idles empty; prod adds WAL archiving into `${BACKUP_DIR}/pitr-zitadel` and `db_dumps` |
+| db-init | shared | data-net | one-shot `db-init.sh` as the superuser (db, and zitadel-db when Zitadel lives there) |
 | redis | shared | data-net | `--requirepass` |
 | volume-init | shared | none | one-shot: `zitadel_machinekey` to uid 1000, mode 0700 |
 | zitadel-init | shared | data-net | one-shot `zitadel init`; the only holder of the Postgres admin login for Zitadel |
-| zitadel | shared | data-net | `start-from-setup`, TLS off, no public route; healthcheck `zitadel ready` |
+| zitadel | shared | data-net | `start-from-setup`, TLS off, no public route; healthcheck `zitadel ready`; database on `${ZITADEL_DB_HOST:-db}` |
 | rustfs | shared | edge-net, data-net | S3; buckets `ab-public`, `ab-private`; data in `${RUSTFS_DATA_DIR:-rustfs_data}` |
 | storage-init | shared | data-net | one-shot `infra/storage/init.sh` |
 | runner | shared, profile `runner` | exec-net | `ashyq-runner` (go-judge `criyle/go-judge` + toolchains, `infra/runner`), privileged, `shm_size` 256m, `ES_AUTH_TOKEN`; stateless, nothing to back up |
@@ -102,12 +106,12 @@ Trust zones:
   through it, without NAT loopback or `host-gateway`.
 
 All services log through `x-logging` (json-file, 10 MB x 5). Memory limits:
-web 2g (`WEB_MEMORY`), web2 512m; db, server, worker, zitadel, nginx 1g; rustfs 512m; redis 256m.
+web 2g (`WEB_MEMORY`), web2 512m; db, server, worker, zitadel, nginx 1g; zitadel-db, rustfs 512m; redis 256m.
 Nginx uses two workers with its one-CPU quota (`infra/nginx/nginx.conf`),
 128k response-header buffers and eight 32k response-body buffers per proxied request.
 
 Volumes (`<project>_<name>`; the names are load-bearing, a rename means empty
-volumes): `postgres_data`, `redis_data`, `rustfs_data` (unless `RUSTFS_DATA_DIR`),
+volumes): `postgres_data`, `zitadel_pg_data`, `redis_data`, `rustfs_data` (unless `RUSTFS_DATA_DIR`),
 `zitadel_machinekey` (shared); `nginx_cache`, `nginx_content_cache`,
 `db_dumps`, `restic_cache` (prod). Prod also keeps the legacy `app_content` volume
 and the legacy `cs_mooc` database (owner decision 2026-10-02: do not drop); nothing
@@ -128,14 +132,14 @@ db-init when loaded; `just prod-report` lists the app database's statements by t
 | --- | --- | --- | --- |
 | `${POSTGRES_USER}` (`cs_mooc` in prod, `postgres` in dev) | yes | initdb on an empty volume | db-init, zitadel-init, backup and pre-deploy dumps (local socket) |
 | `ashyq` | no | db-init, password `ASHYQ_DB_PASSWORD`, only if missing; `CREATEDB` when `ASHYQ_DB_CREATEDB=true` (dev, for test databases) | server-migrate (owner of every object); server and worker until `server.env` names `ashyq_app` |
-| `zitadel` | no | db-init, password `ZITADEL_DB_PASSWORD`, only if missing | zitadel |
+| `zitadel` | no | db-init, password `ZITADEL_DB_PASSWORD`, only if missing, in the instance `ZITADEL_DB_HOST` names (`zitadel-db.sql` there) | zitadel |
 | `ashyq_app` | no | db-init (`roles.sql`), password `ASHYQ_APP_DB_PASSWORD`, only if missing and set | server, worker (`server.env`; smoke and e2e stands already): rows only, insert-only journals (RUNBOOK 2.5) |
 | `ashyq_ro` | no | db-init (`roles.sql`), password `ASHYQ_RO_DB_PASSWORD`, only if missing and set | read-only access without contact data or secrets: `just db sql` in dev, `psql -U ashyq_ro` on prod |
 
 | Database | Owner | Notes |
 | --- | --- | --- |
 | `ashyq` (`ASHYQ_DATABASES`; dev: `ashyq_dev,ashyq_test`) | `ashyq` | |
-| `zitadel` | `zitadel` | |
+| `zitadel` | `zitadel` | in `zitadel-db` with `ZITADEL_DB_HOST=zitadel-db` (fresh installs; prod after RUNBOOK 3.15), else in `db`; after the move db keeps `zitadel_moved_<stamp>` until dropped |
 | `cs_mooc` (`openu` until 2026-10-25) | `cs_mooc` | prod only, legacy; kept, unused, not backed up |
 
 db-init runs `infra/postgres/db-init.sh`: `init.sql`, then `roles.sql` on `template1` and on each database of
@@ -181,13 +185,15 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 | Release | `IMAGE_REPO` (default `ghcr.io/meirbek-dev`) | image names; deploy.sh |
 | | `IMAGE_TAG` | image tag; written by deploy.sh |
 | Web | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | web |
-| Postgres | `POSTGRES_USER`, `POSTGRES_PASSWORD` | db (initdb only), db-init, zitadel-init |
-| | `PG_LOG_MIN_DURATION_STATEMENT` (default `300` ms) | db slow-query log |
+| Postgres | `POSTGRES_USER`, `POSTGRES_PASSWORD` | db, zitadel-db (initdb only), db-init, zitadel-init |
+| | `PG_LOG_MIN_DURATION_STATEMENT` (default `300` ms) | db, zitadel-db slow-query log |
+| | `PG_ARCHIVE_MODE` (default `on`), `PG_ARCHIVE_TIMEOUT` (default `300` s), `PITR_BASE_KEEP` (default 3, shell) | prod WAL archiving (RUNBOOK 3.14) |
 | | `ASHYQ_DB_PASSWORD`, `ASHYQ_DATABASES` | db-init; server-migrate's owner URL |
 | | `ASHYQ_APP_DB_PASSWORD`, `ASHYQ_RO_DB_PASSWORD` (unset: roles not created) | db-init (`roles.sql`); the app password also in `server.env` |
 | Zitadel | `ZITADEL_MASTERKEY` (exactly 32 chars; losing it loses every account) | zitadel; preflight |
 | | `ZITADEL_DB_PASSWORD` | db-init, zitadel-init, zitadel |
 | | `ZITADEL_PAT_EXPIRATION` | zitadel first-instance setup; preflight expiry check |
+| | `ZITADEL_DB_HOST` (`zitadel-db`, or unset = `db` until the move, RUNBOOK 3.15) | zitadel, zitadel-init, db-init, backup, restore; preflight |
 | Storage | `RUSTFS_DATA_DIR` (prod `/data/cs-mooc/content`; default the `rustfs_data` volume) | rustfs, backup |
 | | `RUSTFS_ACCESS_KEY`, `RUSTFS_SECRET_KEY` | rustfs, storage-init, server/worker (`AB__STORAGE__*`) |
 | Backup | `BACKUP_DIR` (default `./backups`; prod `/data/cs-mooc/backups`) | restic repository `${BACKUP_DIR}/restic` |
@@ -407,8 +413,8 @@ compresses. Sundays (or `BACKUP_PRUNE=1`) also `forget` (14 daily, 8 weekly,
 <args>` runs restic on the prod repository (`snapshots`, `stats`, `diff`). No
 service is stopped. Before each snapshot backup.sh:
 
-- db: `pg_dump -Fc -Z0` of `ashyq` and `zitadel` plus `pg_dumpall --globals-only`
-  into the `db_dumps` volume (written to `.tmp`, then renamed).
+- db: `pg_dump -Fc -Z0` of `ashyq` (db) and `zitadel` (its instance, `ZITADEL_DB_HOST`) plus
+  `pg_dumpall --globals-only` of db into the `db_dumps` volume (written to `.tmp`, then renamed).
 - redis: `redis-cli SAVE`.
 
 Production storage lives on the data disk: `RUSTFS_DATA_DIR=/data/cs-mooc/content`
@@ -425,20 +431,24 @@ volume. `dumps/pre-deploy-*.dump` files from deploy.sh are not pruned.
 
 Point-in-time recovery (owner decision 2026-11-01): the prod db command archives WAL (`archive_mode=on`,
 `archive_command` = `infra/postgres/wal-archive.sh`, gzip into `${BACKUP_DIR}/pitr/wal`, `archive_timeout`
-`PG_ARCHIVE_TIMEOUT` = 300 s, `PG_ARCHIVE_MODE=off` disables); the one-shot `pitr-init` makes the directory the db's.
+`PG_ARCHIVE_TIMEOUT` = 300 s, `PG_ARCHIVE_MODE=off` disables); zitadel-db the same into `${BACKUP_DIR}/pitr-zitadel`;
+the one-shot `pitr-init` makes both directories the instances' postgres user's.
 `backup.sh` adds a nightly `pg_basebackup` (`infra/postgres/pitr-base.sh`, tar + gzip with its WAL) to
 `${BACKUP_DIR}/pitr/base`, keeps `PITR_BASE_KEEP` (3) and prunes WAL older than the oldest base
 (`pg_archivecleanup`); the archive records the cluster's system identifier and refuses another cluster's WAL.
-`pitr-restore.sh` (`just pitr-restore <time|latest> [base]`) recovers in place with `infra/postgres/pitr-prepare.sh`,
+`pitr-restore.sh` (`just pitr-restore <time|latest> [base]`, `PITR_SERVICE=zitadel-db` for Zitadel's instance)
+recovers in place with `infra/postgres/pitr-prepare.sh`,
 keeping the replaced data directory in the volume. The PITR archive is not in the restic snapshots (same disk).
 `infra/tests/pitr.sh` (`just pitr-test`, in `ci-infra`) rehearses archive, base, retention and both recoveries.
 
 `restore.sh [snapshot]` (`just restore <snapshot-id|latest>`; a legacy offen
 `backup-*.tar.zst` archive also works): refuses if the project already has a
-`postgres_data` volume. Restores the dumps (restic in its own container; legacy
-archives: zstd and GNU tar inside the db image), starts `db`, loads `globals.sql`,
-`pg_restore --create` of `ashyq` and `zitadel` (first moving an existing PITR archive aside to
-`pitr/before-restore-<stamp>`: the restored cluster is a new one), unpacks rustfs, redis and
+`postgres_data` or `zitadel_pg_data` volume. Restores the dumps (restic in its own container; legacy
+archives: zstd and GNU tar inside the db image), starts `db` and `zitadel-db`, loads `globals.sql`,
+`pg_restore --create` of `ashyq`, and of `zitadel` into db, or with `ZITADEL_DB_HOST=zitadel-db` into zitadel-db
+as the `zitadel` role without owners, grants and extensions (`zitadel-restore.sh`; dumps from either instance
+load). First it moves existing PITR archives aside to `pitr{,-zitadel}/before-restore-<stamp>`: the restored
+clusters are new ones. Then it unpacks rustfs, redis and
 zitadel_machinekey into their volumes as root (owners and modes kept), starts the
 stack, runs smoke. On a new host the snapshot's `backup/secrets` files go next to
 the compose files first.

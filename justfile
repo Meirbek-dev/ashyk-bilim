@@ -261,8 +261,8 @@ web-release-e2e action *args:
 redis-test:
     {{ bash_bin }} infra/tests/redis-persistence.sh
 
-# Infra gates: compose config, shell syntax, database roles, PITR, nginx, dual-web routing and Redis persistence
-# with backup mounted.
+# Infra gates: compose config, shell syntax, database roles, PITR, nginx, dual-web routing, Redis persistence
+# with backup mounted and the Zitadel database move.
 [script]
 ci-infra:
     source infra/scripts/lib.sh
@@ -303,6 +303,7 @@ ci-infra:
     [[ $status == 0 ]]
     {{ bash_bin }} infra/tests/dual-web.sh
     {{ bash_bin }} infra/tests/redis-persistence.sh
+    {{ bash_bin }} infra/tests/zitadel-db-move.sh
 
 preflight *args:
     {{ bash_bin }} infra/scripts/preflight.sh "$@"
@@ -332,6 +333,14 @@ pitr-restore target *base:
 # Rehearse WAL archiving, a base backup and point-in-time recovery on throwaway containers (no network).
 pitr-test:
     {{ bash_bin }} infra/tests/pitr.sh
+
+# Move Zitadel's database from the app's db into its own instance zitadel-db (RUNBOOK 3.15); `--back` undoes it.
+zitadel-db-move *args:
+    {{ bash_bin }} infra/scripts/zitadel-db-move.sh "$@"
+
+# Rehearse the move, the way back and a fresh install on a throwaway project (production files, no ports).
+zitadel-db-move-test:
+    {{ bash_bin }} infra/tests/zitadel-db-move.sh
 
 restore-drill *archive:
     {{ bash_bin }} infra/scripts/restore-drill.sh "$@"

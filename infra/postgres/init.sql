@@ -1,5 +1,8 @@
 -- Roles and databases, run by the db-init job as the bootstrap superuser:
---   psql -v ashyq_password=.. -v zitadel_password=.. -v databases=ashyq[,..] -v createdb=true|false -f init.sql
+--   psql -v ashyq_password=.. -v zitadel_password=.. -v databases=ashyq[,..] -v createdb=true|false \
+--        -v zitadel_here=true|false -f init.sql
+-- zitadel_here: Zitadel's role and database belong in this instance (ZITADEL_DB_HOST=db); with its own
+-- instance (zitadel-db) they are created there by zitadel-db.sql instead.
 -- Idempotent and additive only: existing roles and databases are left as they are
 -- (prod: `ashyq` and `zitadel` exist, owned by the legacy superuser `cs_mooc`).
 -- Object ownership hand-over is a separate, rehearsed step: transfer-ownership.sql.
@@ -24,7 +27,7 @@ WHERE :'createdb'::boolean
   AND NOT (SELECT rolcreatedb FROM pg_roles WHERE rolname = 'ashyq') \gexec
 
 SELECT format('CREATE ROLE zitadel LOGIN PASSWORD %L', :'zitadel_password')
-WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'zitadel') \gexec
+WHERE :'zitadel_here'::boolean AND NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'zitadel') \gexec
 
 SELECT format('CREATE DATABASE %I OWNER ashyq', btrim(d))
 FROM unnest(string_to_array(:'databases', ',')) AS d
@@ -32,4 +35,4 @@ WHERE btrim(d) <> ''
   AND NOT EXISTS (SELECT FROM pg_database WHERE datname = btrim(d)) \gexec
 
 SELECT 'CREATE DATABASE zitadel OWNER zitadel'
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'zitadel') \gexec
+WHERE :'zitadel_here'::boolean AND NOT EXISTS (SELECT FROM pg_database WHERE datname = 'zitadel') \gexec

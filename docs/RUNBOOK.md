@@ -218,7 +218,8 @@ just bootstrap        # runner-check (restore.sh skips it); PAT and migrations a
 just deploy           # records .deploy-history so rollback works
 ```
 
-`restore.sh` only restores into a project without a `postgres_data` volume.
+`restore.sh` only restores into a project without a `postgres_data` or `zitadel_pg_data` volume; the snapshot's
+`.env` decides where `zitadel` goes (`ZITADEL_DB_HOST`, 3.15).
 On the existing prod host that means `dc down -v` first, which deletes every
 data volume of the project: do it only with a snapshot that passed
 `just restore-drill`. Legacy offen archives (`backup-*.tar.zst`, before
@@ -441,8 +442,8 @@ minute, not only to last night's dump. Postgres archives every WAL segment into 
 `just backup` (the nightly timer) adds a base backup to `${BACKUP_DIR}/pitr/base/<UTC stamp>` and keeps the newest
 `PITR_BASE_KEEP` (3), deleting WAL older than the oldest kept base. The window is the last three nights; older
 points come from the restic dumps (3.4). Both sit on the backup disk of this host, like the restic repository
-(FINDINGS 3: not a disk-failure protection). `just pitr-test` rehearses it on throwaway containers; `just ci-infra`
-runs it.
+(FINDINGS 3: not a disk-failure protection). Zitadel's own instance (zitadel-db, 3.15) is archived the same way
+into `${BACKUP_DIR}/pitr-zitadel`. `just pitr-test` rehearses it on throwaway containers; `just ci-infra` runs it.
 
 Check it works (expect recent `last archived`, no `FAILING`):
 
@@ -451,12 +452,13 @@ just prod-report --since 1h        # section "WAL archive"
 ls -l /data/cs-mooc/backups/pitr/base /data/cs-mooc/backups/pitr/wal | tail
 ```
 
-Recover (the whole cluster goes back, ashyq and Zitadel's database while they share it; everything written after
-the target is gone, so take `just backup` first if the current state may still be wanted):
+Recover (the whole instance goes back: ashyq, and Zitadel's database while it still shares db; everything written
+after the target is gone, so take `just backup` first if the current state may still be wanted):
 
 ```bash
 just pitr-restore '2026-11-02 10:15:00+05'      # just before the mistake; asks, then stops server/worker/db
 just pitr-restore latest                        # everything archived (a lost data directory, same disk)
+PITR_SERVICE=zitadel-db just pitr-restore '<time>'   # Zitadel's own instance only (after 3.15)
 ```
 
 It picks the newest base finished before the target, keeps the current data directory in the volume as
@@ -470,6 +472,44 @@ archive in `pg_wal` (disk pressure, 3.11) and retries. "belongs to cluster" mean
 or a new volume) met the old archive: `restore.sh` moves it aside to `pitr/before-restore-<stamp>` itself; by hand,
 move `pitr/wal` and `pitr/base` aside and recreate db. A logical restore always starts a new archive: run `just backup`
 right after it so the new cluster has a base.
+
+### 3.15 Zitadel in its own Postgres instance
+
+Schema review item 47: Zitadel's eventstore (writes on every sign-in and token, its own vacuum and locks) runs in
+the compose service `zitadel-db` (same image and superuser as db, 512m, volume `zitadel_pg_data`), so it cannot
+starve the app's instance and either can be restarted, upgraded or recovered alone. `ZITADEL_DB_HOST` in `.env`
+says where Zitadel's database is: `zitadel-db` on fresh installs (`prod.env.example`, smoke, CI), unset (= `db`) on
+a stack set up before. Never set it by hand on such a stack: Zitadel would start a new, empty instance on
+zitadel-db and nobody could sign in (preflight fails on that).
+
+Move (one window, a few minutes; sign-in is unavailable while Zitadel is stopped, pages and API keep serving;
+rehearsed by `just zitadel-db-move-test`, in `just ci-infra`):
+
+```bash
+just deploy                            # a release with zitadel-db: it starts empty beside db
+just backup                            # a fresh restic snapshot first
+just zitadel-db-move                   # asks; dumps, restores as zitadel, compares every table's row count
+just prod-report --since 1h            # WAL archive: db and zitadel-db
+```
+
+`zitadel-db-move.sh` stops Zitadel, copies db's `zitadel` into zitadel-db (`infra/postgres/zitadel-restore.sh`:
+objects owned by `zitadel`, no grants or extensions of the source), compares the row counts of every table,
+renames the source to `zitadel_moved_<yyyymmdd_hhmmss>` in db, writes `ZITADEL_DB_HOST=zitadel-db` to `.env`,
+starts Zitadel on the copy and runs smoke. A failure before the switch restarts Zitadel on db; one after it
+goes back by itself. From then on backup.sh dumps `zitadel` from zitadel-db, restore.sh loads it there and
+PITR covers it in `pitr-zitadel/`.
+
+Back (sign-in broken after the move, or zitadel-db unusable): `just zitadel-db-move --back` renames
+`zitadel_moved_*` back to `zitadel` in db, keeps the copy as `zitadel_back_<stamp>` in zitadel-db, sets
+`ZITADEL_DB_HOST=db` and restarts Zitadel; writes made on zitadel-db since the move (new accounts, password
+changes, sessions) are lost, so go back soon or not at all. After a week without problems:
+
+```bash
+dc exec -T db sh -c 'psql -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE zitadel_moved_<stamp>"'
+```
+
+The `zitadel` role stays in db (it owns nothing there any more); restores of older snapshots still work: their
+`zitadel.dump` loads into zitadel-db.
 
 ## 4. Troubleshooting
 

@@ -759,6 +759,8 @@ Decided, not done:
    AI grade draft lives as long as the grade. `ai_threads.retention_class` is dropped.
 9. **Rollback without restore**: once every migration since the previous release is expand-only (no
    `-- contract:` file), `rollback.sh` may skip the "migrations differ" refusal.
+10. **Zitadel in its own Postgres instance** until phase 4 removes it (done in the repo, 2026-11): compose service
+    `zitadel-db`, `ZITADEL_DB_HOST`; production moves with `just zitadel-db-move` in a window (RUNBOOK 3.15).
 
 ## 6. Auth
 
