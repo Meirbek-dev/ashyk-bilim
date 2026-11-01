@@ -33,6 +33,7 @@ UI word and ready queries: `DATA.md`. Rules behind the shapes: `docs/ARCHITECTUR
 - [`assessment_audit_events`](#assessment_audit_events): History of staff actions on an assessment
 - [`assessment_items`](#assessment_items): A question or task of an assessment (typed body by kind), ordered by position, max_score in points
 - [`assessment_overrides`](#assessment_overrides): Per-learner exceptions of an assessment: extra attempts, a later due date, a waived late penalty
+- [`assessment_versions`](#assessment_versions): Frozen policy + items of an assessment as handed in (content-addressed, numbered per assessment); a hand-in names its version once
 - [`assessments`](#assessments): The graded part of a quiz, exam or code challenge activity: lifecycle, attempt and grading policy
 - [`auth_audit_log`](#auth_audit_log): Security events of accounts (logins, failures, erasure)
 - [`block_uploads`](#block_uploads): Uploads a lesson block references (derived from its content's file key by a trigger); the upload reaper keeps them
@@ -750,6 +751,26 @@ Per-learner exceptions of an assessment: extra attempts, a later due date, a wai
 - Foreign key `assessment_overrides_granted_by_fkey`: `FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `assessment_overrides_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
+## assessment_versions
+
+Frozen policy + items of an assessment as handed in (content-addressed, numbered per assessment); a hand-in names its version once.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |
+| assessment_id | uuid |  |  |
+| number | integer |  |  |
+| items | jsonb |  |  |
+| policy | jsonb |  |  |
+| content_hash | text |  |  |
+| max_points | numeric(10,2) |  |  |
+| created_at | timestamp with time zone |  | `now()` |
+
+- Primary key `assessment_versions_pkey`: `PRIMARY KEY (id)`
+- Unique `assessment_versions_assessment_id_content_hash_key`: `UNIQUE (assessment_id, content_hash)`
+- Unique `assessment_versions_assessment_id_number_key`: `UNIQUE (assessment_id, number)`
+- Foreign key `assessment_versions_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
+
 ## assessments
 
 The graded part of a quiz, exam or code challenge activity: lifecycle, attempt and grading policy.
@@ -967,6 +988,7 @@ The result of one test case of a code run.
 | message | text | null |  |
 | time_seconds | double precision | null |  |
 | memory_kb | integer | null |  |
+| verdict | text |  |  |
 
 - Primary key `code_run_cases_pkey`: `PRIMARY KEY (id)`
 - Foreign key `code_run_cases_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES code_runs(id) ON DELETE CASCADE`
@@ -2086,9 +2108,11 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 | updated_at | timestamp with time zone |  | `now()` |
 | preview | boolean |  | `false` |
 | rules_accepted_at | timestamp with time zone | null |  |
+| assessment_version_id | uuid | null |  |
 
 - Primary key `submissions_pkey`: `PRIMARY KEY (id)`
 - Foreign key `submissions_assessment_id_fkey`: `FOREIGN KEY (assessment_id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
+- Foreign key `submissions_assessment_version_id_fkey`: `FOREIGN KEY (assessment_version_id) REFERENCES assessment_versions(id)`
 - Foreign key `submissions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `submissions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 

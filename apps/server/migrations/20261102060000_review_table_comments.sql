@@ -21,3 +21,5 @@ COMMENT ON TABLE trail_runs IS
     'A learner''s legacy course run (status, data); membership is enrolments since schema review 3.';
 COMMENT ON TABLE trail_steps IS
     'Legacy per-activity step inside a trail run; completions is the progress fact since schema review 3.';
+COMMENT ON TABLE assessment_versions IS
+    'Frozen policy + items of an assessment as handed in (content-addressed, numbered per assessment); a hand-in names its version once.';
