@@ -57,6 +57,10 @@
   --color-activity-exam: var(--activity-exam);
   --color-activity-code: var(--activity-code);
 
+  /* Media stage (the video player): fixed like the brand artwork */
+  --color-media: var(--media);
+  --color-media-foreground: var(--media-foreground);
+
   /* Type: Inter for reading and UI, Geologica for headings and display numbers, mono; seven sizes, three weights */
   --font-sans: 'Inter Variable', system-ui, sans-serif;
   --font-heading: 'Geologica Variable', var(--font-sans);
@@ -179,6 +183,11 @@
   --brand-navy: #1d3d66;
   --brand-orange: #de6e35;
   --brand-ink: #162c4a;
+
+  /* Media stage: the video player's frame and its controls, dark in every theme and mode like a screen. The controls
+     sit on `bg-media/70` over the picture: white ink on it stays >= 4.5:1 over any frame. */
+  --media: oklch(0.16 0.01 258);
+  --media-foreground: oklch(0.98 0.003 258);
 
   /* Derived meaning: a fixed hue anchor pulled 25% toward the theme's ink, so contrast follows the theme.
      Text/icon on background, card and on its own /10 tint is >= 4.5:1 in every theme (G-15). */

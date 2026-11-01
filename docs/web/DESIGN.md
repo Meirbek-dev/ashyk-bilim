@@ -40,6 +40,7 @@ palette classes (`bg-red-500`, G-11), `text-3xl`, `font-bold`, `tracking-*`, `sh
 | `ring`                                          | keyboard focus                             | the focus outline only                                    |
 | `chart-1..5`                                    | data series                                | charts in slot order                                      |
 | `sidebar-*`                                     | the shell's navigation column              | the app shell sidebar and bottom bar only                 |
+| `media` / `media-foreground`                    | the video stage (fixed, every theme)       | the video player's frame and controls only                |
 
 - A fill always comes with its own ink: `bg-X` goes with `text-X-foreground`. Status and activity tokens are
   never fills. They appear as `text-X`, `border-X/30` or `bg-X/10` with `text-X` (contrast >= 4.5:1 holds on

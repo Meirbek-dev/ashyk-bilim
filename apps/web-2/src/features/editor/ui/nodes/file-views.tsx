@@ -9,7 +9,7 @@ import { PdfFrame } from '#/shared/components/pdf-frame'
 import { blockFileUrl, isRecord, numberAttr } from '../../model/document'
 import { justify } from './align'
 import { ImageView } from './image-view'
-import { VideoPlayer } from './video-player'
+import { VideoPlayer } from '../video/video-player'
 import { NodeParts, type ViewProps } from './parts'
 
 const width = (size: unknown) => (isRecord(size) ? (numberAttr(size['width']) ?? undefined) : undefined)
