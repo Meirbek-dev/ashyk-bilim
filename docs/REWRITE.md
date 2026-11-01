@@ -195,7 +195,8 @@ the Zitadel client. Add nothing that one module could replace in under 200 lines
   that must survive a crash.
 - The queue is the current `SKIP LOCKED` + `LISTEN/NOTIFY` design (`db/src/queue.rs`),
   run as a task inside the same process. Succeeded rows are deleted after 7 days, failed
-  rows after 30.
+  rows after 30. A job outlives the deploy that enqueued it, so its payload carries a
+  version and a handler still accepts the previous one for one release.
 - Time-based behaviour is data, not polling:
   - scheduled publishing is `published_at > now()`; readers filter on it, no job;
   - auto-submit is one job with `run_at = attempt.deadline_at`, enqueued when the attempt
@@ -243,7 +244,20 @@ keys stay valid. `etl_*` and every `legacy_uuid` but `blocks.legacy_uuid` were d
 Conventions: `uuid` primary keys (`uuidv7()` default), `timestamptz`, `text` + `CHECK` for
 enums, composite foreign keys wherever a row repeats its parent's `course_id`, so the
 copy cannot drift. Deletes of learning records are soft (`deleted_at`) or forbidden; no
-cascade from `users`.
+cascade from `users`. The database also holds what the code would otherwise have to
+remember:
+
+- references to other rows are foreign keys, media included (`avatar_id`, not a storage
+  key), so a daily sweep can find unreferenced media by joins;
+- a row that repeats several parents (a code run's item, attempt and learner) binds
+  them with composite keys, so each id can be valid and the combination still wrong;
+- sibling order is `unique (<parent>, position) deferrable initially deferred` with
+  `position >= 1`, so a reorder renumbers in one transaction without duplicates;
+- scores are `numeric` with explicit bounds that also exclude `'NaN'` (it passes
+  `>= 0`), percentages are `0..100`;
+- `jsonb` bodies and snapshots carry `check (jsonb_typeof(x) = 'object')`; Rust does the
+  detailed validation;
+- a status implies its timestamps (`status <> 'in_progress'` needs `submitted_at`).
 
 ### 5.1 Identity
 
@@ -260,7 +274,7 @@ create table users (
   theme            text,
   bio              text not null default '',
   organization     text not null default '',
-  avatar_key       text,
+  avatar_id        uuid,                     -- references media (5.2)
   email_verified_at timestamptz,
   disabled_at      timestamptz,
   created_at       timestamptz not null default now(),
@@ -285,14 +299,20 @@ create table sessions (
   user_agent   text
 );
 create index on sessions (user_id);
+create index on sessions (expires_at);       -- the daily sweep deletes expired rows
+alter table sessions add check (octet_length(token_hash) = 32 and expires_at > created_at);
 
 create table auth_tokens (
-  token_hash bytea primary key,
+  token_hash bytea primary key check (octet_length(token_hash) = 32),
   user_id    uuid not null references users,
   purpose    text not null check (purpose in ('verify-email', 'reset-password')),
+  created_at timestamptz not null default now(),
   expires_at timestamptz not null,
-  used_at    timestamptz
+  used_at    timestamptz,
+  check (expires_at > created_at and (used_at is null or used_at >= created_at))
 );
+create index on auth_tokens (user_id, purpose);
+create index on auth_tokens (expires_at);    -- swept with sessions
 
 create table audit_log (
   id       uuid primary key default uuidv7(),
@@ -316,7 +336,7 @@ create table courses (
   about       text not null default '',
   learnings   text[] not null default '{}',
   tags        text[] not null default '{}',
-  cover_key   text,
+  cover_id    uuid,                         -- references media
   public      boolean not null default false,
   enrol_required_for_assessments boolean not null default true,
   archived_at timestamptz,
@@ -339,20 +359,21 @@ create table chapters (
   id        uuid primary key default uuidv7(),
   course_id uuid not null references courses,
   title     text not null,
-  position  integer not null,
+  position  integer not null check (position >= 1),
   version   integer not null default 1,
-  unique (id, course_id)
+  unique (id, course_id),
+  unique (course_id, position) deferrable initially deferred
 );
 
 create table activities (
   id           uuid primary key default uuidv7(),
   course_id    uuid not null,
   chapter_id   uuid not null,
-  position     integer not null,
+  position     integer not null check (position >= 1),
   kind         text not null
                check (kind in ('page', 'video', 'pdf', 'quiz', 'exam', 'assignment', 'code')),
   title        text not null,
-  body         jsonb not null,              -- ActivityBody, tagged by kind (5.3)
+  body         jsonb not null check (jsonb_typeof(body) = 'object'),  -- ActivityBody (5.3)
   body_version smallint not null,
   required     boolean not null default true,
   published_at timestamptz,                 -- null = draft; future = scheduled
@@ -361,7 +382,8 @@ create table activities (
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now(),
   foreign key (chapter_id, course_id) references chapters (id, course_id),
-  unique (id, course_id)
+  unique (id, course_id),
+  unique (chapter_id, position) deferrable initially deferred
 );
 
 create table media (
@@ -371,7 +393,7 @@ create table media (
   visibility  text not null check (visibility in ('public', 'private')),
   path        text not null unique,         -- relative to /data/ashyq/media/<visibility>/
   mime        text not null,
-  size_bytes  bigint not null,
+  size_bytes  bigint not null check (size_bytes >= 0),
   status      text not null check (status in ('uploading', 'ready')),
   created_at  timestamptz not null default now()
 );
@@ -384,8 +406,10 @@ create table activity_media (                -- rewritten on every body save, sa
 ```
 
 `blocks` disappears: image, PDF and video blocks inside a page are Tiptap nodes that hold
-a `media_id`. Media with no `activity_media`, avatar, cover or attempt reference for 24 h
-is deleted by a daily job.
+a `media_id`. Media with no `activity_media`, `attempt_files`, avatar, cover or logo
+reference for 24 h is deleted by a daily job; there is no reference counter to drift.
+`courses.cover_id`, `users.avatar_id` and `platform.logo_id` reference `media` (added
+after `media` exists).
 
 ### 5.3 Typed bodies
 
@@ -419,11 +443,13 @@ create table enrolments (
 create table assessment_items (
   id          uuid primary key default uuidv7(),
   activity_id uuid not null references activities,
-  position    integer not null,
+  position    integer not null check (position >= 1),
   kind        text not null check (kind in ('choice', 'matching', 'code')),
-  body        jsonb not null,               -- ItemBody, tagged by kind
-  max_score   numeric(8, 2) not null,
-  version     integer not null default 1
+  body        jsonb not null check (body->>'kind' = kind),  -- ItemBody, tagged by kind
+  max_score   numeric(8, 2) not null check (max_score >= 0 and max_score <> 'NaN'),
+  version     integer not null default 1,
+  unique (id, activity_id),
+  unique (activity_id, position) deferrable initially deferred
 );
 
 create table attempts (                      -- quizzes, exams, assignments, code
@@ -431,22 +457,24 @@ create table attempts (                      -- quizzes, exams, assignments, cod
   course_id       uuid not null,
   activity_id     uuid not null,
   user_id         uuid not null references users,
-  number          integer not null,
+  number          integer not null check (number >= 1),
   status          text not null check (status in ('in_progress', 'submitted', 'graded')),
   preview         boolean not null default false,   -- staff preview, excluded from reports
   answers         jsonb not null default '{}',      -- Answers, keyed by item id
-  items_snapshot  jsonb not null,                   -- frozen at start
-  policy_snapshot jsonb not null,
+  items_snapshot  jsonb not null check (jsonb_typeof(items_snapshot) = 'object'),  -- frozen at start
+  policy_snapshot jsonb not null check (jsonb_typeof(policy_snapshot) = 'object'),
   started_at      timestamptz not null default now(),
   deadline_at     timestamptz,
   submitted_at    timestamptz,
   auto_submitted  boolean not null default false,
   violations      jsonb not null default '[]',
-  auto_score      numeric(8, 2),
+  auto_score      numeric(8, 2) check (auto_score >= 0 and auto_score <> 'NaN'),
   is_late         boolean not null default false,
   version         integer not null default 1,
   foreign key (activity_id, course_id) references activities (id, course_id),
-  unique (activity_id, user_id, number)
+  unique (activity_id, user_id, number),
+  unique (id, activity_id, user_id),
+  check ((status = 'in_progress') = (submitted_at is null))
 );
 
 create table attempt_files (
@@ -459,11 +487,12 @@ create table attempt_files (
 create table grades (                        -- one current grade per attempt
   attempt_id    uuid primary key references attempts,
   graded_by     uuid references users,       -- null = auto
-  raw_score     numeric(8, 2) not null,
-  penalty_pct   numeric(5, 2) not null default 0,
-  final_score   numeric(8, 2) not null,
+  raw_score     numeric(8, 2) not null check (raw_score >= 0 and raw_score <> 'NaN'),
+  penalty_pct   numeric(5, 2) not null default 0
+                check (penalty_pct between 0 and 100),  -- excludes 'NaN'
+  final_score   numeric(8, 2) not null check (final_score >= 0 and final_score <> 'NaN'),
   feedback      text not null default '',
-  item_feedback jsonb not null default '{}',
+  item_feedback jsonb not null default '{}' check (jsonb_typeof(item_feedback) = 'object'),
   released_at   timestamptz,
   version       integer not null default 1,
   updated_at    timestamptz not null default now()
@@ -480,8 +509,9 @@ create table completions (                   -- the only progress fact
 create table code_runs (
   id          uuid primary key default uuidv7(),
   user_id     uuid not null references users,
-  item_id     uuid not null references assessment_items,
-  attempt_id  uuid references attempts,      -- null = practice run
+  activity_id uuid not null,
+  item_id     uuid not null,
+  attempt_id  uuid,                          -- null = practice run
   client_key  text not null,
   language_id integer not null,
   source      text not null,
@@ -491,7 +521,12 @@ create table code_runs (
   cases       jsonb not null default '[]',   -- per-test results
   created_at  timestamptz not null default now(),
   finished_at timestamptz,
-  unique (user_id, client_key)
+  unique (user_id, client_key),
+  -- the item is the activity's, the attempt is this learner's on that activity
+  foreign key (item_id, activity_id) references assessment_items (id, activity_id),
+  foreign key (attempt_id, activity_id, user_id) references attempts (id, activity_id, user_id),
+  check (total >= 0 and passed between 0 and total),
+  check (status <> 'done' or (finished_at is not null and total is not null))
 );
 
 create table certificates (
@@ -506,6 +541,10 @@ create table certificate_awards (
   user_id     uuid not null references users,
   verify_code text not null unique,
   issued_at   timestamptz not null default now(),
+  -- what the certificate shows and why it was earned, frozen at issue: recipient name,
+  -- course title, the CertificateConfig used, required_total and the completed
+  -- activity ids. Later edits to the course, config or profile do not change it.
+  snapshot    jsonb not null check (jsonb_typeof(snapshot) = 'object'),
   unique (course_id, user_id)
 );
 
@@ -528,16 +567,25 @@ select e.course_id, e.user_id,
        count(c.activity_id) filter (where a.required)                as required_done,
        max(c.completed_at)                                           as last_completed_at
 from enrolments e
-join activities a on a.course_id = e.course_id
-                 and a.published_at <= now()
+left join activities a on a.course_id = e.course_id      -- an empty course keeps its learners
+                      and a.published_at <= now()
 left join completions c on c.activity_id = a.id and c.user_id = e.user_id
 group by e.course_id, e.user_id;
 ```
 
 A completion row is written in the same transaction as the event that causes it: the
 learner marking a page/video/pdf done, or a grade that passes. Certificate eligibility
-is `required_done = required_total`, checked in the same transaction, which enqueues the
-award job.
+is `required_total > 0 and required_done = required_total`, checked in the same
+transaction, which enqueues the award job.
+
+Learning history survives edits: `items_snapshot` and `policy_snapshot` (for `assignment`
+the instructions, rubric, effective deadline and late policy) are written when the
+attempt starts and a trigger refuses to change them. `grades` holds the current grade
+only; every insert or change of it writes an `audit_log` row (`grade-set`,
+`grade-released`) whose `data` holds the previous and the new grade, feedback and
+release time, in the same transaction, so a correction stays reconstructible.
+Name corrections re-issue an award (new `snapshot`, same `verify_code`, an audit row);
+erasure blanks the name in it.
 
 ### 5.5 Q&A, jobs, settings
 
@@ -557,6 +605,7 @@ create table qa_messages (
   citations     jsonb not null default '[]',
   input_tokens  integer,
   output_tokens integer,
+  reserved_tokens integer,                  -- set while the assistant call runs
   created_at    timestamptz not null default now()
 );
 
@@ -567,14 +616,19 @@ create table platform (
   name     text not null,
   about    text not null default '',
   email    text not null default '',
-  logo_key text,
+  logo_id  uuid,                            -- references media
   settings jsonb not null default '{}',     -- PlatformSettings (typed), incl. Q&A on/off, monthly token cap
   version  integer not null default 1
 );
 ```
 
-The monthly Q&A budget is `sum(input_tokens + output_tokens)` over the current month,
-checked before each call. No ledger or reservation tables.
+The monthly Q&A budget is `sum(input_tokens + output_tokens)` over the current month's
+`qa_messages`. Admission stays atomic as in v2 (BUG-349): under
+`pg_advisory_xact_lock`, the sum plus the `reserved_tokens` of pending rows must leave
+room, and the assistant row is inserted with its reservation before the call starts; the
+call's end writes the real usage and clears `reserved_tokens`, and a pending row older
+than the call timeout stops counting. No ledger or reservation tables, and parallel
+requests cannot overshoot the cap.
 
 ### 5.6 Schema review 2026-11: what is left
 
@@ -839,7 +893,15 @@ Every schema change in phases 3–5 is a forward migration on the live `ashyq` d
   - a `course_progress` view row differs from the old projection's
     `completed_required_count`/`total_required_count` without a listed reason (known:
     Q-2026-09-26-1 empty assignments);
-  - a certificate `verify_code` does not resolve.
+  - a certificate `verify_code` does not resolve, or an award has no `snapshot`;
+  - a row breaks a cross-parent rule (activity vs chapter course, attempt vs activity,
+    code run vs item/attempt/learner), or a constraint is still `NOT VALID`;
+  - a handed-in attempt has no items/policy snapshot;
+  - grade history shrank: every v2 `grading_entries`/`file_grading_entries` row is a
+    `grades` row or a `grade-set` audit row;
+  - completion evidence is lost: a passing graded submission or a completed
+    `activity_progress` row has no `completions` row;
+  - a media id or storage key referenced anywhere has no `media` row.
 - Old tables are dropped one deploy after the code stops reading them, never in the
   same deploy.
 
