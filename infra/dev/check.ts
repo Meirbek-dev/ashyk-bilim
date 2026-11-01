@@ -228,6 +228,11 @@ export function runGate(gate: Gate, directory = logDir): Promise<Result> {
   })
 }
 
+// An area that starts once another has finished. ci-infra creates and removes container networks, and Chromium aborts
+// its in-flight requests on a network change (ERR_NETWORK_CHANGED): web-2's browser tests then fail as "Failed to
+// fetch dynamically imported module" (ai-server, 2026-11-01).
+const AFTER: Record<string, string> = { infra: 'web2' }
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2)
   const all = args.includes('--all')
@@ -255,23 +260,23 @@ async function main(): Promise<void> {
     const gate = areas.server?.find(gate => gate.name === 'server:test')
     if (gate) gate.env = { ...gate.env, DATABASE_URL: database.url }
   }
+  const runArea = async (gates: Gate[]): Promise<Result[]> => {
+    const out: Result[] = []
+    for (const gate of gates) {
+      const result = await runGate(gate)
+      console.log(`${result.ok ? 'ok  ' : 'FAIL'} ${gate.name.padEnd(16)} ${result.seconds.toFixed(0).padStart(4)}s`)
+      out.push(result)
+      if (!result.ok) break
+    }
+    return out
+  }
+  const runs: Record<string, Promise<Result[]>> = {}
+  for (const name of names.filter(name => !AFTER[name])) runs[name] = runArea(areas[name] ?? [])
+  for (const name of names.filter(name => AFTER[name])) {
+    runs[name] = Promise.resolve(runs[AFTER[name] ?? '']).then(() => runArea(areas[name] ?? []))
+  }
   try {
-    const results = (
-      await Promise.all(
-        Object.values(areas).map(async gates => {
-          const out: Result[] = []
-          for (const gate of gates) {
-            const result = await runGate(gate)
-            console.log(
-              `${result.ok ? 'ok  ' : 'FAIL'} ${gate.name.padEnd(16)} ${result.seconds.toFixed(0).padStart(4)}s`,
-            )
-            out.push(result)
-            if (!result.ok) break
-          }
-          return out
-        }),
-      )
-    ).flat()
+    const results = (await Promise.all(Object.values(runs))).flat()
     const failed = results.filter(r => !r.ok)
     recordHits(
       'check',
