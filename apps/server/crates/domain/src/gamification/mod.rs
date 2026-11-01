@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use ab_core::assessments::{StreakKind, XpSource};
 use ab_core::id::{UserId, XpTransactionId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
+use ab_core::time::Day;
 use ab_core::{Error, ErrorCode, FieldError, Result};
 use ab_db::gamification::{
     ConfigRow, LeaderboardRow, NewTransaction, ProfileRow, Recorded, TransactionRow,
@@ -72,10 +73,6 @@ fn now_unix() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
-}
-
-const fn day_of(unix: i64) -> i64 {
-    unix.div_euclid(86_400)
 }
 
 /// Resolved policy: defaults overlaid with the config row.
@@ -163,11 +160,11 @@ pub struct Dashboard {
     pub daily_xp: DailyXp,
 }
 
-/// Today's XP against the daily cap, as `award` judges it (UTC day, admin awards
+/// Today's XP against the daily cap, as `award` judges it (platform day, admin awards
 /// excluded from the cap but counted, like the stored total).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DailyXp {
-    /// XP earned since 00:00 UTC; 0 when the last award was on an earlier day
+    /// XP earned since the platform day's midnight; 0 when the last award was on an earlier day
     /// (the stored `daily_xp_earned` resets only on the next award).
     pub earned_today: i32,
     /// The effective cap; `None` when unlimited.
@@ -179,7 +176,7 @@ impl DailyXp {
     pub fn of(profile: &ProfileRow, policy_limit: i32, now: i64) -> Self {
         let same_day = profile
             .last_xp_award_at
-            .is_some_and(|at| day_of(at) == day_of(now));
+            .is_some_and(|at| Day::of_unix(at) == Day::of_unix(now));
         Self {
             earned_today: if same_day { profile.daily_xp_earned } else { 0 },
             limit: (policy_limit > 0).then_some(policy_limit),
@@ -327,8 +324,8 @@ impl GamificationService {
             StreakKind::Login => (profile.last_login_at, profile.login_streak),
             StreakKind::Learning => (profile.last_learning_at, profile.learning_streak),
         };
-        let today = day_of(now_unix());
-        let next = match last.map(|t| today - day_of(t)) {
+        let today = Day::of_unix(now_unix());
+        let next = match last.map(|t| today.days_since(Day::of_unix(t))) {
             Some(0) => current.max(1),
             Some(1) => current + 1,
             _ => 1,
@@ -575,7 +572,7 @@ impl GamificationService {
 
 /// Best-effort side effects other slices call; failures are logged.
 pub mod hooks {
-    use super::{AwardRequest, GamificationService, StreakKind, XpSource, day_of, now_unix};
+    use super::{AwardRequest, Day, GamificationService, StreakKind, XpSource, now_unix};
     use ab_core::assessments::AssessmentKind;
     use ab_core::id::{ActivityId, CourseId, SubmissionId, UserId};
     use sqlx::PgPool;
@@ -697,7 +694,10 @@ pub mod hooks {
             "login_streak",
             service.record_streak(user_id, StreakKind::Login).await,
         );
-        let day = day_of(now_unix()).to_string();
+        // The day as days since 1970-01-01 (the bonus key since before the platform zone).
+        let day = Day::of_unix(now_unix())
+            .days_since(Day(jiff::civil::date(1970, 1, 1)))
+            .to_string();
         log_err(
             "login_bonus",
             service
@@ -780,6 +780,16 @@ mod tests {
         // Yesterday's total is not today's: the stored counter resets only on the next award.
         assert_eq!(
             DailyXp::of(&profile(120, Some(noon - 86_400)), 500, noon).earned_today,
+            0
+        );
+        // The day is Almaty's (UTC+5): 23:00Z and 01:00Z are 04:00 and 06:00 of one day there.
+        let early = 20_000 * 86_400 + 3_600;
+        assert_eq!(
+            DailyXp::of(&profile(120, Some(early - 7_200)), 500, early).earned_today,
+            120
+        );
+        assert_eq!(
+            DailyXp::of(&profile(120, Some(early - 7 * 3_600)), 500, early).earned_today,
             0
         );
         assert_eq!(DailyXp::of(&profile(0, None), 0, noon).limit, None);

@@ -15,7 +15,7 @@ use sqlx::PgPool;
 
 use super::context::{
     AnalyticsContext, SnapshotKey, build_activity_events, days_between, file_is_reviewable,
-    is_reviewable, progress_snapshots, round1, score_of, utc_date,
+    is_reviewable, progress_snapshots, round1, score_of,
 };
 use super::filters::{AnalyticsFilters, SortOrder};
 use super::scope::TeacherScope;
@@ -419,9 +419,9 @@ pub async fn enrich_risk_rows(
     let mut course_ids: Vec<CourseId> = rows.iter().map(|r| r.course_id).collect();
     course_ids.sort_unstable();
     course_ids.dedup();
-    let before = utc_date(generated_at);
+    let before = ab_core::time::Day::of_unix(generated_at);
     let previous: HashMap<(CourseId, UserId), (RiskLevel, f64)> =
-        ab_db::analytics::previous_risk_snapshots(pool, &course_ids, &before)
+        ab_db::analytics::previous_risk_snapshots(pool, &course_ids, before)
             .await?
             .into_iter()
             .filter_map(|s| {

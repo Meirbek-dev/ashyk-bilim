@@ -34,7 +34,7 @@ impl JobHandler for AnalyticsRollup {
         KIND
     }
 
-    /// Optional payload `{ "date": "YYYY-MM-DD" }`; defaults to today (UTC).
+    /// Optional payload `{ "date": "YYYY-MM-DD" }`; defaults to today (platform zone).
     fn handle(&self, payload: serde_json::Value) -> BoxFuture<'static, Result<()>> {
         let pool = self.pool.clone();
         let date = payload

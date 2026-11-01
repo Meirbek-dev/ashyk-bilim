@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT max(snapshot_date)::text AS \"d?\" FROM learner_risk_snapshots\n           WHERE course_id = ANY($1) AND snapshot_date < $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "d?",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Date"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "49a471bd95ba97c8a1729ae4abf5edb4b38441881397b929c660ac2192dc0a75"
+}

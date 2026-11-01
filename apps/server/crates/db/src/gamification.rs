@@ -4,6 +4,7 @@
 use ab_core::Result;
 use ab_core::assessments::{StreakKind, XpSource};
 use ab_core::id::{GamificationProfileId, UserId, XpTransactionId};
+use ab_core::time::{Day, EPOCH_MAX};
 use sqlx::PgPool;
 
 #[derive(Debug, Clone)]
@@ -125,22 +126,23 @@ pub enum Recorded {
 
 /// Record the award and move the profile in one transaction.
 ///
-/// The daily cap (`daily_limit`, `None` = uncapped) is checked and the UTC-day reset
-/// decided under the profile row lock, so parallel awards serialize on it
+/// The daily cap (`daily_limit`, `None` = uncapped) is checked and the reset at
+/// the platform day's midnight ([`Day`]) decided under the profile row lock, so parallel awards serialize on it
 /// (BUG-252). Returns the new row with `triggered_level_up` resolved.
 pub async fn record_award(
     pool: &PgPool,
     new: NewTransaction<'_>,
     daily_limit: Option<i32>,
 ) -> Result<Recorded> {
+    let today_start = Day::today().start().unwrap_or(EPOCH_MAX);
     let mut tx = pool.begin().await?;
     let locked = sqlx::query!(
         r#"SELECT level AS "level!", daily_xp_earned AS "daily_xp_earned!",
                   (last_xp_award_at IS NOT NULL
-                   AND (last_xp_award_at AT TIME ZONE 'UTC')::date
-                       = (now() AT TIME ZONE 'UTC')::date) AS "same_day!"
+                   AND last_xp_award_at >= to_timestamp($2::bigint)) AS "same_day!"
            FROM gamification_profiles WHERE user_id = $1 FOR UPDATE"#,
-        new.user_id.0
+        new.user_id.0,
+        today_start
     )
     .fetch_one(&mut *tx)
     .await?;

@@ -11,6 +11,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use ab_core::Result;
 use ab_core::id::{ActivityId, CourseId, UserId};
+use ab_core::time::Day;
 use ab_db::analytics::{
     AssessmentMetricsWrite, CourseMetricsWrite, EngagementWrite, RiskSnapshotWrite, RollupCounts,
     TeacherMetricsWrite, UserCourseProgressWrite,
@@ -190,12 +191,12 @@ pub fn engagement_rows(
         .collect()
 }
 
-/// Compute and store every rollup for `date` (`YYYY-MM-DD`).
+/// Compute and store every rollup for one platform day.
 #[allow(
     clippy::too_many_lines,
     reason = "one legacy code path kept whole for line-by-line comparison"
 )]
-pub async fn run_rollup(pool: &PgPool, date: &str) -> Result<RollupCounts> {
+pub async fn run_rollup(pool: &PgPool, date: Day) -> Result<RollupCounts> {
     // Archived courses are frozen: no new snapshots, no risk rows; their
     // historical rows stay (docs/COURSE_ARCHIVING.md section 8).
     let course_ids = ab_db::analytics::all_course_ids(pool, false).await?;
@@ -374,7 +375,7 @@ pub async fn run_rollup(pool: &PgPool, date: &str) -> Result<RollupCounts> {
     tx.commit().await?;
     let counts = ab_db::analytics::rollup_counts(pool, date).await?;
     tracing::info!(
-        date,
+        %date,
         courses = course_rows.len(),
         assessments = assessment_rows.len(),
         risk_rows = risk_rows.len(),

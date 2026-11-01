@@ -557,9 +557,23 @@ pub struct ServerConfig {
     /// (`legacy` default, `v2` from the cutover).
     #[serde(default)]
     pub web_links: crate::links::LinkScheme,
+    /// `AB__SERVER__TIME_ZONE`: the platform day (XP daily cap, streaks,
+    /// rollup dates) turns over at midnight here; an IANA name.
+    #[serde(default = "ServerConfig::default_time_zone")]
+    pub time_zone: String,
 }
 
 impl ServerConfig {
+    fn default_time_zone() -> String {
+        crate::time::DEFAULT_TIME_ZONE.to_owned()
+    }
+
+    /// The configured platform zone.
+    pub fn zone(&self) -> Result<jiff::tz::TimeZone> {
+        jiff::tz::TimeZone::get(&self.time_zone)
+            .map_err(|e| Error::config(format!("AB__SERVER__TIME_ZONE {:?}: {e}", self.time_zone)))
+    }
+
     /// `path` (leading slash) anchored at `web_url` when configured.
     #[must_use]
     pub fn web_href(&self, path: &str) -> String {
@@ -665,6 +679,7 @@ impl Config {
         if self.database.url.expose_secret().is_empty() {
             return Err(Error::config("AB__DATABASE__URL must be set"));
         }
+        self.server.zone()?;
         let r = self.retention;
         if [
             r.jobs_succeeded_days,
@@ -716,6 +731,7 @@ impl Config {
                 "cors_origins": self.server.cors_origins,
                 "web_url": self.server.web_url,
                 "web_links": self.server.web_links,
+                "time_zone": self.server.time_zone,
             },
             "resend": self.resend.as_ref().map(|r| serde_json::json!({
                 "api_key": "[redacted]",
@@ -765,6 +781,7 @@ mod tests {
                 cors_origins: vec![],
                 web_url: None,
                 web_links: crate::links::LinkScheme::Legacy,
+                time_zone: crate::time::DEFAULT_TIME_ZONE.into(),
             },
             database: DatabaseConfig {
                 url: SecretString::from("postgres://x"),

@@ -622,6 +622,10 @@ Read their app-specific `AGENTS.md` for client conventions and `docs/INFRA.md` f
   (`AB__DATABASE__URL` set; in production a non-empty, non-wildcard CORS allowlist, JSON logs, auth limits not
   relaxed past their defaults). `serve` refuses to start without Redis, Zitadel or storage settings.
 - `ashyq admin config-check` prints the effective config with secrets redacted.
+- One platform time zone, `AB__SERVER__TIME_ZONE` (IANA name, default `Asia/Almaty`; the tz database is bundled
+  into the binary): the XP daily cap, login/learning streaks, the daily login bonus and analytics rollup dates
+  turn over at its midnight (`ab_core::time::Day`, which binds as Postgres `date`). Instants stay `timestamptz`;
+  dashboards bucket by the zone the client sends.
 - Data migrations that rewrite stored shapes (`ashyq admin migrate-editor-docs`, `migrate-themes`,
   `migrate-locales`) are idempotent commands with `--dry-run`, not SQL migrations: they run against live data on
   the operator's schedule (`docs/STAGE-2-CUTOVER.md`).

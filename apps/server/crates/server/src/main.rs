@@ -133,6 +133,7 @@ async fn main() -> anyhow::Result<()> {
 
     let config = Config::load()?;
     ab_core::links::init(config.server.web_links);
+    ab_core::time::init_time_zone(config.server.zone()?);
     ab_domain::rich_text::init(&config);
     // seed-e2e's stdout is its JSON report: no log lines in it.
     let quiet = matches!(
@@ -704,14 +705,14 @@ async fn worker(config: Config) -> anyhow::Result<()> {
     }
 }
 
-/// `admin analytics-rollup`: rebuild every UTC day in `[from, to]`
+/// `admin analytics-rollup`: rebuild every platform day in `[from, to]`
 /// (both default to today) and print one line per day.
 async fn analytics_rollup(
     config: Config,
     from: Option<String>,
     to: Option<String>,
 ) -> anyhow::Result<()> {
-    let today = ab_domain::analytics::context::utc_date(ab_domain::analytics::context::now_unix());
+    let today = ab_core::time::Day::today().to_string();
     let from = from.unwrap_or_else(|| today.clone());
     let to = to.unwrap_or(today);
     let pool = ab_db::connect(&config.database).await?;
