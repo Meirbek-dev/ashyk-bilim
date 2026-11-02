@@ -13,12 +13,31 @@
 -- previous release's writes are overridden with the same rule; the new code
 -- no longer writes them. The lane C contract migration replaces both with
 -- virtual generated columns and drops the trigger.
+--
+-- The previous release counts a row completed by its state alone (a legacy
+-- `passed` without a stamp) and then writes the flag with no completed_at; the
+-- new code falls back to the last activity for that time. The trigger does the
+-- same for such a write (the flag set, completed_at empty before and now), and
+-- the rows already stored that way get it here, so the flag keeps its meaning.
+-- A leaver's write clears a completed_at that was set: it stays cleared.
 
 SET LOCAL lock_timeout = '5s';
+
+-- data-fix: the previous release's eligible rows without a completion time.
+SET LOCAL ab.bookkeeping = 'on';
+UPDATE course_progress SET completed_at = coalesce(last_activity_at, updated_at)
+WHERE certificate_eligible AND completed_at IS NULL
+  AND total_required_count > 0 AND completed_required_count >= total_required_count;
+SET LOCAL ab.bookkeeping = 'off';
 
 CREATE FUNCTION course_progress_derive() RETURNS trigger
     LANGUAGE plpgsql AS $$
 BEGIN
+    IF NEW.completed_at IS NULL AND NEW.certificate_eligible
+       AND NEW.total_required_count > 0 AND NEW.completed_required_count >= NEW.total_required_count
+       AND (TG_OP = 'INSERT' OR OLD.completed_at IS NULL) THEN
+        NEW.completed_at := coalesce(NEW.last_activity_at, now());
+    END IF;
     NEW.progress_pct := CASE WHEN NEW.total_required_count > 0
         THEN round(NEW.completed_required_count * 100.0 / NEW.total_required_count, 2)::double precision
         ELSE 0 END;

@@ -39,8 +39,8 @@ Compilation uses the committed SQLx cache by default; `prepare` and `sqlx-check`
   edit batch and `just ci-server` once before committing server changes. Fix a red hosted pipeline before other work.
 - Never edit an applied migration. Never commit env files, keys, tokens or restored data.
 - A constraint on existing data: repair violating rows with a stated deterministic rule first, or add it with
-  `SELECT schema_try_check(table, name, expr)` (NOT VALID + VALIDATE; when old rows violate it the check stays
-  NOT VALID, guarding new and updated rows, with a warning and a `schema_skipped_checks` row). A growing value list (`kind IN (...)`) is a lookup
+  `SELECT schema_try_check(table, name, expr)` (NOT VALID + VALIDATE; skipped with a warning and a
+  `schema_skipped_checks` row when old rows violate it). A growing value list (`kind IN (...)`) is a lookup
   table with a foreign key (`notification_kinds`, `upload_purposes`), not a CHECK rewritten per value.
   New foreign keys get an index led by their first column (`fk_index_audit.rs`).
 - Migrations deploy during classes and the previous release must run on the new schema (`migration_rules.rs`):

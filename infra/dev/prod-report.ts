@@ -167,7 +167,7 @@ function jobs(names: string[]): string[] {
     : ['  none']
 }
 
-// A skipped check is kept NOT VALID: old rows still violate it. Repair them, then call schema_try_check again.
+// A skipped check means the schema guarantees less than its migrations say: repair the rows, re-add it.
 function checks(names: string[]): string[] {
   const out = psql(
     names,

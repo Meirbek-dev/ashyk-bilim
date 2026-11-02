@@ -45,7 +45,9 @@ $$;
 
 -- Drop every partition whose rows are all older than `before` (its upper
 -- bound <= before); returns how many it dropped. The default partition is
--- never dropped (its rows go by the batched DELETE of the prune).
+-- never dropped (its rows go by the batched DELETE of the prune). It runs as
+-- the owner for the app (20261102060100): never this month's or last month's
+-- data, whatever `before` the caller passes.
 CREATE FUNCTION analytics_events_drop_partitions(before timestamptz)
     RETURNS integer
     LANGUAGE plpgsql AS $$
@@ -54,6 +56,9 @@ DECLARE
     upper_bound timestamptz;
     dropped integer := 0;
 BEGIN
+    IF before > now() - interval '30 days' THEN
+        RAISE EXCEPTION 'analytics_events_drop_partitions: % is less than 30 days ago', before;
+    END IF;
     IF (SELECT relkind FROM pg_class WHERE oid = 'analytics_events'::regclass) <> 'p' THEN
         RETURN 0;
     END IF;

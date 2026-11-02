@@ -130,7 +130,8 @@ async fn user_constraints_and_role_cascade(pool: PgPool) {
 
 /// Review 3, item 27: audit IPs are `inet`; a forwarded value that is not an
 /// address is kept as NULL instead of rejecting the audit row, both from the
-/// server and from a previous binary that still writes the text column.
+/// server and from a previous binary that still writes the text column; the
+/// server's rows keep that column filled for the previous binary.
 #[ab_testdb::test]
 async fn audit_ips_are_inet_and_junk_is_null(pool: PgPool) {
     for (ip, want) in [
@@ -149,6 +150,13 @@ async fn audit_ips_are_inet_and_junk_is_null(pool: PgPool) {
         )
         .await
         .unwrap();
+        // The previous binary reads the text column: a rollback still shows this row's address.
+        let mirrored: Option<String> =
+            sqlx::query_scalar("SELECT ip FROM auth_audit_log WHERE event = 'probe-new'")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!(mirrored.as_deref(), want, "{ip:?}");
         sqlx::query("INSERT INTO auth_audit_log (event, ip) VALUES ('probe-old', $1)")
             .bind(ip)
             .execute(&pool)

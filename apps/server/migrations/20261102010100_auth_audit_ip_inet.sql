@@ -6,9 +6,10 @@ SET LOCAL lock_timeout = '5s';
 -- becomes NULL through `inet_or_null` (the one rule for the backfill, this
 -- trigger and the server's INSERT), so junk still never rejects an audit
 -- row (a function, not a CASE: the planner folds `$1::inet` of a bound
--- parameter even in a CASE branch that is not taken). The trigger fills
--- ip_address for rows the previous binary writes (it sets only `ip`); the
--- contract file drops `ip`.
+-- parameter even in a CASE branch that is not taken). The trigger keeps both
+-- filled: ip_address for rows the previous binary writes (it sets only `ip`),
+-- `ip` for this release's rows, which the previous binary shows after a
+-- rollback; the contract file drops `ip`.
 
 ALTER TABLE auth_audit_log ADD COLUMN ip_address inet;
 
@@ -31,6 +32,8 @@ CREATE FUNCTION auth_audit_log_ip_address() RETURNS trigger
 BEGIN
     IF NEW.ip_address IS NULL AND NEW.ip IS NOT NULL THEN
         NEW.ip_address := inet_or_null(NEW.ip);
+    ELSIF NEW.ip IS NULL AND NEW.ip_address IS NOT NULL THEN
+        NEW.ip := host(NEW.ip_address);
     END IF;
     RETURN NEW;
 END $$;

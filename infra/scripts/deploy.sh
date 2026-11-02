@@ -136,9 +136,9 @@ set_tag "$sha"
 if ! up_and_smoke; then
   if ((migrations)); then
     log "FAIL: smoke failed on a release with migrations; no automatic rollback."
-    log "To restore the pre-deploy state (RUNBOOK: restore from pre-deploy dump):"
+    log "To restore the pre-deploy state (RUNBOOK 3.2: the whole database is recreated from the dump):"
     log "  compose stop server worker"
-    log "  compose exec -T db sh -c 'pg_restore -U \"\$POSTGRES_USER\" -d ashyq --clean --if-exists' < $dump"
+    log "  compose exec -T db sh -c 'pg_restore -U \"\$POSTGRES_USER\" -d postgres --clean --create --exit-on-error' < $dump"
     log "  infra/scripts/rollback.sh --force ${prev:-<previous sha>}"
     exit 1
   fi

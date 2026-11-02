@@ -108,7 +108,7 @@ enum AdminCommand {
         user: String,
     },
     /// Bring back a course deleted within the grace period
-    /// (`AB__RETENTION__DELETED_COURSES_DAYS`, RUNBOOK 2.6): it returns
+    /// (`AB__RETENTION__DELETED_COURSES_DAYS`, RUNBOOK 2.7): it returns
     /// archived, with its learners' work; its staff restore it from the
     /// archive. Notifications deleted with it stay deleted.
     RestoreCourse {

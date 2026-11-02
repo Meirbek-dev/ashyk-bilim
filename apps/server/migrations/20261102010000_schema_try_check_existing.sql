@@ -1,13 +1,10 @@
 SET LOCAL lock_timeout = '5s';
 
--- Schema review 3, item 24: a check that existing rows violate stays on the
--- table as NOT VALID instead of being dropped. Postgres then checks every
--- new row and every updated row against it, so the violation cannot spread;
--- only the old rows are exempt until repaired. The price: an UPDATE of a
--- still-violating old row is refused too (repair those rows first, RUNBOOK
--- 2.4). The check is recorded in schema_skipped_checks as before; calling
--- schema_try_check again after the repair validates the existing constraint
--- and removes the row.
+-- schema_try_check also takes a check that is already on the table: it validates it (a repair migration calls
+-- it again, RUNBOOK 2.4). A check that existing rows violate is still dropped again and recorded in
+-- schema_skipped_checks, as since 20261101220200: kept NOT VALID it would refuse every later UPDATE of such a
+-- row, the backfills of this very release included (schema review 3 item 24 tried that; the release review of
+-- 2026-11-02 reverted it: a legacy course's learnings failed the upload_references backfill).
 
 CREATE OR REPLACE FUNCTION schema_try_check(p_table regclass, p_name text, p_expr text) RETURNS boolean
     LANGUAGE plpgsql AS $$
@@ -18,11 +15,12 @@ BEGIN
     BEGIN
         EXECUTE format('ALTER TABLE %s VALIDATE CONSTRAINT %I', p_table, p_name);
     EXCEPTION WHEN check_violation THEN
+        EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', p_table, p_name);
         INSERT INTO schema_skipped_checks AS s (name, table_name, expr)
         VALUES (p_name, p_table::text, p_expr)
         ON CONFLICT ON CONSTRAINT schema_skipped_checks_pkey
         DO UPDATE SET expr = EXCLUDED.expr, skipped_at = now();
-        RAISE WARNING 'schema_try_check: % kept NOT VALID, existing rows violate %', p_name, p_expr;
+        RAISE WARNING 'schema_try_check: % skipped, existing rows violate %', p_name, p_expr;
         RETURN false;
     END;
     DELETE FROM schema_skipped_checks s WHERE s.name = p_name;
@@ -30,13 +28,12 @@ BEGIN
 END $$;
 
 COMMENT ON FUNCTION schema_try_check(regclass, text, text) IS
-    'Add a CHECK NOT VALID and validate it; when existing rows violate it, keep it NOT VALID (new and updated rows are checked) and record it in schema_skipped_checks. Migrations only.';
+    'Add a CHECK (or take the existing one) and validate it; when existing rows violate it, drop it and record it in schema_skipped_checks. Migrations only.';
 COMMENT ON TABLE schema_skipped_checks IS
-    'Checks kept NOT VALID because existing rows violate them (RUNBOOK 2.4); a row goes when the check validates.';
+    'Checks not on their table because existing rows violate them (RUNBOOK 2.4); a row goes when the check is added.';
 
--- Checks an earlier release skipped (dropped) come back as NOT VALID. One
--- that cannot be re-added (its table or column changed since) stays
--- recorded with a WARNING.
+-- Checks an earlier release skipped are tried again: added where the rows were repaired since, recorded
+-- again otherwise. One that cannot be added (its table or column changed since) stays recorded with a WARNING.
 DO $$
 DECLARE
     r record;

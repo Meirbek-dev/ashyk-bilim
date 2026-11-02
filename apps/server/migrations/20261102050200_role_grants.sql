@@ -60,6 +60,7 @@ BEGIN
             ('google_accounts', ARRAY['google_sub', 'email']),
             ('auth_audit_log', ARRAY['ip', 'ip_address', 'user_agent', 'metadata']),
             ('platforms', ARRAY['email']),
+            ('code_run_cases', ARRAY['judge0_token']),
             ('idempotency_keys', NULL)
         ) AS x(name, hidden)
         JOIN pg_class c ON c.relname = x.name AND c.relnamespace = 'public'::regnamespace

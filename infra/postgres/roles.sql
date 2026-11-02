@@ -47,6 +47,14 @@ SELECT format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public
                  GRANT SELECT ON TABLES TO ashyq_ro', :'owner') \gexec
 SELECT format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public
                  GRANT SELECT ON SEQUENCES TO ashyq_ro', :'owner') \gexec
-SELECT format('SELECT apply_role_grants(%L)', :'owner')
+-- Large objects are, with temp tables (apply_role_grants), what a read-only role could still write (it can
+-- turn default_transaction_read_only off): their writers for superusers only, here and, through template1,
+-- in every database created later.
+REVOKE EXECUTE ON FUNCTION lo_create(oid), lo_creat(integer), lo_from_bytea(oid, bytea),
+    lo_put(oid, bigint, bytea), lowrite(integer, bytea) FROM PUBLIC;
+-- apply_role_grants is the owner's code: run it with the owner's rights, never this superuser's (the owner
+-- could otherwise replace it with ALTER ROLE ... SUPERUSER and get it run on the next deploy).
+SELECT format('SET LOCAL ROLE %I', :'owner') \gexec
+SELECT format('SELECT public.apply_role_grants(%L)', :'owner')
 WHERE to_regprocedure('public.apply_role_grants(name)') IS NOT NULL \gexec
 COMMIT;

@@ -419,9 +419,12 @@ pub async fn user_run_course_ids(pool: &PgPool, user_id: UserId) -> Result<Vec<C
 }
 
 pub async fn list_course_ids(pool: &PgPool) -> Result<Vec<CourseId>> {
-    let ids = sqlx::query_scalar!(r#"SELECT id AS "id: CourseId" FROM courses ORDER BY id"#)
-        .fetch_all(pool)
-        .await?;
+    // A deleted course waits for its purge: nothing to project.
+    let ids = sqlx::query_scalar!(
+        r#"SELECT id AS "id: CourseId" FROM courses WHERE deleted_at IS NULL ORDER BY id"#
+    )
+    .fetch_all(pool)
+    .await?;
     Ok(ids)
 }
 

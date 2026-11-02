@@ -34,9 +34,11 @@ pub async fn insert_many(
            WHERE NOT EXISTS (SELECT 1 FROM notification_opt_outs o
                              WHERE o.user_id = r.user_id AND o.kind = $2)
              -- A link into a course or activity deleted meanwhile is not sent (the
-             -- generated course_id / activity_id columns are foreign keys).
+             -- generated course_id / activity_id columns are foreign keys), nor one into
+             -- a course in its deletion grace period (it answers 404).
              AND ($3::jsonb->>'course_id' IS NULL
-                  OR EXISTS (SELECT 1 FROM courses c WHERE c.id = ($3::jsonb->>'course_id')::uuid))
+                  OR EXISTS (SELECT 1 FROM courses c WHERE c.id = ($3::jsonb->>'course_id')::uuid
+                                                       AND c.deleted_at IS NULL))
              AND ($3::jsonb->>'activity_id' IS NULL
                   OR EXISTS (SELECT 1 FROM activities a
                              WHERE a.id = ($3::jsonb->>'activity_id')::uuid))

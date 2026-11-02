@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT g.course_id AS \"course_id: CourseId\"\n           FROM usergroup_courses g JOIN courses c ON c.id = g.course_id\n           WHERE g.usergroup_id = $1 AND c.deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "usergroup_courses",
+            "name": "course_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "fe851e4f463e984205e73ed0f296142a0b7af2eaa3cd42e85ffaa6124c087332"
+}

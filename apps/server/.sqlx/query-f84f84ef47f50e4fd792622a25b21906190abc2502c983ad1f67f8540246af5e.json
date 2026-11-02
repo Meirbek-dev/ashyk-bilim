@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM courses WHERE creator_id = $1 AND deleted_at IS NULL)\n               OR EXISTS (SELECT 1 FROM course_staff s JOIN courses c ON c.id = s.course_id\n                          WHERE s.user_id = $1 AND s.status = 'active' AND s.authorship <> 'reporter'\n                            AND c.deleted_at IS NULL)\n               AS \"authors!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "authors!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "f84f84ef47f50e4fd792622a25b21906190abc2502c983ad1f67f8540246af5e"
+}

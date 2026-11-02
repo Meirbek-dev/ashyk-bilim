@@ -97,9 +97,8 @@ COMMIT;
 ### 2.4 Integrity checks skipped by a migration
 
 A migration adds a CHECK through `schema_try_check` (apps/server/AGENTS.md): when existing rows violate it,
-the check stays on the table as NOT VALID (new rows and every updated row must satisfy it, the old rows are
-exempt until repaired), the migrate log shows `WARNING: schema_try_check: <name> kept NOT VALID`, and the
-check is recorded. An UPDATE of a still-violating old row is refused (500 in the API) until the row is repaired. After a deploy:
+the check is not added, the migrate log shows `WARNING: schema_try_check: <name> skipped`, and the
+check is recorded. After a deploy:
 
 ```bash
 dc exec -T db psql -U ashyq -d ashyq -c 'SELECT name, table_name, expr, skipped_at FROM schema_skipped_checks'
@@ -107,7 +106,12 @@ dc exec -T db psql -U ashyq -d ashyq -c 'SELECT name, table_name, expr, skipped_
 
 Zero rows is the expected state. For each row: find the offenders (`SELECT id FROM <table_name> WHERE NOT
 (<expr>)`), decide the repair (owner call when it changes grades or content), write it as a new
-migration that repairs and calls `schema_try_check` again (it validates the existing constraint; the row disappears).
+migration that repairs and calls `schema_try_check` again (the row disappears when the check is added).
+Since `20261102010000` every deploy's migration run tries the recorded checks again, so a repair made by hand
+also ends the row on the next release with migrations.
+
+The owner runs these expressions as DDL: only migrations write `schema_skipped_checks` (the app role may not).
+
 
 ### 2.5 Least-privilege app roles
 
@@ -168,7 +172,7 @@ Dev: the same against the dev cluster as its superuser, plus each test database.
 `ALTER EXTENSION vector SET SCHEMA public` (and `ALTER ROLE ... RESET search_path`) in the same way.
 `infra/tests/db-roles.sh` rehearses it on a migrated throwaway database.
 
-### 2.6 Restoring a deleted course
+### 2.7 Restoring a deleted course
 
 `DELETE /courses/{id}` is soft: the course is archived, stamped `deleted_at` and gone from every read; the daily
 `maintenance:retention` purges it with everything under it (learner work and grades) once it has been deleted for
@@ -198,6 +202,17 @@ Deploys `HEAD` (the compose files and the images must belong to the same
 commit). Steps and auto-rollback rules: INFRA "Build and release". History:
 `tail .deploy-history`.
 
+A release whose migrations rewrite or scan large tables under an exclusive lock (a column type change, a
+backfill, a CHECK validated over every row; the file header says so) blocks the API on those tables while it
+runs: deploy it outside class hours, after timing `just server-migrate` on a restored copy (3.5). Each file
+waits at most its `lock_timeout` for its lock, so a busy table fails the deploy rather than queueing behind it;
+run it again. An index built `CONCURRENTLY` that failed stays behind INVALID: before the retry, list them and
+drop each (`DROP INDEX CONCURRENTLY <name>`), since a retry either fails on the name or keeps the broken index:
+
+```bash
+dc exec -T db psql -U ashyq -d ashyq -Atc 'SELECT indexrelid::regclass FROM pg_index WHERE NOT indisvalid'
+```
+
 ### 3.2 Rollback
 
 ```bash
@@ -212,9 +227,18 @@ these lines when it stops):
 
 ```bash
 dc stop server worker
-dc exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d ashyq --clean --if-exists' < dumps/pre-deploy-<bad sha>.dump
+dc exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d postgres --clean --create --exit-on-error' < dumps/pre-deploy-<bad sha>.dump
 just rollback --force <previous sha>
 ```
+
+`--create` drops and recreates the database `ashyq` from the dump: a restore over the newer database
+(`--clean` alone) keeps every object the dump does not name, such as tables a release moved into another
+schema. It stops before changing anything while a session is still connected to `ashyq` (close `just db sql`
+and psql sessions, or `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'ashyq'`).
+
+A release that soft-deletes courses (`courses.deleted_at`): the releases before it show such a course as an
+ordinary archived one, and unarchiving it there answers 500 (the `deleted_at` check). Restore those courses
+(`ashyq admin restore-course`) or leave them archived before rolling back past it.
 
 Rollback switches image tags only. If the bad release also changed compose or
 `infra/` files, `git checkout <previous sha>` first. A checkout older than `zitadel-db` (3.15) points Zitadel

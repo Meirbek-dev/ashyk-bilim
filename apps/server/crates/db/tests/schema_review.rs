@@ -45,8 +45,9 @@
 //! - review item 18 (REWRITE 5.6 n4): every media key carries its upload id;
 //!   the reaper keeps a referenced file whose counter drifted to 0 and still
 //!   collects a real orphan.
-//! - review 3, item 24: a check old rows violate stays NOT VALID and bites
-//!   on new rows; it validates after the repair.
+//! - review 3, item 24 (reverted by the release review): a check old rows
+//!   violate is not added, so their rows stay editable; it is added after the
+//!   repair.
 //! - review 3, item 20: every submission / file-attempt arc table names
 //!   exactly one of the two.
 //! - lane C, item 17: one platform day (`AB__SERVER__TIME_ZONE`, default
@@ -1241,68 +1242,75 @@ async fn the_previous_release_cannot_start_the_clock_of_a_referenced_upload(pool
     assert_eq!(clocks, vec![true, false], "k/free released, k/held kept");
 }
 
-/// Review 3, item 24: a check that old rows violate stays NOT VALID (new and
-/// updated rows are checked), is recorded, and validates once the rows are
-/// repaired and the check is tried again.
+/// Review 3, item 24, as the release review left it: a check that old rows
+/// violate is not added (kept NOT VALID it would refuse every later UPDATE of
+/// those rows, a backfill's included), is recorded, and is added once the rows
+/// are repaired and the check is tried again. A check already on the table is
+/// validated, not added twice.
 #[ab_testdb::test]
-async fn a_violated_check_stays_not_valid_until_repaired(pool: PgPool) {
-    sqlx::query("CREATE TABLE try_check_probe (n int NOT NULL)")
+async fn a_violated_check_is_skipped_until_repaired(pool: PgPool) {
+    sqlx::query("CREATE TABLE try_check_probe (n int NOT NULL, note text)")
         .execute(&pool)
         .await
         .unwrap();
-    sqlx::query("INSERT INTO try_check_probe VALUES (1), (-1)")
+    sqlx::query("INSERT INTO try_check_probe VALUES (1, NULL), (-1, NULL)")
         .execute(&pool)
         .await
         .unwrap();
     let try_check =
         "SELECT schema_try_check('try_check_probe', 'try_check_probe_n_check', 'n >= 0')";
+    let on_table = || async {
+        sqlx::query_scalar::<_, bool>(
+            "SELECT convalidated FROM pg_constraint WHERE conname = 'try_check_probe_n_check'",
+        )
+        .fetch_optional(&pool)
+        .await
+        .unwrap()
+    };
+    let recorded = || async {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT count(*) FROM schema_skipped_checks WHERE name = 'try_check_probe_n_check'",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
     let added: bool = sqlx::query_scalar(try_check)
         .fetch_one(&pool)
         .await
         .unwrap();
     assert!(!added);
-    let validated: Option<bool> = sqlx::query_scalar(
-        "SELECT convalidated FROM pg_constraint WHERE conname = 'try_check_probe_n_check'",
-    )
-    .fetch_optional(&pool)
-    .await
-    .unwrap();
-    assert_eq!(validated, Some(false), "the check stays, NOT VALID");
-    let recorded: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM schema_skipped_checks WHERE name = 'try_check_probe_n_check'",
-    )
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert_eq!(recorded, 1);
-    let refused = sqlx::query("INSERT INTO try_check_probe VALUES (-2)")
+    assert_eq!(
+        on_table().await,
+        None,
+        "the violated check is dropped again"
+    );
+    assert_eq!(recorded().await, 1);
+    sqlx::query("UPDATE try_check_probe SET note = 'edited'")
         .execute(&pool)
-        .await;
-    assert!(refused.is_err(), "a new violating row is refused");
+        .await
+        .expect("an old violating row stays editable");
 
     sqlx::query("UPDATE try_check_probe SET n = 0 WHERE n < 0")
         .execute(&pool)
         .await
         .unwrap();
-    let added: bool = sqlx::query_scalar(try_check)
-        .fetch_one(&pool)
-        .await
-        .unwrap();
-    assert!(added, "the repaired table validates the existing check");
-    let validated: bool = sqlx::query_scalar(
-        "SELECT convalidated FROM pg_constraint WHERE conname = 'try_check_probe_n_check'",
-    )
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert!(validated);
-    let recorded: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM schema_skipped_checks WHERE name = 'try_check_probe_n_check'",
-    )
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert_eq!(recorded, 0);
+    for _ in 0..2 {
+        let added: bool = sqlx::query_scalar(try_check)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert!(
+            added,
+            "the repaired table takes the check, and keeps it on a second try"
+        );
+    }
+    assert_eq!(on_table().await, Some(true));
+    assert_eq!(recorded().await, 0);
+    let refused = sqlx::query("INSERT INTO try_check_probe VALUES (-2, NULL)")
+        .execute(&pool)
+        .await;
+    assert!(refused.is_err(), "a new violating row is refused");
 }
 
 /// Review 3, item 20: until the file-task pipeline merges into submissions,
@@ -1623,6 +1631,33 @@ async fn course_progress_derives_percent_and_eligibility(pool: PgPool) {
                      WHERE course_id = $1 AND user_id = $2")
     .await;
     assert!(early.is_err(), "completed_at only on a completed course");
+
+    // The previous release's leaver write clears the stamp: the course stays not completed.
+    set(
+        "UPDATE course_progress SET completed_at = NULL, certificate_eligible = false
+         WHERE course_id = $1 AND user_id = $2",
+    )
+    .await
+    .unwrap();
+    assert_eq!(derived().await, (100.0, false));
+    // Its member write of a course done by state alone (no stamp, the flag set): the stamp is the
+    // last activity, as the new projector's.
+    set(
+        "UPDATE course_progress SET certificate_eligible = true, last_activity_at = '2026-10-01Z'
+         WHERE course_id = $1 AND user_id = $2",
+    )
+    .await
+    .unwrap();
+    assert_eq!(derived().await, (100.0, true));
+    let stamped: bool = sqlx::query_scalar(
+        "SELECT completed_at = '2026-10-01Z' FROM course_progress WHERE course_id = $1 AND user_id = $2",
+    )
+    .bind(w.course)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(stamped);
 }
 
 #[ab_testdb::test]
@@ -2338,6 +2373,29 @@ async fn every_session_gets_the_app_search_path(pool: PgPool) {
             .unwrap(),
         ab_db::SEARCH_PATH
     );
+}
+
+/// The roles review: every plpgsql function of the app finds its tables through
+/// the app's path with pg_temp last, so a TEMP table of the caller cannot stand
+/// in for the table a trigger checks (20261102091000). A new function sets
+/// `SET search_path` itself; the one that sets the caller's path cannot.
+#[ab_testdb::test]
+async fn app_functions_pin_their_search_path(pool: PgPool) {
+    let unpinned: Vec<String> = sqlx::query_scalar(
+        "SELECT p.oid::regprocedure::text FROM pg_proc p
+         JOIN pg_language l ON l.oid = p.prolang
+         WHERE p.pronamespace::regnamespace::name = ANY (ARRAY['public']::name[] || app_schemas())
+           AND l.lanname = 'plpgsql'
+           AND NOT EXISTS (SELECT FROM pg_depend d
+                           WHERE d.classid = 'pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e')
+           AND NOT EXISTS (SELECT FROM unnest(p.proconfig) c
+                           WHERE c LIKE 'search\\_path=%pg\\_temp')
+         ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(unpinned, ["ensure_app_search_path()"]);
 }
 
 #[ab_testdb::test]

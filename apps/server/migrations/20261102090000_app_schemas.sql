@@ -103,8 +103,9 @@ CREATE FUNCTION app_table_schema(t name) RETURNS name LANGUAGE sql IMMUTABLE AS 
     END::name
 $$;
 
--- Move every table, view and free sequence of `public` (but the sqlx ledger and extension members) into its
--- schema; a partition goes where its root goes. Indexes, constraints, owned sequences, triggers, comments and
+-- Move every table, view and free sequence the migrating role owns in `public` (but the sqlx ledger and
+-- extension members) into its schema; a partition goes where its root goes. Another role's relation (one
+-- a superuser made by hand) stays in public: it is not the app's, and SET SCHEMA would fail on it. Indexes, constraints, owned sequences, triggers, comments and
 -- privileges move with their table. Returns how many relations moved. Called by 20261103073000 (and again by
 -- any later file that has to place a table an older file created unqualified).
 CREATE FUNCTION place_app_tables() RETURNS integer LANGUAGE plpgsql AS $$
@@ -120,6 +121,7 @@ BEGIN
         FROM pg_class c
         LEFT JOIN pg_class root ON c.relispartition AND root.oid = pg_partition_root(c.oid)
         WHERE c.relnamespace = 'public'::regnamespace
+          AND pg_has_role(c.relowner, 'USAGE')
           AND c.relkind IN ('r', 'p', 'v', 'm', 'S')
           AND c.relname <> '_sqlx_migrations'
           -- not an extension's member; a sequence owned by a column moves with its table
@@ -187,6 +189,9 @@ BEGIN
         RETURN;
     END IF;
     EXECUTE format('GRANT CONNECT ON DATABASE %I TO ashyq_app, ashyq_ro', current_database());
+    -- Temp tables are written disk: the owner and the app may, the read-only role may not.
+    EXECUTE format('REVOKE TEMPORARY ON DATABASE %1$I FROM PUBLIC; GRANT TEMPORARY ON DATABASE %1$I TO %2$I, ashyq_app',
+                   current_database(), owner);
     REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 
     FOREACH s IN ARRAY ARRAY['public']::name[] || app_schemas() LOOP
@@ -207,15 +212,16 @@ BEGIN
     END LOOP;
 
     -- The ledger is the owner's; journal rows are appended, never rewritten or deleted by the app.
+    -- schema_skipped_checks holds CHECK expressions that migrations run as the owner: rows of the owner only.
     FOR t IN
         SELECT c.oid::regclass AS rel, c.relname FROM pg_class c
         WHERE c.relnamespace::regnamespace::name = ANY (ARRAY['public']::name[] || app_schemas())
           AND c.relkind IN ('r', 'p')
-          AND c.relname IN ('_sqlx_migrations', 'grading_entries', 'file_grading_entries',
-                            'assessment_audit_events', 'auth_audit_log')
+          AND c.relname IN ('_sqlx_migrations', 'schema_skipped_checks', 'grading_entries',
+                            'file_grading_entries', 'assessment_audit_events', 'auth_audit_log')
     LOOP
         EXECUTE format('REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON %s FROM ashyq_app', t.rel);
-        IF t.relname <> '_sqlx_migrations' THEN
+        IF t.relname NOT IN ('_sqlx_migrations', 'schema_skipped_checks') THEN
             EXECUTE format('GRANT INSERT ON %s TO ashyq_app', t.rel);
         END IF;
     END LOOP;
@@ -228,6 +234,7 @@ BEGIN
             ('google_accounts', ARRAY['google_sub', 'email']),
             ('auth_audit_log', ARRAY['ip', 'ip_address', 'user_agent', 'metadata']),
             ('platforms', ARRAY['email']),
+            ('code_run_cases', ARRAY['judge0_token']),
             ('idempotency_keys', NULL)
         ) AS x(name, hidden)
         JOIN pg_class c ON c.relname = x.name

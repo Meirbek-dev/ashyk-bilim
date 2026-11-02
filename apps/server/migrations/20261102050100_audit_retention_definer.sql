@@ -8,7 +8,7 @@
 SET LOCAL lock_timeout = '5s';
 
 CREATE FUNCTION prune_auth_audit_log(days integer, batch integer) RETURNS bigint
-LANGUAGE sql SECURITY DEFINER SET search_path = pg_catalog, public AS $$
+LANGUAGE sql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
     WITH gone AS (
         DELETE FROM public.auth_audit_log WHERE id IN (
             SELECT id FROM public.auth_audit_log

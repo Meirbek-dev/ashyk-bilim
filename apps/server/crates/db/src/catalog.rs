@@ -93,8 +93,9 @@ pub async fn insert_course(
 pub async fn authors_any_course(pool: &PgPool, user_id: UserId) -> Result<bool> {
     let authors = sqlx::query_scalar!(
         r#"SELECT EXISTS (SELECT 1 FROM courses WHERE creator_id = $1 AND deleted_at IS NULL)
-               OR EXISTS (SELECT 1 FROM course_staff
-                          WHERE user_id = $1 AND status = 'active' AND authorship <> 'reporter')
+               OR EXISTS (SELECT 1 FROM course_staff s JOIN courses c ON c.id = s.course_id
+                          WHERE s.user_id = $1 AND s.status = 'active' AND s.authorship <> 'reporter'
+                            AND c.deleted_at IS NULL)
                AS "authors!""#,
         user_id.0
     )
@@ -717,6 +718,9 @@ pub async fn restore_deleted_course(pool: &PgPool, id: CourseId) -> Result<bool>
 
 /// Hard-delete every course deleted more than `older_than_days` ago, one transaction each
 /// (`maintenance:retention`); returns how many went. A course restored meanwhile is skipped.
+///
+/// A course that fails (a timeout, a lock) does not hold back the ones after it: the run
+/// purges the rest, then fails with the first error, so the job is retried.
 pub async fn purge_deleted_courses(
     pool: &PgPool,
     older_than_days: i32,
@@ -731,12 +735,17 @@ pub async fn purge_deleted_courses(
     .fetch_all(pool)
     .await?;
     let mut purged = 0;
+    let mut failed = None;
     for id in due {
-        if purge_course(pool, id, older_than_days, grace_secs).await? {
-            purged += 1;
+        match purge_course(pool, id, older_than_days, grace_secs).await {
+            Ok(true) => purged += 1,
+            Ok(false) => {}
+            Err(e) => {
+                failed.get_or_insert(e);
+            }
         }
     }
-    Ok(purged)
+    failed.map_or(Ok(purged), Err)
 }
 
 /// The cascade a delete used to run at once: the course with everything under it, learner work

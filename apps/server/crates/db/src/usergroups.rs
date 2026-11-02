@@ -213,8 +213,9 @@ pub async fn remove_courses(pool: &PgPool, id: UsergroupId, course_ids: &[Course
 
 pub async fn list_course_ids(pool: &PgPool, id: UsergroupId) -> Result<Vec<CourseId>> {
     let ids = sqlx::query_scalar!(
-        r#"SELECT course_id AS "course_id: CourseId"
-           FROM usergroup_courses WHERE usergroup_id = $1"#,
+        r#"SELECT g.course_id AS "course_id: CourseId"
+           FROM usergroup_courses g JOIN courses c ON c.id = g.course_id
+           WHERE g.usergroup_id = $1 AND c.deleted_at IS NULL"#,
         id.0
     )
     .fetch_all(pool)

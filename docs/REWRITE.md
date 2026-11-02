@@ -639,7 +639,7 @@ in the order it can be done, each step a forward migration on the current schema
 1. **Course delete with learner work** (item 3): decided 2026-11-01 - allowed after the teacher acknowledges it
    (COURSE_ARCHIVING 6.2). Changed the same evening (review 2 item 22, done): the delete is soft (archived +
    `deleted_at`, gone from every read), and `maintenance:retention` runs the old cascade from `courses` after
-   `AB__RETENTION__DELETED_COURSES_DAYS` (30); `ashyq admin restore-course` undoes it before (RUNBOOK 2.6).
+   `AB__RETENTION__DELETED_COURSES_DAYS` (30); `ashyq admin restore-course` undoes it before (RUNBOOK 2.7).
 2. **AI run coherence** (item 6, AI-owned tables): `schema_try_check('ai_runs', 'ai_runs_finished_at_check',
    $$status NOT IN ('succeeded','failed','aborted') OR completed_at IS NOT NULL$$)` once the AI work settles
    the status set.
@@ -686,7 +686,9 @@ in the order it can be done, each step a forward migration on the current schema
    jsonb, created_at, UNIQUE (assessment_id, number))` written when an assessment is published or changed while
    published; `submissions.assessment_version_id` replaces `items_snapshot`/`policy_snapshot` (backfill: one
    version per distinct snapshot pair, by md5). The 45 `assessments` columns split into identity/lifecycle
-   (stay) and policy (move to the version's typed `policy`). Same scheduling constraint as 6.
+   (stay) and policy (move to the version's typed `policy`). Same scheduling constraint as 6. The contract
+   that drops the snapshots first re-runs the backfill of `20261102020600`: hand-ins the release before it made
+   during the deploy window or after a rollback have snapshots and no version (no trigger fills it).
 8. **Projections** (items 15, 16 long term). Done: `completions` is the progress fact
    (`20261102030500_completions.sql`, ARCHITECTURE §8): lesson marks write it, un-marks and leaves delete it,
    the lesson projection reads it instead of `trail_steps`, and a trigger mirrors `activity_progress.completed_at`
@@ -881,7 +883,6 @@ Done:
 - Grade journals guard the whole row (`file_grading_entries` had no guard; `grading_entries` compared a column
   list): `20261102000000_ledger_guards`, `schema_review.rs`.
 - Skipped checks are reported, not fatal: `just prod-report` lists `schema_skipped_checks`, `just brief` names them.
-  Since `20261102010000` such a check stays NOT VALID (guards new and updated rows) instead of being dropped.
 - Migrations deploy during classes: `migration_rules.rs` enforces `lock_timeout`, CONCURRENTLY indexes in
   `-- no-transaction` files, and expand/contract (`-- contract:` marker) from 2026-11-02 on. The 2026-11-01
   migrations predate it: their first deploy builds ~45 indexes in one transaction, so it goes in a quiet window.

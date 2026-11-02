@@ -3,8 +3,9 @@
 -- and now stops writing it too, so the lane C2 contract can drop it.
 --
 -- Expand step: the previous release still reads the column for its daily cap
--- and its profile, as "XP awarded since 00:00 UTC" (it compares the UTC date
--- of last_xp_award_at with today's). Every award sets last_xp_award_at, so a
+-- and its profile, as "XP awarded since the platform day began" (it compares
+-- the Almaty date of last_xp_award_at with today's, ab_core::time::Day since
+-- 4611c9951). Every award sets last_xp_award_at, so a
 -- BEFORE trigger on that column recomputes the counter from the journal with
 -- the previous release's own rule - for its awards and for the new code's,
 -- which no longer name the column. The journal row of the award is inserted
@@ -18,7 +19,7 @@ BEGIN
     NEW.daily_xp_earned := coalesce((
         SELECT sum(x.amount) FROM xp_transactions x
         WHERE x.user_id = NEW.user_id
-          AND x.created_at >= (date_trunc('day', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')), 0);
+          AND x.created_at >= platform_day_start(platform_date(now()))), 0);
     RETURN NEW;
 END;
 $$;

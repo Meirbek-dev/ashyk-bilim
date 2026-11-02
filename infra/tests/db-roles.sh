@@ -28,7 +28,7 @@ check() { # check <role> <ok|denied> <sql>
     [[ $2 == ok ]] && return
     log "FAIL: $1 may run: $3"
   else
-    [[ $2 == denied && $out =~ (permission denied|read-only transaction|must be owner) ]] && return
+    [[ $2 == denied && $out =~ (permission denied|read-only transaction|must be owner|less than 30 days ago) ]] && return
     log "FAIL: $1 $( [[ $2 == ok ]] && echo 'may not run' || echo 'failed otherwise on'): $3: $out"
   fi
   failures=$((failures + 1))
@@ -59,6 +59,24 @@ probe() {
   check ashyq_ro denied "SELECT * FROM idempotency_keys"
   check ashyq_ro denied "INSERT INTO jobs (kind) VALUES ('x')"
   check ashyq_ro denied "SELECT prune_auth_audit_log(365, 10)"
+  # Read-only is a default the role can turn off: what it may write then is privileges alone.
+  ro_rw="SET default_transaction_read_only = off;"
+  check ashyq_ro denied "$ro_rw INSERT INTO jobs (kind) VALUES ('x')"
+  check ashyq_ro denied "$ro_rw SELECT lo_from_bytea(0, '\\x00')"
+  check ashyq_ro denied "$ro_rw CREATE TEMP TABLE ro_scratch (i int)"
+  check ashyq_app ok "CREATE TEMP TABLE app_scratch (i int)"
+  # The owner runs these expressions as DDL (schema_try_check).
+  check ashyq_app denied "DELETE FROM schema_skipped_checks"
+  check ashyq_app denied "SELECT analytics_events_drop_partitions(now())"
+  # A column named like contact data or a secret is hidden from ashyq_ro, also on a table added later.
+  check ashyq ok "DO \$\$ DECLARE leaks text; BEGIN
+      SELECT string_agg(c.table_name || '.' || c.column_name, ', ') INTO leaks
+      FROM information_schema.columns c
+      WHERE c.table_schema IN ('public', 'core', 'learning', 'ai', 'analytics', 'ops')
+        AND c.column_name ~ '^(email|ip|ip_address|user_agent|phone|google_sub|password.*|.*_?token|.*_?secret)\$'
+        AND has_column_privilege('ashyq_ro', format('%I.%I', c.table_schema, c.table_name), c.column_name, 'SELECT');
+      IF leaks IS NOT NULL THEN RAISE EXCEPTION 'ashyq_ro reads %', leaks; END IF;
+    END \$\$"
 }
 
 # Every migration as the owner, each in one transaction unless `-- no-transaction` (as sqlx runs them).
@@ -97,6 +115,13 @@ check ashyq_app ok "SELECT '[1,2]'::vector <=> '[1,3]'::vector, (SELECT count(em
 check ashyq_ro ok "SELECT count(embedding <=> embedding) FROM content_chunks"
 check ashyq ok "CREATE TABLE vector_check (v vector(3)); DROP TABLE vector_check"
 probe
+
+# db-init runs the owner's apply_role_grants as the owner: an owner that rewrote it cannot become superuser.
+x psql -X -q -U ashyq -d ashyq -v ON_ERROR_STOP=1 -c "CREATE OR REPLACE FUNCTION apply_role_grants(owner name)
+  RETURNS void LANGUAGE plpgsql AS \$\$ BEGIN EXECUTE format('ALTER ROLE %I SUPERUSER', owner); END \$\$" >/dev/null
+x sh /pg/db-init.sh >/dev/null 2>&1 && { log "FAIL: db-init ran a rewritten apply_role_grants"; failures=$((failures + 1)); }
+[[ $(x psql -X -U postgres -d postgres -Atc "SELECT rolsuper FROM pg_roles WHERE rolname = 'ashyq'") == f ]] ||
+  { log "FAIL: the owner made itself superuser through db-init"; failures=$((failures + 1)); }
 
 ((failures == 0)) || die "db-roles: $failures privilege checks failed"
 log "db-roles ok"
