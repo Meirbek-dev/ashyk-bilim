@@ -217,7 +217,9 @@ just rollback --force <previous sha>
 ```
 
 Rollback switches image tags only. If the bad release also changed compose or
-`infra/` files, `git checkout <previous sha>` first.
+`infra/` files, `git checkout <previous sha>` first. A checkout older than `zitadel-db` (3.15) points Zitadel
+back at db, where its database is now `zitadel_moved_*`, and Zitadel would initialise a new, empty instance
+there: run `just zitadel-db-move --back` before such a checkout.
 
 ### 3.3 Manual backup
 
@@ -292,13 +294,13 @@ scripts themselves with synthetic data (`just restore-test`, INFRA "Backup and r
 ```bash
 git clone https://github.com/Meirbek-dev/ashyk-bilim.git ~/cs-mooc && cd ~/cs-mooc
 cp infra/env/prod.env.example .env && cp infra/env/server.env.example server.env && chmod 600 .env server.env
-for k in POSTGRES_PASSWORD ASHYQ_DB_PASSWORD ZITADEL_DB_PASSWORD RUSTFS_ACCESS_KEY RUSTFS_SECRET_KEY \
-  REDIS_PASSWORD RUNNER_AUTH_TOKEN BACKUP_PASSWORD; do
+for k in POSTGRES_PASSWORD ASHYQ_DB_PASSWORD ASHYQ_APP_DB_PASSWORD ASHYQ_RO_DB_PASSWORD ZITADEL_DB_PASSWORD \
+  RUSTFS_ACCESS_KEY RUSTFS_SECRET_KEY REDIS_PASSWORD RUNNER_AUTH_TOKEN BACKUP_PASSWORD; do
   sed -i "s/^$k=CHANGE_ME$/$k=$(openssl rand -hex 32)/" .env
 done
 sed -i "s/^ZITADEL_MASTERKEY=CHANGE_ME$/ZITADEL_MASTERKEY=$(openssl rand -hex 16)/" .env
 sed -i "s|^NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=CHANGE_ME$|NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$(openssl rand -base64 32)|" .env
-pw=$(sed -n 's/^ASHYQ_DB_PASSWORD=//p' .env); sed -i "s|CHANGE_ME|$pw|" server.env; unset pw
+pw=$(sed -n 's/^ASHYQ_APP_DB_PASSWORD=//p' .env); sed -i "s|CHANGE_ME|$pw|" server.env; unset pw
 ```
 
 Edit `NGINX_SERVER_NAME`, `TRUSTED_PROXY_CIDR`, and `COMPOSE_PROJECT_NAME`
@@ -485,6 +487,11 @@ points come from the restic dumps (3.4). Both sit on the backup disk of this hos
 (FINDINGS 3: not a disk-failure protection). Zitadel's own instance (zitadel-db, 3.15) is archived the same way
 into `${BACKUP_DIR}/pitr-zitadel`. `just pitr-test` rehearses it on throwaway containers; `just ci-infra` runs it.
 
+The base backup connects over the instance's socket for replication (`pg_hba.conf` of the image: `local
+replication all trust`). A cluster initialised long ago may lack that line: before the first deploy with PITR, check
+`dc exec -T db sh -c 'psql -U "$POSTGRES_USER" -d postgres -Atc "SELECT count(*) FROM pg_hba_file_rules WHERE type = '\''local'\'' AND '\''replication'\'' = ANY (database)"'`
+says 1 or more. A failing base backup or WAL archiving makes the nightly `just backup` end non-zero.
+
 Check it works (expect recent `last archived`, no `FAILING`):
 
 ```bash
@@ -549,7 +556,8 @@ dc exec -T db sh -c 'psql -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE zita
 ```
 
 The `zitadel` role stays in db (it owns nothing there any more); restores of older snapshots still work: their
-`zitadel.dump` loads into zitadel-db.
+`zitadel.dump` loads into zitadel-db. Rolling compose/`infra/` back to a release without zitadel-db (3.2) needs
+`--back` first, while `zitadel_moved_*` still exists.
 
 ## 4. Troubleshooting
 

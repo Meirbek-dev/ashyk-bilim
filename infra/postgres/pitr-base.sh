@@ -1,6 +1,6 @@
 #!/bin/sh
 # Nightly base backup for point-in-time recovery, inside the db container as the superuser
-# (infra/scripts/pitr-base.sh runs it): pg_basebackup into /pitr/base/<UTC stamp>/ (tar, gzip, WAL included),
+# (infra/scripts/pitr-base.sh runs it): pg_basebackup into /pitr/base/<UTC stamp>/ (tar, gzip, WAL streamed beside it),
 # then keeps the newest PITR_BASE_KEEP (default 3) and drops archived WAL older than the oldest kept base.
 # The recovery window is therefore the last PITR_BASE_KEEP nights; older points come from the restic dumps.
 set -eu
@@ -13,7 +13,8 @@ user=${POSTGRES_USER:-postgres}
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 dir=/pitr/base/$stamp
 mkdir -p /pitr/base
-pg_basebackup -U "$user" -D "$dir.tmp" -Ft -z -X fetch --checkpoint=fast --label "pitr-$stamp"
+# -X stream: the WAL of the backup comes over a temporary slot, so a checkpoint cannot recycle it mid-backup.
+pg_basebackup -U "$user" -D "$dir.tmp" -Ft -z -X stream --checkpoint=fast --label "pitr-$stamp"
 start=$(sed -n 's/.*"Start-LSN": "\([^"]*\)".*/\1/p' "$dir.tmp/backup_manifest" | head -n 1)
 [ -n "$start" ] || { echo "pitr-base: no Start-LSN in backup_manifest" >&2; exit 1; }
 psql -U "$user" -d postgres -Atc "SELECT pg_walfile_name('$start')" >"$dir.tmp/start-wal"

@@ -5,7 +5,9 @@
 #   1. in place (the data directory moved aside, as RUNBOOK 3.14 does on production) to the target time:
 #      the rows before it are back, the row after it is not;
 #   2. into a new volume to the end of the archive: every row is back;
-#   3. a new cluster (a logical restore, a fresh volume) is refused by the archive of the old one.
+#   3. from a base taken after recovery 1 (it carries that recovery's settings) to the end of the archive:
+#      the old target does not stop the replay;
+#   4. a new cluster (a logical restore, a fresh volume) is refused by the archive of the old one.
 # Never touches a compose project. `just pitr-test`.
 source "$(dirname "$0")/../scripts/lib.sh"
 [[ -n $CTR ]] || die "pitr-test: no container runtime"
@@ -15,7 +17,7 @@ root=$(pwd -W 2>/dev/null || pwd)
 archive=$id-archive
 cleanup() {
   "$CTR" rm -f "$id-db" >/dev/null 2>&1 || true
-  "$CTR" volume rm -f "$id-data" "$id-data2" "$id-data3" "$archive" >/dev/null 2>&1 || true
+  "$CTR" volume rm -f "$id-data" "$id-data2" "$id-data3" "$id-data4" "$archive" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
@@ -91,6 +93,25 @@ got=$(q "SELECT string_agg(label, ',' ORDER BY label) FROM marks")
 [[ $got == before-base,kept,lost ]] || die "pitr-test: restore to the archive end has rows '$got'"
 stop
 
+wait_archived() { # wait_archived <segment>
+  for _ in $(seq 60); do
+    [[ ! $(q "SELECT last_archived_wal FROM pg_stat_archiver") < "$1" ]] && return
+    sleep 1
+  done
+  die "pitr-test: $1 was not archived"
+}
+start "$id-data" "${archive_flags[@]}"
+"$CTR" exec "$id-db" sh /pg/pitr-base.sh
+q "INSERT INTO marks (label) VALUES ('after-recovery')" >/dev/null
+wait_archived "$(q "SELECT pg_walfile_name(pg_switch_wal())")"
+stop
+prepare "$id-data4" latest latest
+start "$id-data4"
+got=$(q "SELECT string_agg(label, ',' ORDER BY label) FROM marks")
+[[ $got == after-recovery,before-base,kept ]] || die "pitr-test: restore from a base taken after a recovery has rows '$got'"
+stop
+log "pitr-test: a second recovery ok ($got)"
+
 start "$id-data3" "${archive_flags[@]}"
 q "SELECT pg_switch_wal()" >/dev/null
 # The container log trails pg_stat_archiver: wait for the refusal itself.
@@ -106,4 +127,4 @@ done
 q "SELECT current_setting('archive_mode'), archived_count, failed_count, (SELECT count(*) FROM pg_ls_waldir())
      FROM pg_stat_archiver" >/dev/null
 stop
-log "pitr-test ok (target time, end of archive, foreign cluster refused)"
+log "pitr-test ok (target time, end of archive, second recovery, foreign cluster refused)"

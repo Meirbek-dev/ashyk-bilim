@@ -17,6 +17,12 @@ if [ -n "$(ls -A "$PGDATA" 2>/dev/null)" ]; then
 fi
 mkdir -p "$PGDATA"
 tar -xzf "$src/base.tar.gz" -C "$PGDATA"
+# The WAL streamed during the backup (pitr-base.sh: -X stream); the archive holds it too.
+[ ! -f "$src/pg_wal.tar.gz" ] || tar -xzf "$src/pg_wal.tar.gz" -C "$PGDATA/pg_wal"
+# A base taken after an earlier recovery carries that recovery's settings (they stay in postgresql.auto.conf
+# after promote): an old recovery_target_time would stop this replay at the old point.
+sed -i -e '/^# point-in-time recovery from base /d' -e '/^restore_command[[:space:]]*=/d' \
+  -e '/^recovery_target[a-z_]*[[:space:]]*=/d' "$PGDATA/postgresql.auto.conf"
 {
   echo "# point-in-time recovery from base $base ($(date -u +%Y-%m-%dT%H:%M:%SZ))"
   echo "restore_command = 'gzip -dc /pitr/wal/%f.gz > %p'"

@@ -27,7 +27,8 @@ sql() { compose run --rm --no-deps -T --entrypoint sh db-init -c "$1"; }
 q() { sql "psql -h $1 -d ${3:-postgres} -XAtq -v ON_ERROR_STOP=1 -c \"$2\""; }
 set_host() {
   local tmp=$env_file.zitadel-move
-  grep -v '^ZITADEL_DB_HOST=' "$env_file" >"$tmp" || true
+  # The copy holds every secret of .env: readable by its owner only, like .env.
+  (umask 077 && grep -v '^ZITADEL_DB_HOST=' "$env_file" >"$tmp") || true
   printf 'ZITADEL_DB_HOST=%s\n' "$1" >>"$tmp"
   cat "$tmp" >"$env_file" # keep the file's owner and mode
   rm -f "$tmp"

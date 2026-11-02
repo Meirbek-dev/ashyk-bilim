@@ -202,8 +202,10 @@ stack-up:
     STACK=smoke {{ bash_bin }} infra/scripts/bootstrap.sh
     {{ lib }} && use_smoke && compose up -d --wait
 
+# The WAL archive goes too: the next stack is a new cluster, and the old archive would refuse its WAL. Its files
+# are the container postgres user's, hence the one-off pitr-init.
 stack-down:
-    {{ lib }} && use_smoke && compose down -v --remove-orphans && rm -f tmp/smoke/server.env
+    {{ lib }} && use_smoke && { compose run --rm --no-deps -T --entrypoint sh pitr-init -c 'rm -rf /pitr/* /pitr-zitadel/*' || true; } && compose down -v --remove-orphans && rm -f tmp/smoke/server.env
 
 smoke origin="http://ashyq.test":
     STACK=smoke SMOKE_RESOLVE_IP="${SMOKE_RESOLVE_IP:-127.0.0.1}" {{ bash_bin }} infra/scripts/smoke.sh "$@"

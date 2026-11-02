@@ -35,6 +35,15 @@ for svc in db zitadel-db; do
   if [[ $(compose exec -T "$svc" sh -c 'psql -U "$POSTGRES_USER" -d postgres -Atc "SHOW archive_mode"') == on* ]]; then
     log "base backup of $svc"
     compose exec -T "$svc" sh /pg/pitr-base.sh || pitr_failed=1
+    # A failing archive_command does not stop writes: pg_wal grows on the Docker disk until it is full.
+    # shellcheck disable=SC2016
+    stuck=$(compose exec -T "$svc" sh -c 'psql -U "$POSTGRES_USER" -d postgres -XAtc "
+      SELECT last_failed_wal FROM pg_stat_archiver
+      WHERE last_failed_time > coalesce(last_archived_time, '\''-infinity'\'')"')
+    if [[ -n $stuck ]]; then
+      log "WAL archiving of $svc is failing (last failed segment $stuck; compose logs $svc)"
+      pitr_failed=1
+    fi
   fi
 done
 
@@ -50,5 +59,5 @@ if [[ $(date +%u) == 7 || ${BACKUP_PRUNE:-} == 1 ]]; then
   r forget --host "$project" --keep-daily 14 --keep-weekly 8 --keep-monthly 12 --prune
   r check --read-data-subset=5%
 fi
-((pitr_failed == 0)) || die "backup of $project: snapshot done, but the PITR base backup failed (see above)"
+((pitr_failed == 0)) || die "backup of $project: snapshot done, but the PITR base backup or WAL archiving failed (see above)"
 log "backup of $project done"

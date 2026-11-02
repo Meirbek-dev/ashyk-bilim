@@ -40,6 +40,10 @@ if [[ $db_user == ashyq ]]; then
   warn "server.env: AB__DATABASE__URL connects as the owner ashyq; switch to ashyq_app (RUNBOOK 2.5)"
 elif [[ $db_user == ashyq_app && -z $(env_get ASHYQ_APP_DB_PASSWORD) ]]; then
   fail "server.env connects as ashyq_app but .env has no ASHYQ_APP_DB_PASSWORD (db-init creates the role from it)"
+elif [[ $db_user == ashyq_app ]] &&
+  [[ $(env_get AB__DATABASE__URL server.env | sed -n 's|^postgres://[^:@]*:\([^@]*\)@.*|\1|p') != "$(env_get ASHYQ_APP_DB_PASSWORD)" ]]; then
+  # db-init creates the role with ASHYQ_APP_DB_PASSWORD once and never changes it (RUNBOOK 3.8).
+  fail "server.env: the ashyq_app password in AB__DATABASE__URL is not ASHYQ_APP_DB_PASSWORD of .env"
 fi
 
 # RUNBOOK 3.15: Zitadel's database in its own instance. Pointing Zitadel at zitadel-db while its data is still in
