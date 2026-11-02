@@ -923,8 +923,9 @@ Decided, not done:
 4. **Journals are protected by privileges too** (done in the repo, 2026-11): `ashyq_app` has INSERT only on
    grade and audit journals (`apply_role_grants`, migration `20261102050200`); `auth_audit_log` retention runs
    through the SECURITY DEFINER `prune_auth_audit_log`. Production switches with RUNBOOK 2.5 (a deploy step).
-5. **Analytics events are written in the action's transaction** (`events::record` takes the transaction) and
-   carry a `schema_version` in the payload.
+5. **Analytics events are written in the action's transaction** (done in the repo, 2026-11-02): `events::record`
+   and its hooks take the action's connection and return its error (ARCHITECTURE §9); every payload carries
+   `schema_version` (1). Rows written before carry none: read a missing `schema_version` as 1.
 6. **AI retention**: runs, artifacts, Q&A messages and analyses 400 days, like `analytics_events`; an accepted
    AI grade draft lives as long as the grade. `ai_threads.retention_class` is dropped.
 7. **Rollback without restore**: once every migration since the previous release is expand-only (no

@@ -133,8 +133,10 @@ impl GoogleAuthService {
         }
         let session_id =
             session_id.ok_or_else(|| Error::internal("google login fenced twice", anyhow_msg()))?;
+        // The audit row and the analytics event of the sign-in commit together.
+        let mut tx = self.pool.begin().await?;
         ab_db::identity::insert_auth_audit(
-            &self.pool,
+            &mut *tx,
             Some(user_id),
             "login-google",
             ip.as_deref(),
@@ -142,8 +144,9 @@ impl GoogleAuthService {
             serde_json::json!({}),
         )
         .await?;
+        crate::analytics::events::hooks::login(&mut tx, user_id, "google").await?;
+        tx.commit().await?;
         crate::gamification::hooks::login(&self.pool, user_id).await;
-        crate::analytics::events::hooks::login(&self.pool, user_id, "google").await;
         Ok(GoogleLoginOk {
             session_id,
             user_id,

@@ -475,10 +475,20 @@ impl IdentityService {
             return Err(self.fenced_login(&user, &input).await?);
         };
         self.limiter.clear(&login_key).await?;
-        self.audit(Some(user.id), "login", &input, serde_json::json!({}))
-            .await?;
+        // The audit row and the analytics event of the sign-in commit together.
+        let mut tx = self.pool.begin().await?;
+        ab_db::identity::insert_auth_audit(
+            &mut *tx,
+            Some(user.id),
+            "login",
+            input.ip.as_deref(),
+            input.user_agent.as_deref(),
+            serde_json::json!({}),
+        )
+        .await?;
+        crate::analytics::events::hooks::login(&mut tx, user.id, "password").await?;
+        tx.commit().await?;
         crate::gamification::hooks::login(&self.pool, user.id).await;
-        crate::analytics::events::hooks::login(&self.pool, user.id, "password").await;
         Ok(ok)
     }
 

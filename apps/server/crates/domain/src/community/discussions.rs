@@ -524,15 +524,15 @@ impl DiscussionsService {
         // A claimed image the content does not show is not held (post_uploads).
         ab_db::uploads::release_references(&mut tx, upload_ids, UNREFERENCED_GRACE.as_secs_f64())
             .await?;
-        tx.commit().await?;
         crate::analytics::events::hooks::discussion_posted(
-            &self.pool,
+            &mut tx,
             course_id,
             actor.user_id,
             id,
             parent_id.is_some(),
         )
-        .await;
+        .await?;
+        tx.commit().await?;
         let row = ab_db::discussions::get_discussion(&self.pool, id, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("discussion"))?;

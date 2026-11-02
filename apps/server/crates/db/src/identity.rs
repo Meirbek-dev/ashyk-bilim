@@ -455,8 +455,8 @@ pub async fn create_user_with_default_role(
     Ok(Some(UserId(id)))
 }
 
-pub async fn insert_auth_audit(
-    pool: &PgPool,
+pub async fn insert_auth_audit<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     user_id: Option<UserId>,
     event: &str,
     ip: Option<&str>,
@@ -474,7 +474,7 @@ pub async fn insert_auth_audit(
         user_agent,
         metadata
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(())
 }

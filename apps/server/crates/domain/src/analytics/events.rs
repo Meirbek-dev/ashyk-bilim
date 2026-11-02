@@ -1,14 +1,21 @@
-//! The analytics event log: capture points other slices call, best-effort.
+//! The analytics event log: capture points other slices call.
 //!
 //! The legacy declared `analytics_event` and never wrote to it; v2 records
 //! submission transitions, activity completions, discussion posts and
-//! logins. A failed insert is logged and never fails the caller.
+//! logins. An event is written in the transaction of the action it reports
+//! (REWRITE 5.7): both commit or neither does, so the log never claims what
+//! did not happen nor misses what did. Every payload carries
+//! `schema_version` ([`SCHEMA_VERSION`]).
 
 use ab_core::assessments::SubmissionStatus;
 use ab_core::id::{ActivityId, AssessmentId, CourseId, SubmissionId, UserId};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::PgConnection;
 use utoipa::ToSchema;
+
+/// The payload's shape: bump it when a key changes meaning or goes away, so rollups and exports can
+/// tell old rows from new ones.
+pub const SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
 pub enum AnalyticsEventType {
@@ -66,15 +73,20 @@ pub struct EventDraft {
     pub payload: serde_json::Value,
 }
 
-/// Append one event; failures are logged, never returned.
-pub async fn record(pool: &PgPool, event_type: AnalyticsEventType, draft: EventDraft) {
-    let payload = if draft.payload.is_null() {
-        serde_json::Value::Object(serde_json::Map::new())
-    } else {
-        draft.payload
+/// Append one event on the action's connection (its transaction).
+pub async fn record(
+    conn: &mut PgConnection,
+    event_type: AnalyticsEventType,
+    draft: EventDraft,
+) -> ab_core::Result<()> {
+    let mut payload = match draft.payload {
+        serde_json::Value::Object(map) => map,
+        _ => serde_json::Map::new(),
     };
-    let result = ab_db::analytics::insert_event(
-        pool,
+    payload.insert("schema_version".into(), SCHEMA_VERSION.into());
+    let payload = serde_json::Value::Object(payload);
+    ab_db::analytics::insert_event(
+        conn,
         ab_db::analytics::NewEvent {
             event_type: event_type.as_str(),
             course_id: draft.course_id,
@@ -86,10 +98,7 @@ pub async fn record(pool: &PgPool, event_type: AnalyticsEventType, draft: EventD
             payload: &payload,
         },
     )
-    .await;
-    if let Err(err) = result {
-        tracing::warn!(error = %err, event = event_type.as_str(), "analytics event not recorded");
-    }
+    .await
 }
 
 /// Capture points, one per write path.
@@ -97,20 +106,20 @@ pub mod hooks {
     use super::{AnalyticsEventType, EventDraft, record};
     use ab_core::assessments::SubmissionStatus;
     use ab_core::id::{ActivityId, AssessmentId, CourseId, DiscussionId, SubmissionId, UserId};
-    use sqlx::PgPool;
+    use sqlx::PgConnection;
 
     /// A learner submitted (explicitly or by auto-submit). Recorded as
     /// `submission.submitted` whatever the auto-grader made of it.
     pub async fn submission_submitted(
-        pool: &PgPool,
+        conn: &mut PgConnection,
         submission_id: SubmissionId,
         assessment_id: AssessmentId,
         course_id: CourseId,
         user_id: UserId,
         status: SubmissionStatus,
-    ) {
+    ) -> ab_core::Result<()> {
         record(
-            pool,
+            conn,
             AnalyticsEventType::SubmissionSubmitted,
             EventDraft {
                 course_id: Some(course_id),
@@ -122,26 +131,26 @@ pub mod hooks {
                 payload: serde_json::json!({ "status": status.as_str() }),
             },
         )
-        .await;
+        .await
     }
 
     /// A submission reached `status` (submit, grade save, publish, return).
     /// `actor` is the teacher for grading transitions, `None` for the learner
     /// or the auto-grader.
     pub async fn submission_status(
-        pool: &PgPool,
+        conn: &mut PgConnection,
         submission_id: SubmissionId,
         assessment_id: AssessmentId,
         course_id: CourseId,
         user_id: UserId,
         status: SubmissionStatus,
         actor: Option<UserId>,
-    ) {
+    ) -> ab_core::Result<()> {
         let Some(event_type) = AnalyticsEventType::for_submission_status(status) else {
-            return;
+            return Ok(());
         };
         record(
-            pool,
+            conn,
             event_type,
             EventDraft {
                 course_id: Some(course_id),
@@ -153,19 +162,19 @@ pub mod hooks {
                 payload: serde_json::json!({ "status": status.as_str() }),
             },
         )
-        .await;
+        .await
     }
 
     /// An activity flipped to completed for a learner (explicit lesson
     /// completion or a projected assessment completion).
     pub async fn activity_completed(
-        pool: &PgPool,
+        conn: &mut PgConnection,
         course_id: CourseId,
         activity_id: ActivityId,
         user_id: UserId,
-    ) {
+    ) -> ab_core::Result<()> {
         record(
-            pool,
+            conn,
             AnalyticsEventType::ActivityCompleted,
             EventDraft {
                 course_id: Some(course_id),
@@ -174,18 +183,18 @@ pub mod hooks {
                 ..EventDraft::default()
             },
         )
-        .await;
+        .await
     }
 
     pub async fn discussion_posted(
-        pool: &PgPool,
+        conn: &mut PgConnection,
         course_id: CourseId,
         user_id: UserId,
         discussion_id: DiscussionId,
         is_reply: bool,
-    ) {
+    ) -> ab_core::Result<()> {
         record(
-            pool,
+            conn,
             AnalyticsEventType::DiscussionPosted,
             EventDraft {
                 course_id: Some(course_id),
@@ -194,12 +203,16 @@ pub mod hooks {
                 ..EventDraft::default()
             },
         )
-        .await;
+        .await
     }
 
-    pub async fn login(pool: &PgPool, user_id: UserId, method: &str) {
+    pub async fn login(
+        conn: &mut PgConnection,
+        user_id: UserId,
+        method: &str,
+    ) -> ab_core::Result<()> {
         record(
-            pool,
+            conn,
             AnalyticsEventType::Login,
             EventDraft {
                 user_id: Some(user_id),
@@ -207,6 +220,6 @@ pub mod hooks {
                 ..EventDraft::default()
             },
         )
-        .await;
+        .await
     }
 }

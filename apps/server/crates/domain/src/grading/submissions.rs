@@ -1177,20 +1177,20 @@ impl SubmissionsService {
                 .owe_reproject_submission(&mut attempts, assessment.id, submission.user_id)
                 .await?
         };
+        crate::analytics::events::hooks::submission_submitted(
+            &mut attempts,
+            submission.id,
+            assessment.id,
+            submission.course_id,
+            submission.user_id,
+            verdict.status,
+        )
+        .await?;
         attempts.commit().await?;
         projector.settle(followup).await;
         let fresh = ab_db::submissions::get_submission(pool, submission.id)
             .await?
             .ok_or_else(|| Error::not_found("submission"))?;
-        crate::analytics::events::hooks::submission_submitted(
-            pool,
-            fresh.id,
-            fresh.assessment_id,
-            fresh.course_id,
-            fresh.user_id,
-            fresh.status,
-        )
-        .await;
         if let Some(events) = events {
             events
                 .publish_best_effort(

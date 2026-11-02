@@ -656,11 +656,10 @@ CREATE TABLE jobs (                        -- migrations/20260816000001_jobs.sql
 - Notifications: `notifications:deadline-reminders` sends one `deadline_approaching` per (learner, activity, due
   date) for unsubmitted work due within 24 h (dedupe key, so ticks and restarts never repeat it; an extension
   reminds again); `notifications:prune` deletes notifications older than **90 days**.
+- Analytics events (`ab_domain::analytics::events`): submission transitions, activity completions, discussion
+  posts and sign-ins are written in the transaction of the action they report, so both commit or neither does;
+  every payload carries `schema_version` (`SCHEMA_VERSION`, bumped when a key changes meaning or goes away).
 - Analytics retention: `analytics:rollup` ends by pruning `analytics_events` older than **400 days** and the
-  `daily_*` rollup tables plus `learner_risk_snapshots` older than **2 years**, in 5 000-row batches through the
-  primary key (`ab_db::analytics::prune_retention`), summarised in one tracing line. Dashboards only ever read the
-  last 180 days.
-- Log retention: `maintenance:retention` (daily, `ab_db::retention`) deletes failed/dead jobs, old sign-in audit rows
   `daily_*` rollup tables plus `learner_risk_snapshots` older than **2 years**, in 5 000-row batches
   (`ab_db::analytics::prune_retention`), summarised in one tracing line. Dashboards only ever read the
   last 180 days. Once `analytics_events` is partitioned by UTC month of `occurred_at` (the lane C contract

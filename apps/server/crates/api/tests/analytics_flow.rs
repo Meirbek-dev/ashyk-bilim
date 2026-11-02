@@ -11,7 +11,8 @@
 //! - the rollup job writes the five daily tables and the risk snapshots for
 //!   every course and is idempotent; a date range backfills one row set per
 //!   day;
-//! - the event log captures submit / publish / activity-completed;
+//! - the event log captures submit / publish / activity-completed, every payload stating
+//!   `schema_version`; an event commits with its action's transaction or not at all;
 //! - interventions record the latest snapshot risk score, default to
 //!   `completed`, validate the type, and 404 outside the scope; saved views
 //!   upsert by (type, name) and delete is owner-only;
@@ -363,6 +364,13 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert_eq!(event_count(&pool, "submission.graded").await, 1);
     assert!(event_count(&pool, "submission.published").await >= 1);
     assert!(event_count(&pool, "activity.completed").await >= 1);
+    let unversioned: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM analytics_events WHERE payload -> 'schema_version' IS DISTINCT FROM '1'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(unversioned, 0);
 
     // ── Access ──────────────────────────────────────────────────────────
     let anon = app.get("/api/v2/analytics/teacher/overview").await;
@@ -2784,4 +2792,39 @@ async fn exam_common_failures_name_the_missed_questions(pool: PgPool) {
     assert_eq!(rows[0]["key"], hard.to_string(), "{failures}");
     assert_eq!(rows[0]["label"], "Hard one", "{failures}");
     assert_eq!(rows[0]["count"], 33, "{failures}");
+}
+
+#[ab_testdb::test]
+async fn an_event_commits_with_its_action_or_not_at_all(pool: PgPool) {
+    use ab_domain::analytics::events::{SCHEMA_VERSION, hooks};
+    let user: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO users (zitadel_user_id, username, email, display_name)
+         VALUES ('z-events', 'events', 'events@example.com', 'Events') RETURNING id",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let user = ab_core::id::UserId(user);
+
+    let mut rolled_back = pool.begin().await.unwrap();
+    hooks::login(&mut rolled_back, user, "password")
+        .await
+        .unwrap();
+    rolled_back.rollback().await.unwrap();
+    assert_eq!(event_count(&pool, "login").await, 0);
+
+    let mut committed = pool.begin().await.unwrap();
+    hooks::login(&mut committed, user, "password")
+        .await
+        .unwrap();
+    committed.commit().await.unwrap();
+    let payload: serde_json::Value =
+        sqlx::query_scalar("SELECT payload FROM analytics_events WHERE event_type = 'login'")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        payload,
+        serde_json::json!({ "method": "password", "schema_version": SCHEMA_VERSION })
+    );
 }

@@ -98,32 +98,23 @@ pub struct BackfillReport {
 ///
 /// They go through the pool, so they fire once that transaction committed:
 /// inside the trail lock each holder would wait on a second pool connection
-/// and enough holders deadlock the pool (BUG-235).
+/// and enough holders deadlock the pool (BUG-235). The `activity.completed`
+/// analytics event is not one: it is written on the projection's own
+/// connection, in its transaction.
 #[derive(Debug, Default, Clone, Copy)]
 #[must_use = "fire after the transaction commits"]
 pub struct AfterCommit {
-    activity_completed: Option<(CourseId, ActivityId, UserId)>,
     course_completed: Option<(UserId, CourseId)>,
 }
 
 impl AfterCommit {
     pub fn and(self, other: Self) -> Self {
         Self {
-            activity_completed: self.activity_completed.or(other.activity_completed),
             course_completed: self.course_completed.or(other.course_completed),
         }
     }
 
     pub async fn fire(self, pool: &PgPool) {
-        if let Some((course_id, activity_id, user_id)) = self.activity_completed {
-            crate::analytics::events::hooks::activity_completed(
-                pool,
-                course_id,
-                activity_id,
-                user_id,
-            )
-            .await;
-        }
         if let Some((user_id, course_id)) = self.course_completed {
             crate::gamification::hooks::course_completed(pool, user_id, course_id).await;
         }
@@ -291,11 +282,17 @@ impl ProgressProjector {
             ab_db::progress::get_activity_progress(&mut *conn, activity.id, user_id).await?;
         let write = completed_write(activity, user_id, existing.as_ref(), now_unix());
         ab_db::progress::upsert_activity_progress(&mut *conn, &write).await?;
+        crate::analytics::events::hooks::activity_completed(
+            &mut *conn,
+            activity.course_id,
+            activity.id,
+            user_id,
+        )
+        .await?;
         let (course, newly_completed) = self
             .recalculate_course_on(conn, activity.course_id, user_id)
             .await?;
         Ok(AfterCommit {
-            activity_completed: Some((activity.course_id, activity.id, user_id)),
             course_completed: course_completed(&course, newly_completed),
         })
     }
@@ -343,7 +340,6 @@ impl ProgressProjector {
             .recalculate_course_on(conn, activity.course_id, user_id)
             .await?;
         Ok(AfterCommit {
-            activity_completed: None,
             course_completed: course_completed(&course, newly_completed),
         })
     }
@@ -391,7 +387,13 @@ impl ProgressProjector {
                 ab_db::progress::sync_graded_completion(&mut tx, activity_id, user_id).await?;
             }
             if write.state == ActivityProgressState::Completed && !was_completed {
-                hooks.activity_completed = Some((course_id, activity_id, user_id));
+                crate::analytics::events::hooks::activity_completed(
+                    &mut tx,
+                    course_id,
+                    activity_id,
+                    user_id,
+                )
+                .await?;
             }
         }
         if joined {
@@ -800,7 +802,6 @@ impl ProgressProjector {
         Ok((
             rows,
             AfterCommit {
-                activity_completed: None,
                 course_completed: course_completed(&aggregate, newly_completed),
             },
         ))

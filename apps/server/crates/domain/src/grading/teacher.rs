@@ -1625,6 +1625,16 @@ impl GradingService {
         let followup = projector
             .owe_reproject_submission(&mut tx, row.assessment_id, row.user_id)
             .await?;
+        crate::analytics::events::hooks::submission_status(
+            &mut tx,
+            id,
+            row.assessment_id,
+            row.course_id,
+            row.user_id,
+            target,
+            Some(actor.user_id),
+        )
+        .await?;
         tx.commit().await?;
         projector.settle(followup).await;
         match target {
@@ -1649,16 +1659,6 @@ impl GradingService {
         self.emit_course(&row, assessment.activity_id, target, final_score, &feedback)
             .await;
         let fresh = self.load_submission(id).await?;
-        crate::analytics::events::hooks::submission_status(
-            &self.pool,
-            fresh.id,
-            fresh.assessment_id,
-            fresh.course_id,
-            fresh.user_id,
-            target,
-            Some(actor.user_id),
-        )
-        .await;
         self.view(actor, &course, fresh, &assessment).await
     }
 
@@ -1863,10 +1863,8 @@ impl GradingService {
             let followup = projector
                 .owe_reproject_submission(&mut tx, assessment_id, row.user_id)
                 .await?;
-            tx.commit().await?;
-            projector.settle(followup).await;
             crate::analytics::events::hooks::submission_status(
-                &self.pool,
+                &mut tx,
                 row.id,
                 assessment_id,
                 row.course_id,
@@ -1874,7 +1872,9 @@ impl GradingService {
                 SubmissionStatus::Published,
                 Some(actor.user_id),
             )
-            .await;
+            .await?;
+            tx.commit().await?;
+            projector.settle(followup).await;
             published += 1;
             self.emit(
                 row.id,

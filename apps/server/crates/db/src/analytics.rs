@@ -549,7 +549,7 @@ pub struct NewEvent<'a> {
     pub payload: &'a serde_json::Value,
 }
 
-pub async fn insert_event(pool: &PgPool, e: NewEvent<'_>) -> Result<()> {
+pub async fn insert_event<'e>(db: impl sqlx::PgExecutor<'e>, e: NewEvent<'_>) -> Result<()> {
     sqlx::query!(
         r"INSERT INTO analytics_events
               (event_type, course_id, activity_id, assessment_id, submission_id, user_id, actor_id, payload)
@@ -563,7 +563,7 @@ pub async fn insert_event(pool: &PgPool, e: NewEvent<'_>) -> Result<()> {
         e.actor_id.map(|u| u.0),
         e.payload
     )
-    .execute(pool)
+    .execute(db)
     .await?;
     Ok(())
 }
