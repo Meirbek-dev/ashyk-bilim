@@ -769,11 +769,11 @@ in the order it can be done, each step a forward migration on the current schema
 14. **Permissions** (item 19, rest). `Grant::parse` can read `role_permissions.resource/action/scope`
     directly (the columns exist since 2026-11); a CHECK on `resource` against the Rust enum list would turn the
     enum into a lookup table like `notification_kinds`.
-- **Review queue member test** (found by `query_plans.rs`, 2026-11): `list_teacher_grading_work` asks
-  "is the learner a member" with `EXISTS (trail_runs ... AND NOT is_course_staff(...))` inside a `CASE`; the planner
-  turns it into a hashed scan of every `trail_runs` row, calling `is_course_staff` per enrolment of the platform on
-  each load. Goes with the enrolments table (5): a join on `enrolments (course_id, user_id)`, staff excluded once;
-  then add `trail_runs`/`enrolments` to the case's `no_seq_scan`.
+- **Review queue member test**: done 2026-11-03. Both teacher queues (`ab_db::work_queue`) join
+  `enrolments` on its key and exclude staff per row of the teacher's courses, and take the teacher's courses as a
+  semi-join (`creator_id = $1 UNION ALL course_staff`) instead of an `OR EXISTS` filter the planner estimated at
+  half the platform. Generic plan cost on the `query_plans.rs` fixture: 270 000+ to under 600; the grading and
+  release queue cases there bound it.
 
 15. **Naming** (review 3, item 33). The convention is ARCHITECTURE §8 rule 2 (`naming_rules.rs` holds new
     migrations to it). Existing columns that break it, renamed one table at a time as expand/contract (add the

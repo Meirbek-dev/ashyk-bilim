@@ -127,10 +127,9 @@ pub async fn list_teacher_grading_work(
            JOIN activities a ON a.id = p.activity_id
            JOIN courses c ON c.id = p.course_id
            JOIN users u ON u.id = p.user_id
+           LEFT JOIN enrolments r ON r.course_id = p.course_id AND r.user_id = p.user_id
            WHERE p.user_id <> $1
-             AND CASE WHEN EXISTS (SELECT 1 FROM enrolments r
-                                   WHERE r.course_id = p.course_id AND r.user_id = p.user_id
-                                     AND NOT is_course_staff(r.course_id, r.user_id))
+             AND CASE WHEN r.user_id IS NOT NULL AND NOT is_course_staff(p.course_id, p.user_id)
                  THEN p.teacher_action_required
                  ELSE EXISTS (SELECT 1 FROM submissions s
                               WHERE s.id = p.latest_submission_id AND s.status IN ('submitted', 'pending'))
@@ -140,10 +139,11 @@ pub async fn list_teacher_grading_work(
                                 AND fa.status = 'submitted' AND NOT fa.preview)
              END
              AND c.archived_at IS NULL
-             AND (c.creator_id = $1 OR EXISTS (
-                     SELECT 1 FROM course_staff ra
-                     WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
-                       AND ra.authorship <> 'reporter'))"#,
+             AND c.id IN (SELECT id FROM courses WHERE creator_id = $1
+                          UNION ALL
+                          SELECT ra.course_id FROM course_staff ra
+                          WHERE ra.user_id = $1 AND ra.status = 'active'
+                            AND ra.authorship <> 'reporter')"#,
         teacher_id.0
     )
     .fetch_all(pool)
@@ -185,16 +185,15 @@ pub async fn list_teacher_release_work(
            JOIN activities a ON a.id = p.activity_id
            JOIN courses c ON c.id = p.course_id
            JOIN users u ON u.id = p.user_id
+           LEFT JOIN enrolments r ON r.course_id = p.course_id AND r.user_id = p.user_id
            WHERE p.user_id <> $1
-             AND (p.state = 'graded' OR NOT EXISTS (
-                     SELECT 1 FROM enrolments r
-                     WHERE r.course_id = p.course_id AND r.user_id = p.user_id
-                       AND NOT is_course_staff(r.course_id, r.user_id)))
+             AND (p.state = 'graded' OR r.user_id IS NULL OR is_course_staff(p.course_id, p.user_id))
              AND c.archived_at IS NULL
-             AND (c.creator_id = $1 OR EXISTS (
-                     SELECT 1 FROM course_staff ra
-                     WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
-                       AND ra.authorship <> 'reporter'))"#,
+             AND c.id IN (SELECT id FROM courses WHERE creator_id = $1
+                          UNION ALL
+                          SELECT ra.course_id FROM course_staff ra
+                          WHERE ra.user_id = $1 AND ra.status = 'active'
+                            AND ra.authorship <> 'reporter')"#,
         teacher_id.0
     )
     .fetch_all(pool)

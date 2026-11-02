@@ -27,6 +27,8 @@ struct Case {
     no_seq_scan: &'static [&'static str],
     /// Indexes the plan uses.
     indexes: &'static [&'static str],
+    /// Upper bound of the plan's total cost, where a shape check alone would pass a regression.
+    max_cost: Option<f64>,
 }
 
 const CASES: &[Case] = &[
@@ -38,26 +40,44 @@ const CASES: &[Case] = &[
         ],
         no_seq_scan: &["gamification_profiles", "users"],
         indexes: &["gamification_profiles_board_idx"],
+        max_cost: None,
     },
     Case {
         name: "notifications list",
         fragments: &["FROM notifications", "($3::uuid IS NULL OR id < $3)"],
         no_seq_scan: &["notifications"],
         indexes: &["notifications_user_idx"],
+        max_cost: None,
     },
     Case {
         name: "unread notifications count",
         fragments: &["FROM notifications WHERE user_id = $1 AND read_at IS NULL"],
         no_seq_scan: &["notifications"],
         indexes: &["notifications_unread_idx"],
+        max_cost: None,
     },
     Case {
         name: "teacher review queue",
         fragments: &["FROM activity_progress p", "THEN p.teacher_action_required"],
-        // Known cost (REWRITE §5.6 "Review queue member test"): the member test becomes a hashed scan of every
-        // `trail_runs` row with `is_course_staff` per row; it goes with the enrolments table.
-        no_seq_scan: &["activity_progress", "users"],
+        // REWRITE §5.6 "Review queue member test": the member test is a join on the enrolment key with
+        // staff excluded per row of the teacher's courses, and the teacher's courses a semi-join (an `OR
+        // EXISTS` filter was estimated at half the platform's courses). The member test was a hashed scan of
+        // every enrolment with `is_course_staff` per row, for a total cost over 270 000. The teacher's two
+        // courses here hold 2 000 progress rows, so the 3 000 users and enrolments are hashed whole: bounded
+        // by the cost, not a shape.
+        no_seq_scan: &["activity_progress"],
         indexes: &["activity_progress_course_user_idx"],
+        max_cost: Some(2_000.0),
+    },
+    Case {
+        name: "teacher release queue",
+        fragments: &[
+            "FROM activity_progress p",
+            "p.state = 'graded' OR r.user_id IS NULL",
+        ],
+        no_seq_scan: &["activity_progress"],
+        indexes: &["activity_progress_course_user_idx"],
+        max_cost: Some(2_000.0),
     },
     Case {
         name: "learner course progress",
@@ -68,6 +88,7 @@ const CASES: &[Case] = &[
         ],
         no_seq_scan: &["activity_progress"],
         indexes: &["activity_progress_course_user_idx"],
+        max_cost: None,
     },
     // The `/search` course query and the `q` filter of the course/collection listings are built at run
     // time (pg_trgm terms, REWRITE §5.6 n11), so they are not in the cache:
@@ -186,6 +207,16 @@ async fn hot_queries_keep_their_index_plans(pool: PgPool) {
                     case.name
                 ));
             }
+        }
+        let cost = doc[0]["Plan"]["Total Cost"]
+            .as_f64()
+            .unwrap_or(f64::INFINITY);
+        if case.max_cost.is_some_and(|max| cost > max) {
+            broken.push(format!(
+                "{}: total cost {cost} over {:?}
+{explain}",
+                case.name, case.max_cost
+            ));
         }
         for index in case.indexes {
             if !plan.iter().any(|(_, _, used)| used == index) {

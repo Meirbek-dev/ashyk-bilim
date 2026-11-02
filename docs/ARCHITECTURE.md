@@ -777,7 +777,7 @@ Layered, all runnable via `just` (single source of truth; CI calls the same reci
 | Format | `just fmt-check` | |
 | Query validity | `just sqlx-check` | SQL matches schema at build time |
 | Runtime SQL | `crates/db/tests/runtime_sql.rs` | every `sqlx::query("...")` literal prepares on the migrated schema; each file building SQL at run time (`QueryBuilder`, `AssertSqlSafe`) names the DB test that runs its shapes |
-| Query plans | `crates/db/tests/query_plans.rs` | hot queries (leaderboard, notifications, review queue, learner progress, search) keep their index plans: `EXPLAIN (GENERIC_PLAN)` of the cached SQL over a production-shaped fixture |
+| Query plans | `crates/db/tests/query_plans.rs` | hot queries (leaderboard, notifications, review and release queues, learner progress, search) keep their index plans and, where a shape check is too weak, a cost bound: `EXPLAIN (GENERIC_PLAN)` of the cached SQL over a production-shaped fixture |
 | Unit | nextest (`just test-unit` needs no services) | pure domain logic |
 | DB | `#[ab_testdb::test]` (per-test clone of one migrated template, `crates/testdb`) | queries, constraints, queue semantics |
 | HTTP | `ab_testkit::TestApp` (real router + test DB + test Redis + wiremock Zitadel; fakes for go-judge/LLM) | handlers, auth, RBAC, error envelopes |
