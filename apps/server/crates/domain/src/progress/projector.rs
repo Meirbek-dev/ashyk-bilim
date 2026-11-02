@@ -439,6 +439,7 @@ impl ProgressProjector {
             .await?
             .is_some_and(|p| p.certificate_eligible);
         ab_db::progress::ensure_course_rows(&mut *conn, course_id, user_id).await?;
+        ab_db::progress::refresh_required(&mut *conn, course_id, user_id).await?;
         let mut rows =
             ab_db::progress::list_course_progress_rows(&mut *conn, course_id, user_id).await?;
         // BUG-318: an assessment the learner is not allowed to take is not

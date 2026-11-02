@@ -624,6 +624,15 @@ impl CurriculumService {
         let published = changes.published.filter(|p| *p != activity.published);
         // BUG-358: one guarded write for every column - a rename under a
         // stale `If-Match` is refused exactly like a content save.
+        // A lesson made optional or required moves every member's totals (REWRITE 5.6 n8 step 3):
+        // read the flag before the write (its trigger re-derives it from the new settings).
+        let required_changes = match changes.settings {
+            Some(settings) => {
+                ab_db::progress::activity_required(&mut *tx, activity_id).await?
+                    != Some(lesson_required(settings))
+            }
+            None => false,
+        };
         let updated = ab_db::catalog::update_activity(
             &mut tx,
             activity_id,
@@ -664,13 +673,12 @@ impl CurriculumService {
                 .await?;
             }
         }
-        let followup = match published {
-            Some(_) => {
-                self.projector
-                    .owe_course_change(&mut tx, activity.course_id)
-                    .await?
-            }
-            None => Followup::none(),
+        let followup = if published.is_some() || required_changes {
+            self.projector
+                .owe_course_change(&mut tx, activity.course_id)
+                .await?
+        } else {
+            Followup::none()
         };
         tx.commit().await?;
         self.projector.settle(followup).await;
@@ -865,5 +873,15 @@ impl CurriculumService {
         }
         tx.commit().await?;
         Ok(())
+    }
+}
+
+/// `activities.required` as its trigger derives it from `settings`: a lesson counts unless
+/// `settings.required` reads `false` (a JSON `false` or the string `"false"`, as `->>` sees both).
+fn lesson_required(settings: &serde_json::Value) -> bool {
+    match settings.get("required") {
+        Some(serde_json::Value::Bool(b)) => *b,
+        Some(serde_json::Value::String(s)) => s != "false",
+        _ => true,
     }
 }

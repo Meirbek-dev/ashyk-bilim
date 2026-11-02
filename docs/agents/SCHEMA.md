@@ -116,23 +116,24 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 
 A lesson step inside a chapter: page, video, document, quiz, exam, code challenge, file task. published makes it visible to learners.
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| chapter_id | uuid |  |  |
-| course_id | uuid |  |  |
-| name | text |  |  |
-| activity_type | text |  |  |
-| activity_sub_type | text |  |  |
-| content | jsonb |  | `'{}'::jsonb` |
-| details | jsonb |  | `'{}'::jsonb` |
-| settings | jsonb |  | `'{}'::jsonb` |
-| published | boolean |  | `false` |
-| position | integer |  | `1` |
-| creator_id | uuid | null |  |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-| version | integer |  | `1` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| chapter_id | uuid |  |  |  |
+| course_id | uuid |  |  |  |
+| name | text |  |  |  |
+| activity_type | text |  |  |  |
+| activity_sub_type | text |  |  |  |
+| content | jsonb |  | `'{}'::jsonb` |  |
+| details | jsonb |  | `'{}'::jsonb` |  |
+| settings | jsonb |  | `'{}'::jsonb` |  |
+| published | boolean |  | `false` |  |
+| position | integer |  | `1` |  |
+| creator_id | uuid | null |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| updated_at | timestamp with time zone |  | `now()` |  |
+| version | integer |  | `1` |  |
+| required | boolean |  | `true` | A lesson counts toward course completion (settings.required, kept by a trigger); graded activities always count. |
 
 - Primary key `activities_pkey`: `PRIMARY KEY (id)`
 - Unique `activities_id_course_key`: `UNIQUE (id, course_id)`

@@ -600,6 +600,58 @@ async fn studio_publish_and_unpublish_follow_into_totals(pool: PgPool) {
     assert_view_matches_projection(&app.pool).await;
 }
 
+/// REWRITE 5.6 n8 step 3: a lesson's `settings.required` is `activities.required`, and flipping it
+/// moves the members' stored totals at once: no row keeps the flag it was seeded with.
+#[ab_testdb::test]
+async fn a_lessons_required_flag_moves_the_members_totals(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Optional 101").await;
+    let alice = learner(&app, "alice").await;
+    let done = lesson(&app, &teacher, &chapter_id, "Done").await;
+    let optional = lesson(&app, &teacher, &chapter_id, "Optional").await;
+    let marked = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{done}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
+    let stored = async || {
+        sqlx::query_as::<_, (i32, i32)>(
+            "SELECT completed_required_count, total_required_count FROM course_progress
+             WHERE course_id = $1::uuid",
+        )
+        .bind(&course_id)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap()
+    };
+    assert_eq!(stored().await, (1, 2));
+    for (required, total) in [(false, 1), (true, 2)] {
+        let patched = app
+            .patch_as(
+                &teacher,
+                &format!("/api/v2/activities/{optional}"),
+                &serde_json::json!({ "settings": { "required": required } }),
+            )
+            .await;
+        assert_eq!(patched.status, StatusCode::OK, "{}", patched.text());
+        let flag: bool = sqlx::query_scalar("SELECT required FROM activities WHERE id = $1::uuid")
+            .bind(&optional)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+        assert_eq!(flag, required);
+        wait_until("the stored totals follow the flag", async || {
+            stored().await == (1, total)
+        })
+        .await;
+    }
+    assert_view_matches_projection(&app.pool).await;
+}
+
 /// BUG-161: deleting a chapter cascades its activities, so the learner
 /// totals are recalculated like `delete_activity` does: 2/3 with the
 /// completed lecture in the deleted chapter → 1/2.

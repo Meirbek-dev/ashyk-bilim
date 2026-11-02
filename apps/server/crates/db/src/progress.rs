@@ -179,11 +179,48 @@ pub async fn list_course_progress_rows<'e>(
     Ok(rows)
 }
 
+/// `activities.required` (the lesson flag its trigger derives from `settings`).
+pub async fn activity_required<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    activity_id: ActivityId,
+) -> Result<Option<bool>> {
+    Ok(sqlx::query_scalar!(
+        "SELECT required FROM activities WHERE id = $1",
+        activity_id.0
+    )
+    .fetch_optional(db)
+    .await?)
+}
+
+/// Put a member's rows on the required rule as the activities say now.
+///
+/// REWRITE 5.6 n8 step 3, `course_progress_v`'s rule: a graded activity (an assessment or a file
+/// task) always counts, a lesson by `activities.required`. A row keeps no flag of its own, so a
+/// lesson made optional (or required) moves every member's totals on their next projection.
+pub async fn refresh_required<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<()> {
+    sqlx::query!(
+        r#"UPDATE activity_progress p SET required = r.required
+           FROM (SELECT a.id, a.activity_type = 'file_submission' OR a.required
+                              OR EXISTS (SELECT 1 FROM assessments s WHERE s.activity_id = a.id) AS required
+                 FROM activities a WHERE a.course_id = $1) r
+           WHERE p.activity_id = r.id AND p.course_id = $1 AND p.user_id = $2
+             AND p.required IS DISTINCT FROM r.required"#,
+        course_id.0,
+        user_id.0
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
 /// Seed `not_started` rows for every published activity without one.
 ///
-/// Every activity is required unless its `settings.required` is `false`
-/// (legacy: the assessment-level flag is not consulted); `due_at` comes
-/// from the assessment / file submission behind it.
+/// Required by [`refresh_required`]'s rule; `due_at` comes from the assessment /
+/// file submission behind it.
 pub async fn ensure_course_rows<'e>(
     db: impl sqlx::PgExecutor<'e>,
     course_id: CourseId,
@@ -192,7 +229,7 @@ pub async fn ensure_course_rows<'e>(
     sqlx::query!(
         r#"INSERT INTO activity_progress (course_id, activity_id, user_id, required, due_at)
            SELECT a.course_id, a.id, $2,
-                  (a.settings->>'required') IS DISTINCT FROM 'false',
+                  a.activity_type = 'file_submission' OR s.id IS NOT NULL OR a.required,
                   COALESCE(s.due_at, f.due_at)
            FROM activities a
            LEFT JOIN assessments s ON s.activity_id = a.id

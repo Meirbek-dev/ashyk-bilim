@@ -703,10 +703,11 @@ in the order it can be done, each step a forward migration on the current schema
       delete), the DTO ids lose their LEFT JOINs (the course / activity id becomes the `id`, already the
       fallback), `legacy_learner_cursor` goes, and a contract drops `trail_steps`, `trail_runs`, `trails`
       (with `trail_runs_sync_enrolment` already gone).
-   3. `required` per activity: the 5.4 view counts `a.required`, today a projection column
-      (`activity_progress.required`, always true for graded kinds and for a new lesson row). Add
-      `activities.required boolean NOT NULL DEFAULT true`, backfill from the projection, and have the
-      projector read it.
+   3. Done 2026-11-03 (`activities_required`): `activities.required` (a trigger derives it from
+      `settings.required` for both releases until settings move into the typed body); the seed, the
+      view and the projector read it, every recalculation puts the member's rows on the current rule
+      (`ab_db::progress::refresh_required`: graded always, a lesson by the flag), and flipping it
+      re-projects the course (`progress_flow::a_lessons_required_flag_moves_the_members_totals`).
    4. The view exists (review 3 wave 2, `20261102071000`): `course_progress_v` (enrolments ⨝ published
       required activities ⨝ completions; `progress_pct`, `certificate_eligible`, `completed_at` = the last
       completion when all are done), equal to the projection on every progress scenario and the e2e seed;
