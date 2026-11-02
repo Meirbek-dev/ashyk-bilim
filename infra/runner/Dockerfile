@@ -47,8 +47,12 @@ COPY --from=gojudge /opt/go-judge /opt/go-judge
 COPY mount.yaml /opt/mount.yaml
 # Warm caches, read-only in every run: Go's standard library (a cold build spends seconds of CPU on it)
 # and a precompiled <bits/stdc++.h> for the C++ flags of languages.rs (2.7 s -> well under 1 s).
+# Go trims its cache a day after the stamp in trim.txt and fails the build when it cannot rewrite it (the
+# cache is read-only): the stamp points into the run's fresh /tmp, so each run re-stamps it there (a walk of
+# the cache that removes nothing) and an image older than a day still compiles Go.
 RUN mkdir -p /usr/local/go-cache && GOCACHE=/usr/local/go-cache GOFLAGS=-trimpath go build std \
     && chmod -R a+rX /usr/local/go-cache \
+    && ln -sf /tmp/go-cache-trim.txt /usr/local/go-cache/trim.txt \
     && header=$(echo '#include <bits/stdc++.h>' | g++ -std=gnu++20 -x c++ -H -fsyntax-only - 2>&1 | grep -m1 'bits/stdc++.h$' | sed 's/^[.]* //') \
     && g++ -O2 -std=gnu++20 -pipe -x c++-header "$header" -o "$header.gch"
 WORKDIR /opt
