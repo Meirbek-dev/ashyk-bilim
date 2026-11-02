@@ -2732,3 +2732,20 @@ async fn one_touch_trigger_keeps_updated_at_and_version(pool: PgPool) {
     .unwrap();
     assert_eq!(old, None, "the pair is gone");
 }
+
+/// Production skipped `auth_audit_log_metadata_check` over the JSON-null metadata of imported events; the
+/// repair (`auth_audit_metadata_object`) stores the default `{}` for them, and the check holds.
+#[ab_testdb::test]
+async fn audit_metadata_is_an_object(pool: PgPool) {
+    let refused =
+        sqlx::query("INSERT INTO auth_audit_log (event, metadata) VALUES ('logout', 'null')")
+            .execute(&pool)
+            .await
+            .unwrap_err();
+    assert!(
+        refused
+            .to_string()
+            .contains("auth_audit_log_metadata_check"),
+        "{refused}"
+    );
+}

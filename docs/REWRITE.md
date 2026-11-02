@@ -712,8 +712,8 @@ in the order it can be done, each step a forward migration on the current schema
       required activities ⨝ completions; `progress_pct`, `certificate_eligible`, `completed_at` = the last
       completion when all are done), equal to the projection on every progress scenario and the e2e seed;
       `maintenance:reconcile` logs its `view_drift`. Its `required` rule is the seed rule (graded always,
-      lessons by `settings.required`, minus restricted assessments); the projection keeps a lesson's flag from
-      when its row was seeded, so step 3 (`activities.required`) removes the one known source of drift.
+      lessons by `activities.required`, minus restricted assessments); since step 3 the projection puts its rows
+      on the same rule at every recalculation, which removed the one known source of drift.
       When `changed`, `completion_drift` and `view_drift` are zero for a month (four weekly runs), move
       every reader to the view in one release (`course_progress_pcts`, learner-state, analytics context and
       rollups, certificate eligibility, the work queue) while the projector still writes the table; compare
@@ -885,6 +885,8 @@ Done:
 - Grade journals guard the whole row (`file_grading_entries` had no guard; `grading_entries` compared a column
   list): `20261102000000_ledger_guards`, `schema_review.rs`.
 - Skipped checks are reported, not fatal: `just prod-report` lists `schema_skipped_checks`, `just brief` names them.
+  Production skipped one (2026-11-02), `auth_audit_log_metadata_check`: 170 events imported from April 2026 store
+  JSON null; `20261102215413_auth_audit_metadata_object` stores `{}` for them and validates it.
 - Migrations deploy during classes: `migration_rules.rs` enforces `lock_timeout`, CONCURRENTLY indexes in
   `-- no-transaction` files, and expand/contract (`-- contract:` marker) from 2026-11-02 on. The 2026-11-01
   migrations predate it: their first deploy builds ~45 indexes in one transaction, so it goes in a quiet window.
