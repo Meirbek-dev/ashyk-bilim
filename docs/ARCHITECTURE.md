@@ -681,7 +681,7 @@ CREATE TABLE jobs (                        -- migrations/20260816000001_jobs.sql
 
 | Use | Structure | Notes |
 |---|---|---|
-| Sessions | `session:{id}` JSON + `session_seen:{id}` last-seen stamp + `user_sessions:{uid}` zset + `user_epoch:{uid}` counter | the touch only `EXPIRE`s the record and writes the stamp (BUG-191); every session-ending mutation `INCR`s the epoch first and `create` is a Lua CAS on it, so a login in flight cannot outlive a disable / password change / TOTP activation / grant change (BUG-203) |
+| Sessions | `session:{id}` JSON + `session_seen:{id}` last-seen stamp + `user_sessions:{uid}` zset + `user_epoch:{uid}` counter | the touch only `EXPIRE`s the record and writes the stamp (BUG-191); every session-ending mutation `INCR`s the epoch first and `create` is a Lua CAS on it, so a login in flight cannot outlive a disable / password change / TOTP activation / grant change (BUG-203); each create sets the zset TTL to the 90-day absolute cap, so no registry outlives its sessions |
 | SSE event logs | Redis Streams `sse:grading:{submission}` / `sse:grading:course:{course}` / `sse:ai:{run}` | `MAXLEN ~1024`, replay via `XRANGE` |
 | Per-user event stream | Redis Stream `sse:user:{user}` | `MAXLEN ~500`, 7-day TTL refreshed on publish; written by a process-wide publisher (`events::user::install` at boot) |
 | SSE connection caps | `sse_leases:{user}` zset of expiring leases | 10 per user, lease TTL 1 h, Lua acquire |

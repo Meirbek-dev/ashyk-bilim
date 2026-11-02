@@ -157,3 +157,29 @@ async fn rewrite_propagates_permissions_to_live_sessions() {
     }
     store.revoke_all(user).await.unwrap();
 }
+
+#[tokio::test]
+async fn sessions_and_their_registry_expire_with_the_store_lifetimes() {
+    use std::time::Duration;
+    let store = SessionStore::connect(&redis_url())
+        .await
+        .unwrap()
+        .with_lifetimes(Duration::from_secs(60), Duration::from_secs(600));
+    let user = UserId::new();
+    let id = store.create(new_session(user, &[])).await.unwrap().unwrap();
+    let redis = store.redis();
+    let ttl = |key: String| {
+        let mut redis = redis.clone();
+        async move {
+            redis::cmd("TTL")
+                .arg(key)
+                .query_async::<i64>(&mut redis)
+                .await
+                .unwrap()
+        }
+    };
+    assert!((1..=60).contains(&ttl(format!("session:{id}")).await));
+    // The registry outlives every session in it (the cap), then goes: no key without a TTL.
+    assert!((61..=600).contains(&ttl(format!("user_sessions:{user}")).await));
+    store.revoke(user, &id).await.unwrap();
+}

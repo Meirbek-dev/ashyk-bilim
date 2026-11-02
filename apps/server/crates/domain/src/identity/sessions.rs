@@ -18,6 +18,9 @@
 //! - Per-user registry `user_sessions:{uid}` (zset scored by creation time)
 //!   caps concurrent LIVE sessions at [`MAX_SESSIONS_PER_USER`], evicting
 //!   oldest; expired ids are pruned first, in the create step (BUG-277).
+//!   Each create sets its TTL to the absolute cap: every session in it is
+//!   younger, so an idle user's registry goes once its sessions can no longer
+//!   be live.
 //! - Permission changes propagate at mutation time:
 //!   [`SessionStore::rewrite_user_sessions`] updates every live session of a
 //!   user (called by RBAC admin flows). That rewrite runs after the Postgres
@@ -54,12 +57,8 @@ fn user_key(user_id: UserId) -> String {
 fn epoch_key(user_id: UserId) -> String {
     format!("user_epoch:{user_id}")
 }
-fn idle_ttl() -> i64 {
-    i64::try_from(IDLE_TTL.as_secs()).unwrap_or(i64::MAX)
-}
-fn past_absolute_cap(record: &SessionRecord) -> bool {
-    let age = now_unix().saturating_sub(record.created_at_unix);
-    age >= i64::try_from(ABSOLUTE_CAP.as_secs()).unwrap_or(i64::MAX)
+fn secs(d: Duration) -> i64 {
+    i64::try_from(d.as_secs()).unwrap_or(i64::MAX)
 }
 
 /// Compare-and-set rewrite: only if the record is still the one we read, and
@@ -74,6 +73,7 @@ return 1";
 /// expired, or created before the absolute cap (`ARGV[6]`, ms) - then evict
 /// the oldest LIVE sessions beyond the cap (`ARGV[7]`). Key names are built
 /// here from the `session:` / `session_seen:` prefixes (standalone Redis).
+/// The registry expires with the absolute cap (`ARGV[8]`, s): no session in it outlives that.
 const CREATE_IF_EPOCH: &str = r"
 if (redis.call('GET', KEYS[3]) or '0') ~= ARGV[5] then return 0 end
 redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2])
@@ -93,6 +93,7 @@ for i = 1, #live - tonumber(ARGV[7]) do
   redis.call('DEL', 'session:' .. live[i], 'session_seen:' .. live[i])
   redis.call('ZREM', KEYS[2], live[i])
 end
+redis.call('EXPIRE', KEYS[2], ARGV[8])
 return 1";
 /// Touch: slide the record's TTL and stamp `last_seen` only while the record
 /// exists - a touch racing a revoke must not leave an orphan stamp.
@@ -172,6 +173,8 @@ pub struct SessionStore {
     client: redis::Client,
     redis: ConnectionManager,
     max_sessions: usize,
+    idle_ttl: Duration,
+    absolute_cap: Duration,
 }
 
 impl SessionStore {
@@ -198,7 +201,22 @@ impl SessionStore {
             client,
             redis,
             max_sessions: MAX_SESSIONS_PER_USER,
+            idle_ttl: IDLE_TTL,
+            absolute_cap: ABSOLUTE_CAP,
         })
+    }
+
+    /// Override the idle timeout and the absolute cap (tests: sessions they mint must not
+    /// pile up in a long-lived Redis for the production 14 / 90 days).
+    #[must_use]
+    pub const fn with_lifetimes(mut self, idle_ttl: Duration, absolute_cap: Duration) -> Self {
+        self.idle_ttl = idle_ttl;
+        self.absolute_cap = absolute_cap;
+        self
+    }
+
+    fn past_absolute_cap(&self, record: &SessionRecord) -> bool {
+        now_unix().saturating_sub(record.created_at_unix) >= secs(self.absolute_cap)
     }
 
     /// Override the live-session cap (config `auth.limits.sessions_per_user`).
@@ -264,23 +282,24 @@ impl SessionStore {
             .map_err(|e| Error::internal("serializing session", e))?;
         // One atomic step, fenced on the epoch: a record without its registry
         // entry reads as revoked; a record a mutation could not see is never written.
-        let written: i32 = redis::Script::new(CREATE_IF_EPOCH)
-            .key(session_key(&id))
-            .key(user_key(record.user_id))
-            .key(epoch_key(record.user_id))
-            .arg(payload)
-            .arg(idle_ttl())
-            .arg(now_unix_millis())
-            .arg(&id)
-            .arg(new.epoch)
-            .arg(
-                now_unix_millis()
-                    .saturating_sub(i64::try_from(ABSOLUTE_CAP.as_millis()).unwrap_or(i64::MAX)),
-            )
-            .arg(self.max_sessions)
-            .invoke_async(&mut conn)
-            .await
-            .map_err(|e| Error::internal("storing session", e))?;
+        let written: i32 =
+            redis::Script::new(CREATE_IF_EPOCH)
+                .key(session_key(&id))
+                .key(user_key(record.user_id))
+                .key(epoch_key(record.user_id))
+                .arg(payload)
+                .arg(secs(self.idle_ttl))
+                .arg(now_unix_millis())
+                .arg(&id)
+                .arg(new.epoch)
+                .arg(now_unix_millis().saturating_sub(
+                    i64::try_from(self.absolute_cap.as_millis()).unwrap_or(i64::MAX),
+                ))
+                .arg(self.max_sessions)
+                .arg(secs(self.absolute_cap))
+                .invoke_async(&mut conn)
+                .await
+                .map_err(|e| Error::internal("storing session", e))?;
         if written != 1 {
             return Ok(None);
         }
@@ -293,7 +312,7 @@ impl SessionStore {
         let Some(mut record) = self.load(id).await? else {
             return Ok(None);
         };
-        if past_absolute_cap(&record) {
+        if self.past_absolute_cap(&record) {
             self.revoke(record.user_id, id).await?;
             return Ok(None);
         }
@@ -323,7 +342,7 @@ impl SessionStore {
         let _: i32 = redis::Script::new(TOUCH_IF_ALIVE)
             .key(session_key(id))
             .key(seen_key(id))
-            .arg(idle_ttl())
+            .arg(secs(self.idle_ttl))
             .arg(now)
             .invoke_async(&mut conn)
             .await
@@ -338,7 +357,7 @@ impl SessionStore {
         Ok(self
             .load(id)
             .await?
-            .filter(|record| !past_absolute_cap(record)))
+            .filter(|record| !self.past_absolute_cap(record)))
     }
 
     /// Record + its `last_seen` stamp (the record's own field is the creation

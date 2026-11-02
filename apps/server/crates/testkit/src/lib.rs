@@ -144,7 +144,9 @@ impl TestApp {
         let sessions = ab_domain::identity::SessionStore::connect(&test_redis_url())
             .await
             .expect("test redis reachable (see AGENTS.md local dev stack)")
-            .with_max_sessions(config.auth.limits.sessions_per_user as usize);
+            .with_max_sessions(config.auth.limits.sessions_per_user as usize)
+            // The dev Redis outlives the run: production lifetimes piled up ~100k test sessions there.
+            .with_lifetimes(Duration::from_hours(1), Duration::from_hours(24));
         let zitadel_client = Arc::new(
             ZitadelClient::new(ZitadelConfig {
                 base_url: zitadel.uri(),
