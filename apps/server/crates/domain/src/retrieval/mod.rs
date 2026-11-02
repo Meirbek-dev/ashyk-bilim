@@ -2,7 +2,9 @@
 //!
 //! [`Retrieval::sweep`] (the worker's `retrieval:sweep`, every minute) re-cuts every source whose version
 //! moved; [`Retrieval::search`] fuses the vector and lexical candidates with Reciprocal Rank Fusion.
-//! Access is the caller's business: the AI service checks the course and passes `learner_only`.
+//! Access to the course is the caller's business: the AI service checks it and passes `learner_only`;
+//! what a learner may see inside it (published activities, a course not archived) is checked by the
+//! search query itself.
 
 pub mod chunker;
 
@@ -91,14 +93,14 @@ impl Retrieval {
     }
 
     #[allow(clippy::too_many_lines, reason = "one match over the kinds of source")]
-    async fn pieces(&self, source: &StaleSource) -> Result<(Vec<Piece>, &'static str, bool)> {
+    async fn pieces(&self, source: &StaleSource) -> Result<(Vec<Piece>, &'static str)> {
         let activity =
             |id: Option<ActivityId>| id.ok_or_else(|| Error::conflict("source without activity"));
         Ok(match source.source_type.as_str() {
             "lesson" | "activity" | "assignment" => {
                 let id = activity(source.activity_id)?;
                 let Some(row) = ab_db::retrieval::activity_source(&self.pool, id).await? else {
-                    return Ok((Vec::new(), "learner", false));
+                    return Ok((Vec::new(), "learner"));
                 };
                 let title = format!("{} › {}", row.chapter_name, row.name);
                 let mut pieces = match source.source_type.as_str() {
@@ -144,11 +146,10 @@ impl Retrieval {
                         .join("\n");
                     pieces = text_pieces(&title, &text, &json!({}));
                 }
-                (pieces, "learner", row.published)
+                (pieces, "learner")
             }
             "item" => {
                 let items = ab_db::retrieval::item_sources(&self.pool, source.source_id).await?;
-                let published = items.first().is_some_and(|i| i.published);
                 let pieces = items
                     .iter()
                     .filter_map(|item| {
@@ -163,13 +164,13 @@ impl Retrieval {
                         })
                     })
                     .collect();
-                (pieces, "staff", published)
+                (pieces, "staff")
             }
             "course" => {
                 let Some(row) =
                     ab_db::retrieval::course_source(&self.pool, source.course_id).await?
                 else {
-                    return Ok((Vec::new(), "learner", false));
+                    return Ok((Vec::new(), "learner"));
                 };
                 let learnings = row
                     .learnings
@@ -199,7 +200,7 @@ impl Retrieval {
                 .copied()
                 .collect::<Vec<_>>()
                 .join("\n\n");
-                (text_pieces(&row.name, &text, &json!({})), "learner", true)
+                (text_pieces(&row.name, &text, &json!({})), "learner")
             }
             other => return Err(Error::conflict(format!("unknown source type {other}"))),
         })
@@ -208,7 +209,7 @@ impl Retrieval {
     /// Cut, embed and store one source. Returns the chunk count and whether the embedder failed (the
     /// chunks are stored without vectors then; lexical search still finds them, the next sweep retries).
     pub async fn index_source(&self, source: &StaleSource) -> Result<(usize, bool)> {
-        let (pieces, audience, published) = self.pieces(source).await?;
+        let (pieces, audience) = self.pieces(source).await?;
         let pieces: Vec<Piece> = pieces
             .into_iter()
             .filter(|p| !p.body.trim().is_empty())
@@ -237,7 +238,6 @@ impl Retrieval {
             .enumerate()
             .map(|(i, p)| NewChunk {
                 audience,
-                published,
                 token_estimate: i32::try_from(p.body.chars().count() / 4).unwrap_or(i32::MAX),
                 embedding: vectors
                     .get(i)

@@ -737,7 +737,8 @@ Postgres work uses Postgres advisory locks and row locks.
   - `ab-domain::retrieval`: course material cut into `content_chunks` (heading-path anchors,
     `halfvec(1024)` + a `simple` lexeme column), kept in step by the `retrieval:sweep` job (every
     minute, version comparison, no write-path hooks); hybrid search = HNSW cosine + full text fused
-    by RRF. Embeddings come from `ab-clients::embed` (`AB__AI__EMBEDDING_*`; without a provider a
+    by RRF. A learner's search checks visibility when it runs (the activity published, the course not
+    archived), not a flag copied at indexing. Embeddings come from `ab-clients::embed` (`AB__AI__EMBEDDING_*`; without a provider a
     deterministic hashed n-gram embedder). `course_qa` and `study_companion` put the passages that
     answer the question in front of the course outline.
   - Concept graph (`course_concepts`, `concept_prerequisites`, `concept_tags`) curated by teachers

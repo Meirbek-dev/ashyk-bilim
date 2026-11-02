@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO content_chunks\n                   (course_id, activity_id, source_type, source_id, ordinal, audience, label, body,\n                    anchor, token_estimate, embedding, embedding_model)\n               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::text::halfvec, $12)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid",
+        "Int4",
+        "Text",
+        "Text",
+        "Text",
+        "Jsonb",
+        "Int4",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ffc9037df73ae8d4fa17054e11523398c24090c5b5b6e40d81eefb04c1518df3"
+}

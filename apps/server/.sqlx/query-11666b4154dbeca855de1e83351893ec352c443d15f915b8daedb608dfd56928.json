@@ -1,0 +1,111 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT ch.id AS \"id: ContentChunkId\", ch.source_type, ch.source_id,\n                  ch.activity_id AS \"activity_id: ActivityId\", ch.label, ch.body, ch.anchor,\n                  (1 - (ch.embedding <=> $3::text::halfvec))::float8 AS \"score!\"\n           FROM content_chunks ch\n           JOIN courses c ON c.id = ch.course_id\n           LEFT JOIN activities a ON a.id = ch.activity_id\n           WHERE ch.course_id = $1 AND ch.embedding_model = $4\n             AND (ch.activity_id IS NULL OR a.course_id = ch.course_id)\n             AND (NOT $2 OR (ch.audience = 'learner' AND c.archived_at IS NULL\n                             AND (ch.activity_id IS NULL OR a.published)))\n           ORDER BY ch.embedding <=> $3::text::halfvec\n           LIMIT $5",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: ContentChunkId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "source_type",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "source_type"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "source_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "source_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "label",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "label"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "body",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "body"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "anchor",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "content_chunks",
+            "name": "anchor"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "score!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool",
+        "Text",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "11666b4154dbeca855de1e83351893ec352c443d15f915b8daedb608dfd56928"
+}
