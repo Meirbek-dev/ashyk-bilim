@@ -55,10 +55,6 @@ export function certificateKind(config: CertificationConfig, courseName?: string
   return [name, type].filter(Boolean).join(' · ')
 }
 
-/** What the certificate is called where it travels alone (LinkedIn): its own name, else the course's. */
-export const certificateTitle = (config: CertificationConfig, courseName: string): string =>
-  config.certification_name?.trim() || courseName
-
 /** The public verify page as an absolute URL: what a holder shares (B-CRT-09). */
 export const verifyUrl = (origin: string, code: string): string =>
   `${origin}/certificates/${encodeURIComponent(code)}/verify`

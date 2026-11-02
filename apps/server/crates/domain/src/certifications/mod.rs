@@ -144,8 +144,7 @@ pub struct IssuedCertificate {
     pub certificate: CertificateRow,
     pub certification: CertificationRow,
     pub course: Course,
-    /// The name signed on the certificate: `config.certificate_instructor`,
-    /// else the course creator's display name (what the PDF prints).
+    /// The name signed on the certificate, as issued (what the PDF prints).
     pub instructor_name: Option<String>,
 }
 
@@ -159,12 +158,11 @@ pub struct ProfileCertificate {
     pub issued_at: i64,
 }
 
-/// The public verification view.
+/// The public verification view: the certificate states holder, course and
+/// score as issued (`CertificateRow`), whatever the course says today.
 #[derive(Debug, Clone)]
 pub struct VerifiedCertificate {
     pub issued: IssuedCertificate,
-    /// The only thing a verifier learns about the holder.
-    pub holder_display_name: String,
 }
 
 #[derive(Clone)]
@@ -284,21 +282,17 @@ impl CertificationsService {
         Ok(row)
     }
 
-    async fn issued(
-        &self,
+    fn issued(
         certificate: CertificateRow,
         certification: CertificationRow,
         course: Course,
-    ) -> Result<IssuedCertificate> {
-        let instructor_name = self
-            .instructor_name(&certification.config, course.creator_id)
-            .await?;
-        Ok(IssuedCertificate {
+    ) -> IssuedCertificate {
+        IssuedCertificate {
+            instructor_name: certificate.instructor_name.clone(),
             certificate,
             certification,
             course,
-            instructor_name,
-        })
+        }
     }
 
     /// `config.certificate_instructor`, else the course creator's name.
@@ -458,10 +452,7 @@ impl CertificationsService {
         let mut out = Vec::with_capacity(rows.len());
         for certificate in rows {
             let certification = self.load(certificate.certification_id).await?;
-            out.push(
-                self.issued(certificate, certification, course.clone())
-                    .await?,
-            );
+            out.push(Self::issued(certificate, certification, course.clone()));
         }
         Ok(out)
     }
@@ -482,7 +473,7 @@ impl CertificationsService {
             else {
                 continue;
             };
-            out.push(self.issued(certificate, certification, course).await?);
+            out.push(Self::issued(certificate, certification, course));
         }
         Ok(out)
     }
@@ -515,10 +506,9 @@ impl CertificationsService {
                 continue;
             };
             out.push(ProfileCertificate {
-                certificate_name: config_text(&certification.config, "certification_name")
-                    .unwrap_or_else(|| course.name.clone()),
                 course_id: course.id,
-                course_name: course.name,
+                course_name: certificate.course_name,
+                certificate_name: certificate.certificate_name,
                 verify_code: certificate.verify_code,
                 issued_at: certificate.created_at,
             });
@@ -538,13 +528,8 @@ impl CertificationsService {
         let course = ab_db::catalog::get_course(&self.pool, certification.course_id)
             .await?
             .ok_or_else(|| Error::not_found("course"))?;
-        let holder = ab_db::identity::list_user_summaries(&self.pool, &[certificate.user_id])
-            .await?
-            .into_iter()
-            .next();
         Ok(VerifiedCertificate {
-            holder_display_name: holder.map(|h| h.display_name).unwrap_or_default(),
-            issued: self.issued(certificate, certification, course).await?,
+            issued: Self::issued(certificate, certification, course),
         })
     }
 
@@ -571,19 +556,18 @@ impl CertificationsService {
             .unwrap_or(Language::Ru);
         let config = &verified.issued.certification.config;
         let text = |key: &str| config_text(config, key);
-        let teacher_name = verified.issued.instructor_name;
-        let code = verified.issued.certificate.verify_code.clone();
+        let certificate = verified.issued.certificate;
+        let code = certificate.verify_code.clone();
         let bytes = pdf::render(&pdf::CertificatePdf {
             language,
-            holder_name: verified.holder_display_name,
-            certificate_name: text("certification_name")
-                .unwrap_or_else(|| verified.issued.course.name.clone()),
+            holder_name: certificate.holder_name,
+            certificate_name: certificate.certificate_name,
             certificate_type: text("certification_type").unwrap_or_default(),
-            course_name: verified.issued.course.name,
-            issued_at_unix: verified.issued.certificate.created_at,
+            course_name: certificate.course_name,
+            issued_at_unix: certificate.created_at,
             verify_url: verify_url(language, &code),
             verify_code: code.clone(),
-            teacher_name,
+            teacher_name: certificate.instructor_name,
             course_start: text("course_start"),
             course_end: text("course_end"),
             training_hours: text("training_hours").and_then(|h| h.parse().ok()),

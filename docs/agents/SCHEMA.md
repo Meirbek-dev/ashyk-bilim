@@ -917,6 +917,12 @@ A certificate issued to a learner, verifiable by verify_code. Survives the accou
 | verify_code | text |  |  |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
+| holder_name | text |  |  |
+| course_name | text |  |  |
+| certificate_name | text |  |  |
+| instructor_name | text | null |  |
+| score | double precision | null |  |
+| reissued_at | timestamp with time zone | null |  |
 
 - Primary key `certificate_users_pkey`: `PRIMARY KEY (id)`
 - Unique `certificate_users_certification_id_user_id_key`: `UNIQUE (certification_id, user_id)`

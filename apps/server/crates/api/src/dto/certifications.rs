@@ -71,6 +71,14 @@ pub struct Certificate {
     /// Public verification code; the client links `/certificates/{code}/verify`.
     pub verify_code: String,
     pub issued_at_unix: i64,
+    /// The course name as issued (renaming the course leaves it).
+    pub course_name: String,
+    /// The template's `certification_name` as issued, else the course name.
+    pub certificate_name: String,
+    /// The course grade at issue (0-100), if anything was scored.
+    pub score: Option<f64>,
+    /// When a change of the holder's name last re-issued it.
+    pub reissued_at_unix: Option<i64>,
 }
 
 impl From<ab_db::certifications::CertificateRow> for Certificate {
@@ -81,6 +89,10 @@ impl From<ab_db::certifications::CertificateRow> for Certificate {
             user_id: r.user_id,
             verify_code: r.verify_code,
             issued_at_unix: r.created_at,
+            course_name: r.course_name,
+            certificate_name: r.certificate_name,
+            score: r.score,
+            reissued_at_unix: r.reissued_at,
         }
     }
 }
@@ -91,7 +103,7 @@ pub struct IssuedCertificate {
     pub certificate: Certificate,
     pub certification: Certification,
     pub course: Course,
-    /// The name signed on the certificate (`config.certificate_instructor`,
+    /// The name signed on the certificate as issued (`config.certificate_instructor`,
     /// else the course creator's display name) - what the PDF prints.
     pub instructor_name: Option<String>,
 }
@@ -132,7 +144,8 @@ impl From<domain::ProfileCertificate> for ProfileCertificate {
     }
 }
 
-/// What a verifier learns about the holder: the name on the certificate.
+/// What a verifier learns about the holder: the name on the certificate (the
+/// holder's current one: a name change re-issues).
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CertificateHolder {
     pub display_name: String,
@@ -145,6 +158,14 @@ pub struct PublicCertificate {
     pub certification_id: CertificationId,
     pub verify_code: String,
     pub issued_at_unix: i64,
+    /// The course name as issued (renaming the course leaves it).
+    pub course_name: String,
+    /// The template's `certification_name` as issued, else the course name.
+    pub certificate_name: String,
+    /// The course grade at issue (0-100), if anything was scored.
+    pub score: Option<f64>,
+    /// When a change of the holder's name last re-issued it.
+    pub reissued_at_unix: Option<i64>,
 }
 
 /// The public verification view.
@@ -167,6 +188,10 @@ impl From<domain::VerifiedCertificate> for VerifiedCertificate {
                 certification_id: c.certification_id,
                 verify_code: c.verify_code,
                 issued_at_unix: c.created_at,
+                course_name: c.course_name,
+                certificate_name: c.certificate_name,
+                score: c.score,
+                reissued_at_unix: c.reissued_at,
             },
             // Public view: nobody acts on it.
             certification: Certification::new(v.issued.certification, Vec::new()),
@@ -177,7 +202,7 @@ impl From<domain::VerifiedCertificate> for VerifiedCertificate {
                 ..Course::for_actor(v.issued.course, &ab_domain::identity::Actor::anonymous())
             },
             holder: CertificateHolder {
-                display_name: v.holder_display_name,
+                display_name: c.holder_name,
             },
             instructor_name: v.issued.instructor_name,
         }

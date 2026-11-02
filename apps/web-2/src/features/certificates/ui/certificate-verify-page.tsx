@@ -7,9 +7,9 @@ import { Link } from '#/shared/components/link'
 import { ProgressRing } from '#/shared/components/progress-ring'
 import { StatusBadge } from '#/shared/components/status-badge'
 import { DetailPage } from '#/shared/components/templates/detail-page'
-import { formatDate } from '#/shared/i18n/format'
+import { formatDate, formatPercent } from '#/shared/i18n/format'
 
-import { certificateKind, certificateTitle } from '../model/certificates'
+import { certificateKind } from '../model/certificates'
 import { verificationOptions } from '../queries'
 import { CertificatePdfLink } from './certificate-pdf-link'
 import { CertificateShare } from './certificate-share'
@@ -18,27 +18,32 @@ import { CertificateShare } from './certificate-share'
  * The public answer to "is this certificate real, and whose is it". Both verify URLs render it: the plain one and
  * the `/{ru|kz|en}/...` alias printed on issued PDFs. The facts sit on the course's own cover under a seal with the
  * holder's name large (B-CRT-07): the page an employer opens from a QR code reads as the credential it checks.
+ * Course, certificate name and grade are the certificate's own, as issued: a renamed course does not rewrite them.
  */
 export function CertificateVerifyPage({ code }: { code: string }) {
   const { data } = useSuspenseQuery(verificationOptions(code))
   const { certificate, certification, course, holder, instructor_name: instructor } = data
-  const kind = certificateKind(certification.config)
+  const kind = certificateKind(
+    { ...certification.config, certification_name: certificate.certificate_name },
+    certificate.course_name,
+  )
   const fields = [
     {
       label: m.certificates_course(),
       value: (
         <Link to="/courses/$courseId" params={{ courseId: course.id }}>
-          {course.name}
+          {certificate.course_name}
         </Link>
       ),
     },
     ...(kind ? [{ label: m.certificates_name(), value: kind }] : []),
     ...(instructor ? [{ label: m.certificates_instructor(), value: instructor }] : []),
+    ...(certificate.score == null ? [] : [{ label: m.certificates_score(), value: formatPercent(certificate.score) }]),
     { label: m.certificates_code(), value: certificate.verify_code },
   ]
   return (
     <DetailPage
-      title={course.name}
+      title={certificate.course_name}
       meta={m.certificates_summary({ date: formatDate(certificate.issued_at_unix, undefined, { withYear: true }) })}
       status={
         <StatusBadge tone="success">
@@ -51,7 +56,7 @@ export function CertificateVerifyPage({ code }: { code: string }) {
           <CertificatePdfLink code={certificate.verify_code} variant="default" />
           <CertificateShare
             code={certificate.verify_code}
-            name={certificateTitle(certification.config, course.name)}
+            name={certificate.certificate_name}
             issuedAtUnix={certificate.issued_at_unix}
           />
         </div>

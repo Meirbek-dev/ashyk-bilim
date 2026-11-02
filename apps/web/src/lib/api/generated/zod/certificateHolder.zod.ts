@@ -11,7 +11,9 @@ export const CertificateHolder = zod
   .object({
     display_name: zod.string(),
   })
-  .describe('What a verifier learns about the holder: the name on the certificate.')
+  .describe(
+    "What a verifier learns about the holder: the name on the certificate (the\nholder's current one: a name change re-issues).",
+  )
 
 export type CertificateHolder = zod.input<typeof CertificateHolder>
 export type CertificateHolderOutput = zod.output<typeof CertificateHolder>

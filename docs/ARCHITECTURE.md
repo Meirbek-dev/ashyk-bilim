@@ -432,6 +432,11 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   from its submission / attempt. The guards compare the whole row, so a new column is frozen too. The one
   extra change is `graded_by` becoming NULL (its `ON DELETE SET NULL`), so a grader can be erased by hand
   (`20261102000100_ledger_grader_erasure.sql`); naming another grader is refused.
+- **A certificate states what was issued** (`20261102000200_certificates_freeze_issued.sql`): issuing stores the
+  holder's name, course and certificate names, the signing instructor and the course grade on `certificate_users`
+  (a BEFORE INSERT trigger fills them, so no insert path can skip it); verification, the PDF and the profile read
+  them, never the live course. The row is otherwise immutable, except `holder_name`: a change of the person's
+  `display_name` re-issues (`reissued_at`), which is also how erasure blanks it.
 - **A deleted account stays disabled**: `deleted_at IS NULL OR disabled_at IS NOT NULL`.
 - **Account state is timestamps** (`20261102011100`): `users.disabled_at` (NULL = active) and
   `users.email_verified_at` (NULL = not confirmed). The old `status` / `email_verified` columns are mirrored both

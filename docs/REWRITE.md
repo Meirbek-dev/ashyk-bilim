@@ -898,6 +898,9 @@ Done:
   rows are not rebuilt: a rollup is a snapshot of the state at run time, so rebuilding a past date would write
   today's numbers onto it. Rows dated before the switch keep their UTC day (a snapshot up to 05:00 of the next
   Almaty day) and age out with the 2-year retention.
+- Certificates freeze what was issued (`20261102000200_certificates_freeze_issued`, `certificates.rs`): holder,
+  course and certificate names, instructor and grade; verification, the PDF and both webs show them; a display-name
+  change re-issues. Certificates issued before the migration took what their course stated on that day.
 
 Decided, not done:
 
@@ -905,27 +908,25 @@ Decided, not done:
    nightly base backups into the backup directory of the production host (RUNBOOK 3.14), built-in tools only
    (`archive_command`, `pg_basebackup`, `pg_archivecleanup`: no extra image to build and pin). Backups stay on
    the production host (FINDINGS 3). Turned on by the first deploy of the change (it recreates db).
-2. **Certificates freeze what was issued**: holder name, course name, score and issue date are stored on the
-   certificate row; verification shows them; a name change re-issues.
-3. **Learner search and AI context check visibility at query time** (activity published, course not archived,
+2. **Learner search and AI context check visibility at query time** (activity published, course not archived,
    the caller's access) instead of the copied `content_chunks.published`, which is dropped (expand/contract).
-4. **Postgres settings as one file** (`infra/postgres/postgresql.conf`): memory sized to the 1 GB container,
+3. **Postgres settings as one file** (`infra/postgres/postgresql.conf`): memory sized to the 1 GB container,
    `random_page_cost = 1.1`, `pg_stat_statements` with a top-by-total-time section in `prod-report`,
    `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; Zitadel's role gets a
    connection limit. Done: the pool sets `statement_timeout`, `idle_in_transaction_session_timeout`,
    `lock_timeout` and `application_name` on connect (ARCHITECTURE §16, `AB__DATABASE__LIMITS__*`).
-5. **Journals are protected by privileges too** (done in the repo, 2026-11): `ashyq_app` has INSERT only on
+4. **Journals are protected by privileges too** (done in the repo, 2026-11): `ashyq_app` has INSERT only on
    grade and audit journals (`apply_role_grants`, migration `20261102050200`); `auth_audit_log` retention runs
    through the SECURITY DEFINER `prune_auth_audit_log`. Production switches with RUNBOOK 2.5 (a deploy step).
-6. **Analytics events are written in the action's transaction** (`events::record` takes the transaction) and
+5. **Analytics events are written in the action's transaction** (`events::record` takes the transaction) and
    carry a `schema_version` in the payload.
-7. **AI retention**: runs, artifacts, Q&A messages and analyses 400 days, like `analytics_events`; an accepted
+6. **AI retention**: runs, artifacts, Q&A messages and analyses 400 days, like `analytics_events`; an accepted
    AI grade draft lives as long as the grade. `ai_threads.retention_class` is dropped.
-8. **Rollback without restore**: once every migration since the previous release is expand-only (no
+7. **Rollback without restore**: once every migration since the previous release is expand-only (no
    `-- contract:` file), `rollback.sh` may skip the "migrations differ" refusal.
-9. **Zitadel in its own Postgres instance** until phase 4 removes it (done in the repo, 2026-11): compose service
+8. **Zitadel in its own Postgres instance** until phase 4 removes it (done in the repo, 2026-11): compose service
    `zitadel-db`, `ZITADEL_DB_HOST`; production moves with `just zitadel-db-move` in a window (RUNBOOK 3.15).
-10. **Schemas** (core, learning, ai, analytics, ops) and an `extensions` schema (review 43; ARCHITECTURE §8
+9. **Schemas** (core, learning, ai, analytics, ops) and an `extensions` schema (review 43; ARCHITECTURE §8
     rule 8). Done in the repo (2026-11): expand `20261102090000` creates the schemas, the mapping
     `app_table_schema()`, grants and default privileges per schema, and sets the `search_path` on the database
     (the server also sends it on connect, `ashyq migrate` re-applies it); new tables name their schema. The move

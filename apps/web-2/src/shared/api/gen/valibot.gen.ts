@@ -578,7 +578,8 @@ export const vCaseResult = v.object({
 });
 
 /**
- * What a verifier learns about the holder: the name on the certificate.
+ * What a verifier learns about the holder: the name on the certificate (the
+ * holder's current one: a name change re-issues).
  */
 export const vCertificateHolder = v.object({
     display_name: v.string()
@@ -4496,9 +4497,13 @@ export const vProgressState = v.object({
  * A certificate as the public sees it (no holder id).
  */
 export const vPublicCertificate = v.object({
+    certificate_name: v.string(),
     certification_id: vCertificationId,
+    course_name: v.string(),
     id: vCertificateId,
     issued_at_unix: vUnixTime,
+    reissued_at_unix: v.nullable(vUnixTime),
+    score: v.nullable(v.number()),
     verify_code: v.string()
 });
 
@@ -4970,9 +4975,13 @@ export const vBulkAction = v.object({
 });
 
 export const vCertificate = v.object({
+    certificate_name: v.string(),
     certification_id: vCertificationId,
+    course_name: v.string(),
     id: vCertificateId,
     issued_at_unix: vUnixTime,
+    reissued_at_unix: v.nullable(vUnixTime),
+    score: v.nullable(v.number()),
     user_id: vUserId,
     verify_code: v.string()
 });
