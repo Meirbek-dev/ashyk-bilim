@@ -68,7 +68,7 @@
 
 ```sql
 content_chunks (id uuid pk, course_id fk, activity_id fk null, source_type, source_id uuid,
-  ordinal int, audience ('learner'|'staff'), published bool, label text, body text,
+  ordinal int, audience ('learner'|'staff'), published bool (устарело, см. 1.6), label text, body text,
   anchor jsonb object, token_estimate int, embedding vector(1024) null, embedding_model text null,
   lexeme tsvector generated (simple, свёрнутый label+body), created_at)
   индексы: (course_id, audience), HNSW (embedding vector_cosine_ops), GIN (lexeme)
@@ -91,7 +91,12 @@ content_index_state (source_type, source_id) pk, course_id, activity_id, source_
 - Гибрид: top-40 по косинусу (если есть вектор запроса той же модели) + top-40 по `ts_rank_cd` по
   `websearch_to_tsquery('simple', свёртка запроса)` -> слияние Reciprocal Rank Fusion (k = 60) ->
   не более 3 фрагментов на источник -> top-k (по умолчанию 8).
-- Фильтры: курс; для учащегося `audience = 'learner' AND published`; для преподавателя - все.
+- Фильтры: курс; для учащегося `audience = 'learner'`, курс не в архиве, активность фрагмента опубликована -
+  по состоянию на момент запроса (снятие публикации и архив действуют сразу, до переиндексации); для
+  преподавателя - все. Фрагмент активности, перенесённой в другой курс, не возвращается никому. Доступ к самому
+  курсу проверяет вызывающий (`visible_course`), маршрут поиска отвечает 409 `course-archived` на архивный курс.
+  Копия `content_chunks.published` больше не пишется сервером: её заполняет триггер для предыдущего релиза,
+  колонка и триггер удаляются следующим релизом (`-- contract:`).
 - `POST /ai/retrieval/{course_id}/search {query, limit}` -> `hits[{chunk_id, source_type, source_id,
   activity_id, label, excerpt, anchor, score}]`. `GET .../status`, `POST .../reindex` - для
   преподавателя курса.

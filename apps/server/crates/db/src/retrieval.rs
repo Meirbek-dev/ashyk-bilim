@@ -74,7 +74,6 @@ pub struct ActivitySourceRow {
     pub course_id: CourseId,
     pub name: String,
     pub activity_type: String,
-    pub published: bool,
     pub chapter_name: String,
     pub content: serde_json::Value,
     pub details: serde_json::Value,
@@ -85,7 +84,7 @@ pub struct ActivitySourceRow {
 pub async fn activity_source(pool: &PgPool, id: ActivityId) -> Result<Option<ActivitySourceRow>> {
     let row = sqlx::query_as!(
         ActivitySourceRow,
-        r#"SELECT a.course_id AS "course_id: CourseId", a.name, a.activity_type, a.published,
+        r#"SELECT a.course_id AS "course_id: CourseId", a.name, a.activity_type,
                   ch.name AS chapter_name, a.content, a.details,
                   fs.instructions AS "instructions?", fs.rubric AS "rubric?"
            FROM activities a
@@ -104,7 +103,6 @@ pub struct ItemSourceRow {
     pub item_id: uuid::Uuid,
     pub activity_id: ActivityId,
     pub activity_name: String,
-    pub published: bool,
     pub title: String,
     pub kind: String,
     pub body: serde_json::Value,
@@ -116,7 +114,7 @@ pub async fn item_sources(pool: &PgPool, assessment_id: uuid::Uuid) -> Result<Ve
     let rows = sqlx::query_as!(
         ItemSourceRow,
         r#"SELECT i.id AS item_id, a.id AS "activity_id: ActivityId", a.name AS activity_name,
-                  a.published, i.title, i.kind, i.body, i.max_score
+                  i.title, i.kind, i.body, i.max_score
            FROM assessment_items i
            JOIN assessments s ON s.id = i.assessment_id
            JOIN activities a ON a.id = s.activity_id
@@ -157,7 +155,6 @@ pub async fn course_source(pool: &PgPool, id: CourseId) -> Result<Option<CourseS
 #[derive(Debug, Clone)]
 pub struct NewChunk {
     pub audience: &'static str,
-    pub published: bool,
     pub label: String,
     pub body: String,
     pub anchor: serde_json::Value,
@@ -193,16 +190,15 @@ pub async fn replace_chunks(
         let model = chunk.embedding.as_ref().and(source.embedding_model);
         sqlx::query!(
             r#"INSERT INTO content_chunks
-                   (course_id, activity_id, source_type, source_id, ordinal, audience, published,
-                    label, body, anchor, token_estimate, embedding, embedding_model)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::text::vector, $13)"#,
+                   (course_id, activity_id, source_type, source_id, ordinal, audience, label, body,
+                    anchor, token_estimate, embedding, embedding_model)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::text::vector, $12)"#,
             source.course_id.0,
             source.activity_id.map(|a| a.0),
             source.source_type,
             source.source_id,
             i32::try_from(ordinal).unwrap_or(i32::MAX),
             chunk.audience,
-            chunk.published,
             chunk.label,
             chunk.body,
             chunk.anchor,
@@ -260,8 +256,10 @@ pub struct ChunkHit {
     pub score: f64,
 }
 
-/// Nearest chunks by cosine distance among vectors of `model`. `learner_only` keeps learner-audience,
-/// published chunks.
+/// Nearest chunks by cosine distance among vectors of `model`.
+///
+/// `learner_only` keeps learner-audience chunks of a course that is not archived, from published activities,
+/// as they are now: a publish or an archive takes effect before the sweep re-cuts. A chunk of an activity since moved to another course never comes.
 pub async fn vector_candidates(
     pool: &PgPool,
     course_id: CourseId,
@@ -277,13 +275,17 @@ pub async fn vector_candidates(
         .await?;
     let rows = sqlx::query_as!(
         ChunkHit,
-        r#"SELECT id AS "id: ContentChunkId", source_type, source_id,
-                  activity_id AS "activity_id: ActivityId", label, body, anchor,
-                  (1 - (embedding <=> $3::text::vector))::float8 AS "score!"
-           FROM content_chunks
-           WHERE course_id = $1 AND embedding_model = $4
-             AND (NOT $2 OR (audience = 'learner' AND published))
-           ORDER BY embedding <=> $3::text::vector
+        r#"SELECT ch.id AS "id: ContentChunkId", ch.source_type, ch.source_id,
+                  ch.activity_id AS "activity_id: ActivityId", ch.label, ch.body, ch.anchor,
+                  (1 - (ch.embedding <=> $3::text::vector))::float8 AS "score!"
+           FROM content_chunks ch
+           JOIN courses c ON c.id = ch.course_id
+           LEFT JOIN activities a ON a.id = ch.activity_id
+           WHERE ch.course_id = $1 AND ch.embedding_model = $4
+             AND (ch.activity_id IS NULL OR a.course_id = ch.course_id)
+             AND (NOT $2 OR (ch.audience = 'learner' AND c.archived_at IS NULL
+                             AND (ch.activity_id IS NULL OR a.published)))
+           ORDER BY ch.embedding <=> $3::text::vector
            LIMIT $5"#,
         course_id.0,
         learner_only,
@@ -297,7 +299,8 @@ pub async fn vector_candidates(
     Ok(rows)
 }
 
-/// Lexical candidates for a `to_tsquery` expression over folded text (`a:* | b:*`).
+/// Lexical candidates for a `to_tsquery` expression over folded text (`a:* | b:*`), filtered as
+/// [`vector_candidates`].
 pub async fn lexical_candidates(
     pool: &PgPool,
     course_id: CourseId,
@@ -307,13 +310,18 @@ pub async fn lexical_candidates(
 ) -> Result<Vec<ChunkHit>> {
     let rows = sqlx::query_as!(
         ChunkHit,
-        r#"SELECT id AS "id: ContentChunkId", source_type, source_id,
-                  activity_id AS "activity_id: ActivityId", label, body, anchor,
-                  ts_rank_cd(lexeme, q)::float8 AS "score!"
-           FROM content_chunks, to_tsquery('simple', search_fold($3)) q
-           WHERE course_id = $1 AND lexeme @@ q
-             AND (NOT $2 OR (audience = 'learner' AND published))
-           ORDER BY ts_rank_cd(lexeme, q) DESC, id
+        r#"SELECT ch.id AS "id: ContentChunkId", ch.source_type, ch.source_id,
+                  ch.activity_id AS "activity_id: ActivityId", ch.label, ch.body, ch.anchor,
+                  ts_rank_cd(ch.lexeme, q)::float8 AS "score!"
+           FROM content_chunks ch
+           JOIN courses c ON c.id = ch.course_id
+           LEFT JOIN activities a ON a.id = ch.activity_id
+           CROSS JOIN to_tsquery('simple', search_fold($3)) q
+           WHERE ch.course_id = $1 AND ch.lexeme @@ q
+             AND (ch.activity_id IS NULL OR a.course_id = ch.course_id)
+             AND (NOT $2 OR (ch.audience = 'learner' AND c.archived_at IS NULL
+                             AND (ch.activity_id IS NULL OR a.published)))
+           ORDER BY ts_rank_cd(ch.lexeme, q) DESC, ch.id
            LIMIT $4"#,
         course_id.0,
         learner_only,

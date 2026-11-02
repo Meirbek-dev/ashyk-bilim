@@ -5,6 +5,8 @@
 //!   `concept-cycle`) and tags; a learner reads only the approved graph and cannot write it;
 //! - mastery: a released grade on a tagged activity becomes evidence the learner sees;
 //! - material search: the sweep indexes the course, a learner finds it, anonymous callers are refused;
+//!   what a learner finds is checked when they search: an unpublished lesson or an archived course is
+//!   gone before the sweep re-cuts, while the teacher still finds it;
 //! - pre-grading: a pending essay is queued, the worker drafts it (quotes not in the answer are
 //!   dropped and flagged), the teacher approves it through the ordinary grade save, the draft closes
 //!   as `applied` with a calibration row, and the metrics count it; a learner can neither queue nor
@@ -302,14 +304,69 @@ async fn concept_graph_is_curated_by_teachers_and_read_by_learners(pool: PgPool)
     assert_eq!(queued.json()["kind"], "concept_mapping");
 }
 
+/// The source types `who` finds for `query`, lesson hits named by their activity.
+async fn found(app: &TestApp, who: &MintedSession, course_id: &str, query: &str) -> Vec<String> {
+    let hits = created(
+        &app.post_as(
+            who,
+            &format!("/api/v2/ai/retrieval/{course_id}/search"),
+            &json!({ "query": query }),
+        )
+        .await,
+    );
+    hits.as_array()
+        .unwrap()
+        .iter()
+        .map(|h| match h["activity_id"].as_str() {
+            Some(id) => format!("{}:{id}", h["source_type"].as_str().unwrap()),
+            None => h["source_type"].as_str().unwrap().to_owned(),
+        })
+        .collect()
+}
+
 #[ab_testdb::test]
 async fn material_search_answers_members_only(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
     let alice = learner(&app, "alice").await;
-    let (course_id, _, _) = course(&app, &teacher, "Search").await;
+    let (course_id, _, lesson_id) = course(&app, &teacher, "Search").await;
     let report = app.ai_service().retrieval().sweep().await.unwrap();
     assert!(report.sources >= 1, "{report:?}");
+    let lesson = format!("lesson:{lesson_id}");
+    assert!(
+        found(&app, &alice, &course_id, "Lesson")
+            .await
+            .contains(&lesson)
+    );
+    // The previous release still reads the copied flag; the insert trigger keeps it true to the activity.
+    let copied: bool = sqlx::query_scalar(
+        "SELECT bool_and(published) FROM content_chunks WHERE activity_id = $1::uuid",
+    )
+    .bind(&lesson_id)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert!(copied);
+
+    // Unpublished: gone for the learner at once, no sweep in between; the teacher still finds it.
+    created(
+        &app.patch_as(
+            &teacher,
+            &format!("/api/v2/activities/{lesson_id}"),
+            &json!({ "published": false }),
+        )
+        .await,
+    );
+    assert!(
+        !found(&app, &alice, &course_id, "Lesson")
+            .await
+            .contains(&lesson)
+    );
+    assert!(
+        found(&app, &teacher, &course_id, "Lesson")
+            .await
+            .contains(&lesson)
+    );
 
     let hits = app
         .post_as(
@@ -345,6 +402,42 @@ async fn material_search_answers_members_only(pool: PgPool) {
             &json!({ "query": "stack" }),
         )
         .await,
+    );
+
+    // An archived course refuses the search route; below it, retrieval gives a learner's context
+    // nothing from it, while the staff view still reads it.
+    created(
+        &app.post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/lifecycle"),
+            &json!({ "action": "archive" }),
+        )
+        .await,
+    );
+    let archived = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/ai/retrieval/{course_id}/search"),
+            &json!({ "query": "call stack" }),
+        )
+        .await;
+    assert_eq!(archived.status, StatusCode::CONFLICT, "{}", archived.text());
+    let ai = app.ai_service();
+    let retrieval = ai.retrieval();
+    let id = ab_core::id::CourseId(course_id.parse().unwrap());
+    assert!(
+        retrieval
+            .search(id, true, "call stack", 8)
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    assert!(
+        !retrieval
+            .search(id, false, "call stack", 8)
+            .await
+            .unwrap()
+            .is_empty()
     );
 }
 

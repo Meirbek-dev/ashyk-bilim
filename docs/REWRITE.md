@@ -732,6 +732,9 @@ Done:
   rows are not rebuilt: a rollup is a snapshot of the state at run time, so rebuilding a past date would write
   today's numbers onto it. Rows dated before the switch keep their UTC day (a snapshot up to 05:00 of the next
   Almaty day) and age out with the 2-year retention.
+- Learner search and AI context check visibility at query time (the activity published, the course not archived;
+  course access stays with the caller): `20261102000300_content_chunks_visibility_at_query`, `ai_first_flow.rs`.
+  The server no longer writes `content_chunks.published`; an insert trigger fills it for the previous release.
 - Certificates freeze what was issued (`20261102000200_certificates_freeze_issued`, `certificates.rs`): holder,
   course and certificate names, instructor and grade; verification, the PDF and both webs show them; a display-name
   change re-issues. Certificates issued before the migration took what their course stated on that day.
@@ -740,8 +743,9 @@ Decided, not done:
 
 1. **Recovery point**: a day of work (nightly dump) is acceptable; no WAL archiving. Backups stay on the
    production host (FINDINGS 3, reconfirmed).
-2. **Learner search and AI context check visibility at query time** (activity published, course not archived,
-   the caller's access) instead of the copied `content_chunks.published`, which is dropped (expand/contract).
+2. **Drop `content_chunks.published`** with its trigger `content_chunks_published` and the index
+   `content_chunks_course_idx` (replaced by `(course_id, audience)`), in a `-- contract:` file of the release after
+   the one that stopped reading it (above).
 3. **Postgres settings as one file** (`infra/postgres/postgresql.conf`): memory sized to the 1 GB container,
    `random_page_cost = 1.1`, `pg_stat_statements` with a top-by-total-time section in `prod-report`,
    `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; the pool sets
