@@ -447,7 +447,11 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   actor/audit columns onto `users` (never deleted by the app), each listed with its reason.
 - **Retention** (`maintenance:retention`, daily, windows `AB__RETENTION__*`): a job is deleted when it succeeds
   (rows a previous release left as `succeeded` go after 14 days), failed/dead jobs 90, deleted courses 30 (purged with everything under them), `auth_audit_log` 365, stdout/stderr/compile output of practice code runs 180 (verdict rows and graded
-  `final` runs stay), event logs of finished AI runs 180. Time-ordered append tables carry BRIN indexes on their
+  `final` runs stay), event logs of finished AI runs 180, AI records 400 like `analytics_events`
+  (`AB__RETENTION__AI_RECORDS_DAYS`): finished runs with their artifacts, evidence and approvals, Q&A messages and
+  the threads they leave empty, submission analyses, superseded lecture reviews, every course analysis but the
+  newest and the newest published (the course page shows it), and discarded/superseded/failed grade drafts. An
+  applied grade draft lives as long as its grade; a queued or ready one until the teacher decides. Time-ordered append tables carry BRIN indexes on their
   timestamp for these sweeps and the analytics prune.
 - **Growing value lists are lookup tables**: `notifications.kind` → `notification_kinds`, `uploads.purpose` →
   `upload_purposes` (a new kind or purpose is one `INSERT` in a migration). A user's switched-off kinds are
@@ -667,8 +671,8 @@ CREATE TABLE jobs (                        -- migrations/20260816000001_jobs.sql
   partitions ahead (`analytics_events_ensure_partitions`) and drops whole months past the window
   (`analytics_events_drop_partitions`); the batch delete then covers the partial month. On a plain table both
   functions do nothing.
-- Log retention: `maintenance:retention` (daily, `ab_db::retention`) deletes finished jobs, old sign-in audit rows
-  and AI event logs and clears old practice code-run output; windows in §8 "Schema guarantees".
+- Log retention: `maintenance:retention` (daily, `ab_db::retention`) deletes finished jobs, old sign-in audit rows,
+  AI event logs and AI records and clears old practice code-run output; windows in §8 "Schema guarantees".
 - Reconciliation: `maintenance:reconcile` (weekly) re-derives gamification totals from their journals and re-projects
   every member's progress, logging what it changed (§8 "Schema guarantees"); a steady non-zero count is a projector
   bug.

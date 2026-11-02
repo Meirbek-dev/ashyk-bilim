@@ -926,8 +926,10 @@ Decided, not done:
 5. **Analytics events are written in the action's transaction** (done in the repo, 2026-11-02): `events::record`
    and its hooks take the action's connection and return its error (ARCHITECTURE §9); every payload carries
    `schema_version` (1). Rows written before carry none: read a missing `schema_version` as 1.
-6. **AI retention**: runs, artifacts, Q&A messages and analyses 400 days, like `analytics_events`; an accepted
-   AI grade draft lives as long as the grade. `ai_threads.retention_class` is dropped.
+6. **AI retention** (done in the repo, 2026-11-03): runs, artifacts, Q&A messages and analyses 400 days, like
+   `analytics_events`, in `maintenance:retention` (ARCHITECTURE §8 "Retention"); an accepted AI grade draft lives
+   as long as the grade, a live one until the teacher decides, a course keeps the analysis its page shows.
+   `ai_threads.retention_class` is dropped (`20261102195636`; nothing read it since the ETL went).
 7. **Rollback without restore**: once every migration since the previous release is expand-only (no
    `-- contract:` file), `rollback.sh` may skip the "migrations differ" refusal.
 8. **Zitadel in its own Postgres instance** until phase 4 removes it (done in the repo, 2026-11): compose service

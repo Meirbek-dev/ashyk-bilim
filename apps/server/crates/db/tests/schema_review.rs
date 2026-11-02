@@ -354,6 +354,122 @@ async fn retention_sweeps_old_logs_and_keeps_learner_work(pool: PgPool) {
 }
 
 #[ab_testdb::test]
+async fn ai_records_age_out_except_what_a_grade_or_a_page_shows(pool: PgPool) {
+    let w = world(&pool).await;
+    let thread = |title: &str, days: i32| {
+        sqlx::query_scalar::<_, Uuid>(
+            "INSERT INTO ai_threads (user_id, course_id, title, updated_at)
+             VALUES ($1, $2, $3, now() - make_interval(days => $4)) RETURNING id",
+        )
+        .bind(w.user)
+        .bind(w.course)
+        .bind(title.to_owned())
+        .bind(days)
+        .fetch_one(&pool)
+    };
+    let message = |thread: Uuid, content: &str, days: i32| {
+        sqlx::query(
+            "INSERT INTO ai_qa_messages (thread_id, course_id, user_id, role, content, created_at)
+             VALUES ($1, $2, $3, 'user', $4, now() - make_interval(days => $5))",
+        )
+        .bind(thread)
+        .bind(w.course)
+        .bind(w.user)
+        .bind(content.to_owned())
+        .bind(days)
+        .execute(&pool)
+    };
+    // Threads: one with an old and a new message, one with only an old message and an old run.
+    let live = thread("live", 0).await.unwrap();
+    message(live, "old", 401).await.unwrap();
+    message(live, "new", 0).await.unwrap();
+    let stale = thread("stale", 401).await.unwrap();
+    message(stale, "old", 401).await.unwrap();
+    sqlx::query(
+        "INSERT INTO ai_runs (thread_id, kind, status, created_at)
+         VALUES ($1, 'course_qa', 'succeeded', now() - interval '401 days')",
+    )
+    .bind(stale)
+    .execute(&pool)
+    .await
+    .unwrap();
+    // Course analyses: the newest (4) and the newest published (2) stay; lecture reviews.
+    sqlx::query(
+        "INSERT INTO ai_course_analyses (course_id, status, public_score, created_at) VALUES
+           ($1, 'draft', 1, now() - interval '700 days'),
+           ($1, 'published', 2, now() - interval '600 days'),
+           ($1, 'draft', 3, now() - interval '500 days'),
+           ($1, 'draft', 4, now() - interval '450 days')",
+    )
+    .bind(w.course)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO ai_lecture_reviews (course_id, activity_id, status, created_at) VALUES
+           ($1, $2, 'superseded', now() - interval '401 days'),
+           ($1, $2, 'active', now() - interval '401 days')",
+    )
+    .bind(w.course)
+    .bind(w.activity)
+    .execute(&pool)
+    .await
+    .unwrap();
+    // Grade drafts: an old applied one stays with its grade, an old discarded one goes.
+    let sub = submission(&pool, &w, 1, false).await.unwrap();
+    sqlx::query(
+        "INSERT INTO ai_grade_drafts (course_id, activity_id, submission_id, learner_id, status,
+                                      subject_version, agreement, created_at)
+         VALUES ($1, $2, $3, $4, 'applied', 1, 'exact', now() - interval '401 days'),
+                ($1, $2, $3, $4, 'discarded', 1, NULL, now() - interval '401 days')",
+    )
+    .bind(w.course)
+    .bind(w.activity)
+    .bind(sub)
+    .bind(w.user)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let swept = ab_db::retention::sweep(&pool, &RetentionConfig::default())
+        .await
+        .unwrap();
+    assert_eq!(
+        (
+            swept.ai_grade_drafts,
+            swept.ai_runs,
+            swept.ai_messages,
+            swept.ai_threads,
+            swept.ai_analyses
+        ),
+        (1, 1, 2, 1, 3)
+    );
+    let left = |sql: &'static str| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query_scalar::<_, String>(sql)
+                .fetch_all(&pool)
+                .await
+                .unwrap()
+        }
+    };
+    assert_eq!(left("SELECT title FROM ai_threads").await, ["live"]);
+    assert_eq!(left("SELECT content FROM ai_qa_messages").await, ["new"]);
+    assert_eq!(
+        left("SELECT public_score::text FROM ai_course_analyses ORDER BY public_score").await,
+        ["2", "4"]
+    );
+    assert_eq!(
+        left("SELECT status FROM ai_lecture_reviews").await,
+        ["active"]
+    );
+    assert_eq!(
+        left("SELECT status FROM ai_grade_drafts").await,
+        ["applied"]
+    );
+}
+
+#[ab_testdb::test]
 async fn course_scoped_children_follow_their_parent(pool: PgPool) {
     let w = world(&pool).await;
     let other: Uuid =

@@ -557,7 +557,6 @@ An AI conversation (course assistant, tutor) of an account.
 | course_id | uuid | null |  |
 | activity_id | uuid | null |  |
 | title | text | null |  |
-| retention_class | text |  | `'generated_ai'::text` |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
 

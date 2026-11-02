@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM ai_submission_analyses WHERE id IN (\n             SELECT id FROM ai_submission_analyses\n             WHERE created_at < now() - make_interval(days => $1)\n             LIMIT 5000)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "747f027e70b1e04c59e160716cd036955825495fd06ac81f66f3f0f45534e2d1"
+}

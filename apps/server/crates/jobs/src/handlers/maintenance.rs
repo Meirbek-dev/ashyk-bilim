@@ -60,6 +60,11 @@ impl JobHandler for RetentionSweep {
                 auth_audit = swept.auth_audit,
                 code_run_outputs = swept.code_run_outputs,
                 ai_events = swept.ai_events,
+                ai_grade_drafts = swept.ai_grade_drafts,
+                ai_runs = swept.ai_runs,
+                ai_messages = swept.ai_messages,
+                ai_threads = swept.ai_threads,
+                ai_analyses = swept.ai_analyses,
                 deleted_courses,
                 "retention swept"
             );
