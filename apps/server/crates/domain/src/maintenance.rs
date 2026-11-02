@@ -378,6 +378,31 @@ pub async fn resolve_email_verified(
     Ok(report)
 }
 
+// ── Schema review 18: uploads nothing names and no clock runs on ────────────
+
+/// Uploads a rollback window left claimed (REWRITE 5.6 n4): start the reaper's grace
+/// ([`crate::files::uploads::UNREFERENCED_GRACE`]) for each one no row names.
+pub async fn clock_unreferenced_uploads(pool: &PgPool, dry_run: bool) -> Result<Report> {
+    let mut report = Report {
+        dry_run,
+        ..Report::default()
+    };
+    let n = if dry_run {
+        ab_db::uploads::count_unclocked_unreferenced(pool).await?
+    } else {
+        i64::try_from(
+            ab_db::uploads::clock_unclocked_unreferenced(
+                pool,
+                crate::files::uploads::UNREFERENCED_GRACE.as_secs_f64(),
+            )
+            .await?,
+        )
+        .unwrap_or(i64::MAX)
+    };
+    report.add("uploads_clocked", n);
+    Ok(report)
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {

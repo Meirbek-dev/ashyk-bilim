@@ -115,6 +115,13 @@ enum AdminCommand {
         #[arg(long)]
         course: ab_core::id::CourseId,
     },
+    /// Finalized uploads no row names and no clock runs on (a rollback window
+    /// claimed them, or a post deleted before `post_uploads` showed them): start
+    /// the reaper's 24 h grace (RUNBOOK 2.8). Idempotent.
+    ClockUnreferencedUploads {
+        #[arg(long)]
+        dry_run: bool,
+    },
     /// D-03: `users.locale` `ru-RU|kk-KZ|en-US` → `ru|kk|en` (needs
     /// migration 20261003000020; responses keep the legacy `locale`).
     MigrateLocales {
@@ -235,6 +242,13 @@ async fn main() -> anyhow::Result<()> {
             let report =
                 ab_domain::maintenance::migrate_editor_docs(&pool, dry_run, after_cutover).await?;
             print_report("migrate-editor-docs", &report)
+        }
+        Command::Admin {
+            command: AdminCommand::ClockUnreferencedUploads { dry_run },
+        } => {
+            let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
+            let report = ab_domain::maintenance::clock_unreferenced_uploads(&pool, dry_run).await?;
+            print_report("clock-unreferenced-uploads", &report)
         }
         Command::Admin {
             command: AdminCommand::MigrateThemes { dry_run },

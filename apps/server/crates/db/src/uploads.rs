@@ -247,3 +247,29 @@ pub async fn lock_pending(conn: &mut sqlx::PgConnection, id: Uuid) -> Result<boo
     Ok(sqlx::query_scalar!("SELECT id FROM uploads WHERE id = $1 AND status = 'pending' AND expires_at > now() FOR UPDATE", id)
         .fetch_optional(conn).await?.is_some())
 }
+
+/// Finalized uploads no row names and no clock runs on (`expires_at` NULL).
+///
+/// Claimed during a rollback window, or the images of posts deleted before `post_uploads`
+/// (REWRITE 5.6 n4). The reaper only collects what has a clock, so these stay until
+/// [`clock_unclocked_unreferenced`].
+pub async fn count_unclocked_unreferenced(pool: &PgPool) -> Result<i64> {
+    Ok(sqlx::query_scalar!(
+        r#"SELECT count(*) AS "n!" FROM uploads
+           WHERE status = 'finalized' AND expires_at IS NULL AND NOT upload_referenced(id)"#
+    )
+    .fetch_one(pool)
+    .await?)
+}
+
+/// Starts the grace clock of [`count_unclocked_unreferenced`]'s uploads; returns how many.
+pub async fn clock_unclocked_unreferenced(pool: &PgPool, grace_secs: f64) -> Result<u64> {
+    Ok(sqlx::query!(
+        "UPDATE uploads SET expires_at = now() + make_interval(secs => $1)
+         WHERE status = 'finalized' AND expires_at IS NULL AND NOT upload_referenced(id)",
+        grace_secs
+    )
+    .execute(pool)
+    .await?
+    .rows_affected())
+}

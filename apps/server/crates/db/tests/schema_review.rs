@@ -2576,3 +2576,60 @@ async fn a_finished_ai_run_says_when_it_finished(pool: PgPool) {
         );
     }
 }
+
+#[ab_testdb::test]
+async fn unclocked_unreferenced_uploads_get_the_reaper_clock(pool: PgPool) {
+    let w = world(&pool).await;
+    let upload = |key: &'static str, status: &'static str, clocked: bool| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query_scalar::<_, Uuid>(
+                "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes, status, expires_at)
+                 VALUES ($1, 'avatar', 'public', $2, 'image/png', 1, $3,
+                         CASE WHEN $4 THEN now() + interval '1 day' END) RETURNING id",
+            )
+            .bind(w.user)
+            .bind(key)
+            .bind(status)
+            .bind(clocked)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+        }
+    };
+    upload("k/avatar", "finalized", false).await;
+    let orphan = upload("k/orphan", "finalized", false).await;
+    upload("k/clocked", "finalized", true).await;
+    upload("k/pending", "pending", true).await;
+    sqlx::query("UPDATE users SET avatar_key = 'k/avatar' WHERE id = $1")
+        .bind(w.user)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    assert_eq!(
+        ab_db::uploads::count_unclocked_unreferenced(&pool)
+            .await
+            .unwrap(),
+        1
+    );
+    assert_eq!(
+        ab_db::uploads::clock_unclocked_unreferenced(&pool, 3600.0)
+            .await
+            .unwrap(),
+        1
+    );
+    let unclocked: Vec<Uuid> =
+        sqlx::query_scalar("SELECT id FROM uploads WHERE expires_at IS NULL")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+    assert_eq!(unclocked.len(), 1, "only the avatar stays without a clock");
+    assert_ne!(unclocked[0], orphan);
+    assert_eq!(
+        ab_db::uploads::count_unclocked_unreferenced(&pool)
+            .await
+            .unwrap(),
+        0
+    );
+}

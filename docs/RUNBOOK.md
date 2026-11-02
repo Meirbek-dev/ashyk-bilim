@@ -187,6 +187,19 @@ dc run --rm server admin restore-course --course <uuid>
 It comes back archived with its learners' work (its notifications stay deleted); a creator or maintainer restores
 it from the archive to reopen it. After the purge only a backup has it (3.4).
 
+### 2.8 Uploads nothing names
+
+The reaper deletes an upload once its clock (`expires_at`) runs out and no row names it. An upload claimed while
+a previous release ran (a rollback window), or an image of a discussion post deleted before `post_uploads`,
+has no clock and stays. After `just backup`:
+
+```bash
+dc run --rm server admin clock-unreferenced-uploads --dry-run   # how many
+dc run --rm server admin clock-unreferenced-uploads             # start their 24 h grace
+```
+
+A row that names one again within the grace keeps it (the reaper re-checks `upload_referenced`).
+
 ## 3. Routine
 
 ### 3.1 Deploy

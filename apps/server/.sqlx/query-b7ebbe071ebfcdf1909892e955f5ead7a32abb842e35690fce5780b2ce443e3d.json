@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"n!\" FROM uploads\n           WHERE status = 'finalized' AND expires_at IS NULL AND NOT upload_referenced(id)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "b7ebbe071ebfcdf1909892e955f5ead7a32abb842e35690fce5780b2ce443e3d"
+}

@@ -664,9 +664,9 @@ in the order it can be done, each step a forward migration on the current schema
    release what the post stopped showing); `block_uploads` holds only claimed blocks. The previous release still
    moves the counter: `uploads_rollback_guard` keeps its writes from starting the clock of a referenced upload;
    `20261103072000` (contract) drops the guard and `referenced_count`.
-   Left: uploads a rollback window left claimed but unreferenced (`expires_at` NULL, nothing names them) are
-   never reaped; a one-off `ashyq admin` sweep (`expires_at = now() + grace` where finalized, NULL and not
-   `upload_referenced`) collects them, also the discussion images of posts deleted before `post_uploads`.
+   Uploads a rollback window left claimed but unreferenced (`expires_at` NULL, nothing names them), and the
+   discussion images of posts deleted before `post_uploads`, get the reaper's clock from `ashyq admin
+   clock-unreferenced-uploads` (RUNBOOK 2.8; done 2026-11-03). Left: run it in production.
 5. **Enrolments** (item 11): done (ARCHITECTURE §8 "Membership is an `enrolments` row";
    `progress_flow::membership_is_the_enrolment_not_the_trail`, `permission_matrix::the_matrix_holds_with_trails_emptied`).
    The roster (keyset `(enrolled_at, user_id)`, cursor `"<µs>.<user id>"`; an old run-id cursor resolves through
