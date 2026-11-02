@@ -739,8 +739,9 @@ in the order it can be done, each step a forward migration on the current schema
     [--dry-run]` (review 3, item 28) asks Zitadel for each such account and stores the answer. Left: run it in
     production; the rule for accounts Zitadel cannot answer for (`failed`: gone, anonymised) is
     QUESTIONS.md Q-2026-11-02-1; then switch `get_profile` / `update_profile` / `set_email_verified` / the
-    insert to `email_verified_at` alone and drop `email_verified` (contract). A CHECK that a deleted
-    user is anonymised. `roles.display_name_key`/`description_key` vs
+    insert to `email_verified_at` alone and drop `email_verified` (contract). Done 2026-11-03:
+    `users_deleted_anonymised_check` (a deleted user has the placeholder login names and no personal field;
+    no repair, a violating old row skips the check: erase it, RUNBOOK 2.3). `roles.display_name_key`/`description_key` vs
     `display_name`/`description`: keep only the keys for built-in roles, plain text for custom ones
     (CHECK exactly one set). `profile_version` starts at 0 while every other version starts at 1: leave it
     (the web's If-Match sends what it read).
