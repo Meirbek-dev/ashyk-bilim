@@ -44,7 +44,10 @@ export NGINX_SERVER_NAME=$domain
 export SMOKE_ORIGIN=http://$domain:$HTTP_PORT
 
 use_prod
-trap 'log "tearing down"; compose down -v --remove-orphans >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
+# The WAL archive under $work/backups is the container postgres user's: emptied by a one-off pitr-init.
+trap 'log "tearing down"
+  compose run --rm --no-deps -T --entrypoint sh pitr-init -c "rm -rf /pitr/* /pitr-zitadel/*" >/dev/null 2>&1 || true
+  compose down -v --remove-orphans >/dev/null 2>&1 || true; rm -rf "$work"' EXIT
 
 bash "$ROOT/infra/scripts/restore.sh" "$src"
 
