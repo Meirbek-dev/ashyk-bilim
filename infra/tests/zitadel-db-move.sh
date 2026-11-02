@@ -9,10 +9,13 @@ source "$(dirname "$0")/../scripts/lib.sh"
 [[ -n $CTR ]] || die "zitadel-db-move-test: no container runtime"
 
 work=$ROOT/tmp/zitadel-move-check-$$
+# Git Bash: compose reads COMPOSE_ENV_FILES and the bind mounts as Windows paths (/x/... is not one).
+if command -v cygpath >/dev/null; then work=$(cygpath -m "$work"); fi
 export STACK=custom COMPOSE_FILE=compose.yaml:compose.prod.yaml COMPOSE_PROJECT_NAME=ashyq-zmove-check-$$
 export COMPOSE_ENV_FILES=$work/.env SERVER_ENV_FILE=$work/server.env IMAGE_TAG=rehearsal COMPOSE_PROFILES=
 unset ZITADEL_DB_HOST
-mkdir -p "$work"
+# Podman does not create a missing bind-mount source the way Docker does.
+mkdir -p "$work/backups/pitr" "$work/backups/pitr-zitadel"
 # A stack from before the move: no ZITADEL_DB_HOST. The archives go under the work directory.
 grep -v -e '^ZITADEL_DB_HOST=' -e '^BACKUP_DIR=' infra/env/smoke.env >"$COMPOSE_ENV_FILES"
 echo "BACKUP_DIR=$work/backups" >>"$COMPOSE_ENV_FILES"
