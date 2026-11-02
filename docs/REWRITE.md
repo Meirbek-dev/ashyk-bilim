@@ -761,11 +761,12 @@ in the order it can be done, each step a forward migration on the current schema
     `learner-<kind>-<activity>` / `teacher-<kind>-<activity>.<user>`), the unique index is the primary key. `id`
     stays (NOT NULL, default) for the previous release; the lane C contract drops it. `daily_teacher_metrics`
     keeps a surrogate key (nullable teacher, `NULLS NOT DISTINCT`).
-13. **One touch trigger** (item 27). `touch_row()` BEFORE UPDATE: `updated_at = now()` unless
-    `ab.bookkeeping`, `version = OLD.version + 1` when the table has `version` and the caller did not set it;
-    replaces `set_updated_at` + `bump_version` pairs (trigger order by name today). Version columns stay their
-    current type (`submissions`/`file_submission_attempts` bigint, the rest integer): the contract carries
-    them as integers either way. Done when: every optimistic-lock test still answers 412 on a stale write.
+13. **One touch trigger** (item 27): done 2026-11-03 (`one_touch_trigger`). `touch_row()` replaces every
+    `set_updated_at` + `bump_version` pair (both functions dropped): the version first, from the row every other
+    BEFORE trigger left (`'version'` argument; further arguments name the columns that count, course_discussions'
+    content and status), then `updated_at` unless `ab.bookkeeping`. Found: a table with a generated column
+    (`courses.search`) bumps its version on a no-op write too, as the pair did (a BEFORE trigger sees the
+    column unset).
 14. **Permissions** (item 19, rest). `Grant::parse` can read `role_permissions.resource/action/scope`
     directly (the columns exist since 2026-11); a CHECK on `resource` against the Rust enum list would turn the
     enum into a lookup table like `notification_kinds`.

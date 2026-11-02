@@ -2647,3 +2647,88 @@ async fn unclocked_unreferenced_uploads_get_the_reaper_clock(pool: PgPool) {
         0
     );
 }
+
+/// REWRITE 5.6 n13: one `touch_row` trigger keeps `updated_at` and `version` (on chapters: a table with a
+/// generated column, like courses, sees every write as a change, since BEFORE triggers see it unset).
+#[ab_testdb::test]
+async fn one_touch_trigger_keeps_updated_at_and_version(pool: PgPool) {
+    let w = world(&pool).await;
+    let chapter = async || {
+        sqlx::query_as::<_, (i32, f64)>(
+            "SELECT version, extract(epoch FROM updated_at)::float8 FROM chapters WHERE course_id = $1",
+        )
+        .bind(w.course)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    let write = async |sql: &str| {
+        sqlx::raw_sql(sqlx::AssertSqlSafe(
+            sql.replace("$course", &format!("'{}'", w.course)),
+        ))
+        .execute(&pool)
+        .await
+        .unwrap();
+    };
+    let (v0, t0) = chapter().await;
+    write("UPDATE chapters SET name = 'renamed' WHERE course_id = $course").await;
+    let (v1, t1) = chapter().await;
+    assert_eq!((v1, t1 > t0), (v0 + 1, true), "a change bumps both");
+    write("UPDATE chapters SET name = name WHERE course_id = $course").await;
+    let (v2, t2) = chapter().await;
+    assert_eq!(
+        (v2, t2 > t1),
+        (v1, true),
+        "a no-op write touches, keeps the version"
+    );
+    write("UPDATE chapters SET name = 'set', version = 40 WHERE course_id = $course").await;
+    assert_eq!(chapter().await.0, 40, "a version the caller sets stands");
+    write(
+        "BEGIN; SET LOCAL ab.bookkeeping = 'on';
+         UPDATE chapters SET name = 'kept' WHERE course_id = $course; COMMIT;",
+    )
+    .await;
+    let (v3, t3) = chapter().await;
+    assert_eq!(
+        (v3, t3),
+        (41, chapter().await.1),
+        "bookkeeping keeps updated_at"
+    );
+    assert!(t3 > t2);
+
+    // course_discussions: only content and status move the version.
+    let post: Uuid = sqlx::query_scalar(
+        "INSERT INTO course_discussions (course_id, user_id, content) VALUES ($1, $2, 'p') RETURNING id",
+    )
+    .bind(w.course)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let version = async |sql: &str| -> i32 {
+        sqlx::query_scalar(sqlx::AssertSqlSafe(format!(
+            "{sql} WHERE id = $1 RETURNING version"
+        )))
+        .bind(post)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    let v = version("UPDATE course_discussions SET likes_count = likes_count + 1").await;
+    assert_eq!(
+        version("UPDATE course_discussions SET content = 'edited'").await,
+        v + 1
+    );
+    assert_eq!(
+        version("UPDATE course_discussions SET replies_count = 3").await,
+        v + 1
+    );
+
+    let old: Option<String> = sqlx::query_scalar(
+        "SELECT string_agg(proname, ', ') FROM pg_proc WHERE proname IN ('set_updated_at', 'bump_version')",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(old, None, "the pair is gone");
+}

@@ -243,7 +243,7 @@ pub enum Error {
   `ETag: "<version>"`; mutations take an optional `If-Match` and answer 412 `precondition-failed`
   (`details {expected, actual}`) when it is stale (`extract::require_if_match`, after the permission gate).
   Courses, chapters, announcements, certifications, roster rows, usergroups, roles, the platform and assessments
-  bump `version` through the `bump_version` trigger; collections, activities, drafts and grades keep their
+  bump `version` through their `touch_row('version')` trigger; collections, activities, drafts and grades keep their
   explicit counters.
 - **`Prefer: return=representation`**: writes that answer 204 (admin role / status / membership writes) or a
   different resource (trail writes → the course's `learner_state`) return the updated resource on request; the
@@ -343,8 +343,9 @@ contract (`ab_api::app::dev_login_enabled`).
 One migration set for the database `ashyq`. Rules:
 
 1. **Every table**: `id uuid PRIMARY KEY DEFAULT uuidv7()` (Postgres 18 native),
-   `created_at timestamptz NOT NULL DEFAULT now()`, `updated_at` maintained by the shared `set_updated_at`
-   trigger.
+   `created_at timestamptz NOT NULL DEFAULT now()`, `updated_at` (and a versioned table's `version`) maintained
+   by the one `touch_row()` BEFORE UPDATE trigger (`<table>_touch`; `'version'` and the columns that count as
+   arguments; `ab.bookkeeping` keeps `updated_at`).
 2. Naming: `snake_case`, plural table names, `*_id` FKs, no abbreviations. Columns added from 2026-11-02 on
    (`crates/db/tests/naming_rules.rs` checks the migrations):
    - a key onto `users` is `user_id` for the person the row belongs to or is about (owner, learner, member,

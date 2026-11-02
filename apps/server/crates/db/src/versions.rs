@@ -1,5 +1,5 @@
 //! S-04 `If-Match`: the current `version` of one versioned row (bumped by
-//! the `bump_version` trigger, migration `20261003000002`).
+//! the `touch_row('version')` trigger, migration `20261102214353`).
 
 use ab_core::Result;
 use ab_core::id::{
