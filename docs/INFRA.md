@@ -119,12 +119,18 @@ in the stack uses or backs them up.
 
 ## Postgres roles and databases
 
-The shared `db` service logs statements taking at least 300 ms to stderr (the
-rotating container log), with timestamp, PID, user, database and application.
-`PG_LOG_MIN_DURATION_STATEMENT` overrides the threshold in milliseconds (`-1`
-disables it; `0` logs every statement). Bound parameter values are suppressed;
-SQL text, including any inline literals, is still logged. Startup flags apply to
-existing volumes too; changing them requires recreating the `db` container.
+The `db` service reads one settings file, `infra/postgres/postgresql.conf` (mounted as `config_file`; the
+cluster's own file is included first, so initdb's locale and time zone stay). It sizes memory to the 1 GB
+container (`max_connections = 60`, `shared_buffers = 256MB`, `work_mem = 8MB`), sets `random_page_cost = 1.1` and
+`track_io_timing`, and logs to stderr (the rotating container log), with timestamp, PID, user, database and
+application: statements of 300 ms or more, lock waits, autovacuum runs of 1 s or more, every temp file.
+`PG_LOG_MIN_DURATION_STATEMENT` overrides the slow-query threshold in milliseconds (`-1` disables it; `0` logs
+every statement). Bound parameter values are suppressed; SQL text, including any inline literals, is still
+logged. Command-line flags win over the file: the threshold, WAL archiving (`compose.prod.yaml`), and in dev/CI
+`max_connections = 200` and `DEV_PG_ARGS` (`compose.dev.yaml`). The file's header names the settings that need
+`docker compose restart db`; the others reload with `SELECT pg_reload_conf()`. Changing the command recreates the
+container on the next deploy. `zitadel-db` keeps its own flags (512 MB, default memory settings). While Zitadel
+still shares `db` (`ZITADEL_DB_HOST=db`), its role is limited to 20 connections (`init.sql`).
 `pg_stat_statements` is preloaded (top-level statements only) and created in the `postgres` database by
 db-init when loaded; `just prod-report` lists the app database's statements by total time from there.
 db-init also creates an empty `extensions` schema (`USAGE` to `PUBLIC`) in template1 and every app database:

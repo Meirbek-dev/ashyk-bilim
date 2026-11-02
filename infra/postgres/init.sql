@@ -19,7 +19,7 @@ CREATE SCHEMA IF NOT EXISTS extensions;
 GRANT USAGE ON SCHEMA extensions TO PUBLIC;
 \connect postgres
 -- Statement statistics of every database (`just prod-report`), read by the superuser from `postgres`.
--- Needs shared_preload_libraries (the db command); a server started without it skips this.
+-- Needs shared_preload_libraries (postgresql.conf); a server started without it skips this.
 SELECT 'CREATE EXTENSION IF NOT EXISTS pg_stat_statements'
 WHERE current_setting('shared_preload_libraries') ~ 'pg_stat_statements' \gexec
 
@@ -33,6 +33,9 @@ WHERE :'createdb'::boolean
 
 SELECT format('CREATE ROLE zitadel LOGIN PASSWORD %L', :'zitadel_password')
 WHERE :'zitadel_here'::boolean AND NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'zitadel') \gexec
+-- While Zitadel shares this instance: its pool (10) plus setup steps, so a runaway cannot take the app's
+-- connections (max_connections 60, postgresql.conf).
+SELECT 'ALTER ROLE zitadel CONNECTION LIMIT 20' WHERE :'zitadel_here'::boolean \gexec
 
 SELECT format('CREATE DATABASE %I OWNER ashyq', btrim(d))
 FROM unnest(string_to_array(:'databases', ',')) AS d

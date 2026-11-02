@@ -914,11 +914,12 @@ Decided, not done:
 2. **Drop `content_chunks.published`** with its trigger `content_chunks_published` and the index
    `content_chunks_course_idx` (replaced by `(course_id, audience)`), in a `-- contract:` file of the release after
    the one that stopped reading it (above).
-3. **Postgres settings as one file** (`infra/postgres/postgresql.conf`): memory sized to the 1 GB container,
-   `random_page_cost = 1.1`, `pg_stat_statements` with a top-by-total-time section in `prod-report`,
-   `log_lock_waits`, `log_autovacuum_min_duration`, `log_temp_files`, `track_io_timing`; Zitadel's role gets a
-   connection limit. Done: the pool sets `statement_timeout`, `idle_in_transaction_session_timeout`,
-   `lock_timeout` and `application_name` on connect (ARCHITECTURE §16, `AB__DATABASE__LIMITS__*`).
+3. **Postgres settings as one file** (done in the repo, 2026-11-02): `infra/postgres/postgresql.conf` for `db`
+   (INFRA "Postgres roles and databases"): memory sized to the 1 GB container, `random_page_cost = 1.1`,
+   `pg_stat_statements` (top by total time in `prod-report`), `log_lock_waits`, `log_autovacuum_min_duration`,
+   `log_temp_files`, `track_io_timing`; the `zitadel` role is limited to 20 connections while it shares `db`. The
+   pool sets `statement_timeout`, `idle_in_transaction_session_timeout`, `lock_timeout` and `application_name`
+   on connect (ARCHITECTURE §16, `AB__DATABASE__LIMITS__*`). The first deploy recreates `db` (a few seconds).
 4. **Journals are protected by privileges too** (done in the repo, 2026-11): `ashyq_app` has INSERT only on
    grade and audit journals (`apply_role_grants`, migration `20261102050200`); `auth_audit_log` retention runs
    through the SECURITY DEFINER `prune_auth_audit_log`. Production switches with RUNBOOK 2.5 (a deploy step).
