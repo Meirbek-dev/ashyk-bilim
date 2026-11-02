@@ -930,8 +930,10 @@ Decided, not done:
    `analytics_events`, in `maintenance:retention` (ARCHITECTURE §8 "Retention"); an accepted AI grade draft lives
    as long as the grade, a live one until the teacher decides, a course keeps the analysis its page shows.
    `ai_threads.retention_class` is dropped (`20261102195636`; nothing read it since the ETL went).
-7. **Rollback without restore**: once every migration since the previous release is expand-only (no
-   `-- contract:` file), `rollback.sh` may skip the "migrations differ" refusal.
+7. **Rollback without restore** (done in the repo, 2026-11-03): when every migration since the target is
+   expand-only (added files from 20261102000000 on, no `-- contract:`), `rollback.sh` skips the "migrations
+   differ" refusal and a failed deploy rolls back by itself (`infra/scripts/migrations.sh`, INFRA "Build and
+   release").
 8. **Zitadel in its own Postgres instance** until phase 4 removes it (done in the repo, 2026-11): compose service
    `zitadel-db`, `ZITADEL_DB_HOST`; production moves with `just zitadel-db-move` in a window (RUNBOOK 3.15).
 9. **Schemas** (core, learning, ai, analytics, ops) and an `extensions` schema (review 43; ARCHITECTURE §8

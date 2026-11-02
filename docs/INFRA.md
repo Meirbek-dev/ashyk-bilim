@@ -391,12 +391,15 @@ without credentials.
    `smoke.sh https://<NGINX_SERVER_NAME>` against 127.0.0.1.
 10. On success appends `<UTC time> <sha>` to `.deploy-history` and removes
     local `ashyq-*` images outside the last 5 releases.
-11. On smoke failure: without migrations, rolls back automatically to the
-    previous release; with migrations, stops and prints the restore commands.
+11. On smoke failure: without migrations or with expand-only ones (below), rolls back automatically
+    to the previous release; with other migrations, stops and prints the restore commands.
 
 Rollback (`just rollback [--force] [sha]`, = `deploy.sh --rollback`): target
 is the given sha or the newest history entry that differs from the current one;
-preflight; refuses when the migrations differ unless `--force`; sets the tag,
+preflight; refuses when the migrations differ unless `--force` or they are expand-only
+(`infra/scripts/migrations.sh`: the newer release only adds files, each from 20261102000000 on, held to
+expand/contract by `migration_rules.rs`, and none says `-- contract:`; the older binary runs on that schema,
+`infra/tests/rollback-rule.sh`); sets the tag,
 `up --wait`, recreates nginx, smoke, records history. Rollback switches images only;
 the compose files stay those of the checkout.
 

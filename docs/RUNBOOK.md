@@ -221,7 +221,9 @@ just rollback <sha>           # to a given release
 just rollback --force <sha>   # migrations differ, and the older binary is known to tolerate the newer schema
 ```
 
-When migrations differ and the schema change is not backward compatible,
+Migrations that are all expand-only since the target (added files, none `-- contract:`; INFRA "Build and
+release") need no `--force` and no restore: the rollback says so and switches images. When migrations differ
+otherwise and the schema change is not backward compatible,
 restore the pre-deploy dump of the release being undone (deploy.sh prints
 these lines when it stops):
 
@@ -593,7 +595,7 @@ The `zitadel` role stays in db (it owns nothing there any more); restores of old
 | `unknown commit: <x> (git fetch first)` | `git fetch` / `git pull` |
 | `another deploy or rollback is running` | `flock` on `.deploy.lock` is held; find it with `pgrep -af deploy.sh` |
 | `no previous release to roll back to` | `.deploy-history` has no other release; give a sha |
-| `migrations differ between A and B ...` | 3.2: restore the pre-deploy dump, or `--force` if the old binary tolerates the schema |
+| `migrations differ between A and B ...` | A contract file, an edited migration or one from before 2026-11-02 lies between them. 3.2: restore the pre-deploy dump, or `--force` if the old binary tolerates the schema |
 | `FAIL: smoke failed on a release with migrations; no automatic rollback.` | Follow the printed lines (= 3.2) or fix forward |
 | `smoke failed after rolling back to <sha>` | The previous release fails too: infrastructure, not the release. Smoke section below |
 | `pre-deploy dump is empty` | db not reachable or disk full: `dc logs db`, `df -h` |

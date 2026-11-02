@@ -277,6 +277,7 @@ ci-infra:
     log "compose config ok: dev, prod, smoke, web2, web-e2e"
     for f in infra/scripts/*.sh infra/storage/*.sh infra/tests/*.sh infra/postgres/*.sh; do {{ bash_bin }} -n "$f"; done
     log "bash -n ok"
+    {{ bash_bin }} infra/tests/rollback-rule.sh
     if [[ -z $CTR ]]; then log "no container runtime: nginx -t skipped"; exit 0; fi
     # Least-privilege roles and point-in-time recovery on throwaway Postgres containers (no network): no address pool.
     {{ bash_bin }} infra/tests/db-roles.sh

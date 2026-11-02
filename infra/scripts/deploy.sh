@@ -7,18 +7,17 @@
 set -euo pipefail
 # shellcheck source=infra/scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
+# shellcheck source=infra/scripts/migrations.sh
+source "$(dirname "$0")/migrations.sh"
 use_prod
 
 HISTORY=.deploy-history
-MIGRATIONS=apps/server/migrations
 KEEP_RELEASES=5
 
 env_get() { sed -n "s/^$1=//p" .env | tail -n 1 | sed -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/"; }
 short_sha() { git rev-parse --verify --quiet "$1^{commit}" | cut -c1-8; }
 # Nth entry from the end of the history (1 = current release).
 deployed() { if [[ -f $HISTORY ]]; then tail -n "$1" "$HISTORY" | head -n 1 | awk '{ print $2 }'; fi; }
-# False (= "migrations changed") also when either sha is empty or unknown to git.
-same_migrations() { [[ -n $1 && -n $2 ]] && git diff --quiet "$1" "$2" -- "$MIGRATIONS" 2>/dev/null; }
 
 IMAGE_REPO=${IMAGE_REPO:-$(env_get IMAGE_REPO)}
 export IMAGE_REPO=${IMAGE_REPO:-ghcr.io/meirbek-dev}
@@ -54,7 +53,11 @@ record() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $1" >>"$HISTORY"; }
 rollback() {
   local force=$1 target=$2 current=$3
   [[ -n $target && $target != "$current" ]] || die "no previous release to roll back to"
-  if ! same_migrations "$target" "$current"; then
+  if same_migrations "$target" "$current"; then
+    :
+  elif expand_only "$target" "$current"; then
+    log "migrations since $target are expand-only: it runs on the current schema"
+  else
     ((force)) || die "migrations differ between $current and $target (or a sha is unknown to git); restore the pre-deploy dump instead (RUNBOOK), or pass --force"
     log "WARN: migrations differ between $current and $target (--force)"
   fi
@@ -134,7 +137,7 @@ compose run --rm server-migrate
 
 set_tag "$sha"
 if ! up_and_smoke; then
-  if ((migrations)); then
+  if ((migrations)) && ! expand_only "$prev" "$sha"; then
     log "FAIL: smoke failed on a release with migrations; no automatic rollback."
     log "To restore the pre-deploy state (RUNBOOK 3.2: the whole database is recreated from the dump):"
     log "  compose stop server worker"
