@@ -386,8 +386,9 @@ async fn ai_records_age_out_except_what_a_grade_or_a_page_shows(pool: PgPool) {
     let stale = thread("stale", 401).await.unwrap();
     message(stale, "old", 401).await.unwrap();
     sqlx::query(
-        "INSERT INTO ai_runs (thread_id, kind, status, created_at)
-         VALUES ($1, 'course_qa', 'succeeded', now() - interval '401 days')",
+        "INSERT INTO ai_runs (thread_id, kind, status, created_at, completed_at)
+         VALUES ($1, 'course_qa', 'succeeded', now() - interval '401 days',
+                 now() - interval '401 days')",
     )
     .bind(stale)
     .execute(&pool)
@@ -2552,4 +2553,26 @@ async fn app_table_schema_places_tables_by_area(pool: PgPool) {
     .await
     .unwrap();
     assert_eq!(schemas, ["ai", "analytics", "core", "learning", "ops"]);
+}
+
+#[ab_testdb::test]
+async fn a_finished_ai_run_says_when_it_finished(pool: PgPool) {
+    let thread: Uuid = sqlx::query_scalar("INSERT INTO ai_threads DEFAULT VALUES RETURNING id")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let run = |status: &'static str| {
+        sqlx::query("INSERT INTO ai_runs (thread_id, kind, status) VALUES ($1, 'course_qa', $2)")
+            .bind(thread)
+            .bind(status)
+            .execute(&pool)
+    };
+    run("running").await.unwrap();
+    for status in ["succeeded", "failed", "aborted"] {
+        let err = run(status).await.unwrap_err();
+        assert!(
+            err.to_string().contains("ai_runs_finished_at_check"),
+            "{status}: {err}"
+        );
+    }
 }

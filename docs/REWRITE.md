@@ -640,9 +640,8 @@ in the order it can be done, each step a forward migration on the current schema
    (COURSE_ARCHIVING 6.2). Changed the same evening (review 2 item 22, done): the delete is soft (archived +
    `deleted_at`, gone from every read), and `maintenance:retention` runs the old cascade from `courses` after
    `AB__RETENTION__DELETED_COURSES_DAYS` (30); `ashyq admin restore-course` undoes it before (RUNBOOK 2.7).
-2. **AI run coherence** (item 6, AI-owned tables): `schema_try_check('ai_runs', 'ai_runs_finished_at_check',
-   $$status NOT IN ('succeeded','failed','aborted') OR completed_at IS NOT NULL$$)` once the AI work settles
-   the status set.
+2. **AI run coherence** (item 6, AI-owned tables): done 2026-11-03, `20261102210640_ai_runs_finished_at`: a
+   finished run (`succeeded`, `failed`, `aborted`) has `completed_at` (old rows repaired to `started_at`).
 3. **Unchecked references** (item 8). Done (review 2 item 19): `course_update_activities (update_id, activity_id,
    position)` holds the links as keys (`20261102040000`, backfilled with `unnest` filtered by `EXISTS`); no code read
    the array, which `20261103040000` (contract) drops. `assessment_items.outcome_ids`
