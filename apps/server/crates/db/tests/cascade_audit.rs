@@ -251,14 +251,12 @@ const NOT_USER_DATA: &[&str] = &[
     "course_updates",
     "file_submission_overrides",
     "file_submissions",
-    "resource_authors",
     "usergroup_courses",
     "usergroup_members",
     // Accounts, roles and preferences (not work).
     "google_accounts",
     "idempotency_keys",
     "notification_opt_outs",
-    "notification_preferences",
     "role_permissions",
     "user_roles",
     // Derived / rebuilt analytics and teacher tooling.
@@ -300,12 +298,15 @@ const NOT_USER_DATA: &[&str] = &[
 
 #[ab_testdb::test]
 async fn every_cascade_onto_user_data_is_reviewed(pool: PgPool) {
+    // `conparentid = 0`: a partition's copy of its table's key is reviewed
+    // as the table's key (analytics_events is partitioned by month).
     let cascades: Vec<(String, String, String)> = sqlx::query_as(
         "SELECT c.conrelid::regclass::text, \
                 (SELECT string_agg(a.attname, ',' ORDER BY a.attnum) FROM pg_attribute a \
                   WHERE a.attrelid = c.conrelid AND a.attnum = ANY(c.conkey)), \
                 c.confrelid::regclass::text \
-           FROM pg_constraint c WHERE c.contype = 'f' AND c.confdeltype = 'c' ORDER BY 1, 2",
+           FROM pg_constraint c WHERE c.contype = 'f' AND c.confdeltype = 'c' \
+            AND c.conparentid = 0 ORDER BY 1, 2",
     )
     .fetch_all(&pool)
     .await

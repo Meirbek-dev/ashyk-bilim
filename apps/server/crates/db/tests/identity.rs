@@ -129,9 +129,7 @@ async fn user_constraints_and_role_cascade(pool: PgPool) {
 }
 
 /// Review 3, item 27: audit IPs are `inet`; a forwarded value that is not an
-/// address is kept as NULL instead of rejecting the audit row, both from the
-/// server and from a previous binary that still writes the text column; the
-/// server's rows keep that column filled for the previous binary.
+/// address is kept as NULL instead of rejecting the audit row.
 #[ab_testdb::test]
 async fn audit_ips_are_inet_and_junk_is_null(pool: PgPool) {
     for (ip, want) in [
@@ -150,31 +148,19 @@ async fn audit_ips_are_inet_and_junk_is_null(pool: PgPool) {
         )
         .await
         .unwrap();
-        // The previous binary reads the text column: a rollback still shows this row's address.
-        let mirrored: Option<String> =
-            sqlx::query_scalar("SELECT ip FROM auth_audit_log WHERE event = 'probe-new'")
-                .fetch_one(&pool)
-                .await
-                .unwrap();
-        assert_eq!(mirrored.as_deref(), want, "{ip:?}");
-        sqlx::query("INSERT INTO auth_audit_log (event, ip) VALUES ('probe-old', $1)")
-            .bind(ip)
-            .execute(&pool)
-            .await
-            .unwrap();
         let stored: Vec<Option<String>> = sqlx::query_scalar(
             "DELETE FROM auth_audit_log WHERE event LIKE 'probe-%' RETURNING host(ip_address)",
         )
         .fetch_all(&pool)
         .await
         .unwrap();
-        assert_eq!(stored, vec![want.map(str::to_owned); 2], "{ip:?}");
+        assert_eq!(stored, vec![want.map(str::to_owned)], "{ip:?}");
     }
 }
 
-async fn state(pool: &PgPool, id: uuid::Uuid) -> (String, bool, Option<bool>, bool) {
+async fn state(pool: &PgPool, id: uuid::Uuid) -> (bool, Option<bool>, bool) {
     sqlx::query_as(
-        "SELECT status, disabled_at IS NOT NULL, email_verified, email_verified_at IS NOT NULL
+        "SELECT disabled_at IS NOT NULL, email_verified, email_verified_at IS NOT NULL
          FROM users WHERE id = $1",
     )
     .bind(id)
@@ -184,10 +170,9 @@ async fn state(pool: &PgPool, id: uuid::Uuid) -> (String, bool, Option<bool>, bo
 }
 
 /// Review 3, items 28-29: the account state is `disabled_at` /
-/// `email_verified_at`; until the contract step every write to either the
-/// new columns (this release) or the old `status` / `email_verified` (the
-/// previous one) shows up on the other side, and a deleted account keeps a
-/// `disabled_at`.
+/// `email_verified_at`; a write to either email column (the old one stays
+/// while it still means "not known yet") shows up on the other side, and a
+/// deleted account keeps a `disabled_at`.
 #[ab_testdb::test]
 async fn account_state_timestamps_mirror_the_old_columns(pool: PgPool) {
     use ab_core::id::UserId;
@@ -204,10 +189,7 @@ async fn account_state_timestamps_mirror_the_old_columns(pool: PgPool) {
     .await
     .unwrap()
     .unwrap();
-    assert_eq!(
-        state(&pool, id.0).await,
-        ("active".into(), false, Some(false), false)
-    );
+    assert_eq!(state(&pool, id.0).await, (false, Some(false), false));
 
     // This release writes the new columns.
     ab_db::identity::set_email_verified(&pool, id, true)
@@ -217,10 +199,7 @@ async fn account_state_timestamps_mirror_the_old_columns(pool: PgPool) {
     ab_db::identity::set_user_status(&mut conn, id, "disabled")
         .await
         .unwrap();
-    assert_eq!(
-        state(&pool, id.0).await,
-        ("disabled".into(), true, Some(true), true)
-    );
+    assert_eq!(state(&pool, id.0).await, (true, Some(true), true));
     assert_eq!(
         ab_db::identity::user_status(&pool, id)
             .await
@@ -229,32 +208,26 @@ async fn account_state_timestamps_mirror_the_old_columns(pool: PgPool) {
         Some("disabled")
     );
 
-    // The previous release writes the old ones.
-    sqlx::query("UPDATE users SET status = 'active', email_verified = false WHERE id = $1")
+    // The old email column still moves the new one.
+    sqlx::query("UPDATE users SET disabled_at = NULL, email_verified = false WHERE id = $1")
         .bind(id.0)
         .execute(&pool)
         .await
         .unwrap();
-    assert_eq!(
-        state(&pool, id.0).await,
-        ("active".into(), false, Some(false), false)
-    );
+    assert_eq!(state(&pool, id.0).await, (false, Some(false), false));
     let profile = ab_db::identity::get_profile(&pool, id)
         .await
         .unwrap()
         .unwrap();
     assert_eq!(profile.email_verified, Some(false));
     let old: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO users (zitadel_user_id, username, email, status, email_verified)
-         VALUES ('z-old', 'old', 'old@example.com', 'disabled', true) RETURNING id",
+        "INSERT INTO users (zitadel_user_id, username, email, disabled_at, email_verified)
+         VALUES ('z-old', 'old', 'old@example.com', now(), true) RETURNING id",
     )
     .fetch_one(&pool)
     .await
     .unwrap();
-    assert_eq!(
-        state(&pool, old).await,
-        ("disabled".into(), true, Some(true), true)
-    );
+    assert_eq!(state(&pool, old).await, (true, Some(true), true));
     // An account older than `email_verified` stays "not known yet".
     let unknown: uuid::Uuid = sqlx::query_scalar(
         "INSERT INTO users (zitadel_user_id, username, email) VALUES ('z-u', 'u', 'u@example.com')
@@ -277,10 +250,7 @@ async fn account_state_timestamps_mirror_the_old_columns(pool: PgPool) {
             .unwrap()
     );
     tx.commit().await.unwrap();
-    assert_eq!(
-        state(&pool, id.0).await,
-        ("disabled".into(), true, Some(true), true)
-    );
+    assert_eq!(state(&pool, id.0).await, (true, Some(true), true));
     let revived = sqlx::query("UPDATE users SET disabled_at = NULL WHERE id = $1")
         .bind(id.0)
         .execute(&pool)

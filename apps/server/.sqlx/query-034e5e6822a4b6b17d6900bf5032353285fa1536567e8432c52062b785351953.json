@@ -107,12 +107,7 @@
         "ordinal": 10,
         "name": "final_score?",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "file_submission_attempts",
-            "name": "final_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 11,
@@ -168,7 +163,7 @@
       null,
       null,
       false,
-      true,
+      null,
       false,
       null,
       null,

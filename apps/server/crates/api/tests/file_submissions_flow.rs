@@ -1656,7 +1656,8 @@ async fn a_grade_for_a_leaver_issues_no_certificate(pool: PgPool) {
     assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
     let attempt_id = submitted.json()["id"].as_str().unwrap().to_owned();
     let version = submitted.json()["version"].to_string();
-    sqlx::query("DELETE FROM trail_runs WHERE user_id = $1")
+    sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = $1 RETURNING course_id, user_id)
+         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
         .bind(alice.user_id.0)
         .execute(&app.pool)
         .await
@@ -2015,7 +2016,8 @@ async fn file_task_requires_enrollment(pool: PgPool) {
             .fetch_one(&app.pool)
             .await
             .unwrap();
-    sqlx::query("INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2::uuid, $3)")
+    sqlx::query("WITH r AS (INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2::uuid, $3) RETURNING course_id, user_id)
+         INSERT INTO enrolments (course_id, user_id) SELECT course_id, user_id FROM r ON CONFLICT DO NOTHING")
         .bind(trail_id)
         .bind(&course_id)
         .bind(alice.user_id.0)

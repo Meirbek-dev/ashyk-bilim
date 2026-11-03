@@ -349,8 +349,8 @@ pub struct CourseProgressRow {
 
 #[derive(Debug, Clone)]
 /// What the projector writes. `progress_pct` and `certificate_eligible`
-/// are not written: the database derives them from the counts and
-/// `completed_at` (`course_progress_derive`, items 14/15).
+/// are not written: they are generated columns over the counts and
+/// `completed_at` (items 14/15).
 pub struct CourseProgressWrite {
     pub course_id: CourseId,
     pub user_id: UserId,

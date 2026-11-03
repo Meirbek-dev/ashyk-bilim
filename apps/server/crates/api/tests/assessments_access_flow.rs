@@ -48,7 +48,8 @@ async fn enrol(pool: &PgPool, course_id: &str, user_id: UserId) {
     .fetch_one(pool)
     .await
     .unwrap();
-    sqlx::query("INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2::uuid, $3)")
+    sqlx::query("WITH r AS (INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2::uuid, $3) RETURNING course_id, user_id)
+         INSERT INTO enrolments (course_id, user_id) SELECT course_id, user_id FROM r ON CONFLICT DO NOTHING")
         .bind(trail_id)
         .bind(course_id)
         .bind(user_id.0)
@@ -791,7 +792,8 @@ async fn held_leave(
     .execute(&mut *leave)
     .await
     .unwrap();
-    sqlx::query("DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid")
+    sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid RETURNING course_id, user_id)
+         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
         .bind(user_id.0)
         .bind(course_id)
         .execute(&mut *leave)
@@ -1670,7 +1672,8 @@ async fn assessments_require_enrollment(pool: PgPool) {
     let draft_id = draft.json()["id"].as_str().unwrap().to_owned();
 
     // She leaves and the course closes again: her draft is readable, frozen.
-    sqlx::query("DELETE FROM trail_runs WHERE user_id = (SELECT user_id FROM submissions WHERE id = $1::uuid)")
+    sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = (SELECT user_id FROM submissions WHERE id = $1::uuid) RETURNING course_id, user_id)
+         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
         .bind(&draft_id)
         .execute(&app.pool)
         .await

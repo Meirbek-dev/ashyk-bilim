@@ -57,23 +57,13 @@
         "ordinal": 5,
         "name": "passing_score!",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "assessments",
-            "name": "passing_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 6,
         "name": "weight!",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "assessments",
-            "name": "weight"
-          }
-        }
+        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -87,8 +77,8 @@
       false,
       false,
       null,
-      false,
-      false
+      null,
+      null
     ]
   },
   "hash": "802f79652a9a947ea5c683642bb7a77bbe578ca27265d23f0a8ffdd9910a2c80"

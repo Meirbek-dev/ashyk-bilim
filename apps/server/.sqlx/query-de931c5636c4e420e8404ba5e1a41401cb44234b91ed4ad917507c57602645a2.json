@@ -29,34 +29,19 @@
         "ordinal": 2,
         "name": "ai_score!",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "ai_grade_corrections",
-            "name": "ai_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 3,
         "name": "teacher_score!",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "ai_grade_corrections",
-            "name": "teacher_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 4,
         "name": "max_score!",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "ai_grade_corrections",
-            "name": "max_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 5,
@@ -90,9 +75,9 @@
     "nullable": [
       false,
       false,
-      false,
-      false,
-      false,
+      null,
+      null,
+      null,
       false,
       false
     ]

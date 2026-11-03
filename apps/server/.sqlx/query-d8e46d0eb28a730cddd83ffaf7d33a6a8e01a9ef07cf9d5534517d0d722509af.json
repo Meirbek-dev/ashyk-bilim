@@ -73,23 +73,13 @@
         "ordinal": 6,
         "name": "auto_score?",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "submissions",
-            "name": "auto_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 7,
         "name": "final_score?",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "submissions",
-            "name": "final_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 8,
@@ -165,8 +155,8 @@
       false,
       false,
       false,
-      true,
-      true,
+      null,
+      null,
       false,
       null,
       null,

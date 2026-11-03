@@ -2308,8 +2308,8 @@ async fn lifecycle_and_activity_flag_never_disagree(pool: PgPool) {
 }
 
 /// BUG-245/246: a client that hangs up mid-request never leaves a torn
-/// write - the title PATCH moves the assessment title and the activity name
-/// together, and a duplicate never leaves an activity without its
+/// write - the title PATCH renames the activity (the assessment's title is
+/// its name), and a duplicate never leaves an activity without its
 /// assessment.
 #[ab_testdb::test]
 async fn dropped_title_patch_and_duplicate_are_atomic(pool: PgPool) {
@@ -2326,9 +2326,9 @@ async fn dropped_title_patch_and_duplicate_are_atomic(pool: PgPool) {
     let id = created.json()["id"].as_str().unwrap().to_owned();
     let uuid = uuid::Uuid::parse_str(&id).unwrap();
     let path = format!("/api/v2/assessments/{id}");
-    let titles = async || -> (String, String) {
-        sqlx::query_as(
-            "SELECT a.title, act.name FROM assessments a
+    let title_of = async || -> String {
+        sqlx::query_scalar(
+            "SELECT act.name FROM assessments a
              JOIN activities act ON act.id = a.activity_id WHERE a.id = $1",
         )
         .bind(uuid)
@@ -2340,14 +2340,12 @@ async fn dropped_title_patch_and_duplicate_are_atomic(pool: PgPool) {
         let title = format!("drop {round}");
         drop_request_when(
             app.patch_as(&teacher, &path, &serde_json::json!({ "title": title })),
-            async || titles().await.0 == title,
+            async || title_of().await == title,
             |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
         )
         .await;
-        wait_until("the dropped PATCH left a torn title", async || {
-            titles().await == (title.clone(), title.clone())
-        })
-        .await;
+        let detail = app.get_as(&teacher, &path).await;
+        assert_eq!(detail.json()["title"], title.as_str());
     }
 
     let duplicate = format!("{path}/duplicate");

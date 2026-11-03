@@ -7,12 +7,7 @@
         "ordinal": 0,
         "name": "final_score!",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "submissions",
-            "name": "final_score"
-          }
-        }
+        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -22,7 +17,7 @@
       ]
     },
     "nullable": [
-      true
+      null
     ]
   },
   "hash": "3cea5c5f81d0f7d12a706734c05459b93459a54263c711f3ddeb901551393b35"

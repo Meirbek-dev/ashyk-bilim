@@ -268,7 +268,8 @@ async fn enrol(pool: &PgPool, course_id: &str, user_id: ab_core::id::UserId, pct
     .fetch_one(pool)
     .await
     .unwrap();
-    sqlx::query("INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2, $3)")
+    sqlx::query("WITH r AS (INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2, $3) RETURNING course_id, user_id)
+         INSERT INTO enrolments (course_id, user_id) SELECT course_id, user_id FROM r ON CONFLICT DO NOTHING")
         .bind(trail_id)
         .bind(course_uuid)
         .bind(user_id.0)
@@ -2420,7 +2421,8 @@ async fn interventions_racing_a_leave_are_not_in_course(pool: PgPool) {
     .execute(&mut *leave)
     .await
     .unwrap();
-    sqlx::query("DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid")
+    sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid RETURNING course_id, user_id)
+         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
         .bind(alice.user_id.0)
         .bind(&course_id)
         .execute(&mut *leave)

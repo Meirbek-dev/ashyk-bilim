@@ -1296,7 +1296,8 @@ async fn course_recalculation_racing_leaves_skips_the_leavers(pool: PgPool) {
         .execute(&mut *leave)
         .await
         .unwrap();
-        sqlx::query("DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid")
+        sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid RETURNING course_id, user_id)
+         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
             .bind(leaver.user_id.0)
             .bind(&course_id)
             .execute(&mut *leave)
@@ -2605,17 +2606,12 @@ async fn assert_view_matches_projection(pool: &PgPool) {
 }
 
 /// Delete every trail (runs, steps) as if trails were gone, keeping the
-/// enrolments: the previous release's sync trigger is off for the delete.
+/// enrolments.
 async fn empty_trails(pool: &PgPool) {
-    let mut tx = pool.begin().await.unwrap();
-    for sql in [
-        "ALTER TABLE trail_runs DISABLE TRIGGER trail_runs_sync_enrolment",
-        "DELETE FROM trails",
-        "ALTER TABLE trail_runs ENABLE TRIGGER trail_runs_sync_enrolment",
-    ] {
-        sqlx::query(sql).execute(&mut *tx).await.unwrap();
-    }
-    tx.commit().await.unwrap();
+    sqlx::query("DELETE FROM trails")
+        .execute(pool)
+        .await
+        .unwrap();
 }
 
 /// REWRITE 5.6 n5: membership is the `enrolments` row. With the trails
@@ -2902,11 +2898,8 @@ async fn a_lesson_completion_is_the_completions_row(pool: PgPool) {
         .await;
     assert_eq!(unmarked.status, StatusCode::OK, "{}", unmarked.text());
     assert_eq!(facts().await, (0, 0, xp));
-    // A projection the previous release left completed without a fact.
-    sqlx::query("ALTER TABLE activity_progress DISABLE TRIGGER activity_progress_sync_completion")
-        .execute(&pool)
-        .await
-        .unwrap();
+    // A projection the previous release left completed without a fact
+    // (its mirror trigger is gone since the lane C2 contract).
     sqlx::query(
         "UPDATE activity_progress SET completed_at = now() WHERE user_id = $1 AND activity_id = $2",
     )
@@ -2921,17 +2914,13 @@ async fn a_lesson_completion_is_the_completions_row(pool: PgPool) {
 }
 
 /// REWRITE 5.6 n8 step 1: a graded activity's projection writer owns its
-/// `completions` row. With the previous release's mirror trigger off (as
-/// after the contract), a published passing grade inserts the completion
+/// `completions` row (the previous release's mirror trigger is gone since
+/// the lane C2 contract): a published passing grade inserts the completion
 /// at the projection's time, and a re-projection repairs a shifted time and
 /// removes a completion the projection does not hold.
 #[ab_testdb::test]
 async fn graded_writers_own_their_completions(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
-    sqlx::query("ALTER TABLE activity_progress DISABLE TRIGGER activity_progress_sync_completion")
-        .execute(&pool)
-        .await
-        .unwrap();
     let teacher = instructor(&app, "teacher").await;
     let (_course_id, chapter_id) = public_course(&app, &teacher, "Graded 101").await;
     let (essay, essay_activity, item) = essay_quiz(&app, &teacher, &chapter_id).await;

@@ -475,7 +475,6 @@ impl TrailService {
             }
             None => false,
         };
-        // The previous release's trigger may already have removed it with the run.
         let was_member = ab_db::progress::unenrol(&mut tx, course_id, user_id).await?;
         if !had_run && !was_member {
             return Ok(false);

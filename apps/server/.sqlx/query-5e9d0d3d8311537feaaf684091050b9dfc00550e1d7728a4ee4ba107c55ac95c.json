@@ -18,12 +18,7 @@
         "ordinal": 1,
         "name": "weight!",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "assessments",
-            "name": "weight"
-          }
-        }
+        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -33,7 +28,7 @@
     },
     "nullable": [
       false,
-      false
+      null
     ]
   },
   "hash": "5e9d0d3d8311537feaaf684091050b9dfc00550e1d7728a4ee4ba107c55ac95c"

@@ -57,12 +57,7 @@
         "ordinal": 5,
         "name": "final_score?",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "file_submission_attempts",
-            "name": "final_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 6,
@@ -82,7 +77,7 @@
       false,
       false,
       null,
-      true,
+      null,
       null
     ]
   },

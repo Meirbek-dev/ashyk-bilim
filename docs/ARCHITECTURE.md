@@ -456,9 +456,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   timestamp for these sweeps and the analytics prune.
 - **Growing value lists are lookup tables**: `notifications.kind` → `notification_kinds`, `uploads.purpose` →
   `upload_purposes` (a new kind or purpose is one `INSERT` in a migration). A user's switched-off kinds are
-  `notification_opt_outs (user_id, kind)` rows with a key onto `notification_kinds`; until the contract migration
-  triggers mirror them into the old `notification_preferences.disabled` array the previous release reads and
-  writes. Short fixed lists stay CHECKs.
+  `notification_opt_outs (user_id, kind)` rows with a key onto `notification_kinds` (the old
+  `notification_preferences.disabled` array is gone, `20261103010100`). Short fixed lists stay CHECKs.
 - **Permission parts are columns**: `role_permissions.resource/action/scope` are generated from the grant
   string (shape-checked like `Grant::parse`); `is_course_staff` reads them through a partial index, so its
   role branch is two index probes per call.
@@ -488,8 +487,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `(enrolled_at, user_id)`, cursor `"<µs>.<user id>"`; a trail run id from the previous release still resolves) and
   the learner's list (`GET /trail`, `/enrollments`: one run per enrolment, cursor = course id, a run id still works)
   read it, never the staff. The trail tables only lend their legacy `id`s to those DTOs (the course / activity id
-  stands in without a row). A trigger mirrors the previous release's trail-run inserts/deletes into it until the
-  lane C contract drops it.
+  stands in without a row). The lane C contract dropped the trigger that mirrored the previous release's
+  trail-run writes into it.
 - **A completion is a `completions` row** (`20261102030500_completions.sql`, REWRITE 5.6 n8): `(activity_id,
   user_id)` PK, `completed_at`. A learner's mark writes it (with the trail step, still written for the previous
   release), un-marking and leaving delete it; the lesson projection and the trail's steps read it, never
@@ -508,20 +507,18 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   percent, flag or `completed_at` (within a second) differ from the stored row), and the progress tests assert it is 0
   on every scenario and on the e2e seed.
 - **Projections and rollups are keyed by what they describe** (REWRITE 5.6 n12): `(activity_id, user_id)`,
-  `(course_id, user_id)`, `user_id`, `(metric_date, ...)` are the primary keys; `daily_teacher_metrics` keeps a
-  surrogate key.
+  `(course_id, user_id)`, `user_id`, `(metric_date, ...)` are the primary keys and they have no `id` column;
+  `daily_teacher_metrics` keeps a surrogate key.
 - **`users.locale` is the short tag** (`ru|kk|en`, D-03); the API still renders and accepts the region form.
 - **Embeddings are `halfvec(1024)`** (`content_chunks`, `ai_work_embeddings`); the HNSW index is partial per
   embedding model (a new model gets its own index in a migration), and the nearest-chunk query sets
   `hnsw.iterative_scan` and `plan_cache_mode = force_custom_plan` so its model's index applies.
 - **Media keys carry upload ids** (`*_upload_id`, `block_uploads` for claimed blocks, `post_uploads` for the
   discussion images a post's content shows; all derived from the keys/content by triggers); the reaper keeps any
-  upload `upload_referenced` names, and the release paths start the clock only when it names none (§11).
-  `referenced_count` is no longer written by the server; until the contract drops it, `uploads_rollback_guard`
-  keeps the previous release's counter writes from starting the clock of a referenced upload.
+  upload `upload_referenced` names, and the release paths start the clock only when it names none (§11);
+  there is no reference counter.
 - **Staff per target**: `course_staff (course_id, user_id)` and `collection_staff (collection_id, user_id)`
-  replace `resource_authors` (one table, course XOR collection); until its contract migration drops it, triggers
-  mirror writes both ways so the previous release sees the same roster.
+  replaced `resource_authors` (one table, course XOR collection; dropped by `20261103040100`).
 - **A course update links activities by key** (`course_update_activities`, cascading from both sides), not by
   an unchecked uuid array.
 - **Audit IPs are `inet`** (`auth_audit_log.ip_address`): a forwarded value that is not an address is stored as
@@ -546,25 +543,24 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   Chosen over `rust_decimal` because it changes no Rust type, no DTO and no contract, and the same SQL runs on
   the old double columns (the expand release) and the numeric ones (after the contract). A new query on these
   columns needs the casts: the SQLx macros refuse `NUMERIC` (no decimal feature).
-- **A handed-in attempt keeps what it answered** (`20261102020200_submission_snapshots`): a submission that is
-  inserted as, or moves from `draft` to, any other status has `items_snapshot` and `policy_snapshot`, checked at
-  COMMIT (`submissions_handed_in_snapshots_*`, deferred: the hand-in statement writes them, the previous release
-  a statement later); once written neither changes (`submissions_snapshots_frozen`); both are JSON objects.
-  Rows handed in before 2026-11-02 are not re-checked (legacy imports may lack snapshots).
+- **A handed-in attempt keeps what it answered** (`20261102020200_submission_snapshots`, contract
+  `20261103020400_handed_in_snapshots_check`): a submission that is not a `draft` has `items_snapshot` and
+  `policy_snapshot` (CHECK `submissions_handed_in_snapshots_check`; the hand-in UPDATE writes them); once written
+  neither changes (`submissions_snapshots_frozen`); both are JSON objects. A database with legacy hand-ins
+  lacking snapshots keeps instead the deferred triggers `submissions_handed_in_snapshots_*`, which judge only a
+  row being handed in (the CHECK is then listed in `schema_skipped_checks`).
 - **One current grade** (`20261102020300_current_grade_matches_journal`): `grading_entries` is the journal,
   `submissions.final_score` its one current value. At COMMIT a submission with entries has its
   latest entry's (highest id) `final_score`; checked when an entry is appended or the
   submission's score changes. A write that changes one without the other fails the transaction. The breakdown
   has no copy (`20261102070200`): readers call `submission_breakdown(id, auto_breakdown)`, the latest entry's
   `effective_breakdown`, else `submissions.auto_breakdown` (the auto-grader's breakdown written at hand-in, the
-  teacher's starting point while no entry exists), else `{}`. Until contract `20261103070100` drops
-  `submissions.grading`, triggers keep it equal to that for the previous release (hand-in both ways, every
-  entry mirrored) and the check still compares it.
+  teacher's starting point while no entry exists), else `{}`; `submissions.grading` is gone (`20261103070100`).
 - **An assessment is named and typed by its activity** (`20261102020400_assessment_name_from_activity`): the
   title is `activities.name`, the kind `activities.activity_type` (1:1 through `assessments.activity_id`); readers
   join them and nothing writes a copy. An activity with an assessment cannot change its type
-  (`activities_keep_assessment_type`). Until the contract drops `assessments.title` / `kind`, triggers keep the
-  copies equal to the activity for the previous release.
+  (`activities_keep_assessment_type`). The copies `assessments.title` / `kind` are gone (contract
+  `20261103020100`).
 - **Assessment versions** (`20261102020600_assessment_versions`, first step of REWRITE 5.6 n7): each distinct
   (items, policy) pair a learner handed in against is one `assessment_versions` row, numbered per assessment,
   content-addressed (`content_hash` = `assessment_content_hash(items, policy)`, computed by Postgres) and frozen;
@@ -588,9 +584,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   the previous release reads every row.
 - **Code-run verdicts are the platform's own** (`code_run_cases.verdict`, `TestVerdict`: accepted, wrong_answer,
   time_limit, memory_limit, output_limit, compile_error, runtime_error, internal_error). The API's case
-  `status_id` is derived from it (`legacy_status_id`, Judge0's numbers that both web clients map); until the
-  contract migration drops `status_id` / `judge0_token`, the trigger `code_run_cases_sync` keeps the previous
-  release's code and the verdict in step.
+  `status_id` is derived from it (`legacy_status_id`, Judge0's numbers that both web clients map); the stored
+  Judge0 `status_id` / `judge0_token` are gone (contract `20261103020300`).
 
 ### SQLx usage
 
@@ -667,11 +662,11 @@ CREATE TABLE jobs (                        -- migrations/20260816000001_jobs.sql
 - Analytics retention: `analytics:rollup` ends by pruning `analytics_events` older than **400 days** and the
   `daily_*` rollup tables plus `learner_risk_snapshots` older than **2 years**, in 5 000-row batches
   (`ab_db::analytics::prune_retention`), summarised in one tracing line. Dashboards only ever read the
-  last 180 days. Once `analytics_events` is partitioned by UTC month of `occurred_at` (the lane C contract
-  migration swaps it in, the old table becoming the first partition), the prune first keeps three months of
-  partitions ahead (`analytics_events_ensure_partitions`) and drops whole months past the window
-  (`analytics_events_drop_partitions`); the batch delete then covers the partial month. On a plain table both
-  functions do nothing.
+  last 180 days. `analytics_events` is partitioned by UTC month of `occurred_at` (`20261103030300`: the plain
+  table became the first partition, `analytics_events_legacy`, plus a `analytics_events_default` safety net;
+  the primary key is `(id, occurred_at)`). The prune first keeps three months of partitions ahead
+  (`analytics_events_ensure_partitions`) and drops whole months past the window
+  (`analytics_events_drop_partitions`); the batch delete then covers the partial month.
 - Log retention: `maintenance:retention` (daily, `ab_db::retention`) deletes finished jobs, old sign-in audit rows,
   AI event logs and AI records and clears old practice code-run output; windows in §8 "Schema guarantees".
 - Reconciliation: `maintenance:reconcile` (weekly) re-derives gamification totals from their journals and re-projects

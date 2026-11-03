@@ -302,7 +302,8 @@ async fn discussion_actions_match_enforcement(pool: PgPool) {
             .fetch_one(&app.pool)
             .await
             .unwrap();
-    sqlx::query("INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2::uuid, $3)")
+    sqlx::query("WITH r AS (INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2::uuid, $3) RETURNING course_id, user_id)
+         INSERT INTO enrolments (course_id, user_id) SELECT course_id, user_id FROM r ON CONFLICT DO NOTHING")
         .bind(trail)
         .bind(&course_id)
         .bind(author.user_id.0)

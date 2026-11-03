@@ -68,7 +68,8 @@ async fn every_foreign_key_has_a_leading_index(pool: PgPool) {
     // A key is covered when some index starts with the key's first column
     // (a composite (parent_id, course_id) key is served by the parent_id
     // index) and is either complete or partial only on `<col> IS NOT NULL`
-    // (a key check never looks for NULL).
+    // (a key check never looks for NULL). A partition's copy of its table's
+    // key (`conparentid <> 0`) is covered by the table's partitioned index.
     let missing: Vec<(String, String, String)> = sqlx::query_as(
         "SELECT c.conrelid::regclass::text, \
                 (SELECT string_agg(a.attname, ',' ORDER BY a.attnum) FROM pg_attribute a \
@@ -76,6 +77,7 @@ async fn every_foreign_key_has_a_leading_index(pool: PgPool) {
                 c.confrelid::regclass::text \
            FROM pg_constraint c \
           WHERE c.contype = 'f' \
+            AND c.conparentid = 0 \
             AND NOT EXISTS ( \
                 SELECT 1 FROM pg_index i \
                  WHERE i.indrelid = c.conrelid \

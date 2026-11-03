@@ -175,7 +175,7 @@ async fn one_reaction_per_user_and_no_double_issuance(pool: PgPool) {
 }
 
 #[ab_testdb::test]
-async fn resource_authors_require_exactly_one_target(pool: PgPool) {
+async fn staff_rosters_hold_one_row_per_target_and_user(pool: PgPool) {
     let (course, _c, _a) = seed_course(&pool).await;
     let collection: uuid::Uuid =
         sqlx::query_scalar("INSERT INTO collections (name) VALUES ('T') RETURNING id")
@@ -190,42 +190,30 @@ async fn resource_authors_require_exactly_one_target(pool: PgPool) {
     .await
     .unwrap();
 
-    // Both targets set → rejected.
-    let both = sqlx::query(
-        "INSERT INTO resource_authors (course_id, collection_id, user_id, authorship)
-         VALUES ($1, $2, $3, 'creator')",
-    )
-    .bind(course)
-    .bind(collection)
-    .bind(user)
-    .execute(&pool)
-    .await;
-    assert!(both.is_err());
-
-    // Neither target → rejected.
-    let neither =
-        sqlx::query("INSERT INTO resource_authors (user_id, authorship) VALUES ($1, 'creator')")
+    for (sql, target) in [
+        (
+            "INSERT INTO course_staff (course_id, user_id, authorship) VALUES ($1, $2, 'creator')",
+            course,
+        ),
+        (
+            "INSERT INTO collection_staff (collection_id, user_id, authorship)
+             VALUES ($1, $2, 'creator')",
+            collection,
+        ),
+    ] {
+        sqlx::query(sql)
+            .bind(target)
+            .bind(user)
+            .execute(&pool)
+            .await
+            .unwrap();
+        let dup = sqlx::query(sql)
+            .bind(target)
             .bind(user)
             .execute(&pool)
             .await;
-    assert!(neither.is_err());
-
-    // Exactly one target, twice for the same user → second rejected
-    // (UNIQUE NULLS NOT DISTINCT).
-    let one =
-        "INSERT INTO resource_authors (course_id, user_id, authorship) VALUES ($1, $2, 'creator')";
-    sqlx::query(one)
-        .bind(course)
-        .bind(user)
-        .execute(&pool)
-        .await
-        .unwrap();
-    let dup = sqlx::query(one)
-        .bind(course)
-        .bind(user)
-        .execute(&pool)
-        .await;
-    assert!(dup.is_err());
+        assert!(dup.is_err(), "one row per (target, user): {sql}");
+    }
 }
 
 #[ab_testdb::test]
@@ -245,6 +233,17 @@ async fn full_text_search_matches_course_names(pool: PgPool) {
 
 /// One code challenge as the ETL left it: the statement on the activity, an empty item prompt.
 async fn seed_code_challenge(pool: &PgPool, description: &str, prompt: &str) -> uuid::Uuid {
+    seed_code_challenge_on(pool, description, prompt, false).await
+}
+
+/// `previous_schema`: the assessment still has its own title / kind copies
+/// (before `20261102020400`, dropped by `20261103020100`).
+async fn seed_code_challenge_on(
+    pool: &PgPool,
+    description: &str,
+    prompt: &str,
+    previous_schema: bool,
+) -> uuid::Uuid {
     let (course, chapter, _) = seed_course(pool).await;
     let activity: uuid::Uuid = sqlx::query_scalar(
         "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, content, position)
@@ -257,10 +256,13 @@ async fn seed_code_challenge(pool: &PgPool, description: &str, prompt: &str) -> 
     .fetch_one(pool)
     .await
     .unwrap();
-    let assessment: uuid::Uuid = sqlx::query_scalar(
+    let assessment: uuid::Uuid = sqlx::query_scalar(if previous_schema {
         "INSERT INTO assessments (activity_id, course_id, kind, title, grading_mode, grade_release_mode, completion_rule)
-         VALUES ($1, $2, 'code_challenge', 'Hello', 'auto', 'immediate', 'submitted') RETURNING id",
-    )
+         VALUES ($1, $2, 'code_challenge', 'Hello', 'auto', 'immediate', 'submitted') RETURNING id"
+    } else {
+        "INSERT INTO assessments (activity_id, course_id, grading_mode, grade_release_mode, completion_rule)
+         VALUES ($1, $2, 'auto', 'immediate', 'submitted') RETURNING id"
+    })
     .bind(activity)
     .bind(course)
     .fetch_one(pool)
@@ -305,6 +307,9 @@ async fn legacy_code_statement_moves_into_an_empty_prompt_only(pool: PgPool) {
 }
 
 /// Apply the real migration chain to a populated previous schema, preserving a teacher's newer text.
+// `sqlx::migrate!` embeds every migration in a local array, past the lint's 16 KiB once the
+// contract files are in.
+#[allow(clippy::large_stack_arrays)]
 #[sqlx::test(migrations = false)]
 async fn populated_previous_schema_upgrades_without_replacing_authored_prompts(pool: PgPool) {
     let mut previous = sqlx::migrate!("../../migrations");
@@ -316,11 +321,19 @@ async fn populated_previous_schema_upgrades_without_replacing_authored_prompts(p
             .collect(),
     );
     previous.run(&pool).await.unwrap();
-    let imported = seed_code_challenge(&pool, "Imported statement", "").await;
-    let authored = seed_code_challenge(&pool, "Old statement", "Teacher's current statement").await;
-    let empty = seed_code_challenge(&pool, "  ", "").await;
+    let imported = seed_code_challenge_on(&pool, "Imported statement", "", true).await;
+    let authored =
+        seed_code_challenge_on(&pool, "Old statement", "Teacher's current statement", true).await;
+    let empty = seed_code_challenge_on(&pool, "  ", "", true).await;
     let current = sqlx::migrate!("../../migrations");
     current.run(&pool).await.unwrap();
+    // A session keeps the search_path it opened with; the tables have moved into their schemas
+    // (20261103073000), so read through sessions opened after the migrations, as a new release does.
+    let pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(2)
+        .connect_with((*pool.connect_options()).clone())
+        .await
+        .unwrap();
     assert_eq!(prompt_of(&pool, imported).await, "Imported statement");
     assert_eq!(
         prompt_of(&pool, authored).await,

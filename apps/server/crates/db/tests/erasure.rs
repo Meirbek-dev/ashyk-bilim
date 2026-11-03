@@ -97,9 +97,7 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("learner_risk_snapshots", "user_id", ERASED),
     ("mastery_evidence", "user_id", ERASED),
     ("notification_opt_outs", "user_id", SETTING),
-    ("notification_preferences", "user_id", SETTING),
     ("notifications", "user_id", ERASED),
-    ("resource_authors", "user_id", SETTING),
     ("submissions", "user_id", RECORD),
     ("teacher_interventions", "teacher_user_id", ACTOR),
     ("teacher_interventions", "user_id", ERASED),
@@ -115,11 +113,14 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
 
 #[ab_testdb::test]
 async fn every_key_onto_users_is_classified(pool: PgPool) {
+    // `conparentid = 0`: a partition's copy of its table's key is the
+    // table's key (analytics_events is partitioned by month).
     let keys: Vec<(String, String)> = sqlx::query_as(
         "SELECT c.conrelid::regclass::text, a.attname::text
            FROM pg_constraint c
            JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
-          WHERE c.contype = 'f' AND c.confrelid = 'users'::regclass",
+          WHERE c.contype = 'f' AND c.confrelid = 'users'::regclass
+            AND c.conparentid = 0",
     )
     .fetch_all(&pool)
     .await

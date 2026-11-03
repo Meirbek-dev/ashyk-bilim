@@ -5,112 +5,110 @@ do not edit. Table comments are `COMMENT ON` statements in `apps/server/migratio
 UI word and ready queries: `DATA.md`. Rules behind the shapes: `docs/ARCHITECTURE.md` §8. Each table is
 listed as `schema.table`; SQL names it unqualified (the search_path covers every schema, §8 rule 8).
 
-- [`public.activities`](#activities): A lesson step inside a chapter: page, video, document, quiz, exam, code challenge, file task
-- [`public.activity_progress`](#activity_progress): Projection: a learner's state in one activity (from submissions, hand-ins and steps), rebuilt by progress-backfill
-- [`public.ai_approvals`](#ai_approvals): A staff approval an AI action waits for
-- [`public.ai_artifacts`](#ai_artifacts): An output an AI run produced
-- [`public.ai_course_analyses`](#ai_course_analyses): An AI review of a whole course
-- [`public.ai_course_settings`](#ai_course_settings): AI settings of a course (automatic grade drafts)
-- [`public.ai_eval_results`](#ai_eval_results): Outcome of an AI evaluation fixture run (ashyq admin ai-eval)
-- [`public.ai_events`](#ai_events): Streamed events of an AI run (pruned 180 days after the run finished)
-- [`public.ai_evidence`](#ai_evidence): A source an AI artifact cites (course chunk, submission part)
-- [`public.ai_feature_switches`](#ai_feature_switches): Platform switches of AI features
-- [`public.ai_grade_corrections`](#ai_grade_corrections): A teacher's correction of an AI grade draft (calibration data)
-- [`public.ai_grade_drafts`](#ai_grade_drafts): An AI-proposed grade for an attempt, for a teacher to accept or correct
-- [`public.ai_lecture_reviews`](#ai_lecture_reviews): AI suggestions for one lesson activity
-- [`public.ai_qa_messages`](#ai_qa_messages): A message in an AI thread, with citations into course material
-- [`public.ai_remediation_sessions`](#ai_remediation_sessions): Remediation (lecture + test) generated from a submission analysis
-- [`public.ai_runs`](#ai_runs): One AI job (grading draft, analysis, review, answer): model, tokens, cost, status
-- [`public.ai_student_memory`](#ai_student_memory): Notes the AI tutor keeps about a learner in a course
-- [`public.ai_submission_analyses`](#ai_submission_analyses): AI gap analysis of one attempt (a submission or a file hand-in)
-- [`public.ai_threads`](#ai_threads): An AI conversation (course assistant, tutor) of an account
-- [`public.ai_token_ledger`](#ai_token_ledger): AI tokens used per account per month (budget)
-- [`public.ai_token_reservations`](#ai_token_reservations): Tokens reserved by a running AI run against the budget, released on finish or expiry
-- [`public.ai_work_embeddings`](#ai_work_embeddings): Embedding of a part of learner work (similarity, grading context)
-- [`public.analytics_events`](#analytics_events): Event log of learning actions (append-only, pruned after its retention window)
-- [`public.analytics_saved_views`](#analytics_saved_views): A teacher's saved analytics filter
-- [`public.assessment_access_usergroups`](#assessment_access_usergroups): User groups an assessment is restricted to
-- [`public.assessment_access_users`](#assessment_access_users): Learners an assessment is restricted to (with assessment_access_usergroups)
-- [`public.assessment_audit_events`](#assessment_audit_events): History of staff actions on an assessment
-- [`public.assessment_items`](#assessment_items): A question or task of an assessment (typed body by kind), ordered by position, max_score in points
-- [`public.assessment_overrides`](#assessment_overrides): Per-learner exceptions of an assessment: extra attempts, a later due date, a waived late penalty
-- [`public.assessment_versions`](#assessment_versions): Frozen policy + items of an assessment as handed in (content-addressed, numbered per assessment); a hand-in names its version once
-- [`public.assessments`](#assessments): The graded part of a quiz, exam or code challenge activity: lifecycle, attempt and grading policy
-- [`public.auth_audit_log`](#auth_audit_log): Security events of accounts (logins, failures, erasure)
-- [`public.block_uploads`](#block_uploads): Uploads a lesson block references (derived from its content's file key by a trigger); the upload reaper keeps them
-- [`public.blocks`](#blocks): A content block of a page activity (files, embeds), linked from the editor document by legacy_uuid
-- [`public.bulk_actions`](#bulk_actions): A bulk operation a teacher ran on the learners of an assessment, its targets and outcome
-- [`public.certificate_users`](#certificate_users): A certificate issued to a learner, verifiable by verify_code
-- [`public.certifications`](#certifications): The certificate a course issues on completion: layout and rules (config); disabled_at stops issuing
-- [`public.chapters`](#chapters): A chapter of a course; position orders chapters within the course
-- [`public.code_run_cases`](#code_run_cases): The result of one test case of a code run
-- [`public.code_runs`](#code_runs): A run of learner code in the go-judge runner: a practice run or the graded run of a submission
-- [`public.collection_courses`](#collection_courses): Courses of a collection, ordered by position
-- [`public.collection_staff`](#collection_staff): Staff of a collection: creator, maintainer, contributor or reporter, with a status
-- [`public.collections`](#collections): A curated, ordered set of courses shown in the catalog
-- [`public.completions`](#completions): Activities a learner completed: the progress fact
-- [`public.concept_mastery`](#concept_mastery): Estimated probability that a learner knows a concept (p_known), from mastery_evidence
-- [`public.concept_prerequisites`](#concept_prerequisites): A prerequisite edge between two concepts of a course
-- [`public.concept_tags`](#concept_tags): Links an activity or assessment item to a concept it practises, with a weight
-- [`public.content_chunks`](#content_chunks): A searchable chunk of course material with its embedding (course material search, AI context)
-- [`public.content_index_state`](#content_index_state): Indexing state of each content source: version, chunk count, last error
-- [`public.course_concepts`](#course_concepts): A concept (skill) of a course, proposed by AI or a teacher and decided by staff
-- [`public.course_discussions`](#course_discussions): A discussion post or reply in a course (replies point to their post by parent_id); counters are kept by triggers
-- [`public.course_progress`](#course_progress): Projection: a learner's totals in a course (counts, percentage, grade averages, completion)
-- [`public.course_progress_v`](#course_progress_v): A member's course completion computed from enrolments, published activities and completions; compared with the course_progress projection by maintenance:reconcile until it replaces it (REWRITE 5.6 n8)
-- [`public.course_staff`](#course_staff): Staff of a course: creator, maintainer, contributor or reporter, with a status
-- [`public.course_update_activities`](#course_update_activities): Activities a course update links to, in order; a deleted activity leaves the update
-- [`public.course_updates`](#course_updates): An announcement a teacher posts in a course
-- [`public.courses`](#courses): A course: catalog card, visibility (public), lifecycle (archived_at) and settings
-- [`public.daily_assessment_metrics`](#daily_assessment_metrics): Daily rollup per assessment: submission, pass and score figures
-- [`public.daily_course_engagement`](#daily_course_engagement): Daily rollup per course step: learners who started/completed it, drop-off
-- [`public.daily_course_metrics`](#daily_course_metrics): Daily rollup per course: enrolment, activity, completion, risk, grading backlog
-- [`public.daily_teacher_metrics`](#daily_teacher_metrics): Daily rollup per teacher (or platform-wide when teacher_user_id is NULL)
-- [`public.daily_user_course_progress`](#daily_user_course_progress): Daily snapshot of each learner's progress in each course
-- [`public.discussion_reactions`](#discussion_reactions): A like or dislike of a discussion post by an account
-- [`public.enrolments`](#enrolments): Course membership (a learner joined or was enrolled)
-- [`public.feature_activations`](#feature_activations): When a feature switch was first turned on (one row per feature)
-- [`public.file_grading_entries`](#file_grading_entries): Grade journal of file-task hand-ins: append-only (trigger-guarded)
-- [`public.file_submission_attempts`](#file_submission_attempts): A learner's hand-in for a file task and its grading state
-- [`public.file_submission_files`](#file_submission_files): A file of a file-task hand-in (points at its upload)
-- [`public.file_submission_overrides`](#file_submission_overrides): A per-learner deadline exception of a file task
-- [`public.file_submissions`](#file_submissions): The file task of a file_submission activity: instructions, file limits, deadline and late policy
-- [`public.gamification_completions`](#gamification_completions): Completion facts that award XP once (source kind + id per learner)
-- [`public.gamification_config`](#gamification_config): XP rules: daily cap and rewards (versioned single row)
-- [`public.gamification_profiles`](#gamification_profiles): A learner's XP total, level and streaks (reconciled weekly from xp_transactions)
-- [`public.google_accounts`](#google_accounts): A Google identity linked to an account (google_sub), for Google sign-in
-- [`public.grading_entries`](#grading_entries): Grade journal of submissions: one row per grading; append-only except published_at (trigger-guarded)
-- [`public.idempotency_keys`](#idempotency_keys): Stored responses of mutating requests sent with an Idempotency-Key, replayed on a retry
-- [`public.item_feedback`](#item_feedback): A grader's comment, score or annotation on one item of a graded submission
-- [`public.job_schedules`](#job_schedules): Periodic jobs: kind, interval and next run, driven by the worker's cron leader
-- [`public.jobs`](#jobs): Background job queue (transactional, SKIP LOCKED); succeeded and failed rows are pruned by retention
-- [`public.learner_risk_snapshots`](#learner_risk_snapshots): Daily risk score of a learner in a course, with reasons and a recommended action
-- [`public.mastery_evidence`](#mastery_evidence): One observation of a learner on a concept (a scored item or activity)
-- [`public.notification_kinds`](#notification_kinds): Lookup: the notification kinds the server sends
-- [`public.notification_opt_outs`](#notification_opt_outs): Notification kinds a user switched off (GET/PUT /me/notification-preferences); no row = on
-- [`public.notification_preferences`](#notification_preferences): Notification kinds an account turned off
-- [`public.notifications`](#notifications): An in-app notification of an account (typed payload; course_id/activity_id are generated from it)
-- [`public.platforms`](#platforms): The platform's own settings and texts (one row, singleton)
-- [`public.post_uploads`](#post_uploads): The discussion-image uploads a post's content shows (kept by trigger from the content); the reaper keeps them
-- [`public.resource_authors`](#resource_authors): Previous release's staff table, mirrored both ways with course_staff / collection_staff until its contract migration drops it
-- [`public.role_permissions`](#role_permissions): A permission grant of a role; resource/action/scope are generated from the grant string
-- [`public.roles`](#roles): A role: built-in (is_system, display_name_key/description_key) or custom (display_name/description)
-- [`public.schema_skipped_checks`](#schema_skipped_checks): CHECK constraints a migration could not add because existing rows violate them (RUNBOOK 2.4)
-- [`public.submissions`](#submissions): An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> submitted -> graded -> released / returned (pending / published until contract B2)
-- [`public.teacher_interventions`](#teacher_interventions): An action a teacher logged for an at-risk learner and its outcome
-- [`public.trail_runs`](#trail_runs): A learner's legacy course run (status, data); membership is enrolments since schema review 3
-- [`public.trail_steps`](#trail_steps): Legacy per-activity step inside a trail run; completions is the progress fact since schema review 3
-- [`public.trails`](#trails): A learner's learning record (one per account); its trail_runs are the course enrolments
-- [`public.translatable_fields`](#translatable_fields): Lookup: the (entity, field) pairs that may have translation rows
-- [`public.translations`](#translations): Text of a translatable field in another language (translatable_fields); no row = not translated
-- [`public.upload_purposes`](#upload_purposes): Lookup: what an upload may be for (avatar, course media, hand-in, ...)
-- [`public.uploads`](#uploads): A stored object (S3 key) uploaded by an account, its purpose and lifecycle; unreferenced ones are reaped
-- [`public.user_roles`](#user_roles): Platform roles held by an account
-- [`public.usergroup_courses`](#usergroup_courses): Courses opened to a user group
-- [`public.usergroup_members`](#usergroup_members): Accounts in a user group
-- [`public.usergroups`](#usergroups): A named group of learners a teacher assigns courses or assessments to
-- [`public.users`](#users): An account
-- [`public.xp_transactions`](#xp_transactions): XP journal: every award with its source; the profile totals are derived from it
+- [`core.activities`](#activities): A lesson step inside a chapter: page, video, document, quiz, exam, code challenge, file task
+- [`learning.activity_progress`](#activity_progress): Projection: a learner's state in one activity (from submissions, hand-ins and steps), rebuilt by progress-backfill
+- [`ai.ai_approvals`](#ai_approvals): A staff approval an AI action waits for
+- [`ai.ai_artifacts`](#ai_artifacts): An output an AI run produced
+- [`ai.ai_course_analyses`](#ai_course_analyses): An AI review of a whole course
+- [`ai.ai_course_settings`](#ai_course_settings): AI settings of a course (automatic grade drafts)
+- [`ai.ai_eval_results`](#ai_eval_results): Outcome of an AI evaluation fixture run (ashyq admin ai-eval)
+- [`ai.ai_events`](#ai_events): Streamed events of an AI run (pruned 180 days after the run finished)
+- [`ai.ai_evidence`](#ai_evidence): A source an AI artifact cites (course chunk, submission part)
+- [`ai.ai_feature_switches`](#ai_feature_switches): Platform switches of AI features
+- [`ai.ai_grade_corrections`](#ai_grade_corrections): A teacher's correction of an AI grade draft (calibration data)
+- [`ai.ai_grade_drafts`](#ai_grade_drafts): An AI-proposed grade for an attempt, for a teacher to accept or correct
+- [`ai.ai_lecture_reviews`](#ai_lecture_reviews): AI suggestions for one lesson activity
+- [`ai.ai_qa_messages`](#ai_qa_messages): A message in an AI thread, with citations into course material
+- [`ai.ai_remediation_sessions`](#ai_remediation_sessions): Remediation (lecture + test) generated from a submission analysis
+- [`ai.ai_runs`](#ai_runs): One AI job (grading draft, analysis, review, answer): model, tokens, cost, status
+- [`ai.ai_student_memory`](#ai_student_memory): Notes the AI tutor keeps about a learner in a course
+- [`ai.ai_submission_analyses`](#ai_submission_analyses): AI gap analysis of one attempt (a submission or a file hand-in)
+- [`ai.ai_threads`](#ai_threads): An AI conversation (course assistant, tutor) of an account
+- [`ai.ai_token_ledger`](#ai_token_ledger): AI tokens used per account per month (budget)
+- [`ai.ai_token_reservations`](#ai_token_reservations): Tokens reserved by a running AI run against the budget, released on finish or expiry
+- [`ai.ai_work_embeddings`](#ai_work_embeddings): Embedding of a part of learner work (similarity, grading context)
+- [`analytics.analytics_events`](#analytics_events): Domain events for analytics (submissions, grades, completions, views), partitioned by month (UTC); kept 400 days, expired months dropped whole
+- [`analytics.analytics_saved_views`](#analytics_saved_views): A teacher's saved analytics filter
+- [`learning.assessment_access_usergroups`](#assessment_access_usergroups): User groups an assessment is restricted to
+- [`learning.assessment_access_users`](#assessment_access_users): Learners an assessment is restricted to (with assessment_access_usergroups)
+- [`learning.assessment_audit_events`](#assessment_audit_events): History of staff actions on an assessment
+- [`learning.assessment_items`](#assessment_items): A question or task of an assessment (typed body by kind), ordered by position, max_score in points
+- [`learning.assessment_overrides`](#assessment_overrides): Per-learner exceptions of an assessment: extra attempts, a later due date, a waived late penalty
+- [`learning.assessment_versions`](#assessment_versions): Frozen policy + items of an assessment as handed in (content-addressed, numbered per assessment); a hand-in names its version once
+- [`learning.assessments`](#assessments): The graded part of a quiz, exam or code challenge activity: lifecycle, attempt and grading policy
+- [`ops.auth_audit_log`](#auth_audit_log): Security events of accounts (logins, failures, erasure)
+- [`core.block_uploads`](#block_uploads): Uploads a lesson block references (derived from its content's file key by a trigger); the upload reaper keeps them
+- [`core.blocks`](#blocks): A content block of a page activity (files, embeds), linked from the editor document by legacy_uuid
+- [`learning.bulk_actions`](#bulk_actions): A bulk operation a teacher ran on the learners of an assessment, its targets and outcome
+- [`learning.certificate_users`](#certificate_users): A certificate issued to a learner, verifiable by verify_code
+- [`learning.certifications`](#certifications): The certificate a course issues on completion: layout and rules (config); disabled_at stops issuing
+- [`core.chapters`](#chapters): A chapter of a course; position orders chapters within the course
+- [`learning.code_run_cases`](#code_run_cases): The result of one test case of a code run
+- [`learning.code_runs`](#code_runs): A run of learner code in the go-judge runner: a practice run or the graded run of a submission
+- [`core.collection_courses`](#collection_courses): Courses of a collection, ordered by position
+- [`core.collection_staff`](#collection_staff): Staff of a collection: creator, maintainer, contributor or reporter, with a status
+- [`core.collections`](#collections): A curated, ordered set of courses shown in the catalog
+- [`learning.completions`](#completions): Activities a learner completed: the progress fact
+- [`learning.concept_mastery`](#concept_mastery): Estimated probability that a learner knows a concept (p_known), from mastery_evidence
+- [`learning.concept_prerequisites`](#concept_prerequisites): A prerequisite edge between two concepts of a course
+- [`learning.concept_tags`](#concept_tags): Links an activity or assessment item to a concept it practises, with a weight
+- [`ai.content_chunks`](#content_chunks): A searchable chunk of course material with its embedding (course material search, AI context)
+- [`ai.content_index_state`](#content_index_state): Indexing state of each content source: version, chunk count, last error
+- [`learning.course_concepts`](#course_concepts): A concept (skill) of a course, proposed by AI or a teacher and decided by staff
+- [`core.course_discussions`](#course_discussions): A discussion post or reply in a course (replies point to their post by parent_id); counters are kept by triggers
+- [`learning.course_progress`](#course_progress): Projection: a learner's totals in a course (counts, percentage, grade averages, completion)
+- [`core.course_progress_v`](#course_progress_v): A member's course completion computed from enrolments, published activities and completions; compared with the course_progress projection by maintenance:reconcile until it replaces it (REWRITE 5.6 n8)
+- [`core.course_staff`](#course_staff): Staff of a course: creator, maintainer, contributor or reporter, with a status
+- [`core.course_update_activities`](#course_update_activities): Activities a course update links to, in order; a deleted activity leaves the update
+- [`core.course_updates`](#course_updates): An announcement a teacher posts in a course
+- [`core.courses`](#courses): A course: catalog card, visibility (public), lifecycle (archived_at) and settings
+- [`analytics.daily_assessment_metrics`](#daily_assessment_metrics): Daily rollup per assessment: submission, pass and score figures
+- [`analytics.daily_course_engagement`](#daily_course_engagement): Daily rollup per course step: learners who started/completed it, drop-off
+- [`analytics.daily_course_metrics`](#daily_course_metrics): Daily rollup per course: enrolment, activity, completion, risk, grading backlog
+- [`analytics.daily_teacher_metrics`](#daily_teacher_metrics): Daily rollup per teacher (or platform-wide when teacher_user_id is NULL)
+- [`analytics.daily_user_course_progress`](#daily_user_course_progress): Daily snapshot of each learner's progress in each course
+- [`core.discussion_reactions`](#discussion_reactions): A like or dislike of a discussion post by an account
+- [`learning.enrolments`](#enrolments): Course membership (a learner joined or was enrolled)
+- [`core.feature_activations`](#feature_activations): When a feature switch was first turned on (one row per feature)
+- [`learning.file_grading_entries`](#file_grading_entries): Grade journal of file-task hand-ins: append-only (trigger-guarded)
+- [`learning.file_submission_attempts`](#file_submission_attempts): A learner's hand-in for a file task and its grading state
+- [`learning.file_submission_files`](#file_submission_files): A file of a file-task hand-in (points at its upload)
+- [`learning.file_submission_overrides`](#file_submission_overrides): A per-learner deadline exception of a file task
+- [`learning.file_submissions`](#file_submissions): The file task of a file_submission activity: instructions, file limits, deadline and late policy
+- [`learning.gamification_completions`](#gamification_completions): Completion facts that award XP once (source kind + id per learner)
+- [`learning.gamification_config`](#gamification_config): XP rules: daily cap and rewards (versioned single row)
+- [`learning.gamification_profiles`](#gamification_profiles): A learner's XP total, level and streaks (reconciled weekly from xp_transactions)
+- [`core.google_accounts`](#google_accounts): A Google identity linked to an account (google_sub), for Google sign-in
+- [`learning.grading_entries`](#grading_entries): Grade journal of submissions: one row per grading; append-only except published_at (trigger-guarded)
+- [`ops.idempotency_keys`](#idempotency_keys): Stored responses of mutating requests sent with an Idempotency-Key, replayed on a retry
+- [`learning.item_feedback`](#item_feedback): A grader's comment, score or annotation on one item of a graded submission
+- [`ops.job_schedules`](#job_schedules): Periodic jobs: kind, interval and next run, driven by the worker's cron leader
+- [`ops.jobs`](#jobs): Background job queue (transactional, SKIP LOCKED); succeeded and failed rows are pruned by retention
+- [`analytics.learner_risk_snapshots`](#learner_risk_snapshots): Daily risk score of a learner in a course, with reasons and a recommended action
+- [`learning.mastery_evidence`](#mastery_evidence): One observation of a learner on a concept (a scored item or activity)
+- [`core.notification_kinds`](#notification_kinds): Lookup: the notification kinds the server sends
+- [`core.notification_opt_outs`](#notification_opt_outs): Notification kinds a user switched off (GET/PUT /me/notification-preferences); no row = on
+- [`core.notifications`](#notifications): An in-app notification of an account (typed payload; course_id/activity_id are generated from it)
+- [`core.platforms`](#platforms): The platform's own settings and texts (one row, singleton)
+- [`core.post_uploads`](#post_uploads): The discussion-image uploads a post's content shows (kept by trigger from the content); the reaper keeps them
+- [`core.role_permissions`](#role_permissions): A permission grant of a role; resource/action/scope are generated from the grant string
+- [`core.roles`](#roles): A role: built-in (is_system, display_name_key/description_key) or custom (display_name/description)
+- [`ops.schema_skipped_checks`](#schema_skipped_checks): CHECK constraints a migration could not add because existing rows violate them (RUNBOOK 2.4)
+- [`learning.submissions`](#submissions): An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> submitted -> graded -> released / returned (pending / published until contract B2)
+- [`learning.teacher_interventions`](#teacher_interventions): An action a teacher logged for an at-risk learner and its outcome
+- [`learning.trail_runs`](#trail_runs): A learner's legacy course run (status, data); membership is enrolments since schema review 3
+- [`learning.trail_steps`](#trail_steps): Legacy per-activity step inside a trail run; completions is the progress fact since schema review 3
+- [`learning.trails`](#trails): A learner's learning record (one per account); its trail_runs are the course enrolments
+- [`core.translatable_fields`](#translatable_fields): Lookup: the (entity, field) pairs that may have translation rows
+- [`core.translations`](#translations): Text of a translatable field in another language (translatable_fields); no row = not translated
+- [`core.upload_purposes`](#upload_purposes): Lookup: what an upload may be for (avatar, course media, hand-in, ...)
+- [`core.uploads`](#uploads): A stored object (S3 key) uploaded by an account, its purpose and lifecycle; unreferenced ones are reaped
+- [`core.user_roles`](#user_roles): Platform roles held by an account
+- [`core.usergroup_courses`](#usergroup_courses): Courses opened to a user group
+- [`core.usergroup_members`](#usergroup_members): Accounts in a user group
+- [`core.usergroups`](#usergroups): A named group of learners a teacher assigns courses or assessments to
+- [`core.users`](#users): An account
+- [`learning.xp_transactions`](#xp_transactions): XP journal: every award with its source; the profile totals are derived from it
 
 ## activities
 
@@ -148,7 +146,6 @@ Projection: a learner's state in one activity (from submissions, hand-ins and st
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
 | course_id | uuid |  |  |
 | activity_id | uuid |  |  |
 | user_id | uuid |  |  |
@@ -340,9 +337,9 @@ A teacher's correction of an AI grade draft (calibration data).
 | teacher_id | uuid | null |  |
 | part_key | text |  |  |
 | criterion_key | text |  | `''::text` |
-| ai_score | double precision |  |  |
-| teacher_score | double precision |  |  |
-| max_score | double precision |  |  |
+| ai_score | score_points |  |  |
+| teacher_score | score_points |  |  |
+| max_score | score_points |  |  |
 | excerpt | text |  | `''::text` |
 | teacher_feedback | text |  | `''::text` |
 | created_at | timestamp with time zone |  | `now()` |
@@ -371,15 +368,15 @@ An AI-proposed grade for an attempt, for a teacher to accept or correct.
 | status | text |  |  |
 | subject_version | bigint |  |  |
 | proposal | jsonb |  | `'{}'::jsonb` |
-| ai_score | double precision | null |  |
-| calibrated_score | double precision | null |  |
-| max_score | double precision | null |  |
+| ai_score | score_points | null |  |
+| calibrated_score | score_points | null |  |
+| max_score | score_points | null |  |
 | confidence | real | null |  |
 | flags | text[] |  | `'{}'::text[]` |
 | model_name | text | null |  |
 | error_code | text | null |  |
 | agreement | text | null |  |
-| final_score | double precision | null |  |
+| final_score | score_points | null |  |
 | decided_by | uuid | null |  |
 | decided_at | timestamp with time zone | null |  |
 | created_at | timestamp with time zone |  | `now()` |
@@ -614,9 +611,9 @@ Embedding of a part of learner work (similarity, grading context).
 - Primary key `ai_work_embeddings_pkey`: `PRIMARY KEY (subject_id, part_key)`
 - Foreign key `ai_work_embeddings_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
 
-## analytics_events
+## analytics_events (partitioned)
 
-Event log of learning actions (append-only, pruned after its retention window).
+Domain events for analytics (submissions, grades, completions, views), partitioned by month (UTC); kept 400 days, expired months dropped whole.
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
@@ -632,7 +629,7 @@ Event log of learning actions (append-only, pruned after its retention window).
 | occurred_at | timestamp with time zone |  | `now()` |
 | created_at | timestamp with time zone |  | `now()` |
 
-- Primary key `analytics_events_pkey`: `PRIMARY KEY (id)`
+- Primary key `analytics_events_pkey`: `PRIMARY KEY (id, occurred_at)`
 - Foreign key `analytics_events_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
 - Foreign key `analytics_events_actor_id_fkey`: `FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `analytics_events_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
@@ -715,7 +712,7 @@ A question or task of an assessment (typed body by kind), ordered by position, m
 | kind | text |  |  |
 | title | text |  | `''::text` |
 | body | jsonb |  | `'{}'::jsonb` |
-| max_score | double precision |  | `0` |
+| max_score | score_points |  | `0` |
 | section_label | text | null |  |
 | difficulty | text | null |  |
 | tags | text[] |  | `'{}'::text[]` |
@@ -783,27 +780,25 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 | id | uuid |  | `uuidv7()` |
 | activity_id | uuid |  |  |
 | course_id | uuid |  |  |
-| kind | text |  |  |
-| title | text |  |  |
 | description | text |  | `''::text` |
 | lifecycle | text |  | `'draft'::text` |
 | scheduled_at | timestamp with time zone | null |  |
 | published_at | timestamp with time zone | null |  |
 | archived_at | timestamp with time zone | null |  |
-| weight | double precision |  | `1.0` |
+| weight | score_weight |  | `1.0` |
 | grading_type | text |  | `'percentage'::text` |
 | content_version | integer |  | `1` |
 | policy_version | integer |  | `1` |
 | grading_mode | text |  |  |
 | grade_release_mode | text |  |  |
 | completion_rule | text |  |  |
-| passing_score | double precision |  | `60` |
+| passing_score | percent |  | `60` |
 | max_attempts | integer | null |  |
 | time_limit_seconds | integer | null |  |
 | due_at | timestamp with time zone | null |  |
 | allow_late | boolean |  | `true` |
 | late_policy_kind | text |  | `'none'::text` |
-| late_penalty_percent_per_day | double precision | null |  |
+| late_penalty_percent_per_day | percent | null |  |
 | late_penalty_max_days | integer | null |  |
 | late_cutoff_at | timestamp with time zone | null |  |
 | required | boolean |  | `false` |
@@ -811,7 +806,7 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 | randomize_questions | boolean |  | `false` |
 | randomize_options | boolean |  | `false` |
 | partial_credit | boolean |  | `true` |
-| negative_marking_percent | double precision |  | `0` |
+| negative_marking_percent | percent |  | `0` |
 | grace_period_minutes | integer |  | `0` |
 | copy_paste_protection | boolean |  | `false` |
 | tab_switch_detection | boolean |  | `false` |
@@ -823,7 +818,7 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 | creator_id | uuid | null |  |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
-| attempt_penalty_percent | double precision |  | `0` |
+| attempt_penalty_percent | percent |  | `0` |
 | version | integer |  | `1` |
 
 - Primary key `assessments_pkey`: `PRIMARY KEY (id)`
@@ -842,7 +837,6 @@ Security events of accounts (logins, failures, erasure). Retention 365 days.
 | id | uuid |  | `uuidv7()` |  |
 | user_id | uuid | null |  |  |
 | event | text |  |  |  |
-| ip | text | null |  |  |
 | user_agent | text | null |  |  |
 | metadata | jsonb |  | `'{}'::jsonb` |  |
 | created_at | timestamp with time zone |  | `now()` |  |
@@ -982,13 +976,11 @@ The result of one test case of a code run.
 | run_id | uuid |  |  |
 | position | integer |  |  |
 | test_id | text |  |  |
-| judge0_token | text | null |  |
 | stdin | text | null |  |
 | expected_output | text | null |  |
 | description | text |  | `''::text` |
-| weight | double precision |  | `1` |
+| weight | score_weight |  | `1` |
 | is_visible | boolean |  | `true` |
-| status_id | integer | null |  |
 | status_description | text |  | `''::text` |
 | passed | boolean |  | `false` |
 | stdout | text | null |  |
@@ -1021,7 +1013,7 @@ A run of learner code in the go-judge runner: a practice run or the graded run o
 | idempotency_key | text | null |  |
 | passed | integer |  | `0` |
 | total | integer |  | `0` |
-| score | double precision | null |  |
+| score | percent | null |  |
 | compile_output | text | null |  |
 | error_message | text | null |  |
 | started_at | timestamp with time zone | null |  |
@@ -1277,21 +1269,20 @@ Projection: a learner's totals in a course (counts, percentage, grade averages, 
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
 | course_id | uuid |  |  |
 | user_id | uuid |  |  |
 | completed_required_count | integer |  | `0` |
 | total_required_count | integer |  | `0` |
-| progress_pct | double precision |  | `0` |
 | grade_average | double precision | null |  |
 | weighted_grade_average | double precision | null |  |
 | missing_required_count | integer |  | `0` |
 | needs_grading_count | integer |  | `0` |
 | last_activity_at | timestamp with time zone | null |  |
 | completed_at | timestamp with time zone | null |  |
-| certificate_eligible | boolean |  | `false` |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
+| progress_pct | double precision |  | `CASE WHEN (total_required_count > 0) THEN (round((((completed_required_count)::numeric * 100.0) / (total_required_count)::numeric), 2))::double precision ELSE (0)::double precision END` |
+| certificate_eligible | boolean |  | `((total_required_count > 0) AND (completed_required_count >= total_required_count) AND (completed_at IS NOT NULL))` |
 
 - Primary key `course_progress_pkey`: `PRIMARY KEY (course_id, user_id)`
 - Foreign key `course_progress_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
@@ -1353,7 +1344,6 @@ An announcement a teacher posts in a course.
 | course_id | uuid |  |  |
 | title | text |  |  |
 | content | text |  |  |
-| linked_activity_ids | uuid[] |  | `'{}'::uuid[]` |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
 | version | integer |  | `1` |
@@ -1406,7 +1396,6 @@ Daily rollup per assessment: submission, pass and score figures.
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
 | metric_date | date |  |  |
 | assessment_id | uuid |  |  |
 | course_id | uuid |  |  |
@@ -1436,7 +1425,6 @@ Daily rollup per course step: learners who started/completed it, drop-off.
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
 | metric_date | date |  |  |
 | course_id | uuid |  |  |
 | chapter_id | uuid | null |  |
@@ -1458,7 +1446,6 @@ Daily rollup per course: enrolment, activity, completion, risk, grading backlog.
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
 | metric_date | date |  |  |
 | course_id | uuid |  |  |
 | teacher_user_id | uuid | null |  |
@@ -1511,7 +1498,6 @@ Daily snapshot of each learner's progress in each course.
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
 | metric_date | date |  |  |
 | user_id | uuid |  |  |
 | course_id | uuid |  |  |
@@ -1579,9 +1565,9 @@ Grade journal of file-task hand-ins: append-only (trigger-guarded).
 | attempt_id | uuid |  |  |
 | graded_by | uuid | null |  |
 | status | text |  |  |
-| raw_score | double precision | null |  |
-| penalty_pct | double precision |  | `0` |
-| final_score | double precision | null |  |
+| raw_score | percent | null |  |
+| penalty_pct | percent |  | `0` |
+| final_score | percent | null |  |
 | feedback | text |  | `''::text` |
 | created_at | timestamp with time zone |  | `now()` |
 
@@ -1605,15 +1591,15 @@ A learner's hand-in for a file task and its grading state.
 | submitted_at | timestamp with time zone | null |  |
 | graded_at | timestamp with time zone | null |  |
 | is_late | boolean |  | `false` |
-| late_penalty_pct | double precision |  | `0` |
-| final_score | double precision | null |  |
+| late_penalty_pct | percent |  | `0` |
+| final_score | percent | null |  |
 | feedback | text |  | `''::text` |
 | rubric_scores | jsonb |  | `'{}'::jsonb` |
 | graded_by | uuid | null |  |
 | version | bigint |  | `1` |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
-| raw_score | double precision | null |  |
+| raw_score | percent | null |  |
 | preview | boolean |  | `false` |
 
 - Primary key `file_submission_attempts_pkey`: `PRIMARY KEY (id)`
@@ -1680,7 +1666,7 @@ The file task of a file_submission activity: instructions, file limits, deadline
 | due_at | timestamp with time zone | null |  |
 | allow_late | boolean |  | `true` |
 | late_policy_kind | text |  | `'none'::text` |
-| late_penalty_percent_per_day | double precision | null |  |
+| late_penalty_percent_per_day | percent | null |  |
 | late_penalty_max_days | integer | null |  |
 | late_cutoff_at | timestamp with time zone | null |  |
 | max_attempts | integer | null |  |
@@ -1735,11 +1721,9 @@ A learner's XP total, level and streaks (reconciled weekly from xp_transactions)
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
 | user_id | uuid |  |  |
 | total_xp | integer |  | `0` |
 | level | integer |  | `1` |
-| daily_xp_earned | integer |  | `0` |
 | login_streak | integer |  | `0` |
 | learning_streak | integer |  | `0` |
 | longest_login_streak | integer |  | `0` |
@@ -1779,13 +1763,12 @@ Grade journal of submissions: one row per grading; append-only except published_
 | id | uuid |  | `uuidv7()` |  |
 | submission_id | uuid |  |  |  |
 | graded_by | uuid | null |  |  |
-| raw_score | double precision |  |  |  |
-| penalty_pct | double precision |  | `0` |  |
-| final_score | double precision | null |  |  |
+| raw_score | percent |  |  |  |
+| penalty_pct | percent |  | `0` |  |
+| final_score | percent | null |  |  |
 | raw_breakdown | jsonb |  | `'{}'::jsonb` |  |
 | effective_breakdown | jsonb |  | `'{}'::jsonb` |  |
 | overall_feedback | text |  | `''::text` |  |
-| grading_version | integer |  | `1` |  |
 | published_at | timestamp with time zone | null |  |  |
 | created_at | timestamp with time zone |  | `now()` |  |
 | max_points | score_points | null |  | The attempt's assessment_versions.max_points when graded; NULL without a version. |
@@ -1824,8 +1807,8 @@ A grader's comment, score or annotation on one item of a graded submission.
 | item_id | uuid | null |  |
 | item_ref | text |  |  |
 | comment | text |  | `''::text` |
-| score | double precision | null |  |
-| max_score | double precision | null |  |
+| score | score_points | null |  |
+| max_score | score_points | null |  |
 | annotation_type | text |  | `'text'::text` |
 | annotation_key | text | null |  |
 | graded_by | uuid | null |  |
@@ -1887,7 +1870,6 @@ Daily risk score of a learner in a course, with reasons and a recommended action
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
 | snapshot_date | date |  |  |
 | user_id | uuid |  |  |
 | course_id | uuid |  |  |
@@ -1957,20 +1939,6 @@ Notification kinds a user switched off (GET/PUT /me/notification-preferences); n
 - Foreign key `notification_opt_outs_kind_fkey`: `FOREIGN KEY (kind) REFERENCES notification_kinds(kind) ON UPDATE CASCADE`
 - Foreign key `notification_opt_outs_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
-## notification_preferences
-
-Notification kinds an account turned off.
-
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| user_id | uuid |  |  |
-| disabled | text[] |  | `'{}'::text[]` |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-
-- Primary key `notification_preferences_pkey`: `PRIMARY KEY (user_id)`
-- Foreign key `notification_preferences_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
-
 ## notifications
 
 An in-app notification of an account (typed payload; course_id/activity_id are generated from it).
@@ -2012,10 +1980,6 @@ The platform's own settings and texts (one row, singleton).
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
 | version | integer |  | `1` |
-| description_kk | text |  | `''::text` |
-| description_en | text |  | `''::text` |
-| about_kk | text |  | `''::text` |
-| about_en | text |  | `''::text` |
 | logo_upload_id | uuid | null |  |
 | thumbnail_upload_id | uuid | null |  |
 
@@ -2036,28 +2000,6 @@ The discussion-image uploads a post's content shows (kept by trigger from the co
 - Primary key `post_uploads_pkey`: `PRIMARY KEY (discussion_id, upload_id)`
 - Foreign key `post_uploads_discussion_id_fkey`: `FOREIGN KEY (discussion_id) REFERENCES course_discussions(id) ON DELETE CASCADE`
 - Foreign key `post_uploads_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE`
-
-## resource_authors
-
-Previous release's staff table, mirrored both ways with course_staff / collection_staff until its contract migration drops it.
-
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| course_id | uuid | null |  |
-| collection_id | uuid | null |  |
-| user_id | uuid |  |  |
-| authorship | text |  |  |
-| status | text |  | `'active'::text` |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-| version | integer |  | `1` |
-
-- Primary key `resource_authors_pkey`: `PRIMARY KEY (id)`
-- Unique `resource_authors_unique_per_target`: `UNIQUE NULLS NOT DISTINCT (course_id, collection_id, user_id)`
-- Foreign key `resource_authors_collection_id_fkey`: `FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE`
-- Foreign key `resource_authors_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `resource_authors_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 
 ## role_permissions
 
@@ -2121,11 +2063,10 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 | status | text |  | `'draft'::text` |  |
 | attempt_number | integer |  |  |  |
 | answers | jsonb |  | `'{}'::jsonb` |  |
-| grading | jsonb |  | `'{}'::jsonb` |  |
-| auto_score | double precision | null |  |  |
-| final_score | double precision | null |  |  |
+| auto_score | percent | null |  |  |
+| final_score | percent | null |  |  |
 | is_late | boolean |  | `false` |  |
-| late_penalty_pct | double precision |  | `0` |  |
+| late_penalty_pct | percent |  | `0` |  |
 | violation_count | integer |  | `0` |  |
 | violations | jsonb |  | `'[]'::jsonb` |  |
 | auto_submit_reason | text | null |  |  |
@@ -2138,9 +2079,7 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 | graded_at | timestamp with time zone | null |  |  |
 | version | bigint |  | `1` |  |
 | draft_version | bigint |  | `1` |  |
-| grading_version | integer |  | `1` |  |
 | content_version | integer |  | `1` |  |
-| policy_version | integer |  | `1` |  |
 | items_snapshot | jsonb | null |  |  |
 | policy_snapshot | jsonb | null |  |  |
 | created_at | timestamp with time zone |  | `now()` |  |
@@ -2299,7 +2238,6 @@ A stored object (S3 key) uploaded by an account, its purpose and lifecycle; unre
 | mime | text |  |  |
 | size_bytes | bigint |  |  |
 | status | text |  | `'pending'::text` |
-| referenced_count | integer |  | `0` |
 | expires_at | timestamp with time zone | null |  |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
@@ -2383,7 +2321,6 @@ An account. Never deleted by the app: disabled (status) or anonymised (deleted_a
 | bio | text |  | `''::text` |  |
 | avatar_key | text | null |  |  |
 | locale | text |  | `'ru'::text` |  |
-| status | text |  | `'active'::text` |  |
 | rbac_version | bigint |  | `1` |  |
 | created_at | timestamp with time zone |  | `now()` |  |
 | updated_at | timestamp with time zone |  | `now()` |  |

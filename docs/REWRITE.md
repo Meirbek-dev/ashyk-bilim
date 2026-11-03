@@ -661,9 +661,9 @@ in the order it can be done, each step a forward migration on the current schema
    Done (review 3, item 18 rest, `20261102072000`): the claim/release paths set `expires_at` from
    `upload_referenced` (BUG-209/263's recounts and the copy's increments are gone); `post_uploads (discussion_id,
    upload_id)` holds the images a post's content shows (trigger from the content, backfilled; edits and deletes
-   release what the post stopped showing); `block_uploads` holds only claimed blocks. The previous release still
-   moves the counter: `uploads_rollback_guard` keeps its writes from starting the clock of a referenced upload;
-   `20261103072000` (contract) drops the guard and `referenced_count`.
+   release what the post stopped showing); `block_uploads` holds only claimed blocks; `20261103072000`
+   (contract) dropped `referenced_count` and the rollback guard that kept the previous release's counter writes
+   from starting the clock of a referenced upload.
    Uploads a rollback window left claimed but unreferenced (`expires_at` NULL, nothing names them), and the
    discussion images of posts deleted before `post_uploads`, get the reaper's clock from `ashyq admin
    clock-unreferenced-uploads` (RUNBOOK 2.8; done 2026-11-03). Left: run it in production.
@@ -753,13 +753,13 @@ in the order it can be done, each step a forward migration on the current schema
     existing `LIKE`); `course_search_walks_the_trigram_index` checks the bitmap index scan over 10 000 courses.
     Done for the listings too (review 3, item 35 rest): `list_courses` / `list_collections` are `QueryBuilder`
     queries with the same terms (`listing_filters_walk_the_trigram_indexes`), people search's one-letter rule
-    is inline, and `20261103072100` (contract) drops `search_matches`. The tsvector columns stay while ranking
+    is inline, and `20261103072100` (contract) dropped `search_matches`. The tsvector columns stay while ranking
     uses `ts_rank_cd`.
 12. **Natural keys** (item 26): done for `activity_progress`, `course_progress`, `gamification_profiles`, the
     `daily_*` rollups and `learner_risk_snapshots` (`20261102030300`..`0309`): readers use the natural key (prune
     batches by `ctid`, the leaderboard keyset/cursor and its index on `(total_xp DESC, user_id)`, work item ids
     `learner-<kind>-<activity>` / `teacher-<kind>-<activity>.<user>`), the unique index is the primary key. `id`
-    stays (NOT NULL, default) for the previous release; the lane C contract drops it. `daily_teacher_metrics`
+    is dropped one release later (`20261103030200`). `daily_teacher_metrics`
     keeps a surrogate key (nullable teacher, `NULLS NOT DISTINCT`).
 13. **One touch trigger** (item 27): done 2026-11-03 (`one_touch_trigger`). `touch_row()` replaces every
     `set_updated_at` + `bump_version` pair (both functions dropped): the version first, from the row every other
@@ -1114,7 +1114,7 @@ Where each v2 table goes and in which phase:
 | Zitadel eventstore | `users.password_hash` (9.2) | 4 |
 | `user_roles` | `users.role` (admin > instructor/legacy-grants → teacher > learner) | 4 |
 | `uploads` + RustFS objects | `media` (status `ready` only) + `/data/ashyq/media` (9.3) | 4 |
-| `resource_authors` | `course_staff` + `collection_staff` (review 2 item 21: same columns, PK (target, user); mirrored both ways until `20261103040100` drops the old table). Left: creator → owner, contributor → editor, active only | 5 |
+| `resource_authors` | `course_staff` + `collection_staff` (review 2 item 21: same columns, PK (target, user); the old table dropped by `20261103040100`). Left: creator → owner, contributor → editor, active only | 5 |
 | `activities` + `blocks` | `activities` with typed `body`; block media → `media` + `activity_media` | 5 |
 | `assessments` | `activities.body.policy` for quiz/exam/code | 5 |
 | `file_submissions` | `activities.body` for `assignment` | 5 |

@@ -40,8 +40,8 @@
 //! - review item 35 (REWRITE 5.6 n11): `/search` over 10 000 courses walks
 //!   the trigram index on the folded text.
 //! - review item 21: course staff live in `course_staff` (collection staff
-//!   in `collection_staff`); until the contract, a write on either side of
-//!   `resource_authors` reaches the other, so both releases see one roster.
+//!   in `collection_staff`), one row per (course, user), gone with the course;
+//!   `resource_authors` is dropped.
 //! - review item 18 (REWRITE 5.6 n4): every media key carries its upload id;
 //!   the reaper keeps a referenced file whose counter drifted to 0 and still
 //!   collects a real orphan.
@@ -54,19 +54,16 @@
 //!   Asia/Almaty): `platform_date` and `platform_day_start` cut days at the
 //!   midnight of the zone the pool passes as `ab.time_zone`, and a `Day`
 //!   binds as `date`.
-//! - lane C, item 11: membership is an `enrolments` row; the previous
-//!   release's trail-run writes are mirrored into it until the contract.
+//! - lane C, item 11: membership is an `enrolments` row.
 //! - lane C, items 14/15: course_progress derives its percent and the
-//!   certificate flag from the counts and completed_at; the counts cohere.
+//!   certificate flag from the counts and completed_at (generated columns,
+//!   not writable); the counts cohere.
 //! - lane C, item 40: projections and rollups are keyed by their natural key.
 //! - lane C, item 38: the event prune removes events past 400 days and
 //!   keeps the rest, whether or not analytics_events is partitioned.
-//! - lane C, item 12: a completion the previous release projects (or
-//!   clears) in activity_progress is mirrored into completions.
-//! - review 2, item 25: a code-run case stores the platform's own verdict;
-//!   the previous release's Judge0 code and the verdict fill each other.
-//! - review 2, item 9: a handed-in attempt has both snapshots (checked at
-//!   commit, so they may follow the hand-in within its transaction), and a
+//! - review 2, item 25: a code-run case stores the platform's own verdict
+//!   (a closed list); no Judge0 column is left.
+//! - review 2, item 9: a handed-in attempt has both snapshots, and a
 //!   snapshot once written never changes.
 //! - review 2, item 8: a submission's current grade is its latest journal
 //!   entry's; a grade written to only one side fails at commit.
@@ -83,6 +80,8 @@
 //! - review 2, item 2: attempts share one status vocabulary (`submitted`,
 //!   `released`); a new spelling is accepted and reads back as the same
 //!   status, and until the contract it is stored in the previous spelling.
+//! - review 2, items 7 and 31: scores are exact numerics behind the
+//!   `percent` / `score_points` / `score_weight` domains.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -306,8 +305,8 @@ async fn retention_sweeps_old_logs_and_keeps_learner_work(pool: PgPool) {
         .await
         .unwrap();
         sqlx::query(
-            "INSERT INTO code_run_cases (run_id, position, test_id, passed, stdout, stderr)
-             VALUES ($1, 1, 't1', true, 'out', 'err')",
+            "INSERT INTO code_run_cases (run_id, position, test_id, verdict, passed, stdout, stderr)
+             VALUES ($1, 1, 't1', 'accepted', true, 'out', 'err')",
         )
         .bind(run)
         .execute(&pool)
@@ -1104,89 +1103,51 @@ async fn listing_filters_walk_the_trigram_indexes(pool: PgPool) {
 }
 
 #[ab_testdb::test]
-async fn staff_writes_reach_both_rosters_until_the_contract(pool: PgPool) {
+async fn course_staff_is_the_one_roster(pool: PgPool) {
     let w = world(&pool).await;
     let helper = user(&pool, "helper").await;
-    let staff = |table: &'static str| {
-        let pool = pool.clone();
-        async move {
-            let sql = format!(
-                "SELECT authorship || '/' || status || '/' || version FROM {table}
-                  WHERE course_id = $1 AND user_id = $2"
-            );
-            // SAFETY: `table` is one of the two literal table names below.
-            sqlx::query_scalar::<_, String>(sqlx::AssertSqlSafe(sql))
-                .bind(w.course)
-                .bind(helper)
-                .fetch_optional(&pool)
-                .await
-                .unwrap()
-        }
-    };
-    // The previous release adds and edits through resource_authors.
-    sqlx::query(
-        "INSERT INTO resource_authors (course_id, user_id, authorship, status)
-         VALUES ($1, $2, 'contributor', 'pending')",
-    )
-    .bind(w.course)
-    .bind(helper)
-    .execute(&pool)
-    .await
-    .unwrap();
-    assert_eq!(
-        staff("course_staff").await.as_deref(),
-        Some("contributor/pending/1")
-    );
-    sqlx::query("UPDATE resource_authors SET status = 'active' WHERE user_id = $1")
+    let gone: Option<String> = sqlx::query_scalar("SELECT to_regclass('resource_authors')::text")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(gone, None, "resource_authors is dropped by the contract");
+    let add =
+        "INSERT INTO course_staff (course_id, user_id, authorship) VALUES ($1, $2, 'reporter')";
+    sqlx::query(add)
+        .bind(w.course)
         .bind(helper)
         .execute(&pool)
         .await
         .unwrap();
-    assert_eq!(
-        staff("course_staff").await.as_deref(),
-        Some("contributor/active/2")
-    );
-    // This release writes course_staff; the old table follows, versions equal.
-    sqlx::query("UPDATE course_staff SET authorship = 'maintainer' WHERE user_id = $1")
+    let twice = sqlx::query(add)
+        .bind(w.course)
         .bind(helper)
         .execute(&pool)
-        .await
-        .unwrap();
-    assert_eq!(
-        staff("course_staff").await.as_deref(),
-        Some("maintainer/active/3")
-    );
-    assert_eq!(
-        staff("resource_authors").await.as_deref(),
-        Some("maintainer/active/3")
-    );
-    sqlx::query("DELETE FROM course_staff WHERE user_id = $1")
-        .bind(helper)
-        .execute(&pool)
-        .await
-        .unwrap();
-    assert_eq!(staff("resource_authors").await, None);
-    // A course's staff go with it.
-    sqlx::query(
-        "INSERT INTO course_staff (course_id, user_id, authorship) VALUES ($1, $2, 'reporter')",
-    )
-    .bind(w.course)
-    .bind(helper)
-    .execute(&pool)
-    .await
-    .unwrap();
-    assert_eq!(
-        staff("resource_authors").await.as_deref(),
-        Some("reporter/active/1")
-    );
-    let twice = sqlx::query(
-        "INSERT INTO course_staff (course_id, user_id, authorship) VALUES ($1, $2, 'reporter')",
-    )
-    .bind(w.course)
-    .bind(helper)
-    .execute(&pool)
-    .await;
+        .await;
     assert!(twice.is_err(), "one row per (course, user)");
+    sqlx::query("UPDATE course_staff SET status = 'pending' WHERE user_id = $1")
+        .bind(helper)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let version: i32 = sqlx::query_scalar("SELECT version FROM course_staff WHERE user_id = $1")
+        .bind(helper)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(version, 2, "an edit bumps the row version");
+    // A course's staff go with it.
+    sqlx::query("DELETE FROM courses WHERE id = $1")
+        .bind(w.course)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let left: i64 = sqlx::query_scalar("SELECT count(*) FROM course_staff WHERE course_id = $1")
+        .bind(w.course)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(left, 0);
 }
 
 #[ab_testdb::test]
@@ -1253,8 +1214,8 @@ async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPoo
     .unwrap();
     assert_eq!(ids, (Some(avatar), Some(thumb), Some(media), Some(image)));
 
-    // Every counter drifted to 0 with the reaper clock run out.
-    sqlx::query("UPDATE uploads SET referenced_count = 0, expires_at = now() - interval '1 hour'")
+    // Every reaper clock run out (as a drifted counter used to leave them).
+    sqlx::query("UPDATE uploads SET expires_at = now() - interval '1 hour'")
         .execute(&pool)
         .await
         .unwrap();
@@ -1320,57 +1281,6 @@ async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPoo
         held(block).await,
         "a re-claimed block holds its upload again"
     );
-}
-
-/// Item 18, rollback: the previous release moves `referenced_count` by hand
-/// and starts the clock when it reaches 0. Its counts miss this release's
-/// claims, so it may reach 0 while a row still names the file: the guard
-/// keeps that file off the clock, and an unreferenced one still goes.
-#[ab_testdb::test]
-async fn the_previous_release_cannot_start_the_clock_of_a_referenced_upload(pool: PgPool) {
-    let w = world(&pool).await;
-    let mut ids = Vec::new();
-    for key in ["k/held", "k/free"] {
-        ids.push(
-            sqlx::query_scalar::<_, Uuid>(
-                "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes, status,
-                                      referenced_count, expires_at)
-                 VALUES ($1, 'course-thumbnail', 'public', $2, 'image/png', 1, 'finalized', 1, NULL)
-                 RETURNING id",
-            )
-            .bind(w.user)
-            .bind(key)
-            .fetch_one(&pool)
-            .await
-            .unwrap(),
-        );
-    }
-    sqlx::query("UPDATE courses SET thumbnail_image_key = 'k/held' WHERE id = $1")
-        .bind(w.course)
-        .execute(&pool)
-        .await
-        .unwrap();
-    // The previous release's release_reference, verbatim.
-    sqlx::query(
-        "UPDATE uploads
-         SET referenced_count = referenced_count - 1,
-             expires_at = CASE WHEN referenced_count - 1 = 0
-                               THEN now() + make_interval(secs => 60)
-                               ELSE expires_at END
-         WHERE id = ANY($1) AND referenced_count > 0",
-    )
-    .bind(&ids)
-    .execute(&pool)
-    .await
-    .unwrap();
-    let clocks: Vec<bool> = sqlx::query_scalar(
-        "SELECT expires_at IS NOT NULL FROM uploads WHERE id = ANY($1) ORDER BY key",
-    )
-    .bind(&ids)
-    .fetch_all(&pool)
-    .await
-    .unwrap();
-    assert_eq!(clocks, vec![true, false], "k/free released, k/held kept");
 }
 
 /// Review 3, item 24, as the release review left it: a check that old rows
@@ -1674,40 +1584,6 @@ async fn the_platform_day_is_almatys(pool: PgPool) {
 }
 
 #[ab_testdb::test]
-async fn trail_runs_of_the_previous_release_mirror_into_enrolments(pool: PgPool) {
-    let w = world(&pool).await;
-    let trail: Uuid = sqlx::query_scalar("INSERT INTO trails (user_id) VALUES ($1) RETURNING id")
-        .bind(w.user)
-        .fetch_one(&pool)
-        .await
-        .unwrap();
-    sqlx::query("INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2, $3)")
-        .bind(trail)
-        .bind(w.course)
-        .bind(w.user)
-        .execute(&pool)
-        .await
-        .unwrap();
-    let enrolled = || async {
-        sqlx::query_scalar::<_, i64>(
-            "SELECT count(*) FROM enrolments WHERE course_id = $1 AND user_id = $2",
-        )
-        .bind(w.course)
-        .bind(w.user)
-        .fetch_one(&pool)
-        .await
-        .unwrap()
-    };
-    assert_eq!(enrolled().await, 1);
-    sqlx::query("DELETE FROM trail_runs WHERE trail_id = $1")
-        .bind(trail)
-        .execute(&pool)
-        .await
-        .unwrap();
-    assert_eq!(enrolled().await, 0);
-}
-
-#[ab_testdb::test]
 async fn course_progress_derives_percent_and_eligibility(pool: PgPool) {
     let w = world(&pool).await;
     let derived = || async {
@@ -1762,33 +1638,10 @@ async fn course_progress_derives_percent_and_eligibility(pool: PgPool) {
                      WHERE course_id = $1 AND user_id = $2")
     .await;
     assert!(early.is_err(), "completed_at only on a completed course");
-
-    // The previous release's leaver write clears the stamp: the course stays not completed.
-    set(
-        "UPDATE course_progress SET completed_at = NULL, certificate_eligible = false
-         WHERE course_id = $1 AND user_id = $2",
-    )
-    .await
-    .unwrap();
-    assert_eq!(derived().await, (100.0, false));
-    // Its member write of a course done by state alone (no stamp, the flag set): the stamp is the
-    // last activity, as the new projector's.
-    set(
-        "UPDATE course_progress SET certificate_eligible = true, last_activity_at = '2026-10-01Z'
-         WHERE course_id = $1 AND user_id = $2",
-    )
-    .await
-    .unwrap();
-    assert_eq!(derived().await, (100.0, true));
-    let stamped: bool = sqlx::query_scalar(
-        "SELECT completed_at = '2026-10-01Z' FROM course_progress WHERE course_id = $1 AND user_id = $2",
-    )
-    .bind(w.course)
-    .bind(w.user)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert!(stamped);
+    let written = set("UPDATE course_progress SET progress_pct = 50
+                       WHERE course_id = $1 AND user_id = $2")
+    .await;
+    assert!(written.is_err(), "the percent is generated, never written");
 }
 
 #[ab_testdb::test]
@@ -1847,54 +1700,7 @@ async fn the_event_prune_keeps_400_days(pool: PgPool) {
 }
 
 #[ab_testdb::test]
-async fn completions_mirror_the_previous_releases_projection(pool: PgPool) {
-    let w = world(&pool).await;
-    let completions = || async {
-        sqlx::query_scalar::<_, i64>(
-            "SELECT count(*) FROM completions WHERE activity_id = $1 AND user_id = $2",
-        )
-        .bind(w.activity)
-        .bind(w.user)
-        .fetch_one(&pool)
-        .await
-        .unwrap()
-    };
-    let write = |sql: &'static str| {
-        let pool = pool.clone();
-        async move {
-            sqlx::query(sql)
-                .bind(w.course)
-                .bind(w.activity)
-                .bind(w.user)
-                .execute(&pool)
-                .await
-                .unwrap();
-        }
-    };
-    write(
-        "INSERT INTO activity_progress (course_id, activity_id, user_id, state)
-         VALUES ($1, $2, $3, 'submitted')",
-    )
-    .await;
-    assert_eq!(completions().await, 0);
-    // A passing grade released: the old binary sets completed_at.
-    write(
-        "UPDATE activity_progress SET state = 'completed', completed_at = now()
-         WHERE course_id = $1 AND activity_id = $2 AND user_id = $3",
-    )
-    .await;
-    assert_eq!(completions().await, 1);
-    // A regrade below the pass mark clears it again.
-    write(
-        "UPDATE activity_progress SET state = 'failed', completed_at = NULL
-         WHERE course_id = $1 AND activity_id = $2 AND user_id = $3",
-    )
-    .await;
-    assert_eq!(completions().await, 0);
-}
-
-#[ab_testdb::test]
-async fn a_code_run_case_keeps_its_verdict_and_the_legacy_code_in_step(pool: PgPool) {
+async fn a_code_run_case_stores_the_platforms_verdict(pool: PgPool) {
     let w = world(&pool).await;
     let item: Uuid = sqlx::query_scalar(
         "INSERT INTO assessment_items (assessment_id, kind, position, body)
@@ -1915,52 +1721,35 @@ async fn a_code_run_case_keeps_its_verdict_and_the_legacy_code_in_step(pool: PgP
     .fetch_one(&pool)
     .await
     .unwrap();
-    // The previous release writes Judge0's code, this one the verdict.
-    sqlx::query(
-        "INSERT INTO code_run_cases (run_id, position, test_id, status_id, status_description)
-         VALUES ($1, 1, 'old', 7, 'Runtime Error (SIGSEGV)'),
-                ($1, 2, 'old-mle', 12, 'Memory Limit Exceeded'),
-                ($1, 3, 'old-none', NULL, '')",
-    )
-    .bind(run)
-    .execute(&pool)
-    .await
-    .unwrap();
     sqlx::query(
         "INSERT INTO code_run_cases (run_id, position, test_id, verdict, status_description)
-         VALUES ($1, 4, 'new', 'output_limit', 'Output Limit Exceeded')",
+         VALUES ($1, 1, 'new', 'output_limit', 'Output Limit Exceeded')",
     )
     .bind(run)
     .execute(&pool)
     .await
     .unwrap();
-    let rows: Vec<(String, String, Option<i32>)> = sqlx::query_as(
-        "SELECT test_id, verdict, status_id FROM code_run_cases WHERE run_id = $1 ORDER BY position",
-    )
-    .bind(run)
-    .fetch_all(&pool)
-    .await
-    .unwrap();
-    let rows: Vec<(&str, &str, Option<i32>)> = rows
-        .iter()
-        .map(|(t, v, s)| (t.as_str(), v.as_str(), *s))
-        .collect();
-    assert_eq!(
-        rows,
-        [
-            ("old", "runtime_error", Some(7)),
-            ("old-mle", "memory_limit", Some(12)),
-            ("old-none", "wrong_answer", Some(4)),
-            ("new", "output_limit", Some(8)),
-        ]
-    );
     let unknown = sqlx::query(
-        "INSERT INTO code_run_cases (run_id, position, test_id, verdict) VALUES ($1, 5, 'x', 'ok')",
+        "INSERT INTO code_run_cases (run_id, position, test_id, verdict) VALUES ($1, 2, 'x', 'ok')",
     )
     .bind(run)
     .execute(&pool)
     .await;
     assert!(unknown.is_err(), "verdicts are a closed list");
+    let missing =
+        sqlx::query("INSERT INTO code_run_cases (run_id, position, test_id) VALUES ($1, 3, 'y')")
+            .bind(run)
+            .execute(&pool)
+            .await;
+    assert!(missing.is_err(), "a case has a verdict");
+    let judge0: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM information_schema.columns
+         WHERE table_name = 'code_run_cases' AND column_name IN ('status_id', 'judge0_token')",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(judge0, 0, "no Judge0 columns are left");
 }
 
 #[ab_testdb::test]
@@ -1978,31 +1767,21 @@ async fn a_handed_in_attempt_keeps_its_snapshots(pool: PgPool) {
     .unwrap();
     let hand_in = "UPDATE submissions SET status = 'submitted', submitted_at = now() WHERE id = $1";
 
-    // Without snapshots the hand-in fails at commit.
-    let mut tx = pool.begin().await.unwrap();
-    sqlx::query(hand_in)
-        .bind(draft)
-        .execute(&mut *tx)
-        .await
-        .unwrap();
-    assert!(tx.commit().await.is_err(), "handed in without snapshots");
+    // Without snapshots the hand-in is refused (a CHECK on the clean
+    // database: no legacy row lacks them).
+    let refused = sqlx::query(hand_in).bind(draft).execute(&pool).await;
+    assert!(refused.is_err(), "handed in without snapshots");
 
-    // The previous release's order: hand in, then write the snapshots.
-    let mut tx = pool.begin().await.unwrap();
-    sqlx::query(hand_in)
-        .bind(draft)
-        .execute(&mut *tx)
-        .await
-        .unwrap();
+    // The hand-in writes them in the same statement.
     sqlx::query(
-        "UPDATE submissions SET items_snapshot = '{\"items\": []}', policy_snapshot = '{}'
+        "UPDATE submissions SET status = 'submitted', submitted_at = now(),
+                items_snapshot = '{\"items\": []}', policy_snapshot = '{}'
          WHERE id = $1",
     )
     .bind(draft)
-    .execute(&mut *tx)
+    .execute(&pool)
     .await
     .unwrap();
-    tx.commit().await.unwrap();
 
     for rewrite in [
         "UPDATE submissions SET items_snapshot = '{}' WHERE id = $1",
@@ -2748,4 +2527,115 @@ async fn audit_metadata_is_an_object(pool: PgPool) {
             .contains("auth_audit_log_metadata_check"),
         "{refused}"
     );
+}
+
+#[ab_testdb::test]
+async fn scores_are_exact_numerics_behind_domains(pool: PgPool) {
+    let columns: Vec<(String, String, String)> = sqlx::query_as(
+        "SELECT table_name::text, column_name::text, domain_name::text
+         FROM information_schema.columns
+         WHERE (table_name, column_name) IN (('submissions', 'final_score'),
+                                             ('grading_entries', 'raw_score'),
+                                             ('assessments', 'passing_score'),
+                                             ('assessments', 'weight'),
+                                             ('assessment_items', 'max_score'),
+                                             ('code_run_cases', 'weight'))
+         ORDER BY 1, 2",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    let columns: Vec<(&str, &str, &str)> = columns
+        .iter()
+        .map(|(t, c, d)| (t.as_str(), c.as_str(), d.as_str()))
+        .collect();
+    assert_eq!(
+        columns,
+        [
+            ("assessment_items", "max_score", "score_points"),
+            ("assessments", "passing_score", "percent"),
+            ("assessments", "weight", "score_weight"),
+            ("code_run_cases", "weight", "score_weight"),
+            ("grading_entries", "raw_score", "percent"),
+            ("submissions", "final_score", "percent"),
+        ]
+    );
+    let double: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM information_schema.columns
+         WHERE table_schema::name = ANY (ARRAY['public']::name[] || app_schemas()) AND data_type = 'double precision'
+           AND column_name <> 'time_seconds'
+           AND table_name IN ('submissions', 'grading_entries', 'assessments', 'assessment_items',
+                              'file_submissions', 'file_submission_attempts',
+                              'file_grading_entries', 'item_feedback', 'code_runs',
+                              'code_run_cases', 'ai_grade_drafts', 'ai_grade_corrections')",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(double, 0, "no score column is left in double precision");
+
+    let w = world(&pool).await;
+    let stored: f64 = sqlx::query_scalar(
+        "UPDATE assessments SET passing_score = 33.333 WHERE id = $1 RETURNING passing_score::float8",
+    )
+    .bind(w.assessment)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(
+        (stored - 33.33).abs() < 1e-9,
+        "rounded to the column scale: {stored}"
+    );
+    for bad in [
+        "UPDATE assessments SET passing_score = 100.01 WHERE id = $1",
+        "UPDATE assessments SET weight = -1 WHERE id = $1",
+        "UPDATE assessments SET weight = 'NaN' WHERE id = $1",
+    ] {
+        let refused = sqlx::query(bad).bind(w.assessment).execute(&pool).await;
+        assert!(refused.is_err(), "{bad}");
+    }
+}
+
+// Review 3, item 43 (contract 20261103073000): no app table stays in `public`; the retention function finds
+// its table in `ops`.
+#[ab_testdb::test]
+async fn no_app_table_is_left_in_public(pool: PgPool) {
+    let left: Vec<String> = sqlx::query_scalar(
+        "SELECT c.relname::text FROM pg_class c
+          WHERE c.relnamespace = 'public'::regnamespace AND c.relkind IN ('r', 'p', 'v', 'm', 'S')
+            AND c.relname <> '_sqlx_migrations'
+            AND NOT EXISTS (SELECT FROM pg_depend d WHERE d.classid = 'pg_class'::regclass
+                             AND d.objid = c.oid
+                             AND (d.deptype = 'e'
+                                  OR (c.relkind = 'S' AND d.deptype IN ('a', 'i')
+                                      AND d.refclassid = 'pg_class'::regclass AND d.refobjid <> c.oid)))
+          ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert!(
+        left.is_empty(),
+        "tables in public (name the schema in CREATE TABLE, ARCHITECTURE §8 rule 8): {left:?}"
+    );
+    let misplaced: Vec<String> = sqlx::query_scalar(
+        "SELECT c.oid::regclass::text || ' in ' || n.nspname FROM pg_class c
+           JOIN pg_namespace n ON n.oid = c.relnamespace
+          WHERE n.nspname = ANY (app_schemas()) AND c.relkind IN ('r', 'p') AND NOT c.relispartition
+            AND n.nspname <> app_table_schema(c.relname)
+          ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert!(misplaced.is_empty(), "moved off the mapping: {misplaced:?}");
+    let pruned: i64 = sqlx::query_scalar("SELECT prune_auth_audit_log(30, 10)")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(pruned, 0);
+    sqlx::query("SELECT analytics_events_ensure_partitions(1)")
+        .execute(&pool)
+        .await
+        .unwrap();
 }

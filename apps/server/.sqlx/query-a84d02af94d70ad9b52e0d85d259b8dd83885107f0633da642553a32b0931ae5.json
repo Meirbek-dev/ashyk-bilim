@@ -117,34 +117,19 @@
         "ordinal": 10,
         "name": "ai_score?",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "ai_grade_drafts",
-            "name": "ai_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 11,
         "name": "calibrated_score?",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "ai_grade_drafts",
-            "name": "calibrated_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 12,
         "name": "max_score?",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "ai_grade_drafts",
-            "name": "max_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 13,
@@ -205,12 +190,7 @@
         "ordinal": 18,
         "name": "final_score?",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "ai_grade_drafts",
-            "name": "final_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 19,
@@ -241,15 +221,15 @@
       false,
       false,
       false,
-      true,
-      true,
-      true,
+      null,
+      null,
+      null,
       true,
       false,
       true,
       true,
       true,
-      true,
+      null,
       null,
       null
     ]

@@ -92,12 +92,7 @@
         "ordinal": 10,
         "name": "weight!",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "assessments",
-            "name": "weight"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 11,
@@ -180,12 +175,7 @@
         "ordinal": 18,
         "name": "passing_score!",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "assessments",
-            "name": "passing_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 19,
@@ -241,12 +231,7 @@
         "ordinal": 24,
         "name": "late_penalty_percent_per_day?",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "assessments",
-            "name": "late_penalty_percent_per_day"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 25,
@@ -324,12 +309,7 @@
         "ordinal": 32,
         "name": "negative_marking_percent!",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "assessments",
-            "name": "negative_marking_percent"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 33,
@@ -412,12 +392,7 @@
         "ordinal": 40,
         "name": "attempt_penalty_percent!",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "assessments",
-            "name": "attempt_penalty_percent"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 41,
@@ -470,22 +445,6 @@
       null,
       null,
       null,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      true,
-      true,
-      null,
-      false,
-      false,
-      true,
-      true,
       null,
       false,
       false,
@@ -494,6 +453,21 @@
       false,
       false,
       false,
+      null,
+      true,
+      true,
+      null,
+      false,
+      false,
+      null,
+      true,
+      null,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
       false,
       false,
       false,
@@ -501,6 +475,7 @@
       false,
       false,
       false,
+      null,
       false,
       true,
       null,

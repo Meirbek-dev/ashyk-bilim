@@ -123,12 +123,7 @@
         "ordinal": 11,
         "name": "late_penalty_percent_per_day?",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "file_submissions",
-            "name": "late_penalty_percent_per_day"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 12,
@@ -255,7 +250,7 @@
       null,
       false,
       false,
-      true,
+      null,
       true,
       null,
       true,

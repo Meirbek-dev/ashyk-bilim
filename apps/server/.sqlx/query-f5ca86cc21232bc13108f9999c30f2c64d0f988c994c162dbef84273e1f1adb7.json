@@ -52,12 +52,7 @@
         "ordinal": 5,
         "name": "passing_score!",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "assessments",
-            "name": "passing_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 6,
@@ -99,7 +94,7 @@
       null,
       null,
       false,
-      false,
+      null,
       true,
       true,
       null

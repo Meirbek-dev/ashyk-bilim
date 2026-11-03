@@ -1395,18 +1395,12 @@ async fn the_matrix_holds_with_trails_emptied(pool: PgPool) {
     run_matrix(pool, true).await;
 }
 
-/// Every trail, run and step goes; the enrolments stay (the previous
-/// release's sync trigger is off for the delete).
+/// Every trail, run and step goes; the enrolments stay.
 async fn delete_every_trail(pool: &PgPool) {
-    let mut tx = pool.begin().await.unwrap();
-    for sql in [
-        "ALTER TABLE trail_runs DISABLE TRIGGER trail_runs_sync_enrolment",
-        "DELETE FROM trails",
-        "ALTER TABLE trail_runs ENABLE TRIGGER trail_runs_sync_enrolment",
-    ] {
-        sqlx::query(sql).execute(&mut *tx).await.unwrap();
-    }
-    tx.commit().await.unwrap();
+    sqlx::query("DELETE FROM trails")
+        .execute(pool)
+        .await
+        .unwrap();
     let enrolled: i64 = sqlx::query_scalar("SELECT count(*) FROM enrolments")
         .fetch_one(pool)
         .await

@@ -73,23 +73,13 @@
         "ordinal": 6,
         "name": "score?",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "item_feedback",
-            "name": "score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 7,
         "name": "max_score?",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "item_feedback",
-            "name": "max_score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 8,
@@ -150,8 +140,8 @@
       true,
       false,
       false,
-      true,
-      true,
+      null,
+      null,
       false,
       true,
       true,

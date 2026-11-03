@@ -23,10 +23,9 @@ Every table, column, key and foreign key with the table's purpose: `docs/agents/
 | enrolled learner                  | `trail_runs` (`user_id`, `course_id`); per activity: `trail_steps`, `activity_progress` |
 | course teacher / author           | `course_staff` (`course_id`, `user_id`, `authorship`, `status`)                      |
 | enrolled learner                  | `enrolments` (`course_id`, `user_id`; staff excluded by `is_course_staff`); the learner's list: `trail_runs`; per activity: `completions` (the fact), `activity_progress` (projection), `trail_steps` (legacy marks) |
-| course teacher / author           | `resource_authors` (`course_id`, `user_id`, `authorship`, `status`)                  |
 | quiz, exam, code challenge        | `assessments` (`activity_id`, `lifecycle`; title/kind = the activity's) + `assessment_items` (`body` json) |
 | code statement, tests, languages  | `assessment_items.body`: `prompt`, `tests[]`, `languages[]`, `time_limit_seconds`     |
-| attempt (quiz, exam, code)        | `submissions` (`status` draft / submitted / graded / released / returned; until contract B2 the rows still say `pending` / `published`, the API always does) |
+| attempt (quiz, exam, code)        | `submissions` (`status` draft / submitted / graded / released / returned) |
 | what an attempt answered against  | `submissions.items_snapshot` / `policy_snapshot`, `assessment_version_id` -> `assessment_versions` |
 | a grade and its history           | `grading_entries` (journal, latest id = current) = `submissions.final_score`; breakdown `submission_breakdown(id, auto_breakdown)` (latest entry's, else the hand-in's) |
 | code "Run"                        | `code_runs` (+ `code_run_cases`, `verdict`)                                          |

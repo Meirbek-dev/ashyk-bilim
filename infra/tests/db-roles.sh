@@ -77,6 +77,14 @@ probe() {
         AND has_column_privilege('ashyq_ro', format('%I.%I', c.table_schema, c.table_name), c.column_name, 'SELECT');
       IF leaks IS NOT NULL THEN RAISE EXCEPTION 'ashyq_ro reads %', leaks; END IF;
     END \$\$"
+  # Schema review 43: the tables sit in their schemas, found through the database's search_path.
+  check ashyq_app ok "SELECT count(*) FROM core.users, learning.submissions, ops.jobs, ai.ai_runs, analytics.analytics_events"
+  check ashyq_app ok "SELECT analytics_events_ensure_partitions(1), analytics_events_drop_partitions(now() - interval '1000 days')"
+  check ashyq_app denied "CREATE TABLE core.intruder (id int)"
+  check ashyq_ro denied "SELECT email FROM core.users"
+  check ashyq ok "SELECT 1 WHERE current_setting('search_path') = 'public, core, learning, ai, analytics, ops, extensions'
+                    AND NOT EXISTS (SELECT FROM pg_class WHERE relnamespace = 'public'::regnamespace AND relkind = 'r'
+                                     AND relname <> '_sqlx_migrations') HAVING count(*) = 1"
 }
 
 # Every migration as the owner, each in one transaction unless `-- no-transaction` (as sqlx runs them).

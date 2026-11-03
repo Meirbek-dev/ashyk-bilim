@@ -182,9 +182,7 @@ pub async fn record_award(
         return Ok(Recorded::OverDailyLimit { earned_today });
     }
     // Level curve: XP(level) = 50(level-1)^2 + 50(level-1), capped at 100.
-    // The stored `daily_xp_earned` is not written: the previous release's
-    // copy is kept by the `gamification_profiles_daily_xp` trigger on
-    // `last_xp_award_at` until the lane C2 contract drops the column.
+    // Today's XP is summed from the journal, never stored (review item 16).
     let new_level: i32 = sqlx::query_scalar!(
         r#"UPDATE gamification_profiles SET
                total_xp = total_xp + $2,
