@@ -139,7 +139,7 @@ pgvector still lives in `public` until the superuser step of RUNBOOK 2.6 (`vecto
 | Role | Superuser | Created by | Used by |
 | --- | --- | --- | --- |
 | `${POSTGRES_USER}` (`cs_mooc` in prod, `postgres` in dev) | yes | initdb on an empty volume | db-init, zitadel-init, backup and pre-deploy dumps (local socket) |
-| `ashyq` | no | db-init, password `ASHYQ_DB_PASSWORD`, only if missing; `CREATEDB` when `ASHYQ_DB_CREATEDB=true` (dev, for test databases) | server-migrate (owner of every object); server and worker until `server.env` names `ashyq_app` |
+| `ashyq` | no | db-init, password `ASHYQ_DB_PASSWORD`, only if missing; `CREATEDB` when `ASHYQ_DB_CREATEDB=true` (dev, for test databases) | server-migrate (owner of every object) |
 | `zitadel` | no | db-init, password `ZITADEL_DB_PASSWORD`, only if missing, in the instance `ZITADEL_DB_HOST` names (`zitadel-db.sql` there) | zitadel |
 | `ashyq_app` | no | db-init (`roles.sql`), password `ASHYQ_APP_DB_PASSWORD`, only if missing and set | server, worker (`server.env`; smoke and e2e stands already): rows only, insert-only journals (RUNBOOK 2.5) |
 | `ashyq_ro` | no | db-init (`roles.sql`), password `ASHYQ_RO_DB_PASSWORD`, only if missing and set | read-only access without contact data or secrets: `just db sql` in dev, `psql -U ashyq_ro` on prod |

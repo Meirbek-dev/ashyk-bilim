@@ -134,7 +134,7 @@ Read prod as `ashyq_ro` (local socket, no password):
 dc exec -T db psql -U ashyq_ro -d ashyq -c 'SELECT count(*) FROM submissions'
 ```
 
-Switching production on (one window; not done yet):
+Switching a stack on (production: done 2026-11-03):
 
 1. `.env`: `ASHYQ_APP_DB_PASSWORD` and `ASHYQ_RO_DB_PASSWORD`, each `openssl rand -hex 32`.
 2. `just deploy` of a release that has migration `20261102050200`. db-init creates the roles, server-migrate applies
@@ -568,8 +568,11 @@ says where Zitadel's database is: `zitadel-db` on fresh installs (`prod.env.exam
 a stack set up before. Never set it by hand on such a stack: Zitadel would start a new, empty instance on
 zitadel-db and nobody could sign in (preflight fails on that).
 
+Production moved 2026-11-03 (Zitadel stopped 13 s); drop `zitadel_moved_20261103_145725` in db after 2026-11-10
+(command at the end of this section).
+
 Move (one window, a few minutes; sign-in is unavailable while Zitadel is stopped, pages and API keep serving;
-rehearsed by `just zitadel-db-move-test`, in `just ci-infra`):
+rehearsed by `just zitadel-db-move-test`, in `just ci-infra`; `ZITADEL_MOVE_YES=1` answers the question):
 
 ```bash
 just deploy                            # a release with zitadel-db: it starts empty beside db

@@ -23,7 +23,8 @@ stamp=$(date -u +%Y%m%d_%H%M%S) # part of database names: lower case
 
 # SQL as the superuser in a one-off db-init container (psql 18, /pg mounted, PGUSER/PGPASSWORD, both hosts).
 # shellcheck disable=SC2016 # expanded in the container
-sql() { compose run --rm --no-deps -T --entrypoint sh db-init -c "$1"; }
+# </dev/null: compose run reads stdin, which would eat the answer piped to confirm.
+sql() { compose run --rm --no-deps -T --entrypoint sh db-init -c "$1" </dev/null; }
 q() { sql "psql -h $1 -d ${3:-postgres} -XAtq -v ON_ERROR_STOP=1 -c \"$2\""; }
 set_host() {
   local tmp=$env_file.zitadel-move
@@ -46,7 +47,7 @@ smoke() {
 confirm() {
   [[ ${ZITADEL_MOVE_YES:-} == 1 ]] && return
   local ok
-  read -r -p "$1 Type yes: " ok
+  read -r -p "$1 Type yes: " ok || true # EOF: "aborted" below, not a silent set -e exit
   [[ $ok == yes ]] || die "aborted"
 }
 terminate() { # terminate <host> <database>: no session may hold a database that is renamed

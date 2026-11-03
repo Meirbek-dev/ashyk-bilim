@@ -926,7 +926,7 @@ Decided, not done:
    on connect (ARCHITECTURE §16, `AB__DATABASE__LIMITS__*`). The first deploy recreates `db` (a few seconds).
 4. **Journals are protected by privileges too** (done in the repo, 2026-11): `ashyq_app` has INSERT only on
    grade and audit journals (`apply_role_grants`, migration `20261102050200`); `auth_audit_log` retention runs
-   through the SECURITY DEFINER `prune_auth_audit_log`. Production switches with RUNBOOK 2.5 (a deploy step).
+   through the SECURITY DEFINER `prune_auth_audit_log`. Production switched 2026-11-03 (RUNBOOK 2.5).
 5. **Analytics events are written in the action's transaction** (done in the repo, 2026-11-02): `events::record`
    and its hooks take the action's connection and return its error (ARCHITECTURE §9); every payload carries
    `schema_version` (1). Rows written before carry none: read a missing `schema_version` as 1.
@@ -939,7 +939,7 @@ Decided, not done:
    differ" refusal and a failed deploy rolls back by itself (`infra/scripts/migrations.sh`, INFRA "Build and
    release").
 8. **Zitadel in its own Postgres instance** until phase 4 removes it (done in the repo, 2026-11): compose service
-   `zitadel-db`, `ZITADEL_DB_HOST`; production moves with `just zitadel-db-move` in a window (RUNBOOK 3.15).
+   `zitadel-db`, `ZITADEL_DB_HOST`; production moved 2026-11-03 (`just zitadel-db-move`, RUNBOOK 3.15).
 9. **Schemas** (core, learning, ai, analytics, ops) and an `extensions` schema (review 43; ARCHITECTURE §8
     rule 8). Done in the repo (2026-11): expand `20261102090000` creates the schemas, the mapping
     `app_table_schema()`, grants and default privileges per schema, and sets the `search_path` on the database
