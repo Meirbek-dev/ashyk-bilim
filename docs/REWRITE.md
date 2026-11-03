@@ -666,7 +666,7 @@ in the order it can be done, each step a forward migration on the current schema
    from starting the clock of a referenced upload.
    Uploads a rollback window left claimed but unreferenced (`expires_at` NULL, nothing names them), and the
    discussion images of posts deleted before `post_uploads`, get the reaper's clock from `ashyq admin
-   clock-unreferenced-uploads` (RUNBOOK 2.8; done 2026-11-03). Left: run it in production.
+   clock-unreferenced-uploads` (RUNBOOK 2.8; done 2026-11-03; production had none on 2026-11-04).
 5. **Enrolments** (item 11): done (ARCHITECTURE §8 "Membership is an `enrolments` row";
    `progress_flow::membership_is_the_enrolment_not_the_trail`, `permission_matrix::the_matrix_holds_with_trails_emptied`).
    The roster (keyset `(enrolled_at, user_id)`, cursor `"<µs>.<user id>"`; an old run-id cursor resolves through
