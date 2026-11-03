@@ -36,7 +36,8 @@ Compilation uses the committed SQLx cache by default; `prepare` and `sqlx-check`
 ## Invariants
 
 - Commit and push per root `AGENTS.md` (`just commit`, `just push`; skill `ship`). Run focused checks during an
-  edit batch and `just ci-server` once before committing server changes. Fix a red hosted pipeline before other work.
+  edit batch, including the DB tests the change reaches (pre-push no longer runs them; CI runs the whole suite).
+  Fix a red hosted pipeline before other work.
 - Never edit an applied migration. Never commit env files, keys, tokens or restored data.
 - A constraint on existing data: repair violating rows with a stated deterministic rule first, or add it with
   `SELECT schema_try_check(table, name, expr)` (NOT VALID + VALIDATE; skipped with a warning and a

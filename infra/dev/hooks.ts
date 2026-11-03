@@ -3,19 +3,17 @@
 // pre-commit checks the STAGED content only. The index (GIT_INDEX_FILE, so `git commit -- <paths>` works too) is
 // written as a tree and checked out into tmp/hooks/snap with an incremental read-tree, node_modules linked in; the
 // tools run there. Unstaged work in progress - yours or another agent's - can neither fail nor pass a commit.
-//   web-2:  vp fmt + vp lint (type-aware, type-check) of the staged files, cheap gates filtered to staged files
-//   web:    vp fmt + vp lint --quiet (type-aware, type-check) of the staged files
+//   web-2:  vp fmt of staged files
+//   web:    vp fmt of staged files
 //   server: rustfmt --check of the staged .rs files; refuses edits to migrations already on origin/main
-// pre-push runs `just check --base <remote tip>` on a checkout of the pushed commit; only CI (env CI) skips it.
+// pre-push runs `just check --fast --base <remote tip>` on the pushed commit; only CI skips it.
 import { lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { delimiter, dirname, join } from 'node:path'
 
 import { recordHits } from './ledger.ts'
 
 const MAX_LINES = 30
-const WEB2_GATES = ['i18n', 'tokens', 'suppressions', 'trace', 'docs']
 const FMT = /\.(ts|tsx|mts|js|mjs|json|jsonc|css|md)$/
-const LINT = /\.(ts|tsx|mts|js|mjs)$/
 const win = process.platform === 'win32'
 
 type Result = { name: string; code: number; out: string; fix?: string }
@@ -174,50 +172,18 @@ function prepare(dir: string, tree: string, paraglide: boolean): void {
   }
 }
 
-function web2(snap: string, files: string[]): Promise<Result>[] {
-  if (!files.length) return []
-  const dir = join(snap, 'apps/web-2')
+function web(snap: string, app: string, files: string[]): Promise<Result>[] {
+  const dir = join(snap, 'apps', app)
   const fmt = files.filter(f => FMT.test(f))
-  const lint = files.filter(f => LINT.test(f))
-  const jobs: Promise<Result>[] = []
-  const fixFmt = `just fmt ${fmt.map(f => `apps/web-2/${f}`).join(' ')}`
-  if (fmt.length)
-    jobs.push(
-      run('web-2 fmt', [vp(dir), 'fmt', '--list-different', '--no-error-on-unmatched-pattern', ...fmt], dir, fixFmt),
-    )
-  if (lint.length) jobs.push(run('web-2 lint', [vp(dir), 'lint', '--no-error-on-unmatched-pattern', ...lint], dir))
-  // Whole-app gates, but only findings in staged files fail the commit (the rest is pre-push's).
-  for (const gate of WEB2_GATES)
-    jobs.push(
-      run(`web-2 gate ${gate}`, ['bun', 'gates/gates.ts', gate], dir).then(r => {
-        const mine = r.out
-          .split('\n')
-          .filter(line => files.some(f => line.startsWith(`${f}:`) || line.startsWith(`${f} `)))
-        return { ...r, code: mine.length ? 1 : 0, out: mine.join('\n') }
-      }),
-    )
-  return jobs
-}
-
-function web(snap: string, files: string[]): Promise<Result>[] {
-  const dir = join(snap, 'apps/web')
-  const fmt = files.filter(f => FMT.test(f))
-  const lint = files.filter(f => LINT.test(f))
-  const jobs: Promise<Result>[] = []
-  const fixFmt = `just fmt ${fmt.map(f => `apps/web/${f}`).join(' ')}`
-  if (fmt.length)
-    jobs.push(
-      run('web fmt', [vp(dir), 'fmt', '--list-different', '--no-error-on-unmatched-pattern', ...fmt], dir, fixFmt),
-    )
-  if (lint.length)
-    jobs.push(
-      run(
-        'web lint',
-        [vp(dir), 'lint', '--type-aware', '--type-check', '--quiet', '--no-error-on-unmatched-pattern', ...lint],
-        dir,
-      ),
-    )
-  return jobs
+  if (!fmt.length) return []
+  return [
+    run(
+      `${app} fmt`,
+      [vp(dir), 'fmt', '--list-different', '--no-error-on-unmatched-pattern', ...fmt],
+      dir,
+      `just fmt ${fmt.map(f => `apps/${app}/${f}`).join(' ')}`,
+    ),
+  ]
 }
 
 function server(snap: string, files: string[]): Promise<Result>[] {
@@ -310,9 +276,13 @@ async function checkChange(hook: string, changed: string[], tree: () => string, 
   if (files.web2.length || files.web.length || files.server.some(f => f.endsWith('.rs'))) {
     const treeish = tree()
     const snap = snapshot(treeish)
-    prepare(snap, treeish, files.web2.length > 0)
+    prepare(snap, treeish, false)
     results.push(
-      ...(await Promise.all([...web2(snap, files.web2), ...web(snap, files.web), ...server(snap, files.server)])),
+      ...(await Promise.all([
+        ...web(snap, 'web-2', files.web2),
+        ...web(snap, 'web', files.web),
+        ...server(snap, files.server),
+      ])),
     )
   }
   return report(hook, results, started)
@@ -362,7 +332,7 @@ function push(args: string[]): number {
   )
 }
 
-// stdin: "<local ref> <local sha> <remote ref> <remote sha>" per pushed ref. `just check --base <remote sha>` runs in
+// stdin: "<local ref> <local sha> <remote ref> <remote sha>" per pushed ref. `just check --fast --base <remote sha>` runs in
 // a detached worktree of the pushed commit (tmp/hooks/push), so uncommitted work in this tree is not checked.
 async function prePush(): Promise<number> {
   if (process.env['CI']) return 0
@@ -398,9 +368,14 @@ async function prePush(): Promise<number> {
   }
   try {
     const dir = pushCheckout(local)
-    prepare(dir, local, true)
-    console.log(`pre-push: just check --base ${base.slice(0, 8)} on ${local.slice(0, 8)} (tmp/hooks/push)`)
-    const p = Bun.spawn([process.execPath, 'infra/dev/check.ts', '--base', base, '--isolated-db'], {
+    const files = git('diff', '--name-only', base, local).out.split('\n')
+    prepare(
+      dir,
+      local,
+      files.some(f => f.startsWith('apps/web-2/')),
+    )
+    console.log(`pre-push: just check --fast --base ${base.slice(0, 8)} on ${local.slice(0, 8)} (tmp/hooks/push)`)
+    const p = Bun.spawn([process.execPath, 'infra/dev/check.ts', '--fast', '--base', base], {
       cwd: dir,
       env: toolEnv, // check.ts picks this checkout's own CARGO_TARGET_DIR (infra/dev/cargo-target.ts)
       stdout: 'inherit',

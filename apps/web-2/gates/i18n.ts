@@ -58,13 +58,20 @@ function checkFiles(locales: string[], patterns: string[], findings: Finding[]):
   return features
 }
 
-function checkMessage(key: string, feature: string, values: Record<string, unknown>, findings: Finding[]): void {
+export function checkMessage(
+  key: string,
+  feature: string,
+  values: Record<string, unknown>,
+  findings: Finding[],
+  warnings: Finding[],
+): void {
   const file = `messages/ru/${feature}.json`
   const ru = values['ru']
   if (!new RegExp(`^${feature}_[a-z0-9_]+$`).test(key)) {
     findings.push({ file, rule: 'i18n-key-name', fix: `rename "${key}" to snake_case with the "${feature}_" prefix` })
   }
-  const sameAllowed = allowlist().i18nSameAsRu.some(entry => entry.key === key)
+  // Reviewed shared terms (gates/allowlist.json) stay quiet; a new kk text equal to ru only warns.
+  const reviewed = allowlist().i18nSameAsRu.some(entry => entry.key === key)
   for (const [locale, value] of Object.entries(values)) {
     const where = `messages/${locale}/${feature}.json`
     if (value === undefined) {
@@ -91,18 +98,11 @@ function checkMessage(key: string, feature: string, values: Record<string, unkno
         fix: `"${key}" needs exactly the ${locale} forms ${expected.join(', ')}`,
       })
     }
-    if (locale === 'kk' && text(value) === text(ru) && !sameAllowed) {
-      findings.push({
+    if (locale === 'kk' && text(value) === text(ru) && !reviewed) {
+      warnings.push({
         file: where,
-        rule: 'i18n-untranslated',
-        fix: `"${key}" equals ru: translate it, or allowlist with a reason`,
-      })
-    }
-    if (locale === 'kk' && text(value) !== text(ru) && sameAllowed) {
-      findings.push({
-        file: 'gates/allowlist.json',
-        rule: 'i18n-untranslated',
-        fix: `"${key}" no longer equals ru in kk: drop it from i18nSameAsRu`,
+        rule: 'i18n-identical',
+        fix: `"${key}" equals ru; review the translation (shared terms may match)`,
       })
     }
   }
@@ -144,6 +144,7 @@ function checkGlossary(catalogs: Record<string, Catalog>, feature: string, findi
 
 export function i18n(): Finding[] {
   const findings: Finding[] = []
+  const warnings: Finding[] = []
   const { locales, patterns } = settings()
   const features = checkFiles(locales, patterns, findings)
   const sources = walk('src', /\.tsx?$/)
@@ -157,7 +158,13 @@ export function i18n(): Finding[] {
     }
     const keys = new Set(locales.flatMap(locale => Object.keys(catalogs[locale] ?? {})))
     for (const key of keys) {
-      checkMessage(key, feature, Object.fromEntries(locales.map(locale => [locale, catalogs[locale]?.[key]])), findings)
+      checkMessage(
+        key,
+        feature,
+        Object.fromEntries(locales.map(locale => [locale, catalogs[locale]?.[key]])),
+        findings,
+        warnings,
+      )
       if (!new RegExp(`\\bm\\.${key}\\b`).test(sources)) {
         findings.push({
           file: `messages/ru/${feature}.json`,
@@ -167,6 +174,11 @@ export function i18n(): Finding[] {
       }
     }
     checkGlossary(catalogs, feature, findings)
+  }
+  if (warnings.length) {
+    process.stdout.write(`i18n: ${warnings.length} identical kk/ru message(s), review only\n`)
+    for (const warning of warnings.slice(0, 10)) process.stdout.write(`  ${warning.file}: ${warning.fix}\n`)
+    if (warnings.length > 10) process.stdout.write(`  ... and ${warnings.length - 10} more\n`)
   }
   return findings
 }

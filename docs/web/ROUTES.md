@@ -16,8 +16,8 @@ Read before touching `src/routes/`, `shared/auth/`, the shell, live data or hydr
   tab's title is followed by its parent's. Tabs live in the layout route file; its `index.tsx` redirects to the first
   tab. A 403 thrown in `beforeLoad` renders in place (`ErrorView` -> `ForbiddenView`) and SSR answers with the
   ApiError's status (`shared/lib/ssr-status.ts`).
-- No stub routes (gate `under-construction`). Each OpenAPI operation has a consumer in `src/`, is a service operation
-  (`allowlist.json`) or is in `gates/server-removals.json` with a reason (G-07; a stale entry is an error).
+- No stub routes (gate `under-construction`). `bun gates/gates.ts api-coverage` reports API usage without
+  blocking changes: operations may serve integrations or clients outside web-2.
 - Live data: `GET /me/events` (`shared/api/events.ts`) -> `shared/api/event-invalidations.ts` (event -> keys); the
   stream and skip rules are B-NOT-11..16 in `features/notifications/SPEC.md`. e2e: `expectReread(page, path)` when a
   test changes data behind an open page on purpose.

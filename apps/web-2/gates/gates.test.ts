@@ -4,9 +4,9 @@ import { join } from 'node:path'
 
 import { expect, test } from 'vite-plus/test'
 
-import { usesOperation } from './lib.ts'
+import { checkMessage } from './i18n.ts'
+import { type Finding, usesOperation } from './lib.ts'
 import { driftedFiles } from './repo.ts'
-import { nextBehaviorId, SUPPRESSIONS, titleIds } from './source.ts'
 
 test('an operation counts only when imported from the generated client and used', () => {
   const imported = `import { listCoursesOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
@@ -26,50 +26,6 @@ const url: ExportAtRiskData['url'] = ''`
   const lazy = `const { currentSession } = await import('#/shared/api/gen/sdk.gen')
 await currentSession()`
   expect(usesOperation(lazy, 'currentSession')).toBe(true)
-})
-
-const ids = (source: string) => titleIds(source).map(id => id.text)
-
-test('a behavior id is tested only when it stands in a test title', () => {
-  expect(ids(`test('B-COL-02 lists', () => {})`)).toEqual(['B-COL-02'])
-  expect(ids(`test.each([1, 2])('B-COL-03 row %s', () => {})`)).toEqual(['B-COL-03'])
-  expect(
-    ids(`test2(
-  'B-NOT-13 speaks kk',
-  async () => {})`),
-  ).toEqual(['B-NOT-13'])
-  expect(
-    ids(`// covers B-COL-04
-const note = 'B-COL-05'
-helper('B-COL-06')`),
-  ).toEqual([])
-})
-
-test('skipped tests and suites never satisfy behavior traceability', () => {
-  const skip = 'skip'
-  expect(ids(`test.${skip}('B-COL-02 ignored', () => {})`)).toEqual([])
-  expect(ids(`describe.${skip}('ignored', () => { test('B-COL-03 nested', () => {}) })`)).toEqual([])
-  expect(ids(`test.todo('B-COL-04 missing')`)).toEqual([])
-  expect(ids(`const sample = "test('B-COL-05 fake', () => {})"`)).toEqual([])
-  expect(ids(`items('B-COL-08 helper'); testData('B-COL-09 helper')`)).toEqual([])
-  expect(ids(`test2('B-COL-10 extended fixture', () => {})`)).toEqual(['B-COL-10'])
-  expect(ids(`test.for([1, 2])('B-COL-06 live', () => {})`)).toEqual(['B-COL-06'])
-  expect(ids('test(`B-COL-07 speaks ${locale}`, () => {})')).toEqual(['B-COL-07'])
-})
-
-test('an unsafe cast is caught in every spelling', () => {
-  const unsafe = SUPPRESSIONS.find(([, rule]) => rule === 'unsafe-cast')?.[0]
-  // Built from parts so this file does not match itself.
-  const [any, never, unknown] = ['any', 'never', 'unknown']
-  const casts = [
-    `x as ${any}`,
-    `x as  ${any}`,
-    `x as ${never}`,
-    `x as ${unknown}
-    as Course`,
-  ]
-  expect(casts.filter(cast => unsafe?.test(cast))).toEqual(casts)
-  expect(unsafe?.test('JSON.parse(raw) as unknown')).toBe(false)
 })
 
 test('codegen drift catches modified, deleted and new generated files', () => {
@@ -96,8 +52,12 @@ test('codegen drift catches modified, deleted and new generated files', () => {
   }
 })
 
-test('next-id is one past the highest behavior id of a SPEC, whatever the order', () => {
-  expect(nextBehaviorId('- B-ANL-01 a\n- B-ANL-34 b\n- B-ANL-09 c\n')).toBe('B-ANL-35')
-  expect(nextBehaviorId('- B-FSB-08 x\n')).toBe('B-FSB-09')
-  expect(() => nextBehaviorId('no behaviors yet')).toThrow('no B-<FEAT>-NN line')
+test('shared kk/ru terms warn without blocking, but missing translations and mismatched params still fail', () => {
+  const errors: Finding[] = []
+  const warnings: Finding[] = []
+  checkMessage('catalog_title', 'catalog', { ru: 'Каталог', kk: 'Каталог', en: 'Catalog' }, errors, warnings)
+  expect(errors).toEqual([])
+  expect(warnings.map(w => w.rule)).toEqual(['i18n-identical'])
+  checkMessage('catalog_count', 'catalog', { ru: '{count}', kk: undefined, en: '{total}' }, errors, warnings)
+  expect(errors.map(e => e.rule)).toEqual(['i18n-missing-key', 'i18n-params'])
 })

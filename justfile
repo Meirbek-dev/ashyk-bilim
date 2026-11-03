@@ -81,7 +81,7 @@ doctor:
 
 # The gates for what changed vs origin/main plus the working tree (`--staged`: the index; `--wip`: only the
 # uncommitted batch, mid-edit; `--base <ref>`; `--all`: every gate). One line per gate; logs in tmp/check/.
-# The pre-push hook runs it.
+# The pre-push hook runs `--fast` (lint, types, clippy, unit tests; no database, browser or container gates).
 check *args:
     @bun infra/dev/check.ts "$@"
 

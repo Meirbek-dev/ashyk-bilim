@@ -49,14 +49,16 @@
   pre-commit checks on the new commit and undoes it (`jj op restore`) when they fail; `just push` moves `main` to `@-` and
   pushes through git so pre-push runs. Plain git users get the same hooks natively.
 - Hooks (`.vite-hooks`, `infra/dev/hooks.ts`) check a checkout of what you commit/push, never the working
-  tree, so other people's unstaged work cannot fail them. pre-commit (< 30 s): format + type-aware lint of
-  the staged web files, cheap web-2 gates, rustfmt of staged `.rs`, no edits to migrations on origin/main.
-  pre-push: `just check` on the pushed commit (only CI skips it). Never `--no-verify`.
+  tree, so other people's unstaged work cannot fail them. pre-commit: format of the staged web files, rustfmt of
+  staged `.rs`, no edits to migrations on origin/main. pre-push: `just check --fast` on the pushed commit (lint, types,
+  clippy, unit tests; no database, browser or container gates; only CI skips it). Integration tests, browser tests,
+  full gates and E2E run in CI. Never `--no-verify`.
 - Every red gate (check, hooks, web-2 gates) is logged to `tmp/gates/hits.jsonl`; `just metrics` lists the gates that
   caught nothing in 30 days. Propose deleting such a gate to the owner instead of satisfying it mechanically.
 - `just fmt <files>` formats exactly like the hook (root `vite.config.ts` holds the one web format config,
   same result from any cwd; rustfmt for `.rs`). `just eol` rewrites CRLF working copies (Windows) as LF.
-- Run focused checks during an edit batch. `just ci-server`, `ci-web`, `ci-web2` validate each app (CI runs
+- Run focused checks for the changed behavior during an edit batch; do not repeat a green check on unchanged
+  inputs. `just ci-server`, `ci-web`, `ci-web2` validate each app (CI runs
   all three); `just ci` runs all local app/infra gates (not hosted image, E2E or secret scans).
 - `.agents/skills` is canonical. `.claude/skills` is an ignored compatibility copy made by
   `just skills-sync`; never edit the copy. Project skills: `server-slice`, `web2-slice`, `debug-e2e`, `ship`;
@@ -66,8 +68,8 @@
 
 ## Working with agents
 
-- Start with `just brief`: vcs state, running slots, the last check/e2e verdict, open owner questions, production
-  health. Real failures come first: `just prod-report [--since 24h]` (read-only, on the production host) lists server
+- Start with `just brief` when an overview helps: vcs state, running slots, the last check/e2e verdict, open owner
+  questions, production health. Its environment errors do not block unrelated work. Real failures come first: `just prod-report [--since 24h]` (read-only, on the production host) lists server
   warnings/errors by message, 5xx by route and dead jobs.
 - Scaffold instead of copying a reference: `just new feature <name>` (web-2), `just new endpoint <tag> <op>` (server
   test plus a `file:line` checklist), `just new migration <name>`.
@@ -76,7 +78,8 @@
 
 - For repeated browser debugging, start `just e2e web2 --serve` once and run focused tests with
   `just e2e web2 --reuse <playwright args>`. Test edits reuse the build and database; application edits
-  require `--stop`, then `--serve`. Fixtures clean up their own data. Run the full suite after focused fixes pass.
+  require `--stop`, then `--serve`. Fixtures clean up their own data. Run the focused scenario and related ones; CI runs
+  the full suite (run it locally when a shared mechanism changed or the affected scope is unclear).
   `--keep` alone retains only the database, not the servers.
 - Watch CI with one `just ci-watch <run>` process. Read its output when it changes; do not launch parallel
   polling loops. Use `just ci-retry <run>` after a completed failed run to preserve successful shards.
@@ -90,7 +93,7 @@
 - QA/fix sweeps are on hold until REWRITE phase 6 unless the owner asks for one; then hand each agent
   `docs/agents/QA.md` plus its lane (roles, accounts, testing, fixing, report format, orchestration).
 - Parallel work without blocking: `just wt new <name>` (worktree in `../ashyq-wt/<name>`, own
-  `bun install` and cargo target dir), commit there, `just wt land <name>` (rebase, `just check`, fast-forward
+  `bun install` and cargo target dir), commit there, `just wt land <name>` (rebase, `just check --fast`, fast-forward
   main, remove); `just wt ls`, `just wt rm <name> [--force]`.
 - One command per task: `just stack up|status|logs|restart` (dev stack per slot), `just login-as <user>`,
   `just db fresh <name>`, `just db sql "<sql>"` (read-only as `ashyq_ro`, no emails/secrets; `--rw` to write), `just check [--wip|--all]`, `just contract`,

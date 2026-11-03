@@ -697,11 +697,12 @@ agent workflow: root `AGENTS.md`; server-only details: `apps/server/docs/DEVELOP
 ### 5.1 Hooks, formatting, line endings
 
 - pre-commit (`.vite-hooks/pre-commit` -> `infra/dev/hooks.ts`) checks the index being committed in a
-  checkout under `tmp/hooks/snap` (incremental, node_modules linked): format + type-aware lint of the
-  staged web files, cheap web-2 gates, rustfmt of staged `.rs`, no edits to migrations on origin/main.
+  checkout under `tmp/hooks/snap` (incremental, node_modules linked): format of the staged
+  web files, rustfmt of staged `.rs`, no edits to migrations on origin/main.
   Unstaged work never affects it; a failure prints the fix (`just fmt <files>`) and the log path.
-- pre-push runs `just check --base <remote tip> --isolated-db` in `tmp/hooks/push` (a detached worktree of the
-  pushed commit, with its own cargo target: the first push compiles the server there from scratch).
+- pre-push runs `just check --fast --base <remote tip>` in `tmp/hooks/push` (a detached worktree of the pushed
+  commit, with its own cargo target: the first push compiles the server there from scratch): format, lint, types,
+  clippy and unit tests, no database, browser or container gates. Those, contract drift and E2E run in CI.
   Only CI skips hooks; never `--no-verify`. Under jj use `just commit` / `just push` (jj runs no git hooks).
 - `just fmt <files>`: the root `vite.config.ts` is the one web format config (apps/web-2's block comes
   from `apps/web-2/fmt.config.ts`), so the result is the same from any cwd.
@@ -766,7 +767,8 @@ Postgres/Zitadel/RustFS for all slots. CORS of the API and of both buckets follo
   `just e2e web2 --reuse --project chromium --grep B-COL-09` runs only that scenario against the same API, worker
   and database (fixtures remove their own data; logs per run). Test edits need no restart; application,
   server or toolchain changes refuse reuse: `just e2e web2 --stop`, then `--serve`. Stop keeps the database; the
-  next start resets it. Run the full suite after focused fixes pass.
+  next start resets it. Run the focused scenario and related ones; CI runs the full suite (locally too when a
+  shared mechanism changed or the affected scope is unclear).
 - `just e2e-dev [web2|web] [--slot N] [args]`: the same suites against a running slot's dev servers (web-2 warms
   every route first).
 - Both take the seed password from `infra/env/dev.local.env` and hand the suites their accounts, API log and learner
@@ -782,7 +784,9 @@ Postgres/Zitadel/RustFS for all slots. CORS of the API and of both buckets follo
   their dependents (all tests for migrations/Cargo/.sqlx) + openapi drift; legacy typecheck + lint + vitest
   `related`; web-2 `vp check` + vitest `related` + gates; contract drift for both clients; infra `ci-infra` +
   `test-dev`. One line per gate, live logs in `tmp/check/<gate>.log`; an area's first failure stops its later
-  gates. Server tests use 127.0.0.1 (Windows: `localhost` hangs). `--isolated-db` (pre-push) runs the server
+  gates. `--fast` (pre-push) drops the server DB tests and openapi drift, the web-2 browser tests and gates, the
+  legacy contract checks and `ci-infra`. Documentation-only edits (`.md`, `.txt`) run no checks.
+  Server tests use 127.0.0.1 (Windows: `localhost` hangs). `--isolated-db` runs the server
   tests on a disposable memory-backed Postgres container with the pinned image instead of the dev one. For one
   integration test, include both `binary(...)` and `test(...)` in the nextest filter to skip unrelated executables.
 - `just contract` after a DTO / route / ErrorCode / upload-policy change: exports `openapi.v2.json`, accepts

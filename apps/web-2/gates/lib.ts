@@ -41,13 +41,10 @@ const Reasoned = v.object({ reason: v.pipe(v.string(), v.minLength(10)) })
 const Allowlist = v.object({
   apiCoverage: v.object({
     ...Reasoned.entries,
-    phase: v.number(),
-    enforceFromPhase: v.number(),
     serviceOperations: v.array(v.object({ ...Reasoned.entries, operation: v.string() })),
   }),
   underConstruction: v.object({ ...Reasoned.entries, phase: v.number(), enforceFromPhase: v.number() }),
   contractReportOnly: v.optional(Reasoned),
-  suppressions: v.array(v.object({ ...Reasoned.entries, file: v.string(), rule: v.string() })),
   i18nSameAsRu: v.array(v.object({ ...Reasoned.entries, key: v.string() })),
 })
 

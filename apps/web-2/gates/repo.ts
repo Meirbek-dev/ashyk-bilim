@@ -1,4 +1,4 @@
-// Gates that need tools or git: G-04 knip, G-09 codegen drift (G-13 freeze lifted).
+// Gates that need tools or git: G-04 knip, G-09 codegen drift.
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { basename, relative, resolve } from 'node:path'
@@ -7,12 +7,6 @@ import * as v from 'valibot'
 
 import { generateApi, generateRouteTree } from './codegen.ts'
 import { appDir, type Finding } from './lib.ts'
-
-// G-13 is lifted while production runs apps/web (rolled back 2026-10-04): apps/web takes normal fixes
-// again (DECISIONS "G-13 freeze lifted"). Restore the check (git history) when web-2 goes live for good.
-export function freeze(): Finding[] {
-  return []
-}
 
 export function knip(): Finding[] {
   const result = spawnSync('bunx', ['knip', '--config', 'gates/knip.jsonc', '--no-progress', '--reporter', 'json'], {

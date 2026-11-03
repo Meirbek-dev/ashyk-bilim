@@ -101,8 +101,8 @@ behind it; it never colors a title, a row or a card background.
 
 ## 5. Spacing, radius, shadow, density
 
-- Spacing uses only the Tailwind scale plus `control`, `row` and `gutter`. Arbitrary values (`p-[13px]`,
-  `w-[...]`) are forbidden (G-11).
+- Spacing uses the Tailwind scale plus `control`, `row` and `gutter`. Arbitrary values and inline geometry are
+  for what the scale cannot say (a seek bar's position, pane sizes, editor and chart layout); colors stay tokens.
 - Rhythm: `gap-1`/`gap-2` inside a control group, `gap-4` between fields, `gap-gutter` between blocks, and
   `gap-8`/`gap-12` between page sections. Page padding is `px-4` up to `md` and `px-6` above it.
 - Radius (multiples of the theme's `--radius`): `rounded-sm` badges, checkbox; `rounded-md` inputs, buttons;

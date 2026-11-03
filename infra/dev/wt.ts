@@ -3,7 +3,7 @@
 //                ~40 s from bun's cache - linked node_modules break turbopack, which refuses a link leaving its root),
 //                apps/web's gitignored .env files copied, its own cargo target dir, Paraglide output generated.
 //   ls           worktrees with their branch, commits ahead of main and uncommitted files
-//   land <name>  rebase onto main, `just check`, fast-forward main (the main checkout), remove the worktree
+//   land <name>  rebase onto main, `just check --fast`, fast-forward main (the main checkout), remove the worktree
 //   rm <name>    remove the worktree and branch (refuses unlanded or uncommitted work without --force)
 import {
   appendFileSync,
@@ -129,13 +129,13 @@ function land(name?: string): void {
   }
   if (sh(['just', '--show', 'check'], wt.path).code !== 0)
     console.log('wt: no `just check` recipe on this branch: skipped')
-  else if (sh(['just', 'check'], wt.path, true).code !== 0)
-    fail(`just check is red in ${wt.path}; fix, commit, land again`)
+  else if (sh(['just', 'check', '--fast'], wt.path, true).code !== 0)
+    fail(`just check --fast is red in ${wt.path}; fix, commit, land again`)
   const ff = git('merge', '--ff-only', '--quiet', wt.branch)
   if (ff.code !== 0) fail(`fast-forward of main failed (main moved or local changes in the way):\n${ff.out}`)
   console.log(`wt: main is now ${git('log', '--oneline', '-1').out}`)
   remove(wt, false)
-  console.log('wt: push when ready: git push origin main (pre-push runs just check)')
+  console.log('wt: push when ready: git push origin main (pre-push runs just check --fast)')
 }
 
 function drop(name?: string, force = false): void {

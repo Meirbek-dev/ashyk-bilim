@@ -3,7 +3,7 @@
 Production runs `apps/web` (Next.js, since the 2026-10-04 rollback); `apps/web-2` is the implemented
 TanStack replacement. Both take normal fixes (the G-13 freeze is lifted). This file is the whole rollout:
 constraints, acceptance, procedure, rollback and the cleanup after the rollback window. Feature behavior lives
-in `apps/web-2/src/features/*/SPEC.md`, conventions in `apps/web-2/AGENTS.md`. `docs/REWRITE.md` phase 1 plans
+in tests and optional `apps/web-2/src/features/*/SPEC.md` references, conventions in `apps/web-2/AGENTS.md`. `docs/REWRITE.md` phase 1 plans
 this cutover as a static SPA build (its section 7); until that lands, the procedure below switches the Node image.
 
 Host facts, `dc` helper, smoke command: `docs/RUNBOOK.md` section 0. Run on the host in `~/cs-mooc`, bash.
@@ -39,8 +39,8 @@ A() { dc exec -T server ashyq admin "$@"; }
 ## Acceptance (on the release being considered; old green runs are not evidence)
 
 - `just ci-web2` and the production-build E2E pass with no unexplained skips, warnings or suppressions;
-  allowlist entries have reasons. G-07 classifies every operation, G-10 covers every `B-...` behavior,
-  G-15 passes every theme and mode.
+  local exceptions have explanations. Tests cover the release's behavior without mandatory behavior IDs.
+  API usage is informational. G-15 passes every theme and mode.
 - E2E covers role access in ru with kk/en smoke, CSP/console errors, axe serious/critical findings and
   horizontal overflow at 390 px (student and grading flows work on phones). Chromium runs the full suite,
   Firefox and WebKit a smoke; tagged runner/AI scenarios run locally in full when CI omits them.
@@ -170,8 +170,8 @@ Item 3 ends the old web's compatibility for good. Before deploying item 4, remov
 
 1. **Old web.** `git rm -r apps/web`; root `package.json` workspaces and `bun.lock`; publish
    from `main` again (drop the release-only condition and the old-web alias in `publish`);
-   `apps/web/AGENTS.md`; G-13 (freeze gate in `apps/web-2/gates`, its allowlist entries,
-   `GATES_BASE` in ci.yaml if only G-13 used it); `infra/smoke/stub-web` comments about Next.
+   `apps/web/AGENTS.md`; `GATES_BASE` in ci.yaml if no remaining check uses it;
+   `infra/smoke/stub-web` comments about Next.
 2. **Next.js config.** `compose.prod.yaml` web: `build.args`, `APP_URL`,
    `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`; `infra/env/prod.env.example`, `infra/env/smoke.env`
    (the key); host `.env` key; ci.yaml `Web build args from PROD_DOMAIN` step, repo variable

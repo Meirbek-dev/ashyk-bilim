@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// `just check [--all] [--staged] [--wip] [--base <ref>]`: the gates for what changed, one line each (logs: tmp/check/).
+// `just check [--fast] [--all] [--staged] [--wip] [--base <ref>]`: the gates for what changed, one line each (logs: tmp/check/).
 //
 // Changed = files that differ from --base (default: where HEAD left origin/main; on main, the unpushed commits) plus
 // the working tree (staged, unstaged, untracked), or only the index with --staged. --wip = --base HEAD: only the
@@ -46,7 +46,8 @@ const isContract = (f: string) => f === 'apps/server/openapi.v2.json'
 const isTs = (f: string) => /\.(ts|tsx|mts|js|mjs|jsx)$/.test(f)
 
 /** The gates per area for `files` (repo-relative, forward slashes); every gate when `all`. */
-export function plan(files: string[], all: boolean): Record<string, Gate[]> {
+export function plan(files: string[], all: boolean, fast = false): Record<string, Gate[]> {
+  files = files.filter(f => !/\.(md|txt)$/.test(f))
   const server = resolve(root, 'apps/server')
   const web = resolve(root, 'apps/web')
   const web2 = resolve(root, 'apps/web-2')
@@ -76,13 +77,21 @@ export function plan(files: string[], all: boolean): Record<string, Gate[]> {
             {
               name: 'server:test',
               cwd: server,
-              cmd: ['cargo', 'nextest', 'run', '--locked', '--workspace', ...filter],
-              env: { ...OFFLINE, ...testEnv() },
+              cmd: [
+                'cargo',
+                'nextest',
+                'run',
+                '--locked',
+                '--workspace',
+                ...(fast ? ['--lib', '--bins'] : []),
+                ...filter,
+              ],
+              env: fast ? OFFLINE : { ...OFFLINE, ...testEnv() },
             },
           ]
         : []),
       // The contract is exported from the API's routes and DTOs (and the domain types they show).
-      ...(all || serverFiles.some(f => /^apps\/server\/(crates\/(api|domain|core)\/src|Cargo)/.test(f))
+      ...(!fast && (all || serverFiles.some(f => /^apps\/server\/(crates\/(api|domain|core)\/src|Cargo)/.test(f)))
         ? [{ name: 'server:openapi', cwd: root, cmd: ['just', 'server', 'openapi-check'], env: OFFLINE }]
         : []),
     ]
@@ -108,7 +117,8 @@ export function plan(files: string[], all: boolean): Record<string, Gate[]> {
               },
             ]
           : []),
-      ...(contract || legacyFiles.some(f => f.startsWith('apps/web/src/messages/') || f.startsWith('apps/web/scripts/'))
+      ...(!fast &&
+      (contract || legacyFiles.some(f => f.startsWith('apps/web/src/messages/') || f.startsWith('apps/web/scripts/')))
         ? [
             { name: 'web:contracts', cwd: web, cmd: ['bun', 'run', 'check:contracts'] },
             { name: 'web:error-codes', cwd: web, cmd: ['bun', 'run', 'check:error-codes'] },
@@ -132,23 +142,39 @@ export function plan(files: string[], all: boolean): Record<string, Gate[]> {
             cmd: ['bunx', 'vp', 'check', '--no-error-on-unmatched-pattern', ...checkable],
           },
       ...(all
-        ? [{ name: 'web2:test', cwd: web2, cmd: ['bunx', 'vp', 'test', 'run', '--maxWorkers=2'] }]
+        ? [
+            {
+              name: 'web2:test',
+              cwd: web2,
+              cmd: ['bunx', 'vp', 'test', 'run', '--maxWorkers=2', ...(fast ? ['--project', 'unit'] : [])],
+            },
+          ]
         : tests.length > 0
           ? [
               {
                 name: 'web2:test',
                 cwd: web2,
-                cmd: ['bunx', 'vp', 'test', 'related', '--run', '--passWithNoTests', '--maxWorkers=2', ...tests],
+                cmd: [
+                  'bunx',
+                  'vp',
+                  'test',
+                  'related',
+                  '--run',
+                  '--passWithNoTests',
+                  '--maxWorkers=2',
+                  ...(fast ? ['--project', 'unit'] : []),
+                  ...tests,
+                ],
               },
             ]
           : []),
-      { name: 'web2:gates', cwd: web2, cmd: ['bun', 'gates/gates.ts', 'all'] },
+      ...(!fast ? [{ name: 'web2:gates', cwd: web2, cmd: ['bun', 'gates/gates.ts', 'all'] }] : []),
     ]
   }
 
   if (all || files.some(isInfra)) {
     areas.infra = [
-      { name: 'infra:ci-infra', cwd: root, cmd: ['just', 'ci-infra'] },
+      ...(!fast ? [{ name: 'infra:ci-infra', cwd: root, cmd: ['just', 'ci-infra'] }] : []),
       { name: 'infra:test-dev', cwd: root, cmd: ['just', 'test-dev'] },
     ]
   }
@@ -237,20 +263,21 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2)
   const all = args.includes('--all')
   const staged = args.includes('--staged')
+  const fast = args.includes('--fast')
   const baseAt = args.indexOf('--base')
   // --wip: only the uncommitted work (the edit batch in progress), whatever is still unpushed.
   const base = args.includes('--wip') ? 'HEAD' : baseAt >= 0 ? args[baseAt + 1] : process.env['CHECK_BASE'] || undefined
   mkdirSync(logDir, { recursive: true })
 
   const files = all ? [] : changedFiles(staged, base)
-  const areas = plan(files, all)
+  const areas = plan(files, all, fast)
   const names = Object.keys(areas)
   if (names.length === 0) {
     console.log(`check: nothing to check (${files.length} changed file(s) outside the gated areas)`)
     return
   }
   console.log(
-    `check: ${all ? 'all gates' : `${files.length} changed file(s)`} -> ${names.join(', ')} (logs: tmp/check/)`,
+    `check${fast ? ' (fast)' : ''}: ${all ? 'all gates' : `${files.length} changed file(s)`} -> ${names.join(', ')} (logs: tmp/check/)`,
   )
   const database =
     args.includes('--isolated-db') && areas.server?.some(gate => gate.name === 'server:test')

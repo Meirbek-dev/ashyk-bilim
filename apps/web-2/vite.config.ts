@@ -65,7 +65,7 @@ const ROUTER_URL = 'URL state: validateSearch (Valibot) + Link / navigate({ sear
 const FORMAT = 'Format dates and numbers with #/shared/i18n/format.ts (platform time zone Asia/Almaty).'
 const STORAGE = 'Browser storage goes through storageItem() / cookieItem() from #/shared/lib/storage.ts.'
 const TIMERS =
-  'No hand-made timers or polling: TanStack Pacer for debounce/throttle; Query + the event stream for freshness.'
+  'No polling: TanStack Pacer for debounce/throttle; Query + the event stream for freshness. A one-shot setTimeout is fine.'
 const QUERY =
   "Imperative reads: queryClient.query(options); a loader reads the cache first with { ...xOptions(), staleTime: 'static' }."
 const INFINITE_QUERY =
@@ -86,7 +86,6 @@ const globals = {
   URLSearchParams: ROUTER_URL,
   Intl: FORMAT,
   setInterval: TIMERS,
-  setTimeout: TIMERS,
 }
 const restrictGlobals = (...allowed: string[]): Rules['no-restricted-globals'] => [
   'error',
@@ -124,12 +123,6 @@ const restrictProperties = (...allowed: string[]): Rules['no-restricted-properti
 const paths = [
   { name: 'react', importNames: ['useMemo', 'useCallback', 'memo'], message: 'React Compiler memoizes: remove it.' },
   { name: '@tanstack/react-start', importNames: ['createServerFn'], message: `The web server serves no data. ${SDK}` },
-  {
-    name: '@tanstack/react-query',
-    importNames: ['useQuery', 'useInfiniteQuery'],
-    message:
-      "Read with loader query({ ...xOptions(), staleTime: 'static' }) + useSuspenseQuery / useSuspenseInfiniteQuery.",
-  },
   { name: 'zod', message: 'Schemas are Valibot, generated from the contract: #/shared/api/gen/valibot.gen.ts.' },
   { name: 'date-fns', message: FORMAT },
 ]
@@ -171,6 +164,16 @@ const lint: OxlintConfig = {
     'max-lines-per-function': ['error', { max: 80 }],
     'typescript/no-floating-promises': 'error',
     'typescript/no-explicit-any': 'error',
+    'typescript/ban-ts-comment': [
+      'error',
+      {
+        'ts-expect-error': 'allow-with-description',
+        'ts-ignore': true,
+        'ts-nocheck': true,
+        minimumDescriptionLength: 10,
+      },
+    ],
+    'vitest/no-focused-tests': 'error',
     'import/no-default-export': 'error',
     'import/no-cycle': 'error',
     'unicorn/filename-case': ['error', { case: 'kebabCase' }],
@@ -179,12 +182,12 @@ const lint: OxlintConfig = {
     'react/no-danger': 'error',
     'react/no-multi-comp': 'error',
     'react/forbid-elements': ['error', { forbid: forbiddenElements }],
-    // DESIGN 12 on class strings (G-11 scans the same in CSS and plain strings). Off: `no-restyle` (the kit's own
-    // files and 28 deliberate looks fail its contracts), `no-unknown-classes` (prose.css classes), `require-static-classes`
-    // (status tones come from a Record).
+    // Colors stay tokens (G-11 scans the same in CSS and plain strings); geometry may be dynamic: arbitrary values
+    // and inline styles are allowed. Off: `no-restyle` (the kit's own files and 28 deliberate looks fail its
+    // contracts), `no-unknown-classes` (prose.css classes), `require-static-classes` (status tones come from a Record).
     'shadcn/no-raw-colors': 'error',
-    'shadcn/no-arbitrary-values': 'error',
-    'shadcn/no-inline-styles': 'error',
+    'shadcn/no-arbitrary-values': 'off',
+    'shadcn/no-inline-styles': 'off',
     'no-restricted-globals': restrictGlobals(),
     'no-restricted-properties': restrictProperties(),
     'no-restricted-imports': restrictImports('any'),

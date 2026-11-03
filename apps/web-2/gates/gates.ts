@@ -1,23 +1,23 @@
-// Every check that lint cannot express (spec 9). `bun gates/gates.ts <gate|all> [--phase N]`; `next-id <feature>`.
+// `bun gates/gates.ts <gate|all> [--phase N]`; api-coverage is an optional usage report.
 // Output is errors only: `file:line rule - what to do`, at most 30 lines per gate plus a count (8.4).
 import { spawnSync } from 'node:child_process'
-import { appendFileSync, mkdirSync, readFileSync } from 'node:fs'
+import { appendFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { contract } from './contract.ts'
 import { i18n } from './i18n.ts'
 import { allowlist, type Finding } from './lib.ts'
-import { codegenDrift, freeze, knip } from './repo.ts'
-import { apiCoverage, docs, nextBehaviorId, suppressions, tokens, trace, underConstruction } from './source.ts'
+import { codegenDrift, knip } from './repo.ts'
+import { apiCoverage, tokens, underConstruction } from './source.ts'
 
 const MAX_LINES = 30
 const phaseFlag = process.argv.indexOf('--phase')
 const phase = phaseFlag > 0 ? Number(process.argv[phaseFlag + 1]) : undefined
 
 function coverage(): Finding[] {
-  const result = apiCoverage(phase)
-  if (result.enforced) return result.findings
-  process.stdout.write(`${result.summary} - report only (gates/allowlist.json apiCoverage)\n`)
+  const result = apiCoverage()
+  process.stdout.write(`${result.summary} - report only\n`)
+  print('api-coverage (report only)', result.findings)
   return []
 }
 
@@ -51,15 +51,10 @@ function contractGate(): Finding[] {
 const GATES: Record<string, () => Finding[] | Promise<Finding[]>> = {
   i18n, // G-03
   knip, // G-04
-  'api-coverage': coverage, // G-07
   'under-construction': stubs, // stub routes, enforced from phase 7
   contract: contractGate, // G-08
   codegen: codegenDrift, // G-09
-  trace, // G-10
   tokens, // G-11
-  suppressions, // G-12
-  freeze, // G-13
-  docs, // 8.2
 }
 
 // One line per finding in <main checkout>/tmp/gates/hits.jsonl (infra/dev/ledger.ts): `just metrics` shows which gates
@@ -83,17 +78,14 @@ function print(gate: string, findings: Finding[]): void {
   const lines = findings.map(f => `${f.file}${f.line ? `:${f.line}` : ''} ${f.rule} - ${f.fix}`)
   const shown = lines.slice(0, MAX_LINES)
   if (lines.length > MAX_LINES) shown.push(`... and ${lines.length - MAX_LINES} more`)
-  process.stdout.write(`\n${gate}: ${findings.length} error(s)\n${shown.join('\n')}\n`)
-}
-
-// Not a gate: the id a new behavior of a feature gets (`bun gates/gates.ts next-id analytics` -> B-ANL-35).
-if (process.argv[2] === 'next-id') {
-  const feature = process.argv[3] ?? ''
-  process.stdout.write(`${nextBehaviorId(readFileSync(`src/features/${feature}/SPEC.md`, 'utf8'))}\n`)
-  process.exit(0)
+  process.stdout.write(`\n${gate}: ${findings.length} finding(s)\n${shown.join('\n')}\n`)
 }
 
 const requested = process.argv[2] ?? 'all'
+if (requested === 'api-coverage') {
+  coverage()
+  process.exit(0)
+}
 const names = requested === 'all' ? Object.keys(GATES) : [requested]
 let failed = 0
 for (const name of names) {

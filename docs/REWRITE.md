@@ -1275,13 +1275,16 @@ and nothing else breaks.
 
 - Hooks: pre-commit formats the staged files; pre-push runs the fast checks (rustfmt,
   clippy on changed crates, typecheck, unit; under 2 minutes). The full `just check` and
-  e2e run in CI.
+  e2e run in CI. Done 2026-11-03 (`just check --fast`).
 - `justfile` under 20 recipes: `stack up|down|logs`, `db reset|sql`, `login-as`, `check`,
   `e2e`, `fmt`, `deploy`, `rollback`, `backup`, `restore-drill`, `wt new|land`.
   `apps/server/justfile` merges into it.
 - `infra/dev` shrinks from 2.5k lines to the code those recipes need (~300 lines).
 - web-2 gates: keep codegen drift; delete the other G-03…G-13 gates, `SPEC.md` files,
-  behaviour ids and `next-id`.
+  behaviour ids and `next-id`. Done 2026-11-03: trace (G-10, behaviour ids, `next-id`), suppressions (G-12; lint
+  bans `@ts-ignore` and `.only` instead), doc sizes and the freeze stub; api-coverage reports only; a kk text equal
+  to ru warns; tokens checks colors only. Left: i18n, knip, contract, tokens, under-construction; the `SPEC.md`
+  files stay as references until phase 3.
 - Vendored third-party skills (`.agents/skills`, 95k lines, `skills-lock.json`,
   `skills-sync`) are deleted; project-written skills stay in `.agents/skills` (at most a
   few), third-party ones are installed per user.

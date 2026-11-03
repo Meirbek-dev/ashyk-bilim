@@ -1,9 +1,7 @@
 {
-  "$comment": "Every exception to a gate, each with a reason (spec 4.7, G-12). Changes here are reported in the phase report (8.6).",
+  "$comment": "Policies for unfinished routes, contract cleanup, optional API usage reporting, and kk terms reviewed as equal to ru.",
   "apiCoverage": {
-    "phase": 7,
-    "enforceFromPhase": 7,
-    "reason": "Enforced from phase 7 (spec 12, Ф7): every operation has a consumer, is a service operation below, or is scheduled for server deletion in gates/server-removals.json.",
+    "reason": "Optional usage report; operations may serve integrations or clients outside web-2.",
     "serviceOperations": [
       {
         "operation": "live",
@@ -24,7 +22,6 @@
     "enforceFromPhase": 7,
     "reason": "Enforced from phase 7 (spec 12, Ф7: no stubs at cutover); the UnderConstruction component is deleted, the gate keeps any new stub out."
   },
-  "suppressions": [],
   "i18nSameAsRu": [
     {
       "key": "ai_run_course",

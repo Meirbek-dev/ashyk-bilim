@@ -31,6 +31,29 @@ test('docs alone run nothing; --all runs every area', () => {
   expect(Object.keys(gates([], true)).sort()).toEqual(['infra', 'server', 'web', 'web2'])
 })
 
+test('fast checks avoid database setup, browser suites and container gates while retaining unit checks', () => {
+  const areas = plan(
+    ['apps/server/crates/api/src/app.rs', 'apps/web-2/src/shared/components/testing.tsx', 'infra/dev/hooks.ts'],
+    false,
+    true,
+  )
+  const server = areas.server.find(g => g.name === 'server:test')!
+  expect(server.cmd).toContain('--lib')
+  expect(server.cmd).toContain('--bins')
+  expect(server.env).not.toHaveProperty('DATABASE_URL')
+  expect(areas.server.some(g => g.name === 'server:openapi')).toBe(false)
+  const web = areas.web2.find(g => g.name === 'web2:test')!
+  expect(web.cmd.join(' ')).toContain('--project unit')
+  expect(areas.web2.some(g => g.name === 'web2:gates')).toBe(false)
+  expect(areas.infra.map(g => g.name)).toEqual(['infra:test-dev'])
+})
+
+test('documentation inside an app does not trigger compilation or tests', () => {
+  expect(
+    plan(['apps/server/AGENTS.md', 'apps/web-2/AGENTS.md', 'apps/web-2/src/features/courses/SPEC.md'], false),
+  ).toEqual({})
+})
+
 test('browser checks bound worker concurrency while other areas run', () => {
   const gate = plan(['apps/web-2/src/shared/components/testing.tsx'], false).web2.find(g => g.name === 'web2:test')
   expect(gate?.cmd).toContain('--maxWorkers=2')
