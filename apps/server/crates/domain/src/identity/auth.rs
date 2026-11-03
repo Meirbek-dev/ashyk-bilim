@@ -1571,7 +1571,9 @@ impl IdentityService {
         self.sessions
             .revoke(actor.user_id, &actor.session_id)
             .await?;
-        if let Some(record) = record {
+        // A Google (or dev) login has no Zitadel session to end: an empty id
+        // is a 400 there, not a 404.
+        if let Some(record) = record.filter(|r| !r.zitadel_session_id.is_empty()) {
             let token = SecretString::from(record.zitadel_session_token);
             if let Err(err) = self
                 .zitadel

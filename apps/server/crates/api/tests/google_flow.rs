@@ -5,7 +5,7 @@ use ab_testkit::{TEST_GOOGLE_CLIENT_ID, TestApp};
 use axum::http::StatusCode;
 use base64::Engine;
 use sqlx::PgPool;
-use wiremock::matchers::{body_string_contains, method, path};
+use wiremock::matchers::{body_string_contains, method, path, path_regex};
 use wiremock::{Mock, ResponseTemplate};
 
 /// Unsigned id_token with the given claims (signature is not verified by
@@ -367,6 +367,35 @@ async fn callback_in_flight_during_a_disable_gets_no_session(pool: PgPool) {
 }
 
 /// One full callback round-trip with whatever Google mock is mounted.
+/// No Zitadel session backs a Google login, so its logout asks Zitadel to end
+/// none (an empty session id was a 400 and a warning on every such logout).
+#[ab_testdb::test]
+async fn google_logout_ends_no_zitadel_session(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    mock_zitadel_user_create(&app, 1).await;
+    mock_google_token(&app, "g-sub-1", "newbie@gmail.com").await;
+    Mock::given(method("DELETE"))
+        .and(path_regex("^/v2/sessions"))
+        .respond_with(ResponseTemplate::new(400))
+        .expect(0)
+        .mount(&app.zitadel)
+        .await;
+    let res = google_callback(&app).await;
+    let cookie = res.session_cookie().expect("session cookie set");
+    let logout = app
+        .send(
+            axum::http::Request::builder()
+                .method("POST")
+                .uri("/api/v2/auth/logout")
+                .header(axum::http::header::COOKIE, &cookie)
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(logout.status, StatusCode::NO_CONTENT, "{}", logout.text());
+    app.zitadel.verify().await;
+}
+
 async fn google_callback(app: &TestApp) -> ab_testkit::TestResponse {
     let state = start_and_get_state(app, "/").await;
     app.get(&format!(
