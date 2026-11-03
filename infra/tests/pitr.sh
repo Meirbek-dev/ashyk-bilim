@@ -114,9 +114,10 @@ log "pitr-test: a second recovery ok ($got)"
 
 start "$id-data3" "${archive_flags[@]}"
 q "SELECT pg_switch_wal()" >/dev/null
-# The container log trails pg_stat_archiver: wait for the refusal itself.
+# The container log trails pg_stat_archiver: wait for the refusal itself (90 s: under the parallel gates of
+# just check the first attempt came after 30).
 refused=
-for _ in $(seq 30); do
+for _ in $(seq 90); do
   if "$CTR" logs "$id-db" 2>&1 | grep -q 'belongs to cluster'; then
     refused=1
     break
