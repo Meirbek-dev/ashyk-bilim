@@ -244,5 +244,7 @@
   "grading_prev_short": "Алдыңғы",
   "grading_next_short": "Келесі",
   "grading_step_hint": "{label} ({key} пернесі)",
-  "grading_nothing_to_check": "Барлық жауап дұрыс, қолмен тексеретін ештеңе жоқ. Оларды көру үшін «Барлық сұрақтар» бөлімін ашыңыз."
+  "grading_nothing_to_check": "Барлық жауап дұрыс, қолмен тексеретін ештеңе жоқ. Оларды көру үшін «Барлық сұрақтар» бөлімін ашыңыз.",
+  "grading_select_start": "Бірнешеуін таңдау",
+  "grading_select_done": "Дайын"
 }

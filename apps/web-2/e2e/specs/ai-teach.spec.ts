@@ -98,6 +98,8 @@ test(
     await gotoLive(page, `/teach/courses/${course.id}/content`)
     await page.getByRole('link', { name: 'Page 1' }).click()
     await expect(page).toHaveURL(new RegExp(`/activities/${activityId}/edit`))
+    // Wide, the panel waits behind its named button in the bar.
+    await page.getByRole('button', { name: m.ai_panel_title({}, ru), expanded: false }).click()
     const aside = page.getByRole('complementary', { name: m.ai_panel_title({}, ru) })
     await aside.getByRole('button', { name: m.ai_tab_critique({}, ru) }).click()
     await expect(aside.getByText('Разбить на части')).toBeVisible()

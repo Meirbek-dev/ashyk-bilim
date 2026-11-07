@@ -1,4 +1,4 @@
-import { PanelLeft, PanelRight } from 'lucide-react'
+import { PanelLeft } from 'lucide-react'
 import { useRef, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
@@ -6,6 +6,8 @@ import { m } from '#/paraglide/messages'
 import { IconButton } from '../icon-button'
 import { SheetPanel } from '../sheet-panel'
 import { SkipLink } from '../skip-link'
+import { AsideButtons } from './aside-buttons'
+import { useAsideOpen } from './use-aside-open'
 
 type FocusPageProps = {
   /** A kit Link (variant ghost) back to where the user came from. */
@@ -20,7 +22,7 @@ type FocusPageProps = {
   contents?: ReactNode
   /** The contents sheet of narrow screens, held by the page (a shortcut opens it, a picked item closes it). */
   contentsSheet?: { open: boolean; onOpenChange: (open: boolean) => void }
-  /** Right panel: AI, rubric. */
+  /** Right panel: AI, rubric. Wide, it opens from a named button in the bar (closed until asked for, remembered). */
   aside?: { label: string; content: ReactNode }
   /** Editors use the full width; reading stays at prose width. */
   wide?: boolean
@@ -55,6 +57,7 @@ export function FocusPage({
   children,
 }: FocusPageProps) {
   const sheetContents = useRef<HTMLDivElement>(null)
+  const [asideOpen, setAsideOpen] = useAsideOpen()
   return (
     <div className="@container flex min-h-dvh flex-col">
       {/* As in the app shell: past the bar and a contents list of dozens of lessons, straight to the page. */}
@@ -86,17 +89,7 @@ export function FocusPage({
         )}
         {saveStatus ? <div className="text-sm text-muted-foreground">{saveStatus}</div> : null}
         {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
-        {aside ? (
-          <div className="@5xl:hidden">
-            <SheetPanel
-              side="right"
-              title={aside.label}
-              trigger={<IconButton label={aside.label} icon={<PanelRight aria-hidden />} />}
-            >
-              {aside.content}
-            </SheetPanel>
-          </div>
-        ) : null}
+        {aside ? <AsideButtons aside={aside} open={asideOpen} onOpen={setAsideOpen} /> : null}
       </header>
       <div className="flex flex-1">
         {contents ? (
@@ -113,8 +106,8 @@ export function FocusPage({
         >
           {children}
         </main>
-        {aside ? (
-          <aside aria-label={aside.label} className="hidden w-96 shrink-0 border-l @5xl:block">
+        {aside && asideOpen ? (
+          <aside id="focus-aside" aria-label={aside.label} className="hidden w-96 shrink-0 border-l @5xl:block">
             <div className="sticky top-14 max-h-dvh overflow-y-auto px-5 py-6 pb-20">{aside.content}</div>
           </aside>
         ) : null}

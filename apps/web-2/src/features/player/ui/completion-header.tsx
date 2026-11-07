@@ -22,7 +22,12 @@ export function CompletionHeader({ progress, completed }: { progress: ProgressSt
     )
   // A course with nothing to take yet has nothing to sum up: «0 %, 0 из 0» counts nothing.
   if (progress.total_required_count === 0)
-    return <h1 className="text-3xl font-semibold wrap-anywhere">{m.player_finish()}</h1>
+    return (
+      <header className="flex flex-col gap-3">
+        <h1 className="text-3xl font-semibold wrap-anywhere">{m.player_finish()}</h1>
+        <p className="max-w-prose text-base text-muted-foreground">{m.player_nothing_yet()}</p>
+      </header>
+    )
   return (
     <header className="flex flex-col gap-4">
       <h1 className="text-3xl font-semibold wrap-anywhere">{m.player_finish()}</h1>

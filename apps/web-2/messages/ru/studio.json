@@ -433,7 +433,7 @@
   "studio_bulk_delete": "Удалить",
   "studio_bulk_confirm": "{action} выбранные курсы ({count})?",
   "studio_bulk_consequence": "Действие применится ко всем выбранным курсам, где это возможно. Остальные не изменятся.",
-  "studio_bulk_done": "Готово: {done}, не удалось: {failed}",
+  "studio_bulk_done": "Готово",
   "studio_bulk_select": "Выбрать «{name}»",
   "studio_roster_check": "Проверить список",
   "studio_roster_preview": "Предварительная проверка: так будет после записи. Пока никто не записан.",
@@ -444,5 +444,6 @@
   "studio_pulse_ungraded": "Ждут проверки",
   "studio_pulse_learners": "Список учащихся",
   "studio_pulse_inbox": "Во входящие",
-  "studio_draft_hidden": "Черновик: учащиеся не видят"
+  "studio_draft_hidden": "Черновик: учащиеся не видят",
+  "studio_bulk_start": "Выбрать несколько"
 }

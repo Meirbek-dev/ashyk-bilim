@@ -34,7 +34,7 @@ describe('prose (styles/prose.css)', () => {
     const style = await renderProse()
     expect(style('h1').fontSize).toBe('34px')
     expect(style('h2').fontSize).toBe('24px')
-    expect(style('h3').fontSize).toBe('19px')
+    expect(style('h3').fontSize).toBe('20px')
     expect(style('h1').fontWeight).toBe('500')
     expect(style('p').fontSize).toBe('17px')
     expect(style('p code').fontFamily).toContain('Geist Mono')
@@ -49,8 +49,8 @@ describe('prose (styles/prose.css)', () => {
 
   test('compact density shrinks text and headings one step', async () => {
     const style = await renderProse('compact')
-    expect(style('p').fontSize).toBe('14px')
+    expect(style('p').fontSize).toBe('15px')
     expect(style('h1').fontSize).toBe('24px')
-    expect(style('h3').fontSize).toBe('16px')
+    expect(style('h3').fontSize).toBe('17px')
   })
 })

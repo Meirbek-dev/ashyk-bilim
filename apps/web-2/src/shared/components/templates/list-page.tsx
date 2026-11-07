@@ -39,7 +39,7 @@ export function ListPage(props: ListPageProps) {
         <div className="flex items-center gap-2">
           <div className="hidden gap-2 @2xl:flex">
             {secondaryActions.map(action => (
-              <Button key={action.label} variant="outline" onClick={action.onSelect}>
+              <Button key={action.label} variant="ghost" onClick={action.onSelect}>
                 {action.label}
               </Button>
             ))}

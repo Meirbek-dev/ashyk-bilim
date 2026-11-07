@@ -1,25 +1,22 @@
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
+import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { CourseId, FileReviewStats, Stats } from '#/shared/api/gen/types.gen'
-import { Anchor } from '#/shared/components/anchor'
 import { DataTable } from '#/shared/components/data-table'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 import { ListPage } from '#/shared/components/templates/list-page'
-import { buttonVariants } from '#/shared/components/button-variants'
 
 import { draftsBySubject } from '../model/ai-draft'
-import { queueCsvHref } from '../model/exports'
 import { activeFilters, sortSearch, statusCounts, tableSort } from '../model/queue'
 import { draftsOptions, queueOptions, type Work } from '../queries'
-import { GroupFilter } from './group-filter'
 import { LearnerSearch } from './learner-search'
 import { PrepareDrafts } from './prepare-drafts'
+import { QueueFilterRow } from './queue-filter-row'
 import { PublishAll } from './publish-all'
 import { queueColumns } from './queue-columns'
-import { LateToggle } from './late-toggle'
 import { StatusTabs } from './queue-filters'
 import { SelectionBar } from './selection-bar'
 import { TABLE_LOOK } from './table-look'
@@ -49,6 +46,7 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
   const drafts = draftList ? draftsBySubject(draftList) : null
   const rows = query.data.pages.flatMap(page => page.items)
   const selection = useRowSelection(rows)
+  const [selecting, setSelecting] = useState(false)
   const active = activeFilters(search)
   return (
     <ListPage
@@ -64,17 +62,18 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
       }
       search={<LearnerSearch q={search.q} onSearch={q => navigate({ search: prev => ({ ...prev, q }) })} />}
       filters={
-        <>
-          <LateToggle ids={ids} search={search} />
-          <GroupFilter
-            courseId={courseId}
-            group={search.group}
-            onGroup={group => navigate({ search: prev => ({ ...prev, group }) })}
-          />
-          <Anchor className={buttonVariants({ variant: 'ghost' })} href={queueCsvHref(work.kind, work.id)} download>
-            {m.grading_export_csv()}
-          </Anchor>
-        </>
+        <QueueFilterRow
+          ids={ids}
+          search={search}
+          courseId={courseId}
+          work={work}
+          onGroup={group => void navigate({ search: prev => ({ ...prev, group }) })}
+          selecting={canGrade ? selecting : null}
+          onSelecting={next => {
+            setSelecting(next)
+            selection.select([])
+          }}
+        />
       }
       activeFilters={active}
     >
@@ -103,7 +102,7 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
           <DataTable
             label={m.grading_queue_table()}
             rows={rows}
-            columns={queueColumns(ids, search, selection, drafts)}
+            columns={queueColumns(ids, search, selecting ? selection : null, drafts)}
             getKey={row => row.id}
             sort={tableSort(search)}
             onSortChange={sort => void navigate({ search: prev => ({ ...prev, ...sortSearch(sort) }) })}

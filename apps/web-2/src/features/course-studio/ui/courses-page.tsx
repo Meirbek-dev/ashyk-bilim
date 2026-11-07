@@ -12,9 +12,7 @@ import { ListPage } from '#/shared/components/templates/list-page'
 
 import { hasNoCourses, presetCount } from '../model/course'
 import { myCoursesOptions } from '../queries'
-import { CoursesPresets } from './courses-presets'
-import { CoursesSearchBox } from './courses-search'
-import { CoursesSortMenu } from './courses-sort'
+import { CoursesToolbar } from './courses-toolbar'
 import { CourseListItem } from './course-list-item'
 import { CoursesBulkBar } from './courses-bulk-bar'
 import { CreateCourseDialog } from './create-course-dialog'
@@ -27,6 +25,7 @@ export function CoursesPage() {
   const query = useSuspenseInfiniteQuery(myCoursesOptions(search))
   const courses = query.data.pages.flatMap(page => page.items)
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
+  const [selecting, setSelecting] = useState(false)
   const toggle = (id: string) =>
     setSelected(prev => {
       const next = new Set(prev)
@@ -40,23 +39,24 @@ export function CoursesPage() {
     <ListPage
       title={m.studio_courses_title()}
       count={summary && !none ? m.studio_courses_count({ count: presetCount(summary, search.preset) }) : undefined}
+      // Checkboxes only once asked for: a box before each of fifty courses read as a form, and most visits open one.
+      secondaryActions={
+        none
+          ? []
+          : [
+              {
+                label: selecting ? m.studio_bulk_done() : m.studio_bulk_start(),
+                onSelect: () => {
+                  setSelecting(!selecting)
+                  setSelected(new Set())
+                },
+              },
+            ]
+      }
       primaryAction={
         hasCapability(session, 'course.create') ? <CreateCourseDialog initiallyOpen={opened === true} /> : null
       }
-      search={
-        // The presets are the list's sections, so they stay in sight on a phone (as tabs, not behind a «Filters» sheet):
-        // wide, one row on one rule with the search and the order.
-        none ? undefined : (
-          <div className="flex w-full flex-col gap-3 @4xl:flex-row @4xl:items-end @4xl:justify-between @4xl:gap-6 @4xl:border-b">
-            <CoursesPresets search={search} summary={summary} />
-            <div className="flex flex-wrap items-end gap-2 @4xl:mb-2 @4xl:flex-nowrap">
-              {/* Keyed by the URL value: "back" to another search refills the box. */}
-              <CoursesSearchBox key={search.q ?? ''} search={search} />
-              <CoursesSortMenu search={search} />
-            </div>
-          </div>
-        )
-      }
+      search={none ? undefined : <CoursesToolbar search={search} summary={summary} />}
     >
       <ListState
         pending={false}
@@ -79,7 +79,12 @@ export function CoursesPage() {
         <div className="@4xl:-mt-gutter @4xl:[&>ul]:border-t-0">
           <DataList items={courses} getKey={course => course.id} variant="rows">
             {course => (
-              <CourseListItem course={course} checked={selected.has(course.id)} onToggle={() => toggle(course.id)} />
+              <CourseListItem
+                course={course}
+                selecting={selecting}
+                checked={selected.has(course.id)}
+                onToggle={() => toggle(course.id)}
+              />
             )}
           </DataList>
         </div>

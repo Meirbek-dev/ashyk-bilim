@@ -413,7 +413,7 @@
   "studio_bulk_delete": "Delete",
   "studio_bulk_confirm": "{action}: {count} courses?",
   "studio_bulk_consequence": "It applies to every selected course that allows it; the rest stay as they are.",
-  "studio_bulk_done": "Done: {done}, failed: {failed}",
+  "studio_bulk_done": "Done",
   "studio_bulk_select": "Select “{name}”",
   "studio_roster_check": "Check the list",
   "studio_roster_preview": "List review: what enrolling would do (nobody is enrolled yet)",
@@ -424,5 +424,6 @@
   "studio_pulse_ungraded": "Awaiting review",
   "studio_pulse_learners": "Learner list",
   "studio_pulse_inbox": "Open inbox",
-  "studio_draft_hidden": "Draft: learners can’t see it"
+  "studio_draft_hidden": "Draft: learners can’t see it",
+  "studio_bulk_start": "Select several"
 }

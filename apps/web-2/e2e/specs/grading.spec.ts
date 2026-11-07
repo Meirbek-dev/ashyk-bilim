@@ -1,7 +1,7 @@
 import { expectFailure, expectReread } from '../fixtures/test'
 import { m } from '#/paraglide/messages'
 import { toDateTimeInput } from '#/shared/i18n/format'
-import { expect, queue, review, row, ru, test, toast } from './grading-fixture'
+import { expect, pick, queue, review, row, ru, test, toast } from './grading-fixture'
 // Slice 6.1: the queue, one review, the results and the gradebook. Each test gets its own course (grading-fixture).
 // The fixture registers and signs in two learners and hands in their work: more than the default 30 s on a busy stand.
 test.describe.configure({ timeout: 90_000 })
@@ -127,7 +127,7 @@ test('B-GRD-07 publish-all asks with the count of held grades and reports what w
 test('B-GRD-08 the selected hand-ins go back for revision', async ({ page, signInAs, graded }) => {
   await signInAs('teacher')
   await page.goto(queue(graded))
-  await row(page, graded.ana.name).getByRole('checkbox').click()
+  await pick(page, graded.ana.name)
   await expect(page.getByText(m.grading_selected({ count: '1' }, ru))).toBeVisible()
   await page.getByRole('button', { name: m.grading_return_selected({}, ru) }).click()
   await page
@@ -146,7 +146,7 @@ test('B-GRD-09 B-GRD-27 a deadline extension takes a future date (a past one is 
 }) => {
   await signInAs('teacher')
   await page.goto(queue(graded))
-  await row(page, graded.ana.name).getByRole('checkbox').click()
+  await pick(page, graded.ana.name)
   await page.getByRole('button', { name: m.grading_extend({}, ru) }).click()
   const dialog = page.getByRole('dialog')
   const due = dialog.getByLabel(m.grading_extend_due({}, ru))
@@ -191,7 +191,7 @@ test('B-GRD-25 the file queue: server counts, publish-all, extension', async ({ 
   await expect(row(page, fileTask.name)).toContainText(m.grading_status_published({}, ru))
   // A second write reads the queue again: a new navigation, so the page-health check counts it apart.
   await page.reload()
-  await row(page, fileTask.name).getByRole('checkbox').click()
+  await pick(page, fileTask.name)
   await page.getByRole('button', { name: m.grading_extend({}, ru) }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel(m.grading_extend_due({}, ru)).fill(toDateTimeInput(Math.floor(Date.now() / 1000) + 86_400))

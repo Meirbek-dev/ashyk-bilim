@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Circle, CircleDot, Square, SquareCheck } from 'lucide-react'
+import { ArrowRight, Check, Circle, CircleDot, Square, SquareCheck, X } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { AssessmentItem, CorrectAnswer, ItemAnswer, MatchingPair } from '#/shared/api/gen/types.gen'
@@ -31,18 +31,33 @@ function choice(item: AssessmentItem, answer: ItemAnswer | undefined, key: Corre
     <ul className="flex flex-col gap-1.5">
       {(item.body.options ?? []).map(option => {
         const picked = chosen.includes(option.id)
+        const correct = right(option.id, option.is_correct)
+        // With a key, a wrong pick says so in its tone and a cross: the one line a teacher looks for in the list.
+        const wrongPick = picked && !correct && key !== null
         return (
           <li key={option.id} className="flex items-baseline gap-2.5">
             {picked ? (
-              <Marked aria-hidden className="size-4 shrink-0 translate-y-0.5" />
+              <Marked
+                aria-hidden
+                className={`size-4 shrink-0 translate-y-0.5 ${wrongPick ? 'text-destructive' : ''}`}
+              />
             ) : (
               <Mark aria-hidden className="size-4 shrink-0 translate-y-0.5 text-muted-foreground" />
             )}
             <span className="flex min-w-0 flex-wrap items-baseline gap-x-3">
-              <span className={`text-base wrap-anywhere ${picked ? '' : 'text-muted-foreground'}`}>{option.text}</span>
-              {picked ? <span className="text-xs text-muted-foreground">{m.grading_chosen()}</span> : null}
-              {right(option.id, option.is_correct) ? (
-                <span className="inline-flex items-center gap-1 text-xs text-success">
+              <span className={`text-base wrap-anywhere ${picked ? 'font-medium' : 'text-muted-foreground'}`}>
+                {option.text}
+              </span>
+              {picked ? (
+                <span
+                  className={`inline-flex items-center gap-1 text-sm ${wrongPick ? 'text-destructive' : 'text-muted-foreground'}`}
+                >
+                  {wrongPick ? <X aria-hidden className="size-3.5" /> : null}
+                  {m.grading_chosen()}
+                </span>
+              ) : null}
+              {correct ? (
+                <span className="inline-flex items-center gap-1 text-sm text-success">
                   <Check aria-hidden className="size-3.5" />
                   {m.grading_right()}
                 </span>

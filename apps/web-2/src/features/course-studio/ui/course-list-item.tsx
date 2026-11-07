@@ -8,30 +8,50 @@ import { Checkbox } from '#/shared/ui/checkbox'
 import { courseStatus } from '../model/course'
 import { CourseStatusText } from './course-status'
 
-type CourseListItemProps = { course: Item; checked: boolean; onToggle: () => void }
+type CourseListItemProps = {
+  course: Item
+  /** Picking courses for a bulk action: the row's checkbox shows; otherwise the whole row opens the course. */
+  selecting: boolean
+  checked: boolean
+  onToggle: () => void
+}
 
 /**
  * One course of the teacher's list: its bulk checkbox (B-CST-45), cover thumbnail, name into the workspace, status,
  * last change, learners and activities, and the work waiting for a grade as a link into the inbox (B-CST-01). Wide, the
  * counts stand in columns, so the rows read as a table; narrow, they are a line under the name.
  */
-export function CourseListItem({ course, checked, onToggle }: CourseListItemProps) {
+export function CourseListItem({ course, selecting, checked, onToggle }: CourseListItemProps) {
   const { teaching } = course
+  // Narrow, the counts sit under the name: the column after the picture (and the checkbox while picking).
+  const under = selecting ? 'col-start-3' : 'col-start-2'
   return (
-    <div className="grid grid-cols-[auto_auto_minmax(0,1fr)] items-start gap-x-3 @4xl:grid-cols-[auto_auto_minmax(0,1fr)_6.5rem_7.5rem_11rem] @4xl:items-center @4xl:gap-x-4">
-      <Checkbox
-        className="mt-1 @4xl:mt-0"
-        aria-label={m.studio_bulk_select({ name: course.name })}
-        checked={checked}
-        onCheckedChange={onToggle}
-      />
+    <div
+      className={`grid items-start gap-x-3 @4xl:items-center @4xl:gap-x-4 ${
+        selecting
+          ? 'grid-cols-[auto_auto_minmax(0,1fr)] @4xl:grid-cols-[auto_auto_minmax(0,1fr)_6.5rem_7.5rem_11rem]'
+          : 'grid-cols-[auto_minmax(0,1fr)] @4xl:grid-cols-[auto_minmax(0,1fr)_6.5rem_7.5rem_11rem]'
+      }`}
+    >
+      {selecting ? (
+        <Checkbox
+          className="mt-1 @4xl:mt-0"
+          aria-label={m.studio_bulk_select({ name: course.name })}
+          checked={checked}
+          onCheckedChange={onToggle}
+        />
+      ) : null}
       <CourseCover
         imageKey={course.thumbnail_key}
         className="row-span-3 aspect-video w-20 shrink-0 rounded-md border @4xl:row-span-1 @4xl:w-24"
       />
       <div className="flex min-w-0 flex-col gap-0.5">
         <h2 className="min-w-0 text-base font-semibold wrap-anywhere">
-          <Link variant="title" to="/teach/courses/$courseId/content" params={{ courseId: course.id }}>
+          <Link
+            variant={selecting ? 'title' : 'stretched'}
+            to="/teach/courses/$courseId/content"
+            params={{ courseId: course.id }}
+          >
             {course.name}
           </Link>
         </h2>
@@ -42,7 +62,7 @@ export function CourseListItem({ course, checked, onToggle }: CourseListItemProp
         </p>
       </div>
       {teaching ? (
-        <p className="col-start-3 flex flex-wrap gap-x-3 text-sm text-muted-foreground tabular-nums @4xl:contents">
+        <p className={`${under} flex flex-wrap gap-x-3 text-sm text-muted-foreground tabular-nums @4xl:contents`}>
           <span className="whitespace-nowrap @4xl:text-end">
             {m.studio_list_learners({ count: teaching.learners })}
           </span>
@@ -54,7 +74,8 @@ export function CourseListItem({ course, checked, onToggle }: CourseListItemProp
         <span aria-hidden className="hidden @4xl:col-span-2 @4xl:block" />
       )}
       {teaching && teaching.ungraded > 0 ? (
-        <p className="col-start-3 text-sm tabular-nums @4xl:col-start-auto @4xl:text-end">
+        // Above the row's stretched link: this one opens the inbox, not the course.
+        <p className={`${under} relative z-1 text-sm tabular-nums @4xl:col-start-auto @4xl:text-end`}>
           <Link to="/teach" search={{ course: course.id }}>
             {m.studio_list_ungraded({ count: teaching.ungraded })}
           </Link>

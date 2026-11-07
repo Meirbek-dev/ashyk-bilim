@@ -33,6 +33,8 @@ import {
 } from '#/shared/api/gen/sdk.gen'
 import type { FileGradeRequest, GradeRequest, TeacherSubmission } from '#/shared/api/gen/types.gen'
 
+import { m } from '#/paraglide/messages'
+
 import { randomIp, registerAccount } from '../fixtures/accounts'
 import { expect as baseExpect, test as base } from '../fixtures/seed'
 
@@ -234,4 +236,9 @@ export const queue = (g: { courseId: string; activityId: string }) =>
   `/teach/courses/${g.courseId}/activities/${g.activityId}/submissions`
 export const review = (g: Graded, id: string) => `${queue(g)}/${id}`
 export const row = (page: Page, text: string) => page.getByRole('row').filter({ hasText: text })
+/** The queue's checkboxes show once «Выбрать несколько» is pressed; then the row's box is ticked. */
+export async function pick(page: Page, text: string) {
+  await page.getByRole('button', { name: m.grading_select_start({}, ru) }).click()
+  await row(page, text).getByRole('checkbox').click()
+}
 export const toast = (page: Page, text: string) => page.getByText(text, { exact: true }).first()

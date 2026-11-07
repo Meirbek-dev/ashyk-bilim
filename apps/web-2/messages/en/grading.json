@@ -244,5 +244,7 @@
   "grading_prev_short": "Previous",
   "grading_next_short": "Next",
   "grading_step_hint": "{label} (key {key})",
-  "grading_nothing_to_check": "Every answer is right; nothing needs a manual check. Open “All questions” to see them."
+  "grading_nothing_to_check": "Every answer is right; nothing needs a manual check. Open “All questions” to see them.",
+  "grading_select_start": "Select several",
+  "grading_select_done": "Done"
 }

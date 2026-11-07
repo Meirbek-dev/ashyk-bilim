@@ -248,5 +248,7 @@
   "grading_prev_short": "Предыдущая",
   "grading_next_short": "Следующая",
   "grading_step_hint": "{label} (клавиша {key})",
-  "grading_nothing_to_check": "Все ответы верны, проверять вручную нечего. Чтобы посмотреть их, откройте «Все вопросы»."
+  "grading_nothing_to_check": "Все ответы верны, проверять вручную нечего. Чтобы посмотреть их, откройте «Все вопросы».",
+  "grading_select_start": "Выбрать несколько",
+  "grading_select_done": "Готово"
 }

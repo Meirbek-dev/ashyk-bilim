@@ -122,10 +122,12 @@ describe('DetailPage', () => {
 })
 
 describe('FocusPage', () => {
-  test('wide: both panels beside the main column', async () => {
+  test('wide: contents beside the main column; the right panel opens from its named toggle', async () => {
     await page.viewport(1440, 900)
     const screen = await renderFocus()
     await expect.element(screen.getByRole('navigation', { name: m.ui_contents() })).toBeVisible()
+    await expect.element(screen.getByRole('complementary', { name: text.rubric })).not.toBeInTheDocument()
+    await screen.getByRole('button', { name: text.rubric, expanded: false }).click()
     await expect.element(screen.getByRole('complementary', { name: text.rubric })).toBeVisible()
   })
 
