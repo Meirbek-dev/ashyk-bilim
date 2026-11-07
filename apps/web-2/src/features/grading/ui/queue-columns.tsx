@@ -61,6 +61,7 @@ const actionColumn = (ids: Ids, search: QueueSearch): DataColumn<QueueRow> => ({
   headerCell: <span className="sr-only">{m.grading_col_action()}</span>,
   priority: 2,
   action: true,
+  stretch: true,
   cell: row => {
     // Graded or not, a work still to release is graded (what is left to do stands out); a released or returned one is
     // opened, and quietly.

@@ -46,7 +46,7 @@ export function LearnerAction({ course }: { course: Course }) {
     )
   if (action?.kind === 'workspace')
     return (
-      <RouterLink to="/teach/courses/$courseId/overview" params={params} className={buttonVariants()}>
+      <RouterLink to="/teach/courses/$courseId/content" params={params} className={buttonVariants()}>
         {m.platform_page_course_workspace()}
       </RouterLink>
     )

@@ -188,7 +188,6 @@
   "grading_graded_at": "Проверена {date}",
   "grading_returned_at": "Возвращена на исправление {date}",
   "grading_draft_at": "Черновик оценки сохранён {date}",
-  "grading_keys_hint": "J — следующая, K — предыдущая",
   "grading_manual_unscored": "Поставьте баллы за ответы, которые проверяются вручную: вопросы {numbers}.",
   "grading_col_ai": "ИИ",
   "grading_ai_none": "Нет черновика",
@@ -240,5 +239,14 @@
   "grading_ai_discard_title": "Отклонить черновик ИИ?",
   "grading_ai_discard_text": "Черновик пропадёт из проверки, оценку вы поставите сами.",
   "grading_ai_transferred": "Баллы и отзыв перенесены в форму. Проверьте и сохраните.",
-  "grading_ai_discarded": "Черновик отклонён"
+  "grading_ai_discarded": "Черновик отклонён",
+  "grading_item_feedback_add": "Добавить комментарий",
+  "grading_show_attention": "Требуют внимания",
+  "grading_show_all": "Все вопросы",
+  "grading_auto_summary": "Проверено автоматически: верно {correct} из {total}.",
+  "grading_show_label": "Какие вопросы показать",
+  "grading_prev_short": "Предыдущая",
+  "grading_next_short": "Следующая",
+  "grading_step_hint": "{label} (клавиша {key})",
+  "grading_nothing_to_check": "Все ответы верны, проверять вручную нечего. Чтобы посмотреть их, откройте «Все вопросы»."
 }

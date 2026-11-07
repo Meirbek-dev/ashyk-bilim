@@ -68,6 +68,7 @@ export const inboxColumns: DataColumn<WorkItem>[] = [
     headerCell: <span className="sr-only">{m.inbox_col_action()}</span>,
     priority: 2,
     action: true,
+    stretch: true,
     cell: item => <WorkActionLink item={item} />,
   },
 ]

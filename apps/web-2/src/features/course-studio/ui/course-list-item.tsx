@@ -31,7 +31,7 @@ export function CourseListItem({ course, checked, onToggle }: CourseListItemProp
       />
       <div className="flex min-w-0 flex-col gap-0.5">
         <h2 className="min-w-0 text-base font-semibold wrap-anywhere">
-          <Link variant="title" to="/teach/courses/$courseId/overview" params={{ courseId: course.id }}>
+          <Link variant="title" to="/teach/courses/$courseId/content" params={{ courseId: course.id }}>
             {course.name}
           </Link>
         </h2>

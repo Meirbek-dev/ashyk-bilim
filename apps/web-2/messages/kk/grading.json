@@ -184,7 +184,6 @@
   "grading_graded_at": "Тексерілді {date}",
   "grading_returned_at": "Пысықтауға қайтарылды {date}",
   "grading_draft_at": "Баға нобайы сақталды: {date}",
-  "grading_keys_hint": "J — келесі, K — алдыңғы",
   "grading_manual_unscored": "Қолмен тексерілетін жауаптарға ұпай қойыңыз: {numbers}-сұрақ.",
   "grading_col_ai": "ЖИ",
   "grading_ai_none": "Нобай жоқ",
@@ -236,5 +235,14 @@
   "grading_ai_discard_title": "ЖИ нобайын қабылдамау керек пе?",
   "grading_ai_discard_text": "Нобай тексеруден жойылады, бағаны өзіңіз қоясыз.",
   "grading_ai_transferred": "Ұпайлар мен пікір формаға көшірілді. Тексеріп, сақтаңыз.",
-  "grading_ai_discarded": "Нобай қабылданбады"
+  "grading_ai_discarded": "Нобай қабылданбады",
+  "grading_item_feedback_add": "Пікір қосу",
+  "grading_show_attention": "Назар аударуды қажет етеді",
+  "grading_show_all": "Барлық сұрақтар",
+  "grading_auto_summary": "Автоматты тексеру: {total} сұрақтың ішінде дұрысы — {correct}.",
+  "grading_show_label": "Қандай сұрақтарды көрсету",
+  "grading_prev_short": "Алдыңғы",
+  "grading_next_short": "Келесі",
+  "grading_step_hint": "{label} ({key} пернесі)",
+  "grading_nothing_to_check": "Барлық жауап дұрыс, қолмен тексеретін ештеңе жоқ. Оларды көру үшін «Барлық сұрақтар» бөлімін ашыңыз."
 }

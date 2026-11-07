@@ -12,7 +12,11 @@ import { CourseFilter } from './course-filter'
 import { EmptyInbox } from './empty-inbox'
 import { inboxColumns } from './inbox-columns'
 import { KindFilter } from './kind-filter'
+import { RecentCourses } from './recent-courses'
 import { SortMenu } from './sort-menu'
+
+/** From this many works on, the course filter and the order are offered. */
+const FILTERS_FROM = 10
 
 /** /teach: one queue of what waits for the teacher, filters and order in the URL (server-side), rows into the review. */
 export function InboxPage() {
@@ -26,8 +30,9 @@ export function InboxPage() {
     <ListPage
       title={m.platform_nav_inbox()}
       count={total > 0 || active > 0 ? m.inbox_count({ count: total }) : undefined}
+      // A short queue needs no course filter or order: two buttons over one row only made the page busier.
       filters={
-        items.length > 0 || active > 0 ? (
+        total > FILTERS_FROM || active > 0 ? (
           <>
             <CourseFilter items={items} course={search.course} />
             <SortMenu sort={search.sort} />
@@ -67,6 +72,11 @@ export function InboxPage() {
         pending={query.isFetchingNextPage}
         onMore={() => void query.fetchNextPage()}
       />
+      {active === 0 ? (
+        <div className="mt-8">
+          <RecentCourses />
+        </div>
+      ) : null}
     </ListPage>
   )
 }

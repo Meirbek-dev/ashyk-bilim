@@ -55,7 +55,7 @@ export function CreateCourseDialog({ initiallyOpen = false }: { initiallyOpen?: 
   const { form, reset, pending, error } = useCreateForm(async course => {
     setOpen(false)
     toast.add({ title: m.studio_course_created() })
-    await navigate({ to: '/teach/courses/$courseId/overview', params: { courseId: course.id } })
+    await navigate({ to: '/teach/courses/$courseId/content', params: { courseId: course.id } })
   })
   const changeOpen = (next: boolean) => {
     setOpen(next)

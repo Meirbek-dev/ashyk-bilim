@@ -184,7 +184,6 @@
   "grading_graded_at": "Graded {date}",
   "grading_returned_at": "Returned for revision {date}",
   "grading_draft_at": "Grade draft saved {date}",
-  "grading_keys_hint": "J next, K previous",
   "grading_manual_unscored": "Score the answers that need manual review: questions {numbers}.",
   "grading_col_ai": "AI",
   "grading_ai_none": "No draft",
@@ -236,5 +235,14 @@
   "grading_ai_discard_title": "Discard the AI draft?",
   "grading_ai_discard_text": "The draft leaves this review; you set the grade yourself.",
   "grading_ai_transferred": "Points and feedback copied to the form. Check them and save.",
-  "grading_ai_discarded": "Draft discarded"
+  "grading_ai_discarded": "Draft discarded",
+  "grading_item_feedback_add": "Add a comment",
+  "grading_show_attention": "Need attention",
+  "grading_show_all": "All questions",
+  "grading_auto_summary": "Checked automatically: {correct} of {total} correct.",
+  "grading_show_label": "Which questions to show",
+  "grading_prev_short": "Previous",
+  "grading_next_short": "Next",
+  "grading_step_hint": "{label} (key {key})",
+  "grading_nothing_to_check": "Every answer is right; nothing needs a manual check. Open “All questions” to see them."
 }

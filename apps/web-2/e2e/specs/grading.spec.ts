@@ -53,6 +53,9 @@ test('B-GRD-10 B-GRD-11 B-GRD-12 B-GRD-13 B-GRD-14 B-GRD-34 a review shows answe
     'href',
     review(graded, graded.boris.submissionId),
   )
+  // The right answers wait behind «Все вопросы»: the review opens on what needs the teacher.
+  await expect(page.getByRole('listitem').filter({ hasText: 'Столица Казахстана?' })).toHaveCount(0)
+  await page.getByRole('button', { name: new RegExp(`^${m.grading_show_all({}, ru)}`) }).click()
   const capital = page.getByRole('listitem').filter({ hasText: 'Столица Казахстана?' })
   await expect(capital.getByRole('listitem').filter({ hasText: 'Астана' })).toContainText(m.grading_chosen({}, ru))
   await expect(capital.getByRole('listitem').filter({ hasText: 'Астана' })).toContainText(m.grading_right({}, ru))

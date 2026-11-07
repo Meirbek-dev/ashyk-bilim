@@ -116,7 +116,7 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
         </ol>
       )}
       {allowed('add_activity') ? (
-        <div className="-ms-2.5 pt-1.5">
+        <div className="pt-3">
           <CreateActivityDialog courseId={courseId} chapter={chapter} />
         </div>
       ) : null}

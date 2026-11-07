@@ -9,6 +9,9 @@ export type DataColumn<T> = {
   sortable?: boolean
   /** The row's action (a button or link): on a card it ends the card, without the column's label. */
   action?: boolean
+  /** With `action`: the cell holds the row's one link, and a click anywhere on the row follows it (a stretched link:
+   * other controls in the row stay on top and keep their own clicks). */
+  stretch?: boolean
   /** The row's selection checkbox: on a card it sits before the title, without the column's label. */
   select?: boolean
   /** Drawn in the table's header instead of `header` (a select-all checkbox); `header` still labels the column on cards. */

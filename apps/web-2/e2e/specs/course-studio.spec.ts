@@ -16,7 +16,7 @@ test('B-CST-01 the list shows my courses with status, update date and the server
   await page.goto(`/teach/courses?q=${encodeURIComponent(course.name)}`)
   await expect(page.getByRole('heading', { level: 1, name: m.studio_courses_title({}, ru) })).toBeVisible()
   const card = page.getByRole('listitem').filter({ hasText: course.name })
-  await expect(card.getByRole('link', { name: course.name })).toHaveAttribute('href', tab(course.id, 'overview'))
+  await expect(card.getByRole('link', { name: course.name })).toHaveAttribute('href', tab(course.id, 'content'))
   await expect(card.getByText(m.studio_status_draft({}, ru))).toBeVisible()
   await expect(card.getByText(/^Изменён /)).toBeVisible()
   await expect(page.getByText(/^\d+ курс(а|ов)?$/)).toBeVisible()
@@ -38,7 +38,7 @@ test('B-CST-02 search and preset live in the URL; no match offers to reset', asy
   await expect(page).toHaveURL(/\/teach\/courses$/)
 })
 
-test('B-CST-03 a new course: the name is required, then its overview opens', async ({ page, studio }) => {
+test('B-CST-03 a new course: the name is required, then its content opens', async ({ page, studio }) => {
   await page.goto('/teach/courses')
   await page.getByRole('button', { name: m.studio_new_course({}, ru) }).click()
   const dialog = page.getByRole('dialog', { name: m.studio_new_course({}, ru) })
@@ -49,7 +49,7 @@ test('B-CST-03 a new course: the name is required, then its overview opens', asy
   await dialog.getByRole('textbox', { name: m.studio_field_name({}, ru) }).fill(name)
   await dialog.getByRole('button', { name: m.studio_create_submit({}, ru) }).click()
   await expect(page.getByText(m.studio_course_created({}, ru))).toBeVisible()
-  await expect(page).toHaveURL(/\/teach\/courses\/[\w-]+\/overview$/)
+  await expect(page).toHaveURL(/\/teach\/courses\/[\w-]+\/content$/)
   studio.track(new URL(page.url()).pathname.split('/')[3] ?? '')
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
   await expect(page.getByText(m.studio_status_draft({}, ru)).first()).toBeVisible()
@@ -65,22 +65,23 @@ test('B-CST-33 a new course copied from one of mine opens the copy', async ({ pa
   await dialog.getByRole('combobox', { name: m.studio_field_source({}, ru) }).selectOption(course.id)
   await expect(dialog.getByRole('textbox', { name: m.studio_field_about({}, ru) })).toHaveCount(0)
   await dialog.getByRole('button', { name: m.studio_create_submit({}, ru) }).click()
-  await expect(page).toHaveURL(/\/teach\/courses\/[\w-]+\/overview$/)
+  await expect(page).toHaveURL(/\/teach\/courses\/[\w-]+\/content$/)
   const copyId = new URL(page.url()).pathname.split('/')[3] ?? ''
   studio.track(copyId)
   expect(copyId).not.toBe(course.id)
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
 })
 
-test('B-CST-04 the workspace: name, status, 9 tabs; not found; another teacher’s course is no access', async ({
+test('B-CST-04 the workspace: name, status, six tabs and «Ещё»; not found; another teacher’s course is no access', async ({
   page,
   studio,
 }) => {
   const { course } = await studio.course()
-  await page.goto(tab(course.id, 'overview'))
+  await page.goto(tab(course.id, 'content'))
   await expect(page.getByRole('heading', { level: 1, name: course.name })).toBeVisible()
   const tabs = page.getByRole('navigation', { name: m.ui_sections({}, ru) }).getByRole('link')
-  await expect(tabs).toHaveCount(9)
+  await expect(tabs).toHaveCount(6)
+  await expect(page.getByRole('button', { name: m.platform_nav_more({}, ru) })).toBeVisible()
   await expect(tabs.first()).toHaveAttribute('aria-current', 'page')
   expectFailure(page, /^\/teach\/courses\/[^/]+\/overview$/, 404)
   await page.goto(tab(randomUUID(), 'overview'))

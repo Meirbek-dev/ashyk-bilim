@@ -43,6 +43,11 @@ const scrollRegion = (label: string) => (wrapper: HTMLDivElement | null) => {
   region?.setAttribute('aria-label', label)
 }
 
+/** A row whose action link covers it: the link's ::after spans the row, every other control sits above it. */
+export const STRETCH =
+  "cursor-pointer [&_[data-stretch]_a]:after:absolute [&_[data-stretch]_a]:after:inset-0 [&_[data-stretch]_a]:after:content-[''] [&_:is(a,button,input,label,[role=checkbox]):not([data-stretch]_*)]:relative [&_:is(a,button,input,label,[role=checkbox]):not([data-stretch]_*)]:z-1"
+const STRETCHED_ROW = `relative ${STRETCH}`
+
 const ariaSort = (sort: Sort | undefined, id: string) =>
   sort?.id !== id ? undefined : sort.desc ? ('descending' as const) : ('ascending' as const)
 
@@ -56,6 +61,7 @@ export function DataTable<T extends RowData>({
   onSortChange,
   footer,
 }: DataTableProps<T>) {
+  const stretched = columns.some(column => column.action && column.stretch)
   const table = useTable({
     features,
     // The caller's array as is (`data` is a ReadonlyArray): a copy per render would rebuild the row model each time.
@@ -89,10 +95,11 @@ export function DataTable<T extends RowData>({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map(row => (
-              <TableRow key={row.id}>
+              <TableRow key={row.id} className={stretched ? STRETCHED_ROW : undefined}>
                 {columns.map(column => (
                   <TableCell
                     key={column.id}
+                    data-stretch={column.stretch && column.action ? '' : undefined}
                     className={column.priority === 1 || column.wrap ? 'min-w-40 whitespace-normal' : undefined}
                   >
                     {column.cell(row.original)}
@@ -113,7 +120,7 @@ export function DataTable<T extends RowData>({
         </Table>
       </div>
       <div className="@2xl:hidden">
-        <DataTableCards rows={rows} columns={columns} getKey={getKey} />
+        <DataTableCards rows={rows} columns={columns} getKey={getKey} stretch={stretched ? STRETCH : undefined} />
       </div>
     </div>
   )

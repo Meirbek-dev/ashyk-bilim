@@ -46,12 +46,18 @@ export const learnerWorkOptions = () => workOptions('learner')
 /** Whether the teacher has any course at all: the `summary` of their courses (one row is enough). */
 export const ownCoursesOptions = () => listCoursesOptions({ query: { mine: true, limit: 1 } })
 
+/** The teacher's six last-changed courses: the cards under the queue. */
+export const recentCoursesOptions = () => listCoursesOptions({ query: { mine: true, limit: 6 } })
+
 /**
  * Route loader of /teach: the queue, and when it is empty and unfiltered, whether the teacher has a course yet - a
  * brand-new teacher is told to create one instead of «Всё проверено» (B-INB-11).
  */
 export async function ensureInbox(queryClient: QueryClient, search: InboxSearch) {
-  const work = await queryClient.infiniteQuery({ ...teachWorkOptions(search), staleTime: 'static' })
+  const [work] = await Promise.all([
+    queryClient.infiniteQuery({ ...teachWorkOptions(search), staleTime: 'static' }),
+    queryClient.query({ ...recentCoursesOptions(), staleTime: 'static' }),
+  ])
   const filtered = Boolean(search.kind ?? search.course)
   if (!filtered && (work.pages[0]?.items.length ?? 0) === 0)
     // Fresh each time: a course made since the last visit must end the «first course» state.

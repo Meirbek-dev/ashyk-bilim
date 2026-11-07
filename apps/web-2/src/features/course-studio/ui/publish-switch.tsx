@@ -48,8 +48,13 @@ export function PublishSwitch({ courseId, activity }: PublishSwitchProps) {
     )
   return (
     <div className="flex items-center gap-2">
-      {/* Text only when wide, as the header's back and preview links: a phone keeps its room for the title. */}
-      <span id={labelId} className="sr-only text-sm @md:not-sr-only">
+      {/* The state in words beside the switch, in its tone: a switch labelled «Опубликовано» while off read as a
+          published lesson. Text only when wide, as the header's back and preview links: a phone keeps its room for the
+          title. */}
+      <span aria-hidden className={`hidden text-sm @md:inline ${activity.published ? 'text-success' : 'text-warning'}`}>
+        {activity.published ? m.studio_published_switch() : m.studio_draft_hidden()}
+      </span>
+      <span id={labelId} className="sr-only">
         {m.studio_published_switch()}
       </span>
       <Switch

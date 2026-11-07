@@ -96,7 +96,7 @@ test('B-CRS-06 the course author gets the workspace, never "Enrol"', async ({ pa
   await page.goto(about(made))
   await expect(page.getByRole('link', { name: m.platform_page_course_workspace({}, ru) })).toHaveAttribute(
     'href',
-    `/teach/courses/${made.course.id}/overview`,
+    `/teach/courses/${made.course.id}/content`,
   )
   await expect(page.getByRole('button', { name: m.course_enroll({}, ru) })).toHaveCount(0)
 })

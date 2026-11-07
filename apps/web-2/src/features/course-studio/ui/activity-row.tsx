@@ -59,7 +59,7 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
     // Without `move` the row is not a sortable at all: dnd-kit would make the row itself a button.
     <li
       ref={allowed('move') ? ref : undefined}
-      className={`group/row relative flex min-h-row flex-wrap items-center gap-x-2 py-1.5 ${isDragging ? 'z-10 bg-background opacity-60' : ''}`}
+      className={`group/row relative flex min-h-row flex-wrap items-center gap-x-2 rounded-md py-1.5 transition-colors duration-150 hover:bg-muted/60 [&_button]:relative [&_button]:z-1 [&_form]:relative [&_form]:z-1 ${isDragging ? 'z-10 bg-background opacity-60' : ''}`}
     >
       {/* Wide, the handle hangs in the page's margin until the row is pointed at, so names line up with the chapter's. */}
       {allowed('move') ? (

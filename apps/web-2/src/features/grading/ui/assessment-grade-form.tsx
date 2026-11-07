@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import { m } from '#/paraglide/messages'
 import type { AssessmentItem, TeacherSubmission } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
@@ -7,9 +9,11 @@ import { transferToGradeForm } from '../model/ai-draft'
 import { typedItemsPercent } from '../model/scoring'
 import type { ReviewIds } from '../mutations'
 import { AiDraft } from './ai-draft'
-import { GRADE_LINE, SCORE_LINE } from './field-look'
+import { GRADE_LINE } from './field-look'
 import { GradeActions } from './grade-actions'
 import { ItemCard } from './item-card'
+import { ItemFields } from './item-fields'
+import { attentionOf, QuestionFilter, type QuestionView } from './question-filter'
 import { scoreText } from './labels'
 import { useAssessmentGrade } from './use-assessment-grade'
 
@@ -23,6 +27,8 @@ type AssessmentGradeFormProps = { ids: ReviewIds; submission: TeacherSubmission;
  */
 export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeFormProps) {
   const { form, grade, mutation, graded, unscored, submit } = useAssessmentGrade(ids, submission, items)
+  const summary = attentionOf(items, graded)
+  const [show, setShow] = useState<QuestionView>('attention')
   return (
     <form noValidate className="flex flex-col" onSubmit={event => event.preventDefault()}>
       <AiDraft
@@ -33,20 +39,21 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
           form.setFieldValue('feedback', next.feedback)
         }}
       />
+      <QuestionFilter summary={summary} total={items.length} view={show} onView={setShow} />
+      {show === 'attention' && summary.attention.size === 0 ? (
+        <p className="py-6 text-muted-foreground">{m.grading_nothing_to_check()}</p>
+      ) : null}
       <ol className="flex flex-col">
         {items.map((item, index) => (
-          <ItemCard key={item.id} item={item} answer={submission.answers[item.id]} graded={graded.get(item.id)}>
-            <div className={SCORE_LINE}>
-              <form.AppField name={`items[${index}].score`}>
-                {field => <field.TextField label={m.grading_item_score({ max: item.max_score })} inputMode="decimal" />}
-              </form.AppField>
-            </div>
-            {/* Most questions get no comment: the box grows with what is typed, a tall one per question only lengthened the page. */}
-            <div className="[&_textarea]:field-sizing-content [&_textarea]:min-h-10">
-              <form.AppField name={`items[${index}].feedback`}>
-                {field => <field.TextareaField label={m.grading_item_feedback()} />}
-              </form.AppField>
-            </div>
+          // Hidden, not unmounted: a score typed on a question stays in the form while the list shows others.
+          <ItemCard
+            key={item.id}
+            item={item}
+            answer={submission.answers[item.id]}
+            graded={graded.get(item.id)}
+            hidden={show === 'attention' && !summary.attention.has(item.id)}
+          >
+            <ItemFields form={form} index={index} max={item.max_score} />
           </ItemCard>
         ))}
       </ol>

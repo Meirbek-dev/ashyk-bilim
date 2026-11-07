@@ -74,14 +74,14 @@
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
-  --text-xs: 0.75rem;
-  --text-xs--line-height: 1rem;
-  --text-sm: 0.875rem;
-  --text-sm--line-height: 1.25rem;
-  --text-base: 1rem;
-  --text-base--line-height: 1.5rem;
-  --text-lg: 1.1875rem;
-  --text-lg--line-height: 1.625rem;
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.375rem;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.625rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.75rem;
   --text-xl: 1.5rem;
   --text-xl--line-height: 1.9375rem;
   --text-xl--letter-spacing: -0.012em;
@@ -158,7 +158,7 @@
   --secondary: light-dark(oklch(0.965 0 0), oklch(0.235 0 0));
   --secondary-foreground: var(--foreground);
   --muted: light-dark(oklch(0.97 0 0), oklch(0.205 0 0));
-  --muted-foreground: light-dark(oklch(0.5 0 0), oklch(0.71 0 0));
+  --muted-foreground: light-dark(oklch(0.45 0 0), oklch(0.74 0 0));
   --accent: light-dark(oklch(0.96 0 0), oklch(0.235 0 0));
   --accent-foreground: var(--foreground);
   --destructive: light-dark(oklch(0.53 0.2 27), oklch(0.72 0.17 24));
@@ -223,8 +223,8 @@
   --activity-code: var(--muted-foreground);
 
   /* Density (comfortable = learning, reading) */
-  --density-control: 2.5rem;
-  --density-row: 3.25rem;
+  --density-control: 2.75rem;
+  --density-row: 3.5rem;
   --density-gutter: 1.75rem;
 
   /* Focus */
@@ -340,9 +340,9 @@
 
 /* Compact = teacher/admin tables; set by the layout, never by feature classes */
 [data-density='compact'] {
-  --density-control: 2.25rem;
-  --density-row: 2.75rem;
-  --density-gutter: 1.25rem;
+  --density-control: 2.5rem;
+  --density-row: 3.25rem;
+  --density-gutter: 1.5rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

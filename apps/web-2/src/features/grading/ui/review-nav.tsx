@@ -1,7 +1,7 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { Link as RouterLink, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useEffect, type ReactNode } from 'react'
+import { useEffect } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { buttonVariants } from '#/shared/components/button-variants'
@@ -27,14 +27,16 @@ export function ReviewNav({ work }: { work: Work }) {
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   })
-  const step = (submissionId: string | null | undefined, label: string, keys: 'J' | 'K', icon: ReactNode) =>
+  // Words beside the arrows from a laptop up: an arrow alone asked an older teacher to guess, and J / K stay for those
+  // who know them (the tooltip says so).
+  const step = (submissionId: string | null | undefined, label: string, keys: 'J' | 'K', side: 'prev' | 'next') =>
     submissionId ? (
       <Tooltip>
         <TooltipTrigger
           delay={300}
           render={
             <RouterLink
-              className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+              className={`${buttonVariants({ variant: 'outline' })} max-@3xl:w-control max-@3xl:px-0`}
               to={TO}
               params={{ ...params, submissionId }}
               search={search}
@@ -43,22 +45,20 @@ export function ReviewNav({ work }: { work: Work }) {
             />
           }
         >
-          {icon}
+          {side === 'prev' ? <ChevronLeft aria-hidden data-icon="inline-start" /> : null}
+          <span className="hidden @3xl:inline">
+            {side === 'prev' ? m.grading_prev_short() : m.grading_next_short()}
+          </span>
+          {side === 'next' ? <ChevronRight aria-hidden data-icon="inline-end" /> : null}
         </TooltipTrigger>
-        <TooltipContent>{label}</TooltipContent>
+        <TooltipContent>{m.grading_step_hint({ label, key: keys })}</TooltipContent>
       </Tooltip>
-    ) : (
-      // The other arrow stays where it is at either end of the pile.
-      <span aria-hidden className="size-control" />
-    )
+    ) : null
   return (
-    <nav aria-label={m.platform_tab_submissions()} className="flex items-center gap-1">
-      {prev || next ? (
-        <span className="me-3 hidden text-xs text-muted-foreground @5xl:inline">{m.grading_keys_hint()}</span>
-      ) : null}
-      <ReviewPosition work={work} className="me-1 hidden whitespace-nowrap @3xl:inline" />
-      {step(prev, m.grading_prev(), 'K', <ChevronLeft aria-hidden />)}
-      {step(next, m.grading_next(), 'J', <ChevronRight aria-hidden />)}
+    <nav aria-label={m.platform_tab_submissions()} className="flex items-center gap-2">
+      <ReviewPosition work={work} className="me-2 hidden whitespace-nowrap text-muted-foreground @3xl:inline" />
+      {step(prev, m.grading_prev(), 'K', 'prev')}
+      {step(next, m.grading_next(), 'J', 'next')}
     </nav>
   )
 }

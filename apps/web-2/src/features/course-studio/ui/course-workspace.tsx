@@ -2,6 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { Outlet, Link as RouterLink, useMatch, useParams } from '@tanstack/react-router'
 import { Eye } from 'lucide-react'
 
+import { TabLinks } from '#/features/platform'
 import { m } from '#/paraglide/messages'
 import { CourseCover } from '#/shared/components/course-cover'
 import { Link } from '#/shared/components/link'
@@ -22,11 +23,6 @@ export function CourseWorkspace() {
   const { courseId } = useParams({ from: '/_authed/teach/courses/$courseId' })
   const { staticData } = useMatch({ from: '/_authed/teach/courses/$courseId' })
   const { data: course } = useSuspenseQuery(courseOptions(courseId))
-  const tabs = (staticData.tabs ?? []).map(tab => (
-    <Link key={tab.to} variant="tab" to={tab.to} params={{ courseId }}>
-      {tab.label()}
-    </Link>
-  ))
   return (
     <DetailPage
       cover={<CourseCover imageKey={course.thumbnail_key} className="aspect-video w-full rounded-lg border" />}
@@ -66,7 +62,7 @@ export function CourseWorkspace() {
           {m.studio_preview()}
         </RouterLink>
       }
-      tabs={tabs}
+      tabs={<TabLinks tabs={staticData.tabs ?? []} />}
     >
       <Outlet />
     </DetailPage>

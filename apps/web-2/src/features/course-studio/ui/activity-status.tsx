@@ -8,6 +8,6 @@ export function ActivityStatusBadge({ published }: { published: boolean }) {
   return published ? (
     <span className="sr-only">{m.studio_activity_status_published()}</span>
   ) : (
-    <span className="text-xs text-muted-foreground @3xl:text-sm">{m.studio_status_draft()}</span>
+    <span className="text-sm text-warning">{m.studio_status_draft()}</span>
   )
 }

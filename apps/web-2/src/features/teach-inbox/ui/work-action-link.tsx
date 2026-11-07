@@ -15,7 +15,8 @@ const actionLabels = {
 export function WorkActionLink({ item }: { item: WorkItem }) {
   const action = rowAction(item)
   if (!action) return null
-  const className = `-mx-3 ${buttonVariants({ variant: 'ghost', size: 'sm' })}`
+  // A button's outline, not a bare word: the row's one way on, found at a glance; the whole row follows it too.
+  const className = buttonVariants({ variant: 'outline', size: 'sm' })
   const params = { courseId: item.course_id, activityId: item.activity_id }
   const submissionId = submissionIdOf(item)
   return submissionId ? (

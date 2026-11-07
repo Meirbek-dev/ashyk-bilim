@@ -12,12 +12,14 @@ type ItemCardProps = {
   item: AssessmentItem
   answer: ItemAnswer | undefined
   graded: GradedItem | undefined
+  /** Out of the list for now (the «need attention» view); its fields stay in the form. */
+  hidden?: boolean
   /** The grader's fields for this item. */
   children: ReactNode
 }
 
 /** One question of the work (B-GRD-11): wording, the learner's answer, the key and the auto-grader's verdict. */
-export function ItemCard({ item, answer, graded, children }: ItemCardProps) {
+export function ItemCard({ item, answer, graded, hidden, children }: ItemCardProps) {
   const verdict = graded ? verdictText(graded) : null
   const tone = graded?.correct === true ? 'success' : graded?.correct === false ? 'destructive' : 'neutral'
   // Most migrated questions repeat the title as the prompt: show the wording once.
@@ -26,7 +28,7 @@ export function ItemCard({ item, answer, graded, children }: ItemCardProps) {
   const criteria = item.body.kind === 'open_text' ? item.body.rubric?.trim() : null
   return (
     // The page and its margin: the question and the answer read on the left, the grader's marks stand beside them.
-    <li className="grid gap-x-10 gap-y-4 border-b py-8 @3xl/review:grid-cols-[minmax(0,1fr)_17rem]">
+    <li hidden={hidden} className="grid gap-x-10 gap-y-4 border-b py-8 @3xl/review:grid-cols-[minmax(0,1fr)_17rem]">
       <div className="flex min-w-0 flex-col gap-4">
         <div className="flex flex-col gap-1">
           <h3 className="text-lg font-semibold wrap-anywhere">
@@ -54,7 +56,7 @@ export function ItemCard({ item, answer, graded, children }: ItemCardProps) {
           </section>
         ) : null}
       </div>
-      <div className="flex min-w-0 flex-col gap-3">
+      <div className="flex min-w-0 flex-col gap-2">
         {verdict || graded?.needs_manual_review ? (
           <p className="flex flex-wrap gap-x-3 text-sm font-medium">
             {verdict ? <StatusText tone={tone}>{verdict}</StatusText> : null}

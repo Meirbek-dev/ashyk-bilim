@@ -17,8 +17,9 @@ declare module '@tanstack/react-router' {
     notFoundTitle?: () => string
     /** 'focus': the route draws the focus layout (FocusPage) itself and the app shell steps aside (spec 5.2). */
     layout?: 'focus'
-    /** A layout's tabs, one child route each; the English label is the URL segment (spec 5.2). */
-    tabs?: readonly { to: AppPath; label: () => string }[]
+    /** A layout's tabs, one child route each; the English label is the URL segment (spec 5.2). `more`: a rare one, kept
+     * behind the row's «Ещё» menu so the row stays short enough to read at a glance. */
+    tabs?: readonly { to: AppPath; label: () => string; more?: true }[]
     /**
      * The shape of the route's loading skeleton (PendingView) when it is not a list: card grid, object page, tiles,
      * thumbnail rows that turn into cards from @xl.

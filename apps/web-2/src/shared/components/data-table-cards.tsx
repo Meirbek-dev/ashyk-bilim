@@ -1,17 +1,23 @@
-import { Fragment, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 import type { DataColumn } from './data-columns'
 import { DataList } from './data-list'
 
 const isBlank = (value: ReactNode) => value === null || value === undefined || value === false || value === ''
 
-type DataTableCardsProps<T> = { rows: readonly T[]; columns: readonly DataColumn<T>[]; getKey: (row: T) => string }
+type DataTableCardsProps<T> = {
+  rows: readonly T[]
+  columns: readonly DataColumn<T>[]
+  getKey: (row: T) => string
+  /** The table's stretched-link look: the whole card opens the row's action. */
+  stretch?: string | undefined
+}
 
 /**
  * DataTable at narrow width: one typeset row per row, the first priority 1 column as the title, further priority 1 columns
  * as lines under it (the learner of a work item), priority 2 as labelled lines, the action column last.
  */
-export function DataTableCards<T>({ rows, columns, getKey }: DataTableCardsProps<T>) {
+export function DataTableCards<T>({ rows, columns, getKey, stretch }: DataTableCardsProps<T>) {
   const [title, ...subtitles] = columns.filter(column => column.priority === 1 && !column.action && !column.select)
   const select = columns.find(column => column.select && column.priority !== 3)
   const lines = columns.filter(column => column.priority === 2 && !column.action && !column.select)
@@ -19,7 +25,8 @@ export function DataTableCards<T>({ rows, columns, getKey }: DataTableCardsProps
   return (
     <DataList items={rows} getKey={getKey} variant="rows">
       {row => (
-        <>
+        // `contents`: the card (li) stays the box the action's link stretches over.
+        <div className={stretch ? `contents ${stretch}` : 'contents'}>
           {select ? (
             <div className="flex items-start gap-3">
               <div className="pt-0.5">{select.cell(row)}</div>
@@ -29,7 +36,9 @@ export function DataTableCards<T>({ rows, columns, getKey }: DataTableCardsProps
             // A single action stands on the name's line: on its own line it reads as a row of its own.
             <div className="flex items-start justify-between gap-3">
               <h3 className="min-w-0 font-sans font-medium">{title.cell(row)}</h3>
-              <div className="shrink-0">{actions[0]?.cell(row)}</div>
+              <div className="shrink-0" data-stretch={actions[0]?.stretch ? '' : undefined}>
+                {actions[0]?.cell(row)}
+              </div>
             </div>
           ) : title ? (
             <h3 className="font-sans font-medium">{title.cell(row)}</h3>
@@ -59,11 +68,13 @@ export function DataTableCards<T>({ rows, columns, getKey }: DataTableCardsProps
           {actions.length > 1 || (actions.length === 1 && (select || !title)) ? (
             <div className="mt-2 flex flex-wrap gap-2">
               {actions.map(column => (
-                <Fragment key={column.id}>{column.cell(row)}</Fragment>
+                <div key={column.id} className="contents" data-stretch={column.stretch ? '' : undefined}>
+                  {column.cell(row)}
+                </div>
               ))}
             </div>
           ) : null}
-        </>
+        </div>
       )}
     </DataList>
   )
