@@ -2260,7 +2260,7 @@ export const listReplies = <ThrowOnError extends boolean = false>(options: Optio
 });
 
 /**
- * The caller's courses (trail runs without their steps). Anonymous callers
+ * The caller's courses (one run per enrolment, without steps). Anonymous callers
  * get none. With `limit` / `cursor` the runs come in keyset pages
  * (`next_cursor`).
  *

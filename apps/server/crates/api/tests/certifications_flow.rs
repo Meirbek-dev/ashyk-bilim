@@ -606,15 +606,13 @@ async fn recode(pool: &PgPool, from: &str, to: &str) {
     .fetch_one(&mut *tx)
     .await
     .unwrap();
-    sqlx::query(
-        "INSERT INTO certificate_users (certification_id, user_id, verify_code, created_at)
-         VALUES ($1, $2, $3, to_timestamp($4))",
+    ab_db::certifications::issue_certificate(
+        &mut *tx,
+        ab_core::id::CertificationId(certification),
+        ab_core::id::UserId(user),
+        to,
+        Some(issued),
     )
-    .bind(certification)
-    .bind(user)
-    .bind(to)
-    .bind(issued)
-    .execute(&mut *tx)
     .await
     .unwrap();
     tx.commit().await.unwrap();

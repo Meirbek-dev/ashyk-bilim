@@ -2020,20 +2020,14 @@ async fn file_task_requires_enrollment(pool: PgPool) {
     assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
     assert_eq!(refused.json()["code"], "enrollment-required");
 
-    let trail_id: uuid::Uuid =
-        sqlx::query_scalar("INSERT INTO trails (user_id) VALUES ($1) RETURNING id")
-            .bind(alice.user_id.0)
-            .fetch_one(&app.pool)
-            .await
-            .unwrap();
-    sqlx::query("WITH r AS (INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2::uuid, $3) RETURNING course_id, user_id)
-         INSERT INTO enrolments (course_id, user_id) SELECT course_id, user_id FROM r ON CONFLICT DO NOTHING")
-        .bind(trail_id)
-        .bind(&course_id)
-        .bind(alice.user_id.0)
-        .execute(&app.pool)
-        .await
-        .unwrap();
+    sqlx::query(
+        "INSERT INTO enrolments (course_id, user_id) VALUES ($1::uuid, $2) ON CONFLICT DO NOTHING",
+    )
+    .bind(&course_id)
+    .bind(alice.user_id.0)
+    .execute(&app.pool)
+    .await
+    .unwrap();
     let started = app.post_as(&alice, &start, &serde_json::json!({})).await;
     assert_eq!(started.status, StatusCode::CREATED, "{}", started.text());
 }

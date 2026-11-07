@@ -728,7 +728,7 @@ export const getListEnrollmentsUrl = (params?: ListEnrollmentsParams) => {
 /**
  * S-10 name of [`get_trail`] (that path is deprecated; it still answers
  * the full trail).
- * @summary The caller's courses (trail runs without their steps). Anonymous callers
+ * @summary The caller's courses (one run per enrolment, without steps). Anonymous callers
 get none. With `limit` / `cursor` the runs come in keyset pages
 (`next_cursor`).
  */
@@ -818,7 +818,7 @@ export function useListEnrollments<TData = Awaited<ReturnType<typeof listEnrollm
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary The caller's courses (trail runs without their steps). Anonymous callers
+ * @summary The caller's courses (one run per enrolment, without steps). Anonymous callers
 get none. With `limit` / `cursor` the runs come in keyset pages
 (`next_cursor`).
  */
@@ -903,7 +903,7 @@ export function useListEnrollmentsSuspense<
   queryClient?: QueryClient,
 ): UseSuspenseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary The caller's courses (trail runs without their steps). Anonymous callers
+ * @summary The caller's courses (one run per enrolment, without steps). Anonymous callers
 get none. With `limit` / `cursor` the runs come in keyset pages
 (`next_cursor`).
  */

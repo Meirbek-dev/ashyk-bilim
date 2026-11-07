@@ -908,7 +908,7 @@ pub async fn latest_course_run(
     let id = sqlx::query_scalar!(
         r#"SELECT r.id FROM ai_runs r JOIN ai_threads t ON t.id = r.thread_id
            WHERE t.course_id = $1 AND r.kind = $2
-           ORDER BY r.started_at DESC, r.id DESC LIMIT 1"#,
+           ORDER BY coalesce(r.started_at, r.created_at) DESC, r.id DESC LIMIT 1"#,
         course_id.0,
         kind
     )

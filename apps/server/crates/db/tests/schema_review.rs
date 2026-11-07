@@ -2935,13 +2935,13 @@ async fn a_certificate_outlives_its_purged_course(pool: PgPool) {
     .fetch_one(&pool)
     .await
     .unwrap();
-    sqlx::query(
-        "INSERT INTO certificate_users (certification_id, user_id, verify_code)
-         VALUES ($1, $2, 'AAAA-AAAA-AAAA-AAAA')",
+    ab_db::certifications::issue_certificate(
+        &pool,
+        ab_core::id::CertificationId(certification),
+        ab_core::id::UserId(w.user),
+        "AAAA-AAAA-AAAA-AAAA",
+        None,
     )
-    .bind(certification)
-    .bind(w.user)
-    .execute(&pool)
     .await
     .unwrap();
     // Without a purge in the way the key itself refuses to lose an issued template.
@@ -3003,8 +3003,6 @@ async fn children_of_a_course_scoped_parent_bind_the_course(pool: PgPool) {
         ("daily_assessment_metrics", "assessments"),
         ("daily_course_engagement", "activities"),
         ("daily_course_engagement", "chapters"),
-        ("daily_user_course_progress", "trail_runs"),
-        ("trail_steps", "trail_runs"),
     ];
     let unbound: Vec<(String, String)> = sqlx::query_as(
         "SELECT c.conrelid::regclass::text, c.confrelid::regclass::text
@@ -3079,7 +3077,6 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("translations_touch_platform", "derived"),
         ("users_upload_ids", "derived"),
         // Business steps, known debts: move to the code that issues and renames.
-        ("certificate_users_issue", "debt"),
         ("users_reissue_certificates", "debt"),
         ("users_sync_state", "debt"),
     ];

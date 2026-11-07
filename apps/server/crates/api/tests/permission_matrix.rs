@@ -1255,13 +1255,13 @@ async fn world(app: &TestApp) -> World {
         .as_str()
         .unwrap()
         .to_owned();
-    sqlx::query(
-        "INSERT INTO certificate_users (certification_id, user_id, verify_code) \
-         VALUES ($1::uuid, $2, 'R-MATRIX-CODE')",
+    ab_db::certifications::issue_certificate(
+        &app.pool,
+        ab_core::id::CertificationId(certification.parse().unwrap()),
+        learner.user_id,
+        "R-MATRIX-CODE",
+        None,
     )
-    .bind(&certification)
-    .bind(learner.user_id.0)
-    .execute(&app.pool)
     .await
     .unwrap();
     ids.insert("certification_id", certification);
@@ -1384,31 +1384,10 @@ fn names(mask: u8) -> String {
 
 #[ab_testdb::test]
 async fn every_route_answers_only_the_callers_it_should(pool: PgPool) {
-    run_matrix(pool, false).await;
+    run_matrix(pool).await;
 }
 
-/// REWRITE 5.6 n5: membership is the enrolment, not the trail. With every
-/// trail (runs, steps) deleted after seeding - the previous release's sync
-/// trigger off, so the enrolments stay - the same callers get the same answers.
-#[ab_testdb::test]
-async fn the_matrix_holds_with_trails_emptied(pool: PgPool) {
-    run_matrix(pool, true).await;
-}
-
-/// Every trail, run and step goes; the enrolments stay.
-async fn delete_every_trail(pool: &PgPool) {
-    sqlx::query("DELETE FROM trails")
-        .execute(pool)
-        .await
-        .unwrap();
-    let enrolled: i64 = sqlx::query_scalar("SELECT count(*) FROM enrolments")
-        .fetch_one(pool)
-        .await
-        .unwrap();
-    assert!(enrolled > 0, "the seeded members stay enrolled");
-}
-
-async fn run_matrix(pool: PgPool, empty_trails: bool) {
+async fn run_matrix(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
     let doc = ab_api::openapi_doc();
 
@@ -1441,9 +1420,6 @@ async fn run_matrix(pool: PgPool, empty_trails: bool) {
     );
 
     let world = world(&app).await;
-    if empty_trails {
-        delete_every_trail(&pool).await;
-    }
     let mut failures = Vec::new();
 
     // 2. Reads: the callers answering 2xx are exactly the listed ones.

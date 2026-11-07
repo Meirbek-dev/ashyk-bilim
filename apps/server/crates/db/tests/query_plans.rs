@@ -111,25 +111,18 @@ INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub
 SELECT ch.id, ch.course_id, 'Activity ' || n, 'dynamic', 'dynamic_page', n, n <> 5
 FROM chapters ch, generate_series(1, 5) n;
 
-INSERT INTO trails (user_id)
-SELECT id FROM users WHERE substr(username, 6)::int BETWEEN 1001 AND 2500;
-
-INSERT INTO trail_runs (trail_id, course_id, user_id)
-SELECT t.id, c.id, t.user_id
-FROM trails t
-JOIN users u ON u.id = t.user_id
-JOIN LATERAL (SELECT id FROM courses ORDER BY id
-              OFFSET substr(u.username, 6)::int % 59 LIMIT 2) c ON true;
-
--- Membership is the enrolment row (the trail-run mirror trigger goes with the enrolments contract).
 INSERT INTO enrolments (course_id, user_id)
-SELECT course_id, user_id FROM trail_runs ON CONFLICT DO NOTHING;
+SELECT c.id, u.id
+FROM users u
+JOIN LATERAL (SELECT id FROM courses ORDER BY id
+              OFFSET substr(u.username, 6)::int % 59 LIMIT 2) c ON true
+WHERE substr(u.username, 6)::int BETWEEN 1001 AND 2500;
 
 INSERT INTO activity_progress (course_id, activity_id, user_id, state, teacher_action_required)
 SELECT r.course_id, a.id, r.user_id,
        CASE WHEN a.position % 3 = 0 THEN 'completed' ELSE 'not_started' END,
        a.position = 4 AND substr(u.username, 6)::int % 10 = 0
-FROM trail_runs r
+FROM enrolments r
 JOIN users u ON u.id = r.user_id
 JOIN activities a ON a.course_id = r.course_id;
 

@@ -100,9 +100,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`learning.submission_violations`](#submission_violations): One anti-cheat event of an attempt, appended as it is reported
 - [`learning.submissions`](#submissions): An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> submitted -> graded -> released / returned (pending / published until contract B2)
 - [`learning.teacher_interventions`](#teacher_interventions): An action a teacher logged for an at-risk learner and its outcome
-- [`learning.trail_runs`](#trail_runs): A learner's legacy course run (status, data); membership is enrolments since schema review 3
-- [`learning.trail_steps`](#trail_steps): Legacy per-activity step inside a trail run; completions is the progress fact since schema review 3
-- [`learning.trails`](#trails): A learner's learning record (one per account); its trail_runs are the course enrolments
+- [`learning.trail_legacy_marks`](#trail_legacy_marks): A complete mark of the old trail on a graded activity that no completion took up
 - [`core.translatable_fields`](#translatable_fields): Lookup: the (entity, field) pairs that may have translation rows
 - [`core.translations`](#translations): Text of a translatable field in another language (translatable_fields); no row = not translated
 - [`core.upload_purposes`](#upload_purposes): Lookup: what an upload may be for (avatar, course media, hand-in, ...)
@@ -165,7 +163,7 @@ Projection: a learner's state in one activity (from submissions, hand-ins and st
 | user_id | uuid |  |  |
 | state | text |  | `'not_started'::text` |
 | required | boolean |  | `true` |
-| score | double precision | null |  |
+| score | percent | null |  |
 | passed | boolean | null |  |
 | best_submission_id | uuid | null |  |
 | latest_submission_id | uuid | null |  |
@@ -189,8 +187,7 @@ Projection: a learner's state in one activity (from submissions, hand-ins and st
 - Foreign key `activity_progress_latest_submission_id_fkey`: `FOREIGN KEY (latest_submission_id, user_id) REFERENCES submissions(id, user_id) ON DELETE SET NULL (latest_submission_id)`
 - Foreign key `activity_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Check `activity_progress_attempt_count_check`: `CHECK ((attempt_count >= 0))`
-- Check `activity_progress_score_check`: `CHECK (((score IS NULL) OR ((score >= (0)::double precision) AND (score <= (100)::double precision))))`
-- Check `activity_progress_score_range`: `CHECK (((score >= (0)::double precision) AND (score <= (100)::double precision)))`
+- Check `activity_progress_score_check`: `CHECK (((score IS NULL) OR (((score)::double precision >= (0)::double precision) AND ((score)::double precision <= (100)::double precision))))`
 - Check `activity_progress_state_check`: `CHECK ((state = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'submitted'::text, 'needs_grading'::text, 'returned'::text, 'graded'::text, 'passed'::text, 'failed'::text, 'completed'::text])))`
 - Index `activity_progress_activity_state_idx`: `CREATE INDEX activity_progress_activity_state_idx ON learning.activity_progress USING btree (activity_id, state)`
 - Index `activity_progress_best_submission_idx`: `CREATE INDEX activity_progress_best_submission_idx ON learning.activity_progress USING btree (best_submission_id)`
@@ -260,7 +257,6 @@ An AI review of a whole course.
 | public_score | integer |  |  |
 | report | jsonb |  | `'{}'::jsonb` |
 | evidence | jsonb |  | `'{}'::jsonb` |
-| model_name | text | null |  |
 | content_hash | text | null |  |
 | created_at | timestamp with time zone |  | `now()` |
 | published_at | timestamp with time zone | null |  |
@@ -436,7 +432,6 @@ An AI-proposed grade for an attempt, for a teacher to accept or correct.
 | max_score | score_points | null |  |
 | confidence | real | null |  |
 | flags | text[] |  | `'{}'::text[]` |
-| model_name | text | null |  |
 | error_code | text | null |  |
 | agreement | text | null |  |
 | final_score | score_points | null |  |
@@ -597,7 +592,7 @@ One AI job (grading draft, analysis, review, answer): model, tokens, cost, statu
 | safety_state | text | null |  |
 | error_code | text | null |  |
 | metadata | jsonb |  | `'{}'::jsonb` |
-| started_at | timestamp with time zone | null | `now()` |
+| started_at | timestamp with time zone | null |  |
 | completed_at | timestamp with time zone | null |  |
 | created_at | timestamp with time zone |  | `now()` |
 
@@ -658,7 +653,6 @@ AI gap analysis of one attempt (a submission or a file hand-in).
 | gap_count | integer |  | `0` |
 | analysis | jsonb |  | `'{}'::jsonb` |
 | evidence | jsonb |  | `'{}'::jsonb` |
-| model_name | text | null |  |
 | created_at | timestamp with time zone |  | `now()` |
 | file_submission_attempt_id | uuid | null |  |
 
@@ -1130,7 +1124,6 @@ A certificate issued to a learner, verifiable by verify_code. Survives the accou
 - Foreign key `certificate_users_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Index `certificate_users_user_idx`: `CREATE INDEX certificate_users_user_idx ON learning.certificate_users USING btree (user_id)`
 - Trigger `certificate_users_frozen`: `CREATE TRIGGER certificate_users_frozen BEFORE UPDATE ON learning.certificate_users FOR EACH ROW EXECUTE FUNCTION certificate_users_frozen()`
-- Trigger `certificate_users_issue`: `CREATE TRIGGER certificate_users_issue BEFORE INSERT ON learning.certificate_users FOR EACH ROW EXECUTE FUNCTION certificate_users_issue()`
 
 ## certifications
 
@@ -1305,7 +1298,6 @@ A curated, ordered set of courses shown in the catalog.
 | description | text |  | `''::text` |
 | public | boolean |  | `false` |
 | creator_id | uuid | null |  |
-| search | tsvector | null | generated: `to_tsvector('simple'::regconfig, ((COALESCE(name, ''::text) \|\| ' '::text) \|\| COALESCE(description, ''::text)))` |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
 | version | integer |  | `1` |
@@ -1575,8 +1567,8 @@ Projection: a learner's totals in a course (counts, percentage, grade averages, 
 | user_id | uuid |  |  |
 | completed_required_count | integer |  | `0` |
 | total_required_count | integer |  | `0` |
-| grade_average | double precision | null |  |
-| weighted_grade_average | double precision | null |  |
+| grade_average | percent | null |  |
+| weighted_grade_average | percent | null |  |
 | missing_required_count | integer |  | `0` |
 | needs_grading_count | integer |  | `0` |
 | last_activity_at | timestamp with time zone | null |  |
@@ -1591,8 +1583,6 @@ Projection: a learner's totals in a course (counts, percentage, grade averages, 
 - Foreign key `course_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Check `course_progress_completed_at_check`: `CHECK (((completed_at IS NULL) OR ((total_required_count > 0) AND (completed_required_count >= total_required_count))))`
 - Check `course_progress_counts_check`: `CHECK (((completed_required_count >= 0) AND (completed_required_count <= total_required_count)))`
-- Check `course_progress_grade_average_range`: `CHECK (((grade_average >= (0)::double precision) AND (grade_average <= (100)::double precision)))`
-- Check `course_progress_weighted_grade_average_range`: `CHECK (((weighted_grade_average >= (0)::double precision) AND (weighted_grade_average <= (100)::double precision)))`
 - Index `course_progress_user_idx`: `CREATE INDEX course_progress_user_idx ON learning.course_progress USING btree (user_id)`
 
 ## course_progress_v (view)
@@ -1686,7 +1676,6 @@ A course: catalog card, visibility (public), lifecycle (archived_at) and setting
 | public | boolean |  | `false` |  |
 | open_to_contributors | boolean |  | `false` |  |
 | creator_id | uuid | null |  |  |
-| search | tsvector | null | generated: `to_tsvector('simple'::regconfig, ((((COALESCE(name, ''::text) \|\| ' '::text) \|\| COALESCE(description, ''::text)) \|\| ' '::text) \|\| COALESCE(about, ''::text)))` |  |
 | created_at | timestamp with time zone |  | `now()` |  |
 | updated_at | timestamp with time zone |  | `now()` |  |
 | archived_at | timestamp with time zone | null |  |  |
@@ -1845,7 +1834,6 @@ Daily snapshot of each learner's progress in each course.
 | metric_date | date |  |  |
 | user_id | uuid |  |  |
 | course_id | uuid |  |  |
-| trail_run_id | uuid | null |  |
 | progress_pct | double precision |  | `0` |
 | completed_steps | integer |  | `0` |
 | total_steps | integer |  | `0` |
@@ -1856,11 +1844,9 @@ Daily snapshot of each learner's progress in each course.
 
 - Primary key `daily_user_course_progress_pkey`: `PRIMARY KEY (metric_date, user_id, course_id)`
 - Foreign key `daily_user_course_progress_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `daily_user_course_progress_trail_run_id_fkey`: `FOREIGN KEY (trail_run_id) REFERENCES trail_runs(id) ON DELETE SET NULL`
 - Foreign key `daily_user_course_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Index `daily_user_course_progress_course_idx`: `CREATE INDEX daily_user_course_progress_course_idx ON analytics.daily_user_course_progress USING btree (course_id, metric_date DESC)`
 - Index `daily_user_course_progress_date_brin`: `CREATE INDEX daily_user_course_progress_date_brin ON analytics.daily_user_course_progress USING brin (metric_date)`
-- Index `daily_user_course_progress_trail_run_idx`: `CREATE INDEX daily_user_course_progress_trail_run_idx ON analytics.daily_user_course_progress USING btree (trail_run_id)`
 - Index `daily_user_course_progress_user_idx`: `CREATE INDEX daily_user_course_progress_user_idx ON analytics.daily_user_course_progress USING btree (user_id)`
 
 ## discussion_reactions
@@ -2658,77 +2644,21 @@ An action a teacher logged for an at-risk learner and its outcome.
 - Index `teacher_interventions_learner_idx`: `CREATE INDEX teacher_interventions_learner_idx ON learning.teacher_interventions USING btree (user_id, course_id)`
 - Index `teacher_interventions_teacher_idx`: `CREATE INDEX teacher_interventions_teacher_idx ON learning.teacher_interventions USING btree (teacher_user_id, course_id, created_at DESC)`
 
-## trail_runs
+## trail_legacy_marks
 
-A learner's legacy course run (status, data); membership is enrolments since schema review 3.
-
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| trail_id | uuid |  |  |
-| course_id | uuid |  |  |
-| user_id | uuid |  |  |
-| status | text |  | `'in_progress'::text` |
-| data | jsonb |  | `'{}'::jsonb` |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-
-- Primary key `trail_runs_pkey`: `PRIMARY KEY (id)`
-- Unique `trail_runs_trail_id_course_id_key`: `UNIQUE (trail_id, course_id)`
-- Foreign key `trail_runs_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `trail_runs_trail_id_fkey`: `FOREIGN KEY (trail_id) REFERENCES trails(id) ON DELETE CASCADE`
-- Foreign key `trail_runs_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
-- Check `trail_runs_data_check`: `CHECK ((jsonb_typeof(data) = 'object'::text))`
-- Check `trail_runs_status_check`: `CHECK ((status = ANY (ARRAY['in_progress'::text, 'completed'::text, 'paused'::text, 'cancelled'::text])))`
-- Index `trail_runs_course_user_idx`: `CREATE INDEX trail_runs_course_user_idx ON learning.trail_runs USING btree (course_id, user_id)`
-- Index `trail_runs_user_idx`: `CREATE INDEX trail_runs_user_idx ON learning.trail_runs USING btree (user_id)`
-
-## trail_steps
-
-Legacy per-activity step inside a trail run; completions is the progress fact since schema review 3.
+A complete mark of the old trail on a graded activity that no completion took up. History only: nothing reads it, and it counts for no progress.
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| trail_run_id | uuid |  |  |
-| trail_id | uuid |  |  |
 | activity_id | uuid |  |  |
 | course_id | uuid |  |  |
 | user_id | uuid |  |  |
-| complete | boolean |  | `true` |
-| teacher_verified | boolean |  | `false` |
-| grade | integer |  | `0` |
-| data | jsonb |  | `'{}'::jsonb` |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
+| marked_at | timestamp with time zone |  |  |
 
-- Primary key `trail_steps_pkey`: `PRIMARY KEY (id)`
-- Unique `trail_steps_trail_run_id_activity_id_key`: `UNIQUE (trail_run_id, activity_id)`
-- Foreign key `trail_steps_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
-- Foreign key `trail_steps_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `trail_steps_trail_id_fkey`: `FOREIGN KEY (trail_id) REFERENCES trails(id) ON DELETE CASCADE`
-- Foreign key `trail_steps_trail_run_id_fkey`: `FOREIGN KEY (trail_run_id) REFERENCES trail_runs(id) ON DELETE CASCADE`
-- Foreign key `trail_steps_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
-- Check `trail_steps_data_check`: `CHECK ((jsonb_typeof(data) = 'object'::text))`
-- Index `trail_steps_activity_idx`: `CREATE INDEX trail_steps_activity_idx ON learning.trail_steps USING btree (activity_id)`
-- Index `trail_steps_course_user_idx`: `CREATE INDEX trail_steps_course_user_idx ON learning.trail_steps USING btree (course_id, user_id)`
-- Index `trail_steps_trail_idx`: `CREATE INDEX trail_steps_trail_idx ON learning.trail_steps USING btree (trail_id)`
-- Index `trail_steps_user_idx`: `CREATE INDEX trail_steps_user_idx ON learning.trail_steps USING btree (user_id)`
-
-## trails
-
-A learner's learning record (one per account); its trail_runs are the course enrolments.
-
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| user_id | uuid |  |  |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-
-- Primary key `trails_pkey`: `PRIMARY KEY (id)`
-- Unique `trails_user_id_key`: `UNIQUE (user_id)`
-- Foreign key `trails_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Primary key `trail_legacy_marks_pkey`: `PRIMARY KEY (activity_id, user_id)`
+- Foreign key `trail_legacy_marks_activity_id_course_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE`
+- Foreign key `trail_legacy_marks_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Index `trail_legacy_marks_user_idx`: `CREATE INDEX trail_legacy_marks_user_idx ON learning.trail_legacy_marks USING btree (user_id)`
 
 ## translatable_fields
 

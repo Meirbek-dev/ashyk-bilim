@@ -675,8 +675,8 @@ in the order it can be done, each step a forward migration on the current schema
    (`progress_flow::roster_and_trail_read_enrolments`, review 3 wave 2). The sync trigger goes in the contract.
    Done 2026-11-07 (n8 step 2): nothing reads or writes `trails`, `trail_runs`, `trail_steps` or
    `daily_user_course_progress.trail_run_id`. The DTOs' `id` is the course / activity id and a run id is no cursor any
-   more. Production held nothing else in them (every run `in_progress`, no grade, no verified step, empty `data`). Left: the contract that drops
-   them, and the test fixtures that still insert a run to enrol someone.
+   more. Production held nothing else in them (every run `in_progress`, no grade, no verified step, empty `data`) but 74 marks
+   on graded activities, now `trail_legacy_marks`. `20261107999910` (contract) dropped them.
 6. **One submission pipeline** (item 12). `file_submission_attempts` becomes `submissions` rows of an
    `assessments.kind = 'assignment'` task: map `file_submissions` → `assessments` (policy columns already
    overlap), attempts → `submissions` (files to an `attempt_files` table as in 5.4, grades to `grading_entries`;
@@ -704,7 +704,7 @@ in the order it can be done, each step a forward migration on the current schema
       steps and runs (`add_activity`, `lock_member_joined`, `ensure_trail*`, `insert_trail_step`, `drop_run`'s
       delete), the DTO ids lose their LEFT JOINs (the course / activity id becomes the `id`, already the
       fallback), `legacy_learner_cursor` goes, and a contract drops `trail_steps`, `trail_runs`, `trails`
-      (with `trail_runs_sync_enrolment` already gone).
+      (with `trail_runs_sync_enrolment` already gone). Done 2026-11-07 (`20261107999910`).
    3. Done 2026-11-03 (`activities_required`): `activities.required` (a trigger derives it from
       `settings.required` for both releases until settings move into the typed body); the seed, the
       view and the projector read it, every recalculation puts the member's rows on the current rule
@@ -755,8 +755,7 @@ in the order it can be done, each step a forward migration on the current schema
     existing `LIKE`); `course_search_walks_the_trigram_index` checks the bitmap index scan over 10 000 courses.
     Done for the listings too (review 3, item 35 rest): `list_courses` / `list_collections` are `QueryBuilder`
     queries with the same terms (`listing_filters_walk_the_trigram_indexes`), people search's one-letter rule
-    is inline, and `20261103072100` (contract) dropped `search_matches`. The tsvector columns stay while ranking
-    uses `ts_rank_cd`.
+    is inline, and `20261103072100` (contract) dropped `search_matches`. `20261107999930` (contract) dropped the tsvector columns: ranking computes them at query time.
 12. **Natural keys** (item 26): done for `activity_progress`, `course_progress`, `gamification_profiles`, the
     `daily_*` rollups and `learner_risk_snapshots` (`20261102030300`..`0309`): readers use the natural key (prune
     batches by `ctid`, the leaderboard keyset/cursor and its index on `(total_xp DESC, user_id)`, work item ids

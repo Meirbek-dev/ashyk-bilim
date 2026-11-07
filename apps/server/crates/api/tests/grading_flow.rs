@@ -4438,20 +4438,15 @@ async fn staff_attempts_are_previews(pool: PgPool) {
     assert_eq!(usernames(&gradebook), ["alice", "carol"]);
     assert_eq!(gradebook.json()["cells"].as_array().unwrap().len(), 1);
 
-    // UX-186: an author enrolled before UX-182 (a legacy trail run) - a
+    // UX-186: an author enrolled before UX-182 - a
     // re-projection (here, grading the preview) never reads the preview into
     // progress, so it stays out of the teacher work queue.
-    sqlx::query(
-        "WITH t AS (INSERT INTO trails (user_id) VALUES ($1) RETURNING id),
-              r AS (INSERT INTO trail_runs (trail_id, course_id, user_id)
-                    SELECT id, $2::uuid, $1 FROM t RETURNING course_id, user_id)
-         INSERT INTO enrolments (course_id, user_id) SELECT course_id, user_id FROM r",
-    )
-    .bind(teacher.user_id.0)
-    .bind(&course_id)
-    .execute(&app.pool)
-    .await
-    .unwrap();
+    sqlx::query("INSERT INTO enrolments (course_id, user_id) VALUES ($2::uuid, $1)")
+        .bind(teacher.user_id.0)
+        .bind(&course_id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
     let body = serde_json::json!({ "action": "save", "final_score": 50 });
     let graded = app.send(grade(&teacher, &preview, Some("1"), &body)).await;
     assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());

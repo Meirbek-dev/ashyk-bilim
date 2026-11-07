@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO ai_runs (thread_id, kind, status, triggered_by, metadata, started_at)\n           VALUES ($1, $2, $3, $4, $5, CASE WHEN $3 = 'queued' THEN NULL ELSE now() END)\n           RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_runs",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Uuid",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c1edfab426ee8e54d54ed3b5b7322e72d59f4e21a9895f20a7025f9bc3b0f160"
+}

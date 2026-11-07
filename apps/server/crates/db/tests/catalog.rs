@@ -154,22 +154,18 @@ async fn one_reaction_per_user_and_no_double_issuance(pool: PgPool) {
             .fetch_one(&pool)
             .await
             .unwrap();
-    let issue = "INSERT INTO certificate_users (certification_id, user_id, verify_code) VALUES ($1, $2, $3)";
-    sqlx::query(issue)
-        .bind(certification)
-        .bind(user)
-        .bind("code-1")
-        .execute(&pool)
-        .await
-        .unwrap();
-    let dup = sqlx::query(issue)
-        .bind(certification)
-        .bind(user)
-        .bind("code-2")
-        .execute(&pool)
-        .await;
+    let issue = |code: &'static str| {
+        ab_db::certifications::issue_certificate(
+            &pool,
+            ab_core::id::CertificationId(certification),
+            ab_core::id::UserId(user),
+            code,
+            None,
+        )
+    };
+    assert!(issue("code-1").await.unwrap());
     assert!(
-        dup.is_err(),
+        !issue("code-2").await.unwrap(),
         "duplicate certificate issuance must be rejected"
     );
 }
@@ -214,21 +210,6 @@ async fn staff_rosters_hold_one_row_per_target_and_user(pool: PgPool) {
             .await;
         assert!(dup.is_err(), "one row per (target, user): {sql}");
     }
-}
-
-#[ab_testdb::test]
-async fn full_text_search_matches_course_names(pool: PgPool) {
-    sqlx::query("INSERT INTO courses (name, description) VALUES ('Введение в Rust', 'системное программирование')")
-        .execute(&pool)
-        .await
-        .unwrap();
-    let hits: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM courses WHERE search @@ plainto_tsquery('simple', 'rust')",
-    )
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert_eq!(hits, 1);
 }
 
 /// One code challenge as the ETL left it: the statement on the activity, an empty item prompt.

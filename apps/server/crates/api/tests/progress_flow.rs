@@ -2604,18 +2604,9 @@ async fn assert_view_matches_projection(pool: &PgPool) {
     );
 }
 
-/// Delete every trail (runs, steps) as if trails were gone, keeping the
-/// enrolments.
-async fn empty_trails(pool: &PgPool) {
-    sqlx::query("DELETE FROM trails")
-        .execute(pool)
-        .await
-        .unwrap();
-}
-
-/// REWRITE 5.6 n5: membership is the `enrolments` row. With the trails
-/// emptied a learner stays enrolled, course-wide recalculations still reach
-/// them, a mark needs no re-join, and leaving works without a trail.
+/// REWRITE 5.6 n5: membership is the `enrolments` row. A learner stays enrolled,
+/// course-wide recalculations reach them, a mark needs no re-join, and leaving
+/// ends it.
 #[ab_testdb::test]
 async fn membership_is_the_enrolment_not_the_trail(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
@@ -2632,7 +2623,6 @@ async fn membership_is_the_enrolment_not_the_trail(pool: PgPool) {
         )
         .await;
     assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
-    empty_trails(&pool).await;
 
     let state = || async {
         app.get_as(
@@ -2657,7 +2647,7 @@ async fn membership_is_the_enrolment_not_the_trail(pool: PgPool) {
     // A course-wide recalculation (a new published lesson) reaches the member.
     lesson(&app, &teacher, &chapter_id, "Three").await;
     assert_eq!(counts().await, (1, 3));
-    // Marking needs no re-join: the enrolment is there, a run is recreated.
+    // Marking needs no re-join: the enrolment is there.
     let marked = app
         .post_as(
             &alice,
@@ -2668,8 +2658,7 @@ async fn membership_is_the_enrolment_not_the_trail(pool: PgPool) {
     assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
     assert_eq!(counts().await, (2, 3));
 
-    // Leaving without any trail ends the membership; a second leave is 404.
-    empty_trails(&pool).await;
+    // Leaving ends the membership; a second leave is 404.
     let left = app
         .delete_as(&alice, &format!("/api/v2/trail/courses/{course_id}"))
         .await;
@@ -2690,10 +2679,8 @@ async fn membership_is_the_enrolment_not_the_trail(pool: PgPool) {
 
 /// REWRITE 5.6 n5 (rest): the roster, `GET /trail` and `/enrollments` read
 /// enrolments and completions. The roster pages newest first on
-/// `(enrolled_at, user_id)`; the previous release's cursor (a trail run id)
-/// still continues after its member, a malformed one is a 422. With the
-/// trail tables emptied the learner still sees every course and completed
-/// lesson; the trail's cursor is the course id, a run id still works.
+/// `(enrolled_at, user_id)`, a malformed cursor is a 422. The learner sees every
+/// course and completed lesson; the trail's cursor is the course id.
 #[ab_testdb::test]
 async fn roster_and_trail_read_enrolments(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
@@ -2786,7 +2773,6 @@ async fn roster_and_trail_read_enrolments(pool: PgPool) {
     assert_eq!(page.json()["runs"][0]["course_id"], second_id.as_str());
     assert!(page.json()["next_cursor"].is_null());
 
-    empty_trails(&pool).await;
     let trail = app.get_as(alice, "/api/v2/trail").await;
     assert_eq!(trail.status, StatusCode::OK, "{}", trail.text());
     let runs = trail.json()["runs"].as_array().unwrap().clone();
@@ -2844,7 +2830,6 @@ async fn a_lesson_completion_is_the_completions_row(pool: PgPool) {
     let (completions, completed, xp) = facts().await;
     assert_eq!((completions, completed), (1, 1));
 
-    empty_trails(&pool).await;
     for sql in [
         "DELETE FROM activity_progress",
         "DELETE FROM course_progress",

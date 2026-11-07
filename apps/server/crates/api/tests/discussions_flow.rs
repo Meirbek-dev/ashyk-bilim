@@ -908,24 +908,16 @@ async fn a_post_holds_the_images_its_content_shows(pool: PgPool) {
     assert_eq!(image_state(&app, &kept).await, (false, true));
 }
 
-/// Enrol `who` in the course (a trail run, as `POST /enrollments` makes).
+/// Enrol `who` in the course (an enrolment, as `POST /enrollments` makes).
 async fn enrol(app: &TestApp, who: &MintedSession, course_id: &str) {
-    let trail_id: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO trails (user_id) VALUES ($1)
-         ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id RETURNING id",
+    sqlx::query(
+        "INSERT INTO enrolments (course_id, user_id) VALUES ($1::uuid, $2) ON CONFLICT DO NOTHING",
     )
+    .bind(course_id)
     .bind(who.user_id.0)
-    .fetch_one(&app.pool)
+    .execute(&app.pool)
     .await
     .unwrap();
-    sqlx::query("WITH r AS (INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2::uuid, $3) RETURNING course_id, user_id)
-         INSERT INTO enrolments (course_id, user_id) SELECT course_id, user_id FROM r ON CONFLICT DO NOTHING")
-        .bind(trail_id)
-        .bind(course_id)
-        .bind(who.user_id.0)
-        .execute(&app.pool)
-        .await
-        .unwrap();
 }
 
 /// DECISIONS 2026-10-11: reading a public course's discussions stays open;

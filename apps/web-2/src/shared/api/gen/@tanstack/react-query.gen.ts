@@ -4382,7 +4382,7 @@ export const listRepliesInfiniteOptions = (options: Options<ListRepliesData>) =>
 export const listEnrollmentsQueryKey = (options?: Options<ListEnrollmentsData>) => createQueryKey('listEnrollments', options);
 
 /**
- * The caller's courses (trail runs without their steps). Anonymous callers
+ * The caller's courses (one run per enrolment, without steps). Anonymous callers
  * get none. With `limit` / `cursor` the runs come in keyset pages
  * (`next_cursor`).
  *
@@ -4405,7 +4405,7 @@ export const listEnrollmentsOptions = (options?: Options<ListEnrollmentsData>) =
 export const listEnrollmentsInfiniteQueryKey = (options?: Options<ListEnrollmentsData>): QueryKey<Options<ListEnrollmentsData>> => createQueryKey('listEnrollments', options, true);
 
 /**
- * The caller's courses (trail runs without their steps). Anonymous callers
+ * The caller's courses (one run per enrolment, without steps). Anonymous callers
  * get none. With `limit` / `cursor` the runs come in keyset pages
  * (`next_cursor`).
  *

@@ -469,9 +469,7 @@ pub async fn list_course_ids(pool: &PgPool) -> Result<Vec<CourseId>> {
 
 /// One course the user is enrolled in, as the trail lists it.
 ///
-/// The enrolment (the membership, REWRITE 5.6 n5) with the legacy run's id and
-/// status where the run exists (every release still writes one; once the
-/// trail tables go there is none).
+/// The enrolment (the membership, REWRITE 5.6 n5).
 #[derive(Debug, Clone)]
 pub struct EnrolledRunRow {
     pub course_id: CourseId,
@@ -1017,11 +1015,6 @@ pub async fn list_course_learners(
     Ok(rows)
 }
 
-/// A roster cursor of the release before enrolments.
-///
-/// The trail run id of the last member shown, resolved to that member's enrolment keyset (or the
-/// run's own time when the enrolment is gone); `None` for no such run.
-// ponytail: goes with the trail tables, a release after the cursor changed.
 /// A user named by an enrolment identifier, with where they stand on the
 /// course (`resolve_enrol_targets`).
 #[derive(Debug, Clone)]

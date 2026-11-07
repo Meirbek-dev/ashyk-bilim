@@ -179,8 +179,8 @@ pub struct CertificateRow {
     pub user_id: UserId,
     /// Public verification code (`/certificates/{code}`).
     pub verify_code: String,
-    /// What the certificate states, stored when it was issued (the
-    /// `certificate_users_issue` trigger): renaming the course or editing
+    /// What the certificate states, stored when it was issued
+    /// ([`issue_certificate`]): renaming the course or editing
     /// the template leaves it. Only `holder_name` follows the person (a
     /// display-name change re-issues: `reissued_at`).
     pub holder_name: String,

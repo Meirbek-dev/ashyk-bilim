@@ -62,12 +62,7 @@
         "ordinal": 5,
         "name": "score",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "activity_progress",
-            "name": "score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 6,
@@ -100,7 +95,7 @@
       false,
       false,
       false,
-      true,
+      null,
       true,
       null
     ]

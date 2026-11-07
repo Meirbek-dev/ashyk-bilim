@@ -39,23 +39,16 @@ async fn learner(app: &TestApp, name: &str) -> (UserId, MintedSession) {
     (user, session)
 }
 
-/// A trail run - course membership, what overrides target (BUG-247).
+/// An enrolment - course membership, what overrides target (BUG-247).
 async fn enrol(pool: &PgPool, course_id: &str, user_id: UserId) {
-    let trail_id: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO trails (user_id) VALUES ($1) ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id RETURNING id",
+    sqlx::query(
+        "INSERT INTO enrolments (course_id, user_id) VALUES ($1::uuid, $2) ON CONFLICT DO NOTHING",
     )
+    .bind(course_id)
     .bind(user_id.0)
-    .fetch_one(pool)
+    .execute(pool)
     .await
     .unwrap();
-    sqlx::query("WITH r AS (INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2::uuid, $3) RETURNING course_id, user_id)
-         INSERT INTO enrolments (course_id, user_id) SELECT course_id, user_id FROM r ON CONFLICT DO NOTHING")
-        .bind(trail_id)
-        .bind(course_id)
-        .bind(user_id.0)
-        .execute(pool)
-        .await
-        .unwrap();
 }
 
 /// A PRIVATE course with one published quiz; returns (course, assessment).

@@ -34888,7 +34888,7 @@
             "description": "The caller's courses"
           }
         },
-        "summary": "The caller's courses (trail runs without their steps). Anonymous callers\nget none. With `limit` / `cursor` the runs come in keyset pages\n(`next_cursor`).",
+        "summary": "The caller's courses (one run per enrolment, without steps). Anonymous callers\nget none. With `limit` / `cursor` the runs come in keyset pages\n(`next_cursor`).",
         "tags": [
           "progress"
         ]

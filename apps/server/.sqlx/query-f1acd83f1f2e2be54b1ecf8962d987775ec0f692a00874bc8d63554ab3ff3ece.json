@@ -62,23 +62,13 @@
         "ordinal": 5,
         "name": "grade_average",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "course_progress",
-            "name": "grade_average"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 6,
         "name": "weighted_grade_average",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "course_progress",
-            "name": "weighted_grade_average"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 7,
@@ -144,8 +134,8 @@
       false,
       false,
       false,
-      true,
-      true,
+      null,
+      null,
       false,
       false,
       null,

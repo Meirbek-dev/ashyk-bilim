@@ -206,8 +206,9 @@ pub async fn insert_run(
     metadata: &serde_json::Value,
 ) -> Result<AiRunId> {
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO ai_runs (thread_id, kind, status, triggered_by, metadata)
-           VALUES ($1, $2, $3, $4, $5) RETURNING id"#,
+        r#"INSERT INTO ai_runs (thread_id, kind, status, triggered_by, metadata, started_at)
+           VALUES ($1, $2, $3, $4, $5, CASE WHEN $3 = 'queued' THEN NULL ELSE now() END)
+           RETURNING id"#,
         thread_id.0,
         kind.as_str(),
         status.as_str(),

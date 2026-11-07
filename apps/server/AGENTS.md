@@ -58,7 +58,7 @@ Compilation uses the committed SQLx cache by default; `prepare` and `sqlx-check`
   backfill are exempt). Any other data fix is an `ashyq admin <command>` (idempotent, `--dry-run`, prints counts;
   `migrate-themes` is the pattern) run by hand after `just backup`. Existing migrations are never squashed.
 - Preserve migrated legacy data: UUIDs, video thumbnails, `custom` activities, certificate layouts,
-  and trail steps without projection rows. Imported users authenticate through Zitadel passwap.
+  and old marks on graded activities (`trail_legacy_marks`). Imported users authenticate through Zitadel passwap.
 - No `unwrap`, `expect`, `panic!`, `todo!`, `unimplemented!`, `dbg!`, or stdout/stderr prints outside
   tests/testkit. Return `ab_core::Error`. A lint allowance needs a one-line safety justification.
 - New user-visible failures need an `ErrorCode`, English message and registry snapshot.

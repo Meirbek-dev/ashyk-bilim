@@ -7,7 +7,7 @@ FROM unnest(ARRAY[
   'submissions', 'grading_entries', 'file_submission_attempts', 'file_grading_entries',
   'certifications', 'certificate_users', 'course_discussions', 'uploads', 'blocks',
   'roles', 'role_permissions', 'user_roles', 'usergroups', 'usergroup_members', 'usergroup_courses',
-  'trails', 'trail_runs', 'trail_steps', 'collections', 'collection_courses'
+  'enrolments', 'completions', 'collections', 'collection_courses'
 ]) AS tables(tablename)
 ORDER BY tablename
 \gexec

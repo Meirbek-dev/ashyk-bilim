@@ -257,25 +257,18 @@ async fn grade_and_publish(
     assert_eq!(released.json()["published_count"], 1);
 }
 
-/// Enrol straight into the tables: the trail run (what `enrolled` means,
+/// Enrol straight into the tables: the enrolment (what `enrolled` means,
 /// UX-150) plus a course-progress row at `pct`.
 async fn enrol(pool: &PgPool, course_id: &str, user_id: ab_core::id::UserId, pct: f64) {
     let course_uuid = uuid::Uuid::parse_str(course_id).unwrap();
-    let trail_id: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO trails (user_id) VALUES ($1) ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id RETURNING id",
+    sqlx::query(
+        "INSERT INTO enrolments (course_id, user_id) VALUES ($1::uuid, $2) ON CONFLICT DO NOTHING",
     )
+    .bind(course_uuid)
     .bind(user_id.0)
-    .fetch_one(pool)
+    .execute(pool)
     .await
     .unwrap();
-    sqlx::query("WITH r AS (INSERT INTO trail_runs (trail_id, course_id, user_id) VALUES ($1, $2, $3) RETURNING course_id, user_id)
-         INSERT INTO enrolments (course_id, user_id) SELECT course_id, user_id FROM r ON CONFLICT DO NOTHING")
-        .bind(trail_id)
-        .bind(course_uuid)
-        .bind(user_id.0)
-        .execute(pool)
-        .await
-        .unwrap();
     // progress_pct is derived from the counts: `pct` of 100 required.
     #[allow(clippy::cast_possible_truncation)]
     let (done, total) = (pct.round() as i32, if pct > 0.0 { 100 } else { 0 });
@@ -2202,13 +2195,13 @@ async fn leavers_drop_from_course_funnels_certificates_and_bottlenecks(pool: PgP
         assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
     }
     for who in [&alice, &bob] {
-        sqlx::query(
-            "INSERT INTO certificate_users (certification_id, user_id, verify_code) VALUES ($1, $2, $3)",
+        ab_db::certifications::issue_certificate(
+            &pool,
+            ab_core::id::CertificationId(certification),
+            who.user_id,
+            &who.user_id.to_string(),
+            None,
         )
-        .bind(certification)
-        .bind(who.user_id.0)
-        .bind(who.user_id.to_string())
-        .execute(&pool)
         .await
         .unwrap();
     }

@@ -21,7 +21,7 @@
 Миграция `apps/server/migrations/20261002000001_course_archive.sql`:
 
 - `courses.archived_at timestamptz`, `courses.archived_by uuid REFERENCES users ON DELETE SET NULL`;
-- `course_visible(c, viewer, see_all)` получает ветку «архивный курс и у зрителя есть `trail_runs`». Она срабатывает
+- `course_visible(c, viewer, see_all)` получает ветку «архивный курс и у зрителя есть `enrolments`». Она срабатывает
   только для архивных курсов, поэтому снятые с публикации курсы по-прежнему скрыты от своих учащихся (BUG-183);
 - `collection_listable` не считает архивный курс поводом показать коллекцию.
 

@@ -381,8 +381,7 @@ One migration set for the database `ashyq`. Rules:
    `search_fold(hay) ~ search_fold($n)` predicate per word (`ab_db::search::push_terms`, so these queries are
    `QueryBuilder`s), answered by the `pg_trgm` GIN indexes `*_search_trgm_idx` for words of 3+ characters
    (`schema_review::*_trigram_ind*` check the plans). A changed `search_fold` body needs a REINDEX of those indexes.
-   The `tsvector` generated columns on courses/collections only rank (`ts_rank_cd`), so they carry no GIN index
-   (dropped 2026-11). Course material search uses pgvector on `content_chunks` (§12 "AI-first foundation").
+   Ranking computes its `tsvector` at query time (`ts_rank_cd`); the generated columns are gone. Course material search uses pgvector on `content_chunks` (§12 "AI-first foundation").
 7. Optimistic concurrency: one integer `version` per edited resource (§6; 412 on a stale `If-Match`), plus the
    per-column-family counters where genuinely concurrent (grading vs. draft; the draft save keeps its 409 until
    phase 9).
@@ -435,7 +434,7 @@ One migration set for the database `ashyq`. Rules:
 The database enforces these itself; `crates/db/tests/schema_review.rs` holds one test per rule.
 
 - **No cascade from `users` onto learning records.** Submissions, file attempts, code runs, issued
-  certificates, progress, trails/enrolments, XP and uploads reference `users` with `ON DELETE RESTRICT`
+  certificates, progress, enrolments, XP and uploads reference `users` with `ON DELETE RESTRICT`
   (accounts are disabled or anonymised, never deleted by the app; manual erasure: RUNBOOK 2.3).
   Settings-like rows (roles, preferences, notifications, reactions, analytics) still cascade.
   `crates/db/tests/cascade_audit.rs` lists every remaining cascade with its reason.
@@ -445,7 +444,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `ON DELETE CASCADE`: deleting a course or activity removes the notifications that link into it.
 - **A copied `course_id` cannot drift.** Chapters, activities, assessments, file tasks and posts carry
   `UNIQUE (id, course_id)`; their children reference `(parent_id, course_id)` (activities → chapters,
-  assessments/file tasks/progress/trail steps → activities, submissions → assessments, file attempts → file
+  assessments/file tasks/progress → activities, submissions → assessments, file attempts → file
   tasks, replies → posts), keeping the old constraint names. They are `ON UPDATE RESTRICT`
   (`20261102010800`): no feature moves a parent to another course (activities move only between chapters of
   their course), so such a change is refused while children exist instead of rewriting learner work.
@@ -512,18 +511,15 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `gamification_profiles_daily_xp` (`20261102071100`) keeps it as the previous release reads it (UTC day, from the
   journal) until the lane C2 contract drops both.
 - **Membership is an `enrolments` row** (`20261102030100_enrolments.sql`, REWRITE 5.6 n5): `(course_id, user_id)` PK,
-  written with the trail run in the same transaction (join, enrol by a roster manager, a first mark) and deleted on
-  leave / removal; every member predicate (`has_trail_run`, `course_members`, `takes_assessments`, the work queue,
+  written on a join, an enrolment by a roster manager or a first mark, and deleted on leave / removal; every member predicate (`has_trail_run`, `course_members`, `takes_assessments`, the work queue,
   analytics, notifications, `course_visible` for archived courses), the roster (`GET /courses/{id}/learners`, keyset
-  `(enrolled_at, user_id)`, cursor `"<µs>.<user id>"`; a trail run id from the previous release still resolves) and
-  the learner's list (`GET /trail`, `/enrollments`: one run per enrolment, cursor = course id, a run id still works)
-  read it, never the staff. The trail tables only lend their legacy `id`s to those DTOs (the course / activity id
-  stands in without a row). The lane C contract dropped the trigger that mirrored the previous release's
-  trail-run writes into it.
+  `(enrolled_at, user_id)`, cursor `"<µs>.<user id>"`) and the learner's list (`GET /trail`, `/enrollments`: one run per
+  enrolment, cursor = course id) read it, never the staff. The DTOs' `id` is the course / activity id. `trails`,
+  `trail_runs` and `trail_steps` are gone; the marks on graded activities that no completion took up are kept as
+  history in `trail_legacy_marks`, which nothing reads and which counts for no progress.
 - **A completion is a `completions` row** (`20261102030500_completions.sql`, REWRITE 5.6 n8): `(activity_id,
   user_id)` PK, `completed_at`. A learner's mark writes it, un-marking and leaving delete it (the leave's
-  `enrolment_events` row keeps what it reset); the lesson projection and the trail's steps read it. The `trail_*`
-  tables are no longer read or written and go in the next release. Graded kinds complete through their projection: the projector's graded write keeps the row equal
+  `enrolment_events` row keeps what it reset); the lesson projection and the trail's steps read it. Graded kinds complete through their projection: the projector's graded write keeps the row equal
   to `activity_progress.completed_at` in the same transaction (`sync_graded_completion`); the trigger
   `activity_progress_sync_completion` does the same for the previous release until the lane C2 contract drops it.
 - **`course_progress` derives what follows from it** (`20261102030200_course_progress_derived.sql`): `progress_pct`
@@ -568,7 +564,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **Scores are exact numerics behind domains** (`20261102020100_score_domains`, contract
   `20261103020000_scores_numeric`): percentages and penalties are `percent` (numeric(5,2), 0..100), points
   `score_points` and weights `score_weight` (numeric(8,2), >= 0, no `'NaN'`), on submissions, grading entries,
-  file attempts/grades, assessment policy, items, item feedback, code runs and AI grade drafts/corrections.
+  file attempts/grades, assessment policy, items, item feedback, code runs, AI grade drafts/corrections, activity and
+  course progress and issued certificates.
   The domain keeps `f64` (grading math and its proptests are unchanged): SQL reads a score as
   `col::float8 AS "col!"`/`"col?"` and binds one as `$n::float8`, and storing rounds it to two decimals.
   Chosen over `rust_decimal` because it changes no Rust type, no DTO and no contract, and the same SQL runs on

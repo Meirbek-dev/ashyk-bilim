@@ -37,8 +37,7 @@ constraint activity_progress activity_progress_is_late_not_null NOT NULL is_late
 constraint activity_progress activity_progress_latest_submission_id_fkey FOREIGN KEY (latest_submission_id, user_id) REFERENCES submissions(id, user_id) ON DELETE SET NULL (latest_submission_id)
 constraint activity_progress activity_progress_pkey PRIMARY KEY (activity_id, user_id)
 constraint activity_progress activity_progress_required_not_null NOT NULL required
-constraint activity_progress activity_progress_score_check CHECK (((score IS NULL) OR ((score >= (0)::double precision) AND (score <= (100)::double precision))))
-constraint activity_progress activity_progress_score_range CHECK (((score >= (0)::double precision) AND (score <= (100)::double precision)))
+constraint activity_progress activity_progress_score_check CHECK (((score IS NULL) OR (((score)::double precision >= (0)::double precision) AND ((score)::double precision <= (100)::double precision))))
 constraint activity_progress activity_progress_state_check CHECK ((state = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'submitted'::text, 'needs_grading'::text, 'returned'::text, 'graded'::text, 'passed'::text, 'failed'::text, 'completed'::text])))
 constraint activity_progress activity_progress_state_not_null NOT NULL state
 constraint activity_progress activity_progress_teacher_action_required_not_null NOT NULL teacher_action_required
@@ -755,7 +754,6 @@ constraint course_progress course_progress_counts_check CHECK (((completed_requi
 constraint course_progress course_progress_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint course_progress course_progress_course_id_not_null NOT NULL course_id
 constraint course_progress course_progress_created_at_not_null NOT NULL created_at
-constraint course_progress course_progress_grade_average_range CHECK (((grade_average >= (0)::double precision) AND (grade_average <= (100)::double precision)))
 constraint course_progress course_progress_missing_required_count_not_null NOT NULL missing_required_count
 constraint course_progress course_progress_needs_grading_count_not_null NOT NULL needs_grading_count
 constraint course_progress course_progress_pkey PRIMARY KEY (course_id, user_id)
@@ -764,7 +762,6 @@ constraint course_progress course_progress_total_required_count_not_null NOT NUL
 constraint course_progress course_progress_updated_at_not_null NOT NULL updated_at
 constraint course_progress course_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 constraint course_progress course_progress_user_id_not_null NOT NULL user_id
-constraint course_progress course_progress_weighted_grade_average_range CHECK (((weighted_grade_average >= (0)::double precision) AND (weighted_grade_average <= (100)::double precision)))
 constraint course_staff course_staff_authorship_check CHECK ((authorship = ANY (ARRAY['creator'::text, 'contributor'::text, 'maintainer'::text, 'reporter'::text])))
 constraint course_staff course_staff_authorship_not_null NOT NULL authorship
 constraint course_staff course_staff_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
@@ -884,7 +881,6 @@ constraint daily_user_course_progress daily_user_course_progress_metric_date_not
 constraint daily_user_course_progress daily_user_course_progress_pkey PRIMARY KEY (metric_date, user_id, course_id)
 constraint daily_user_course_progress daily_user_course_progress_progress_pct_not_null NOT NULL progress_pct
 constraint daily_user_course_progress daily_user_course_progress_total_steps_not_null NOT NULL total_steps
-constraint daily_user_course_progress daily_user_course_progress_trail_run_id_fkey FOREIGN KEY (trail_run_id) REFERENCES trail_runs(id) ON DELETE SET NULL
 constraint daily_user_course_progress daily_user_course_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint daily_user_course_progress daily_user_course_progress_user_id_not_null NOT NULL user_id
 constraint discussion_reactions discussion_reactions_created_at_not_null NOT NULL created_at
@@ -1278,48 +1274,13 @@ constraint teacher_interventions teacher_interventions_updated_at_not_null NOT N
 constraint teacher_interventions teacher_interventions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint teacher_interventions teacher_interventions_user_id_not_null NOT NULL user_id
 constraint teacher_interventions teacher_interventions_version_not_null NOT NULL version
-constraint trail_runs trail_runs_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
-constraint trail_runs trail_runs_course_id_not_null NOT NULL course_id
-constraint trail_runs trail_runs_created_at_not_null NOT NULL created_at
-constraint trail_runs trail_runs_data_check CHECK ((jsonb_typeof(data) = 'object'::text))
-constraint trail_runs trail_runs_data_not_null NOT NULL data
-constraint trail_runs trail_runs_id_not_null NOT NULL id
-constraint trail_runs trail_runs_pkey PRIMARY KEY (id)
-constraint trail_runs trail_runs_status_check CHECK ((status = ANY (ARRAY['in_progress'::text, 'completed'::text, 'paused'::text, 'cancelled'::text])))
-constraint trail_runs trail_runs_status_not_null NOT NULL status
-constraint trail_runs trail_runs_trail_id_course_id_key UNIQUE (trail_id, course_id)
-constraint trail_runs trail_runs_trail_id_fkey FOREIGN KEY (trail_id) REFERENCES trails(id) ON DELETE CASCADE
-constraint trail_runs trail_runs_trail_id_not_null NOT NULL trail_id
-constraint trail_runs trail_runs_updated_at_not_null NOT NULL updated_at
-constraint trail_runs trail_runs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
-constraint trail_runs trail_runs_user_id_not_null NOT NULL user_id
-constraint trail_steps trail_steps_activity_id_fkey FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE
-constraint trail_steps trail_steps_activity_id_not_null NOT NULL activity_id
-constraint trail_steps trail_steps_complete_not_null NOT NULL complete
-constraint trail_steps trail_steps_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
-constraint trail_steps trail_steps_course_id_not_null NOT NULL course_id
-constraint trail_steps trail_steps_created_at_not_null NOT NULL created_at
-constraint trail_steps trail_steps_data_check CHECK ((jsonb_typeof(data) = 'object'::text))
-constraint trail_steps trail_steps_data_not_null NOT NULL data
-constraint trail_steps trail_steps_grade_not_null NOT NULL grade
-constraint trail_steps trail_steps_id_not_null NOT NULL id
-constraint trail_steps trail_steps_pkey PRIMARY KEY (id)
-constraint trail_steps trail_steps_teacher_verified_not_null NOT NULL teacher_verified
-constraint trail_steps trail_steps_trail_id_fkey FOREIGN KEY (trail_id) REFERENCES trails(id) ON DELETE CASCADE
-constraint trail_steps trail_steps_trail_id_not_null NOT NULL trail_id
-constraint trail_steps trail_steps_trail_run_id_activity_id_key UNIQUE (trail_run_id, activity_id)
-constraint trail_steps trail_steps_trail_run_id_fkey FOREIGN KEY (trail_run_id) REFERENCES trail_runs(id) ON DELETE CASCADE
-constraint trail_steps trail_steps_trail_run_id_not_null NOT NULL trail_run_id
-constraint trail_steps trail_steps_updated_at_not_null NOT NULL updated_at
-constraint trail_steps trail_steps_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
-constraint trail_steps trail_steps_user_id_not_null NOT NULL user_id
-constraint trails trails_created_at_not_null NOT NULL created_at
-constraint trails trails_id_not_null NOT NULL id
-constraint trails trails_pkey PRIMARY KEY (id)
-constraint trails trails_updated_at_not_null NOT NULL updated_at
-constraint trails trails_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
-constraint trails trails_user_id_key UNIQUE (user_id)
-constraint trails trails_user_id_not_null NOT NULL user_id
+constraint trail_legacy_marks trail_legacy_marks_activity_id_course_id_fkey FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE
+constraint trail_legacy_marks trail_legacy_marks_activity_id_not_null NOT NULL activity_id
+constraint trail_legacy_marks trail_legacy_marks_course_id_not_null NOT NULL course_id
+constraint trail_legacy_marks trail_legacy_marks_marked_at_not_null NOT NULL marked_at
+constraint trail_legacy_marks trail_legacy_marks_pkey PRIMARY KEY (activity_id, user_id)
+constraint trail_legacy_marks trail_legacy_marks_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
+constraint trail_legacy_marks trail_legacy_marks_user_id_not_null NOT NULL user_id
 constraint translatable_fields translatable_fields_entity_not_null NOT NULL entity
 constraint translatable_fields translatable_fields_field_not_null NOT NULL field
 constraint translatable_fields translatable_fields_pkey PRIMARY KEY (entity, field)
@@ -1723,29 +1684,6 @@ BEGIN
         RAISE EXCEPTION 'certificate_users rows state what was issued: only the holder name is re-issued'
             USING ERRCODE = 'integrity_constraint_violation';
     END IF;
-    RETURN NEW;
-END;
-$function$
-function CREATE OR REPLACE FUNCTION public.certificate_users_issue()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    SELECT COALESCE(NEW.holder_name, u.display_name) INTO NEW.holder_name
-      FROM users u WHERE u.id = NEW.user_id;
-    SELECT ce.course_id,
-           COALESCE(NEW.course_name, co.name),
-           COALESCE(NEW.certificate_name, certification_text(ce.config, 'certification_name'), co.name),
-           COALESCE(NEW.instructor_name, certification_text(ce.config, 'certificate_instructor'),
-                    creator.display_name),
-           COALESCE(NEW.score, COALESCE(p.weighted_grade_average, p.grade_average))
-      INTO NEW.course_id, NEW.course_name, NEW.certificate_name, NEW.instructor_name, NEW.score
-      FROM certifications ce
-      JOIN courses co ON co.id = ce.course_id
-      LEFT JOIN users creator ON creator.id = co.creator_id
-      LEFT JOIN course_progress p ON p.course_id = ce.course_id AND p.user_id = NEW.user_id
-     WHERE ce.id = NEW.certification_id;
     RETURN NEW;
 END;
 $function$
@@ -2520,7 +2458,6 @@ index CREATE INDEX daily_teacher_metrics_date_brin ON analytics.daily_teacher_me
 index CREATE INDEX daily_teacher_metrics_teacher_idx ON analytics.daily_teacher_metrics USING btree (teacher_user_id)
 index CREATE INDEX daily_user_course_progress_course_idx ON analytics.daily_user_course_progress USING btree (course_id, metric_date DESC)
 index CREATE INDEX daily_user_course_progress_date_brin ON analytics.daily_user_course_progress USING brin (metric_date)
-index CREATE INDEX daily_user_course_progress_trail_run_idx ON analytics.daily_user_course_progress USING btree (trail_run_id)
 index CREATE INDEX daily_user_course_progress_user_idx ON analytics.daily_user_course_progress USING btree (user_id)
 index CREATE INDEX discussion_reactions_user_idx ON core.discussion_reactions USING btree (user_id)
 index CREATE INDEX enrolment_events_course_user_idx ON learning.enrolment_events USING btree (course_id, user_id, created_at)
@@ -2568,12 +2505,7 @@ index CREATE INDEX submissions_user_idx ON learning.submissions USING btree (use
 index CREATE INDEX teacher_interventions_course_idx ON learning.teacher_interventions USING btree (course_id)
 index CREATE INDEX teacher_interventions_learner_idx ON learning.teacher_interventions USING btree (user_id, course_id)
 index CREATE INDEX teacher_interventions_teacher_idx ON learning.teacher_interventions USING btree (teacher_user_id, course_id, created_at DESC)
-index CREATE INDEX trail_runs_course_user_idx ON learning.trail_runs USING btree (course_id, user_id)
-index CREATE INDEX trail_runs_user_idx ON learning.trail_runs USING btree (user_id)
-index CREATE INDEX trail_steps_activity_idx ON learning.trail_steps USING btree (activity_id)
-index CREATE INDEX trail_steps_course_user_idx ON learning.trail_steps USING btree (course_id, user_id)
-index CREATE INDEX trail_steps_trail_idx ON learning.trail_steps USING btree (trail_id)
-index CREATE INDEX trail_steps_user_idx ON learning.trail_steps USING btree (user_id)
+index CREATE INDEX trail_legacy_marks_user_idx ON learning.trail_legacy_marks USING btree (user_id)
 index CREATE INDEX uploads_owner_idx ON core.uploads USING btree (created_by, created_at DESC)
 index CREATE INDEX uploads_reaper_idx ON core.uploads USING btree (expires_at) WHERE (expires_at IS NOT NULL)
 index CREATE INDEX user_roles_role_idx ON core.user_roles USING btree (role_id)
@@ -2724,12 +2656,7 @@ index CREATE UNIQUE INDEX submissions_id_user_key ON learning.submissions USING 
 index CREATE UNIQUE INDEX submissions_one_open_draft ON learning.submissions USING btree (assessment_id, user_id) WHERE (status = 'draft'::text)
 index CREATE UNIQUE INDEX submissions_pkey ON learning.submissions USING btree (id)
 index CREATE UNIQUE INDEX teacher_interventions_pkey ON learning.teacher_interventions USING btree (id)
-index CREATE UNIQUE INDEX trail_runs_pkey ON learning.trail_runs USING btree (id)
-index CREATE UNIQUE INDEX trail_runs_trail_id_course_id_key ON learning.trail_runs USING btree (trail_id, course_id)
-index CREATE UNIQUE INDEX trail_steps_pkey ON learning.trail_steps USING btree (id)
-index CREATE UNIQUE INDEX trail_steps_trail_run_id_activity_id_key ON learning.trail_steps USING btree (trail_run_id, activity_id)
-index CREATE UNIQUE INDEX trails_pkey ON learning.trails USING btree (id)
-index CREATE UNIQUE INDEX trails_user_id_key ON learning.trails USING btree (user_id)
+index CREATE UNIQUE INDEX trail_legacy_marks_pkey ON learning.trail_legacy_marks USING btree (activity_id, user_id)
 index CREATE UNIQUE INDEX translatable_fields_pkey ON core.translatable_fields USING btree (entity, field)
 index CREATE UNIQUE INDEX translations_pkey ON core.translations USING btree (entity, entity_id, field, lang)
 index CREATE UNIQUE INDEX upload_purposes_pkey ON core.upload_purposes USING btree (purpose)
@@ -2768,7 +2695,6 @@ table ai.ai_course_analyses created_at timestamp with time zone NOT NULL DEFAULT
 table ai.ai_course_analyses evidence jsonb NOT NULL DEFAULT '{}'::jsonb
 table ai.ai_course_analyses id uuid NOT NULL DEFAULT uuidv7()
 table ai.ai_course_analyses language text NOT NULL DEFAULT 'auto'::text
-table ai.ai_course_analyses model_name text DEFAULT -
 table ai.ai_course_analyses public_score integer NOT NULL DEFAULT -
 table ai.ai_course_analyses published_at timestamp with time zone DEFAULT -
 table ai.ai_course_analyses report jsonb NOT NULL DEFAULT '{}'::jsonb
@@ -2837,7 +2763,6 @@ table ai.ai_grade_drafts flags text[] NOT NULL DEFAULT '{}'::text[]
 table ai.ai_grade_drafts id uuid NOT NULL DEFAULT uuidv7()
 table ai.ai_grade_drafts learner_id uuid NOT NULL DEFAULT -
 table ai.ai_grade_drafts max_score score_points DEFAULT -
-table ai.ai_grade_drafts model_name text DEFAULT -
 table ai.ai_grade_drafts proposal jsonb NOT NULL DEFAULT '{}'::jsonb
 table ai.ai_grade_drafts requested_by uuid DEFAULT -
 table ai.ai_grade_drafts run_id uuid DEFAULT -
@@ -2895,7 +2820,7 @@ table ai.ai_runs metadata jsonb NOT NULL DEFAULT '{}'::jsonb
 table ai.ai_runs model_name text DEFAULT -
 table ai.ai_runs output_tokens integer DEFAULT -
 table ai.ai_runs safety_state text DEFAULT -
-table ai.ai_runs started_at timestamp with time zone DEFAULT now()
+table ai.ai_runs started_at timestamp with time zone DEFAULT -
 table ai.ai_runs status text NOT NULL DEFAULT 'queued'::text
 table ai.ai_runs thread_id uuid DEFAULT -
 table ai.ai_runs triggered_by uuid DEFAULT -
@@ -2916,7 +2841,6 @@ table ai.ai_submission_analyses file_submission_attempt_id uuid DEFAULT -
 table ai.ai_submission_analyses gap_count integer NOT NULL DEFAULT 0
 table ai.ai_submission_analyses id uuid NOT NULL DEFAULT uuidv7()
 table ai.ai_submission_analyses language text NOT NULL DEFAULT 'auto'::text
-table ai.ai_submission_analyses model_name text DEFAULT -
 table ai.ai_submission_analyses run_id uuid DEFAULT -
 table ai.ai_submission_analyses status text NOT NULL DEFAULT 'complete'::text
 table ai.ai_submission_analyses submission_id uuid DEFAULT -
@@ -3054,7 +2978,6 @@ table analytics.daily_user_course_progress last_activity_at timestamp with time 
 table analytics.daily_user_course_progress metric_date date NOT NULL DEFAULT -
 table analytics.daily_user_course_progress progress_pct double precision NOT NULL DEFAULT 0
 table analytics.daily_user_course_progress total_steps integer NOT NULL DEFAULT 0
-table analytics.daily_user_course_progress trail_run_id uuid DEFAULT -
 table analytics.daily_user_course_progress user_id uuid NOT NULL DEFAULT -
 table analytics.learner_risk_snapshots course_id uuid NOT NULL DEFAULT -
 table analytics.learner_risk_snapshots days_since_last_activity integer DEFAULT -
@@ -3126,7 +3049,6 @@ table core.collections description text NOT NULL DEFAULT ''::text
 table core.collections id uuid NOT NULL DEFAULT uuidv7()
 table core.collections name text NOT NULL DEFAULT -
 table core.collections public boolean NOT NULL DEFAULT false
-table core.collections search tsvector GENERATED to_tsvector('simple'::regconfig, ((COALESCE(name, ''::text) || ' '::text) || COALESCE(description, ''::text)))
 table core.collections updated_at timestamp with time zone NOT NULL DEFAULT now()
 table core.collections version integer NOT NULL DEFAULT 1
 table core.course_discussions content text NOT NULL DEFAULT -
@@ -3175,7 +3097,6 @@ table core.courses learnings jsonb NOT NULL DEFAULT '[]'::jsonb
 table core.courses name text NOT NULL DEFAULT -
 table core.courses open_to_contributors boolean NOT NULL DEFAULT false
 table core.courses public boolean NOT NULL DEFAULT false
-table core.courses search tsvector GENERATED to_tsvector('simple'::regconfig, ((((COALESCE(name, ''::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE(about, ''::text)))
 table core.courses tags text[] NOT NULL DEFAULT '{}'::text[]
 table core.courses thumbnail_image_key text DEFAULT -
 table core.courses thumbnail_image_upload_id uuid DEFAULT -
@@ -3310,7 +3231,7 @@ table learning.activity_progress last_activity_at timestamp with time zone DEFAU
 table learning.activity_progress latest_submission_id uuid DEFAULT -
 table learning.activity_progress passed boolean DEFAULT -
 table learning.activity_progress required boolean NOT NULL DEFAULT true
-table learning.activity_progress score double precision DEFAULT -
+table learning.activity_progress score percent DEFAULT -
 table learning.activity_progress started_at timestamp with time zone DEFAULT -
 table learning.activity_progress state text NOT NULL DEFAULT 'not_started'::text
 table learning.activity_progress status_reason text DEFAULT -
@@ -3524,7 +3445,7 @@ table learning.course_progress completed_at timestamp with time zone DEFAULT -
 table learning.course_progress completed_required_count integer NOT NULL DEFAULT 0
 table learning.course_progress course_id uuid NOT NULL DEFAULT -
 table learning.course_progress created_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.course_progress grade_average double precision DEFAULT -
+table learning.course_progress grade_average percent DEFAULT -
 table learning.course_progress last_activity_at timestamp with time zone DEFAULT -
 table learning.course_progress missing_required_count integer NOT NULL DEFAULT 0
 table learning.course_progress needs_grading_count integer NOT NULL DEFAULT 0
@@ -3536,7 +3457,7 @@ END
 table learning.course_progress total_required_count integer NOT NULL DEFAULT 0
 table learning.course_progress updated_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.course_progress user_id uuid NOT NULL DEFAULT -
-table learning.course_progress weighted_grade_average double precision DEFAULT -
+table learning.course_progress weighted_grade_average percent DEFAULT -
 table learning.enrolment_events completions jsonb DEFAULT -
 table learning.enrolment_events course_id uuid NOT NULL DEFAULT -
 table learning.enrolment_events created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3736,30 +3657,10 @@ table learning.teacher_interventions teacher_user_id uuid NOT NULL DEFAULT -
 table learning.teacher_interventions updated_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.teacher_interventions user_id uuid NOT NULL DEFAULT -
 table learning.teacher_interventions version integer NOT NULL DEFAULT 1
-table learning.trail_runs course_id uuid NOT NULL DEFAULT -
-table learning.trail_runs created_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.trail_runs data jsonb NOT NULL DEFAULT '{}'::jsonb
-table learning.trail_runs id uuid NOT NULL DEFAULT uuidv7()
-table learning.trail_runs status text NOT NULL DEFAULT 'in_progress'::text
-table learning.trail_runs trail_id uuid NOT NULL DEFAULT -
-table learning.trail_runs updated_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.trail_runs user_id uuid NOT NULL DEFAULT -
-table learning.trail_steps activity_id uuid NOT NULL DEFAULT -
-table learning.trail_steps complete boolean NOT NULL DEFAULT true
-table learning.trail_steps course_id uuid NOT NULL DEFAULT -
-table learning.trail_steps created_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.trail_steps data jsonb NOT NULL DEFAULT '{}'::jsonb
-table learning.trail_steps grade integer NOT NULL DEFAULT 0
-table learning.trail_steps id uuid NOT NULL DEFAULT uuidv7()
-table learning.trail_steps teacher_verified boolean NOT NULL DEFAULT false
-table learning.trail_steps trail_id uuid NOT NULL DEFAULT -
-table learning.trail_steps trail_run_id uuid NOT NULL DEFAULT -
-table learning.trail_steps updated_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.trail_steps user_id uuid NOT NULL DEFAULT -
-table learning.trails created_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.trails id uuid NOT NULL DEFAULT uuidv7()
-table learning.trails updated_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.trails user_id uuid NOT NULL DEFAULT -
+table learning.trail_legacy_marks activity_id uuid NOT NULL DEFAULT -
+table learning.trail_legacy_marks course_id uuid NOT NULL DEFAULT -
+table learning.trail_legacy_marks marked_at timestamp with time zone NOT NULL DEFAULT -
+table learning.trail_legacy_marks user_id uuid NOT NULL DEFAULT -
 table learning.xp_transactions amount integer NOT NULL DEFAULT -
 table learning.xp_transactions created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.xp_transactions id uuid NOT NULL DEFAULT uuidv7()
@@ -3831,7 +3732,6 @@ trigger CREATE TRIGGER assessments_touch BEFORE UPDATE ON learning.assessments F
 trigger CREATE TRIGGER blocks_touch BEFORE UPDATE ON core.blocks FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER blocks_upload_ids AFTER INSERT OR UPDATE OF content, claimed ON core.blocks FOR EACH ROW EXECUTE FUNCTION block_uploads_sync()
 trigger CREATE TRIGGER certificate_users_frozen BEFORE UPDATE ON learning.certificate_users FOR EACH ROW EXECUTE FUNCTION certificate_users_frozen()
-trigger CREATE TRIGGER certificate_users_issue BEFORE INSERT ON learning.certificate_users FOR EACH ROW EXECUTE FUNCTION certificate_users_issue()
 trigger CREATE TRIGGER certificate_users_touch BEFORE UPDATE ON learning.certificate_users FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER certifications_touch BEFORE UPDATE ON learning.certifications FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER chapters_touch BEFORE UPDATE ON core.chapters FOR EACH ROW EXECUTE FUNCTION touch_row('version')
@@ -3873,9 +3773,6 @@ trigger CREATE TRIGGER roles_touch BEFORE UPDATE ON core.roles FOR EACH ROW EXEC
 trigger CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()
 trigger CREATE TRIGGER submissions_touch BEFORE UPDATE ON learning.submissions FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER teacher_interventions_touch BEFORE UPDATE ON learning.teacher_interventions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
-trigger CREATE TRIGGER trail_runs_touch BEFORE UPDATE ON learning.trail_runs FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER trail_steps_touch BEFORE UPDATE ON learning.trail_steps FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER trails_touch BEFORE UPDATE ON learning.trails FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER translations_touch BEFORE UPDATE ON core.translations FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER translations_touch_platform AFTER INSERT OR DELETE OR UPDATE ON core.translations FOR EACH ROW EXECUTE FUNCTION translations_touch_platform()
 trigger CREATE TRIGGER uploads_touch BEFORE UPDATE ON core.uploads FOR EACH ROW EXECUTE FUNCTION touch_row()

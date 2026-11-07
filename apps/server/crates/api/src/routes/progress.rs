@@ -381,7 +381,7 @@ pub async fn remove_course_learner(
 // The same handlers under the stage-2 paths; the old paths are marked
 // `deprecated` in the export (`openapi::RENAMED`) and go in phase 9.
 
-/// The caller's courses (trail runs without their steps). Anonymous callers
+/// The caller's courses (one run per enrolment, without steps). Anonymous callers
 /// get none. With `limit` / `cursor` the runs come in keyset pages
 /// (`next_cursor`).
 ///

@@ -180,31 +180,11 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         "submissions",
         SUBMISSION_DELETE,
     ),
-    ("trail_runs", "course_id", "courses", COURSE_DELETE),
     (
-        "trail_runs",
-        "trail_id",
-        "trails",
-        "a trail is the user's own enrolment list",
-    ),
-    (
-        "trail_steps",
+        "trail_legacy_marks",
         "activity_id,course_id",
         "activities",
         ACTIVITY_DELETE,
-    ),
-    ("trail_steps", "course_id", "courses", COURSE_DELETE),
-    (
-        "trail_steps",
-        "trail_id",
-        "trails",
-        "a trail is the user's own enrolment list",
-    ),
-    (
-        "trail_steps",
-        "trail_run_id",
-        "trail_runs",
-        "leaving a course resets its lesson completions (DECISIONS 2026-09-12)",
     ),
 ];
 
