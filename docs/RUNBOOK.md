@@ -223,6 +223,14 @@ git pull --ff-only
 just deploy
 ```
 
+`infra/postgres/postgresql.conf` is a single-file bind mount and git replaces the file, so a running db keeps
+reading the old one and `pg_reload_conf()` changes nothing. When a release changes it (the deploy warns), recreate
+db in a quiet hour; Postgres is down for a few seconds and the pools reconnect:
+
+```bash
+dc up -d --no-deps --force-recreate --wait db
+```
+
 Deploys `HEAD` (the compose files and the images must belong to the same
 commit). Steps and auto-rollback rules: INFRA "Build and release". History:
 `tail .deploy-history`.

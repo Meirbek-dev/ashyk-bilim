@@ -571,11 +571,10 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   the old double columns (the expand release) and the numeric ones (after the contract). A new query on these
   columns needs the casts: the SQLx macros refuse `NUMERIC` (no decimal feature).
 - **A handed-in attempt keeps what it answered** (`20261102020200_submission_snapshots`, contract
-  `20261103020400_handed_in_snapshots_check`): a submission that is not a `draft` has `items_snapshot` and
-  `policy_snapshot` (CHECK `submissions_handed_in_snapshots_check`; the hand-in UPDATE writes them); once written
-  neither changes (`submissions_snapshots_frozen`); both are JSON objects. A database with legacy hand-ins
-  lacking snapshots keeps instead the deferred triggers `submissions_handed_in_snapshots_*`, which judge only a
-  row being handed in (the CHECK is then listed in `schema_skipped_checks`).
+  `20261103020400_handed_in_snapshots_check`, `20261107002000_snapshots_check_cutoff`): a submission that is not a
+  `draft` has `items_snapshot` and `policy_snapshot` (CHECK `submissions_handed_in_snapshots_check`; the hand-in
+  UPDATE writes them; rows created before 2026-11-07 are exempt, production holds hand-ins without them); once
+  written neither changes (`submissions_snapshots_frozen`); both are JSON objects.
 - **One current grade** (`20261102020300_current_grade_matches_journal`): `grading_entries` is the journal,
   `submissions.final_score` its one current value. At COMMIT a submission with entries has its
   latest entry's (highest id) `final_score`; checked when an entry is appended or the

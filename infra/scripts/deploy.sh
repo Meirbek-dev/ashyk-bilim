@@ -154,4 +154,7 @@ if ! up_and_smoke; then
 fi
 record "$sha"
 log "deployed $sha"
+if [[ -n $prev ]] && ! git diff --quiet "$prev" "$sha" -- infra/postgres/postgresql.conf; then
+  log "WARN: postgresql.conf changed; a running db keeps the old file until it is recreated (RUNBOOK 3.1)"
+fi
 prune_images

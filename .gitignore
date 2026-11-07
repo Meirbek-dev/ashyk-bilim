@@ -15,6 +15,7 @@ target/
 !.env.example
 !**/e2e/.env.test
 server.env
+server.env.bak-*
 infra/env/dev.local.env
 .env.legacy-removed
 
