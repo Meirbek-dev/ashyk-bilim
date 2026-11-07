@@ -9,6 +9,7 @@ import { vQaChatRequest } from '#/shared/api/gen/valibot.gen'
 
 import { expect as baseExpect, type MadeCourse, test } from '../fixtures/learning'
 import { caps, fulfillSse, json, mockCapabilities, mockRun, problem, RUN, ru, runStatus, THREAD } from './ai-fixture'
+import { startAsked } from './ai-fixture'
 
 // The learner's AI (slice 6.3) with every model answer replaced by `page.route` (tag @ai: these would need the live
 // provider otherwise). The player's loader prefetches the scope on the server, so the tests reach a player page by a
@@ -17,9 +18,7 @@ const expect = baseExpect.configure({ timeout: 15_000 })
 test.describe.configure({ timeout: 60_000 })
 
 const panel = (page: Page) => page.getByRole('complementary', { name: m.ai_panel_title({}, ru) })
-// Wide, the panel waits behind its button in the bar until asked for once (remembered): these tests start asked.
-// oxlint-disable-next-line no-restricted-globals -- the page's own storage, set before it loads, as a learner's click left it
-test.beforeEach(({ page }) => page.addInitScript(() => localStorage.setItem('ab.focus-aside', 'true')))
+test.beforeEach(({ page }) => startAsked(page))
 
 async function openSecondActivity(page: Page, course: MadeCourse) {
   // A link clicked before hydration navigates natively (an SSR load with the real scope): wait for it.

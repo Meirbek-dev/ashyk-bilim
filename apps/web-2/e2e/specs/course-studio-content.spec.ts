@@ -183,7 +183,9 @@ test('B-CST-12 an archived course shows its content without any action', async (
   await expect(page.getByRole('heading', { level: 2, name: 'Архивная глава' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Урок' })).toBeVisible()
   const main = page.getByRole('main')
-  await expect(main.getByRole('button')).toHaveCount(0)
+  // The one button is the workspace's «Ещё» tab menu: nothing that changes the course.
+  await expect(main.getByRole('button')).toHaveCount(1)
+  await expect(main.getByRole('button', { name: m.platform_nav_more({}, ru) })).toBeVisible()
   await page.goto(`/teach/courses/${made.course.id}/settings`)
   await expect(page.getByRole('button', { name: m.studio_restore({}, ru) })).toBeVisible()
   await expect(page.getByRole('form', { name: m.studio_details_title({}, ru) })).toHaveCount(0)

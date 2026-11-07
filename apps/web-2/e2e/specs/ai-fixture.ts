@@ -116,3 +116,18 @@ export const analysis = (patch: Partial<CourseAnalysis> = {}): CourseAnalysis =>
   triggered_by: null,
   ...patch,
 })
+
+/**
+ * Wide, the AI panel waits behind its button in the bar until asked for once (remembered): a test that starts asked
+ * sets that memory before the page loads. The script runs in every frame, and a sandboxed one (an embed) has no
+ * storage: there it does nothing.
+ */
+export const startAsked = (page: Page) =>
+  page.addInitScript(() => {
+    try {
+      // oxlint-disable-next-line no-restricted-globals -- the page's own storage, as a learner's click left it
+      localStorage.setItem('ab.focus-aside', 'true')
+    } catch {
+      // an opaque-origin frame
+    }
+  })
