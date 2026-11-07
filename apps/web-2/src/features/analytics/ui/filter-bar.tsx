@@ -15,16 +15,7 @@ export function FilterBar({ filters }: { filters: Filters }) {
   const { data } = useSuspenseQuery(overviewOptions(filters))
   const [open, setOpen] = useState(false)
   const count = activeFilters(filters)
-  const form = (
-    // Keyed by the URL value: "back" to other filters refills the form.
-    <FilterForm
-      key={JSON.stringify(filters)}
-      filters={filters}
-      courses={data.course_options}
-      cohorts={data.cohort_options}
-      onApplied={() => setOpen(false)}
-    />
-  )
+  const form = <FilterForm filters={filters} courses={data.course_options} cohorts={data.cohort_options} />
   return (
     <>
       <div className="hidden @2xl:block">{form}</div>

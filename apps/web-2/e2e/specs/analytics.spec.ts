@@ -21,12 +21,11 @@ test('B-ANL-01 B-ANL-03 the tabs are routes; a tab keeps the filters and drops t
   await page.getByRole('link', { name: m.platform_tab_learners({}, ru) }).click()
   await expect(page).toHaveURL(/\/teach\/analytics\/learners\?window=7d$/)
 })
-test('B-ANL-04 filters apply through the URL and survive a reload', async ({ page }) => {
+test('B-ANL-04 each pick applies through the URL at once and survives a reload', async ({ page }) => {
   await page.goto('/teach/analytics/overview')
   const filters = page.getByRole('form', { name: m.ui_filters({}, ru) })
   await filters.getByLabel(m.analytics_filter_window({}, ru)).selectOption('90d')
   await filters.getByLabel(m.analytics_filter_bucket({}, ru)).selectOption('week')
-  await filters.getByRole('button', { name: m.analytics_filter_apply({}, ru) }).click()
   await expect(page).toHaveURL(/window=90d&bucket=week|bucket=week&window=90d/)
   await page.reload()
   await expect(filters.getByLabel(m.analytics_filter_window({}, ru))).toHaveValue('90d')

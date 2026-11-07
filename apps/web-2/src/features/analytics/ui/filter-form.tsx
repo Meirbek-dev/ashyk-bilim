@@ -1,9 +1,9 @@
 import { useNavigate } from '@tanstack/react-router'
+import { useEffect } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { FilterOption } from '#/shared/api/gen/types.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
-import { Button } from '#/shared/ui/button'
 
 import {
   BUCKETS,
@@ -21,24 +21,26 @@ type FilterFormProps = {
   /** The server's choices for the caller's scope. */
   courses: readonly FilterOption[]
   cohorts: readonly FilterOption[]
-  onApplied: () => void
 }
 
-/** "Apply" writes the filters to the URL; the tab's page, sort and drill-down start over. */
-export function FilterForm({ filters, courses, cohorts, onApplied }: FilterFormProps) {
+/**
+ * Each pick writes the filters to the URL at once (an «Apply» button was one more step that teachers missed); the
+ * tab's page, sort and drill-down start over. The form stays mounted, so focus stays on the select just changed;
+ * "back" to other filters refills it from the URL.
+ */
+export function FilterForm({ filters, courses, cohorts }: FilterFormProps) {
   const navigate = useNavigate()
-  const form = useAppForm(filterFormSchema, {
-    defaultValues: toFilterForm(filters),
-    onSubmit: async value => {
-      onApplied()
-      await navigate({ to: '.', search: fromFilterForm(value) })
-    },
-  })
+  const apply = (value: ReturnType<typeof toFilterForm>) => navigate({ to: '.', search: fromFilterForm(value) })
+  const form = useAppForm(filterFormSchema, { defaultValues: toFilterForm(filters), onSubmit: apply, onChange: apply })
+  const fromUrl = JSON.stringify(toFilterForm(filters))
+  useEffect(() => {
+    if (JSON.stringify(form.state.values) !== fromUrl) form.reset(JSON.parse(fromUrl))
+  }, [form, fromUrl])
   return (
     <search>
       <form
         aria-label={m.ui_filters()}
-        className="grid items-end gap-3 @2xl:grid-cols-3 @5xl:grid-cols-6 [&_[data-slot=field-label]]:text-xs [&_[data-slot=field-label]]:font-normal [&_[data-slot=field-label]]:text-muted-foreground"
+        className="grid items-end gap-3 @2xl:grid-cols-3 @5xl:grid-cols-5 [&_[data-slot=field-label]]:text-xs [&_[data-slot=field-label]]:font-normal [&_[data-slot=field-label]]:text-muted-foreground"
         onSubmit={event => {
           event.preventDefault()
           void form.handleSubmit()
@@ -84,9 +86,6 @@ export function FilterForm({ filters, courses, cohorts, onApplied }: FilterFormP
             />
           )}
         </form.AppField>
-        <Button type="submit" variant="outline">
-          {m.analytics_filter_apply()}
-        </Button>
       </form>
     </search>
   )
