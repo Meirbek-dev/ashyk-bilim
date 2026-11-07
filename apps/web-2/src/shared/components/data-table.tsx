@@ -44,7 +44,7 @@ const scrollRegion = (label: string) => (wrapper: HTMLDivElement | null) => {
 }
 
 /** A row whose action link covers it: the link's ::after spans the row, every other control sits above it. */
-export const STRETCH =
+const STRETCH =
   "cursor-pointer [&_[data-stretch]_a]:after:absolute [&_[data-stretch]_a]:after:inset-0 [&_[data-stretch]_a]:after:content-[''] [&_:is(a,button,input,label,[role=checkbox]):not([data-stretch]_*)]:relative [&_:is(a,button,input,label,[role=checkbox]):not([data-stretch]_*)]:z-1"
 const STRETCHED_ROW = `relative ${STRETCH}`
 
