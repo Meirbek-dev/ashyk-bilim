@@ -79,7 +79,7 @@ export function ContentPage() {
   return (
     <section
       aria-label={m.studio_content_label()}
-      className="@container flex flex-col gap-gutter has-[[data-quick-publish]]:[--quick:7.5rem]"
+      className="@container flex flex-col gap-gutter has-[[data-quick-publish]]:[--quick:8.5rem]"
     >
       {shown.chapters.length > 0 ? <ProgramHeader courseId={courseId} curriculum={curriculum} create={create} /> : null}
       {failed ? <ErrorAlert>{presentError(failed)}</ErrorAlert> : null}
