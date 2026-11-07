@@ -209,7 +209,7 @@ fn courses_query(
         .push_bind(see_all)
         .push(")");
     push_terms(&mut qb, COURSE_HAY, &word_patterns(query));
-    qb.push(" ORDER BY ts_rank_cd(search, to_tsquery('simple', ")
+    qb.push(" ORDER BY ts_rank_cd(to_tsvector('simple', coalesce(name, '') || ' ' || coalesce(description, '') || ' ' || coalesce(about, '')), to_tsquery('simple', ")
         .push_bind(prefix_tsquery(query))
         .push(")) DESC, id DESC LIMIT ")
         .push_bind(limit)
@@ -246,7 +246,7 @@ pub async fn search_collections(
         .push_bind(see_all_courses)
         .push(")");
     push_terms(&mut qb, COLLECTION_HAY, &word_patterns(query));
-    qb.push(" ORDER BY ts_rank_cd(search, to_tsquery('simple', ")
+    qb.push(" ORDER BY ts_rank_cd(to_tsvector('simple', coalesce(name, '') || ' ' || coalesce(description, '')), to_tsquery('simple', ")
         .push_bind(prefix_tsquery(query))
         .push(")) DESC, id DESC LIMIT ")
         .push_bind(limit)

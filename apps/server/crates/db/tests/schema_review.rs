@@ -985,9 +985,9 @@ async fn embeddings_are_half_precision_with_one_index_per_model(pool: PgPool) {
     for (ordinal, value) in [(0, "0.1"), (1, "-0.1")] {
         sqlx::query(
             "INSERT INTO content_chunks (course_id, source_type, source_id, ordinal, audience,
-                                         published, label, body, token_estimate,
+                                         label, body, token_estimate,
                                          embedding, embedding_model)
-             VALUES ($1, 'course', $1, $2, 'learner', true, 'l', 'b', 1,
+             VALUES ($1, 'course', $1, $2, 'learner', 'l', 'b', 1,
                      array_fill($3::real, ARRAY[1024])::vector::text::vector, 'hash-ngram-v1')",
         )
         .bind(w.course)
@@ -3067,7 +3067,6 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("blocks_upload_ids", "derived"),
         ("chapters_upload_ids", "derived"),
         ("collections_upload_ids", "derived"),
-        ("content_chunks_published", "derived; goes with the column"),
         ("course_discussions_recount_replies", "derived"),
         ("course_discussions_upload_ids", "derived"),
         ("courses_upload_ids", "derived"),
@@ -3151,22 +3150,22 @@ async fn membership_and_violations_keep_their_history(pool: PgPool) {
     let (course, user) = (ab_core::id::CourseId(w.course), ab_core::id::UserId(w.user));
     let mut conn = pool.acquire().await.unwrap();
     assert!(
-        ab_db::progress::enrol(&mut conn, course, user)
+        ab_db::progress::enrol(&mut conn, course, user, user)
             .await
             .unwrap()
     );
     assert!(
-        !ab_db::progress::enrol(&mut conn, course, user)
+        !ab_db::progress::enrol(&mut conn, course, user, user)
             .await
             .unwrap()
     );
     assert!(
-        ab_db::progress::unenrol(&mut conn, course, user)
+        ab_db::progress::unenrol(&mut conn, course, user, user)
             .await
             .unwrap()
     );
     assert!(
-        !ab_db::progress::unenrol(&mut conn, course, user)
+        !ab_db::progress::unenrol(&mut conn, course, user, user)
             .await
             .unwrap()
     );
@@ -3228,4 +3227,114 @@ async fn a_new_course_has_its_creator_on_the_roster(pool: PgPool) {
     .await
     .unwrap();
     assert_eq!(role, "creator");
+}
+
+/// A roster removal says who did it, and a leave keeps the marks it resets (schema review 30).
+#[ab_testdb::test]
+async fn a_leave_says_who_and_keeps_its_marks(pool: PgPool) {
+    let w = world(&pool).await;
+    let teacher = user(&pool, "remover").await;
+    let (course, learner) = (ab_core::id::CourseId(w.course), ab_core::id::UserId(w.user));
+    let by = ab_core::id::UserId(teacher);
+    let mut conn = pool.acquire().await.unwrap();
+    assert!(
+        ab_db::progress::enrol(&mut conn, course, learner, by)
+            .await
+            .unwrap()
+    );
+    sqlx::query("INSERT INTO completions (activity_id, user_id) VALUES ($1, $2)")
+        .bind(w.activity)
+        .bind(w.user)
+        .execute(&mut *conn)
+        .await
+        .unwrap();
+    assert!(
+        ab_db::progress::unenrol(&mut conn, course, learner, by)
+            .await
+            .unwrap()
+    );
+
+    let events: Vec<(String, String, Option<Uuid>, Option<serde_json::Value>)> = sqlx::query_as(
+        "SELECT event, source, created_by, completions FROM enrolment_events
+         WHERE course_id = $1 AND user_id = $2 ORDER BY created_at, event",
+    )
+    .bind(w.course)
+    .bind(w.user)
+    .fetch_all(&mut *conn)
+    .await
+    .unwrap();
+    assert_eq!(events.len(), 2, "{events:?}");
+    assert_eq!(
+        (events[0].0.as_str(), events[0].1.as_str()),
+        ("joined", "staff")
+    );
+    assert_eq!(events[0].3, None);
+    assert_eq!(
+        (events[1].0.as_str(), events[1].1.as_str()),
+        ("left", "staff")
+    );
+    assert_eq!(events[1].2, Some(teacher));
+    let marks = events[1].3.as_ref().unwrap().as_array().unwrap().clone();
+    assert_eq!(marks.len(), 1);
+    assert_eq!(marks[0]["activity_id"], w.activity.to_string());
+}
+
+/// Teaching a course is its roster alone: a `creator_id` without a row gives no role (schema review 27).
+#[ab_testdb::test]
+async fn has_course_role_reads_the_roster(pool: PgPool) {
+    let w = world(&pool).await;
+    let creator: Uuid = sqlx::query_scalar("SELECT creator_id FROM courses WHERE id = $1")
+        .bind(w.course)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let role = || {
+        sqlx::query_scalar::<_, bool>("SELECT has_course_role($1, $2)")
+            .bind(w.course)
+            .bind(creator)
+            .fetch_one(&pool)
+    };
+    sqlx::query("DELETE FROM course_staff WHERE course_id = $1")
+        .bind(w.course)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert!(!role().await.unwrap());
+    sqlx::query(
+        "INSERT INTO course_staff (course_id, user_id, authorship, status) VALUES ($1, $2, 'creator', 'active')",
+    )
+    .bind(w.course)
+    .bind(creator)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert!(role().await.unwrap());
+}
+
+/// A hash column refuses what no hash function writes (schema review 38).
+#[ab_testdb::test]
+async fn hashes_say_what_they_hold(pool: PgPool) {
+    for (table, column) in [
+        ("assessment_versions", "content_hash"),
+        ("ai_course_analyses", "content_hash"),
+        ("ai_work_embeddings", "text_hash"),
+        ("idempotency_keys", "request_hash"),
+    ] {
+        let name = format!("{table}_{column}_format");
+        let found: bool =
+            sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = $1)")
+                .bind(&name)
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert!(found, "{name}");
+    }
+    let score: String = sqlx::query_scalar(
+        "SELECT format_type(atttypid, atttypmod) FROM pg_attribute
+         WHERE attrelid = 'certificate_users'::regclass AND attname = 'score'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(score, "percent");
 }

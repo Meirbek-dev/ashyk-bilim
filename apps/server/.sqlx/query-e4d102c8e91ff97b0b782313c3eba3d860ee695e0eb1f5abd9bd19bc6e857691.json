@@ -1,0 +1,111 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT p.state AS \"state: ActivityProgressState\",\n                  c.id AS \"course_id: CourseId\", c.name AS course_title,\n                  a.id AS \"activity_id: ActivityId\", a.name AS activity_title,\n                  (extract(epoch FROM p.started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM p.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM p.graded_at))::bigint AS \"graded_at?\",\n                  (extract(epoch FROM p.due_at))::bigint AS \"due_at?\",\n                  (extract(epoch FROM p.updated_at))::bigint AS \"updated_at!\"\n           FROM activity_progress p\n           JOIN activities a ON a.id = p.activity_id\n           JOIN courses c ON c.id = p.course_id\n           WHERE p.user_id = $1\n             AND a.published\n             AND p.state IN ('in_progress', 'submitted', 'needs_grading', 'returned',\n                             'passed', 'failed')\n             AND c.archived_at IS NULL\n             AND EXISTS (SELECT 1 FROM course_members r\n                         WHERE r.course_id = p.course_id AND r.user_id = p.user_id)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "state: ActivityProgressState",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activity_progress",
+            "name": "state"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "course_title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "activity_title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "started_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "submitted_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "graded_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "due_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "e4d102c8e91ff97b0b782313c3eba3d860ee695e0eb1f5abd9bd19bc6e857691"
+}

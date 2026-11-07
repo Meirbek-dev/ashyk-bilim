@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO daily_user_course_progress\n              (metric_date, user_id, course_id, progress_pct, completed_steps,\n               total_steps, last_activity_at, is_completed, has_certificate, generated_at)\n          VALUES ($1, $2, $3, $4, $5, $6, to_timestamp($7), $8, $9,\n                  to_timestamp($10))\n          ON CONFLICT (metric_date, user_id, course_id) DO UPDATE SET\n              progress_pct = EXCLUDED.progress_pct,\n              completed_steps = EXCLUDED.completed_steps,\n              total_steps = EXCLUDED.total_steps,\n              last_activity_at = EXCLUDED.last_activity_at,\n              is_completed = EXCLUDED.is_completed,\n              has_certificate = EXCLUDED.has_certificate,\n              generated_at = EXCLUDED.generated_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Uuid",
+        "Uuid",
+        "Float8",
+        "Int4",
+        "Int4",
+        "Float8",
+        "Bool",
+        "Bool",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e316eecbeda0c8c1983f6e0801336436cc4cd299eb8cd37567d3ee00f1b6d33a"
+}

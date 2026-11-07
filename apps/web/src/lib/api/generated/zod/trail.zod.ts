@@ -252,11 +252,7 @@ export const Trail = zod
         course_id: zod.uuid(),
         course_total_steps: zod.int().describe('Published activities in the course.'),
         created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
-        id: zod
-          .uuid()
-          .describe(
-            "The legacy trail run's id (the course id where none exists). The\npaging cursor is the course id now; a run id still works as one.",
-          ),
+        id: zod.uuid().describe('The course id, as the paging cursor is.'),
         learning_status: zod
           .enum(['not_started', 'in_progress', 'completed'])
           .describe(

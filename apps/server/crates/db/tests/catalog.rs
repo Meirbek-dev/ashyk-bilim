@@ -386,12 +386,16 @@ async fn only_a_learners_code_run_is_learner_work(pool: PgPool) {
     .unwrap();
     let teacher = seed_user(&pool, "teacher").await;
     let learner = seed_user(&pool, "learner").await;
-    sqlx::query("UPDATE courses SET creator_id = $2 WHERE id = $1")
-        .bind(course)
-        .bind(teacher)
-        .execute(&pool)
-        .await
-        .unwrap();
+    sqlx::query(
+        "WITH c AS (UPDATE courses SET creator_id = $2 WHERE id = $1)
+         INSERT INTO course_staff (course_id, user_id, authorship, status)
+         VALUES ($1, $2, 'creator', 'active')",
+    )
+    .bind(course)
+    .bind(teacher)
+    .execute(&pool)
+    .await
+    .unwrap();
     seed_code_runs(&pool, item, teacher, 200).await;
     let with_work = |pool: PgPool| async move {
         ab_db::catalog::activities_with_learner_work(&pool, &[activity])

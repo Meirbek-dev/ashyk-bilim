@@ -2,7 +2,7 @@
 //! enrolled courses, where to continue, recent results and announcements -
 //! one read instead of a request per course.
 
-use ab_core::assessments::{ActivityProgressState, TrailRunStatus};
+use ab_core::assessments::ActivityProgressState;
 use ab_core::id::{ActivityId, AssessmentId, CourseId, FileSubmissionId, UserId};
 use ab_core::{Error, FieldError, Result};
 use ab_db::work_queue::{DeadlineRow, RecentResultRow, RecentUpdateRow};
@@ -228,12 +228,10 @@ impl AgendaService {
             .await?
             .runs
             .into_iter()
-            .filter(|r| {
-                r.row.status == TrailRunStatus::InProgress && r.course.archived_at.is_none()
-            })
+            .filter(|r| r.course.archived_at.is_none())
             .filter_map(|r| r.next_activity_id.map(|next| (r, next)))
             .collect();
-        runs.sort_by_key(|(r, _)| std::cmp::Reverse(r.row.updated_at));
+        runs.sort_by_key(|(r, _)| std::cmp::Reverse(r.row.enrolled_at));
         let mut out = Vec::new();
         for (run, next) in runs.into_iter().take(CONTINUE_LIMIT) {
             let Some(activity) = ab_db::catalog::get_activity(&self.pool, next).await? else {

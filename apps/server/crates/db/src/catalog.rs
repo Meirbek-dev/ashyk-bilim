@@ -539,12 +539,12 @@ pub async fn course_archive_preview(
     let row = sqlx::query_as!(
         CourseArchivePreviewRow,
         r#"SELECT
-             (SELECT count(*) FROM enrolments tr
-              WHERE tr.course_id = $1 AND NOT is_course_staff(tr.course_id, tr.user_id))
+             (SELECT count(*) FROM course_members tr
+              WHERE tr.course_id = $1)
                  AS "learners_enrolled!",
-             (SELECT count(*) FROM enrolments tr
+             (SELECT count(*) FROM course_members tr
               LEFT JOIN course_progress cp ON cp.course_id = tr.course_id AND cp.user_id = tr.user_id
-              WHERE tr.course_id = $1 AND NOT is_course_staff(tr.course_id, tr.user_id)
+              WHERE tr.course_id = $1
                 AND coalesce(cp.progress_pct, 0) < 100)
                  AS "learners_in_progress!",
              (SELECT count(*) FROM submissions s

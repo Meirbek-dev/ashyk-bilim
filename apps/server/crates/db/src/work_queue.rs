@@ -51,9 +51,8 @@ pub async fn list_learner_work(pool: &PgPool, user_id: UserId) -> Result<Vec<Lea
              AND p.state IN ('in_progress', 'submitted', 'needs_grading', 'returned',
                              'passed', 'failed')
              AND c.archived_at IS NULL
-             AND EXISTS (SELECT 1 FROM enrolments r
-                         WHERE r.course_id = p.course_id AND r.user_id = p.user_id
-                           AND NOT is_course_staff(r.course_id, r.user_id))"#,
+             AND EXISTS (SELECT 1 FROM course_members r
+                         WHERE r.course_id = p.course_id AND r.user_id = p.user_id)"#,
         user_id.0
     )
     .fetch_all(pool)
@@ -139,9 +138,7 @@ pub async fn list_teacher_grading_work(
                                 AND fa.status = 'submitted' AND NOT fa.preview)
              END
              AND c.archived_at IS NULL
-             AND c.id IN (SELECT id FROM courses WHERE creator_id = $1
-                          UNION ALL
-                          SELECT ra.course_id FROM course_staff ra
+             AND c.id IN (SELECT ra.course_id FROM course_staff ra
                           WHERE ra.user_id = $1 AND ra.status = 'active'
                             AND ra.authorship <> 'reporter')"#,
         teacher_id.0
@@ -189,9 +186,7 @@ pub async fn list_teacher_release_work(
            WHERE p.user_id <> $1
              AND (p.state = 'graded' OR r.user_id IS NULL OR is_course_staff(p.course_id, p.user_id))
              AND c.archived_at IS NULL
-             AND c.id IN (SELECT id FROM courses WHERE creator_id = $1
-                          UNION ALL
-                          SELECT ra.course_id FROM course_staff ra
+             AND c.id IN (SELECT ra.course_id FROM course_staff ra
                           WHERE ra.user_id = $1 AND ra.status = 'active'
                             AND ra.authorship <> 'reporter')"#,
         teacher_id.0
@@ -236,11 +231,10 @@ pub async fn upcoming_deadlines(
     let rows = sqlx::query_as!(
         DeadlineRow,
         r#"WITH members AS (
-               SELECT DISTINCT r.user_id, r.course_id FROM enrolments r
+               SELECT DISTINCT r.user_id, r.course_id FROM course_members r
                JOIN courses c ON c.id = r.course_id
                WHERE c.archived_at IS NULL
                  AND ($1::uuid IS NULL OR r.user_id = $1)
-                 AND NOT is_course_staff(r.course_id, r.user_id)
                  -- An unpublished course is gone for its learners: no deadline on Today, no reminder.
                  AND course_visible(c, r.user_id, false)
            ),
@@ -253,7 +247,8 @@ pub async fn upcoming_deadlines(
                                s.due_at) AS due_at,
                       s.late_cutoff_at AS cutoff_at
                FROM members m
-               JOIN assessments s ON s.course_id = m.course_id AND s.lifecycle = 'published'
+               JOIN assessments s ON s.course_id = m.course_id
+               JOIN learner_visible_activities v ON v.activity_id = s.activity_id
                LEFT JOIN assessment_overrides o
                       ON o.assessment_id = s.id AND o.user_id = m.user_id
                WHERE s.access_mode = 'all_course_learners'
@@ -266,7 +261,8 @@ pub async fn upcoming_deadlines(
                SELECT m.user_id, m.course_id, f.activity_id, NULL, f.id,
                       COALESCE(fo.due_at, f.due_at), f.late_cutoff_at
                FROM members m
-               JOIN file_submissions f ON f.course_id = m.course_id AND f.lifecycle = 'published'
+               JOIN file_submissions f ON f.course_id = m.course_id
+               JOIN learner_visible_activities v ON v.activity_id = f.activity_id
                LEFT JOIN file_submission_overrides fo
                       ON fo.file_submission_id = f.id AND fo.user_id = m.user_id
            )
@@ -319,7 +315,7 @@ pub async fn recent_results(
         RecentResultRow,
         r#"SELECT c.id AS "course_id: CourseId", c.name AS course_name,
                   a.id AS "activity_id: ActivityId", a.name AS activity_name,
-                  p.state AS "state: ActivityProgressState", p.score,
+                  p.state AS "state: ActivityProgressState", p.score::float8 AS score,
                   p.latest_submission_id AS "submission_id: ab_core::id::SubmissionId",
                   (extract(epoch FROM CASE WHEN p.state = 'returned' THEN p.updated_at
                                            ELSE COALESCE(p.graded_at, p.updated_at) END
@@ -331,9 +327,8 @@ pub async fn recent_results(
              AND p.state IN ('passed', 'failed', 'returned')
              AND CASE WHEN p.state = 'returned' THEN p.updated_at
                       ELSE COALESCE(p.graded_at, p.updated_at) END >= to_timestamp($2::bigint)
-             AND EXISTS (SELECT 1 FROM enrolments r
-                         WHERE r.course_id = p.course_id AND r.user_id = p.user_id
-                           AND NOT is_course_staff(r.course_id, r.user_id))
+             AND EXISTS (SELECT 1 FROM course_members r
+                         WHERE r.course_id = p.course_id AND r.user_id = p.user_id)
            ORDER BY "at!" DESC
            LIMIT $3"#,
         user_id.0,
@@ -369,9 +364,8 @@ pub async fn recent_course_updates(
            FROM course_updates u
            JOIN courses c ON c.id = u.course_id AND c.archived_at IS NULL
            WHERE u.created_at >= to_timestamp($2::bigint)
-             AND EXISTS (SELECT 1 FROM enrolments r
-                         WHERE r.course_id = u.course_id AND r.user_id = $1
-                           AND NOT is_course_staff(r.course_id, r.user_id))
+             AND EXISTS (SELECT 1 FROM course_members r
+                         WHERE r.course_id = u.course_id AND r.user_id = $1)
            ORDER BY u.created_at DESC
            LIMIT $3"#,
         user_id.0,

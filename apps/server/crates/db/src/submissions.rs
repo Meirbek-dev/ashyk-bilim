@@ -675,13 +675,12 @@ pub async fn gradebook_members(
         .map(|s| format!("%{}%", crate::like_escape(s)));
     let rows = sqlx::query_scalar!(
         r#"SELECT u.id AS "user_id!: UserId"
-           FROM (SELECT DISTINCT course_id, user_id FROM enrolments WHERE course_id = $1) t
+           FROM (SELECT DISTINCT course_id, user_id FROM course_members WHERE course_id = $1) t
            JOIN users u ON u.id = t.user_id
            WHERE ($2::uuid IS NULL
                   OR (lower(COALESCE(NULLIF(u.display_name, ''), u.username)), u.id)
                      > (SELECT lower(COALESCE(NULLIF(c.display_name, ''), c.username)), c.id
                         FROM users c WHERE c.id = $2))
-             AND NOT is_course_staff(t.course_id, t.user_id)
              AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\' OR u.display_name ILIKE $4 ESCAPE '\'
                   OR u.email ILIKE $4 ESCAPE '\')
              AND ($5::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
@@ -885,9 +884,8 @@ pub async fn list_for_review(
                   (extract(epoch FROM s.submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM s.graded_at))::bigint AS "graded_at?",
                   s.version,
-                  EXISTS (SELECT 1 FROM enrolments r
-                          WHERE r.course_id = s.course_id AND r.user_id = s.user_id
-                            AND NOT is_course_staff(r.course_id, r.user_id)) AS "enrolled!",
+                  EXISTS (SELECT 1 FROM course_members r
+                          WHERE r.course_id = s.course_id AND r.user_id = s.user_id) AS "enrolled!",
                   is_course_staff(s.course_id, s.user_id) AS "staff!",
                   k.key AS "sort_key!"
            FROM submissions s JOIN users u ON u.id = s.user_id

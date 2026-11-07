@@ -792,8 +792,7 @@ async fn held_leave(
     .execute(&mut *leave)
     .await
     .unwrap();
-    sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid RETURNING course_id, user_id)
-         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
+    sqlx::query("DELETE FROM enrolments WHERE user_id = $1 AND course_id = $2::uuid")
         .bind(user_id.0)
         .bind(course_id)
         .execute(&mut *leave)
@@ -1575,7 +1574,7 @@ async fn assessments_require_enrollment(pool: PgPool) {
     let state_path = format!("/api/v2/assessments/{id}/attempt-state");
     let start_path = format!("/api/v2/assessments/{id}/submissions");
     let runs = |user: UserId| {
-        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM trail_runs WHERE user_id = $1")
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM enrolments WHERE user_id = $1")
             .bind(user.0)
             .fetch_one(&app.pool)
     };
@@ -1672,8 +1671,7 @@ async fn assessments_require_enrollment(pool: PgPool) {
     let draft_id = draft.json()["id"].as_str().unwrap().to_owned();
 
     // She leaves and the course closes again: her draft is readable, frozen.
-    sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = (SELECT user_id FROM submissions WHERE id = $1::uuid) RETURNING course_id, user_id)
-         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
+    sqlx::query("DELETE FROM enrolments WHERE user_id = (SELECT user_id FROM submissions WHERE id = $1::uuid)")
         .bind(&draft_id)
         .execute(&app.pool)
         .await

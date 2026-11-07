@@ -40,3 +40,21 @@ counts. `max_points`, `raw_points`, `final_points` are filled by triggers and re
 function, and these are columns without one. Proposal: stop writing and drop both (a contract migration a release
 later). Or should they start to mean something: a required assessment that gates completion, grades shown in points?
 
+## Q-2026-11-07-5: what is left of the schema review (items 23, 32, 33, 37, 41, 44, 45)
+
+Agents stopped short of these on purpose; each changes much and fixes little at today's volumes. Say which you want.
+
+- 23, baseline for new installs: the 227 migrations build a database in seconds and there is one production. Not worth a
+  second way to build the schema.
+- 32, one assessment version per publish: the policy a hand-in stores includes the learner's own overrides, so one
+  assessment has several versions at one moment. Moving the 43 policy columns into a version's jsonb also loses their
+  checks and types. Proposal: keep versions as they are, written at hand-in.
+- 33, `submission_drafts`: 115 submissions in production, and it touches autosave during exams. Proposal: not now.
+- 37, a `Score` type instead of `::float8`: SQLx already refuses a `numeric` column without the cast at compile time, so a
+  forgotten cast cannot ship. Scores are two decimals, safe in `f64`. Proposal: drop the item.
+- 41, `*_upload_id` as the primary value: about 85 lines in 21 files for no behaviour change; the triggers only derive a
+  key. Proposal: not now.
+- 44, arcs instead of polymorphic references: rows already go with their course and activity keys, and `mastery_evidence`
+  and `ai_work_embeddings` are empty. Proposal: `ai_work_embeddings` gets its key with the file merge (REWRITE 5.6 n6), the
+  rest stays.
+- 45, morphology by `courses.language`: nothing sets the language. It needs a field in the course form. Do you want one?

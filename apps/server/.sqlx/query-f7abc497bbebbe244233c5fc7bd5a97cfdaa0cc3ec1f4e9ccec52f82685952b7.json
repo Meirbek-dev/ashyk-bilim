@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH joined AS (INSERT INTO enrolments (course_id, user_id) VALUES ($1, $2)\n                         ON CONFLICT DO NOTHING RETURNING course_id, user_id)\n         INSERT INTO enrolment_events (course_id, user_id, event, source, created_by)\n         SELECT course_id, user_id, 'joined', CASE WHEN user_id = $3 THEN 'self' ELSE 'staff' END, $3\n         FROM joined",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f7abc497bbebbe244233c5fc7bd5a97cfdaa0cc3ec1f4e9ccec52f82685952b7"
+}

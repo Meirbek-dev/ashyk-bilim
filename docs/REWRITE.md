@@ -673,9 +673,10 @@ in the order it can be done, each step a forward migration on the current schema
    The roster (keyset `(enrolled_at, user_id)`, cursor `"<µs>.<user id>"`; an old run-id cursor resolves through
    `trail_runs`), `GET /trail` and `/enrollments` (cursor = course id; a run id still works) read enrolments too
    (`progress_flow::roster_and_trail_read_enrolments`, review 3 wave 2). The sync trigger goes in the contract.
-   Left: the DTOs' `id` (run / step id, the course / activity id without a row) and `status` come from a LEFT JOIN
-   on `trail_runs` / `trail_steps`, and `legacy_learner_cursor` reads `trail_runs`; both go with the trail tables
-   (n8 step 2).
+   Done 2026-11-07 (n8 step 2): nothing reads or writes `trails`, `trail_runs`, `trail_steps` or
+   `daily_user_course_progress.trail_run_id`. The DTOs' `id` is the course / activity id and a run id is no cursor any
+   more. Production held nothing else in them (every run `in_progress`, no grade, no verified step, empty `data`). Left: the contract that drops
+   them, and the test fixtures that still insert a run to enrol someone.
 6. **One submission pipeline** (item 12). `file_submission_attempts` becomes `submissions` rows of an
    `assessments.kind = 'assignment'` task: map `file_submissions` → `assessments` (policy columns already
    overlap), attempts → `submissions` (files to an `attempt_files` table as in 5.4, grades to `grading_entries`;
@@ -849,6 +850,9 @@ in the order it can be done, each step a forward migration on the current schema
       - AI: `ai_grade_drafts.file_attempt_id`, `ai_remediation_sessions` / `ai_submission_analyses
         .file_submission_attempt_id` → their `submission_id` (same uuid); `ai_work_embeddings.subject_id` gets
         a key onto `submissions`.
+      Production held 0 `file_submission_attempts` (23 file tasks) on 2026-11-07. While that holds, skip the mirror
+      and reverse triggers of R1 and R3: one release moves readers and writers and maps the tasks, the next drops the
+      tables. Count again before starting; with real attempts, the releases below apply.
       Releases, in order: (R0) `AssessmentKind::Assignment` (an additive API enum value: owner decision, both
       web clients render or filter it) and every reader of `assessments` / `submissions` that must not see
       file tasks filters them (`kind <> 'assignment'`, through the activity's type once contract B dropped

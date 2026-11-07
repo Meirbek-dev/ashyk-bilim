@@ -1,0 +1,43 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT e.course_id AS \"course_id!: CourseId\",\n                  coalesce(cp.progress_pct, 0) AS \"progress_pct!\",\n                  (extract(epoch FROM cp.completed_at))::bigint AS \"completed_at?\"\n           FROM course_members e\n           LEFT JOIN course_progress cp ON cp.course_id = e.course_id AND cp.user_id = e.user_id\n           WHERE e.user_id = $1 AND e.course_id = ANY($2)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_id!: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_members",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "progress_pct!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "completed_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "abc73c51c9c67aeb22116a0037e7cf808b2d935ff4f4cfd3df9f9d4b4d5b03bc"
+}

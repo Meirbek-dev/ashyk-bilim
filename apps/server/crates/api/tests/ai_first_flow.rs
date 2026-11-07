@@ -338,16 +338,6 @@ async fn material_search_answers_members_only(pool: PgPool) {
             .await
             .contains(&lesson)
     );
-    // The previous release still reads the copied flag; the insert trigger keeps it true to the activity.
-    let copied: bool = sqlx::query_scalar(
-        "SELECT bool_and(published) FROM content_chunks WHERE activity_id = $1::uuid",
-    )
-    .bind(&lesson_id)
-    .fetch_one(&app.pool)
-    .await
-    .unwrap();
-    assert!(copied);
-
     // Unpublished: gone for the learner at once, no sweep in between; the teacher still finds it.
     created(
         &app.patch_as(

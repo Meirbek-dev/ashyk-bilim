@@ -228,7 +228,7 @@ pub async fn get_run(pool: &PgPool, id: AiRunId) -> Result<Option<RunRow>> {
                   input_tokens, output_tokens,
                   cost_estimate::double precision AS "cost_estimate?",
                   safety_state, error_code, metadata,
-                  (extract(epoch FROM started_at))::bigint AS "started_at!",
+                  (extract(epoch FROM coalesce(started_at, created_at)))::bigint AS "started_at!",
                   (extract(epoch FROM completed_at))::bigint AS "completed_at?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM ai_runs WHERE id = $1"#,
@@ -390,7 +390,7 @@ pub async fn find_run_by_turn(
                   input_tokens, output_tokens,
                   cost_estimate::double precision AS "cost_estimate?",
                   safety_state, error_code, metadata,
-                  (extract(epoch FROM started_at))::bigint AS "started_at!",
+                  (extract(epoch FROM coalesce(started_at, created_at)))::bigint AS "started_at!",
                   (extract(epoch FROM completed_at))::bigint AS "completed_at?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM ai_runs
@@ -427,11 +427,11 @@ pub async fn list_runs(pool: &PgPool, filter: &RunFilter<'_>) -> Result<Vec<RunR
                   input_tokens, output_tokens,
                   cost_estimate::double precision AS "cost_estimate?",
                   safety_state, error_code, metadata,
-                  (extract(epoch FROM started_at))::bigint AS "started_at!",
+                  (extract(epoch FROM coalesce(started_at, created_at)))::bigint AS "started_at!",
                   (extract(epoch FROM completed_at))::bigint AS "completed_at?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM ai_runs
-           WHERE started_at >= now() - make_interval(days => $1)
+           WHERE coalesce(started_at, created_at) >= now() - make_interval(days => $1)
              AND ($2::text IS NULL OR status = $2)
              AND ($3::text IS NULL OR kind = $3)
              AND ($4::text IS NULL OR model_name ILIKE $4 ESCAPE '\')
@@ -1103,7 +1103,6 @@ pub struct NewSubmissionAnalysis<'a> {
     pub gap_count: i32,
     pub analysis: &'a serde_json::Value,
     pub evidence: &'a serde_json::Value,
-    pub model_name: &'a str,
 }
 
 pub async fn insert_submission_analysis<'e>(
@@ -1114,8 +1113,8 @@ pub async fn insert_submission_analysis<'e>(
     let id = sqlx::query_scalar!(
         r#"INSERT INTO ai_submission_analyses (submission_id, file_submission_attempt_id, run_id,
                                                triggered_by, language, gap_count, analysis,
-                                               evidence, model_name)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id"#,
+                                               evidence)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id"#,
         submission_id,
         attempt_id,
         a.run_id.0,
@@ -1123,8 +1122,7 @@ pub async fn insert_submission_analysis<'e>(
         a.language,
         a.gap_count,
         a.analysis,
-        a.evidence,
-        a.model_name
+        a.evidence
     )
     .fetch_one(db)
     .await?;
@@ -1175,7 +1173,8 @@ pub async fn get_submission_analysis(
         r#"SELECT id AS "id: AiSubmissionAnalysisId", submission_id AS "submission_id: SubmissionId",
                   file_submission_attempt_id AS "file_submission_attempt_id: FileAttemptId",
                   run_id AS "run_id: AiRunId", triggered_by AS "triggered_by: UserId", status,
-                  language, gap_count, analysis, evidence, model_name,
+                  language, gap_count, analysis, evidence,
+                  (SELECT r.model_name FROM ai_runs r WHERE r.id = run_id) AS "model_name?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM ai_submission_analyses WHERE id = $1"#,
         id.0
@@ -1199,7 +1198,8 @@ pub async fn latest_submission_analysis(
         r#"SELECT id AS "id: AiSubmissionAnalysisId", submission_id AS "submission_id: SubmissionId",
                   file_submission_attempt_id AS "file_submission_attempt_id: FileAttemptId",
                   run_id AS "run_id: AiRunId", triggered_by AS "triggered_by: UserId", status,
-                  language, gap_count, analysis, evidence, model_name,
+                  language, gap_count, analysis, evidence,
+                  (SELECT r.model_name FROM ai_runs r WHERE r.id = run_id) AS "model_name?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM ai_submission_analyses
            WHERE (($1::uuid IS NOT NULL AND submission_id = $1)
@@ -1243,7 +1243,6 @@ pub struct NewCourseAnalysis<'a> {
     pub public_score: i32,
     pub report: &'a serde_json::Value,
     pub evidence: &'a serde_json::Value,
-    pub model_name: &'a str,
     pub content_hash: &'a str,
 }
 
@@ -1253,8 +1252,8 @@ pub async fn insert_course_analysis<'e>(
 ) -> Result<AiCourseAnalysisId> {
     let id = sqlx::query_scalar!(
         r#"INSERT INTO ai_course_analyses (course_id, run_id, triggered_by, status, language,
-                                           public_score, report, evidence, model_name, content_hash)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id"#,
+                                           public_score, report, evidence, content_hash)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id"#,
         a.course_id.0,
         a.run_id.0,
         a.triggered_by.0,
@@ -1263,7 +1262,6 @@ pub async fn insert_course_analysis<'e>(
         a.public_score,
         a.report,
         a.evidence,
-        a.model_name,
         a.content_hash
     )
     .fetch_one(db)
@@ -1280,7 +1278,7 @@ pub async fn get_course_analysis(
         r#"SELECT id AS "id: AiCourseAnalysisId", course_id AS "course_id: CourseId",
                   run_id AS "run_id: AiRunId", triggered_by AS "triggered_by: UserId",
                   status AS "status: CourseAnalysisStatus", language, public_score, report,
-                  evidence, model_name, content_hash,
+                  evidence, (SELECT r.model_name FROM ai_runs r WHERE r.id = run_id) AS "model_name?", content_hash,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM published_at))::bigint AS "published_at?"
            FROM ai_course_analyses WHERE id = $1"#,
@@ -1303,7 +1301,7 @@ pub async fn latest_course_analyses(
         r#"SELECT id AS "id: AiCourseAnalysisId", course_id AS "course_id: CourseId",
                   run_id AS "run_id: AiRunId", triggered_by AS "triggered_by: UserId",
                   status AS "status: CourseAnalysisStatus", language, public_score, report,
-                  evidence, model_name, content_hash,
+                  evidence, (SELECT r.model_name FROM ai_runs r WHERE r.id = run_id) AS "model_name?", content_hash,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM published_at))::bigint AS "published_at?"
            FROM ai_course_analyses

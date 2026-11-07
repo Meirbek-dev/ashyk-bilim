@@ -100,7 +100,6 @@ pub(crate) struct Finished<T> {
     pub value: T,
     /// The redacted artifact as stored.
     pub artifact: serde_json::Value,
-    pub model_name: String,
     /// The run's success; the feature record joins it before the commit.
     pub completion: Completion,
 }
@@ -322,7 +321,6 @@ impl AiService {
         Ok(Finished {
             value: outcome.value,
             artifact: super::redact::redacted(artifact),
-            model_name: outcome.model_name,
             completion,
         })
     }

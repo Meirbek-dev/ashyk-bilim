@@ -15,7 +15,7 @@ use ab_core::assessments::{
 };
 use ab_core::id::{
     ActivityId, AssessmentId, BulkActionId, ChapterId, CourseId, FileAttemptId, GradingEntryId,
-    InterventionId, SavedViewId, SubmissionId, TrailRunId, UserId, UsergroupId,
+    InterventionId, SavedViewId, SubmissionId, UserId, UsergroupId,
 };
 use ab_core::time::Day;
 use sqlx::PgPool;
@@ -397,8 +397,6 @@ pub async fn list_course_progress(
 
 #[derive(Debug, Clone)]
 pub struct TrailRunInfoRow {
-    /// `None`: enrolled without a trail run.
-    pub id: Option<TrailRunId>,
     pub course_id: CourseId,
     pub user_id: UserId,
 }
@@ -444,8 +442,7 @@ pub async fn count_excluded_attempts(
     Ok(row)
 }
 
-/// The analytics member set: enrolments, never the course's staff
-/// (BUG-287), with the member's trail run when there is one.
+/// The analytics member set: enrolments, never the course's staff (BUG-287).
 pub async fn list_trail_runs(
     pool: &PgPool,
     course_ids: &[CourseId],
@@ -453,11 +450,9 @@ pub async fn list_trail_runs(
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
         TrailRunInfoRow,
-        r#"SELECT r.id AS "id?: TrailRunId", e.course_id AS "course_id: CourseId",
-                  e.user_id AS "user_id: UserId"
-           FROM enrolments e
-           LEFT JOIN trail_runs r ON r.course_id = e.course_id AND r.user_id = e.user_id
-           WHERE e.course_id = ANY($1) AND NOT is_course_staff(e.course_id, e.user_id)
+        r#"SELECT e.course_id AS "course_id!: CourseId", e.user_id AS "user_id!: UserId"
+           FROM course_members e
+           WHERE e.course_id = ANY($1)
            ORDER BY e.enrolled_at, e.course_id, e.user_id"#,
         &ids
     )
@@ -1044,7 +1039,6 @@ pub async fn insert_assessment_metrics(
 pub struct UserCourseProgressWrite {
     pub user_id: UserId,
     pub course_id: CourseId,
-    pub trail_run_id: Option<TrailRunId>,
     pub progress_pct: f64,
     pub completed_steps: i32,
     pub total_steps: i32,
@@ -1061,12 +1055,11 @@ pub async fn insert_user_course_progress(
 ) -> Result<()> {
     sqlx::query!(
         r"INSERT INTO daily_user_course_progress
-              (metric_date, user_id, course_id, trail_run_id, progress_pct, completed_steps,
+              (metric_date, user_id, course_id, progress_pct, completed_steps,
                total_steps, last_activity_at, is_completed, has_certificate, generated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, to_timestamp($8), $9, $10,
-                  to_timestamp($11))
+          VALUES ($1, $2, $3, $4, $5, $6, to_timestamp($7), $8, $9,
+                  to_timestamp($10))
           ON CONFLICT (metric_date, user_id, course_id) DO UPDATE SET
-              trail_run_id = EXCLUDED.trail_run_id,
               progress_pct = EXCLUDED.progress_pct,
               completed_steps = EXCLUDED.completed_steps,
               total_steps = EXCLUDED.total_steps,
@@ -1077,7 +1070,6 @@ pub async fn insert_user_course_progress(
         date as _,
         w.user_id.0,
         w.course_id.0,
-        w.trail_run_id.map(|t| t.0),
         w.progress_pct,
         w.completed_steps,
         w.total_steps,

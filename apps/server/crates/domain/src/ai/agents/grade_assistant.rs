@@ -945,7 +945,6 @@ impl AiService {
                     max_score: max,
                     confidence,
                     flags: &proposal.flags,
-                    model_name: &finished.model_name,
                 },
             )
             .await?;

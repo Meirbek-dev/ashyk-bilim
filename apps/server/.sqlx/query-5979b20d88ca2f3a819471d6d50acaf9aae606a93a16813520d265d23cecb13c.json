@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT e.course_id AS \"course_id!: CourseId\", e.user_id AS \"user_id!: UserId\"\n           FROM course_members e\n           WHERE e.course_id = ANY($1)\n           ORDER BY e.enrolled_at, e.course_id, e.user_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_id!: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_members",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id!: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_members",
+            "name": "user_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "5979b20d88ca2f3a819471d6d50acaf9aae606a93a16813520d265d23cecb13c"
+}

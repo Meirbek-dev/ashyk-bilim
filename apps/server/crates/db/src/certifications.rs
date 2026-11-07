@@ -197,7 +197,7 @@ pub struct CertificateRow {
 }
 
 /// Issue once per (certification, user), dated `issued_at` (unix seconds;
-/// now when `None`); `false` when it already existed.
+/// now when `None`); `false` when it already existed. What the certificate freezes is decided here.
 pub async fn issue_certificate<'e>(
     db: impl sqlx::PgExecutor<'e>,
     certification_id: CertificationId,
@@ -206,8 +206,20 @@ pub async fn issue_certificate<'e>(
     issued_at: Option<i64>,
 ) -> Result<bool> {
     let inserted = sqlx::query!(
-        r#"INSERT INTO certificate_users (certification_id, user_id, verify_code, created_at, updated_at)
-           VALUES ($1, $2, $3, COALESCE(to_timestamp($4::bigint), now()), COALESCE(to_timestamp($4::bigint), now()))
+        r#"INSERT INTO certificate_users
+               (certification_id, user_id, verify_code, created_at, updated_at, course_id, holder_name,
+                course_name, certificate_name, instructor_name, score)
+           SELECT ce.id, u.id, $3, COALESCE(to_timestamp($4::bigint), now()),
+                  COALESCE(to_timestamp($4::bigint), now()), ce.course_id, u.display_name, co.name,
+                  COALESCE(certification_text(ce.config, 'certification_name'), co.name),
+                  COALESCE(certification_text(ce.config, 'certificate_instructor'), creator.display_name),
+                  COALESCE(p.weighted_grade_average, p.grade_average)
+           FROM certifications ce
+           JOIN courses co ON co.id = ce.course_id
+           JOIN users u ON u.id = $2
+           LEFT JOIN users creator ON creator.id = co.creator_id
+           LEFT JOIN course_progress p ON p.course_id = ce.course_id AND p.user_id = u.id
+           WHERE ce.id = $1
            ON CONFLICT (certification_id, user_id) DO NOTHING"#,
         certification_id.0,
         user_id.0,

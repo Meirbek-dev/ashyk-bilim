@@ -7,6 +7,9 @@ use ab_core::id::{AssessmentId, CourseId, SubmissionId, UserId};
 use ab_db::submissions::{self, NewGradingEntry, SubmitOutcome};
 use sqlx::PgPool;
 
+const HASH_1: &str = "1111111111111111111111111111111111111111111111111111111111111111";
+const HASH_2: &str = "2222222222222222222222222222222222222222222222222222222222222222";
+
 /// User → course → chapter → quiz activity → assessment.
 async fn seed(pool: &PgPool) -> (UserId, CourseId, AssessmentId) {
     let user: uuid::Uuid = sqlx::query_scalar(
@@ -237,18 +240,18 @@ async fn grading_ledger_is_append_only(pool: PgPool) {
 async fn idempotency_keys_replay_and_sweep(pool: PgPool) {
     let (user, _, _) = seed(&pool).await;
     let response = serde_json::json!({ "id": "x" });
-    submissions::store_idempotent(&pool, user, "k1", "h1", 201, &response)
+    submissions::store_idempotent(&pool, user, "k1", HASH_1, 201, &response)
         .await
         .unwrap();
     // A second store under the same key is a no-op (first writer wins).
-    submissions::store_idempotent(&pool, user, "k1", "h2", 500, &serde_json::json!({}))
+    submissions::store_idempotent(&pool, user, "k1", HASH_2, 500, &serde_json::json!({}))
         .await
         .unwrap();
     let stored = submissions::get_idempotent(&pool, user, "k1")
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(stored.request_hash, "h1");
+    assert_eq!(stored.request_hash, HASH_1);
     assert_eq!(stored.status_code, 201);
     assert_eq!(stored.response, response);
     assert!(
@@ -279,7 +282,7 @@ async fn idempotency_heartbeat_defers_the_stale_takeover(pool: PgPool) {
             .unwrap();
     };
     assert!(
-        submissions::reserve_idempotent(&pool, user, "k", "h")
+        submissions::reserve_idempotent(&pool, user, "k", HASH_1)
             .await
             .unwrap()
     );
@@ -288,13 +291,13 @@ async fn idempotency_heartbeat_defers_the_stale_takeover(pool: PgPool) {
         .await
         .unwrap();
     assert!(
-        !submissions::reserve_idempotent(&pool, user, "k", "h")
+        !submissions::reserve_idempotent(&pool, user, "k", HASH_1)
             .await
             .unwrap()
     );
     backdate(31).await;
     assert!(
-        submissions::reserve_idempotent(&pool, user, "k", "h")
+        submissions::reserve_idempotent(&pool, user, "k", HASH_1)
             .await
             .unwrap()
     );
@@ -307,7 +310,7 @@ async fn idempotency_heartbeat_defers_the_stale_takeover(pool: PgPool) {
         .await
         .unwrap();
     assert!(
-        !submissions::reserve_idempotent(&pool, user, "k", "h")
+        !submissions::reserve_idempotent(&pool, user, "k", HASH_1)
             .await
             .unwrap()
     );

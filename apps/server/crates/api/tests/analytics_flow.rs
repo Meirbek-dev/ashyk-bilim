@@ -2421,8 +2421,7 @@ async fn interventions_racing_a_leave_are_not_in_course(pool: PgPool) {
     .execute(&mut *leave)
     .await
     .unwrap();
-    sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid RETURNING course_id, user_id)
-         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
+    sqlx::query("DELETE FROM enrolments WHERE user_id = $1 AND course_id = $2::uuid")
         .bind(alice.user_id.0)
         .bind(&course_id)
         .execute(&mut *leave)
@@ -2513,7 +2512,7 @@ async fn staff_never_enrol_nor_count_as_members(pool: PgPool) {
             "staff_preview"
         );
     }
-    let runs: i64 = sqlx::query_scalar("SELECT count(*) FROM trail_runs WHERE user_id <> $1")
+    let runs: i64 = sqlx::query_scalar("SELECT count(*) FROM enrolments WHERE user_id <> $1")
         .bind(alice.user_id.0)
         .fetch_one(&pool)
         .await

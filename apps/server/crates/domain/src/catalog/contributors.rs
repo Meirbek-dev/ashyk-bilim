@@ -2,9 +2,10 @@
 //! `ResourceAuthor`).
 //!
 //! Roles `maintainer | contributor | reporter`, statuses `pending | active |
-//! inactive`. The creator is implicit - `courses.creator_id`, never a stored
-//! row, never editable - and is synthesized into the roster as
-//! `creator/active`. Any *active* row authors on the course like the creator
+//! inactive`. The creator is `courses.creator_id`: creating a course stores a
+//! `creator/active` row, which grants access like any other (`has_course_role`),
+//! but this roster neither lists nor edits it and shows the creator from
+//! `courses`. Any *active* row authors on the course like the creator
 //! (`Course::is_author`, legacy `is_owner`). Roster management: the creator,
 //! an active maintainer, or `course:manage:platform`.
 
@@ -234,7 +235,7 @@ impl CoursesService {
             }
         } else {
             // Someone else's row: managers only - the 403 comes before the
-            // creator 409 (UX-102); the creator is never a row (UX-081).
+            // creator 409 (UX-102); the creator is not a contributor row (UX-081).
             self.manageable(actor, course_id).await?;
             Self::not_creator(&course, user_id)?;
         }

@@ -221,7 +221,6 @@ impl AiService {
                         .unwrap_or(i32::MAX),
                     analysis: &finished.artifact,
                     evidence: &evidence_json(&finished.completion.trusted),
-                    model_name: &finished.model_name,
                 },
             )
             .await?;

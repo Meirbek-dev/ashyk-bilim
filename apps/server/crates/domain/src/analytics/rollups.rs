@@ -224,7 +224,6 @@ pub async fn run_rollup(pool: &PgPool, date: Day) -> Result<RollupCounts> {
             &UserCourseProgressWrite {
                 user_id: s.user_id,
                 course_id: s.course_id,
-                trail_run_id: s.trail_run_id,
                 progress_pct: s.progress_pct,
                 completed_steps: i32::try_from(s.completed_steps).unwrap_or(i32::MAX),
                 total_steps: i32::try_from(s.total_steps).unwrap_or(i32::MAX),
@@ -391,7 +390,7 @@ mod tests {
     use std::collections::{BTreeMap, HashSet};
 
     use ab_core::assessments::ActivityProgressState;
-    use ab_core::id::{ActivityId, ChapterId, CourseId, TrailRunId, UserId};
+    use ab_core::id::{ActivityId, ChapterId, CourseId, UserId};
     use ab_db::analytics::{
         ActivityInfoRow, CertificateInfoRow, ChapterInfoRow, CourseInfoRow, ProgressInfoRow,
         TrailRunInfoRow,
@@ -449,7 +448,6 @@ mod tests {
             is_completed: done == 3,
             has_certificate: done == 3,
             last_activity_at: Some(NOW - DAY_SECS),
-            trail_run_id: None,
         }
     }
 
@@ -512,7 +510,6 @@ mod tests {
         ctx.trail_runs = [u1, u2, u3]
             .into_iter()
             .map(|user_id| TrailRunInfoRow {
-                id: Some(TrailRunId::new()),
                 course_id: course,
                 user_id,
             })

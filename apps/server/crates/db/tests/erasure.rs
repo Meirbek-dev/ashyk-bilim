@@ -238,7 +238,7 @@ async fn erasure_removes_derived_data_and_keeps_the_grade(pool: PgPool) {
     .unwrap();
     sqlx::query(
         "INSERT INTO ai_work_embeddings (subject_id, part_key, activity_id, text_hash, embedding_model, embedding)
-         VALUES ($1, 'p', $2, 'h', 'm', array_fill(0.1::real, ARRAY[1024])::vector)",
+         VALUES ($1, 'p', $2, repeat('a', 64), 'm', array_fill(0.1::real, ARRAY[1024])::vector)",
     )
     .bind(submission)
     .bind(activity)

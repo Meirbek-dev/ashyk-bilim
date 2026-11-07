@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT c.activity_id AS \"activity_id: ActivityId\", a.course_id AS \"course_id: CourseId\",\n                  (extract(epoch FROM c.completed_at))::bigint AS \"completed_at!\"\n           FROM completions c\n           JOIN activities a ON a.id = c.activity_id\n           WHERE c.user_id = $1 AND a.activity_type <> 'file_submission'\n             AND NOT EXISTS (SELECT 1 FROM assessments x WHERE x.activity_id = a.id)\n           ORDER BY c.completed_at, c.activity_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "completions",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "completed_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "ce56c2573b3f36b29180e6c4322142be44ee77aec73045dcb1deddd5801af812"
+}

@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO certificate_users\n               (certification_id, user_id, verify_code, created_at, updated_at, course_id, holder_name,\n                course_name, certificate_name, instructor_name, score)\n           SELECT ce.id, u.id, $3, COALESCE(to_timestamp($4::bigint), now()),\n                  COALESCE(to_timestamp($4::bigint), now()), ce.course_id, u.display_name, co.name,\n                  COALESCE(certification_text(ce.config, 'certification_name'), co.name),\n                  COALESCE(certification_text(ce.config, 'certificate_instructor'), creator.display_name),\n                  COALESCE(p.weighted_grade_average, p.grade_average)\n           FROM certifications ce\n           JOIN courses co ON co.id = ce.course_id\n           JOIN users u ON u.id = $2\n           LEFT JOIN users creator ON creator.id = co.creator_id\n           LEFT JOIN course_progress p ON p.course_id = ce.course_id AND p.user_id = u.id\n           WHERE ce.id = $1\n           ON CONFLICT (certification_id, user_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d564f340f447abb297a68923be5fa0794ace555ef37afc7f3170abb198d73f29"
+}

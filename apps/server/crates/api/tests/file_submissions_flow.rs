@@ -1667,8 +1667,7 @@ async fn a_grade_for_a_leaver_issues_no_certificate(pool: PgPool) {
     assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
     let attempt_id = submitted.json()["id"].as_str().unwrap().to_owned();
     let version = submitted.json()["version"].to_string();
-    sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = $1 RETURNING course_id, user_id)
-         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
+    sqlx::query("DELETE FROM enrolments WHERE user_id = $1")
         .bind(alice.user_id.0)
         .execute(&app.pool)
         .await

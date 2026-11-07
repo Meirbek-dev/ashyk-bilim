@@ -41,8 +41,7 @@ pub enum LearningStatus {
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct TrailRun {
-    /// The legacy trail run's id (the course id where none exists). The
-    /// paging cursor is the course id now; a run id still works as one.
+    /// The course id, as the paging cursor is.
     pub id: TrailRunId,
     pub course_id: CourseId,
     pub status: TrailRunStatus,
@@ -92,8 +91,7 @@ pub struct Enrollments {
 /// One course the caller is enrolled in.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct Enrollment {
-    /// The legacy trail run's id (the course id where none exists); page
-    /// with `next_cursor`, not this.
+    /// The course id; page with `next_cursor`, not this.
     pub id: TrailRunId,
     pub course_id: CourseId,
     pub course: EnrolledCourse,
@@ -150,10 +148,10 @@ impl From<Trail> for Enrollments {
 impl Trail {
     pub fn for_actor(t: domain::Trail, actor: &ab_domain::identity::Actor) -> Self {
         Self {
-            id: t.row.as_ref().map(|r| r.id),
+            id: None,
             user_id: t.user_id,
-            created_at_unix: t.row.as_ref().map(|r| r.created_at),
-            updated_at_unix: t.row.as_ref().map(|r| r.updated_at),
+            created_at_unix: None,
+            updated_at_unix: None,
             runs: t
                 .runs
                 .into_iter()
@@ -178,9 +176,9 @@ impl TrailRun {
         Self {
             learning_status,
             next_activity_id: r.next_activity_id,
-            id: r.row.run_id.unwrap_or(TrailRunId(r.row.course_id.0)),
+            id: TrailRunId(r.row.course_id.0),
             course_id: r.row.course_id,
-            status: r.row.status,
+            status: TrailRunStatus::InProgress,
             course: Course::for_actor(r.course, actor),
             course_total_steps: r.course_total_steps,
             progress_pct: r.progress_pct,
@@ -190,7 +188,7 @@ impl TrailRun {
                 .map(|s| TrailStep::new(s, editable))
                 .collect(),
             created_at_unix: r.row.enrolled_at,
-            updated_at_unix: r.row.updated_at,
+            updated_at_unix: r.row.enrolled_at,
         }
     }
 }
@@ -198,17 +196,17 @@ impl TrailRun {
 impl TrailStep {
     fn new(s: domain::TrailStep, editable: bool) -> Self {
         Self {
-            id: s.row.step_id.unwrap_or(TrailStepId(s.row.activity_id.0)),
+            id: TrailStepId(s.row.activity_id.0),
             activity_id: s.row.activity_id,
             course_id: s.row.course_id,
             // Listed steps are completions.
             complete: true,
-            teacher_verified: s.row.teacher_verified,
-            grade: s.row.grade,
+            teacher_verified: false,
+            grade: 0,
             // Trail views offer no delete: advertise none (the server re-checks anyway).
             activity: Activity::new(s.activity, editable, true),
-            created_at_unix: s.row.created_at,
-            updated_at_unix: s.row.updated_at,
+            created_at_unix: s.row.completed_at,
+            updated_at_unix: s.row.completed_at,
         }
     }
 }

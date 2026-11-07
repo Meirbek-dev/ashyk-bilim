@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ai_grade_drafts\n           SET status = 'ready', proposal = $2, ai_score = $3::float8, calibrated_score = $4::float8, max_score = $5::float8,\n               confidence = $6, flags = $7\n           WHERE id = $1 AND status = 'queued'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Float4",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4777e1d3a3fe7393057ef061534cf87bef9c196b4f1ae2cfe4c7bd70a4af91dc"
+}

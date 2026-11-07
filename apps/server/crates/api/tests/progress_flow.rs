@@ -800,7 +800,7 @@ async fn pipeline_owned_activities_cannot_be_marked_by_hand(pool: PgPool) {
         assert_eq!(refused.json()["code"], "conflict");
     }
     let (steps, progress, xp): (i64, i64, i64) = sqlx::query_as(
-        "SELECT (SELECT count(*) FROM trail_steps),
+        "SELECT (SELECT count(*) FROM completions),
                 (SELECT count(*) FROM activity_progress WHERE course_id = $1),
                 (SELECT count(*) FROM xp_transactions)",
     )
@@ -1296,8 +1296,7 @@ async fn course_recalculation_racing_leaves_skips_the_leavers(pool: PgPool) {
         .execute(&mut *leave)
         .await
         .unwrap();
-        sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid RETURNING course_id, user_id)
-         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
+        sqlx::query("DELETE FROM enrolments WHERE user_id = $1 AND course_id = $2::uuid")
             .bind(leaver.user_id.0)
             .bind(&course_id)
             .execute(&mut *leave)
@@ -1369,7 +1368,7 @@ async fn course_recalculation_outwaits_a_busy_member(pool: PgPool) {
     }
     // The member the recalculation reaches first (`course_members` order).
     let first: uuid::Uuid =
-        sqlx::query_scalar("SELECT user_id FROM trail_runs WHERE course_id = $1::uuid")
+        sqlx::query_scalar("SELECT user_id FROM enrolments WHERE course_id = $1::uuid")
             .bind(&course_id)
             .fetch_one(&app.pool)
             .await
@@ -2743,15 +2742,6 @@ async fn roster_and_trail_read_enrolments(pool: PgPool) {
     let next = next.expect("a second page");
     let (rest, last) = roster(format!("limit=2&cursor={next}")).await;
     assert_eq!((rest, last), (vec!["alice".to_owned()], None));
-    let bob_run: uuid::Uuid =
-        sqlx::query_scalar("SELECT id FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid")
-            .bind(members[1].user_id.0)
-            .bind(&course_id)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
-    let (legacy, _) = roster(format!("limit=2&cursor={bob_run}")).await;
-    assert_eq!(legacy, ["alice"]);
     for bad in ["nope", "12.nope", &uuid::Uuid::nil().to_string()] {
         let page = app
             .get_as(
@@ -2784,26 +2774,17 @@ async fn roster_and_trail_read_enrolments(pool: PgPool) {
         )
         .await;
     assert_eq!(joined.status, StatusCode::OK, "{}", joined.text());
-    let first_run: uuid::Uuid =
-        sqlx::query_scalar("SELECT id FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid")
-            .bind(alice.user_id.0)
-            .bind(&course_id)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
     let page = app.get_as(alice, "/api/v2/enrollments?limit=1").await;
-    assert_eq!(page.json()["runs"][0]["id"], first_run.to_string());
+    assert_eq!(page.json()["runs"][0]["id"], course_id.as_str());
     assert_eq!(page.json()["next_cursor"], course_id.as_str());
-    for cursor in [course_id.clone(), first_run.to_string()] {
-        let page = app
-            .get_as(
-                alice,
-                &format!("/api/v2/enrollments?limit=1&cursor={cursor}"),
-            )
-            .await;
-        assert_eq!(page.json()["runs"][0]["course_id"], second_id.as_str());
-        assert!(page.json()["next_cursor"].is_null());
-    }
+    let page = app
+        .get_as(
+            alice,
+            &format!("/api/v2/enrollments?limit=1&cursor={course_id}"),
+        )
+        .await;
+    assert_eq!(page.json()["runs"][0]["course_id"], second_id.as_str());
+    assert!(page.json()["next_cursor"].is_null());
 
     empty_trails(&pool).await;
     let trail = app.get_as(alice, "/api/v2/trail").await;

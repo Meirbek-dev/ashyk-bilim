@@ -8547,7 +8547,7 @@
           },
           "id": {
             "$ref": "#/components/schemas/TrailRunId",
-            "description": "The legacy trail run's id (the course id where none exists); page\nwith `next_cursor`, not this."
+            "description": "The course id; page with `next_cursor`, not this."
           },
           "learning_status": {
             "$ref": "#/components/schemas/LearningStatus"
@@ -20103,7 +20103,7 @@
           },
           "id": {
             "$ref": "#/components/schemas/TrailRunId",
-            "description": "The legacy trail run's id (the course id where none exists). The\npaging cursor is the course id now; a run id still works as one."
+            "description": "The course id, as the paging cursor is."
           },
           "learning_status": {
             "$ref": "#/components/schemas/LearningStatus",

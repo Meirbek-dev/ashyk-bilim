@@ -3516,8 +3516,7 @@ async fn deadline_extension_is_for_course_members_only(pool: PgPool) {
         uuid::Uuid::parse_str(queued.json()["id"].as_str().unwrap()).unwrap(),
     );
     // Alice leaves before the run: skipped, named in the log.
-    sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = $1 RETURNING course_id, user_id)
-         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
+    sqlx::query("DELETE FROM enrolments WHERE user_id = $1")
         .bind(alice.user_id.0)
         .execute(&app.pool)
         .await
@@ -3628,8 +3627,7 @@ async fn grader_actions_never_enrol_a_leaver(pool: PgPool) {
         uuid::Uuid::parse_str(queued.json()["id"].as_str().unwrap()).unwrap(),
     );
     // Alice leaves (her run is what `learner-state.enrolled` reads).
-    sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = $1 RETURNING course_id, user_id)
-         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
+    sqlx::query("DELETE FROM enrolments WHERE user_id = $1")
         .bind(alice.user_id.0)
         .execute(&app.pool)
         .await
@@ -3646,7 +3644,7 @@ async fn grader_actions_never_enrol_a_leaver(pool: PgPool) {
     ab_domain::grading::GradingService::execute_bulk_action(&app.pool, None, action)
         .await
         .unwrap();
-    let runs: i64 = sqlx::query_scalar("SELECT count(*) FROM trail_runs WHERE user_id = $1")
+    let runs: i64 = sqlx::query_scalar("SELECT count(*) FROM enrolments WHERE user_id = $1")
         .bind(alice.user_id.0)
         .fetch_one(&app.pool)
         .await
@@ -3681,8 +3679,7 @@ async fn leave_in_flight(
     .execute(&mut *leave)
     .await
     .unwrap();
-    sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = $1 AND course_id = $2::uuid RETURNING course_id, user_id)
-         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
+    sqlx::query("DELETE FROM enrolments WHERE user_id = $1 AND course_id = $2::uuid")
         .bind(who.user_id.0)
         .bind(course_id)
         .execute(&mut *leave)
@@ -4416,7 +4413,7 @@ async fn staff_attempts_are_previews(pool: PgPool) {
     let alice = learner(&app, "alice").await;
     submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
     let preview = submit_attempt(&app, &teacher, &id, &choice_id, &essay_id).await;
-    let runs: i64 = sqlx::query_scalar("SELECT count(*) FROM trail_runs WHERE user_id = $1")
+    let runs: i64 = sqlx::query_scalar("SELECT count(*) FROM enrolments WHERE user_id = $1")
         .bind(teacher.user_id.0)
         .fetch_one(&app.pool)
         .await
@@ -4518,8 +4515,7 @@ async fn gradebook_lists_members_not_leavers(pool: PgPool) {
     let bob = learner(&app, "bob").await;
     submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
     submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
-    sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = $1 RETURNING course_id, user_id)
-         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
+    sqlx::query("DELETE FROM enrolments WHERE user_id = $1")
         .bind(bob.user_id.0)
         .execute(&app.pool)
         .await
@@ -4579,8 +4575,7 @@ async fn review_rows_carry_membership(pool: PgPool) {
     let bob = learner(&app, "bob").await;
     submit_attempt(&app, &alice, &id, &choice_id, &essay_id).await;
     submit_attempt(&app, &bob, &id, &choice_id, &essay_id).await;
-    sqlx::query("WITH r AS (DELETE FROM trail_runs WHERE user_id = $1 RETURNING course_id, user_id)
-         DELETE FROM enrolments e USING r WHERE e.course_id = r.course_id AND e.user_id = r.user_id")
+    sqlx::query("DELETE FROM enrolments WHERE user_id = $1")
         .bind(bob.user_id.0)
         .execute(&app.pool)
         .await

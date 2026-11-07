@@ -1,0 +1,59 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT f.id AS \"id: FileSubmissionId\", f.activity_id AS \"activity_id: ActivityId\",\n                  a.name AS title, (extract(epoch FROM f.due_at))::bigint AS \"due_at?\"\n           FROM file_submissions f JOIN activities a ON a.id = f.activity_id\n           JOIN chapters c ON c.id = a.chapter_id\n           WHERE f.course_id = $1\n             AND (EXISTS (SELECT 1 FROM learner_visible_activities v WHERE v.activity_id = a.id)\n                  OR EXISTS (SELECT 1 FROM file_submission_attempts x\n                             WHERE x.file_submission_id = f.id\n                               AND x.status <> 'draft' AND NOT x.preview))\n           ORDER BY c.position, c.id, a.position, a.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: FileSubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "activity_id: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "activities",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "due_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "2026e94c39f2420cd90a572fa19a4be7fe581e0435b6f70f469b7b79748c36be"
+}

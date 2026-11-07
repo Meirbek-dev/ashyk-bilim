@@ -3054,8 +3054,7 @@ export type Enrollment = {
     course_total_steps: number;
     created_at_unix: UnixTime;
     /**
-     * The legacy trail run's id (the course id where none exists); page
-     * with `next_cursor`, not this.
+     * The course id; page with `next_cursor`, not this.
      */
     id: TrailRunId;
     learning_status: LearningStatus;
@@ -6888,8 +6887,7 @@ export type TrailRun = {
     course_total_steps: number;
     created_at_unix: UnixTime;
     /**
-     * The legacy trail run's id (the course id where none exists). The
-     * paging cursor is the course id now; a run id still works as one.
+     * The course id, as the paging cursor is.
      */
     id: TrailRunId;
     /**

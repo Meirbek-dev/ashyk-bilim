@@ -269,6 +269,7 @@ An AI review of a whole course.
 - Foreign key `ai_course_analyses_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_course_analyses_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_course_analyses_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
+- Check `ai_course_analyses_content_hash_format`: `CHECK ((content_hash ~ '^[0-9a-f]{64}$'::text))`
 - Check `ai_course_analyses_evidence_object`: `CHECK ((jsonb_typeof(evidence) = 'object'::text))`
 - Check `ai_course_analyses_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
 - Check `ai_course_analyses_public_score_check`: `CHECK (((public_score >= 0) AND (public_score <= 100)))`
@@ -755,6 +756,7 @@ Embedding of a part of learner work (similarity, grading context).
 
 - Primary key `ai_work_embeddings_pkey`: `PRIMARY KEY (subject_id, part_key)`
 - Foreign key `ai_work_embeddings_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
+- Check `ai_work_embeddings_text_hash_format`: `CHECK ((text_hash ~ '^[0-9a-f]{64}$'::text))`
 - Index `ai_work_embeddings_activity_idx`: `CREATE INDEX ai_work_embeddings_activity_idx ON ai.ai_work_embeddings USING btree (activity_id)`
 
 ## analytics_events (partitioned)
@@ -933,6 +935,7 @@ Frozen policy + items of an assessment as handed in (content-addressed, numbered
 - Unique `assessment_versions_assessment_id_content_hash_key`: `UNIQUE (assessment_id, content_hash)`
 - Unique `assessment_versions_assessment_id_number_key`: `UNIQUE (assessment_id, number)`
 - Foreign key `assessment_versions_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
+- Check `assessment_versions_content_hash_format`: `CHECK ((content_hash ~ '^[0-9a-f]{32}$'::text))`
 - Check `assessment_versions_items_check`: `CHECK ((jsonb_typeof(items) = 'object'::text))`
 - Check `assessment_versions_max_points_check`: `CHECK ((max_points >= (0)::numeric))`
 - Check `assessment_versions_number_check`: `CHECK ((number >= 1))`
@@ -1116,7 +1119,7 @@ A certificate issued to a learner, verifiable by verify_code. Survives the accou
 | course_name | text |  |  |  |
 | certificate_name | text |  |  |  |
 | instructor_name | text | null |  |  |
-| score | double precision | null |  |  |
+| score | percent | null |  |  |
 | reissued_at | timestamp with time zone | null |  |  |
 | course_id | uuid |  |  | The course it was issued for; no key: the certificate outlives the course. |
 
@@ -1125,7 +1128,6 @@ A certificate issued to a learner, verifiable by verify_code. Survives the accou
 - Unique `certificate_users_verify_code_key`: `UNIQUE (verify_code)`
 - Foreign key `certificate_users_certification_id_fkey`: `FOREIGN KEY (certification_id) REFERENCES certifications(id) ON DELETE RESTRICT`
 - Foreign key `certificate_users_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
-- Check `certificate_users_score_range`: `CHECK (((score >= (0)::double precision) AND (score <= (100)::double precision)))`
 - Index `certificate_users_user_idx`: `CREATE INDEX certificate_users_user_idx ON learning.certificate_users USING btree (user_id)`
 - Trigger `certificate_users_frozen`: `CREATE TRIGGER certificate_users_frozen BEFORE UPDATE ON learning.certificate_users FOR EACH ROW EXECUTE FUNCTION certificate_users_frozen()`
 - Trigger `certificate_users_issue`: `CREATE TRIGGER certificate_users_issue BEFORE INSERT ON learning.certificate_users FOR EACH ROW EXECUTE FUNCTION certificate_users_issue()`
@@ -1431,7 +1433,6 @@ A searchable chunk of course material with its embedding (course material search
 | source_id | uuid |  |  |
 | ordinal | integer |  |  |
 | audience | text |  |  |
-| published | boolean |  |  |
 | label | text |  |  |
 | body | text |  |  |
 | anchor | jsonb |  | `'{}'::jsonb` |
@@ -1454,11 +1455,10 @@ A searchable chunk of course material with its embedding (course material search
 - Check `content_chunks_source_type_check`: `CHECK ((source_type = ANY (ARRAY['lesson'::text, 'activity'::text, 'assignment'::text, 'item'::text, 'course'::text, 'document'::text, 'transcript'::text])))`
 - Check `content_chunks_token_estimate_check`: `CHECK ((token_estimate >= 0))`
 - Index `content_chunks_activity_idx`: `CREATE INDEX content_chunks_activity_idx ON ai.content_chunks USING btree (activity_id)`
-- Index `content_chunks_course_idx`: `CREATE INDEX content_chunks_course_idx ON ai.content_chunks USING btree (course_id, audience, published)`
+- Index `content_chunks_course_audience_idx`: `CREATE INDEX content_chunks_course_audience_idx ON ai.content_chunks USING btree (course_id, audience)`
 - Index `content_chunks_embedding_hash_idx`: `CREATE INDEX content_chunks_embedding_hash_idx ON ai.content_chunks USING hnsw (embedding halfvec_cosine_ops) WHERE (embedding_model = 'hash-ngram-v1'::text)`
 - Index `content_chunks_embedding_te3_small_idx`: `CREATE INDEX content_chunks_embedding_te3_small_idx ON ai.content_chunks USING hnsw (embedding halfvec_cosine_ops) WHERE (embedding_model = 'text-embedding-3-small'::text)`
 - Index `content_chunks_lexeme_idx`: `CREATE INDEX content_chunks_lexeme_idx ON ai.content_chunks USING gin (lexeme)`
-- Trigger `content_chunks_published`: `CREATE TRIGGER content_chunks_published BEFORE INSERT ON ai.content_chunks FOR EACH ROW EXECUTE FUNCTION content_chunks_published()`
 
 ## content_index_state
 
@@ -1894,10 +1894,12 @@ One join or leave of a course, appended by enrol/unenrol. Survives the course; e
 | source | text |  |  | self: the learner; staff: someone on their behalf; backfill: the enrolment existed when this table was made. |
 | created_by | uuid | null |  |  |
 | created_at | timestamp with time zone |  | `now()` |  |
+| completions | jsonb | null |  | On a leave: the [{activity_id, completed_at}] the leave reset. NULL on a join, and on leaves before this column. |
 
 - Primary key `enrolment_events_pkey`: `PRIMARY KEY (id)`
 - Foreign key `enrolment_events_created_by_fkey`: `FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `enrolment_events_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `enrolment_events_completions_array`: `CHECK ((jsonb_typeof(completions) = 'array'::text))`
 - Check `enrolment_events_event_check`: `CHECK ((event = ANY (ARRAY['joined'::text, 'left'::text])))`
 - Check `enrolment_events_source_check`: `CHECK ((source = ANY (ARRAY['self'::text, 'staff'::text, 'backfill'::text])))`
 - Index `enrolment_events_course_user_idx`: `CREATE INDEX enrolment_events_course_user_idx ON learning.enrolment_events USING btree (course_id, user_id, created_at)`
@@ -2230,6 +2232,7 @@ Stored responses of mutating requests sent with an Idempotency-Key, replayed on 
 - Primary key `idempotency_keys_pkey`: `PRIMARY KEY (user_id, key)`
 - Foreign key `idempotency_keys_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Check `idempotency_keys_key_check`: `CHECK ((char_length(key) <= 200))`
+- Check `idempotency_keys_request_hash_format`: `CHECK ((request_hash ~ '^[0-9a-f]{64}$'::text))`
 - Index `idempotency_keys_sweep_idx`: `CREATE INDEX idempotency_keys_sweep_idx ON ops.idempotency_keys USING btree (created_at)`
 
 ## item_feedback

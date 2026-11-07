@@ -405,7 +405,7 @@ pub async fn gradebook_columns(
            JOIN activities a ON a.id = s.activity_id
            JOIN chapters c ON c.id = a.chapter_id
            WHERE s.course_id = $1
-             AND ((a.published AND s.lifecycle = 'published')
+             AND (EXISTS (SELECT 1 FROM learner_visible_activities v WHERE v.activity_id = a.id)
                   OR EXISTS (SELECT 1 FROM submissions x WHERE x.assessment_id = s.id
                              AND x.status <> 'draft' AND NOT x.preview))
            ORDER BY c.position, c.id, a.position, a.id"#,
@@ -988,8 +988,8 @@ pub async fn effective_access_count(pool: &PgPool, id: AssessmentId) -> Result<i
     // (an enrolment - the UX-150 predicate), not the empty lists.
     let count = sqlx::query_scalar!(
         r#"SELECT CASE WHEN a.access_mode = 'all_course_learners' THEN
-               (SELECT count(DISTINCT r.user_id) FROM enrolments r
-                WHERE r.course_id = a.course_id AND NOT is_course_staff(r.course_id, r.user_id))
+               (SELECT count(DISTINCT r.user_id) FROM course_members r
+                WHERE r.course_id = a.course_id)
            ELSE
                (SELECT count(DISTINCT reach.user_id) FROM (
                     SELECT user_id FROM assessment_access_users WHERE assessment_id = $1
@@ -998,8 +998,7 @@ pub async fn effective_access_count(pool: &PgPool, id: AssessmentId) -> Result<i
                     JOIN usergroup_members m ON m.usergroup_id = g.usergroup_id
                     WHERE g.assessment_id = $1
                 ) reach
-                JOIN enrolments r ON r.user_id = reach.user_id AND r.course_id = a.course_id
-                WHERE NOT is_course_staff(r.course_id, r.user_id))
+                JOIN course_members r ON r.user_id = reach.user_id AND r.course_id = a.course_id)
            END AS "count!"
            FROM assessments a WHERE a.id = $1"#,
         id.0

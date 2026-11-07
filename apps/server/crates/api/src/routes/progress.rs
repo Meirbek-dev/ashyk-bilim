@@ -37,15 +37,8 @@ pub async fn get_trail(
 ) -> ApiResult<Json<Trail>> {
     let mut trail = Trail::for_actor(state.trail.get(&actor).await?, &actor);
     if query.cursor.is_some() || query.limit.is_some() {
-        // The cursor is the last run's course id; a run id (the cursor
-        // before enrolments) still names its run's course.
-        let cursor = query.cursor.as_deref().map(|c| {
-            trail
-                .runs
-                .iter()
-                .find(|r| r.id.to_string() == c)
-                .map_or_else(|| c.to_owned(), |r| r.course_id.to_string())
-        });
+        // The cursor is the last run's course id.
+        let cursor = query.cursor.clone();
         let (runs, next) = ab_core::page_after(
             std::mem::take(&mut trail.runs),
             cursor.as_deref(),

@@ -422,9 +422,13 @@ One migration set for the database `ashyq`. Rules:
   anti-cheat event, beyond the bounded array the API reads.
 - **The schema is checked at deploy.** `crates/db/schema.snapshot.sql` is the migrated schema as text;
   `ashyq admin schema-verify` compares it with the live database (RUNBOOK 2.4).
-- **Who is in a course.** `course_members` is enrolments without staff; `has_course_role` and `is_platform_author` are
-  the two halves of `is_course_staff`; the creator has a roster row. `learner_visible_activities` states what the
-  publication flags mean together.
+- **Who is in a course.** `course_members` is enrolments without staff, and member queries read it, never
+  `enrolments` plus a staff filter. `has_course_role` (the roster alone: the creator has a row, and `courses.creator_id`
+  only says who owns the course) and `is_platform_author` are the two halves of `is_course_staff`, which means "not a
+  learner here". `learner_visible_activities` states what the publication flags mean together; the deadline queries
+  and the gradebook read it.
+- **A leave leaves a trace.** `enrolment_events` says who ended a membership (`source`, `created_by`) and keeps the
+  `completions` it reset. Rejoining still starts over: nothing reads them yet.
 
 ### Schema guarantees (2026-11 schema review)
 
@@ -517,9 +521,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   stands in without a row). The lane C contract dropped the trigger that mirrored the previous release's
   trail-run writes into it.
 - **A completion is a `completions` row** (`20261102030500_completions.sql`, REWRITE 5.6 n8): `(activity_id,
-  user_id)` PK, `completed_at`. A learner's mark writes it (with the trail step, still written for the previous
-  release), un-marking and leaving delete it; the lesson projection and the trail's steps read it, never
-  `trail_steps`. Graded kinds complete through their projection: the projector's graded write keeps the row equal
+  user_id)` PK, `completed_at`. A learner's mark writes it, un-marking and leaving delete it (the leave's
+  `enrolment_events` row keeps what it reset); the lesson projection and the trail's steps read it. The `trail_*`
+  tables are no longer read or written and go in the next release. Graded kinds complete through their projection: the projector's graded write keeps the row equal
   to `activity_progress.completed_at` in the same transaction (`sync_graded_completion`); the trigger
   `activity_progress_sync_completion` does the same for the previous release until the lane C2 contract drops it.
 - **`course_progress` derives what follows from it** (`20261102030200_course_progress_derived.sql`): `progress_pct`

@@ -1,0 +1,159 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: AiCourseAnalysisId\", course_id AS \"course_id: CourseId\",\n                  run_id AS \"run_id: AiRunId\", triggered_by AS \"triggered_by: UserId\",\n                  status AS \"status: CourseAnalysisStatus\", language, public_score, report,\n                  evidence, (SELECT r.model_name FROM ai_runs r WHERE r.id = run_id) AS \"model_name?\", content_hash,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\"\n           FROM ai_course_analyses\n           WHERE course_id = $1 AND (NOT $2 OR status = 'published')\n           ORDER BY created_at DESC, id DESC LIMIT $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AiCourseAnalysisId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_course_analyses",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_course_analyses",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "run_id: AiRunId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_course_analyses",
+            "name": "run_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "triggered_by: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_course_analyses",
+            "name": "triggered_by"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "status: CourseAnalysisStatus",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_course_analyses",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "language",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_course_analyses",
+            "name": "language"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "public_score",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "ai_course_analyses",
+            "name": "public_score"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "report",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "ai_course_analyses",
+            "name": "report"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "evidence",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "ai_course_analyses",
+            "name": "evidence"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "model_name?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "content_hash",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "ai_course_analyses",
+            "name": "content_hash"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 12,
+        "name": "published_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "3161eda88e9b997c428fade5b33618ab3c054fa9283d9fb121228d67a2a4a523"
+}

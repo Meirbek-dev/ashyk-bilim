@@ -272,7 +272,7 @@ pub async fn list_for_course(
            FROM file_submissions f JOIN activities a ON a.id = f.activity_id
            JOIN chapters c ON c.id = a.chapter_id
            WHERE f.course_id = $1
-             AND ((a.published AND f.lifecycle = 'published')
+             AND (EXISTS (SELECT 1 FROM learner_visible_activities v WHERE v.activity_id = a.id)
                   OR EXISTS (SELECT 1 FROM file_submission_attempts x
                              WHERE x.file_submission_id = f.id
                                AND x.status <> 'draft' AND NOT x.preview))
@@ -676,9 +676,8 @@ pub async fn list_for_review(
                   a.is_late, a.final_score::float8 AS "final_score?", a.version,
                   (SELECT count(*) FROM file_submission_files f WHERE f.attempt_id = a.id)
                       AS "file_count!",
-                  EXISTS (SELECT 1 FROM enrolments r
-                          WHERE r.course_id = a.course_id AND r.user_id = a.user_id
-                            AND NOT is_course_staff(r.course_id, r.user_id)) AS "enrolled!",
+                  EXISTS (SELECT 1 FROM course_members r
+                          WHERE r.course_id = a.course_id AND r.user_id = a.user_id) AS "enrolled!",
                   is_course_staff(a.course_id, a.user_id) AS "staff!"
            FROM file_submission_attempts a JOIN users u ON u.id = a.user_id
            CROSS JOIN LATERAL (SELECT $8::float8 * CASE $7::text

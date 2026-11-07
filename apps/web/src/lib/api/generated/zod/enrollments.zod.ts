@@ -30,11 +30,7 @@ export const Enrollments = zod
           course_id: zod.uuid(),
           course_total_steps: zod.int().describe('Published activities in the course.'),
           created_at_unix: zod.int().describe('Unix time: whole seconds since 1970-01-01T00:00:00Z.'),
-          id: zod
-            .uuid()
-            .describe(
-              "The legacy trail run's id (the course id where none exists); page\nwith `next_cursor`, not this.",
-            ),
+          id: zod.uuid().describe('The course id; page with `next_cursor`, not this.'),
           learning_status: zod
             .enum(['not_started', 'in_progress', 'completed'])
             .describe('Where the learner stands in one course.'),

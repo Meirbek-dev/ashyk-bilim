@@ -240,7 +240,6 @@ impl AiService {
                     public_score: finished.value.public_score.clamp(0, 100),
                     report: &finished.artifact,
                     evidence: &evidence_json(&finished.completion.trusted),
-                    model_name: &finished.model_name,
                     content_hash,
                 },
             )

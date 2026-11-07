@@ -50,7 +50,7 @@ pub async fn get_draft(pool: &PgPool, id: GradeDraftId) -> Result<Option<DraftRo
                   d.file_attempt_id AS "file_attempt_id: FileAttemptId",
                   d.learner_id AS "learner_id: UserId", d.run_id AS "run_id: AiRunId", d.status,
                   d.subject_version, d.proposal, d.ai_score::float8 AS "ai_score?", d.calibrated_score::float8 AS "calibrated_score?", d.max_score::float8 AS "max_score?",
-                  d.confidence, d.flags, d.model_name, d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
+                  d.confidence, d.flags, (SELECT r.model_name FROM ai_runs r WHERE r.id = d.run_id) AS "model_name?", d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
                   extract(epoch FROM d.decided_at)::bigint AS decided_at,
                   extract(epoch FROM d.created_at)::bigint AS "created_at!"
                FROM ai_grade_drafts d WHERE d.id = $1"#,
@@ -71,7 +71,7 @@ pub async fn latest_for_subject(pool: &PgPool, subject: uuid::Uuid) -> Result<Op
                   d.file_attempt_id AS "file_attempt_id: FileAttemptId",
                   d.learner_id AS "learner_id: UserId", d.run_id AS "run_id: AiRunId", d.status,
                   d.subject_version, d.proposal, d.ai_score::float8 AS "ai_score?", d.calibrated_score::float8 AS "calibrated_score?", d.max_score::float8 AS "max_score?",
-                  d.confidence, d.flags, d.model_name, d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
+                  d.confidence, d.flags, (SELECT r.model_name FROM ai_runs r WHERE r.id = d.run_id) AS "model_name?", d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
                   extract(epoch FROM d.decided_at)::bigint AS decided_at,
                   extract(epoch FROM d.created_at)::bigint AS "created_at!"
                FROM ai_grade_drafts d WHERE d.submission_id = $1 OR d.file_attempt_id = $1
@@ -93,7 +93,7 @@ pub async fn latest_for_activity(pool: &PgPool, activity_id: ActivityId) -> Resu
                   d.file_attempt_id AS "file_attempt_id: FileAttemptId",
                   d.learner_id AS "learner_id: UserId", d.run_id AS "run_id: AiRunId", d.status,
                   d.subject_version, d.proposal, d.ai_score::float8 AS "ai_score?", d.calibrated_score::float8 AS "calibrated_score?", d.max_score::float8 AS "max_score?",
-                  d.confidence, d.flags, d.model_name, d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
+                  d.confidence, d.flags, (SELECT r.model_name FROM ai_runs r WHERE r.id = d.run_id) AS "model_name?", d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
                   extract(epoch FROM d.decided_at)::bigint AS decided_at,
                   extract(epoch FROM d.created_at)::bigint AS "created_at!"
                FROM ai_grade_drafts d WHERE d.activity_id = $1 AND d.id = (
@@ -138,7 +138,7 @@ pub async fn live_for_subject(
                   d.file_attempt_id AS "file_attempt_id: FileAttemptId",
                   d.learner_id AS "learner_id: UserId", d.run_id AS "run_id: AiRunId", d.status,
                   d.subject_version, d.proposal, d.ai_score::float8 AS "ai_score?", d.calibrated_score::float8 AS "calibrated_score?", d.max_score::float8 AS "max_score?",
-                  d.confidence, d.flags, d.model_name, d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
+                  d.confidence, d.flags, (SELECT r.model_name FROM ai_runs r WHERE r.id = d.run_id) AS "model_name?", d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
                   extract(epoch FROM d.decided_at)::bigint AS decided_at,
                   extract(epoch FROM d.created_at)::bigint AS "created_at!"
                FROM ai_grade_drafts d WHERE (d.submission_id = $1 OR d.file_attempt_id = $1)
@@ -223,7 +223,6 @@ pub struct ReadyDraft<'a> {
     pub max_score: f64,
     pub confidence: f32,
     pub flags: &'a [String],
-    pub model_name: &'a str,
 }
 
 /// queued -> ready; `false` when the draft is no longer queued (superseded or settled meanwhile).
@@ -235,7 +234,7 @@ pub async fn mark_ready(
     let done = sqlx::query!(
         r#"UPDATE ai_grade_drafts
            SET status = 'ready', proposal = $2, ai_score = $3::float8, calibrated_score = $4::float8, max_score = $5::float8,
-               confidence = $6, flags = $7, model_name = $8
+               confidence = $6, flags = $7
            WHERE id = $1 AND status = 'queued'"#,
         id.0,
         r.proposal,
@@ -243,8 +242,7 @@ pub async fn mark_ready(
         r.calibrated_score,
         r.max_score,
         r.confidence,
-        r.flags,
-        r.model_name
+        r.flags
     )
     .execute(&mut *conn)
     .await?;

@@ -481,7 +481,7 @@ async fn seed_e2e_builds_fixtures_idempotently(pool: PgPool) {
             .contains(&"instructor".to_owned())
     );
     let enrolled: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM trail_runs r JOIN users u ON u.id = r.user_id
+        "SELECT count(*) FROM enrolments r JOIN users u ON u.id = r.user_id
          WHERE r.course_id = $1::uuid AND u.username IN ('e2e-student1', 'e2e-student2')",
     )
     .bind(course_id)

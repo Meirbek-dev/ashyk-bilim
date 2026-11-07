@@ -106,12 +106,7 @@
         "ordinal": 9,
         "name": "score",
         "type_info": "Float8",
-        "origin": {
-          "Table": {
-            "table": "certificate_users",
-            "name": "score"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 10,
@@ -147,7 +142,7 @@
       false,
       false,
       true,
-      true,
+      null,
       null,
       null,
       null

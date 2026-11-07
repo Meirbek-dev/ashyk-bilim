@@ -68,6 +68,7 @@ constraint ai_artifacts ai_artifacts_kind_word CHECK ((kind ~ '^[A-Za-z][A-Za-z0
 constraint ai_artifacts ai_artifacts_pkey PRIMARY KEY (id)
 constraint ai_artifacts ai_artifacts_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE
 constraint ai_artifacts ai_artifacts_run_id_not_null NOT NULL run_id
+constraint ai_course_analyses ai_course_analyses_content_hash_format CHECK ((content_hash ~ '^[0-9a-f]{64}$'::text))
 constraint ai_course_analyses ai_course_analyses_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint ai_course_analyses ai_course_analyses_course_id_not_null NOT NULL course_id
 constraint ai_course_analyses ai_course_analyses_created_at_not_null NOT NULL created_at
@@ -319,6 +320,7 @@ constraint ai_work_embeddings ai_work_embeddings_embedding_not_null NOT NULL emb
 constraint ai_work_embeddings ai_work_embeddings_part_key_not_null NOT NULL part_key
 constraint ai_work_embeddings ai_work_embeddings_pkey PRIMARY KEY (subject_id, part_key)
 constraint ai_work_embeddings ai_work_embeddings_subject_id_not_null NOT NULL subject_id
+constraint ai_work_embeddings ai_work_embeddings_text_hash_format CHECK ((text_hash ~ '^[0-9a-f]{64}$'::text))
 constraint ai_work_embeddings ai_work_embeddings_text_hash_not_null NOT NULL text_hash
 constraint analytics_events analytics_events_created_at_not_null NOT NULL created_at
 constraint analytics_events analytics_events_event_type_check CHECK ((event_type = ANY (ARRAY['submission.submitted'::text, 'submission.graded'::text, 'submission.published'::text, 'submission.returned'::text, 'activity.completed'::text, 'discussion.posted'::text, 'login'::text])))
@@ -401,6 +403,7 @@ constraint assessment_versions assessment_versions_assessment_id_content_hash_ke
 constraint assessment_versions assessment_versions_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE
 constraint assessment_versions assessment_versions_assessment_id_not_null NOT NULL assessment_id
 constraint assessment_versions assessment_versions_assessment_id_number_key UNIQUE (assessment_id, number)
+constraint assessment_versions assessment_versions_content_hash_format CHECK ((content_hash ~ '^[0-9a-f]{32}$'::text))
 constraint assessment_versions assessment_versions_content_hash_not_null NOT NULL content_hash
 constraint assessment_versions assessment_versions_created_at_not_null NOT NULL created_at
 constraint assessment_versions assessment_versions_id_not_null NOT NULL id
@@ -518,7 +521,6 @@ constraint certificate_users certificate_users_created_at_not_null NOT NULL crea
 constraint certificate_users certificate_users_holder_name_not_null NOT NULL holder_name
 constraint certificate_users certificate_users_id_not_null NOT NULL id
 constraint certificate_users certificate_users_pkey PRIMARY KEY (id)
-constraint certificate_users certificate_users_score_range CHECK (((score >= (0)::double precision) AND (score <= (100)::double precision)))
 constraint certificate_users certificate_users_updated_at_not_null NOT NULL updated_at
 constraint certificate_users certificate_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 constraint certificate_users certificate_users_user_id_not_null NOT NULL user_id
@@ -687,7 +689,6 @@ constraint content_chunks content_chunks_label_not_null NOT NULL label
 constraint content_chunks content_chunks_ordinal_check CHECK ((ordinal >= 0))
 constraint content_chunks content_chunks_ordinal_not_null NOT NULL ordinal
 constraint content_chunks content_chunks_pkey PRIMARY KEY (id)
-constraint content_chunks content_chunks_published_not_null NOT NULL published
 constraint content_chunks content_chunks_source_id_not_null NOT NULL source_id
 constraint content_chunks content_chunks_source_type_check CHECK ((source_type = ANY (ARRAY['lesson'::text, 'activity'::text, 'assignment'::text, 'item'::text, 'course'::text, 'document'::text, 'transcript'::text])))
 constraint content_chunks content_chunks_source_type_not_null NOT NULL source_type
@@ -894,6 +895,7 @@ constraint discussion_reactions discussion_reactions_reaction_check CHECK ((reac
 constraint discussion_reactions discussion_reactions_reaction_not_null NOT NULL reaction
 constraint discussion_reactions discussion_reactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint discussion_reactions discussion_reactions_user_id_not_null NOT NULL user_id
+constraint enrolment_events enrolment_events_completions_array CHECK ((jsonb_typeof(completions) = 'array'::text))
 constraint enrolment_events enrolment_events_course_id_not_null NOT NULL course_id
 constraint enrolment_events enrolment_events_created_at_not_null NOT NULL created_at
 constraint enrolment_events enrolment_events_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
@@ -1071,6 +1073,7 @@ constraint idempotency_keys idempotency_keys_created_at_not_null NOT NULL create
 constraint idempotency_keys idempotency_keys_key_check CHECK ((char_length(key) <= 200))
 constraint idempotency_keys idempotency_keys_key_not_null NOT NULL key
 constraint idempotency_keys idempotency_keys_pkey PRIMARY KEY (user_id, key)
+constraint idempotency_keys idempotency_keys_request_hash_format CHECK ((request_hash ~ '^[0-9a-f]{64}$'::text))
 constraint idempotency_keys idempotency_keys_request_hash_not_null NOT NULL request_hash
 constraint idempotency_keys idempotency_keys_response_not_null NOT NULL response
 constraint idempotency_keys idempotency_keys_status_code_not_null NOT NULL status_code
@@ -1766,17 +1769,6 @@ AS $function$
                    AND c.archived_at IS NULL
                    AND course_visible(c, p_viewer, p_see_all_courses))
 $function$
-function CREATE OR REPLACE FUNCTION public.content_chunks_published()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    NEW.published := COALESCE(NEW.published, NEW.activity_id IS NULL OR COALESCE(
-        (SELECT a.published FROM activities a WHERE a.id = NEW.activity_id), false));
-    RETURN NEW;
-END;
-$function$
 function CREATE OR REPLACE FUNCTION public.course_discussions_recount_replies()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1982,8 +1974,7 @@ function CREATE OR REPLACE FUNCTION public.has_course_role(p_course uuid, p_user
  LANGUAGE sql
  STABLE
 AS $function$
-    SELECT EXISTS (SELECT 1 FROM courses c WHERE c.id = p_course AND c.creator_id = p_user)
-        OR EXISTS (SELECT 1 FROM course_staff cs
+    SELECT EXISTS (SELECT 1 FROM course_staff cs
                    WHERE cs.course_id = p_course AND cs.user_id = p_user
                      AND cs.status = 'active' AND cs.authorship <> 'reporter')
 $function$
@@ -2494,7 +2485,7 @@ index CREATE INDEX concept_tags_decided_by_idx ON learning.concept_tags USING bt
 index CREATE INDEX concept_tags_item_idx ON learning.concept_tags USING btree (item_id)
 index CREATE INDEX concept_tags_run_idx ON learning.concept_tags USING btree (run_id)
 index CREATE INDEX content_chunks_activity_idx ON ai.content_chunks USING btree (activity_id)
-index CREATE INDEX content_chunks_course_idx ON ai.content_chunks USING btree (course_id, audience, published)
+index CREATE INDEX content_chunks_course_audience_idx ON ai.content_chunks USING btree (course_id, audience)
 index CREATE INDEX content_chunks_embedding_hash_idx ON ai.content_chunks USING hnsw (embedding halfvec_cosine_ops) WHERE (embedding_model = 'hash-ngram-v1'::text)
 index CREATE INDEX content_chunks_embedding_te3_small_idx ON ai.content_chunks USING hnsw (embedding halfvec_cosine_ops) WHERE (embedding_model = 'text-embedding-3-small'::text)
 index CREATE INDEX content_chunks_lexeme_idx ON ai.content_chunks USING gin (lexeme)
@@ -2968,7 +2959,6 @@ table ai.content_chunks id uuid NOT NULL DEFAULT uuidv7()
 table ai.content_chunks label text NOT NULL DEFAULT -
 table ai.content_chunks lexeme tsvector GENERATED to_tsvector('simple'::regconfig, search_fold(((label || ' '::text) || body)))
 table ai.content_chunks ordinal integer NOT NULL DEFAULT -
-table ai.content_chunks published boolean NOT NULL DEFAULT -
 table ai.content_chunks source_id uuid NOT NULL DEFAULT -
 table ai.content_chunks source_type text NOT NULL DEFAULT -
 table ai.content_chunks token_estimate integer NOT NULL DEFAULT -
@@ -3438,7 +3428,7 @@ table learning.certificate_users holder_name text NOT NULL DEFAULT -
 table learning.certificate_users id uuid NOT NULL DEFAULT uuidv7()
 table learning.certificate_users instructor_name text DEFAULT -
 table learning.certificate_users reissued_at timestamp with time zone DEFAULT -
-table learning.certificate_users score double precision DEFAULT -
+table learning.certificate_users score percent DEFAULT -
 table learning.certificate_users updated_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.certificate_users user_id uuid NOT NULL DEFAULT -
 table learning.certificate_users verify_code text NOT NULL DEFAULT -
@@ -3547,6 +3537,7 @@ table learning.course_progress total_required_count integer NOT NULL DEFAULT 0
 table learning.course_progress updated_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.course_progress user_id uuid NOT NULL DEFAULT -
 table learning.course_progress weighted_grade_average double precision DEFAULT -
+table learning.enrolment_events completions jsonb DEFAULT -
 table learning.enrolment_events course_id uuid NOT NULL DEFAULT -
 table learning.enrolment_events created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.enrolment_events created_by uuid DEFAULT -
@@ -3849,7 +3840,6 @@ trigger CREATE TRIGGER collection_staff_touch BEFORE UPDATE ON core.collection_s
 trigger CREATE TRIGGER collections_touch BEFORE UPDATE ON core.collections FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER collections_upload_ids BEFORE INSERT OR UPDATE OF cover_key ON core.collections FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('cover_key', 'cover_upload_id')
 trigger CREATE TRIGGER concept_tags_touch BEFORE UPDATE ON learning.concept_tags FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER content_chunks_published BEFORE INSERT ON ai.content_chunks FOR EACH ROW EXECUTE FUNCTION content_chunks_published()
 trigger CREATE TRIGGER course_concepts_touch BEFORE UPDATE ON learning.course_concepts FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()
 trigger CREATE TRIGGER course_discussions_touch BEFORE UPDATE ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION touch_row('version', 'status', 'content')

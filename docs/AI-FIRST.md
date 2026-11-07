@@ -98,8 +98,6 @@ content_index_state (source_type, source_id) pk, course_id, activity_id, source_
   по состоянию на момент запроса (снятие публикации и архив действуют сразу, до переиндексации); для
   преподавателя - все. Фрагмент активности, перенесённой в другой курс, не возвращается никому. Доступ к самому
   курсу проверяет вызывающий (`visible_course`), маршрут поиска отвечает 409 `course-archived` на архивный курс.
-  Копия `content_chunks.published` больше не пишется сервером: её заполняет триггер для предыдущего релиза,
-  колонка и триггер удаляются следующим релизом (`-- contract:`).
 - `POST /ai/retrieval/{course_id}/search {query, limit}` -> `hits[{chunk_id, source_type, source_id,
   activity_id, label, excerpt, anchor, score}]`. `GET .../status`, `POST .../reindex` - для
   преподавателя курса.
@@ -241,7 +239,7 @@ p   := p + w·(next - p)
 ai_grade_drafts (id, course_id, activity_id, submission_id null, file_attempt_id null (ровно один),
   learner_id, run_id null, status ('queued'|'ready'|'applied'|'discarded'|'superseded'|'failed'),
   subject_version bigint, proposal jsonb object, ai_score, calibrated_score, max_score, confidence,
-  flags text[], model_name, agreement ('exact'|'adjusted') null, final_score null,
+  flags text[], agreement ('exact'|'adjusted') null, final_score null,
   decided_by null, decided_at null, created_at, updated_at)
   одна активная (queued|ready) на работу
 ai_grade_corrections (id, course_id, activity_id, draft_id, teacher_id null, part_key, criterion_key,

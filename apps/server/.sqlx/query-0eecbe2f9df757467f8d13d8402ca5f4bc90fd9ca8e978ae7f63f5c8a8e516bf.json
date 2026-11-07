@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT e.course_id AS \"course_id!: CourseId\", e.user_id AS \"user_id!: UserId\",\n                  (extract(epoch FROM e.enrolled_at))::bigint AS \"enrolled_at!\"\n           FROM course_members e\n           WHERE e.user_id = $1\n           ORDER BY e.enrolled_at, e.course_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_id!: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_members",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id!: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_members",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "enrolled_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "0eecbe2f9df757467f8d13d8402ca5f4bc90fd9ca8e978ae7f63f5c8a8e516bf"
+}

@@ -11,7 +11,7 @@ use ab_core::Result;
 use ab_core::assessments::{
     ActivityProgressState, AssessmentKind, FileAttemptStatus, Lifecycle, SubmissionStatus,
 };
-use ab_core::id::{ActivityId, AssessmentId, CourseId, TrailRunId, UserId, UsergroupId};
+use ab_core::id::{ActivityId, AssessmentId, CourseId, UserId, UsergroupId};
 use ab_db::analytics::{
     ActivityInfoRow, AssessmentInfoRow, CertificateInfoRow, ChapterInfoRow, CourseInfoRow,
     CourseProgressInfoRow, EventInfoRow, FileAttemptInfoRow, ProgressInfoRow, SubmissionInfoRow,
@@ -197,7 +197,6 @@ pub struct ProgressSnapshot {
     pub is_completed: bool,
     pub has_certificate: bool,
     pub last_activity_at: Option<i64>,
-    pub trail_run_id: Option<TrailRunId>,
 }
 
 pub type SnapshotKey = (CourseId, UserId);
@@ -713,12 +712,6 @@ pub fn progress_snapshots(
             course_rows.insert((c.course_id, c.user_id), c);
         }
     }
-    let mut trail_runs: HashMap<SnapshotKey, Option<TrailRunId>> = HashMap::new();
-    for r in &ctx.trail_runs {
-        if allowed(r.user_id, allowed_users) {
-            trail_runs.insert((r.course_id, r.user_id), r.id);
-        }
-    }
     let certificate_pairs: HashSet<SnapshotKey> = ctx
         .certificates
         .iter()
@@ -734,7 +727,12 @@ pub fn progress_snapshots(
         *entry = (*entry).max(e.ts);
     }
 
-    let keys: BTreeSet<SnapshotKey> = trail_runs.keys().copied().collect();
+    let keys: BTreeSet<SnapshotKey> = ctx
+        .trail_runs
+        .iter()
+        .filter(|r| allowed(r.user_id, allowed_users))
+        .map(|r| (r.course_id, r.user_id))
+        .collect();
 
     let mut snapshots = BTreeMap::new();
     for key in keys {
@@ -787,7 +785,6 @@ pub fn progress_snapshots(
                 is_completed,
                 has_certificate,
                 last_activity_at: progress_last.or_else(|| last_activity.get(&key).copied()),
-                trail_run_id: trail_runs.get(&key).copied().flatten(),
             },
         );
     }
@@ -854,7 +851,6 @@ mod tests {
                 last_activity_at: None,
             }],
             trail_runs: vec![TrailRunInfoRow {
-                id: Some(TrailRunId::new()),
                 course_id: course,
                 user_id: user,
             }],

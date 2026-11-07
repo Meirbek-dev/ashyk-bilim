@@ -369,7 +369,8 @@ impl ProgressProjector {
         enrol: bool,
     ) -> Result<bool> {
         let Some((mut tx, joined)) =
-            super::trail::lock_member_joined(&self.pool, user_id, course_id, enrol).await?
+            super::trail::lock_member_joined(&self.pool, user_id, course_id, enrol, user_id)
+                .await?
         else {
             return Ok(false);
         };
