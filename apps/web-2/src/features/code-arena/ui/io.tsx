@@ -29,7 +29,13 @@ export function Io({ label, text, mark = null }: IoProps) {
           <span className="text-destructive">{m.code_diff_line({ line: formatNumber(mark + 1) })}</span>
         )}
       </span>
-      <pre className="max-h-80 overflow-auto rounded-sm bg-muted px-2.5 py-1.5 font-mono leading-relaxed whitespace-pre">
+      <pre
+        // A box that scrolls takes focus, so it scrolls from the keyboard too (axe scrollable-region-focusable).
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrolling region must be reachable by keyboard
+        tabIndex={0}
+        aria-label={label}
+        className="max-h-80 overflow-auto rounded-sm bg-muted px-2.5 py-1.5 font-mono leading-relaxed whitespace-pre"
+      >
         {mark === null
           ? text
           : text.split('\n').map((line, index) => (
