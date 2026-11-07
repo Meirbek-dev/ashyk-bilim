@@ -580,7 +580,8 @@ transaction, which enqueues the award job.
 
 Learning history survives edits: `items_snapshot` and `policy_snapshot` (for `assignment`
 the instructions, rubric, effective deadline and late policy) are written when the
-attempt starts and a trigger refuses to change them. `grades` holds the current grade
+attempt starts and a trigger refuses to change them. (As built the grade stays a journal, `grading_entries` with a per-attempt `revision`; the target below is the
+proposal.) `grades` holds the current grade
 only; every insert or change of it writes an `audit_log` row (`grade-set`,
 `grade-released`) whose `data` holds the previous and the new grade, feedback and
 release time, in the same transaction, so a correction stays reconstructible.
@@ -1165,9 +1166,9 @@ per-phase rollback for a window in which every write since cutover is lost on ro
 
 ## 10. Cut list
 
-Removed in phase 3 (services in phase 4). Data stays in the per-table dumps and the final
-v2 backup. "Back on request" means rebuild when a teacher asks, against the new schema,
-not port the v2 code.
+**Owner decision 2026-11-07: no product function is cut.** The rows marked "kept" below were proposed for removal and
+stay; schema work may keep investing in them. What still goes is infrastructure a replacement covers. The rest of this
+plan (section 5 tables and phases) still shows the old proposal where it drops those tables; this decision wins.
 
 | Area | Evidence (prod, 2026-10-20) | v3 |
 | --- | --- | --- |
@@ -1176,16 +1177,16 @@ not port the v2 code.
 | Zitadel | 1 TOTP enrolment, never verified | own auth (section 6), phase 4 |
 | Redis | sessions + rate limits | Postgres + nginx, phase 4 |
 | RustFS | 16 GB, 31 tracked uploads | local disk, phase 4 |
-| Gamification (XP, levels, streaks) | reset at cutover | removed |
-| Analytics heuristics (forecasts, anomalies, risk snapshots, interventions, saved views, daily rollups) | 0 saved views, 0 interventions | removed; live SQL reports (below) |
-| AI agents other than course Q&A (course analysis, lecture review, submission analysis, remediation, student memory, evals, approvals) | 13 runs ever | removed |
-| OpenAI-compatible provider | Claude is primary | Anthropic only |
-| Collections | 0 rows | removed, back on request |
-| In-app notifications, deadline reminders | 0 notifications | removed; SSE refresh only |
-| Discussions | 2 posts, 0 reactions | removed, back on request (owner decision) |
-| User groups | 1 group, 22 members, 0 course links | removed (owner decision) |
-| Per-assessment audiences, overrides/extensions | 0 rows each | removed, back on request |
-| Bulk grading actions | 0 rows | removed |
+| Gamification (XP, levels, streaks) | reset at cutover | kept |
+| Analytics heuristics (forecasts, anomalies, risk snapshots, interventions, saved views, daily rollups) | 0 saved views, 0 interventions | kept |
+| AI agents other than course Q&A (course analysis, lecture review, submission analysis, remediation, student memory, evals, approvals) | 13 runs ever | kept |
+| OpenAI-compatible provider | Claude is primary | kept |
+| Collections | 0 rows | kept |
+| In-app notifications, deadline reminders | 0 notifications | kept |
+| Discussions | 2 posts, 0 reactions | kept |
+| User groups | 1 group, 22 members, 0 course links | kept |
+| Per-assessment audiences, overrides/extensions | 0 rows each | kept |
+| Bulk grading actions | 0 rows | kept |
 | Generic idempotency, `Prefer`, blanket `If-Match` | infrastructure | section 4.5 |
 | TOTP | see Zitadel | removed |
 | ETL tables, `legacy_uuid`, legacy setting keys | import artefacts | dropped |
@@ -1380,7 +1381,7 @@ per section 14.
 ## 16. Owner decisions
 
 1. Date for phase 1 (web-2 cutover) and the low-traffic window for the phase-4 auth switch.
-2. Cut list: confirm, especially discussions, user groups and assessment extensions.
+2. Cut list: decided 2026-11-07, no product function is cut (section 10).
 3. Code activities: decided 2026-11-01, kept, on go-judge in VM `judge` (11.6).
 4. Backups: the second machine for the restic repository and the dead-man check (the dev
    box over the tailnet, or another). This reverses "no offsite backup" (FINDINGS #3)

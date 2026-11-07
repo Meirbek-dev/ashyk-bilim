@@ -1614,9 +1614,20 @@ async fn deletes_release_submitted_file_uploads(pool: PgPool) {
             .execute(&app.pool)
             .await
             .unwrap();
-        ab_db::catalog::purge_deleted_courses(&app.pool, 30, 60.0)
-            .await
-            .unwrap();
+        // Retention leaves a course holding a hand-in; the operator's purge takes it.
+        assert_eq!(
+            ab_db::catalog::purge_deleted_courses(&app.pool, 30, 60.0)
+                .await
+                .unwrap(),
+            0
+        );
+        assert_eq!(referenced_count(&app, &upload).await, 1, "{target}");
+        let id = ab_core::id::CourseId(uuid::Uuid::parse_str(&course_id).unwrap());
+        assert!(
+            ab_db::catalog::purge_course_with_work(&app.pool, id, 30, 60.0)
+                .await
+                .unwrap()
+        );
         let (count, expiring): (i32, bool) = sqlx::query_as(
             "SELECT upload_referenced(id)::int, expires_at IS NOT NULL FROM uploads WHERE id = $1",
         )

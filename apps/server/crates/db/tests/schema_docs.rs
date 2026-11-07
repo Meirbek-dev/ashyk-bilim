@@ -5,7 +5,8 @@
 //! schema without a database. It is rendered here from the test template (all
 //! migrations of this checkout) and must match the committed file:
 //! `just schema-docs` rewrites it (`UPDATE_SCHEMA_DOCS=1`), and a migration
-//! without the regenerated file fails this test. Every table has a comment.
+//! without the regenerated file fails this test. Every table has a comment. The same recipe rewrites
+//! `crates/db/schema.snapshot.sql`, which `ashyq admin schema-verify` compares with a live database.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use std::fmt::Write as _;
@@ -122,20 +123,23 @@ async fn render_table(pool: &PgPool, t: &Table, out: &mut String) {
     }
     let keys = sqlx::query(
         "SELECT contype::text AS kind, conname, pg_get_constraintdef(oid) AS def
-         FROM pg_constraint WHERE conrelid = $1 AND contype IN ('p', 'u', 'f')
-         ORDER BY array_position(ARRAY['p', 'u', 'f'], contype::text), conname",
+         FROM pg_constraint WHERE conrelid = $1 AND contype IN ('p', 'u', 'f', 'c', 'x')
+         ORDER BY array_position(ARRAY['p', 'u', 'f', 'x', 'c'], contype::text), conname",
     )
     .bind(sqlx::postgres::types::Oid(t.oid))
     .fetch_all(pool)
     .await
     .unwrap();
-    if !keys.is_empty() {
+    let keys_and_checks = keys;
+    if !keys_and_checks.is_empty() {
         out.push('\n');
     }
-    for k in &keys {
+    for k in &keys_and_checks {
         let label = match k.get::<String, _>("kind").as_str() {
             "p" => "Primary key",
             "u" => "Unique",
+            "c" => "Check",
+            "x" => "Exclude",
             _ => "Foreign key",
         };
         writeln!(
@@ -143,6 +147,37 @@ async fn render_table(pool: &PgPool, t: &Table, out: &mut String) {
             "- {label} `{}`: `{}`",
             k.get::<String, _>("conname"),
             cell(&k.get::<String, _>("def"))
+        )
+        .unwrap();
+    }
+    render_indexes_and_triggers(pool, t, !keys_and_checks.is_empty(), out).await;
+}
+
+async fn render_indexes_and_triggers(pool: &PgPool, t: &Table, listed: bool, out: &mut String) {
+    let others = sqlx::query(
+        "SELECT 'Index' AS label, c.relname::text AS name, pg_get_indexdef(i.indexrelid) AS def
+         FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
+         WHERE i.indrelid = $1
+           AND NOT EXISTS (SELECT FROM pg_constraint k WHERE k.conindid = i.indexrelid AND k.contype IN ('p', 'u', 'x'))
+         UNION ALL
+         SELECT 'Trigger', t.tgname::text, pg_get_triggerdef(t.oid)
+         FROM pg_trigger t WHERE t.tgrelid = $1 AND NOT t.tgisinternal AND t.tgname !~ '_touch$'
+         ORDER BY 1, 2",
+    )
+    .bind(sqlx::postgres::types::Oid(t.oid))
+    .fetch_all(pool)
+    .await
+    .unwrap();
+    if !listed && !others.is_empty() {
+        out.push('\n');
+    }
+    for o in &others {
+        writeln!(
+            out,
+            "- {} `{}`: `{}`",
+            o.get::<String, _>("label"),
+            o.get::<String, _>("name"),
+            cell(&o.get::<String, _>("def"))
         )
         .unwrap();
     }
@@ -190,10 +225,21 @@ async fn render(pool: &PgPool) -> String {
 async fn schema_docs_match_the_migrations(pool: PgPool) {
     let rendered = render(&pool).await;
     let path = doc_path();
+    let snapshot_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("schema.snapshot.sql");
+    let snapshot = ab_db::schema_snapshot::render(&pool).await.unwrap();
     if std::env::var_os("UPDATE_SCHEMA_DOCS").is_some() {
         std::fs::write(&path, &rendered).unwrap();
+        std::fs::write(&snapshot_path, &snapshot).unwrap();
         return;
     }
+    let committed_snapshot = std::fs::read_to_string(&snapshot_path)
+        .unwrap_or_default()
+        .replace("\r\n", "\n");
+    let drift = ab_db::schema_snapshot::differences(&committed_snapshot, &snapshot, 10);
+    assert!(
+        drift.is_empty(),
+        "crates/db/schema.snapshot.sql is stale, run `just schema-docs` and commit it: {drift:#?}"
+    );
     let committed = std::fs::read_to_string(&path)
         .unwrap_or_default()
         .replace("\r\n", "\n");

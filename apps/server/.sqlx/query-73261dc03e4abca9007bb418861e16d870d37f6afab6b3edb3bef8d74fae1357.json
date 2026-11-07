@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM file_submission_attempts t USING file_submissions f\n         WHERE f.id = t.file_submission_id AND f.activity_id = ANY($1)\n           AND (t.preview OR is_course_staff(t.course_id, t.user_id))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "73261dc03e4abca9007bb418861e16d870d37f6afab6b3edb3bef8d74fae1357"
+}

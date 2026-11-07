@@ -1479,6 +1479,11 @@ async fn activity_details_never_carry_nulls(pool: PgPool) {
     );
 
     let id: uuid::Uuid = video.parse().unwrap();
+    // A row older than the shape check (schema_try_check keeps such rows out of the constraint).
+    sqlx::query("ALTER TABLE activities DROP CONSTRAINT activities_details_object")
+        .execute(&app.pool)
+        .await
+        .unwrap();
     sqlx::query("UPDATE activities SET details = 'null'::jsonb WHERE id = $1")
         .bind(id)
         .execute(&app.pool)

@@ -1,0 +1,123 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: GradingEntryId\", submission_id AS \"submission_id: SubmissionId\",\n                  graded_by AS \"graded_by: UserId\", raw_score::float8 AS \"raw_score!\", penalty_pct::float8 AS \"penalty_pct!\", final_score::float8 AS \"final_score?\",\n                  raw_breakdown, effective_breakdown, overall_feedback,\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM grading_entries WHERE submission_id = $1 ORDER BY revision DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: GradingEntryId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "submission_id: SubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "submission_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "graded_by: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "graded_by"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "raw_score!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "penalty_pct!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "final_score?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "raw_breakdown",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "raw_breakdown"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "effective_breakdown",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "effective_breakdown"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "overall_feedback",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "overall_feedback"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "published_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      null,
+      null,
+      null,
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "6dbcfefb7c9a8ab18e3e12f50bf563d3bfe18b43e035ba3b812b8e7f3a342d94"
+}

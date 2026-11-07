@@ -435,8 +435,7 @@ pub async fn get_course_progress<'e>(
 /// with a run left from before they joined it (BUG-287/288).
 pub async fn course_members(pool: &PgPool, course_id: CourseId) -> Result<Vec<UserId>> {
     let ids = sqlx::query_scalar!(
-        r#"SELECT user_id AS "user_id!: UserId" FROM enrolments
-           WHERE course_id = $1 AND NOT is_course_staff(course_id, user_id)"#,
+        r#"SELECT user_id AS "user_id!: UserId" FROM course_members WHERE course_id = $1"#,
         course_id.0
     )
     .fetch_all(pool)
@@ -701,7 +700,10 @@ pub async fn ensure_trail_run(
 /// same transaction.
 pub async fn enrol(conn: &mut PgConnection, course_id: CourseId, user_id: UserId) -> Result<bool> {
     let created = sqlx::query!(
-        "INSERT INTO enrolments (course_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        "WITH joined AS (INSERT INTO enrolments (course_id, user_id) VALUES ($1, $2)
+                         ON CONFLICT DO NOTHING RETURNING course_id, user_id)
+         INSERT INTO enrolment_events (course_id, user_id, event, source, created_by)
+         SELECT course_id, user_id, 'joined', 'self', user_id FROM joined",
         course_id.0,
         user_id.0
     )
@@ -719,7 +721,10 @@ pub async fn unenrol(
     user_id: UserId,
 ) -> Result<bool> {
     let deleted = sqlx::query!(
-        "DELETE FROM enrolments WHERE course_id = $1 AND user_id = $2",
+        "WITH gone AS (DELETE FROM enrolments WHERE course_id = $1 AND user_id = $2
+                       RETURNING course_id, user_id)
+         INSERT INTO enrolment_events (course_id, user_id, event, source, created_by)
+         SELECT course_id, user_id, 'left', 'self', user_id FROM gone",
         course_id.0,
         user_id.0
     )

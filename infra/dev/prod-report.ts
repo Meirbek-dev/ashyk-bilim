@@ -9,6 +9,7 @@
 //   jobs        failed/dead jobs per kind with the last error
 //   checks      CHECK constraints a migration skipped because old rows violate them (RUNBOOK 2.4)
 //   archive     WAL archiving for point-in-time recovery: last archived segment, failures (RUNBOOK 3.14)
+//   indexes     indexes no query used since the last stats reset, largest first (candidates, not verdicts)
 //   statements  the app database's statements by total execution time since the last stats reset
 //               (pg_stat_statements; their text has parameters as $n, never values)
 //
@@ -217,6 +218,18 @@ function archive(names: string[], service: string): string[] {
 }
 
 // Where the database time goes: a query that grew a sequential scan climbs this list before anyone notices a page.
+function unusedIndexes(names: string[]): string[] {
+  const out = psql(
+    names,
+    `SELECT s.relname, s.indexrelname, pg_size_pretty(pg_relation_size(s.indexrelid))
+       FROM pg_stat_user_indexes s JOIN pg_index i ON i.indexrelid = s.indexrelid
+      WHERE s.idx_scan = 0 AND NOT i.indisunique AND NOT i.indisprimary
+      ORDER BY pg_relation_size(s.indexrelid) DESC LIMIT ${ROWS}`,
+  )
+  if ('error' in out) return [out.error]
+  return out.rows.length ? out.rows.map(r => `  ${r.replaceAll('|', '  ')}`) : ['  none']
+}
+
 function statements(names: string[]): string[] {
   const out = psql(
     names,
@@ -256,6 +269,7 @@ if (import.meta.main) {
     [`failed/dead jobs, last ${since}`, jobs(names)],
     ['skipped schema checks', checks(names)],
     ['WAL archive', archives(names)],
+    ['indexes with no scan since the stats reset', unusedIndexes(names)],
     ['top statements by total time (pg_stat_statements)', statements(names)],
   ] as const)
     console.log(`${title}\n${lines.join('\n')}\n`)

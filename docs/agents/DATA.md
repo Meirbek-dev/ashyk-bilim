@@ -1,8 +1,8 @@
 # Finding real data (dev stack)
 
 Run SQL with `just db sql [--slot N | --db NAME] "<sql>"` (or `-f file.sql`): the slot's database, Unicode-safe,
-`|`-separated with a header, read-only as `ashyq_ro` (emails, bios, IPs and secrets are not readable: select named
-columns, find people by `username`); `--rw` runs as the owner for writes and email lookups. Sign in as anyone
+`|`-separated with a header, read-only as `ashyq_ro` (emails, bios, IPs, secrets, answers, messages, feedback text and
+names on certificates are not readable: select named columns, find people by `username`); `--rw` runs as the owner for writes and email lookups. Sign in as anyone
 with `just login-as <username|email> [slot]`; screenshot pages with
 `just shoot`. Real data: a slot on a local restored copy (`just stack up 1 --db <name>`, RUNBOOK 5.3); change its rows
 freely, never production's.
@@ -20,14 +20,13 @@ Every table, column, key and foreign key with the table's purpose: `docs/agents/
 | --------------------------------- | ------------------------------------------------------------------------------------ |
 | course, its picture               | `courses` (`public`, `archived_at`; `thumbnail_image_key` under `/content/<key>`)    |
 | chapter, activity                 | `chapters`, `activities` (`activity_type`, `activity_sub_type`, `published`, `content`) |
-| enrolled learner                  | `trail_runs` (`user_id`, `course_id`); per activity: `trail_steps`, `activity_progress` |
 | course teacher / author           | `course_staff` (`course_id`, `user_id`, `authorship`, `status`)                      |
 | enrolled learner                  | `enrolments` (`course_id`, `user_id`; staff excluded by `is_course_staff`); the learner's list: `trail_runs`; per activity: `completions` (the fact), `activity_progress` (projection), `trail_steps` (legacy marks) |
 | quiz, exam, code challenge        | `assessments` (`activity_id`, `lifecycle`; title/kind = the activity's) + `assessment_items` (`body` json) |
 | code statement, tests, languages  | `assessment_items.body`: `prompt`, `tests[]`, `languages[]`, `time_limit_seconds`     |
 | attempt (quiz, exam, code)        | `submissions` (`status` draft / submitted / graded / released / returned) |
 | what an attempt answered against  | `submissions.items_snapshot` / `policy_snapshot`, `assessment_version_id` -> `assessment_versions` |
-| a grade and its history           | `grading_entries` (journal, latest id = current) = `submissions.final_score`; breakdown `submission_breakdown(id, auto_breakdown)` (latest entry's, else the hand-in's) |
+| a grade and its history           | `grading_entries` (journal, highest `revision` = current) = `submissions.final_score`; breakdown `submission_breakdown(id, auto_breakdown)` (latest entry's, else the hand-in's) |
 | code "Run"                        | `code_runs` (+ `code_run_cases`, `verdict`)                                          |
 | file task, its hand-ins           | `file_submissions` (`lifecycle`, `instructions`) + `file_submission_attempts` (`status`, same words as `submissions`) |
 | lesson media                      | `activities.content->>'filename'` (video, PDF), `blocks.content` (page blocks)       |

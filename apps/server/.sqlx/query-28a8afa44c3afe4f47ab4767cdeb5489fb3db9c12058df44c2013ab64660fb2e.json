@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM certifications c WHERE c.course_id = $1\n         AND NOT EXISTS (SELECT 1 FROM certificate_users cu WHERE cu.certification_id = c.id)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "28a8afa44c3afe4f47ab4767cdeb5489fb3db9c12058df44c2013ab64660fb2e"
+}

@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH counted AS (\n               UPDATE submissions\n               SET violation_count = violation_count + 1,\n                   violations = (CASE WHEN jsonb_array_length(violations) >= $3\n                                      THEN violations - 0 ELSE violations END)\n                                || jsonb_build_array($2::jsonb)\n               WHERE id = $1 AND status = 'draft'\n               RETURNING id, violation_count),\n           evidence AS (\n               INSERT INTO submission_violations (submission_id, event)\n               SELECT id, $2::jsonb FROM counted WHERE jsonb_typeof($2::jsonb) = 'object')\n           SELECT violation_count AS \"violation_count!\" FROM counted",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "violation_count!",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "violation_count"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4b08c9df585d8d6ff84ba86ab290c1ee7c970a58403bdd3795f149a997660a9e"
+}

@@ -293,8 +293,9 @@ async fn retention_sweeps_old_logs_and_keeps_learner_work(pool: PgPool) {
     for purpose in ["custom", "final"] {
         let run: Uuid = sqlx::query_scalar(
             "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id,
-                                    source_sha256, compile_output, created_at)
-             VALUES ($1, $2, $3, $4, 'accepted', 71, 'x', 'warning', now() - interval '200 days')
+                                    source_sha256, compile_output, created_at, finished_at)
+             VALUES ($1, $2, $3, $4, 'accepted', 71, repeat('a', 64), 'warning', now() - interval '200 days',
+                     now() - interval '200 days')
              RETURNING id",
         )
         .bind(w.assessment)
@@ -1712,8 +1713,8 @@ async fn a_code_run_case_stores_the_platforms_verdict(pool: PgPool) {
     .unwrap();
     let run: Uuid = sqlx::query_scalar(
         "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id,
-                                source_sha256)
-         VALUES ($1, $2, $3, 'visible', 'runtime_error', 71, 'x') RETURNING id",
+                                source_sha256, finished_at)
+         VALUES ($1, $2, $3, 'visible', 'runtime_error', 71, repeat('a', 64), now()) RETURNING id",
     )
     .bind(w.assessment)
     .bind(item)
@@ -2638,4 +2639,593 @@ async fn no_app_table_is_left_in_public(pool: PgPool) {
         .execute(&pool)
         .await
         .unwrap();
+}
+
+/// Schema review 2026-11-07: every row below was accepted before the keys bound it to its owner.
+#[ab_testdb::test]
+async fn a_row_cannot_point_at_someone_elses_work(pool: PgPool) {
+    let w = world(&pool).await;
+    let other = user(&pool, "other").await;
+    let theirs = submission(&pool, &w, 1, false).await.unwrap();
+    let foreign_item: Uuid = {
+        let activity: Uuid = sqlx::query_scalar(
+            "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, position)
+             SELECT chapter_id, course_id, 'other', activity_type, activity_sub_type, position + 1
+             FROM activities WHERE id = $1 RETURNING id",
+        )
+        .bind(w.activity)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        let assessment: Uuid = sqlx::query_scalar(
+            "INSERT INTO assessments (activity_id, course_id, lifecycle, published_at,
+                                      grading_mode, grade_release_mode, completion_rule)
+             SELECT $1, course_id, lifecycle, published_at, grading_mode, grade_release_mode, completion_rule
+             FROM assessments WHERE id = $2 RETURNING id",
+        )
+        .bind(activity)
+        .bind(w.assessment)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        sqlx::query_scalar(
+            "INSERT INTO assessment_items (assessment_id, kind, position, body)
+             VALUES ($1, 'code', 1, '{\"kind\": \"code\"}') RETURNING id",
+        )
+        .bind(assessment)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    let own_item: Uuid = sqlx::query_scalar(
+        "INSERT INTO assessment_items (assessment_id, kind, position, body)
+         VALUES ($1, 'code', 1, '{\"kind\": \"code\"}') RETURNING id",
+    )
+    .bind(w.assessment)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    // The same rows with the right owner go in, so what refuses the ones below is the key.
+    sqlx::query(
+        "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status, language_id, source_sha256)
+         VALUES ($1, $2, $3, $4, 'custom', 'queued', 71, repeat('a', 64))",
+    )
+    .bind(w.assessment)
+    .bind(own_item)
+    .bind(theirs)
+    .bind(w.user)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO activity_progress (course_id, activity_id, user_id, best_submission_id)
+         VALUES ($1, $2, $3, $4)",
+    )
+    .bind(w.course)
+    .bind(w.activity)
+    .bind(w.user)
+    .bind(theirs)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO ai_grade_drafts (course_id, activity_id, submission_id, learner_id, status, subject_version)
+         VALUES ($1, $2, $3, $4, 'queued', 1)",
+    )
+    .bind(w.course)
+    .bind(w.activity)
+    .bind(theirs)
+    .bind(w.user)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let refused = [
+        (
+            "a code run of an item of another assessment",
+            sqlx::query(
+                "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, source_sha256)
+                 VALUES ($1, $2, $3, 'custom', 'queued', 71, repeat('a', 64))",
+            )
+            .bind(w.assessment)
+            .bind(foreign_item)
+            .bind(w.user)
+            .execute(&pool)
+            .await,
+        ),
+        (
+            "a code run on another learner's submission",
+            sqlx::query(
+                "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status, language_id, source_sha256)
+                 VALUES ($1, $2, $3, $4, 'custom', 'queued', 71, repeat('a', 64))",
+            )
+            .bind(w.assessment)
+            .bind(own_item)
+            .bind(theirs)
+            .bind(other)
+            .execute(&pool)
+            .await,
+        ),
+        (
+            "progress crediting another learner's submission",
+            sqlx::query(
+                "INSERT INTO activity_progress (course_id, activity_id, user_id, best_submission_id)
+                 VALUES ($1, $2, $3, $4)",
+            )
+            .bind(w.course)
+            .bind(w.activity)
+            .bind(other)
+            .bind(theirs)
+            .execute(&pool)
+            .await,
+        ),
+        (
+            "an AI draft of another learner's submission",
+            sqlx::query(
+                "INSERT INTO ai_grade_drafts (course_id, activity_id, submission_id, learner_id, status, subject_version)
+                 VALUES ($1, $2, $3, $4, 'queued', 1)",
+            )
+            .bind(w.course)
+            .bind(w.activity)
+            .bind(theirs)
+            .bind(other)
+            .execute(&pool)
+            .await,
+        ),
+    ];
+    for (what, result) in refused {
+        assert!(result.is_err(), "{what} was accepted");
+    }
+}
+
+#[ab_testdb::test]
+async fn item_feedback_belongs_to_its_entry_and_is_frozen(pool: PgPool) {
+    let w = world(&pool).await;
+    let first = submission(&pool, &w, 1, false).await.unwrap();
+    let second = submission(&pool, &w, 2, false).await.unwrap();
+    let entry: Uuid = sqlx::query_scalar(
+        "WITH e AS (INSERT INTO grading_entries (submission_id, raw_score, final_score)
+                    VALUES ($1, 80, 80) RETURNING id, submission_id),
+              current AS (UPDATE submissions s SET final_score = 80
+                          FROM e WHERE s.id = e.submission_id)
+         SELECT id FROM e",
+    )
+    .bind(first)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let insert = |submission: Uuid| {
+        sqlx::query(
+            "INSERT INTO item_feedback (grading_entry_id, submission_id, item_ref, score, comment)
+             VALUES ($1, $2, 'q1', 1, 'ok')",
+        )
+        .bind(entry)
+        .bind(submission)
+        .execute(&pool)
+    };
+    assert!(insert(second).await.is_err(), "an entry of another attempt");
+    insert(first).await.unwrap();
+    assert!(insert(first).await.is_err(), "a second row for one item");
+    let edited = sqlx::query("UPDATE item_feedback SET score = 9 WHERE grading_entry_id = $1")
+        .bind(entry)
+        .execute(&pool)
+        .await;
+    assert!(edited.is_err(), "a score edit after the entry was written");
+    // Erasing the grader still clears the name.
+    sqlx::query("UPDATE item_feedback SET graded_by = NULL WHERE grading_entry_id = $1")
+        .bind(entry)
+        .execute(&pool)
+        .await
+        .unwrap();
+}
+
+#[ab_testdb::test]
+async fn the_journal_numbers_entries_per_attempt(pool: PgPool) {
+    let w = world(&pool).await;
+    let attempt = submission(&pool, &w, 1, false).await.unwrap();
+    let mut numbers = vec![];
+    for score in [70, 80, 90] {
+        let revision: i32 = sqlx::query_scalar(
+            "WITH e AS (INSERT INTO grading_entries (submission_id, raw_score, final_score)
+                        VALUES ($1, $2::numeric, $2::numeric) RETURNING submission_id, final_score, revision),
+                  current AS (UPDATE submissions s SET final_score = e.final_score
+                              FROM e WHERE s.id = e.submission_id)
+             SELECT revision FROM e",
+        )
+        .bind(attempt)
+        .bind(score)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        numbers.push(revision);
+    }
+    assert_eq!(numbers, [1, 2, 3]);
+}
+
+#[ab_testdb::test]
+async fn a_finished_code_run_says_when_and_counts_add_up(pool: PgPool) {
+    let w = world(&pool).await;
+    let item: Uuid = sqlx::query_scalar(
+        "INSERT INTO assessment_items (assessment_id, kind, position, body)
+         VALUES ($1, 'code', 1, '{\"kind\": \"code\"}') RETURNING id",
+    )
+    .bind(w.assessment)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let insert = |status: &'static str, finished: bool, passed: i32, total: i32| {
+        let pool = pool.clone();
+        let (assessment, user) = (w.assessment, w.user);
+        async move {
+            sqlx::query(
+                "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, source_sha256,
+                                        passed, total, finished_at)
+                 VALUES ($1, $2, $3, 'custom', $4, 71, repeat('a', 64), $5, $6, CASE WHEN $7 THEN now() END)",
+            )
+            .bind(assessment)
+            .bind(item)
+            .bind(user)
+            .bind(status)
+            .bind(passed)
+            .bind(total)
+            .bind(finished)
+            .execute(&pool)
+            .await
+        }
+    };
+    insert("queued", false, 0, 0).await.unwrap();
+    assert!(
+        insert("accepted", false, 1, 1).await.is_err(),
+        "no finish time"
+    );
+    assert!(
+        insert("accepted", true, 2, 1).await.is_err(),
+        "more passed than ran"
+    );
+    insert("accepted", true, 1, 1).await.unwrap();
+}
+
+/// Schema review 2026-11-07: content deletes never reach what a learner handed in.
+#[ab_testdb::test]
+async fn deleting_content_is_refused_while_learner_work_exists(pool: PgPool) {
+    let w = world(&pool).await;
+    let attempt = submission(&pool, &w, 1, false).await.unwrap();
+    let refused = sqlx::query("DELETE FROM courses WHERE id = $1")
+        .bind(w.course)
+        .execute(&pool)
+        .await;
+    assert!(refused.is_err(), "course delete took a hand-in with it");
+    let refused = sqlx::query("DELETE FROM activities WHERE id = $1")
+        .bind(w.activity)
+        .execute(&pool)
+        .await;
+    assert!(refused.is_err(), "activity delete took a hand-in with it");
+    let has_work: bool = sqlx::query_scalar("SELECT course_has_learner_work($1)")
+        .bind(w.course)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(has_work);
+    sqlx::query("DELETE FROM submissions WHERE id = $1")
+        .bind(attempt)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let has_work: bool = sqlx::query_scalar("SELECT course_has_learner_work($1)")
+        .bind(w.course)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(!has_work);
+    sqlx::query("DELETE FROM courses WHERE id = $1")
+        .bind(w.course)
+        .execute(&pool)
+        .await
+        .unwrap();
+}
+
+/// A diploma outlives its course: the purge keeps the certificate and its template, and the verify lookup
+/// still finds both.
+#[ab_testdb::test]
+async fn a_certificate_outlives_its_purged_course(pool: PgPool) {
+    let w = world(&pool).await;
+    let certification: Uuid = sqlx::query_scalar(
+        "INSERT INTO certifications (course_id, config) VALUES ($1, '{}') RETURNING id",
+    )
+    .bind(w.course)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO certificate_users (certification_id, user_id, verify_code)
+         VALUES ($1, $2, 'AAAA-AAAA-AAAA-AAAA')",
+    )
+    .bind(certification)
+    .bind(w.user)
+    .execute(&pool)
+    .await
+    .unwrap();
+    // Without a purge in the way the key itself refuses to lose an issued template.
+    let refused = sqlx::query("DELETE FROM certifications WHERE id = $1")
+        .bind(certification)
+        .execute(&pool)
+        .await;
+    assert!(refused.is_err());
+
+    sqlx::query("UPDATE courses SET archived_at = now(), deleted_at = now() - interval '31 days' WHERE id = $1")
+        .bind(w.course)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        ab_db::catalog::purge_deleted_courses(&pool, 30, 60.0)
+            .await
+            .unwrap(),
+        0,
+        "retention leaves a course with an issued certificate"
+    );
+    let course = ab_core::id::CourseId(w.course);
+    assert!(
+        ab_db::catalog::purge_course_with_work(&pool, course, 30, 60.0)
+            .await
+            .unwrap()
+    );
+    let kept = ab_db::certifications::get_certificate_by_code(&pool, "AAAA-AAAA-AAAA-AAAA")
+        .await
+        .unwrap()
+        .expect("the certificate survives its course");
+    assert_eq!(kept.course_id, course);
+    let template = ab_db::certifications::get_certification(
+        &pool,
+        ab_core::id::CertificationId(certification),
+    )
+    .await
+    .unwrap()
+    .expect("its template survives too");
+    assert_eq!(template.course_id, course);
+}
+
+/// A row with a `course_id` pointing at a parent with a `course_id` names the course twice; only a key over
+/// both keeps the two equal. Exceptions say why a single-column key is right.
+#[ab_testdb::test]
+async fn children_of_a_course_scoped_parent_bind_the_course(pool: PgPool) {
+    const SINGLE_COLUMN: &[(&str, &str)] = &[
+        // SET NULL of the course must keep the thread and its messages for the learner.
+        ("ai_threads", "activities"),
+        ("ai_qa_messages", "ai_threads"),
+        // The draft already binds (activity_id, course_id); a correction copies them.
+        ("ai_grade_corrections", "ai_grade_drafts"),
+        // Issued certificates keep the course id after the template lost its course.
+        ("certificate_users", "certifications"),
+        // A notification's course is informational and goes on its own.
+        ("notifications", "activities"),
+        // Rollups recomputed nightly from the facts: nothing reads the pair as truth.
+        ("daily_assessment_metrics", "activities"),
+        ("daily_assessment_metrics", "assessments"),
+        ("daily_course_engagement", "activities"),
+        ("daily_course_engagement", "chapters"),
+        ("daily_user_course_progress", "trail_runs"),
+        ("trail_steps", "trail_runs"),
+    ];
+    let unbound: Vec<(String, String)> = sqlx::query_as(
+        "SELECT c.conrelid::regclass::text, c.confrelid::regclass::text
+         FROM pg_constraint c
+         JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+         WHERE c.contype = 'f' AND cardinality(c.conkey) = 1 AND a.attname <> 'course_id'
+           AND EXISTS (SELECT FROM pg_attribute x WHERE x.attrelid = c.conrelid
+                        AND x.attname = 'course_id' AND NOT x.attisdropped)
+           AND EXISTS (SELECT FROM pg_attribute x WHERE x.attrelid = c.confrelid
+                        AND x.attname = 'course_id' AND NOT x.attisdropped)
+           AND NOT EXISTS (SELECT FROM pg_constraint d
+                           JOIN pg_attribute dc ON dc.attrelid = d.conrelid AND dc.attnum = ANY (d.conkey)
+                           WHERE d.contype = 'f' AND d.conrelid = c.conrelid AND d.confrelid = c.confrelid
+                             AND dc.attname = 'course_id' AND c.conkey[1] = ANY (d.conkey))
+         ORDER BY 1, 2",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    let new: Vec<_> = unbound
+        .iter()
+        .filter(|(child, parent)| !SINGLE_COLUMN.iter().any(|(c, p)| c == child && p == parent))
+        .collect();
+    assert!(
+        new.is_empty(),
+        "add a key over (parent, course_id): {new:?}"
+    );
+    for (child, parent) in SINGLE_COLUMN {
+        assert!(
+            unbound.iter().any(|(c, p)| c == child && p == parent),
+            "{child} -> {parent} is bound now: drop the exception"
+        );
+    }
+}
+
+/// Triggers guard a rule or keep a derived field; business steps belong in the code (ARCHITECTURE §8 rule 9).
+/// A new trigger is one more thing a reader of the code cannot see: say here which kind it is.
+#[ab_testdb::test]
+async fn triggers_guard_or_derive(pool: PgPool) {
+    const REVIEWED: &[(&str, &str)] = &[
+        // Guards: refuse a write.
+        ("activities_keep_assessment_type", "guard"),
+        ("ai_grade_drafts_same_activity", "guard"),
+        ("assessment_versions_frozen", "guard"),
+        ("certificate_users_frozen", "guard"),
+        ("file_grading_entries_append_only", "guard"),
+        ("file_grading_entries_immutable", "guard"),
+        ("grading_entries_append_only", "guard"),
+        ("grading_entries_current", "guard"),
+        ("grading_entries_immutable", "guard"),
+        ("item_feedback_frozen", "guard"),
+        ("submissions_current_grade", "guard"),
+        ("submissions_snapshots_frozen", "guard"),
+        // Derived: a value computable from the row or its children.
+        (
+            "activities_required_from_settings",
+            "derived; goes with the settings key",
+        ),
+        ("assessment_versions_points", "derived"),
+        ("blocks_upload_ids", "derived"),
+        ("chapters_upload_ids", "derived"),
+        ("collections_upload_ids", "derived"),
+        ("content_chunks_published", "derived; goes with the column"),
+        ("course_discussions_recount_replies", "derived"),
+        ("course_discussions_upload_ids", "derived"),
+        ("courses_upload_ids", "derived"),
+        ("discussion_reactions_recount", "derived"),
+        ("file_grading_entries_number", "derived"),
+        ("grading_entries_number", "derived"),
+        ("grading_entries_points", "derived"),
+        ("item_feedback_upload_ids", "derived"),
+        ("platforms_upload_ids", "derived"),
+        ("translations_touch_platform", "derived"),
+        ("users_upload_ids", "derived"),
+        // Business steps, known debts: move to the code that issues and renames.
+        ("certificate_users_issue", "debt"),
+        ("users_reissue_certificates", "debt"),
+        ("users_sync_state", "debt"),
+    ];
+    let found: Vec<String> = sqlx::query_scalar(
+        "SELECT DISTINCT t.tgname::text FROM pg_trigger t
+         JOIN pg_class c ON c.oid = t.tgrelid
+         WHERE NOT t.tgisinternal AND NOT c.relispartition AND t.tgname !~ '_touch$'
+           AND t.tgfoid NOT IN (SELECT p.oid FROM pg_proc p JOIN pg_depend d
+                                ON d.objid = p.oid AND d.deptype = 'e')
+         ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    let mut listed: Vec<String> = REVIEWED.iter().map(|(n, _)| (*n).to_owned()).collect();
+    listed.sort();
+    assert_eq!(
+        found, listed,
+        "classify the trigger here (guard or derived), or drop the stale line"
+    );
+}
+
+/// A column named for a closed or machine-owned set has a CHECK or a key (schema review 40).
+#[ab_testdb::test]
+async fn set_named_columns_are_constrained(pool: PgPool) {
+    let open: Vec<String> = sqlx::query_scalar(
+        "SELECT k.relname || '.' || a.attname
+           FROM pg_attribute a JOIN pg_class k ON k.oid = a.attrelid
+           WHERE k.relkind IN ('r', 'p') AND NOT k.relispartition AND a.attnum > 0 AND NOT a.attisdropped
+             AND k.relnamespace::regnamespace::name = ANY (app_schemas())
+             AND a.atttypid = 'text'::regtype
+             AND a.attname ~ '^(status|state|kind|type|event|event_type|language|lifecycle|role|purpose|verdict|source|mode|.*_(status|kind|type|mode|state))$'
+             AND NOT EXISTS (SELECT FROM pg_constraint d WHERE d.conrelid = k.oid AND a.attnum = ANY (d.conkey)
+                             AND d.contype IN ('c', 'f', 'p'))
+           ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(open, Vec::<String>::new());
+}
+
+/// Every jsonb column has a shape check, unless it stores a foreign document whole.
+#[ab_testdb::test]
+async fn jsonb_columns_state_their_shape(pool: PgPool) {
+    let open: Vec<String> = sqlx::query_scalar(
+        "SELECT k.relname || '.' || a.attname
+           FROM pg_attribute a JOIN pg_class k ON k.oid = a.attrelid
+           WHERE k.relkind IN ('r', 'p') AND NOT k.relispartition AND a.attnum > 0 AND NOT a.attisdropped
+             AND k.relnamespace::regnamespace::name = ANY (app_schemas())
+             AND a.atttypid = 'jsonb'::regtype
+             AND (k.relname, a.attname) <> ('idempotency_keys', 'response')
+             AND NOT EXISTS (SELECT FROM pg_constraint d WHERE d.conrelid = k.oid AND a.attnum = ANY (d.conkey)
+                             AND d.contype = 'c')
+           ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(open, Vec::<String>::new());
+}
+
+/// A leave deletes the membership, not the record that it existed (schema review 30); a violation is kept beyond
+/// what the bounded array holds (schema review 34).
+#[ab_testdb::test]
+async fn membership_and_violations_keep_their_history(pool: PgPool) {
+    let w = world(&pool).await;
+    let (course, user) = (ab_core::id::CourseId(w.course), ab_core::id::UserId(w.user));
+    let mut conn = pool.acquire().await.unwrap();
+    assert!(
+        ab_db::progress::enrol(&mut conn, course, user)
+            .await
+            .unwrap()
+    );
+    assert!(
+        !ab_db::progress::enrol(&mut conn, course, user)
+            .await
+            .unwrap()
+    );
+    assert!(
+        ab_db::progress::unenrol(&mut conn, course, user)
+            .await
+            .unwrap()
+    );
+    assert!(
+        !ab_db::progress::unenrol(&mut conn, course, user)
+            .await
+            .unwrap()
+    );
+    let events: Vec<String> = sqlx::query_scalar(
+        "SELECT event FROM enrolment_events WHERE course_id = $1 AND user_id = $2 AND source = 'self' ORDER BY id",
+    )
+    .bind(w.course)
+    .bind(w.user)
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(events, ["joined", "left"]);
+
+    let draft: Uuid = sqlx::query_scalar(
+        "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, preview)
+         VALUES ($1, $2, $3, 'draft', 1, false) RETURNING id",
+    )
+    .bind(w.assessment)
+    .bind(w.course)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    for n in 0..3 {
+        ab_db::submissions::record_violation(
+            &pool,
+            ab_core::id::SubmissionId(draft),
+            &serde_json::json!({ "n": n }),
+            2,
+        )
+        .await
+        .unwrap();
+    }
+    let (kept, all): (i32, i64) = sqlx::query_as(
+        "SELECT jsonb_array_length(s.violations),
+                (SELECT count(*) FROM submission_violations v WHERE v.submission_id = s.id)
+         FROM submissions s WHERE s.id = $1",
+    )
+    .bind(draft)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!((kept, all), (2, 3));
+}
+
+#[ab_testdb::test]
+async fn a_new_course_has_its_creator_on_the_roster(pool: PgPool) {
+    let creator = user(&pool, "creator").await;
+    let course =
+        ab_db::catalog::insert_course(&pool, "c", "", "", &[], ab_core::id::UserId(creator))
+            .await
+            .unwrap();
+    let role: String = sqlx::query_scalar(
+        "SELECT authorship FROM course_staff WHERE course_id = $1 AND user_id = $2 AND status = 'active'",
+    )
+    .bind(course.0)
+    .bind(creator)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(role, "creator");
 }

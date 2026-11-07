@@ -188,14 +188,34 @@ async fn a_course_with_learner_work_is_deleted_only_when_acknowledged(pool: PgPo
     };
     assert_eq!(submissions().await, 1, "the work waits for the purge");
 
-    // Inside the grace period the purge leaves it; after it, the course and the work go.
+    // Retention never destroys official records, inside the grace period or after it.
     assert_eq!(purge(&app).await, 0);
     sqlx::query("UPDATE courses SET deleted_at = now() - interval '31 days' WHERE id = $1::uuid")
         .bind(&course_id)
         .execute(&app.pool)
         .await
         .unwrap();
-    assert_eq!(purge(&app).await, 1);
+    assert_eq!(purge(&app).await, 0);
+    assert_eq!(submissions().await, 1);
+
+    // The operator's purge archives the work first, then the course and the work go.
+    let id = ab_core::id::CourseId(uuid::Uuid::parse_str(&course_id).unwrap());
+    let archive = ab_db::catalog::deleted_course_archive(&app.pool, id)
+        .await
+        .unwrap()
+        .unwrap();
+    let archived = archive["submissions"].as_array().unwrap();
+    assert!(
+        archived
+            .iter()
+            .any(|s| s["user_id"] == alice.user_id.0.to_string())
+    );
+    assert_eq!(archive["course"]["id"], course_id.as_str());
+    assert!(
+        ab_db::catalog::purge_course_with_work(&app.pool, id, 30, 60.0)
+            .await
+            .unwrap()
+    );
     assert_eq!(submissions().await, 0);
     let course: i64 = sqlx::query_scalar("SELECT count(*) FROM courses WHERE id = $1::uuid")
         .bind(&course_id)

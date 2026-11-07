@@ -96,6 +96,10 @@ COMMIT;
 
 ### 2.4 Integrity checks skipped by a migration
 
+The deploy also runs `ashyq admin schema-verify` after the migrations: it compares the live schema with
+`crates/db/schema.snapshot.sql` of the release and prints what differs. It only warns for now; a skipped check, a
+hand-made index or a changed default shows there, which the migration ledger cannot tell.
+
 A migration adds a CHECK through `schema_try_check` (apps/server/AGENTS.md): when existing rows violate it,
 the check is not added, the migrate log shows `WARNING: schema_try_check: <name> skipped`, and the
 check is recorded. After a deploy:
@@ -175,7 +179,7 @@ Dev: the same against the dev cluster as its superuser, plus each test database.
 ### 2.7 Restoring a deleted course
 
 `DELETE /courses/{id}` is soft: the course is archived, stamped `deleted_at` and gone from every read; the daily
-`maintenance:retention` purges it with everything under it (learner work and grades) once it has been deleted for
+`maintenance:retention` purges it with everything under it, unless it holds learner work, once it has been deleted for
 `AB__RETENTION__DELETED_COURSES_DAYS` (30). Within that window:
 
 ```sh
@@ -186,6 +190,14 @@ dc run --rm server admin restore-course --course <uuid>
 
 It comes back archived with its learners' work (its notifications stay deleted); a creator or maintainer restores
 it from the archive to reopen it. After the purge only a backup has it (3.4).
+
+A deleted course holding hand-ins, grades or certificates is never purged by retention: these are official records.
+To destroy one on request (past its grace period), the command writes everything learners made or earned to a new JSON
+file, then purges; issued certificates stay valid and verifiable:
+
+```bash
+ashyq admin purge-course --course <uuid> --archive /var/backups/ashyq/course-<uuid>.json
+```
 
 ### 2.8 Uploads nothing names
 

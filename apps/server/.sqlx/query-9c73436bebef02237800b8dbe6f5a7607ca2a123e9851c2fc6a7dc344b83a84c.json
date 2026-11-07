@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM submissions WHERE course_id = $1 AND (preview OR $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9c73436bebef02237800b8dbe6f5a7607ca2a123e9851c2fc6a7dc344b83a84c"
+}

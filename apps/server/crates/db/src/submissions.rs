@@ -314,13 +314,18 @@ pub async fn record_violation(
     max_events: i32,
 ) -> Result<Option<i32>> {
     let count = sqlx::query_scalar!(
-        r#"UPDATE submissions
-           SET violation_count = violation_count + 1,
-               violations = (CASE WHEN jsonb_array_length(violations) >= $3
-                                  THEN violations - 0 ELSE violations END)
-                            || jsonb_build_array($2::jsonb)
-           WHERE id = $1 AND status = 'draft'
-           RETURNING violation_count"#,
+        r#"WITH counted AS (
+               UPDATE submissions
+               SET violation_count = violation_count + 1,
+                   violations = (CASE WHEN jsonb_array_length(violations) >= $3
+                                      THEN violations - 0 ELSE violations END)
+                                || jsonb_build_array($2::jsonb)
+               WHERE id = $1 AND status = 'draft'
+               RETURNING id, violation_count),
+           evidence AS (
+               INSERT INTO submission_violations (submission_id, event)
+               SELECT id, $2::jsonb FROM counted WHERE jsonb_typeof($2::jsonb) = 'object')
+           SELECT violation_count AS "violation_count!" FROM counted"#,
         id.0,
         event,
         max_events
@@ -1205,7 +1210,7 @@ pub async fn latest_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
                   raw_breakdown, effective_breakdown, overall_feedback,
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
-           FROM grading_entries WHERE submission_id = $1 ORDER BY id DESC LIMIT 1"#,
+           FROM grading_entries WHERE submission_id = $1 ORDER BY revision DESC LIMIT 1"#,
         submission_id.0
     )
     .fetch_optional(executor)
@@ -1224,7 +1229,7 @@ pub async fn list_grading_entries(
                   raw_breakdown, effective_breakdown, overall_feedback,
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
-           FROM grading_entries WHERE submission_id = $1 ORDER BY id DESC"#,
+           FROM grading_entries WHERE submission_id = $1 ORDER BY revision DESC"#,
         submission_id.0
     )
     .fetch_all(pool)
@@ -1350,45 +1355,6 @@ pub async fn list_item_feedback(
     .fetch_all(pool)
     .await?;
     Ok(rows)
-}
-
-pub async fn update_item_feedback(
-    pool: &PgPool,
-    id: ItemFeedbackId,
-    comment: Option<&str>,
-    score: Option<Option<f64>>,
-    max_score: Option<Option<f64>>,
-    annotation_type: Option<AnnotationType>,
-    annotation_key: Option<Option<&str>>,
-) -> Result<bool> {
-    let updated = sqlx::query!(
-        r#"UPDATE item_feedback SET
-               comment = COALESCE($2, comment),
-               score = CASE WHEN $3 THEN $4::float8 ELSE score END,
-               max_score = CASE WHEN $5 THEN $6::float8 ELSE max_score END,
-               annotation_type = COALESCE($7, annotation_type),
-               annotation_key = CASE WHEN $8 THEN $9 ELSE annotation_key END
-           WHERE id = $1"#,
-        id.0,
-        comment,
-        score.is_some(),
-        score.flatten(),
-        max_score.is_some(),
-        max_score.flatten(),
-        annotation_type.map(AnnotationType::as_str),
-        annotation_key.is_some(),
-        annotation_key.flatten()
-    )
-    .execute(pool)
-    .await?;
-    Ok(updated.rows_affected() == 1)
-}
-
-pub async fn delete_item_feedback(pool: &PgPool, id: ItemFeedbackId) -> Result<bool> {
-    let deleted = sqlx::query!("DELETE FROM item_feedback WHERE id = $1", id.0)
-        .execute(pool)
-        .await?;
-    Ok(deleted.rows_affected() == 1)
 }
 
 // ── Code runs ───────────────────────────────────────────────────────────────

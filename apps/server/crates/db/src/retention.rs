@@ -91,10 +91,12 @@ pub async fn sweep(pool: &PgPool, windows: &RetentionConfig) -> Result<Retention
                     OR EXISTS (SELECT 1 FROM code_run_cases c
                                WHERE c.run_id = r.id
                                  AND (c.stdout IS NOT NULL OR c.stderr IS NOT NULL
-                                      OR c.compile_output IS NOT NULL)))
+                                      OR c.compile_output IS NOT NULL
+                                      OR c.stdin IS NOT NULL OR c.expected_output IS NOT NULL)))
              LIMIT 5000),
          cases AS (
-             UPDATE code_run_cases c SET stdout = NULL, stderr = NULL, compile_output = NULL
+             UPDATE code_run_cases c SET stdout = NULL, stderr = NULL, compile_output = NULL,
+                                        stdin = NULL, expected_output = NULL
              FROM old WHERE c.run_id = old.id)
          UPDATE code_runs r SET compile_output = NULL FROM old WHERE r.id = old.id",
             windows.code_run_output_days,

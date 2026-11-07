@@ -15,12 +15,16 @@ pub async fn copy_course(
     creator: UserId,
 ) -> Result<CourseId> {
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO courses (name, description, about, learnings, tags, thumbnail_type,
-                                thumbnail_image_key, thumbnail_video_key, creator_id)
-           SELECT $2, description, about, learnings, tags, thumbnail_type,
-                  thumbnail_image_key, thumbnail_video_key, $3
-           FROM courses WHERE id = $1
-           RETURNING id"#,
+        r#"WITH course AS (
+               INSERT INTO courses (name, description, about, learnings, tags, thumbnail_type,
+                                    thumbnail_image_key, thumbnail_video_key, creator_id)
+               SELECT $2, description, about, learnings, tags, thumbnail_type,
+                      thumbnail_image_key, thumbnail_video_key, $3
+               FROM courses WHERE id = $1
+               RETURNING id, creator_id),
+           roster AS (INSERT INTO course_staff (course_id, user_id, authorship, status)
+                      SELECT id, creator_id, 'creator', 'active' FROM course)
+           SELECT id AS "id!" FROM course"#,
         source.0,
         name,
         creator.0

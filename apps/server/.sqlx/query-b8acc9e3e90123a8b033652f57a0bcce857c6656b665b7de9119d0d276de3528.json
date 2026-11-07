@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM submissions s USING assessments a\n         WHERE a.id = s.assessment_id AND a.activity_id = ANY($1)\n           AND (s.preview OR is_course_staff(s.course_id, s.user_id))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b8acc9e3e90123a8b033652f57a0bcce857c6656b665b7de9119d0d276de3528"
+}

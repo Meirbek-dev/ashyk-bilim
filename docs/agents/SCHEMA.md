@@ -56,6 +56,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`ai.content_index_state`](#content_index_state): Indexing state of each content source: version, chunk count, last error
 - [`learning.course_concepts`](#course_concepts): A concept (skill) of a course, proposed by AI or a teacher and decided by staff
 - [`core.course_discussions`](#course_discussions): A discussion post or reply in a course (replies point to their post by parent_id); counters are kept by triggers
+- [`learning.course_members`](#course_members): Learners of a course: enrolments without its staff, whose stale rows stay in enrolments
 - [`learning.course_progress`](#course_progress): Projection: a learner's totals in a course (counts, percentage, grade averages, completion)
 - [`core.course_progress_v`](#course_progress_v): A member's course completion computed from enrolments, published activities and completions; compared with the course_progress projection by maintenance:reconcile until it replaces it (REWRITE 5.6 n8)
 - [`core.course_staff`](#course_staff): Staff of a course: creator, maintainer, contributor or reporter, with a status
@@ -68,6 +69,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`analytics.daily_teacher_metrics`](#daily_teacher_metrics): Daily rollup per teacher (or platform-wide when teacher_user_id is NULL)
 - [`analytics.daily_user_course_progress`](#daily_user_course_progress): Daily snapshot of each learner's progress in each course
 - [`core.discussion_reactions`](#discussion_reactions): A like or dislike of a discussion post by an account
+- [`learning.enrolment_events`](#enrolment_events): One join or leave of a course, appended by enrol/unenrol
 - [`learning.enrolments`](#enrolments): Course membership (a learner joined or was enrolled)
 - [`core.feature_activations`](#feature_activations): When a feature switch was first turned on (one row per feature)
 - [`learning.file_grading_entries`](#file_grading_entries): Grade journal of file-task hand-ins: append-only (trigger-guarded)
@@ -85,6 +87,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`ops.job_schedules`](#job_schedules): Periodic jobs: kind, interval and next run, driven by the worker's cron leader
 - [`ops.jobs`](#jobs): Background job queue (transactional, SKIP LOCKED); succeeded and failed rows are pruned by retention
 - [`analytics.learner_risk_snapshots`](#learner_risk_snapshots): Daily risk score of a learner in a course, with reasons and a recommended action
+- [`learning.learner_visible_activities`](#learner_visible_activities): Activities a learner may open: the one statement of what the three publication flags mean together
 - [`learning.mastery_evidence`](#mastery_evidence): One observation of a learner on a concept (a scored item or activity)
 - [`core.notification_kinds`](#notification_kinds): Lookup: the notification kinds the server sends
 - [`core.notification_opt_outs`](#notification_opt_outs): Notification kinds a user switched off (GET/PUT /me/notification-preferences); no row = on
@@ -94,6 +97,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`core.role_permissions`](#role_permissions): A permission grant of a role; resource/action/scope are generated from the grant string
 - [`core.roles`](#roles): A role: built-in (is_system, display_name_key/description_key) or custom (display_name/description)
 - [`ops.schema_skipped_checks`](#schema_skipped_checks): CHECK constraints a migration could not add because existing rows violate them (RUNBOOK 2.4)
+- [`learning.submission_violations`](#submission_violations): One anti-cheat event of an attempt, appended as it is reported
 - [`learning.submissions`](#submissions): An attempt at an assessment by a learner: answers, frozen items/policy snapshots, status draft -> submitted -> graded -> released / returned (pending / published until contract B2)
 - [`learning.teacher_interventions`](#teacher_interventions): An action a teacher logged for an at-risk learner and its outcome
 - [`learning.trail_runs`](#trail_runs): A learner's legacy course run (status, data); membership is enrolments since schema review 3
@@ -139,6 +143,16 @@ A lesson step inside a chapter: page, video, document, quiz, exam, code challeng
 - Foreign key `activities_chapter_id_fkey`: `FOREIGN KEY (chapter_id, course_id) REFERENCES chapters(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `activities_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `activities_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
+- Check `activities_content_object`: `CHECK ((jsonb_typeof(content) = 'object'::text))`
+- Check `activities_details_object`: `CHECK ((jsonb_typeof(details) = 'object'::text))`
+- Check `activities_name_check`: `CHECK ((char_length(name) <= 500))`
+- Check `activities_position_check`: `CHECK (("position" >= 1))`
+- Check `activities_settings_object`: `CHECK ((jsonb_typeof(settings) = 'object'::text))`
+- Check `activities_type_subtype_valid`: `CHECK (((((((((((((activity_type = 'dynamic'::text) AND (activity_sub_type = 'dynamic_page'::text)) OR ((activity_type = 'video'::text) AND (activity_sub_type = 'video_youtube'::text))) OR ((activity_type = 'video'::text) AND (activity_sub_type = 'video_hosted'::text))) OR ((activity_type = 'document'::text) AND (activity_sub_type = 'document_pdf'::text))) OR ((activity_type = 'document'::text) AND (activity_sub_type = 'document_doc'::text))) OR ((activity_type = 'quiz'::text) AND (activity_sub_type = 'quiz_standard'::text))) OR ((activity_type = 'exam'::text) AND (activity_sub_type = 'exam_standard'::text))) OR ((activity_type = 'code_challenge'::text) AND (activity_sub_type = 'code_general'::text))) OR ((activity_type = 'code_challenge'::text) AND (activity_sub_type = 'code_competitive'::text))) OR ((activity_type = 'file_submission'::text) AND (activity_sub_type = 'file_submission_standard'::text))) OR ((activity_type = 'custom'::text) AND (activity_sub_type = 'custom'::text))))`
+- Index `activities_course_idx`: `CREATE INDEX activities_course_idx ON core.activities USING btree (course_id)`
+- Index `activities_search_trgm_idx`: `CREATE INDEX activities_search_trgm_idx ON core.activities USING gin (search_fold(name) gin_trgm_ops)`
+- Trigger `activities_keep_assessment_type`: `CREATE TRIGGER activities_keep_assessment_type BEFORE UPDATE OF activity_type ON core.activities FOR EACH ROW WHEN ((old.activity_type IS DISTINCT FROM new.activity_type)) EXECUTE FUNCTION activities_keep_assessment_type()`
+- Trigger `activities_required_from_settings`: `CREATE TRIGGER activities_required_from_settings BEFORE INSERT OR UPDATE OF settings ON core.activities FOR EACH ROW EXECUTE FUNCTION activities_required_from_settings()`
 
 ## activity_progress
 
@@ -170,10 +184,20 @@ Projection: a learner's state in one activity (from submissions, hand-ins and st
 
 - Primary key `activity_progress_pkey`: `PRIMARY KEY (activity_id, user_id)`
 - Foreign key `activity_progress_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
-- Foreign key `activity_progress_best_submission_id_fkey`: `FOREIGN KEY (best_submission_id) REFERENCES submissions(id) ON DELETE SET NULL`
+- Foreign key `activity_progress_best_submission_id_fkey`: `FOREIGN KEY (best_submission_id, user_id) REFERENCES submissions(id, user_id) ON DELETE SET NULL (best_submission_id)`
 - Foreign key `activity_progress_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `activity_progress_latest_submission_id_fkey`: `FOREIGN KEY (latest_submission_id) REFERENCES submissions(id) ON DELETE SET NULL`
+- Foreign key `activity_progress_latest_submission_id_fkey`: `FOREIGN KEY (latest_submission_id, user_id) REFERENCES submissions(id, user_id) ON DELETE SET NULL (latest_submission_id)`
 - Foreign key `activity_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Check `activity_progress_attempt_count_check`: `CHECK ((attempt_count >= 0))`
+- Check `activity_progress_score_check`: `CHECK (((score IS NULL) OR ((score >= (0)::double precision) AND (score <= (100)::double precision))))`
+- Check `activity_progress_score_range`: `CHECK (((score >= (0)::double precision) AND (score <= (100)::double precision)))`
+- Check `activity_progress_state_check`: `CHECK ((state = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'submitted'::text, 'needs_grading'::text, 'returned'::text, 'graded'::text, 'passed'::text, 'failed'::text, 'completed'::text])))`
+- Index `activity_progress_activity_state_idx`: `CREATE INDEX activity_progress_activity_state_idx ON learning.activity_progress USING btree (activity_id, state)`
+- Index `activity_progress_best_submission_idx`: `CREATE INDEX activity_progress_best_submission_idx ON learning.activity_progress USING btree (best_submission_id)`
+- Index `activity_progress_course_user_idx`: `CREATE INDEX activity_progress_course_user_idx ON learning.activity_progress USING btree (course_id, user_id)`
+- Index `activity_progress_latest_submission_idx`: `CREATE INDEX activity_progress_latest_submission_idx ON learning.activity_progress USING btree (latest_submission_id)`
+- Index `activity_progress_teacher_action_idx`: `CREATE INDEX activity_progress_teacher_action_idx ON learning.activity_progress USING btree (course_id) WHERE teacher_action_required`
+- Index `activity_progress_user_idx`: `CREATE INDEX activity_progress_user_idx ON learning.activity_progress USING btree (user_id)`
 
 ## ai_approvals
 
@@ -196,6 +220,11 @@ A staff approval an AI action waits for.
 - Foreign key `ai_approvals_requested_by_fkey`: `FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `ai_approvals_resolved_by_fkey`: `FOREIGN KEY (resolved_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `ai_approvals_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE`
+- Check `ai_approvals_action_type_word`: `CHECK ((action_type ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
+- Check `ai_approvals_payload_object`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
+- Check `ai_approvals_status_check`: `CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'denied'::text, 'expired'::text])))`
+- Index `ai_approvals_run_idx`: `CREATE INDEX ai_approvals_run_idx ON ai.ai_approvals USING btree (run_id)`
+- Index `ai_approvals_status_idx`: `CREATE INDEX ai_approvals_status_idx ON ai.ai_approvals USING btree (status, expires_at)`
 
 ## ai_artifacts
 
@@ -212,6 +241,9 @@ An output an AI run produced.
 
 - Primary key `ai_artifacts_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_artifacts_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE`
+- Check `ai_artifacts_content_object`: `CHECK ((jsonb_typeof(content) = 'object'::text))`
+- Check `ai_artifacts_kind_word`: `CHECK ((kind ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
+- Index `ai_artifacts_run_kind_idx`: `CREATE INDEX ai_artifacts_run_kind_idx ON ai.ai_artifacts USING btree (run_id, kind, created_at)`
 
 ## ai_course_analyses
 
@@ -237,6 +269,13 @@ An AI review of a whole course.
 - Foreign key `ai_course_analyses_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_course_analyses_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_course_analyses_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
+- Check `ai_course_analyses_evidence_object`: `CHECK ((jsonb_typeof(evidence) = 'object'::text))`
+- Check `ai_course_analyses_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
+- Check `ai_course_analyses_public_score_check`: `CHECK (((public_score >= 0) AND (public_score <= 100)))`
+- Check `ai_course_analyses_report_object`: `CHECK ((jsonb_typeof(report) = 'object'::text))`
+- Check `ai_course_analyses_status_check`: `CHECK ((status = ANY (ARRAY['draft'::text, 'needs_human_review'::text, 'published'::text])))`
+- Index `ai_course_analyses_course_status_idx`: `CREATE INDEX ai_course_analyses_course_status_idx ON ai.ai_course_analyses USING btree (course_id, status, created_at DESC)`
+- Index `ai_course_analyses_run_idx`: `CREATE INDEX ai_course_analyses_run_idx ON ai.ai_course_analyses USING btree (run_id)`
 
 ## ai_course_settings
 
@@ -252,6 +291,7 @@ AI settings of a course (automatic grade drafts).
 - Primary key `ai_course_settings_pkey`: `PRIMARY KEY (course_id)`
 - Foreign key `ai_course_settings_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_course_settings_enabled_by_fkey`: `FOREIGN KEY (enabled_by) REFERENCES users(id) ON DELETE SET NULL`
+- Index `ai_course_settings_enabled_by_idx`: `CREATE INDEX ai_course_settings_enabled_by_idx ON ai.ai_course_settings USING btree (enabled_by)`
 
 ## ai_eval_results
 
@@ -270,6 +310,10 @@ Outcome of an AI evaluation fixture run (ashyq admin ai-eval).
 
 - Primary key `ai_eval_results_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_eval_results_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
+- Check `ai_eval_results_details_object`: `CHECK ((jsonb_typeof(details) = 'object'::text))`
+- Check `ai_eval_results_score_check`: `CHECK (((score IS NULL) OR ((score >= (0)::double precision) AND (score <= (1)::double precision))))`
+- Index `ai_eval_results_dataset_idx`: `CREATE INDEX ai_eval_results_dataset_idx ON ai.ai_eval_results USING btree (dataset, created_at DESC)`
+- Index `ai_eval_results_run_idx`: `CREATE INDEX ai_eval_results_run_idx ON ai.ai_eval_results USING btree (run_id)`
 
 ## ai_events
 
@@ -287,6 +331,10 @@ Streamed events of an AI run (pruned 180 days after the run finished).
 - Primary key `ai_events_pkey`: `PRIMARY KEY (id)`
 - Unique `ai_events_run_id_sequence_key`: `UNIQUE (run_id, sequence)`
 - Foreign key `ai_events_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE`
+- Check `ai_events_event_type_word`: `CHECK ((event_type ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
+- Check `ai_events_payload_object`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
+- Check `ai_events_sequence_check`: `CHECK ((sequence >= 1))`
+- Index `ai_events_created_brin`: `CREATE INDEX ai_events_created_brin ON ai.ai_events USING brin (created_at)`
 
 ## ai_evidence
 
@@ -309,6 +357,11 @@ A source an AI artifact cites (course chunk, submission part).
 - Primary key `ai_evidence_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_evidence_artifact_id_fkey`: `FOREIGN KEY (artifact_id) REFERENCES ai_artifacts(id) ON DELETE SET NULL`
 - Foreign key `ai_evidence_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE`
+- Check `ai_evidence_metadata_object`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
+- Check `ai_evidence_score_check`: `CHECK (((score IS NULL) OR ((score >= (0)::double precision) AND (score <= (1)::double precision))))`
+- Check `ai_evidence_source_type_word`: `CHECK ((source_type ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
+- Index `ai_evidence_artifact_idx`: `CREATE INDEX ai_evidence_artifact_idx ON ai.ai_evidence USING btree (artifact_id)`
+- Index `ai_evidence_run_idx`: `CREATE INDEX ai_evidence_run_idx ON ai.ai_evidence USING btree (run_id, source_type, created_at)`
 
 ## ai_feature_switches
 
@@ -323,6 +376,7 @@ Platform switches of AI features.
 
 - Primary key `ai_feature_switches_pkey`: `PRIMARY KEY (feature)`
 - Foreign key `ai_feature_switches_updated_by_fkey`: `FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL`
+- Check `ai_feature_switches_feature_check`: `CHECK ((feature = ANY (ARRAY['course_analysis_enabled'::text, 'submission_analysis_enabled'::text, 'remediation_enabled'::text, 'course_qa_enabled'::text, 'study_companion_enabled'::text, 'lecture_authoring_enabled'::text, 'semantic_memory_enabled'::text, 'semantic_search_enabled'::text, 'concept_graph_enabled'::text, 'grading_assistant_enabled'::text])))`
 
 ## ai_grade_corrections
 
@@ -346,10 +400,18 @@ A teacher's correction of an AI grade draft (calibration data).
 
 - Primary key `ai_grade_corrections_pkey`: `PRIMARY KEY (id)`
 - Unique `ai_grade_corrections_draft_id_part_key_criterion_key_key`: `UNIQUE (draft_id, part_key, criterion_key)`
-- Foreign key `ai_grade_corrections_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
+- Foreign key `ai_grade_corrections_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE`
 - Foreign key `ai_grade_corrections_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_grade_corrections_draft_id_fkey`: `FOREIGN KEY (draft_id) REFERENCES ai_grade_drafts(id) ON DELETE CASCADE`
 - Foreign key `ai_grade_corrections_teacher_id_fkey`: `FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE SET NULL`
+- Check `ai_grade_corrections_criterion_key_check`: `CHECK ((char_length(criterion_key) <= 100))`
+- Check `ai_grade_corrections_excerpt_check`: `CHECK ((char_length(excerpt) <= 1000))`
+- Check `ai_grade_corrections_max_score_check`: `CHECK (((max_score)::numeric > (0)::numeric))`
+- Check `ai_grade_corrections_part_key_check`: `CHECK (((char_length(part_key) >= 1) AND (char_length(part_key) <= 100)))`
+- Check `ai_grade_corrections_teacher_feedback_check`: `CHECK ((char_length(teacher_feedback) <= 1000))`
+- Index `ai_grade_corrections_activity_idx`: `CREATE INDEX ai_grade_corrections_activity_idx ON ai.ai_grade_corrections USING btree (activity_id, part_key, criterion_key, created_at DESC)`
+- Index `ai_grade_corrections_course_idx`: `CREATE INDEX ai_grade_corrections_course_idx ON ai.ai_grade_corrections USING btree (course_id, created_at DESC)`
+- Index `ai_grade_corrections_teacher_idx`: `CREATE INDEX ai_grade_corrections_teacher_idx ON ai.ai_grade_corrections USING btree (teacher_id)`
 
 ## ai_grade_drafts
 
@@ -383,14 +445,31 @@ An AI-proposed grade for an attempt, for a teacher to accept or correct.
 | updated_at | timestamp with time zone |  | `now()` |
 
 - Primary key `ai_grade_drafts_pkey`: `PRIMARY KEY (id)`
-- Foreign key `ai_grade_drafts_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
+- Foreign key `ai_grade_drafts_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE`
 - Foreign key `ai_grade_drafts_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_grade_drafts_decided_by_fkey`: `FOREIGN KEY (decided_by) REFERENCES users(id) ON DELETE SET NULL`
-- Foreign key `ai_grade_drafts_file_attempt_id_fkey`: `FOREIGN KEY (file_attempt_id) REFERENCES file_submission_attempts(id) ON DELETE CASCADE`
+- Foreign key `ai_grade_drafts_file_attempt_id_fkey`: `FOREIGN KEY (file_attempt_id, learner_id) REFERENCES file_submission_attempts(id, user_id) ON DELETE CASCADE`
 - Foreign key `ai_grade_drafts_learner_id_fkey`: `FOREIGN KEY (learner_id) REFERENCES users(id) ON DELETE CASCADE`
 - Foreign key `ai_grade_drafts_requested_by_fkey`: `FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `ai_grade_drafts_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
-- Foreign key `ai_grade_drafts_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE`
+- Foreign key `ai_grade_drafts_submission_id_fkey`: `FOREIGN KEY (submission_id, learner_id) REFERENCES submissions(id, user_id) ON DELETE CASCADE`
+- Check `ai_grade_drafts_agreement_check`: `CHECK ((agreement = ANY (ARRAY['exact'::text, 'adjusted'::text])))`
+- Check `ai_grade_drafts_check`: `CHECK (((submission_id IS NULL) <> (file_attempt_id IS NULL)))`
+- Check `ai_grade_drafts_check1`: `CHECK (((status = 'applied'::text) = (agreement IS NOT NULL)))`
+- Check `ai_grade_drafts_confidence_check`: `CHECK (((confidence IS NULL) OR ((confidence >= (0)::double precision) AND (confidence <= (1)::double precision))))`
+- Check `ai_grade_drafts_proposal_check`: `CHECK ((jsonb_typeof(proposal) = 'object'::text))`
+- Check `ai_grade_drafts_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'ready'::text, 'applied'::text, 'discarded'::text, 'superseded'::text, 'failed'::text])))`
+- Index `ai_grade_drafts_activity_idx`: `CREATE INDEX ai_grade_drafts_activity_idx ON ai.ai_grade_drafts USING btree (activity_id, status, created_at DESC)`
+- Index `ai_grade_drafts_attempt_idx`: `CREATE INDEX ai_grade_drafts_attempt_idx ON ai.ai_grade_drafts USING btree (file_attempt_id, created_at DESC)`
+- Index `ai_grade_drafts_course_idx`: `CREATE INDEX ai_grade_drafts_course_idx ON ai.ai_grade_drafts USING btree (course_id, created_at DESC)`
+- Index `ai_grade_drafts_decided_by_idx`: `CREATE INDEX ai_grade_drafts_decided_by_idx ON ai.ai_grade_drafts USING btree (decided_by)`
+- Index `ai_grade_drafts_learner_idx`: `CREATE INDEX ai_grade_drafts_learner_idx ON ai.ai_grade_drafts USING btree (learner_id)`
+- Index `ai_grade_drafts_live_attempt_idx`: `CREATE UNIQUE INDEX ai_grade_drafts_live_attempt_idx ON ai.ai_grade_drafts USING btree (file_attempt_id) WHERE ((status = ANY (ARRAY['queued'::text, 'ready'::text])) AND (file_attempt_id IS NOT NULL))`
+- Index `ai_grade_drafts_live_submission_idx`: `CREATE UNIQUE INDEX ai_grade_drafts_live_submission_idx ON ai.ai_grade_drafts USING btree (submission_id) WHERE ((status = ANY (ARRAY['queued'::text, 'ready'::text])) AND (submission_id IS NOT NULL))`
+- Index `ai_grade_drafts_requested_by_idx`: `CREATE INDEX ai_grade_drafts_requested_by_idx ON ai.ai_grade_drafts USING btree (requested_by)`
+- Index `ai_grade_drafts_run_idx`: `CREATE INDEX ai_grade_drafts_run_idx ON ai.ai_grade_drafts USING btree (run_id)`
+- Index `ai_grade_drafts_submission_idx`: `CREATE INDEX ai_grade_drafts_submission_idx ON ai.ai_grade_drafts USING btree (submission_id, created_at DESC)`
+- Trigger `ai_grade_drafts_same_activity`: `CREATE TRIGGER ai_grade_drafts_same_activity BEFORE INSERT ON ai.ai_grade_drafts FOR EACH ROW EXECUTE FUNCTION ai_grade_drafts_same_activity()`
 
 ## ai_lecture_reviews
 
@@ -411,10 +490,16 @@ AI suggestions for one lesson activity.
 | superseded_at | timestamp with time zone | null |  |
 
 - Primary key `ai_lecture_reviews_pkey`: `PRIMARY KEY (id)`
-- Foreign key `ai_lecture_reviews_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
+- Foreign key `ai_lecture_reviews_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE`
 - Foreign key `ai_lecture_reviews_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_lecture_reviews_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_lecture_reviews_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
+- Check `ai_lecture_reviews_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
+- Check `ai_lecture_reviews_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'superseded'::text])))`
+- Check `ai_lecture_reviews_suggestions_object`: `CHECK ((jsonb_typeof(suggestions) = 'object'::text))`
+- Index `ai_lecture_reviews_activity_status_idx`: `CREATE INDEX ai_lecture_reviews_activity_status_idx ON ai.ai_lecture_reviews USING btree (activity_id, status, created_at DESC)`
+- Index `ai_lecture_reviews_course_status_idx`: `CREATE INDEX ai_lecture_reviews_course_status_idx ON ai.ai_lecture_reviews USING btree (course_id, status, created_at DESC)`
+- Index `ai_lecture_reviews_run_idx`: `CREATE INDEX ai_lecture_reviews_run_idx ON ai.ai_lecture_reviews USING btree (run_id)`
 
 ## ai_qa_messages
 
@@ -438,6 +523,14 @@ A message in an AI thread, with citations into course material.
 - Foreign key `ai_qa_messages_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_qa_messages_thread_id_fkey`: `FOREIGN KEY (thread_id) REFERENCES ai_threads(id) ON DELETE CASCADE`
 - Foreign key `ai_qa_messages_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
+- Check `ai_qa_messages_citations_object`: `CHECK ((jsonb_typeof(citations) = 'object'::text))`
+- Check `ai_qa_messages_confidence_check`: `CHECK (((confidence IS NULL) OR (confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))))`
+- Check `ai_qa_messages_metadata_object`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
+- Check `ai_qa_messages_role_check`: `CHECK ((role = ANY (ARRAY['user'::text, 'assistant'::text])))`
+- Index `ai_qa_messages_course_user_idx`: `CREATE INDEX ai_qa_messages_course_user_idx ON ai.ai_qa_messages USING btree (course_id, user_id, created_at DESC)`
+- Index `ai_qa_messages_thread_order_idx`: `CREATE INDEX ai_qa_messages_thread_order_idx ON ai.ai_qa_messages USING btree (thread_id, created_at, id)`
+- Index `ai_qa_messages_turn_role_key`: `CREATE UNIQUE INDEX ai_qa_messages_turn_role_key ON ai.ai_qa_messages USING btree (course_id, user_id, client_turn_id, role) WHERE (client_turn_id IS NOT NULL)`
+- Index `ai_qa_messages_user_idx`: `CREATE INDEX ai_qa_messages_user_idx ON ai.ai_qa_messages USING btree (user_id)`
 
 ## ai_remediation_sessions
 
@@ -465,10 +558,24 @@ Remediation (lecture + test) generated from a submission analysis.
 - Primary key `ai_remediation_sessions_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_remediation_sessions_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
 - Foreign key `ai_remediation_sessions_analysis_id_fkey`: `FOREIGN KEY (analysis_id) REFERENCES ai_submission_analyses(id) ON DELETE SET NULL`
-- Foreign key `ai_remediation_sessions_file_submission_attempt_id_fkey`: `FOREIGN KEY (file_submission_attempt_id) REFERENCES file_submission_attempts(id) ON DELETE CASCADE`
+- Foreign key `ai_remediation_sessions_file_submission_attempt_id_fkey`: `FOREIGN KEY (file_submission_attempt_id, student_user_id) REFERENCES file_submission_attempts(id, user_id) ON DELETE CASCADE`
 - Foreign key `ai_remediation_sessions_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_remediation_sessions_student_user_id_fkey`: `FOREIGN KEY (student_user_id) REFERENCES users(id) ON DELETE CASCADE`
-- Foreign key `ai_remediation_sessions_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE`
+- Foreign key `ai_remediation_sessions_submission_id_fkey`: `FOREIGN KEY (submission_id, student_user_id) REFERENCES submissions(id, user_id) ON DELETE CASCADE`
+- Check `ai_remediation_sessions_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
+- Check `ai_remediation_sessions_lecture_object`: `CHECK ((jsonb_typeof(lecture) = 'object'::text))`
+- Check `ai_remediation_sessions_one_subject`: `CHECK (((submission_id IS NULL) <> (file_submission_attempt_id IS NULL)))`
+- Check `ai_remediation_sessions_score_check`: `CHECK (((score IS NULL) OR ((score >= 0) AND (score <= 100))))`
+- Check `ai_remediation_sessions_status_check`: `CHECK ((status = ANY (ARRAY['assigned'::text, 'in_progress'::text, 'passed'::text, 'failed'::text])))`
+- Check `ai_remediation_sessions_test_object`: `CHECK ((jsonb_typeof(test) = 'object'::text))`
+- Index `ai_remediation_sessions_active_gate_uidx`: `CREATE UNIQUE INDEX ai_remediation_sessions_active_gate_uidx ON ai.ai_remediation_sessions USING btree (student_user_id, activity_id) WHERE (gate_mode AND (status = ANY (ARRAY['assigned'::text, 'in_progress'::text, 'failed'::text])))`
+- Index `ai_remediation_sessions_activity_idx`: `CREATE INDEX ai_remediation_sessions_activity_idx ON ai.ai_remediation_sessions USING btree (activity_id)`
+- Index `ai_remediation_sessions_analysis_idx`: `CREATE INDEX ai_remediation_sessions_analysis_idx ON ai.ai_remediation_sessions USING btree (analysis_id)`
+- Index `ai_remediation_sessions_attempt_idx`: `CREATE INDEX ai_remediation_sessions_attempt_idx ON ai.ai_remediation_sessions USING btree (file_submission_attempt_id, created_at DESC) WHERE (file_submission_attempt_id IS NOT NULL)`
+- Index `ai_remediation_sessions_run_idx`: `CREATE INDEX ai_remediation_sessions_run_idx ON ai.ai_remediation_sessions USING btree (run_id)`
+- Index `ai_remediation_sessions_student_activity_idx`: `CREATE INDEX ai_remediation_sessions_student_activity_idx ON ai.ai_remediation_sessions USING btree (student_user_id, activity_id, status)`
+- Index `ai_remediation_sessions_student_idx`: `CREATE INDEX ai_remediation_sessions_student_idx ON ai.ai_remediation_sessions USING btree (student_user_id, created_at DESC)`
+- Index `ai_remediation_sessions_submission_idx`: `CREATE INDEX ai_remediation_sessions_submission_idx ON ai.ai_remediation_sessions USING btree (submission_id, created_at DESC)`
 
 ## ai_runs
 
@@ -477,7 +584,7 @@ One AI job (grading draft, analysis, review, answer): model, tokens, cost, statu
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
 | id | uuid |  | `uuidv7()` |
-| thread_id | uuid |  |  |
+| thread_id | uuid | null |  |
 | kind | text |  |  |
 | status | text |  | `'queued'::text` |
 | triggered_by | uuid | null |  |
@@ -489,13 +596,25 @@ One AI job (grading draft, analysis, review, answer): model, tokens, cost, statu
 | safety_state | text | null |  |
 | error_code | text | null |  |
 | metadata | jsonb |  | `'{}'::jsonb` |
-| started_at | timestamp with time zone |  | `now()` |
+| started_at | timestamp with time zone | null | `now()` |
 | completed_at | timestamp with time zone | null |  |
 | created_at | timestamp with time zone |  | `now()` |
 
 - Primary key `ai_runs_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_runs_thread_id_fkey`: `FOREIGN KEY (thread_id) REFERENCES ai_threads(id) ON DELETE CASCADE`
 - Foreign key `ai_runs_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
+- Check `ai_runs_duration_ms_check`: `CHECK (((duration_ms IS NULL) OR (duration_ms >= 0)))`
+- Check `ai_runs_finished_at_check`: `CHECK (((status <> ALL (ARRAY['succeeded'::text, 'failed'::text, 'aborted'::text])) OR (completed_at IS NOT NULL)))`
+- Check `ai_runs_input_tokens_check`: `CHECK (((input_tokens IS NULL) OR (input_tokens >= 0)))`
+- Check `ai_runs_kind_check`: `CHECK ((kind = ANY (ARRAY['course_analysis'::text, 'submission_analysis'::text, 'remediation'::text, 'study_companion'::text, 'lecture_review'::text, 'course_qa'::text, 'concept_mapping'::text, 'grade_draft'::text])))`
+- Check `ai_runs_metadata_object`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
+- Check `ai_runs_output_tokens_check`: `CHECK (((output_tokens IS NULL) OR (output_tokens >= 0)))`
+- Check `ai_runs_safety_state_word`: `CHECK ((safety_state ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
+- Check `ai_runs_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'succeeded'::text, 'failed'::text, 'aborted'::text])))`
+- Index `ai_runs_started_idx`: `CREATE INDEX ai_runs_started_idx ON ai.ai_runs USING btree (started_at DESC, id DESC)`
+- Index `ai_runs_status_idx`: `CREATE INDEX ai_runs_status_idx ON ai.ai_runs USING btree (status, started_at DESC)`
+- Index `ai_runs_thread_status_idx`: `CREATE INDEX ai_runs_thread_status_idx ON ai.ai_runs USING btree (thread_id, status, started_at DESC)`
+- Index `ai_runs_triggered_by_idx`: `CREATE INDEX ai_runs_triggered_by_idx ON ai.ai_runs USING btree (triggered_by, started_at DESC)`
 
 ## ai_student_memory
 
@@ -517,6 +636,11 @@ Notes the AI tutor keeps about a learner in a course.
 - Primary key `ai_student_memory_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_student_memory_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_student_memory_student_user_id_fkey`: `FOREIGN KEY (student_user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `ai_student_memory_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
+- Check `ai_student_memory_metadata_object`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
+- Check `ai_student_memory_source_type_word`: `CHECK ((source_type ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
+- Index `ai_student_memory_source_idx`: `CREATE INDEX ai_student_memory_source_idx ON ai.ai_student_memory USING btree (source_type, source_id)`
+- Index `ai_student_memory_student_course_idx`: `CREATE INDEX ai_student_memory_student_course_idx ON ai.ai_student_memory USING btree (student_user_id, course_id, updated_at DESC)`
 
 ## ai_submission_analyses
 
@@ -542,6 +666,15 @@ AI gap analysis of one attempt (a submission or a file hand-in).
 - Foreign key `ai_submission_analyses_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_submission_analyses_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE`
 - Foreign key `ai_submission_analyses_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
+- Check `ai_submission_analyses_analysis_object`: `CHECK ((jsonb_typeof(analysis) = 'object'::text))`
+- Check `ai_submission_analyses_evidence_object`: `CHECK ((jsonb_typeof(evidence) = 'object'::text))`
+- Check `ai_submission_analyses_gap_count_check`: `CHECK ((gap_count >= 0))`
+- Check `ai_submission_analyses_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
+- Check `ai_submission_analyses_one_subject`: `CHECK (((submission_id IS NULL) <> (file_submission_attempt_id IS NULL)))`
+- Check `ai_submission_analyses_status_check`: `CHECK ((status = ANY (ARRAY['complete'::text, 'failed'::text, 'superseded'::text])))`
+- Index `ai_submission_analyses_attempt_idx`: `CREATE INDEX ai_submission_analyses_attempt_idx ON ai.ai_submission_analyses USING btree (file_submission_attempt_id, status, created_at DESC) WHERE (file_submission_attempt_id IS NOT NULL)`
+- Index `ai_submission_analyses_run_idx`: `CREATE INDEX ai_submission_analyses_run_idx ON ai.ai_submission_analyses USING btree (run_id)`
+- Index `ai_submission_analyses_submission_idx`: `CREATE INDEX ai_submission_analyses_submission_idx ON ai.ai_submission_analyses USING btree (submission_id, status, created_at DESC)`
 
 ## ai_threads
 
@@ -562,6 +695,11 @@ An AI conversation (course assistant, tutor) of an account.
 - Foreign key `ai_threads_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL`
 - Foreign key `ai_threads_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL`
 - Foreign key `ai_threads_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
+- Check `ai_threads_role_check`: `CHECK ((role = ANY (ARRAY['student'::text, 'teacher'::text, 'author'::text, 'admin'::text])))`
+- Index `ai_threads_activity_idx`: `CREATE INDEX ai_threads_activity_idx ON ai.ai_threads USING btree (activity_id)`
+- Index `ai_threads_course_activity_idx`: `CREATE INDEX ai_threads_course_activity_idx ON ai.ai_threads USING btree (course_id, activity_id, updated_at DESC)`
+- Index `ai_threads_course_user_idx`: `CREATE INDEX ai_threads_course_user_idx ON ai.ai_threads USING btree (course_id, user_id, updated_at DESC)`
+- Index `ai_threads_user_role_idx`: `CREATE INDEX ai_threads_user_role_idx ON ai.ai_threads USING btree (user_id, role, updated_at DESC)`
 
 ## ai_token_ledger
 
@@ -578,6 +716,11 @@ AI tokens used per account per month (budget).
 
 - Primary key `ai_token_ledger_pkey`: `PRIMARY KEY (month, user_id)`
 - Foreign key `ai_token_ledger_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `ai_token_ledger_input_tokens_check`: `CHECK ((input_tokens >= 0))`
+- Check `ai_token_ledger_month_check`: `CHECK ((month = (date_trunc('month'::text, (month)::timestamp with time zone))::date))`
+- Check `ai_token_ledger_output_tokens_check`: `CHECK ((output_tokens >= 0))`
+- Check `ai_token_ledger_run_count_check`: `CHECK ((run_count >= 0))`
+- Index `ai_token_ledger_user_idx`: `CREATE INDEX ai_token_ledger_user_idx ON ai.ai_token_ledger USING btree (user_id)`
 
 ## ai_token_reservations
 
@@ -593,6 +736,8 @@ Tokens reserved by a running AI run against the budget, released on finish or ex
 
 - Primary key `ai_token_reservations_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_token_reservations_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE`
+- Check `ai_token_reservations_tokens_check`: `CHECK ((tokens >= 0))`
+- Index `ai_token_reservations_run_idx`: `CREATE INDEX ai_token_reservations_run_idx ON ai.ai_token_reservations USING btree (run_id) WHERE (run_id IS NOT NULL)`
 
 ## ai_work_embeddings
 
@@ -610,6 +755,7 @@ Embedding of a part of learner work (similarity, grading context).
 
 - Primary key `ai_work_embeddings_pkey`: `PRIMARY KEY (subject_id, part_key)`
 - Foreign key `ai_work_embeddings_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
+- Index `ai_work_embeddings_activity_idx`: `CREATE INDEX ai_work_embeddings_activity_idx ON ai.ai_work_embeddings USING btree (activity_id)`
 
 ## analytics_events (partitioned)
 
@@ -630,12 +776,14 @@ Domain events for analytics (submissions, grades, completions, views), partition
 | created_at | timestamp with time zone |  | `now()` |
 
 - Primary key `analytics_events_pkey`: `PRIMARY KEY (id, occurred_at)`
-- Foreign key `analytics_events_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
-- Foreign key `analytics_events_actor_id_fkey`: `FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL`
-- Foreign key `analytics_events_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
-- Foreign key `analytics_events_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `analytics_events_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE SET NULL`
-- Foreign key `analytics_events_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `analytics_events_event_type_check`: `CHECK ((event_type = ANY (ARRAY['submission.submitted'::text, 'submission.graded'::text, 'submission.published'::text, 'submission.returned'::text, 'activity.completed'::text, 'discussion.posted'::text, 'login'::text])))`
+- Check `analytics_events_payload_check`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
+- Index `analytics_events_activity_idx`: `CREATE INDEX analytics_events_activity_idx ON ONLY analytics.analytics_events USING btree (activity_id)`
+- Index `analytics_events_assessment_idx`: `CREATE INDEX analytics_events_assessment_idx ON ONLY analytics.analytics_events USING btree (assessment_id)`
+- Index `analytics_events_course_time_idx`: `CREATE INDEX analytics_events_course_time_idx ON ONLY analytics.analytics_events USING btree (course_id, occurred_at DESC)`
+- Index `analytics_events_occurred_brin`: `CREATE INDEX analytics_events_occurred_brin ON ONLY analytics.analytics_events USING brin (occurred_at)`
+- Index `analytics_events_submission_idx`: `CREATE INDEX analytics_events_submission_idx ON ONLY analytics.analytics_events USING btree (submission_id)`
+- Index `analytics_events_user_time_idx`: `CREATE INDEX analytics_events_user_time_idx ON ONLY analytics.analytics_events USING btree (user_id, occurred_at DESC)`
 
 ## analytics_saved_views
 
@@ -654,6 +802,9 @@ A teacher's saved analytics filter.
 - Primary key `analytics_saved_views_pkey`: `PRIMARY KEY (id)`
 - Unique `analytics_saved_views_teacher_user_id_view_type_name_key`: `UNIQUE (teacher_user_id, view_type, name)`
 - Foreign key `analytics_saved_views_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `analytics_saved_views_name_check`: `CHECK (((char_length(name) >= 1) AND (char_length(name) <= 200)))`
+- Check `analytics_saved_views_query_object`: `CHECK ((jsonb_typeof(query) = 'object'::text))`
+- Check `analytics_saved_views_view_type_check`: `CHECK (((char_length(view_type) >= 1) AND (char_length(view_type) <= 50)))`
 
 ## assessment_access_usergroups
 
@@ -668,6 +819,7 @@ User groups an assessment is restricted to.
 - Primary key `assessment_access_usergroups_pkey`: `PRIMARY KEY (assessment_id, usergroup_id)`
 - Foreign key `assessment_access_usergroups_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
 - Foreign key `assessment_access_usergroups_usergroup_id_fkey`: `FOREIGN KEY (usergroup_id) REFERENCES usergroups(id) ON DELETE CASCADE`
+- Index `assessment_access_usergroups_group_idx`: `CREATE INDEX assessment_access_usergroups_group_idx ON learning.assessment_access_usergroups USING btree (usergroup_id)`
 
 ## assessment_access_users
 
@@ -682,6 +834,7 @@ Learners an assessment is restricted to (with assessment_access_usergroups).
 - Primary key `assessment_access_users_pkey`: `PRIMARY KEY (assessment_id, user_id)`
 - Foreign key `assessment_access_users_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
 - Foreign key `assessment_access_users_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Index `assessment_access_users_user_idx`: `CREATE INDEX assessment_access_users_user_idx ON learning.assessment_access_users USING btree (user_id)`
 
 ## assessment_audit_events
 
@@ -698,7 +851,9 @@ History of staff actions on an assessment.
 
 - Primary key `assessment_audit_events_pkey`: `PRIMARY KEY (id)`
 - Foreign key `assessment_audit_events_actor_id_fkey`: `FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL`
-- Foreign key `assessment_audit_events_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
+- Check `assessment_audit_events_event_word`: `CHECK ((event ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
+- Check `assessment_audit_events_payload_check`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
+- Index `assessment_audit_events_idx`: `CREATE INDEX assessment_audit_events_idx ON learning.assessment_audit_events USING btree (assessment_id, created_at DESC)`
 
 ## assessment_items
 
@@ -722,8 +877,14 @@ A question or task of an assessment (typed body by kind), ordered by position, m
 | updated_at | timestamp with time zone |  | `now()` |
 
 - Primary key `assessment_items_pkey`: `PRIMARY KEY (id)`
+- Unique `assessment_items_id_assessment_key`: `UNIQUE (id, assessment_id)`
 - Unique `assessment_items_position_key`: `UNIQUE (assessment_id, "position") DEFERRABLE INITIALLY DEFERRED`
 - Foreign key `assessment_items_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
+- Check `assessment_items_body_kind_check`: `CHECK (((jsonb_typeof(body) = 'object'::text) AND ((body ->> 'kind'::text) = kind)))`
+- Check `assessment_items_difficulty_check`: `CHECK (((difficulty IS NULL) OR (difficulty = ANY (ARRAY['easy'::text, 'medium'::text, 'hard'::text]))))`
+- Check `assessment_items_estimated_minutes_check`: `CHECK (((estimated_minutes IS NULL) OR (estimated_minutes >= 0)))`
+- Check `assessment_items_kind_check`: `CHECK ((kind = ANY (ARRAY['choice'::text, 'open_text'::text, 'form'::text, 'code'::text, 'matching'::text])))`
+- Check `assessment_items_position_check`: `CHECK (("position" >= 1))`
 
 ## assessment_overrides
 
@@ -750,6 +911,8 @@ Per-learner exceptions of an assessment: extra attempts, a later due date, a wai
 - Foreign key `assessment_overrides_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
 - Foreign key `assessment_overrides_granted_by_fkey`: `FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `assessment_overrides_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `assessment_overrides_max_attempts_override_check`: `CHECK (((max_attempts_override IS NULL) OR ((max_attempts_override >= 1) AND (max_attempts_override <= 10))))`
+- Index `assessment_overrides_user_idx`: `CREATE INDEX assessment_overrides_user_idx ON learning.assessment_overrides USING btree (user_id)`
 
 ## assessment_versions
 
@@ -770,6 +933,12 @@ Frozen policy + items of an assessment as handed in (content-addressed, numbered
 - Unique `assessment_versions_assessment_id_content_hash_key`: `UNIQUE (assessment_id, content_hash)`
 - Unique `assessment_versions_assessment_id_number_key`: `UNIQUE (assessment_id, number)`
 - Foreign key `assessment_versions_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
+- Check `assessment_versions_items_check`: `CHECK ((jsonb_typeof(items) = 'object'::text))`
+- Check `assessment_versions_max_points_check`: `CHECK ((max_points >= (0)::numeric))`
+- Check `assessment_versions_number_check`: `CHECK ((number >= 1))`
+- Check `assessment_versions_policy_check`: `CHECK ((jsonb_typeof(policy) = 'object'::text))`
+- Trigger `assessment_versions_frozen`: `CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()`
+- Trigger `assessment_versions_points`: `CREATE TRIGGER assessment_versions_points BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_points()`
 
 ## assessments
 
@@ -827,6 +996,25 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Foreign key `assessments_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `assessments_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `assessments_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
+- Check `assessments_access_mode_check`: `CHECK ((access_mode = ANY (ARRAY['all_course_learners'::text, 'restricted'::text])))`
+- Check `assessments_archived_at_check`: `CHECK (((lifecycle <> 'archived'::text) OR (archived_at IS NOT NULL)))`
+- Check `assessments_completion_rule_check`: `CHECK ((completion_rule = ANY (ARRAY['viewed'::text, 'submitted'::text, 'graded'::text, 'passed'::text, 'teacher_verified'::text])))`
+- Check `assessments_grace_period_minutes_check`: `CHECK ((grace_period_minutes >= 0))`
+- Check `assessments_grade_release_mode_check`: `CHECK ((grade_release_mode = ANY (ARRAY['immediate'::text, 'batch'::text])))`
+- Check `assessments_grading_mode_check`: `CHECK ((grading_mode = ANY (ARRAY['auto'::text, 'manual'::text, 'auto_then_manual'::text])))`
+- Check `assessments_grading_type_check`: `CHECK ((grading_type = ANY (ARRAY['numeric'::text, 'percentage'::text])))`
+- Check `assessments_late_penalty_max_days_check`: `CHECK (((late_penalty_max_days IS NULL) OR (late_penalty_max_days >= 1)))`
+- Check `assessments_late_policy_kind_check`: `CHECK ((late_policy_kind = ANY (ARRAY['none'::text, 'penalty'::text, 'cutoff'::text])))`
+- Check `assessments_late_policy_shape`: `CHECK ((((late_policy_kind = 'none'::text) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'penalty'::text) AND (late_penalty_percent_per_day IS NOT NULL) AND (late_penalty_max_days IS NOT NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'cutoff'::text) AND (late_cutoff_at IS NOT NULL) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL))))`
+- Check `assessments_lifecycle_check`: `CHECK ((lifecycle = ANY (ARRAY['draft'::text, 'scheduled'::text, 'published'::text, 'archived'::text])))`
+- Check `assessments_max_attempts_check`: `CHECK (((max_attempts IS NULL) OR (max_attempts >= 1)))`
+- Check `assessments_published_at_check`: `CHECK (((lifecycle <> 'published'::text) OR (published_at IS NOT NULL)))`
+- Check `assessments_review_visibility_check`: `CHECK ((review_visibility = ANY (ARRAY['none'::text, 'score_only'::text, 'full'::text])))`
+- Check `assessments_scheduled_needs_time`: `CHECK (((lifecycle <> 'scheduled'::text) OR (scheduled_at IS NOT NULL)))`
+- Check `assessments_time_limit_seconds_check`: `CHECK (((time_limit_seconds IS NULL) OR (time_limit_seconds >= 1)))`
+- Check `assessments_violation_threshold_check`: `CHECK ((violation_threshold >= 1))`
+- Index `assessments_course_idx`: `CREATE INDEX assessments_course_idx ON learning.assessments USING btree (course_id)`
+- Index `assessments_due_publish_idx`: `CREATE INDEX assessments_due_publish_idx ON learning.assessments USING btree (scheduled_at) WHERE (lifecycle = 'scheduled'::text)`
 
 ## auth_audit_log
 
@@ -844,6 +1032,11 @@ Security events of accounts (logins, failures, erasure). Retention 365 days.
 
 - Primary key `auth_audit_log_pkey`: `PRIMARY KEY (id)`
 - Foreign key `auth_audit_log_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
+- Check `auth_audit_log_event_word`: `CHECK ((event ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
+- Check `auth_audit_log_metadata_check`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
+- Index `auth_audit_log_created_brin`: `CREATE INDEX auth_audit_log_created_brin ON ops.auth_audit_log USING brin (created_at)`
+- Index `auth_audit_log_event_idx`: `CREATE INDEX auth_audit_log_event_idx ON ops.auth_audit_log USING btree (event, created_at DESC)`
+- Index `auth_audit_log_user_idx`: `CREATE INDEX auth_audit_log_user_idx ON ops.auth_audit_log USING btree (user_id, created_at DESC)`
 
 ## block_uploads
 
@@ -857,6 +1050,7 @@ Uploads a lesson block references (derived from its content's file key by a trig
 - Primary key `block_uploads_pkey`: `PRIMARY KEY (block_id, upload_id)`
 - Foreign key `block_uploads_block_id_fkey`: `FOREIGN KEY (block_id) REFERENCES blocks(id) ON DELETE CASCADE`
 - Foreign key `block_uploads_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE`
+- Index `block_uploads_upload_idx`: `CREATE INDEX block_uploads_upload_idx ON core.block_uploads USING btree (upload_id)`
 
 ## blocks
 
@@ -876,6 +1070,10 @@ A content block of a page activity (files, embeds), linked from the editor docum
 - Primary key `blocks_pkey`: `PRIMARY KEY (id)`
 - Unique `blocks_legacy_uuid_key`: `UNIQUE (legacy_uuid)`
 - Foreign key `blocks_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
+- Check `blocks_block_type_check`: `CHECK ((block_type = ANY (ARRAY['video'::text, 'pdf'::text, 'image'::text, 'custom'::text])))`
+- Check `blocks_content_object`: `CHECK ((jsonb_typeof(content) = 'object'::text))`
+- Index `blocks_activity_idx`: `CREATE INDEX blocks_activity_idx ON core.blocks USING btree (activity_id)`
+- Trigger `blocks_upload_ids`: `CREATE TRIGGER blocks_upload_ids AFTER INSERT OR UPDATE OF content, claimed ON core.blocks FOR EACH ROW EXECUTE FUNCTION block_uploads_sync()`
 
 ## bulk_actions
 
@@ -896,33 +1094,41 @@ A bulk operation a teacher ran on the learners of an assessment, its targets and
 | completed_at | timestamp with time zone | null |  |
 
 - Primary key `bulk_actions_pkey`: `PRIMARY KEY (id)`
-- Foreign key `bulk_actions_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
 - Foreign key `bulk_actions_performed_by_fkey`: `FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL`
+- Check `bulk_actions_action_type_check`: `CHECK ((action_type = ANY (ARRAY['extend_deadline'::text, 'release_grades'::text, 'return_all'::text, 'override_score'::text, 'batch_grade'::text])))`
+- Check `bulk_actions_params_object`: `CHECK ((jsonb_typeof(params) = 'object'::text))`
+- Check `bulk_actions_status_check`: `CHECK ((status = ANY (ARRAY['pending'::text, 'running'::text, 'completed'::text, 'failed'::text])))`
+- Index `bulk_actions_assessment_idx`: `CREATE INDEX bulk_actions_assessment_idx ON learning.bulk_actions USING btree (assessment_id, status)`
 
 ## certificate_users
 
 A certificate issued to a learner, verifiable by verify_code. Survives the account's anonymisation.
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| certification_id | uuid |  |  |
-| user_id | uuid |  |  |
-| verify_code | text |  |  |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-| holder_name | text |  |  |
-| course_name | text |  |  |
-| certificate_name | text |  |  |
-| instructor_name | text | null |  |
-| score | double precision | null |  |
-| reissued_at | timestamp with time zone | null |  |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| certification_id | uuid |  |  |  |
+| user_id | uuid |  |  |  |
+| verify_code | text |  |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| updated_at | timestamp with time zone |  | `now()` |  |
+| holder_name | text |  |  |  |
+| course_name | text |  |  |  |
+| certificate_name | text |  |  |  |
+| instructor_name | text | null |  |  |
+| score | double precision | null |  |  |
+| reissued_at | timestamp with time zone | null |  |  |
+| course_id | uuid |  |  | The course it was issued for; no key: the certificate outlives the course. |
 
 - Primary key `certificate_users_pkey`: `PRIMARY KEY (id)`
 - Unique `certificate_users_certification_id_user_id_key`: `UNIQUE (certification_id, user_id)`
 - Unique `certificate_users_verify_code_key`: `UNIQUE (verify_code)`
-- Foreign key `certificate_users_certification_id_fkey`: `FOREIGN KEY (certification_id) REFERENCES certifications(id) ON DELETE CASCADE`
+- Foreign key `certificate_users_certification_id_fkey`: `FOREIGN KEY (certification_id) REFERENCES certifications(id) ON DELETE RESTRICT`
 - Foreign key `certificate_users_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Check `certificate_users_score_range`: `CHECK (((score >= (0)::double precision) AND (score <= (100)::double precision)))`
+- Index `certificate_users_user_idx`: `CREATE INDEX certificate_users_user_idx ON learning.certificate_users USING btree (user_id)`
+- Trigger `certificate_users_frozen`: `CREATE TRIGGER certificate_users_frozen BEFORE UPDATE ON learning.certificate_users FOR EACH ROW EXECUTE FUNCTION certificate_users_frozen()`
+- Trigger `certificate_users_issue`: `CREATE TRIGGER certificate_users_issue BEFORE INSERT ON learning.certificate_users FOR EACH ROW EXECUTE FUNCTION certificate_users_issue()`
 
 ## certifications
 
@@ -931,7 +1137,7 @@ The certificate a course issues on completion: layout and rules (config); disabl
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
 | id | uuid |  | `uuidv7()` |
-| course_id | uuid |  |  |
+| course_id | uuid | null |  |
 | config | jsonb |  | `'{}'::jsonb` |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
@@ -939,7 +1145,10 @@ The certificate a course issues on completion: layout and rules (config); disabl
 | disabled_at | timestamp with time zone | null |  |
 
 - Primary key `certifications_pkey`: `PRIMARY KEY (id)`
-- Foreign key `certifications_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
+- Foreign key `certifications_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL`
+- Check `certifications_config_object`: `CHECK ((jsonb_typeof(config) = 'object'::text))`
+- Index `certifications_course_idx`: `CREATE INDEX certifications_course_idx ON learning.certifications USING btree (course_id)`
+- Index `certifications_one_live_per_course`: `CREATE UNIQUE INDEX certifications_one_live_per_course ON learning.certifications USING btree (course_id) WHERE (disabled_at IS NULL)`
 
 ## chapters
 
@@ -965,6 +1174,11 @@ A chapter of a course; position orders chapters within the course.
 - Foreign key `chapters_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `chapters_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `chapters_thumbnail_upload_id_fkey`: `FOREIGN KEY (thumbnail_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
+- Check `chapters_description_check`: `CHECK ((char_length(description) <= 5000))`
+- Check `chapters_name_check`: `CHECK ((char_length(name) <= 500))`
+- Check `chapters_position_check`: `CHECK (("position" >= 1))`
+- Index `chapters_thumbnail_upload_id_idx`: `CREATE INDEX chapters_thumbnail_upload_id_idx ON core.chapters USING btree (thumbnail_upload_id) WHERE (thumbnail_upload_id IS NOT NULL)`
+- Trigger `chapters_upload_ids`: `CREATE TRIGGER chapters_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_key ON core.chapters FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_key', 'thumbnail_upload_id')`
 
 ## code_run_cases
 
@@ -992,7 +1206,9 @@ The result of one test case of a code run.
 | verdict | text |  |  |
 
 - Primary key `code_run_cases_pkey`: `PRIMARY KEY (id)`
+- Unique `code_run_cases_run_position_key`: `UNIQUE (run_id, "position")`
 - Foreign key `code_run_cases_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES code_runs(id) ON DELETE CASCADE`
+- Check `code_run_cases_verdict_check`: `CHECK ((verdict = ANY (ARRAY['accepted'::text, 'wrong_answer'::text, 'time_limit'::text, 'memory_limit'::text, 'output_limit'::text, 'compile_error'::text, 'runtime_error'::text, 'internal_error'::text])))`
 
 ## code_runs
 
@@ -1023,9 +1239,19 @@ A run of learner code in the go-judge runner: a practice run or the graded run o
 - Primary key `code_runs_pkey`: `PRIMARY KEY (id)`
 - Unique `code_runs_user_id_item_id_purpose_idempotency_key_key`: `UNIQUE (user_id, item_id, purpose, idempotency_key)`
 - Foreign key `code_runs_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
-- Foreign key `code_runs_item_id_fkey`: `FOREIGN KEY (item_id) REFERENCES assessment_items(id) ON DELETE CASCADE`
-- Foreign key `code_runs_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE SET NULL`
+- Foreign key `code_runs_item_id_fkey`: `FOREIGN KEY (item_id, assessment_id) REFERENCES assessment_items(id, assessment_id) ON DELETE CASCADE`
+- Foreign key `code_runs_submission_id_fkey`: `FOREIGN KEY (submission_id, user_id) REFERENCES submissions(id, user_id) ON DELETE SET NULL (submission_id)`
 - Foreign key `code_runs_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Check `code_runs_counts_check`: `CHECK (((passed >= 0) AND (total >= 0) AND (passed <= total)))`
+- Check `code_runs_finished_check`: `CHECK (((status = ANY (ARRAY['queued'::text, 'running'::text])) OR (finished_at IS NOT NULL)))`
+- Check `code_runs_purpose_check`: `CHECK ((purpose = ANY (ARRAY['custom'::text, 'visible'::text, 'final'::text, 'reference_check'::text])))`
+- Check `code_runs_source_sha256_format`: `CHECK ((source_sha256 ~ '^[0-9a-f]{64}$'::text))`
+- Check `code_runs_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text, 'degraded'::text])))`
+- Check `code_runs_stdin_sha256_format`: `CHECK ((stdin_sha256 ~ '^[0-9a-f]{64}$'::text))`
+- Index `code_runs_assessment_user_idx`: `CREATE INDEX code_runs_assessment_user_idx ON learning.code_runs USING btree (assessment_id, user_id)`
+- Index `code_runs_created_brin`: `CREATE INDEX code_runs_created_brin ON learning.code_runs USING brin (created_at)`
+- Index `code_runs_item_idx`: `CREATE INDEX code_runs_item_idx ON learning.code_runs USING btree (item_id, user_id, created_at DESC)`
+- Index `code_runs_submission_idx`: `CREATE INDEX code_runs_submission_idx ON learning.code_runs USING btree (submission_id)`
 
 ## collection_courses
 
@@ -1042,6 +1268,8 @@ Courses of a collection, ordered by position.
 - Unique `collection_courses_position_key`: `UNIQUE (collection_id, "position") DEFERRABLE INITIALLY DEFERRED`
 - Foreign key `collection_courses_collection_id_fkey`: `FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE`
 - Foreign key `collection_courses_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
+- Check `collection_courses_position_check`: `CHECK (("position" >= 1))`
+- Index `collection_courses_course_idx`: `CREATE INDEX collection_courses_course_idx ON core.collection_courses USING btree (course_id)`
 
 ## collection_staff
 
@@ -1060,6 +1288,9 @@ Staff of a collection: creator, maintainer, contributor or reporter, with a stat
 - Primary key `collection_staff_pkey`: `PRIMARY KEY (collection_id, user_id)`
 - Foreign key `collection_staff_collection_id_fkey`: `FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE`
 - Foreign key `collection_staff_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `collection_staff_authorship_check`: `CHECK ((authorship = ANY (ARRAY['creator'::text, 'contributor'::text, 'maintainer'::text, 'reporter'::text])))`
+- Check `collection_staff_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'pending'::text, 'inactive'::text])))`
+- Index `collection_staff_user_idx`: `CREATE INDEX collection_staff_user_idx ON core.collection_staff USING btree (user_id)`
 
 ## collections
 
@@ -1082,6 +1313,11 @@ A curated, ordered set of courses shown in the catalog.
 - Primary key `collections_pkey`: `PRIMARY KEY (id)`
 - Foreign key `collections_cover_upload_id_fkey`: `FOREIGN KEY (cover_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 - Foreign key `collections_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
+- Check `collections_description_check`: `CHECK ((char_length(description) <= 5000))`
+- Check `collections_name_check`: `CHECK ((char_length(name) <= 500))`
+- Index `collections_cover_upload_id_idx`: `CREATE INDEX collections_cover_upload_id_idx ON core.collections USING btree (cover_upload_id) WHERE (cover_upload_id IS NOT NULL)`
+- Index `collections_search_trgm_idx`: `CREATE INDEX collections_search_trgm_idx ON core.collections USING gin (search_fold(((name \|\| ' '::text) \|\| description)) gin_trgm_ops)`
+- Trigger `collections_upload_ids`: `CREATE TRIGGER collections_upload_ids BEFORE INSERT OR UPDATE OF cover_key ON core.collections FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('cover_key', 'cover_upload_id')`
 
 ## completions
 
@@ -1096,6 +1332,7 @@ Activities a learner completed: the progress fact. activity_progress and course_
 - Primary key `completions_pkey`: `PRIMARY KEY (activity_id, user_id)`
 - Foreign key `completions_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
 - Foreign key `completions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Index `completions_user_idx`: `CREATE INDEX completions_user_idx ON learning.completions USING btree (user_id)`
 
 ## concept_mastery
 
@@ -1112,9 +1349,13 @@ Estimated probability that a learner knows a concept (p_known), from mastery_evi
 | updated_at | timestamp with time zone |  | `now()` |
 
 - Primary key `concept_mastery_pkey`: `PRIMARY KEY (user_id, concept_id)`
-- Foreign key `concept_mastery_concept_id_fkey`: `FOREIGN KEY (concept_id) REFERENCES course_concepts(id) ON DELETE CASCADE`
+- Foreign key `concept_mastery_concept_id_fkey`: `FOREIGN KEY (concept_id, course_id) REFERENCES course_concepts(id, course_id) ON DELETE CASCADE`
 - Foreign key `concept_mastery_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `concept_mastery_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `concept_mastery_evidence_count_check`: `CHECK ((evidence_count >= 0))`
+- Check `concept_mastery_p_known_check`: `CHECK (((p_known >= (0)::double precision) AND (p_known <= (1)::double precision)))`
+- Index `concept_mastery_concept_idx`: `CREATE INDEX concept_mastery_concept_idx ON learning.concept_mastery USING btree (concept_id)`
+- Index `concept_mastery_course_idx`: `CREATE INDEX concept_mastery_course_idx ON learning.concept_mastery USING btree (course_id, concept_id)`
 
 ## concept_prerequisites
 
@@ -1132,6 +1373,11 @@ A prerequisite edge between two concepts of a course.
 - Primary key `concept_prerequisites_pkey`: `PRIMARY KEY (concept_id, requires_id)`
 - Foreign key `concept_prerequisites_concept_id_course_id_fkey`: `FOREIGN KEY (concept_id, course_id) REFERENCES course_concepts(id, course_id) ON DELETE CASCADE`
 - Foreign key `concept_prerequisites_requires_id_course_id_fkey`: `FOREIGN KEY (requires_id, course_id) REFERENCES course_concepts(id, course_id) ON DELETE CASCADE`
+- Check `concept_prerequisites_check`: `CHECK ((concept_id <> requires_id))`
+- Check `concept_prerequisites_origin_check`: `CHECK ((origin = ANY (ARRAY['ai'::text, 'teacher'::text])))`
+- Check `concept_prerequisites_status_check`: `CHECK ((status = ANY (ARRAY['suggested'::text, 'approved'::text, 'rejected'::text])))`
+- Index `concept_prerequisites_concept_course_idx`: `CREATE INDEX concept_prerequisites_concept_course_idx ON learning.concept_prerequisites USING btree (concept_id, course_id)`
+- Index `concept_prerequisites_requires_idx`: `CREATE INDEX concept_prerequisites_requires_idx ON learning.concept_prerequisites USING btree (requires_id, course_id)`
 
 ## concept_tags
 
@@ -1156,11 +1402,21 @@ Links an activity or assessment item to a concept it practises, with a weight.
 
 - Primary key `concept_tags_pkey`: `PRIMARY KEY (id)`
 - Unique `concept_tags_concept_id_activity_id_item_id_key`: `UNIQUE NULLS NOT DISTINCT (concept_id, activity_id, item_id)`
-- Foreign key `concept_tags_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
+- Foreign key `concept_tags_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE`
 - Foreign key `concept_tags_concept_id_course_id_fkey`: `FOREIGN KEY (concept_id, course_id) REFERENCES course_concepts(id, course_id) ON DELETE CASCADE`
 - Foreign key `concept_tags_decided_by_fkey`: `FOREIGN KEY (decided_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `concept_tags_item_id_fkey`: `FOREIGN KEY (item_id) REFERENCES assessment_items(id) ON DELETE CASCADE`
 - Foreign key `concept_tags_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
+- Check `concept_tags_origin_check`: `CHECK ((origin = ANY (ARRAY['ai'::text, 'teacher'::text])))`
+- Check `concept_tags_rationale_check`: `CHECK ((char_length(rationale) <= 1000))`
+- Check `concept_tags_status_check`: `CHECK ((status = ANY (ARRAY['suggested'::text, 'approved'::text, 'rejected'::text])))`
+- Check `concept_tags_weight_check`: `CHECK (((weight > (0)::double precision) AND (weight <= (1)::double precision)))`
+- Index `concept_tags_activity_idx`: `CREATE INDEX concept_tags_activity_idx ON learning.concept_tags USING btree (activity_id, item_id)`
+- Index `concept_tags_concept_course_idx`: `CREATE INDEX concept_tags_concept_course_idx ON learning.concept_tags USING btree (concept_id, course_id)`
+- Index `concept_tags_course_idx`: `CREATE INDEX concept_tags_course_idx ON learning.concept_tags USING btree (course_id, status)`
+- Index `concept_tags_decided_by_idx`: `CREATE INDEX concept_tags_decided_by_idx ON learning.concept_tags USING btree (decided_by)`
+- Index `concept_tags_item_idx`: `CREATE INDEX concept_tags_item_idx ON learning.concept_tags USING btree (item_id)`
+- Index `concept_tags_run_idx`: `CREATE INDEX concept_tags_run_idx ON learning.concept_tags USING btree (run_id)`
 
 ## content_chunks
 
@@ -1187,8 +1443,22 @@ A searchable chunk of course material with its embedding (course material search
 
 - Primary key `content_chunks_pkey`: `PRIMARY KEY (id)`
 - Unique `content_chunks_source_type_source_id_ordinal_key`: `UNIQUE (source_type, source_id, ordinal)`
-- Foreign key `content_chunks_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
+- Foreign key `content_chunks_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE`
 - Foreign key `content_chunks_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
+- Check `content_chunks_anchor_check`: `CHECK ((jsonb_typeof(anchor) = 'object'::text))`
+- Check `content_chunks_audience_check`: `CHECK ((audience = ANY (ARRAY['learner'::text, 'staff'::text])))`
+- Check `content_chunks_body_check`: `CHECK (((char_length(body) >= 1) AND (char_length(body) <= 4000)))`
+- Check `content_chunks_check`: `CHECK (((embedding IS NULL) = (embedding_model IS NULL)))`
+- Check `content_chunks_label_check`: `CHECK (((char_length(label) >= 1) AND (char_length(label) <= 500)))`
+- Check `content_chunks_ordinal_check`: `CHECK ((ordinal >= 0))`
+- Check `content_chunks_source_type_check`: `CHECK ((source_type = ANY (ARRAY['lesson'::text, 'activity'::text, 'assignment'::text, 'item'::text, 'course'::text, 'document'::text, 'transcript'::text])))`
+- Check `content_chunks_token_estimate_check`: `CHECK ((token_estimate >= 0))`
+- Index `content_chunks_activity_idx`: `CREATE INDEX content_chunks_activity_idx ON ai.content_chunks USING btree (activity_id)`
+- Index `content_chunks_course_idx`: `CREATE INDEX content_chunks_course_idx ON ai.content_chunks USING btree (course_id, audience, published)`
+- Index `content_chunks_embedding_hash_idx`: `CREATE INDEX content_chunks_embedding_hash_idx ON ai.content_chunks USING hnsw (embedding halfvec_cosine_ops) WHERE (embedding_model = 'hash-ngram-v1'::text)`
+- Index `content_chunks_embedding_te3_small_idx`: `CREATE INDEX content_chunks_embedding_te3_small_idx ON ai.content_chunks USING hnsw (embedding halfvec_cosine_ops) WHERE (embedding_model = 'text-embedding-3-small'::text)`
+- Index `content_chunks_lexeme_idx`: `CREATE INDEX content_chunks_lexeme_idx ON ai.content_chunks USING gin (lexeme)`
+- Trigger `content_chunks_published`: `CREATE TRIGGER content_chunks_published BEFORE INSERT ON ai.content_chunks FOR EACH ROW EXECUTE FUNCTION content_chunks_published()`
 
 ## content_index_state
 
@@ -1207,8 +1477,12 @@ Indexing state of each content source: version, chunk count, last error.
 | error | text | null |  |
 
 - Primary key `content_index_state_pkey`: `PRIMARY KEY (source_type, source_id)`
-- Foreign key `content_index_state_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
+- Foreign key `content_index_state_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE`
 - Foreign key `content_index_state_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
+- Check `content_index_state_chunk_count_check`: `CHECK ((chunk_count >= 0))`
+- Check `content_index_state_source_type_check`: `CHECK ((source_type = ANY (ARRAY['lesson'::text, 'activity'::text, 'assignment'::text, 'item'::text, 'course'::text, 'document'::text, 'transcript'::text])))`
+- Index `content_index_state_activity_idx`: `CREATE INDEX content_index_state_activity_idx ON ai.content_index_state USING btree (activity_id)`
+- Index `content_index_state_course_idx`: `CREATE INDEX content_index_state_course_idx ON ai.content_index_state USING btree (course_id)`
 
 ## course_concepts
 
@@ -1236,6 +1510,14 @@ A concept (skill) of a course, proposed by AI or a teacher and decided by staff.
 - Foreign key `course_concepts_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `course_concepts_decided_by_fkey`: `FOREIGN KEY (decided_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `course_concepts_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
+- Check `course_concepts_description_check`: `CHECK ((char_length(description) <= 2000))`
+- Check `course_concepts_name_check`: `CHECK (((char_length(name) >= 1) AND (char_length(name) <= 200)))`
+- Check `course_concepts_origin_check`: `CHECK ((origin = ANY (ARRAY['ai'::text, 'teacher'::text])))`
+- Check `course_concepts_position_check`: `CHECK (("position" >= 0))`
+- Check `course_concepts_slug_check`: `CHECK ((slug ~ '^[a-z0-9][a-z0-9-]{0,79}$'::text))`
+- Check `course_concepts_status_check`: `CHECK ((status = ANY (ARRAY['suggested'::text, 'approved'::text, 'rejected'::text])))`
+- Index `course_concepts_decided_by_idx`: `CREATE INDEX course_concepts_decided_by_idx ON learning.course_concepts USING btree (decided_by)`
+- Index `course_concepts_run_idx`: `CREATE INDEX course_concepts_run_idx ON learning.course_concepts USING btree (run_id)`
 
 ## course_discussions
 
@@ -1262,6 +1544,26 @@ A discussion post or reply in a course (replies point to their post by parent_id
 - Foreign key `course_discussions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `course_discussions_parent_id_fkey`: `FOREIGN KEY (parent_id, course_id) REFERENCES course_discussions(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `course_discussions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
+- Check `course_discussions_content_check`: `CHECK ((char_length(content) <= 20000))`
+- Check `course_discussions_kind_check`: `CHECK ((kind = ANY (ARRAY['post'::text, 'reply'::text])))`
+- Check `course_discussions_reply_parent_check`: `CHECK (((kind = 'reply'::text) = (parent_id IS NOT NULL)))`
+- Check `course_discussions_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'hidden'::text, 'deleted'::text])))`
+- Index `course_discussions_course_idx`: `CREATE INDEX course_discussions_course_idx ON core.course_discussions USING btree (course_id, created_at DESC)`
+- Index `course_discussions_parent_idx`: `CREATE INDEX course_discussions_parent_idx ON core.course_discussions USING btree (parent_id)`
+- Index `course_discussions_posts_keyset_idx`: `CREATE INDEX course_discussions_posts_keyset_idx ON core.course_discussions USING btree (course_id, id DESC) WHERE ((parent_id IS NULL) AND (status = 'active'::text))`
+- Index `course_discussions_replies_keyset_idx`: `CREATE INDEX course_discussions_replies_keyset_idx ON core.course_discussions USING btree (parent_id, id) WHERE (status = 'active'::text)`
+- Trigger `course_discussions_recount_replies`: `CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()`
+- Trigger `course_discussions_upload_ids`: `CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF content ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION post_uploads_sync()`
+
+## course_members (view)
+
+Learners of a course: enrolments without its staff, whose stale rows stay in enrolments.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| course_id | uuid | null |  |
+| user_id | uuid | null |  |
+| enrolled_at | timestamp with time zone | null |  |
 
 ## course_progress
 
@@ -1287,6 +1589,11 @@ Projection: a learner's totals in a course (counts, percentage, grade averages, 
 - Primary key `course_progress_pkey`: `PRIMARY KEY (course_id, user_id)`
 - Foreign key `course_progress_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `course_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Check `course_progress_completed_at_check`: `CHECK (((completed_at IS NULL) OR ((total_required_count > 0) AND (completed_required_count >= total_required_count))))`
+- Check `course_progress_counts_check`: `CHECK (((completed_required_count >= 0) AND (completed_required_count <= total_required_count)))`
+- Check `course_progress_grade_average_range`: `CHECK (((grade_average >= (0)::double precision) AND (grade_average <= (100)::double precision)))`
+- Check `course_progress_weighted_grade_average_range`: `CHECK (((weighted_grade_average >= (0)::double precision) AND (weighted_grade_average <= (100)::double precision)))`
+- Index `course_progress_user_idx`: `CREATE INDEX course_progress_user_idx ON learning.course_progress USING btree (user_id)`
 
 ## course_progress_v (view)
 
@@ -1319,6 +1626,9 @@ Staff of a course: creator, maintainer, contributor or reporter, with a status.
 - Primary key `course_staff_pkey`: `PRIMARY KEY (course_id, user_id)`
 - Foreign key `course_staff_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `course_staff_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `course_staff_authorship_check`: `CHECK ((authorship = ANY (ARRAY['creator'::text, 'contributor'::text, 'maintainer'::text, 'reporter'::text])))`
+- Check `course_staff_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'pending'::text, 'inactive'::text])))`
+- Index `course_staff_user_idx`: `CREATE INDEX course_staff_user_idx ON core.course_staff USING btree (user_id, course_id)`
 
 ## course_update_activities
 
@@ -1333,6 +1643,8 @@ Activities a course update links to, in order; a deleted activity leaves the upd
 - Primary key `course_update_activities_pkey`: `PRIMARY KEY (update_id, activity_id)`
 - Foreign key `course_update_activities_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
 - Foreign key `course_update_activities_update_id_fkey`: `FOREIGN KEY (update_id) REFERENCES course_updates(id) ON DELETE CASCADE`
+- Check `course_update_activities_position_check`: `CHECK (("position" >= 1))`
+- Index `course_update_activities_activity_idx`: `CREATE INDEX course_update_activities_activity_idx ON core.course_update_activities USING btree (activity_id)`
 
 ## course_updates
 
@@ -1352,36 +1664,40 @@ An announcement a teacher posts in a course.
 - Primary key `course_updates_pkey`: `PRIMARY KEY (id)`
 - Foreign key `course_updates_author_id_fkey`: `FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `course_updates_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
+- Check `course_updates_content_check`: `CHECK ((char_length(content) <= 50000))`
+- Check `course_updates_title_check`: `CHECK ((char_length(title) <= 500))`
+- Index `course_updates_course_idx`: `CREATE INDEX course_updates_course_idx ON core.course_updates USING btree (course_id, created_at DESC)`
 
 ## courses
 
 A course: catalog card, visibility (public), lifecycle (archived_at) and settings. Deleting one cascades to its content and learner records (COURSE_ARCHIVING).
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| name | text |  |  |
-| description | text |  | `''::text` |
-| about | text |  | `''::text` |
-| learnings | jsonb |  | `'[]'::jsonb` |
-| tags | text[] |  | `'{}'::text[]` |
-| thumbnail_type | text |  | `'image'::text` |
-| thumbnail_image_key | text | null |  |
-| thumbnail_video_key | text | null |  |
-| public | boolean |  | `false` |
-| open_to_contributors | boolean |  | `false` |
-| creator_id | uuid | null |  |
-| search | tsvector | null | generated: `to_tsvector('simple'::regconfig, ((((COALESCE(name, ''::text) \|\| ' '::text) \|\| COALESCE(description, ''::text)) \|\| ' '::text) \|\| COALESCE(about, ''::text)))` |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-| archived_at | timestamp with time zone | null |  |
-| archived_by | uuid | null |  |
-| version | integer |  | `1` |
-| assessments_require_enrollment | boolean |  | `true` |
-| thumbnail_image_upload_id | uuid | null |  |
-| thumbnail_video_upload_id | uuid | null |  |
-| deleted_at | timestamp with time zone | null |  |
-| deleted_by | uuid | null |  |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| name | text |  |  |  |
+| description | text |  | `''::text` |  |
+| about | text |  | `''::text` |  |
+| learnings | jsonb |  | `'[]'::jsonb` |  |
+| tags | text[] |  | `'{}'::text[]` |  |
+| thumbnail_type | text |  | `'image'::text` |  |
+| thumbnail_image_key | text | null |  |  |
+| thumbnail_video_key | text | null |  |  |
+| public | boolean |  | `false` |  |
+| open_to_contributors | boolean |  | `false` |  |
+| creator_id | uuid | null |  |  |
+| search | tsvector | null | generated: `to_tsvector('simple'::regconfig, ((((COALESCE(name, ''::text) \|\| ' '::text) \|\| COALESCE(description, ''::text)) \|\| ' '::text) \|\| COALESCE(about, ''::text)))` |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| updated_at | timestamp with time zone |  | `now()` |  |
+| archived_at | timestamp with time zone | null |  |  |
+| archived_by | uuid | null |  |  |
+| version | integer |  | `1` |  |
+| assessments_require_enrollment | boolean |  | `true` |  |
+| thumbnail_image_upload_id | uuid | null |  |  |
+| thumbnail_video_upload_id | uuid | null |  |  |
+| deleted_at | timestamp with time zone | null |  |  |
+| deleted_by | uuid | null |  |  |
+| language | text |  | `'ru'::text` | The language the course is taught in. |
 
 - Primary key `courses_pkey`: `PRIMARY KEY (id)`
 - Foreign key `courses_archived_by_fkey`: `FOREIGN KEY (archived_by) REFERENCES users(id) ON DELETE SET NULL`
@@ -1389,6 +1705,21 @@ A course: catalog card, visibility (public), lifecycle (archived_at) and setting
 - Foreign key `courses_deleted_by_fkey`: `FOREIGN KEY (deleted_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `courses_thumbnail_image_upload_id_fkey`: `FOREIGN KEY (thumbnail_image_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 - Foreign key `courses_thumbnail_video_upload_id_fkey`: `FOREIGN KEY (thumbnail_video_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
+- Check `courses_about_check`: `CHECK ((char_length(about) <= 20000))`
+- Check `courses_deleted_by_check`: `CHECK (((deleted_by IS NULL) OR (deleted_at IS NOT NULL)))`
+- Check `courses_deleted_is_archived`: `CHECK (((deleted_at IS NULL) OR (archived_at IS NOT NULL)))`
+- Check `courses_description_check`: `CHECK ((char_length(description) <= 5000))`
+- Check `courses_language_check`: `CHECK ((language = ANY (ARRAY['ru'::text, 'kk'::text, 'en'::text])))`
+- Check `courses_learnings_check`: `CHECK (course_learnings_ok(learnings))`
+- Check `courses_name_check`: `CHECK ((char_length(name) <= 500))`
+- Check `courses_tags_check`: `CHECK (text_list_ok(tags, 20, 64))`
+- Check `courses_thumbnail_type_check`: `CHECK ((thumbnail_type = ANY (ARRAY['image'::text, 'video'::text, 'both'::text])))`
+- Index `courses_deleted_idx`: `CREATE INDEX courses_deleted_idx ON core.courses USING btree (deleted_at) WHERE (deleted_at IS NOT NULL)`
+- Index `courses_public_idx`: `CREATE INDEX courses_public_idx ON core.courses USING btree (public, created_at DESC)`
+- Index `courses_search_trgm_idx`: `CREATE INDEX courses_search_trgm_idx ON core.courses USING gin (search_fold(((((name \|\| ' '::text) \|\| description) \|\| ' '::text) \|\| COALESCE(about, ''::text))) gin_trgm_ops)`
+- Index `courses_thumbnail_image_upload_id_idx`: `CREATE INDEX courses_thumbnail_image_upload_id_idx ON core.courses USING btree (thumbnail_image_upload_id) WHERE (thumbnail_image_upload_id IS NOT NULL)`
+- Index `courses_thumbnail_video_upload_id_idx`: `CREATE INDEX courses_thumbnail_video_upload_id_idx ON core.courses USING btree (thumbnail_video_upload_id) WHERE (thumbnail_video_upload_id IS NOT NULL)`
+- Trigger `courses_upload_ids`: `CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_image_key, thumbnail_video_key ON core.courses FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_image_key', 'thumbnail_image_upload_id', 'thumbnail_video_key', 'thumbnail_video_upload_id')`
 
 ## daily_assessment_metrics
 
@@ -1418,6 +1749,11 @@ Daily rollup per assessment: submission, pass and score figures.
 - Foreign key `daily_assessment_metrics_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL`
 - Foreign key `daily_assessment_metrics_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
 - Foreign key `daily_assessment_metrics_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
+- Check `daily_assessment_metrics_assessment_kind_check`: `CHECK ((assessment_kind = ANY (ARRAY['quiz'::text, 'exam'::text, 'code_challenge'::text])))`
+- Index `daily_assessment_metrics_activity_idx`: `CREATE INDEX daily_assessment_metrics_activity_idx ON analytics.daily_assessment_metrics USING btree (activity_id)`
+- Index `daily_assessment_metrics_assessment_idx`: `CREATE INDEX daily_assessment_metrics_assessment_idx ON analytics.daily_assessment_metrics USING btree (assessment_id)`
+- Index `daily_assessment_metrics_course_idx`: `CREATE INDEX daily_assessment_metrics_course_idx ON analytics.daily_assessment_metrics USING btree (course_id, metric_date DESC)`
+- Index `daily_assessment_metrics_date_brin`: `CREATE INDEX daily_assessment_metrics_date_brin ON analytics.daily_assessment_metrics USING brin (metric_date)`
 
 ## daily_course_engagement
 
@@ -1439,6 +1775,10 @@ Daily rollup per course step: learners who started/completed it, drop-off.
 - Foreign key `daily_course_engagement_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
 - Foreign key `daily_course_engagement_chapter_id_fkey`: `FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE SET NULL`
 - Foreign key `daily_course_engagement_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
+- Index `daily_course_engagement_activity_idx`: `CREATE INDEX daily_course_engagement_activity_idx ON analytics.daily_course_engagement USING btree (activity_id)`
+- Index `daily_course_engagement_chapter_idx`: `CREATE INDEX daily_course_engagement_chapter_idx ON analytics.daily_course_engagement USING btree (chapter_id)`
+- Index `daily_course_engagement_course_idx`: `CREATE INDEX daily_course_engagement_course_idx ON analytics.daily_course_engagement USING btree (course_id, metric_date DESC)`
+- Index `daily_course_engagement_date_brin`: `CREATE INDEX daily_course_engagement_date_brin ON analytics.daily_course_engagement USING brin (metric_date)`
 
 ## daily_course_metrics
 
@@ -1465,6 +1805,8 @@ Daily rollup per course: enrolment, activity, completion, risk, grading backlog.
 - Primary key `daily_course_metrics_pkey`: `PRIMARY KEY (metric_date, course_id)`
 - Foreign key `daily_course_metrics_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `daily_course_metrics_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE SET NULL`
+- Index `daily_course_metrics_course_idx`: `CREATE INDEX daily_course_metrics_course_idx ON analytics.daily_course_metrics USING btree (course_id, metric_date DESC)`
+- Index `daily_course_metrics_date_brin`: `CREATE INDEX daily_course_metrics_date_brin ON analytics.daily_course_metrics USING brin (metric_date)`
 
 ## daily_teacher_metrics
 
@@ -1491,6 +1833,8 @@ Daily rollup per teacher (or platform-wide when teacher_user_id is NULL).
 - Primary key `daily_teacher_metrics_pkey`: `PRIMARY KEY (id)`
 - Unique `daily_teacher_metrics_metric_date_teacher_user_id_key`: `UNIQUE NULLS NOT DISTINCT (metric_date, teacher_user_id)`
 - Foreign key `daily_teacher_metrics_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Index `daily_teacher_metrics_date_brin`: `CREATE INDEX daily_teacher_metrics_date_brin ON analytics.daily_teacher_metrics USING brin (metric_date)`
+- Index `daily_teacher_metrics_teacher_idx`: `CREATE INDEX daily_teacher_metrics_teacher_idx ON analytics.daily_teacher_metrics USING btree (teacher_user_id)`
 
 ## daily_user_course_progress
 
@@ -1514,6 +1858,10 @@ Daily snapshot of each learner's progress in each course.
 - Foreign key `daily_user_course_progress_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `daily_user_course_progress_trail_run_id_fkey`: `FOREIGN KEY (trail_run_id) REFERENCES trail_runs(id) ON DELETE SET NULL`
 - Foreign key `daily_user_course_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Index `daily_user_course_progress_course_idx`: `CREATE INDEX daily_user_course_progress_course_idx ON analytics.daily_user_course_progress USING btree (course_id, metric_date DESC)`
+- Index `daily_user_course_progress_date_brin`: `CREATE INDEX daily_user_course_progress_date_brin ON analytics.daily_user_course_progress USING brin (metric_date)`
+- Index `daily_user_course_progress_trail_run_idx`: `CREATE INDEX daily_user_course_progress_trail_run_idx ON analytics.daily_user_course_progress USING btree (trail_run_id)`
+- Index `daily_user_course_progress_user_idx`: `CREATE INDEX daily_user_course_progress_user_idx ON analytics.daily_user_course_progress USING btree (user_id)`
 
 ## discussion_reactions
 
@@ -1529,6 +1877,32 @@ A like or dislike of a discussion post by an account.
 - Primary key `discussion_reactions_pkey`: `PRIMARY KEY (discussion_id, user_id)`
 - Foreign key `discussion_reactions_discussion_id_fkey`: `FOREIGN KEY (discussion_id) REFERENCES course_discussions(id) ON DELETE CASCADE`
 - Foreign key `discussion_reactions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `discussion_reactions_reaction_check`: `CHECK ((reaction = ANY (ARRAY['like'::text, 'dislike'::text])))`
+- Index `discussion_reactions_user_idx`: `CREATE INDEX discussion_reactions_user_idx ON core.discussion_reactions USING btree (user_id)`
+- Trigger `discussion_reactions_recount`: `CREATE TRIGGER discussion_reactions_recount AFTER INSERT OR DELETE OR UPDATE ON core.discussion_reactions FOR EACH ROW EXECUTE FUNCTION discussion_reactions_recount()`
+
+## enrolment_events
+
+One join or leave of a course, appended by enrol/unenrol. Survives the course; erased with the person.
+
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| course_id | uuid |  |  |  |
+| user_id | uuid |  |  |  |
+| event | text |  |  |  |
+| source | text |  |  | self: the learner; staff: someone on their behalf; backfill: the enrolment existed when this table was made. |
+| created_by | uuid | null |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+
+- Primary key `enrolment_events_pkey`: `PRIMARY KEY (id)`
+- Foreign key `enrolment_events_created_by_fkey`: `FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL`
+- Foreign key `enrolment_events_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `enrolment_events_event_check`: `CHECK ((event = ANY (ARRAY['joined'::text, 'left'::text])))`
+- Check `enrolment_events_source_check`: `CHECK ((source = ANY (ARRAY['self'::text, 'staff'::text, 'backfill'::text])))`
+- Index `enrolment_events_course_user_idx`: `CREATE INDEX enrolment_events_course_user_idx ON learning.enrolment_events USING btree (course_id, user_id, created_at)`
+- Index `enrolment_events_created_by_idx`: `CREATE INDEX enrolment_events_created_by_idx ON learning.enrolment_events USING btree (created_by) WHERE (created_by IS NOT NULL)`
+- Index `enrolment_events_user_idx`: `CREATE INDEX enrolment_events_user_idx ON learning.enrolment_events USING btree (user_id)`
 
 ## enrolments
 
@@ -1543,6 +1917,7 @@ Course membership (a learner joined or was enrolled). The course's staff are nev
 - Primary key `enrolments_pkey`: `PRIMARY KEY (course_id, user_id)`
 - Foreign key `enrolments_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `enrolments_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Index `enrolments_user_idx`: `CREATE INDEX enrolments_user_idx ON learning.enrolments USING btree (user_id)`
 
 ## feature_activations
 
@@ -1554,26 +1929,34 @@ When a feature switch was first turned on (one row per feature).
 | activated_at | timestamp with time zone |  | `now()` |
 
 - Primary key `feature_activations_pkey`: `PRIMARY KEY (feature)`
+- Check `feature_activations_feature_check`: `CHECK ((feature = 'deadline_auto_submit'::text))`
 
 ## file_grading_entries
 
 Grade journal of file-task hand-ins: append-only (trigger-guarded).
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| attempt_id | uuid |  |  |
-| graded_by | uuid | null |  |
-| status | text |  |  |
-| raw_score | percent | null |  |
-| penalty_pct | percent |  | `0` |
-| final_score | percent | null |  |
-| feedback | text |  | `''::text` |
-| created_at | timestamp with time zone |  | `now()` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| attempt_id | uuid |  |  |  |
+| graded_by | uuid | null |  |  |
+| status | text |  |  |  |
+| raw_score | percent | null |  |  |
+| penalty_pct | percent |  | `0` |  |
+| final_score | percent | null |  |  |
+| feedback | text |  | `''::text` |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| revision | integer |  |  | Number of the entry within its attempt (1, 2, ...); the highest is the current grade. |
 
 - Primary key `file_grading_entries_pkey`: `PRIMARY KEY (id)`
 - Foreign key `file_grading_entries_attempt_id_fkey`: `FOREIGN KEY (attempt_id) REFERENCES file_submission_attempts(id) ON DELETE CASCADE`
 - Foreign key `file_grading_entries_graded_by_fkey`: `FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL`
+- Check `file_grading_entries_status_check`: `CHECK ((status = ANY (ARRAY['graded'::text, 'released'::text, 'returned'::text])))`
+- Index `file_grading_entries_attempt_idx`: `CREATE INDEX file_grading_entries_attempt_idx ON learning.file_grading_entries USING btree (attempt_id, id DESC)`
+- Index `file_grading_entries_attempt_revision_key`: `CREATE UNIQUE INDEX file_grading_entries_attempt_revision_key ON learning.file_grading_entries USING btree (attempt_id, revision)`
+- Trigger `file_grading_entries_append_only`: `CREATE TRIGGER file_grading_entries_append_only BEFORE DELETE ON learning.file_grading_entries FOR EACH ROW EXECUTE FUNCTION file_grading_entries_no_delete()`
+- Trigger `file_grading_entries_immutable`: `CREATE TRIGGER file_grading_entries_immutable BEFORE UPDATE ON learning.file_grading_entries FOR EACH ROW EXECUTE FUNCTION file_grading_entries_immutable()`
+- Trigger `file_grading_entries_number`: `CREATE TRIGGER file_grading_entries_number BEFORE INSERT ON learning.file_grading_entries FOR EACH ROW EXECUTE FUNCTION file_grading_entries_number()`
 
 ## file_submission_attempts
 
@@ -1603,10 +1986,20 @@ A learner's hand-in for a file task and its grading state.
 | preview | boolean |  | `false` |
 
 - Primary key `file_submission_attempts_pkey`: `PRIMARY KEY (id)`
-- Foreign key `file_submission_attempts_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `file_submission_attempts_file_submission_id_fkey`: `FOREIGN KEY (file_submission_id, course_id) REFERENCES file_submissions(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
+- Unique `file_submission_attempts_id_user_key`: `UNIQUE (id, user_id)`
+- Foreign key `file_submission_attempts_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE RESTRICT`
+- Foreign key `file_submission_attempts_file_submission_id_fkey`: `FOREIGN KEY (file_submission_id, course_id) REFERENCES file_submissions(id, course_id) ON UPDATE RESTRICT ON DELETE RESTRICT`
 - Foreign key `file_submission_attempts_graded_by_fkey`: `FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `file_submission_attempts_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Check `file_submission_attempts_attempt_number_check`: `CHECK ((attempt_number >= 1))`
+- Check `file_submission_attempts_rubric_scores_object`: `CHECK ((jsonb_typeof(rubric_scores) = 'object'::text))`
+- Check `file_submission_attempts_status_check`: `CHECK ((status = ANY (ARRAY['draft'::text, 'submitted'::text, 'graded'::text, 'released'::text, 'returned'::text])))`
+- Check `file_submission_attempts_submitted_at_check`: `CHECK (((status = 'draft'::text) OR (submitted_at IS NOT NULL)))`
+- Index `file_submission_attempts_attempt_number_key`: `CREATE UNIQUE INDEX file_submission_attempts_attempt_number_key ON learning.file_submission_attempts USING btree (file_submission_id, user_id, attempt_number) WHERE (NOT preview)`
+- Index `file_submission_attempts_course_idx`: `CREATE INDEX file_submission_attempts_course_idx ON learning.file_submission_attempts USING btree (course_id, user_id)`
+- Index `file_submission_attempts_one_open`: `CREATE UNIQUE INDEX file_submission_attempts_one_open ON learning.file_submission_attempts USING btree (file_submission_id, user_id) WHERE (status = ANY (ARRAY['draft'::text, 'returned'::text]))`
+- Index `file_submission_attempts_review_idx`: `CREATE INDEX file_submission_attempts_review_idx ON learning.file_submission_attempts USING btree (file_submission_id, status, submitted_at DESC)`
+- Index `file_submission_attempts_user_idx`: `CREATE INDEX file_submission_attempts_user_idx ON learning.file_submission_attempts USING btree (user_id)`
 
 ## file_submission_files
 
@@ -1629,6 +2022,10 @@ A file of a file-task hand-in (points at its upload).
 - Unique `file_submission_files_attempt_id_upload_id_key`: `UNIQUE (attempt_id, upload_id)`
 - Foreign key `file_submission_files_attempt_id_fkey`: `FOREIGN KEY (attempt_id) REFERENCES file_submission_attempts(id) ON DELETE CASCADE`
 - Foreign key `file_submission_files_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE RESTRICT`
+- Check `file_submission_files_content_type_mime`: `CHECK ((content_type ~ '^[A-Za-z0-9.+-]+/[A-Za-z0-9.+-]+'::text))`
+- Check `file_submission_files_scan_status_check`: `CHECK ((scan_status = ANY (ARRAY['pending'::text, 'clean'::text, 'flagged'::text, 'error'::text])))`
+- Index `file_submission_files_attempt_idx`: `CREATE INDEX file_submission_files_attempt_idx ON learning.file_submission_files USING btree (attempt_id, "position")`
+- Index `file_submission_files_upload_idx`: `CREATE INDEX file_submission_files_upload_idx ON learning.file_submission_files USING btree (upload_id)`
 
 ## file_submission_overrides
 
@@ -1648,6 +2045,8 @@ A per-learner deadline exception of a file task.
 - Foreign key `file_submission_overrides_file_submission_id_fkey`: `FOREIGN KEY (file_submission_id) REFERENCES file_submissions(id) ON DELETE CASCADE`
 - Foreign key `file_submission_overrides_granted_by_fkey`: `FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `file_submission_overrides_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `file_submission_overrides_reason_check`: `CHECK ((char_length(reason) <= 1000))`
+- Index `file_submission_overrides_user_idx`: `CREATE INDEX file_submission_overrides_user_idx ON learning.file_submission_overrides USING btree (user_id)`
 
 ## file_submissions
 
@@ -1686,6 +2085,18 @@ The file task of a file_submission activity: instructions, file limits, deadline
 - Foreign key `file_submissions_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `file_submissions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `file_submissions_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
+- Check `file_submissions_grade_release_mode_check`: `CHECK ((grade_release_mode = ANY (ARRAY['immediate'::text, 'batch'::text])))`
+- Check `file_submissions_instructions_check`: `CHECK ((char_length(instructions) <= 50000))`
+- Check `file_submissions_late_penalty_max_days_check`: `CHECK ((late_penalty_max_days >= 1))`
+- Check `file_submissions_late_policy_kind_check`: `CHECK ((late_policy_kind = ANY (ARRAY['none'::text, 'penalty'::text, 'cutoff'::text])))`
+- Check `file_submissions_late_policy_shape`: `CHECK ((((late_policy_kind = 'none'::text) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'penalty'::text) AND (late_penalty_percent_per_day IS NOT NULL) AND (late_penalty_max_days IS NOT NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'cutoff'::text) AND (late_cutoff_at IS NOT NULL) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL))))`
+- Check `file_submissions_lifecycle_check`: `CHECK ((lifecycle = ANY (ARRAY['draft'::text, 'published'::text, 'archived'::text])))`
+- Check `file_submissions_max_attempts_check`: `CHECK (((max_attempts >= 1) AND (max_attempts <= 50)))`
+- Check `file_submissions_max_file_size_mb_check`: `CHECK (((max_file_size_mb >= 1) AND (max_file_size_mb <= 500)))`
+- Check `file_submissions_max_files_check`: `CHECK (((max_files >= 1) AND (max_files <= 25)))`
+- Check `file_submissions_rubric_object`: `CHECK ((jsonb_typeof(rubric) = 'object'::text))`
+- Check `file_submissions_settings_object`: `CHECK ((jsonb_typeof(settings) = 'object'::text))`
+- Index `file_submissions_course_idx`: `CREATE INDEX file_submissions_course_idx ON learning.file_submissions USING btree (course_id)`
 
 ## gamification_completions
 
@@ -1700,6 +2111,7 @@ Completion facts that award XP once (source kind + id per learner).
 
 - Primary key `gamification_completions_pkey`: `PRIMARY KEY (user_id, kind, source_id)`
 - Foreign key `gamification_completions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Check `gamification_completions_kind_check`: `CHECK ((kind = ANY (ARRAY['activity'::text, 'course'::text])))`
 
 ## gamification_config
 
@@ -1714,6 +2126,8 @@ XP rules: daily cap and rewards (versioned single row).
 | version | integer |  | `1` |
 
 - Primary key `gamification_config_pkey`: `PRIMARY KEY (id)`
+- Check `gamification_config_id_check`: `CHECK ((id = 1))`
+- Check `gamification_config_rewards_object`: `CHECK ((jsonb_typeof(rewards) = 'object'::text))`
 
 ## gamification_profiles
 
@@ -1739,6 +2153,16 @@ A learner's XP total, level and streaks (reconciled weekly from xp_transactions)
 
 - Primary key `gamification_profiles_pkey`: `PRIMARY KEY (user_id)`
 - Foreign key `gamification_profiles_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Check `gamification_profiles_learning_streak_check`: `CHECK ((learning_streak >= 0))`
+- Check `gamification_profiles_level_check`: `CHECK (((level >= 1) AND (level <= 100)))`
+- Check `gamification_profiles_login_streak_check`: `CHECK ((login_streak >= 0))`
+- Check `gamification_profiles_longest_learning_streak_check`: `CHECK ((longest_learning_streak >= 0))`
+- Check `gamification_profiles_longest_login_streak_check`: `CHECK ((longest_login_streak >= 0))`
+- Check `gamification_profiles_preferences_object`: `CHECK ((jsonb_typeof(preferences) = 'object'::text))`
+- Check `gamification_profiles_total_activities_completed_check`: `CHECK ((total_activities_completed >= 0))`
+- Check `gamification_profiles_total_courses_completed_check`: `CHECK ((total_courses_completed >= 0))`
+- Check `gamification_profiles_total_xp_check`: `CHECK ((total_xp >= 0))`
+- Index `gamification_profiles_board_idx`: `CREATE INDEX gamification_profiles_board_idx ON learning.gamification_profiles USING btree (total_xp DESC, user_id)`
 
 ## google_accounts
 
@@ -1753,6 +2177,7 @@ A Google identity linked to an account (google_sub), for Google sign-in.
 
 - Primary key `google_accounts_pkey`: `PRIMARY KEY (google_sub)`
 - Foreign key `google_accounts_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Index `google_accounts_user_idx`: `CREATE INDEX google_accounts_user_idx ON core.google_accounts USING btree (user_id)`
 
 ## grading_entries
 
@@ -1774,10 +2199,20 @@ Grade journal of submissions: one row per grading; append-only except published_
 | max_points | score_points | null |  | The attempt's assessment_versions.max_points when graded; NULL without a version. |
 | raw_points | score_points | null |  | points_of_percent(raw_score, max_points), set by the database. |
 | final_points | score_points | null |  | points_of_percent(final_score, max_points), set by the database. |
+| revision | integer |  |  | Number of the entry within its submission (1, 2, ...); the highest is the current grade. |
 
 - Primary key `grading_entries_pkey`: `PRIMARY KEY (id)`
+- Unique `grading_entries_id_submission_key`: `UNIQUE (id, submission_id)`
 - Foreign key `grading_entries_graded_by_fkey`: `FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `grading_entries_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE`
+- Check `grading_entries_breakdown_check`: `CHECK (((jsonb_typeof(raw_breakdown) = 'object'::text) AND (jsonb_typeof(effective_breakdown) = 'object'::text)))`
+- Check `grading_entries_points_check`: `CHECK ((((max_points IS NULL) AND (raw_points IS NULL) AND (final_points IS NULL)) OR ((max_points IS NOT NULL) AND (raw_points IS NOT NULL) AND ((raw_points)::numeric <= (max_points)::numeric) AND ((final_points IS NULL) = (final_score IS NULL)) AND ((final_points IS NULL) OR ((final_points)::numeric <= (max_points)::numeric)))))`
+- Index `grading_entries_submission_revision_key`: `CREATE UNIQUE INDEX grading_entries_submission_revision_key ON learning.grading_entries USING btree (submission_id, revision)`
+- Trigger `grading_entries_append_only`: `CREATE TRIGGER grading_entries_append_only BEFORE DELETE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_no_delete()`
+- Trigger `grading_entries_current`: `CREATE CONSTRAINT TRIGGER grading_entries_current AFTER INSERT ON learning.grading_entries DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION grading_entries_current_check()`
+- Trigger `grading_entries_immutable`: `CREATE TRIGGER grading_entries_immutable BEFORE UPDATE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_guard()`
+- Trigger `grading_entries_number`: `CREATE TRIGGER grading_entries_number BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_number()`
+- Trigger `grading_entries_points`: `CREATE TRIGGER grading_entries_points BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_points()`
 
 ## idempotency_keys
 
@@ -1794,6 +2229,8 @@ Stored responses of mutating requests sent with an Idempotency-Key, replayed on 
 
 - Primary key `idempotency_keys_pkey`: `PRIMARY KEY (user_id, key)`
 - Foreign key `idempotency_keys_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `idempotency_keys_key_check`: `CHECK ((char_length(key) <= 200))`
+- Index `idempotency_keys_sweep_idx`: `CREATE INDEX idempotency_keys_sweep_idx ON ops.idempotency_keys USING btree (created_at)`
 
 ## item_feedback
 
@@ -1817,11 +2254,18 @@ A grader's comment, score or annotation on one item of a graded submission.
 | annotation_upload_id | uuid | null |  |
 
 - Primary key `item_feedback_pkey`: `PRIMARY KEY (id)`
+- Unique `item_feedback_entry_item_key`: `UNIQUE (grading_entry_id, item_ref)`
 - Foreign key `item_feedback_annotation_upload_id_fkey`: `FOREIGN KEY (annotation_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
+- Foreign key `item_feedback_entry_submission_fkey`: `FOREIGN KEY (grading_entry_id, submission_id) REFERENCES grading_entries(id, submission_id) ON DELETE CASCADE`
 - Foreign key `item_feedback_graded_by_fkey`: `FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL`
-- Foreign key `item_feedback_grading_entry_id_fkey`: `FOREIGN KEY (grading_entry_id) REFERENCES grading_entries(id) ON DELETE CASCADE`
 - Foreign key `item_feedback_item_id_fkey`: `FOREIGN KEY (item_id) REFERENCES assessment_items(id) ON DELETE SET NULL`
 - Foreign key `item_feedback_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE`
+- Check `item_feedback_annotation_type_check`: `CHECK ((annotation_type = ANY (ARRAY['text'::text, 'highlight'::text, 'audio'::text])))`
+- Index `item_feedback_annotation_upload_id_idx`: `CREATE INDEX item_feedback_annotation_upload_id_idx ON learning.item_feedback USING btree (annotation_upload_id) WHERE (annotation_upload_id IS NOT NULL)`
+- Index `item_feedback_item_idx`: `CREATE INDEX item_feedback_item_idx ON learning.item_feedback USING btree (item_id)`
+- Index `item_feedback_submission_item_idx`: `CREATE INDEX item_feedback_submission_item_idx ON learning.item_feedback USING btree (submission_id, item_ref)`
+- Trigger `item_feedback_frozen`: `CREATE TRIGGER item_feedback_frozen BEFORE UPDATE ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION item_feedback_frozen()`
+- Trigger `item_feedback_upload_ids`: `CREATE TRIGGER item_feedback_upload_ids BEFORE INSERT OR UPDATE OF annotation_key ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('annotation_key', 'annotation_upload_id')`
 
 ## job_schedules
 
@@ -1839,6 +2283,9 @@ Periodic jobs: kind, interval and next run, driven by the worker's cron leader.
 | interval_seconds | bigint |  | `60` |
 
 - Primary key `job_schedules_pkey`: `PRIMARY KEY (kind)`
+- Check `job_schedules_interval_seconds_check`: `CHECK ((interval_seconds > 0))`
+- Check `job_schedules_kind_word`: `CHECK ((kind ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
+- Check `job_schedules_payload_check`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
 
 ## jobs
 
@@ -1863,6 +2310,12 @@ Background job queue (transactional, SKIP LOCKED); succeeded and failed rows are
 | updated_at | timestamp with time zone |  | `now()` |
 
 - Primary key `jobs_pkey`: `PRIMARY KEY (id)`
+- Check `jobs_kind_word`: `CHECK ((kind ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
+- Check `jobs_payload_check`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
+- Check `jobs_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'succeeded'::text, 'failed'::text, 'dead'::text])))`
+- Index `jobs_claim_idx`: `CREATE INDEX jobs_claim_idx ON ops.jobs USING btree (priority DESC, run_at) WHERE (status = 'queued'::text)`
+- Index `jobs_dedupe_live_idx`: `CREATE UNIQUE INDEX jobs_dedupe_live_idx ON ops.jobs USING btree (dedupe_key) WHERE ((dedupe_key IS NOT NULL) AND (status = ANY (ARRAY['queued'::text, 'running'::text])))`
+- Index `jobs_status_kind_idx`: `CREATE INDEX jobs_status_kind_idx ON ops.jobs USING btree (status, kind, created_at)`
 
 ## learner_risk_snapshots
 
@@ -1889,6 +2342,19 @@ Daily risk score of a learner in a course, with reasons and a recommended action
 - Foreign key `learner_risk_snapshots_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `learner_risk_snapshots_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `learner_risk_snapshots_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `learner_risk_snapshots_risk_level_check`: `CHECK ((risk_level = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text])))`
+- Index `learner_risk_snapshots_date_brin`: `CREATE INDEX learner_risk_snapshots_date_brin ON analytics.learner_risk_snapshots USING brin (snapshot_date)`
+- Index `learner_risk_snapshots_pair_idx`: `CREATE INDEX learner_risk_snapshots_pair_idx ON analytics.learner_risk_snapshots USING btree (course_id, user_id, snapshot_date DESC)`
+- Index `learner_risk_snapshots_user_idx`: `CREATE INDEX learner_risk_snapshots_user_idx ON analytics.learner_risk_snapshots USING btree (user_id)`
+
+## learner_visible_activities (view)
+
+Activities a learner may open: the one statement of what the three publication flags mean together.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| activity_id | uuid | null |  |
+| course_id | uuid | null |  |
 
 ## mastery_evidence
 
@@ -1911,9 +2377,16 @@ One observation of a learner on a concept (a scored item or activity).
 
 - Primary key `mastery_evidence_pkey`: `PRIMARY KEY (id)`
 - Unique `mastery_evidence_source_type_source_id_concept_id_part_id_u_key`: `UNIQUE NULLS NOT DISTINCT (source_type, source_id, concept_id, part_id, user_id)`
-- Foreign key `mastery_evidence_concept_id_fkey`: `FOREIGN KEY (concept_id) REFERENCES course_concepts(id) ON DELETE CASCADE`
+- Foreign key `mastery_evidence_concept_id_fkey`: `FOREIGN KEY (concept_id, course_id) REFERENCES course_concepts(id, course_id) ON DELETE CASCADE`
 - Foreign key `mastery_evidence_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `mastery_evidence_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `mastery_evidence_kind_check`: `CHECK ((kind = ANY (ARRAY['choice'::text, 'open'::text, 'code'::text, 'signal'::text])))`
+- Check `mastery_evidence_score_check`: `CHECK (((score >= (0)::double precision) AND (score <= (1)::double precision)))`
+- Check `mastery_evidence_source_type_check`: `CHECK ((source_type = ANY (ARRAY['item'::text, 'file_attempt'::text, 'code_run'::text, 'remediation'::text, 'ai_question'::text])))`
+- Check `mastery_evidence_weight_check`: `CHECK (((weight > (0)::double precision) AND (weight <= (1)::double precision)))`
+- Index `mastery_evidence_concept_idx`: `CREATE INDEX mastery_evidence_concept_idx ON learning.mastery_evidence USING btree (concept_id)`
+- Index `mastery_evidence_course_idx`: `CREATE INDEX mastery_evidence_course_idx ON learning.mastery_evidence USING btree (course_id, concept_id)`
+- Index `mastery_evidence_learner_idx`: `CREATE INDEX mastery_evidence_learner_idx ON learning.mastery_evidence USING btree (user_id, concept_id, observed_at)`
 
 ## notification_kinds
 
@@ -1961,6 +2434,13 @@ An in-app notification of an account (typed payload; course_id/activity_id are g
 - Foreign key `notifications_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `notifications_kind_fkey`: `FOREIGN KEY (kind) REFERENCES notification_kinds(kind) ON UPDATE CASCADE`
 - Foreign key `notifications_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `notifications_payload_check`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
+- Index `notifications_activity_idx`: `CREATE INDEX notifications_activity_idx ON core.notifications USING btree (activity_id)`
+- Index `notifications_course_idx`: `CREATE INDEX notifications_course_idx ON core.notifications USING btree (course_id)`
+- Index `notifications_created_idx`: `CREATE INDEX notifications_created_idx ON core.notifications USING btree (created_at)`
+- Index `notifications_unread_idx`: `CREATE INDEX notifications_unread_idx ON core.notifications USING btree (user_id) WHERE (read_at IS NULL)`
+- Index `notifications_unread_work_idx`: `CREATE INDEX notifications_unread_work_idx ON core.notifications USING btree (user_id, activity_id) WHERE ((kind = 'work_submitted'::text) AND (read_at IS NULL))`
+- Index `notifications_user_idx`: `CREATE INDEX notifications_user_idx ON core.notifications USING btree (user_id, id DESC)`
 
 ## platforms
 
@@ -1987,6 +2467,10 @@ The platform's own settings and texts (one row, singleton).
 - Unique `platforms_singleton_key`: `UNIQUE (singleton)`
 - Foreign key `platforms_logo_upload_id_fkey`: `FOREIGN KEY (logo_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 - Foreign key `platforms_thumbnail_upload_id_fkey`: `FOREIGN KEY (thumbnail_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
+- Check `platforms_singleton_check`: `CHECK (singleton)`
+- Index `platforms_logo_upload_id_idx`: `CREATE INDEX platforms_logo_upload_id_idx ON core.platforms USING btree (logo_upload_id) WHERE (logo_upload_id IS NOT NULL)`
+- Index `platforms_thumbnail_upload_id_idx`: `CREATE INDEX platforms_thumbnail_upload_id_idx ON core.platforms USING btree (thumbnail_upload_id) WHERE (thumbnail_upload_id IS NOT NULL)`
+- Trigger `platforms_upload_ids`: `CREATE TRIGGER platforms_upload_ids BEFORE INSERT OR UPDATE OF logo_key, thumbnail_key ON core.platforms FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('logo_key', 'logo_upload_id', 'thumbnail_key', 'thumbnail_upload_id')`
 
 ## post_uploads
 
@@ -2000,6 +2484,7 @@ The discussion-image uploads a post's content shows (kept by trigger from the co
 - Primary key `post_uploads_pkey`: `PRIMARY KEY (discussion_id, upload_id)`
 - Foreign key `post_uploads_discussion_id_fkey`: `FOREIGN KEY (discussion_id) REFERENCES course_discussions(id) ON DELETE CASCADE`
 - Foreign key `post_uploads_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE`
+- Index `post_uploads_upload_idx`: `CREATE INDEX post_uploads_upload_idx ON core.post_uploads USING btree (upload_id)`
 
 ## role_permissions
 
@@ -2015,6 +2500,8 @@ A permission grant of a role; resource/action/scope are generated from the grant
 
 - Primary key `role_permissions_pkey`: `PRIMARY KEY (role_id, permission)`
 - Foreign key `role_permissions_role_id_fkey`: `FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE`
+- Check `role_permissions_permission_check`: `CHECK ((permission ~ '^[a-z_*-]+:[a-z_*-]+(:[a-z_*-]+)?$'::text))`
+- Index `role_permissions_course_staff_idx`: `CREATE INDEX role_permissions_course_staff_idx ON core.role_permissions USING btree (role_id) WHERE ((resource = ANY (ARRAY['*'::text, 'assessment'::text])) AND (action = ANY (ARRAY['*'::text, 'author'::text])) AND (scope = ANY (ARRAY[''::text, '*'::text, 'platform'::text, 'all'::text])))`
 
 ## roles
 
@@ -2049,6 +2536,22 @@ CHECK constraints a migration could not add because existing rows violate them (
 | skipped_at | timestamp with time zone |  | `now()` |
 
 - Primary key `schema_skipped_checks_pkey`: `PRIMARY KEY (name)`
+
+## submission_violations
+
+One anti-cheat event of an attempt, appended as it is reported. Evidence: the app cannot rewrite it.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |
+| submission_id | uuid |  |  |
+| event | jsonb |  |  |
+| created_at | timestamp with time zone |  | `now()` |
+
+- Primary key `submission_violations_pkey`: `PRIMARY KEY (id)`
+- Foreign key `submission_violations_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE`
+- Check `submission_violations_event_check`: `CHECK ((jsonb_typeof(event) = 'object'::text))`
+- Index `submission_violations_submission_idx`: `CREATE INDEX submission_violations_submission_idx ON learning.submission_violations USING btree (submission_id, created_at)`
 
 ## submissions
 
@@ -2090,10 +2593,32 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 | auto_breakdown | jsonb | null |  | The auto-grader's breakdown written at hand-in (NULL for a draft); the current breakdown is the latest grading entry's, this one only while there is none. |
 
 - Primary key `submissions_pkey`: `PRIMARY KEY (id)`
-- Foreign key `submissions_assessment_id_fkey`: `FOREIGN KEY (assessment_id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
+- Unique `submissions_id_user_key`: `UNIQUE (id, user_id)`
+- Foreign key `submissions_assessment_id_fkey`: `FOREIGN KEY (assessment_id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE RESTRICT`
 - Foreign key `submissions_assessment_version_id_fkey`: `FOREIGN KEY (assessment_version_id) REFERENCES assessment_versions(id)`
-- Foreign key `submissions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
+- Foreign key `submissions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE RESTRICT`
 - Foreign key `submissions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Check `submissions_answers_check`: `CHECK ((jsonb_typeof(answers) = 'object'::text))`
+- Check `submissions_attempt_number_check`: `CHECK ((attempt_number >= 1))`
+- Check `submissions_auto_breakdown_check`: `CHECK (((auto_breakdown IS NULL) OR (jsonb_typeof(auto_breakdown) = 'object'::text)))`
+- Check `submissions_auto_submit_reason_check`: `CHECK (((auto_submit_reason IS NULL) OR (auto_submit_reason = ANY (ARRAY['time_expired'::text, 'integrity_violation'::text, 'deadline_passed'::text, 'late_cutoff_passed'::text]))))`
+- Check `submissions_duration_seconds_check`: `CHECK (((duration_seconds IS NULL) OR (duration_seconds >= 0)))`
+- Check `submissions_handed_in_snapshots_check`: `CHECK (((status = 'draft'::text) OR ((items_snapshot IS NOT NULL) AND (policy_snapshot IS NOT NULL)) OR (created_at < '2026-11-07 00:00:00+00'::timestamp with time zone)))`
+- Check `submissions_items_snapshot_check`: `CHECK (((items_snapshot IS NULL) OR (jsonb_typeof(items_snapshot) = 'object'::text)))`
+- Check `submissions_policy_snapshot_check`: `CHECK (((policy_snapshot IS NULL) OR (jsonb_typeof(policy_snapshot) = 'object'::text)))`
+- Check `submissions_status_check`: `CHECK ((status = ANY (ARRAY['draft'::text, 'submitted'::text, 'graded'::text, 'released'::text, 'returned'::text])))`
+- Check `submissions_submitted_at_check`: `CHECK (((status = 'draft'::text) OR (submitted_at IS NOT NULL)))`
+- Check `submissions_violation_count_check`: `CHECK ((violation_count >= 0))`
+- Check `submissions_violations_check`: `CHECK ((jsonb_typeof(violations) = 'array'::text))`
+- Index `submissions_assessment_version_idx`: `CREATE INDEX submissions_assessment_version_idx ON learning.submissions USING btree (assessment_version_id)`
+- Index `submissions_attempt_number_key`: `CREATE UNIQUE INDEX submissions_attempt_number_key ON learning.submissions USING btree (assessment_id, user_id, attempt_number) WHERE (NOT preview)`
+- Index `submissions_course_user_idx`: `CREATE INDEX submissions_course_user_idx ON learning.submissions USING btree (course_id, user_id)`
+- Index `submissions_one_open_draft`: `CREATE UNIQUE INDEX submissions_one_open_draft ON learning.submissions USING btree (assessment_id, user_id) WHERE (status = 'draft'::text)`
+- Index `submissions_review_idx`: `CREATE INDEX submissions_review_idx ON learning.submissions USING btree (assessment_id, status, submitted_at DESC)`
+- Index `submissions_timer_idx`: `CREATE INDEX submissions_timer_idx ON learning.submissions USING btree (started_at) WHERE ((status = 'draft'::text) AND (started_at IS NOT NULL))`
+- Index `submissions_user_idx`: `CREATE INDEX submissions_user_idx ON learning.submissions USING btree (user_id)`
+- Trigger `submissions_current_grade`: `CREATE CONSTRAINT TRIGGER submissions_current_grade AFTER UPDATE OF final_score ON learning.submissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.final_score)::numeric IS DISTINCT FROM (new.final_score)::numeric)) EXECUTE FUNCTION submissions_current_grade_check()`
+- Trigger `submissions_snapshots_frozen`: `CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()`
 
 ## teacher_interventions
 
@@ -2122,6 +2647,13 @@ An action a teacher logged for an at-risk learner and its outcome.
 - Foreign key `teacher_interventions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `teacher_interventions_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Foreign key `teacher_interventions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `teacher_interventions_intervention_type_check`: `CHECK ((intervention_type = ANY (ARRAY['message_sent'::text, 'submission_graded'::text, 'extension_granted'::text, 'meeting_scheduled'::text, 'learner_recovered'::text])))`
+- Check `teacher_interventions_outcome_code_check`: `CHECK ((outcome_code = ANY (ARRAY['improved'::text, 'no_change'::text, 'worsened'::text, 'no_response'::text])))`
+- Check `teacher_interventions_payload_object`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
+- Check `teacher_interventions_status_check`: `CHECK ((status = ANY (ARRAY['planned'::text, 'completed'::text, 'resolved'::text])))`
+- Index `teacher_interventions_course_idx`: `CREATE INDEX teacher_interventions_course_idx ON learning.teacher_interventions USING btree (course_id)`
+- Index `teacher_interventions_learner_idx`: `CREATE INDEX teacher_interventions_learner_idx ON learning.teacher_interventions USING btree (user_id, course_id)`
+- Index `teacher_interventions_teacher_idx`: `CREATE INDEX teacher_interventions_teacher_idx ON learning.teacher_interventions USING btree (teacher_user_id, course_id, created_at DESC)`
 
 ## trail_runs
 
@@ -2143,6 +2675,10 @@ A learner's legacy course run (status, data); membership is enrolments since sch
 - Foreign key `trail_runs_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `trail_runs_trail_id_fkey`: `FOREIGN KEY (trail_id) REFERENCES trails(id) ON DELETE CASCADE`
 - Foreign key `trail_runs_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Check `trail_runs_data_check`: `CHECK ((jsonb_typeof(data) = 'object'::text))`
+- Check `trail_runs_status_check`: `CHECK ((status = ANY (ARRAY['in_progress'::text, 'completed'::text, 'paused'::text, 'cancelled'::text])))`
+- Index `trail_runs_course_user_idx`: `CREATE INDEX trail_runs_course_user_idx ON learning.trail_runs USING btree (course_id, user_id)`
+- Index `trail_runs_user_idx`: `CREATE INDEX trail_runs_user_idx ON learning.trail_runs USING btree (user_id)`
 
 ## trail_steps
 
@@ -2170,6 +2706,11 @@ Legacy per-activity step inside a trail run; completions is the progress fact si
 - Foreign key `trail_steps_trail_id_fkey`: `FOREIGN KEY (trail_id) REFERENCES trails(id) ON DELETE CASCADE`
 - Foreign key `trail_steps_trail_run_id_fkey`: `FOREIGN KEY (trail_run_id) REFERENCES trail_runs(id) ON DELETE CASCADE`
 - Foreign key `trail_steps_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Check `trail_steps_data_check`: `CHECK ((jsonb_typeof(data) = 'object'::text))`
+- Index `trail_steps_activity_idx`: `CREATE INDEX trail_steps_activity_idx ON learning.trail_steps USING btree (activity_id)`
+- Index `trail_steps_course_user_idx`: `CREATE INDEX trail_steps_course_user_idx ON learning.trail_steps USING btree (course_id, user_id)`
+- Index `trail_steps_trail_idx`: `CREATE INDEX trail_steps_trail_idx ON learning.trail_steps USING btree (trail_id)`
+- Index `trail_steps_user_idx`: `CREATE INDEX trail_steps_user_idx ON learning.trail_steps USING btree (user_id)`
 
 ## trails
 
@@ -2213,6 +2754,9 @@ Text of a translatable field in another language (translatable_fields); no row =
 
 - Primary key `translations_pkey`: `PRIMARY KEY (entity, entity_id, field, lang)`
 - Foreign key `translations_entity_field_fkey`: `FOREIGN KEY (entity, field) REFERENCES translatable_fields(entity, field)`
+- Check `translations_lang_check`: `CHECK ((lang = ANY (ARRAY['ru'::text, 'kk'::text, 'en'::text])))`
+- Check `translations_text_check`: `CHECK ((text <> ''::text))`
+- Trigger `translations_touch_platform`: `CREATE TRIGGER translations_touch_platform AFTER INSERT OR DELETE OR UPDATE ON core.translations FOR EACH ROW EXECUTE FUNCTION translations_touch_platform()`
 
 ## upload_purposes
 
@@ -2247,6 +2791,11 @@ A stored object (S3 key) uploaded by an account, its purpose and lifecycle; unre
 - Unique `uploads_key_key`: `UNIQUE (key)`
 - Foreign key `uploads_created_by_fkey`: `FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT`
 - Foreign key `uploads_purpose_fkey`: `FOREIGN KEY (purpose) REFERENCES upload_purposes(purpose) ON UPDATE CASCADE`
+- Check `uploads_bucket_check`: `CHECK ((bucket = ANY (ARRAY['public'::text, 'private'::text])))`
+- Check `uploads_size_bytes_check`: `CHECK ((size_bytes > 0))`
+- Check `uploads_status_check`: `CHECK ((status = ANY (ARRAY['pending'::text, 'finalized'::text])))`
+- Index `uploads_owner_idx`: `CREATE INDEX uploads_owner_idx ON core.uploads USING btree (created_by, created_at DESC)`
+- Index `uploads_reaper_idx`: `CREATE INDEX uploads_reaper_idx ON core.uploads USING btree (expires_at) WHERE (expires_at IS NOT NULL)`
 
 ## user_roles
 
@@ -2261,6 +2810,7 @@ Platform roles held by an account.
 - Primary key `user_roles_pkey`: `PRIMARY KEY (user_id, role_id)`
 - Foreign key `user_roles_role_id_fkey`: `FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE`
 - Foreign key `user_roles_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Index `user_roles_role_idx`: `CREATE INDEX user_roles_role_idx ON core.user_roles USING btree (role_id)`
 
 ## usergroup_courses
 
@@ -2275,6 +2825,7 @@ Courses opened to a user group.
 - Primary key `usergroup_courses_pkey`: `PRIMARY KEY (usergroup_id, course_id)`
 - Foreign key `usergroup_courses_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `usergroup_courses_usergroup_id_fkey`: `FOREIGN KEY (usergroup_id) REFERENCES usergroups(id) ON DELETE CASCADE`
+- Index `usergroup_courses_course_idx`: `CREATE INDEX usergroup_courses_course_idx ON core.usergroup_courses USING btree (course_id)`
 
 ## usergroup_members
 
@@ -2289,6 +2840,7 @@ Accounts in a user group.
 - Primary key `usergroup_members_pkey`: `PRIMARY KEY (usergroup_id, user_id)`
 - Foreign key `usergroup_members_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Foreign key `usergroup_members_usergroup_id_fkey`: `FOREIGN KEY (usergroup_id) REFERENCES usergroups(id) ON DELETE CASCADE`
+- Index `usergroup_members_user_idx`: `CREATE INDEX usergroup_members_user_idx ON core.usergroup_members USING btree (user_id)`
 
 ## usergroups
 
@@ -2306,6 +2858,7 @@ A named group of learners a teacher assigns courses or assessments to.
 
 - Primary key `usergroups_pkey`: `PRIMARY KEY (id)`
 - Foreign key `usergroups_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
+- Check `usergroups_name_check`: `CHECK ((char_length(name) <= 500))`
 
 ## users
 
@@ -2337,6 +2890,18 @@ An account. Never deleted by the app: disabled (status) or anonymised (deleted_a
 - Primary key `users_pkey`: `PRIMARY KEY (id)`
 - Unique `users_zitadel_user_id_key`: `UNIQUE (zitadel_user_id)`
 - Foreign key `users_avatar_upload_id_fkey`: `FOREIGN KEY (avatar_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
+- Check `users_deleted_anonymised_check`: `CHECK (((deleted_at IS NULL) OR ((username ~~ 'deleted-%'::text) AND (email = (username \|\| '@deleted.invalid'::text)) AND (display_name = ''::text) AND (bio = ''::text) AND (organization = ''::text) AND (avatar_key IS NULL))))`
+- Check `users_deleted_disabled_at_check`: `CHECK (((deleted_at IS NULL) OR (disabled_at IS NOT NULL)))`
+- Check `users_locale_check`: `CHECK ((locale = ANY (ARRAY['ru'::text, 'kk'::text, 'en'::text])))`
+- Check `users_profile_check`: `CHECK ((jsonb_typeof(profile) = 'object'::text))`
+- Index `users_avatar_upload_id_idx`: `CREATE INDEX users_avatar_upload_id_idx ON core.users USING btree (avatar_upload_id) WHERE (avatar_upload_id IS NOT NULL)`
+- Index `users_display_name_trgm_idx`: `CREATE INDEX users_display_name_trgm_idx ON core.users USING gin (search_fold(display_name) gin_trgm_ops)`
+- Index `users_email_lower_key`: `CREATE UNIQUE INDEX users_email_lower_key ON core.users USING btree (lower(email))`
+- Index `users_username_lower_key`: `CREATE UNIQUE INDEX users_username_lower_key ON core.users USING btree (lower(username))`
+- Index `users_username_trgm_idx`: `CREATE INDEX users_username_trgm_idx ON core.users USING gin (search_fold(username) gin_trgm_ops)`
+- Trigger `users_reissue_certificates`: `CREATE TRIGGER users_reissue_certificates AFTER UPDATE OF display_name ON core.users FOR EACH ROW WHEN ((old.display_name IS DISTINCT FROM new.display_name)) EXECUTE FUNCTION users_reissue_certificates()`
+- Trigger `users_sync_state`: `CREATE TRIGGER users_sync_state BEFORE INSERT OR UPDATE ON core.users FOR EACH ROW EXECUTE FUNCTION users_sync_state()`
+- Trigger `users_upload_ids`: `CREATE TRIGGER users_upload_ids BEFORE INSERT OR UPDATE OF avatar_key ON core.users FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('avatar_key', 'avatar_upload_id')`
 
 ## xp_transactions
 
@@ -2359,3 +2924,7 @@ XP journal: every award with its source; the profile totals are derived from it.
 - Unique `xp_transactions_idempotency_key_key`: `UNIQUE (idempotency_key)`
 - Unique `xp_transactions_user_id_source_source_id_key`: `UNIQUE (user_id, source, source_id)`
 - Foreign key `xp_transactions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Check `xp_transactions_amount_check`: `CHECK ((amount > 0))`
+- Check `xp_transactions_previous_level_check`: `CHECK ((previous_level >= 1))`
+- Check `xp_transactions_source_check`: `CHECK ((source = ANY (ARRAY['activity_completion'::text, 'course_completion'::text, 'login_bonus'::text, 'quiz_completion'::text, 'exam_completion'::text, 'streak_bonus'::text, 'admin_award'::text, 'code_challenge_completion'::text, 'code_challenge_perfect'::text, 'code_challenge_first_solve'::text])))`
+- Index `xp_transactions_user_recent_idx`: `CREATE INDEX xp_transactions_user_recent_idx ON learning.xp_transactions USING btree (user_id, created_at DESC)`

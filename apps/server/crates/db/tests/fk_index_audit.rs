@@ -32,7 +32,6 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ("ai_lecture_reviews", "triggered_by", "users", ACTOR),
     ("ai_student_memory", "course_id", "courses", AI_OWNED),
     ("ai_submission_analyses", "triggered_by", "users", ACTOR),
-    ("analytics_events", "actor_id", "users", ACTOR),
     ("assessment_audit_events", "actor_id", "users", ACTOR),
     ("assessment_overrides", "granted_by", "users", ACTOR),
     ("assessments", "creator_id", "users", ACTOR),

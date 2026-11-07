@@ -342,8 +342,9 @@ contract (`ab_api::app::dev_login_enabled`).
 
 One migration set for the database `ashyq`. Rules:
 
-1. **Every table**: `id uuid PRIMARY KEY DEFAULT uuidv7()` (Postgres 18 native),
-   `created_at timestamptz NOT NULL DEFAULT now()`, `updated_at` (and a versioned table's `version`) maintained
+1. **A new entity table**: `id uuid PRIMARY KEY DEFAULT uuidv7()` (Postgres 18 native),
+   `created_at timestamptz NOT NULL DEFAULT now()`. Join tables, projections and rollups key on what they join and
+   may have neither (`schema_docs` lists each table's real columns). `updated_at` (and a versioned table's `version`) is maintained
    by the one `touch_row()` BEFORE UPDATE trigger (`<table>_touch`; `'version'` and the columns that count as
    arguments; `ab.bookkeeping` keeps `updated_at`).
 2. Naming: `snake_case`, plural table names, `*_id` FKs, no abbreviations. Columns added from 2026-11-02 on
@@ -358,20 +359,23 @@ One migration set for the database `ashyq`. Rules:
    - a row's state machine is `status` (one per table), not `state` / `lifecycle`; a status's moments are
      `<status>_at` timestamps.
    Older columns that break it are renamed by REWRITE §5.6 n15 (each rename is expand/contract).
-2. Naming: `snake_case`, plural table names, `*_id` FKs, no abbreviations. Every table has a `COMMENT ON TABLE`
-   (what one row is, who writes it) in the migration that creates it; `docs/agents/SCHEMA.md` is generated from
-   the schema (`just schema-docs`) and `crates/db/tests/schema_docs.rs` fails while it is stale or a table has no
-   comment.
+   Every table has a `COMMENT ON TABLE` (what one row is, who writes it) in the migration that creates it;
+   `docs/agents/SCHEMA.md` is generated from the schema (`just schema-docs`) and `crates/db/tests/schema_docs.rs`
+   fails while it is stale or a table has no comment.
 3. **Enums**: `text` + `CHECK` constraint (mirrored by a Rust enum); native PG enums are avoided.
 4. **JSONB policy**: only for genuinely polymorphic payloads — assessment item bodies, submission
    answers/snapshots, activity block content, AI event payloads. Each JSONB column maps to a typed serde shape
    (`crates/domain/src/wire.rs`) with round-trip tests. Settings scalars and flags are columns. A list of short
    strings is `text[]` with a bounds CHECK (`text_list_ok`: `courses.tags`); a list of records the API replaces
    whole is a jsonb array with a shape CHECK (`course_learnings_ok`: `courses.learnings` `{id, text, emoji?}`).
-5. FKs always explicit with deliberate `ON DELETE` (mostly `RESTRICT`; `CASCADE` only for owned children like
-   items/blocks). No general soft-delete convention; archival is a domain status where the domain needs it
+5. FKs always explicit with deliberate `ON DELETE`: `CASCADE` for owned children (most keys; `cascade_audit.rs`
+   lists each with its reason), `SET NULL` for an informational link, `RESTRICT` at the boundary **content -> learner
+   work**: submissions and file attempts refuse the delete of their assessment, task or course, and a certificate
+   refuses the delete of its template. Audit and analytics journals keep the ids of what they name with no key, so
+   they outlive it. No general soft-delete convention; archival is a domain status where the domain needs it
    (courses, assessments). The one soft delete is a course's (`deleted_at`, always archived): reads skip it
-   (`get_course`, `course_visible`), the retention purge cascades it after the grace period (COURSE_ARCHIVING 6.2).
+   (`get_course`, `course_visible`), retention purges only a course holding no learner work and the rest waits for
+   `ashyq admin purge-course` (COURSE_ARCHIVING 6.2).
 6. Search: `search_fold` (`migrations/20260926000001_search_matches.sql`, Kazakh folding since 2026-10) and one
    word-match rule for `/search`, `courses?q=` and `collections?q=`, written as one
    `search_fold(hay) ~ search_fold($n)` predicate per word (`ab_db::search::push_terms`, so these queries are
@@ -398,6 +402,29 @@ One migration set for the database `ashyq`. Rules:
    Grants are per schema (`apply_role_grants`, default privileges in each). The move itself is the contract
    file 20261103073000 (`place_app_tables()`), a release after the path is set: a session keeps the path it
    started with.
+
+9. **Triggers** guard a rule or keep a derived field. A business step (issuing, reissuing, notifying) belongs in the
+   code that does it, where a reader sees it; `schema_review::triggers_guard_or_derive` lists each trigger with its
+   kind and the debts. Set-named text columns carry a CHECK or a key and jsonb columns a shape CHECK, each with its own
+   rule test (`set_named_columns_are_constrained`, `jsonb_columns_state_their_shape`).
+
+### Schema guarantees (2026-11-07 schema review)
+
+- **Learner work outlives content.** `RESTRICT` keys refuse deleting an assessment, file task or course under an
+  attempt. Retention purges only courses without learner work (`course_has_learner_work`); the rest wait for
+  `ashyq admin purge-course`, which writes a JSON archive first. A certificate carries its own `course_id` and survives
+  the purge with its template (`certifications.course_id` NULL).
+- **A row cannot point at someone else's work.** Composite keys bind code runs, progress, AI drafts and remediation to
+  the attempt's owner; `(parent, course_id)` keys bind course-scoped children (`children_of_a_course_scoped_parent_bind_the_course`).
+- **Grades are numbered.** `grading_entries.revision` and `file_grading_entries.revision` count per attempt under the
+  attempt's row lock; the highest revision is current. `item_feedback` is frozen once written, one row per item.
+- **History stays.** `enrolment_events` keeps joins and leaves past the course; `submission_violations` keeps every
+  anti-cheat event, beyond the bounded array the API reads.
+- **The schema is checked at deploy.** `crates/db/schema.snapshot.sql` is the migrated schema as text;
+  `ashyq admin schema-verify` compares it with the live database (RUNBOOK 2.4).
+- **Who is in a course.** `course_members` is enrolments without staff; `has_course_role` and `is_platform_author` are
+  the two halves of `is_course_staff`; the creator has a roster row. `learner_visible_activities` states what the
+  publication flags mean together.
 
 ### Schema guarantees (2026-11 schema review)
 
@@ -447,7 +474,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **Every foreign key has an index led by its columns** (`crates/db/tests/fk_index_audit.rs`); the exceptions are
   actor/audit columns onto `users` (never deleted by the app), each listed with its reason.
 - **Retention** (`maintenance:retention`, daily, windows `AB__RETENTION__*`): a job is deleted when it succeeds
-  (rows a previous release left as `succeeded` go after 14 days), failed/dead jobs 90, deleted courses 30 (purged with everything under them), `auth_audit_log` 365, stdout/stderr/compile output of practice code runs 180 (verdict rows and graded
+  (rows a previous release left as `succeeded` go after 14 days), failed/dead jobs 90, deleted courses 30 (purged unless they hold learner work, which waits for `ashyq admin purge-course`), `auth_audit_log` 365, stdout/stderr/compile output of practice code runs 180 (verdict rows and graded
   `final` runs stay), event logs of finished AI runs 180, AI records 400 like `analytics_events`
   (`AB__RETENTION__AI_RECORDS_DAYS`): finished runs with their artifacts, evidence and approvals, Q&A messages and
   the threads they leave empty, submission analyses, superseded lecture reviews, every course analysis but the

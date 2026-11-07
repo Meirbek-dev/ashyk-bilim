@@ -305,8 +305,7 @@ pub async fn course_owners(pool: &PgPool, course_id: CourseId) -> Result<Vec<Use
 /// Enrolled learners (an enrolment, never staff - the UX-150 predicate).
 pub async fn course_learners(pool: &PgPool, course_id: CourseId) -> Result<Vec<UserId>> {
     let ids = sqlx::query_scalar!(
-        r#"SELECT DISTINCT user_id AS "id!" FROM enrolments
-           WHERE course_id = $1 AND NOT is_course_staff(course_id, user_id)"#,
+        r#"SELECT DISTINCT user_id AS "id!" FROM course_members WHERE course_id = $1"#,
         course_id.0
     )
     .fetch_all(pool)

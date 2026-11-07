@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT jsonb_build_object(\n               'course', to_jsonb(c),\n               'assessments', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM assessments x WHERE x.course_id = c.id),\n               'assessment_versions', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM assessment_versions x\n                                        JOIN assessments a ON a.id = x.assessment_id WHERE a.course_id = c.id),\n               'submissions', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM submissions x WHERE x.course_id = c.id),\n               'grading_entries', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM grading_entries x\n                                    JOIN submissions s ON s.id = x.submission_id WHERE s.course_id = c.id),\n               'item_feedback', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM item_feedback x\n                                  JOIN submissions s ON s.id = x.submission_id WHERE s.course_id = c.id),\n               'file_tasks', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM file_submissions x WHERE x.course_id = c.id),\n               'file_attempts', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM file_submission_attempts x WHERE x.course_id = c.id),\n               'file_grading_entries', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM file_grading_entries x\n                                         JOIN file_submission_attempts t ON t.id = x.attempt_id WHERE t.course_id = c.id),\n               'certificates', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM certificate_users x WHERE x.course_id = c.id),\n               'enrolments', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM enrolments x WHERE x.course_id = c.id),\n               'completions', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM completions x\n                                JOIN activities a ON a.id = x.activity_id WHERE a.course_id = c.id)\n           ) AS \"archive!\"\n           FROM courses c WHERE c.id = $1 AND c.deleted_at IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "archive!",
+        "type_info": "Jsonb",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "432ea0fec016a0f625ef5caf80ff16d6b98a034d9849730ea0e6b42dc5c0b919"
+}

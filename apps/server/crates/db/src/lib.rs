@@ -27,6 +27,7 @@ pub mod queue;
 pub mod retention;
 pub mod retrieval;
 pub mod schedule;
+pub mod schema_snapshot;
 pub mod search;
 pub mod submissions;
 pub mod uploads;

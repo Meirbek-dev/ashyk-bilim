@@ -74,9 +74,12 @@ pub async fn insert_course(
     creator_id: UserId,
 ) -> Result<CourseId> {
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO courses (name, description, about, tags, creator_id)
-           VALUES ($1, $2, $3, $4, $5)
-           RETURNING id"#,
+        r#"WITH course AS (INSERT INTO courses (name, description, about, tags, creator_id)
+                           VALUES ($1, $2, $3, $4, $5)
+                           RETURNING id, creator_id),
+                roster AS (INSERT INTO course_staff (course_id, user_id, authorship, status)
+                           SELECT id, creator_id, 'creator', 'active' FROM course)
+           SELECT id AS "id!" FROM course"#,
         name,
         description,
         about,
@@ -115,7 +118,7 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
                   version,
                   ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
-                          AND ra.authorship <> 'reporter')
+                          AND ra.authorship NOT IN ('reporter', 'creator'))
                       AS "contributor_ids!: Vec<UserId>",
                   ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
@@ -358,7 +361,7 @@ pub async fn list_user_courses(
                   version,
                   ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
-                          AND ra.authorship <> 'reporter')
+                          AND ra.authorship NOT IN ('reporter', 'creator'))
                       AS "contributor_ids!: Vec<UserId>",
                   ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
@@ -421,7 +424,7 @@ pub async fn update_course<'e>(
                   version,
                   ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
-                          AND ra.authorship <> 'reporter')
+                          AND ra.authorship NOT IN ('reporter', 'creator'))
                       AS "contributor_ids!: Vec<UserId>",
                   ARRAY(SELECT ra.user_id FROM course_staff ra
                         WHERE ra.course_id = courses.id AND ra.status = 'active'
@@ -716,8 +719,11 @@ pub async fn restore_deleted_course(pool: &PgPool, id: CourseId) -> Result<bool>
     Ok(restored.rows_affected() == 1)
 }
 
-/// Hard-delete every course deleted more than `older_than_days` ago, one transaction each
-/// (`maintenance:retention`); returns how many went. A course restored meanwhile is skipped.
+/// Hard-delete every course deleted over `older_than_days` ago that holds no learner work.
+///
+/// One transaction each (`maintenance:retention`); returns how many went. A course restored meanwhile is skipped.
+/// A course with hand-ins, grades or certificates waits for `ashyq admin purge-course` (RUNBOOK 2.7): retention
+/// never destroys official records.
 ///
 /// A course that fails (a timeout, a lock) does not hold back the ones after it: the run
 /// purges the rest, then fails with the first error, so the job is retried.
@@ -728,7 +734,7 @@ pub async fn purge_deleted_courses(
 ) -> Result<u64> {
     let due = sqlx::query_scalar!(
         r#"SELECT id AS "id: CourseId" FROM courses
-           WHERE deleted_at < now() - make_interval(days => $1)
+           WHERE deleted_at < now() - make_interval(days => $1) AND NOT course_has_learner_work(id)
            ORDER BY deleted_at"#,
         older_than_days
     )
@@ -737,7 +743,7 @@ pub async fn purge_deleted_courses(
     let mut purged = 0;
     let mut failed = None;
     for id in due {
-        match purge_course(pool, id, older_than_days, grace_secs).await {
+        match purge_course(pool, id, older_than_days, grace_secs, false).await {
             Ok(true) => purged += 1,
             Ok(false) => {}
             Err(e) => {
@@ -748,10 +754,57 @@ pub async fn purge_deleted_courses(
     failed.map_or(Ok(purged), Err)
 }
 
-/// The cascade a delete used to run at once: the course with everything under it, learner work
-/// and its grades included. The uploads its rows named (thumbnails, chapter thumbnails, blocks,
+/// Everything a learner made or earned in a deleted course, as one JSON document: what
+/// `ashyq admin purge-course` writes before it destroys them. `None`: no such deleted course.
+pub async fn deleted_course_archive(
+    pool: &PgPool,
+    id: CourseId,
+) -> Result<Option<serde_json::Value>> {
+    let archive = sqlx::query_scalar!(
+        r#"SELECT jsonb_build_object(
+               'course', to_jsonb(c),
+               'assessments', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM assessments x WHERE x.course_id = c.id),
+               'assessment_versions', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM assessment_versions x
+                                        JOIN assessments a ON a.id = x.assessment_id WHERE a.course_id = c.id),
+               'submissions', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM submissions x WHERE x.course_id = c.id),
+               'grading_entries', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM grading_entries x
+                                    JOIN submissions s ON s.id = x.submission_id WHERE s.course_id = c.id),
+               'item_feedback', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM item_feedback x
+                                  JOIN submissions s ON s.id = x.submission_id WHERE s.course_id = c.id),
+               'file_tasks', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM file_submissions x WHERE x.course_id = c.id),
+               'file_attempts', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM file_submission_attempts x WHERE x.course_id = c.id),
+               'file_grading_entries', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM file_grading_entries x
+                                         JOIN file_submission_attempts t ON t.id = x.attempt_id WHERE t.course_id = c.id),
+               'certificates', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM certificate_users x WHERE x.course_id = c.id),
+               'enrolments', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM enrolments x WHERE x.course_id = c.id),
+               'completions', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM completions x
+                                JOIN activities a ON a.id = x.activity_id WHERE a.course_id = c.id)
+           ) AS "archive!"
+           FROM courses c WHERE c.id = $1 AND c.deleted_at IS NOT NULL"#,
+        id.0
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(archive)
+}
+
+/// `ashyq admin purge-course`: the purge of a deleted course past its grace period, learner work included
+/// (issued certificates stay, with their template). The caller has archived it first.
+pub async fn purge_course_with_work(
+    pool: &PgPool,
+    id: CourseId,
+    older_than_days: i32,
+    grace_secs: f64,
+) -> Result<bool> {
+    purge_course(pool, id, older_than_days, grace_secs, true).await
+}
+
+/// The course with everything under it. The uploads its rows named (thumbnails, chapter thumbnails, blocks,
 /// file-task files, discussion images) start their grace clock in the same transaction when
 /// nothing else names them (BUG-209: the FK cascade drops rows, not the clocks).
+///
+/// `with_work` also deletes the learners' attempts; without it only staff previews go, so a hand-in that
+/// arrived after the caller looked makes the keys refuse the delete.
 ///
 /// BUG-242: lock order course → chapters → activities → uploads (the order every block/upload
 /// write uses). With every activity locked no block can be added or removed under the delete.
@@ -760,6 +813,7 @@ async fn purge_course(
     id: CourseId,
     older_than_days: i32,
     grace_secs: f64,
+    with_work: bool,
 ) -> Result<bool> {
     let mut tx = pool.begin().await?;
     let Some(course) = sqlx::query!(
@@ -796,6 +850,28 @@ async fn purge_course(
         id.0
     )
     .fetch_all(&mut *tx)
+    .await?;
+    sqlx::query!(
+        "DELETE FROM submissions WHERE course_id = $1 AND (preview OR $2)",
+        id.0,
+        with_work
+    )
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query!(
+        "DELETE FROM file_submission_attempts WHERE course_id = $1 AND (preview OR $2)",
+        id.0,
+        with_work
+    )
+    .execute(&mut *tx)
+    .await?;
+    // A template that issued nothing goes; one that did stays for its certificates, without a course.
+    sqlx::query!(
+        "DELETE FROM certifications c WHERE c.course_id = $1
+         AND NOT EXISTS (SELECT 1 FROM certificate_users cu WHERE cu.certification_id = c.id)",
+        id.0
+    )
+    .execute(&mut *tx)
     .await?;
     let deleted = sqlx::query!("DELETE FROM courses WHERE id = $1", id.0)
         .execute(&mut *tx)
@@ -1076,6 +1152,32 @@ async fn refuse_learner_work(
     ))
 }
 
+/// Staff attempts at activities about to be deleted ([`activities_with_learner_work`] does not count them). The
+/// keys refuse the delete while an attempt remains, so a learner's hand-in that slipped past
+/// [`refuse_learner_work`] fails the delete instead of going with it.
+async fn delete_preview_attempts(
+    conn: &mut sqlx::PgConnection,
+    activities: &[uuid::Uuid],
+) -> Result<()> {
+    sqlx::query!(
+        "DELETE FROM submissions s USING assessments a
+         WHERE a.id = s.assessment_id AND a.activity_id = ANY($1)
+           AND (s.preview OR is_course_staff(s.course_id, s.user_id))",
+        activities
+    )
+    .execute(&mut *conn)
+    .await?;
+    sqlx::query!(
+        "DELETE FROM file_submission_attempts t USING file_submissions f
+         WHERE f.id = t.file_submission_id AND f.activity_id = ANY($1)
+           AND (t.preview OR is_course_staff(t.course_id, t.user_id))",
+        activities
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
+}
+
 /// Delete a chapter, releasing the uploads of the media blocks under it
 /// (and its thumbnail; BUG-209/242 - see [`purge_deleted_courses`]; lock order
 /// chapter → activities → uploads).
@@ -1099,6 +1201,7 @@ pub async fn delete_chapter(
     .await?;
     refuse_learner_work(&mut *conn, &activities).await?;
     crate::file_submissions::delete_files_releasing(&mut *conn, &activities, grace_secs).await?;
+    delete_preview_attempts(&mut *conn, &activities).await?;
     delete_blocks_releasing(&mut *conn, &activities, None, grace_secs).await?;
     let deleted = sqlx::query!("DELETE FROM chapters WHERE id = $1", id.0)
         .execute(&mut *conn)
@@ -1310,6 +1413,7 @@ pub async fn delete_activity(
     };
     refuse_learner_work(&mut *conn, &[locked]).await?;
     crate::file_submissions::delete_files_releasing(&mut *conn, &[locked], grace_secs).await?;
+    delete_preview_attempts(&mut *conn, &[locked]).await?;
     delete_blocks_releasing(&mut *conn, &[locked], None, grace_secs).await?;
     let deleted = sqlx::query!("DELETE FROM activities WHERE id = $1", id.0)
         .execute(&mut *conn)
@@ -1595,7 +1699,7 @@ pub async fn get_contributor(
                   ra.authorship AS role, ra.status, ra.version,
                   (extract(epoch FROM ra.created_at))::bigint AS "created_at!"
            FROM course_staff ra JOIN users u ON u.id = ra.user_id
-           WHERE ra.course_id = $1 AND ra.user_id = $2"#,
+           WHERE ra.course_id = $1 AND ra.user_id = $2 AND ra.authorship <> 'creator'"#,
         course_id.0,
         user_id.0
     )

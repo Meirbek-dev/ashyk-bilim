@@ -162,7 +162,7 @@ pub(crate) const COURSE_COLUMNS: &str = "SELECT courses.id, name, description, a
         (extract(epoch FROM archived_at))::bigint AS archived_at, archived_by, version,
         ARRAY(SELECT ra.user_id FROM course_staff ra
               WHERE ra.course_id = courses.id AND ra.status = 'active'
-                AND ra.authorship <> 'reporter') AS contributor_ids,
+                AND ra.authorship NOT IN ('reporter', 'creator')) AS contributor_ids,
         ARRAY(SELECT ra.user_id FROM course_staff ra
               WHERE ra.course_id = courses.id AND ra.status = 'active'
                 AND ra.authorship = 'maintainer') AS maintainer_ids,

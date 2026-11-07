@@ -821,7 +821,7 @@ pub async fn list_grading_entries(
                   status AS "status: FileAttemptStatus", raw_score::float8 AS "raw_score?", penalty_pct::float8 AS "penalty_pct!", final_score::float8 AS "final_score?",
                   feedback, (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM file_grading_entries WHERE attempt_id = $1
-           ORDER BY id DESC"#,
+           ORDER BY revision DESC"#,
         attempt_id.0
     )
     .fetch_all(pool)

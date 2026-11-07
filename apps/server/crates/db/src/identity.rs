@@ -970,10 +970,21 @@ pub async fn erase_personal_data(tx: &mut sqlx::PgConnection, user_id: UserId) -
         .execute(&mut *tx)
         .await?
         .rows_affected();
+    removed += sqlx::query!("DELETE FROM enrolment_events WHERE user_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    // Events keep no key onto users (they outlive every row they name), so the erasure reaches them by value.
     removed += sqlx::query!("DELETE FROM analytics_events WHERE user_id = $1", uid)
         .execute(&mut *tx)
         .await?
         .rows_affected();
+    sqlx::query!(
+        "UPDATE analytics_events SET actor_id = NULL WHERE actor_id = $1",
+        uid
+    )
+    .execute(&mut *tx)
+    .await?;
     removed += sqlx::query!(
         "DELETE FROM daily_user_course_progress WHERE user_id = $1",
         uid

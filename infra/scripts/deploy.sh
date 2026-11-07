@@ -134,6 +134,8 @@ if ((migrations)); then
   mv "$dump.tmp" "$dump"
 fi
 compose run --rm server-migrate
+# Warns only for now: the first production runs show what differs (RUNBOOK 2.4), then it can refuse.
+compose run --rm server admin schema-verify || log "WARN: the database schema differs from this release (above)"
 
 set_tag "$sha"
 if ! up_and_smoke; then

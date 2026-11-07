@@ -115,6 +115,19 @@ enum AdminCommand {
         #[arg(long)]
         course: ab_core::id::CourseId,
     },
+    /// Compare the live schema with the one this release was built from (`crates/db/schema.snapshot.sql`);
+    /// exits non-zero on a difference, printing it. The deploy runs it after the migrations.
+    SchemaVerify,
+    /// Destroy a deleted course past its grace period together with its learners' work, after writing it all to
+    /// `--archive` (RUNBOOK 2.7). Retention never does this: it leaves such a course in place. Issued
+    /// certificates stay valid.
+    PurgeCourse {
+        #[arg(long)]
+        course: ab_core::id::CourseId,
+        /// Where the JSON archive goes; an existing file is refused.
+        #[arg(long)]
+        archive: std::path::PathBuf,
+    },
     /// Finalized uploads no row names and no clock runs on (a rollback window
     /// claimed them, or a post deleted before `post_uploads` showed them): start
     /// the reaper's 24 h grace (RUNBOOK 2.8). Idempotent.
@@ -228,6 +241,53 @@ async fn main() -> anyhow::Result<()> {
             writeln!(
                 std::io::stdout(),
                 "course {course} restored (archived; restore it from the archive to reopen it)"
+            )?;
+            Ok(())
+        }
+        Command::Admin {
+            command: AdminCommand::SchemaVerify,
+        } => {
+            let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
+            let live = ab_db::schema_snapshot::render(&pool).await?;
+            let differences =
+                ab_db::schema_snapshot::differences(ab_db::schema_snapshot::EXPECTED, &live, 40);
+            let mut stdout = std::io::stdout();
+            if differences.is_empty() {
+                writeln!(stdout, "schema matches this release")?;
+                return Ok(());
+            }
+            for line in &differences {
+                writeln!(stdout, "{line}")?;
+            }
+            anyhow::bail!(
+                "the schema differs from this release (first 40 lines above; - expected, + live)"
+            );
+        }
+        Command::Admin {
+            command: AdminCommand::PurgeCourse { course, archive },
+        } => {
+            let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
+            let Some(document) = ab_db::catalog::deleted_course_archive(&pool, course).await?
+            else {
+                anyhow::bail!("no deleted course {course}");
+            };
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&archive)?;
+            serde_json::to_writer(&mut file, &document)?;
+            file.sync_all()?;
+            let days = config.retention.deleted_courses_days;
+            let grace = ab_domain::files::uploads::UNREFERENCED_GRACE.as_secs_f64();
+            if !ab_db::catalog::purge_course_with_work(&pool, course, days, grace).await? {
+                anyhow::bail!(
+                    "course {course} is still in its {days}-day grace period; nothing was purged"
+                );
+            }
+            writeln!(
+                std::io::stdout(),
+                "course {course} purged; its learners' work is in {}",
+                archive.display()
             )?;
             Ok(())
         }

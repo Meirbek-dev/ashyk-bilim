@@ -66,7 +66,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ),
     (
         "ai_remediation_sessions",
-        "file_submission_attempt_id",
+        "student_user_id,file_submission_attempt_id",
         "file_submission_attempts",
         ATTEMPT_DELETE,
     ),
@@ -78,7 +78,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ),
     (
         "ai_remediation_sessions",
-        "submission_id",
+        "submission_id,student_user_id",
         "submissions",
         SUBMISSION_DELETE,
     ),
@@ -102,12 +102,6 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         SUBMISSION_DELETE,
     ),
     (
-        "certificate_users",
-        "certification_id",
-        "certifications",
-        "a certification with issued certificates is disabled, never deleted (delete_certification)",
-    ),
-    (
         "code_run_cases",
         "run_id",
         "code_runs",
@@ -121,7 +115,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ),
     (
         "code_runs",
-        "item_id",
+        "assessment_id,item_id",
         "assessment_items",
         "scratch runs; item delete is refused once graded work locks the content",
     ),
@@ -147,18 +141,6 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         ATTEMPT_DELETE,
     ),
     (
-        "file_submission_attempts",
-        "course_id",
-        "courses",
-        COURSE_DELETE,
-    ),
-    (
-        "file_submission_attempts",
-        "file_submission_id,course_id",
-        "file_submissions",
-        "a file task goes only with its activity or course (ACTIVITY_DELETE)",
-    ),
-    (
         "file_submission_files",
         "attempt_id",
         "file_submission_attempts",
@@ -172,7 +154,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ),
     (
         "item_feedback",
-        "grading_entry_id",
+        "grading_entry_id,submission_id",
         "grading_entries",
         "grading entries are history: never deleted on their own",
     ),
@@ -190,14 +172,14 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ),
     ("notifications", "course_id", "courses", NOTIFICATION_LINK),
     ("notifications", "user_id", "users", USER_ERASURE),
-    (
-        "submissions",
-        "assessment_id,course_id",
-        "assessments",
-        "an assessment goes only with its activity or course (ACTIVITY_DELETE)",
-    ),
-    ("submissions", "course_id", "courses", COURSE_DELETE),
     ("enrolments", "course_id", "courses", COURSE_DELETE),
+    ("enrolment_events", "user_id", "users", USER_ERASURE),
+    (
+        "submission_violations",
+        "submission_id",
+        "submissions",
+        SUBMISSION_DELETE,
+    ),
     ("trail_runs", "course_id", "courses", COURSE_DELETE),
     (
         "trail_runs",

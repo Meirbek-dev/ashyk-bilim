@@ -222,7 +222,7 @@ pub async fn insert_run(
 pub async fn get_run(pool: &PgPool, id: AiRunId) -> Result<Option<RunRow>> {
     let row = sqlx::query_as!(
         RunRow,
-        r#"SELECT id AS "id: AiRunId", thread_id AS "thread_id: AiThreadId",
+        r#"SELECT id AS "id: AiRunId", thread_id AS "thread_id!: AiThreadId",
                   kind AS "kind: AiRunKind", status AS "status: AiRunStatus",
                   triggered_by AS "triggered_by: UserId", model_name, duration_ms,
                   input_tokens, output_tokens,
@@ -384,7 +384,7 @@ pub async fn find_run_by_turn(
 ) -> Result<Option<RunRow>> {
     let row = sqlx::query_as!(
         RunRow,
-        r#"SELECT id AS "id: AiRunId", thread_id AS "thread_id: AiThreadId",
+        r#"SELECT id AS "id: AiRunId", thread_id AS "thread_id!: AiThreadId",
                   kind AS "kind: AiRunKind", status AS "status: AiRunStatus",
                   triggered_by AS "triggered_by: UserId", model_name, duration_ms,
                   input_tokens, output_tokens,
@@ -421,7 +421,7 @@ pub struct RunFilter<'a> {
 pub async fn list_runs(pool: &PgPool, filter: &RunFilter<'_>) -> Result<Vec<RunRow>> {
     let rows = sqlx::query_as!(
         RunRow,
-        r#"SELECT id AS "id: AiRunId", thread_id AS "thread_id: AiThreadId",
+        r#"SELECT id AS "id: AiRunId", thread_id AS "thread_id!: AiThreadId",
                   kind AS "kind: AiRunKind", status AS "status: AiRunStatus",
                   triggered_by AS "triggered_by: UserId", model_name, duration_ms,
                   input_tokens, output_tokens,

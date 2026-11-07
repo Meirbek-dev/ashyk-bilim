@@ -68,11 +68,16 @@ pub async fn get_certification(
 ) -> Result<Option<CertificationRow>> {
     let row = sqlx::query_as!(
         CertificationRow,
-        r#"SELECT id AS "id: CertificationId", course_id AS "course_id: CourseId", config, version,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!",
-                  (extract(epoch FROM disabled_at))::bigint AS disabled_at
-           FROM certifications WHERE id = $1"#,
+        // A purged course leaves the template only with issued certificates, which keep its id.
+        r#"SELECT c.id AS "id: CertificationId",
+                  COALESCE(c.course_id, (SELECT cu.course_id FROM certificate_users cu
+                                          WHERE cu.certification_id = c.id LIMIT 1))
+                      AS "course_id!: CourseId",
+                  c.config, c.version,
+                  (extract(epoch FROM c.created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM c.updated_at))::bigint AS "updated_at!",
+                  (extract(epoch FROM c.disabled_at))::bigint AS disabled_at
+           FROM certifications c WHERE c.id = $1"#,
         id.0
     )
     .fetch_optional(pool)
@@ -104,7 +109,7 @@ pub async fn list_course_certifications<'e>(
 ) -> Result<Vec<CertificationRow>> {
     let rows = sqlx::query_as!(
         CertificationRow,
-        r#"SELECT id AS "id: CertificationId", course_id AS "course_id: CourseId", config, version,
+        r#"SELECT id AS "id: CertificationId", course_id AS "course_id!: CourseId", config, version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!",
                   (extract(epoch FROM disabled_at))::bigint AS disabled_at
@@ -135,7 +140,7 @@ pub async fn update_certification_config(
 ///
 /// One that issued no certificate is deleted; one that did is retired (`disabled_at`), so the issued
 /// certificates stay valid. The row lock waits for an issue in flight (its insert holds a key-share lock on
-/// this row), so a certificate issued meanwhile is never cascaded away.
+/// this row), so a certificate issued meanwhile is seen (the key refuses the delete otherwise).
 pub async fn delete_certification(pool: &PgPool, id: CertificationId) -> Result<bool> {
     let mut tx = pool.begin().await?;
     let Some(issued) = sqlx::query_scalar!(
@@ -223,14 +228,14 @@ pub async fn list_user_certificates_for_course(
         CertificateRow,
         r#"SELECT cu.id AS "id: CertificateId",
                   cu.certification_id AS "certification_id: CertificationId",
-                  c.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
+                  cu.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
                   cu.verify_code, cu.holder_name, cu.course_name, cu.certificate_name,
-                  cu.instructor_name, cu.score,
+                  cu.instructor_name, cu.score::float8 AS score,
                   (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
-           FROM certificate_users cu JOIN certifications c ON c.id = cu.certification_id
-           WHERE c.course_id = $1 AND cu.user_id = $2
+           FROM certificate_users cu
+           WHERE cu.course_id = $1 AND cu.user_id = $2
            ORDER BY cu.id"#,
         course_id.0,
         user_id.0
@@ -245,13 +250,13 @@ pub async fn list_user_certificates(pool: &PgPool, user_id: UserId) -> Result<Ve
         CertificateRow,
         r#"SELECT cu.id AS "id: CertificateId",
                   cu.certification_id AS "certification_id: CertificationId",
-                  c.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
+                  cu.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
                   cu.verify_code, cu.holder_name, cu.course_name, cu.certificate_name,
-                  cu.instructor_name, cu.score,
+                  cu.instructor_name, cu.score::float8 AS score,
                   (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
-           FROM certificate_users cu JOIN certifications c ON c.id = cu.certification_id
+           FROM certificate_users cu
            WHERE cu.user_id = $1
            ORDER BY cu.id DESC"#,
         user_id.0
@@ -269,13 +274,13 @@ pub async fn get_certificate_by_code(
         CertificateRow,
         r#"SELECT cu.id AS "id: CertificateId",
                   cu.certification_id AS "certification_id: CertificationId",
-                  c.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
+                  cu.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
                   cu.verify_code, cu.holder_name, cu.course_name, cu.certificate_name,
-                  cu.instructor_name, cu.score,
+                  cu.instructor_name, cu.score::float8 AS score,
                   (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
-           FROM certificate_users cu JOIN certifications c ON c.id = cu.certification_id
+           FROM certificate_users cu
            -- Dash-insensitive: ETL-migrated legacy codes keep their own
            -- `XX-XXXXXXXX-XXXX-XXXXXX` layout (the table is small; a seq
            -- scan is fine until it is not - then an expression index).

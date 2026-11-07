@@ -480,11 +480,10 @@ pub async fn list_certificates(
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
         CertificateInfoRow,
-        r#"SELECT c.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
+        r#"SELECT cu.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!"
            FROM certificate_users cu
-           JOIN certifications c ON c.id = cu.certification_id
-           WHERE c.course_id = ANY($1) ORDER BY cu.id"#,
+           WHERE cu.course_id = ANY($1) ORDER BY cu.id"#,
         &ids
     )
     .fetch_all(pool)

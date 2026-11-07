@@ -359,8 +359,8 @@ async fn seed_user(pool: &PgPool, name: &str) -> uuid::Uuid {
 
 async fn seed_code_runs(pool: &PgPool, item: uuid::Uuid, user: uuid::Uuid, runs: i32) {
     sqlx::query(
-        "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, source_sha256)
-         SELECT i.assessment_id, i.id, $2, 'custom', 'accepted', 71, md5(g::text)
+        "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, source_sha256, finished_at)
+         SELECT i.assessment_id, i.id, $2, 'custom', 'accepted', 71, md5(g::text) || md5(g::text), now()
            FROM assessment_items i CROSS JOIN generate_series(1, $3) g WHERE i.id = $1",
     )
     .bind(item)

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM file_submission_attempts WHERE course_id = $1 AND (preview OR $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5f9d08906d20161f6d624b17607f9dbb689e669d08c1f0d575af0ee2de550d39"
+}
