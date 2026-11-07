@@ -80,7 +80,7 @@ pub struct GradedItem {
     pub feedback_params: Option<serde_json::Value>,
     #[serde(default)]
     pub needs_manual_review: bool,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "legacy_answer")]
     #[schema(value_type = Option<crate::grading::answers::ItemAnswer>)]
     pub user_answer: serde_json::Value,
     #[serde(default)]
@@ -169,6 +169,22 @@ pub fn round2(x: f64) -> f64 {
     rounded / 100.0 + 0.0
 }
 
+/// The stored answer as the contract's `ItemAnswer`. Code answers graded by the legacy app keep `kind: "CODE"` and a
+/// `latest_run` in grading entries, which are append-only: without this, the web client refuses the whole response.
+fn legacy_answer<'de, D>(deserializer: D) -> Result<serde_json::Value, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let mut answer = serde_json::Value::deserialize(deserializer)?;
+    if let Some(fields) = answer.as_object_mut()
+        && fields.get("kind").and_then(serde_json::Value::as_str) == Some("CODE")
+    {
+        fields.insert("kind".to_owned(), "code".into());
+        fields.remove("latest_run");
+    }
+    Ok(answer)
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::float_cmp)]
 mod tests {
@@ -247,5 +263,21 @@ mod tests {
         };
         assert!(exam.differs_from_items(99.83));
         assert!(!exam.differs_from_items(99.33));
+    }
+
+    #[test]
+    fn a_legacy_code_answer_reads_as_the_contract_says() {
+        let item: GradedItem = serde_json::from_value(serde_json::json!({
+            "item_id": "019bb10c-2f09-78b1-8191-f9cba6273cf4",
+            "score": 0.0,
+            "max_score": 1.0,
+            "user_answer": { "kind": "CODE", "source": "", "language": 71, "latest_run": { "score": 0.0 } },
+        }))
+        .unwrap();
+        assert_eq!(
+            item.user_answer,
+            serde_json::json!({ "kind": "code", "source": "", "language": 71 })
+        );
+        serde_json::from_value::<crate::grading::answers::ItemAnswer>(item.user_answer).unwrap();
     }
 }
