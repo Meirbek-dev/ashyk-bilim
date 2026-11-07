@@ -820,8 +820,27 @@ Postgres/Zitadel/RustFS for all slots. CORS of the API and of both buckets follo
 
 ### 5.6 Databases
 
-- `just db template` builds `ashyq_seed` once (migrated + `ashyq admin seed-e2e`, ~1-2 min; the e2e accounts'
-  rows are copied from `ashyq_dev` first because Zitadel is shared). `just db fresh <name>` clones it in about
+**Dev runs on a copy of production's data.** `ashyq_dev` and the e2e template `ashyq_seed` are restored from production's
+newest backup dump (`~/cs-mooc/dumps/pre-deploy-*.dump`, `PROD_DUMPS` elsewhere), never from the live database. Judge
+screens, compare and run e2e on this data; server integration tests (`#[ab_testdb::test]`) stay on empty migrated
+templates, on purpose: they must not depend on what production holds.
+
+- `just dev-data` does all of it: `just db prod-copy`, `just db template`, restart of slot 1's API and worker,
+  `just restore-media --pictures`. On ai-server the user timer `ashyq-dev-data.timer` runs it on the 1st of each month
+  (`systemctl --user list-timers`, log `journalctl --user -u ashyq-dev-data`).
+- `just db prod-copy [--into <db>] [--dump <file>]`: restores to `<db>_next`, migrates it, carries over the e2e accounts and
+  swaps it in; the replaced database stays as `<db>_prev` until the next run, so nothing local is lost at once. A dump's
+  queued and running jobs are deleted so production's queue never runs a second time.
+- The copy is real people's data. Dev sends no mail (no `AB__RESEND__*` in dev: the API logs "email delivery not
+  configured" at startup) and uses the dev Zitadel, so nobody but the developer can sign in; use `just login-as
+  <login> [slot]`. Screenshots stay under `tmp/` (ignored); commits, reports and issues name screens, not people, emails or
+  grades. Dumps are mode 600 and are never copied off this host.
+- Media: dumps hold no files. `just restore-media --pictures` copies every course picture and avatar from production's
+  public `/content/` by plain GETs, `--sample` and `--activity <id>` lesson media.
+- On a machine without production's dumps (the laptop) `just db template` builds from the empty schema; `just db prod-copy
+  --dump <file>` takes a dump you brought over yourself.
+- `just db template` builds `ashyq_seed` (the dump, migrated + `ashyq admin seed-e2e`, ~2 min; the e2e accounts' rows
+  are copied from `ashyq_dev` first because Zitadel is shared). `just db fresh <name>` clones it in about
   a second (`CREATE DATABASE … TEMPLATE`); `just db drop <name>`, `just db ls`.
 - `just db sql [--slot N | --db NAME] "<sql>"` (or `-f <file>`) runs SQL on a slot's database; table map and
   ready queries: `docs/agents/DATA.md`.

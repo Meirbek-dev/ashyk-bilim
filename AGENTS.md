@@ -38,6 +38,9 @@
 - Never edit an applied migration; add a new one. Data fixes are `ashyq admin` commands, not migrations
   (`apps/server/AGENTS.md`).
 - Never commit `.env`, `server.env`, `temp-restore/`, keys or tokens.
+- Dev data is a copy of production's backup, refreshed monthly (`just dev-data`, `docs/RUNBOOK.md` 5.6): slot 1 and e2e run
+  on it, judge and compare screens on it. It is real people's data: screenshots stay under `tmp/`, commits and reports
+  never name people, emails or grades. Server integration tests stay on empty templates.
 - Dependency updates come from Renovate (`renovate.json5`): `renovate/*` branches land on `main` by themselves once CI
   is green; majors and stateful images (Postgres, Redis, Zitadel, RustFS, go-judge, restic) wait as PRs. Its
   Dependency Dashboard issue lists what is pending.

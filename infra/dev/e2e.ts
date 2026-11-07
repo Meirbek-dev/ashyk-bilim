@@ -317,7 +317,8 @@ async function prod(o: ReturnType<typeof parse>, env: Record<string, string>): P
     // that reads a new column), so bring it up to date before anything serves it.
     const migrated = Bun.spawnSync([builtServer, 'migrate'], {
       cwd: join(root, 'apps/server'),
-      env: { ...process.env, ...server },
+      // As the owner, like every migration: the app role may not create in the schemas.
+      env: { ...process.env, ...server, AB__DATABASE__URL: databaseUrl(env, db) },
     })
     writeFileSync(join(dir, 'migrate.log'), Buffer.concat([migrated.stdout, migrated.stderr]))
     if (migrated.exitCode !== 0) throw new Error(`migrating ${db} failed (log ${join(dir, 'migrate.log')})`)

@@ -1,7 +1,10 @@
 #!/usr/bin/env bun
 // `just db <command>`: throwaway databases on the dev Postgres (docs/RUNBOOK.md, "Databases").
 //
-//   template [--from <db>]  build ashyq_seed: migrated + `ashyq admin seed-e2e` (once; ~1-2 min)
+//   prod-copy [--into <db>] [--dump <file>]
+//                           replace <db> (default ashyq_dev) with the newest production backup dump, migrated, plus
+//                           the e2e accounts it had; the replaced one stays as <db>_prev (docs/RUNBOOK.md 5.6).
+//   template [--from <db>]  build ashyq_seed: the production copy, migrated + `ashyq admin seed-e2e` (~1-2 min)
 //   fresh <name>            drop <name> and clone it from ashyq_seed (CREATE DATABASE ... TEMPLATE, ~1 s)
 //   drop <name>             drop <name>
 //   test-reset [--force]    recreate ashyq_test migrated; drop leftover test databases and templates
@@ -23,13 +26,17 @@
 import './cargo-target.ts' // first: CARGO_TARGET_DIR for this checkout, before anything reads or spawns cargo
 import { SQL } from 'bun'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join, resolve } from 'node:path'
 
 import { type DbRole, copyDatabaseSettings, databaseUrl, devEnv, readManifest, root } from './lib.ts'
 
 const TEMPLATE = 'ashyq_seed'
 const TEST_DB = 'ashyq_test'
+// Where the production deploy writes its pre-deploy dumps (infra/scripts/deploy.sh); never the live database.
+const PROD_DUMPS = process.env['PROD_DUMPS'] ?? join(homedir(), 'cs-mooc/dumps')
+const DB_CONTAINER = process.env['DEV_DB_CONTAINER'] ?? 'ashyq-dev-db-1'
 const env = devEnv()
 const urlFor = (db: string) => databaseUrl(env, db)
 const ident = (name: string) => {
@@ -100,15 +107,129 @@ function secret(key: string): string {
   return value
 }
 
+/** The newest production dump, or null on a machine without production's dumps (then: the empty schema). */
+function newestDump(): string | null {
+  if (!existsSync(PROD_DUMPS)) return null
+  const dumps = readdirSync(PROD_DUMPS)
+    .filter(name => name.endsWith('.dump'))
+    .map(name => join(PROD_DUMPS, name))
+    .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs)
+  return dumps[0] ?? null
+}
+
+/** A command in the dev Postgres container, as its superuser; `file` goes to stdin (the dump stays on the host). */
+function inDbContainer(argv: string[], file?: string): string {
+  const stdin = file ? openSync(file, 'r') : 'ignore'
+  const result = spawnSync('docker', ['exec', '-i', DB_CONTAINER, ...argv], {
+    encoding: 'utf8',
+    stdio: [stdin, 'pipe', 'pipe'],
+    maxBuffer: 64 * 1024 * 1024,
+  })
+  if (typeof stdin === 'number') closeSync(stdin)
+  if (result.status !== 0)
+    die(`${argv[0]} failed:\n${`${result.stdout}${result.stderr}`.trim().split('\n').slice(-8).join('\n')}`)
+  return result.stdout
+}
+
+/**
+ * Create `db` from a production dump: every object owned by the dev owner, grants re-applied as on any database.
+ * What the worker would act on is cleared: production's queue must not run a second time from here. Mail stays off
+ * on its own (no AB__RESEND__* in dev), and Zitadel is the dev one, so people sign in only through dev-login.
+ */
+async function restoreDump(db: string, dump: string): Promise<void> {
+  await dropDb(db)
+  // template0: template1 carries the roles' setup, and the dump creates those objects itself.
+  await admin(async sql => {
+    await sql.unsafe(`CREATE DATABASE ${ident(db)} TEMPLATE template0`)
+    await sql.unsafe(
+      `ALTER DATABASE ${ident(db)} SET search_path = public, core, learning, ai, analytics, ops, extensions`,
+    )
+  })
+  // Roles only production has (an old owner of a schema) exist for the restore and are folded into the owner.
+  const owners = new Set(
+    inDbContainer(['pg_restore', '-l'], dump)
+      .split('\n')
+      .filter(line => !line.startsWith(';'))
+      .map(line => line.trim().split(/\s+/).at(-1) ?? '')
+      .filter(owner => /^[a-z_][a-z0-9_]*$/.test(owner)),
+  )
+  const known = await admin(async sql =>
+    (await sql`SELECT rolname FROM pg_roles`).map((r: { rolname: string }) => r.rolname),
+  )
+  const foreign = [...owners].filter(owner => /^cs_|^ashyq/.test(owner) && !known.includes(owner))
+  const asSuperuser = (statements: string, db = 'postgres') =>
+    inDbContainer(['psql', '-U', 'postgres', '-d', db, '-v', 'ON_ERROR_STOP=1', '-qAtc', statements])
+  if (foreign.length > 0) asSuperuser(foreign.map(role => `CREATE ROLE ${ident(role)} NOLOGIN;`).join(' '))
+  inDbContainer(['pg_restore', '-U', 'postgres', '-d', db, '--exit-on-error'], dump)
+  const sql = `
+    ${foreign.map(role => `REASSIGN OWNED BY ${ident(role)} TO ashyq; DROP OWNED BY ${ident(role)};`).join('\n')}
+    DELETE FROM ops.jobs WHERE status IN ('queued', 'running');
+    SET ROLE ashyq;
+    SELECT public.apply_role_grants('ashyq');`
+  asSuperuser(sql, db)
+  if (foreign.length > 0) asSuperuser(foreign.map(role => `DROP ROLE ${ident(role)};`).join(' '))
+}
+
+/** Replace `into` with the production copy, swapped in only once it is restored and migrated. */
+async function prodCopy(args: string[]): Promise<void> {
+  const started = performance.now()
+  const option = (name: string) => {
+    const at = args.indexOf(name)
+    return at >= 0 ? (args[at + 1] ?? die(`${name} needs a value`)) : null
+  }
+  const into = option('--into') ?? 'ashyq_dev'
+  const dump = option('--dump') ?? newestDump() ?? die(`no dumps in ${PROD_DUMPS} (PROD_DUMPS, or --dump <file>)`)
+  const next = `${into}_next`
+  const previous = `${into}_prev`
+  await restoreDump(next, dump)
+  ashyq(next, ['migrate'], 'prod-copy')
+  // `just login-as e2e-admin` keeps working: production has no such people, the dev Zitadel does.
+  if (await exists(into)) await copyAccounts(into, next)
+  if (await exists(into)) await dropDb(previous)
+  await admin(async sql => {
+    // Slots reconnect by themselves; a connection that returns between the two statements only delays the rename.
+    for (let attempt = 0; ; attempt++) {
+      try {
+        if (attempt === 0 && !(await exists(into))) break
+        // A slot's API and worker connect under other roles: only the superuser may end those sessions.
+        inDbContainer([
+          'psql',
+          '-U',
+          'postgres',
+          '-d',
+          'postgres',
+          '-qAtc',
+          `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${into}'`,
+        ])
+        await sql.unsafe(`ALTER DATABASE ${ident(into)} RENAME TO ${ident(previous)}`)
+        break
+      } catch (error) {
+        if (attempt >= 10) throw error
+        await Bun.sleep(300)
+      }
+    }
+    await sql.unsafe(`ALTER DATABASE ${ident(next)} RENAME TO ${ident(into)}`)
+    const stamp = `production copy of ${dump.split('/').at(-1)}, restored ${new Date().toISOString()}`
+    await sql.unsafe(`COMMENT ON DATABASE ${ident(into)} IS '${stamp}'`)
+  })
+  const seconds = ((performance.now() - started) / 1000).toFixed(0)
+  console.log(`db: ${into} is now a copy of ${dump} (${seconds}s); the replaced one: ${previous}`)
+}
+
 async function template(from: string): Promise<void> {
   const started = performance.now()
   const seedEnv = { AB__ZITADEL__PAT: secret('AB__ZITADEL__PAT'), E2E_PASSWORD: secret('E2E_PASSWORD') }
   // Built aside and swapped in at the end: a failed build never leaves a half-seeded ashyq_seed to clone.
   const building = `${TEMPLATE}_build`
   await dropDb(building)
-  await admin(sql => sql.unsafe(`CREATE DATABASE ${ident(building)}`))
+  // e2e runs on production's data too, where a dump exists (docs/RUNBOOK.md 5.6); its fixtures add their own rows.
+  const dump = newestDump()
+  if (dump) await restoreDump(building, dump)
+  else await admin(sql => sql.unsafe(`CREATE DATABASE ${ident(building)}`))
   ashyq(building, ['migrate'], 'template')
-  const copied = (await exists(from)) ? await copyAccounts(from, building) : 0
+  // The e2e accounts live in the previous template once ashyq_dev is a production copy without them.
+  let copied = (await exists(from)) ? await copyAccounts(from, building) : 0
+  if (copied === 0 && (await exists(TEMPLATE))) copied = await copyAccounts(TEMPLATE, building)
   ashyq(building, ['admin', 'seed-e2e', '--learners', process.env.E2E_LEARNERS ?? '250'], 'template', seedEnv)
   await dropDb(TEMPLATE)
   await admin(async sql => {
@@ -273,6 +394,9 @@ async function list(): Promise<void> {
 mkdirSync(resolve(root, 'tmp/db'), { recursive: true })
 const [command, arg, value] = process.argv.slice(2)
 switch (command) {
+  case 'prod-copy':
+    await prodCopy(process.argv.slice(3))
+    break
   case 'template':
     await template(arg === '--from' && value ? value : 'ashyq_dev')
     break
@@ -295,6 +419,6 @@ switch (command) {
     break
   default:
     die(
-      'usage: just db template [--from <db>] | fresh <name> | drop <name> | test-reset | ls | sql [--slot N] [--rw] "<sql>"',
+      'usage: just db prod-copy [--into <db>] [--dump <file>] | template [--from <db>] | fresh <name> | drop <name> | test-reset | ls | sql [--slot N] [--rw] "<sql>"',
     )
 }

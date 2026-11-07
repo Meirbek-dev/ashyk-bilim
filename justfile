@@ -89,10 +89,18 @@ check *args:
 contract:
     @bun infra/dev/contract.ts
 
-# Throwaway databases and SQL: `just db template | fresh <name> | drop <name> | test-reset | ls | sql [--slot N] [--rw] "<sql>"`
+# Databases and SQL: `just db prod-copy | template | fresh <name> | drop <name> | test-reset | ls | sql [--slot N] [--rw] "<sql>"`
 # (sql reads as ashyq_ro: no emails or secrets; --rw writes as the owner).
 db *args:
     @bun infra/dev/db.ts "$@"
+
+# Bring dev onto the newest production backup (docs/RUNBOOK.md 5.6): slot 1's database, the e2e template, course pictures.
+# Monthly by the user timer `ashyq-dev-data.timer` on ai-server. Slot 1 must run; writes only local databases and the local bucket.
+dev-data:
+    @bun infra/dev/db.ts prod-copy
+    @bun infra/dev/db.ts template
+    @JUST_EXECUTABLE={{ just_bin }} bun infra/dev/stack.ts restart server 1
+    @bun infra/dev/media.ts --slot 1 --pictures --max-mb 20
 
 # All local application and infra gates; needs dependencies and the dev stack.
 # Hosted image builds, secret scans and E2E remain separate CI jobs.
@@ -145,7 +153,7 @@ login-as user slot="0":
     @bun infra/dev/stack.ts login-as "$@"
 
 # Public media a restored database points at but local storage lacks, copied from production's /content/
-# (read-only GETs): `just restore-media [--slot N] [--sample 20] [--max-mb 50] [--activity <id>]`.
+# (read-only GETs): `just restore-media [--slot N] [--sample 20] [--max-mb 50] [--activity <id>] [--pictures]`.
 restore-media *args:
     @bun infra/dev/media.ts "$@"
 
