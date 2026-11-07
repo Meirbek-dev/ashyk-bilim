@@ -102,6 +102,9 @@ behind it; it never colors a title, a row or a card background.
   `--heading-weight`, so a heading never reads heavy). Bold never.
 - Numbers that line up (tables, scores, timers, counters) use `tabular-nums`.
 - Never all-caps or letter-spaced text. Width at most `max-w-prose` for reading and 80ch for forms.
+- The scale is a step larger than a typical web app's: many teachers are older and read at arm's length. Text size
+  (/settings/appearance and the profile menu, cookie `ab_size`, SSR `html[data-size]`) multiplies the root size by
+  112.5 % or 125 %; every size and space is in rem, so a new style never uses px for text or controls.
 
 | Utility     | Size / line height | Use                                                              |
 | ----------- | ------------------ | ---------------------------------------------------------------- |
@@ -109,10 +112,10 @@ behind it; it never colors a title, a row or a card background.
 | `text-3xl`  | 30-40 / 1.08       | hero `h1` (home, auth, a page with a cover), status pages        |
 | `text-2xl`  | 34 / 40            | page title (`h1`), one per page; content `h1`                    |
 | `text-xl`   | 24 / 31            | section title (`h2`); content `h2`                               |
-| `text-lg`   | 19 / 26            | focus-layout context title, dialog title, row titles; content `h3` |
-| `text-base` | 16 / 24            | reading text, form fields, comfortable lists                     |
-| `text-sm`   | 14 / 20            | UI default: buttons, tables, meta lines, nav; compact density    |
-| `text-xs`   | 12 / 16            | badges, table heads, timestamps in dense rows, chart axes; never a full sentence |
+| `text-lg`   | 20 / 28            | focus-layout context title, dialog title, row titles; content `h3` |
+| `text-base` | 17 / 26            | reading text, form fields (at every width), list row names       |
+| `text-sm`   | 15 / 22            | UI default: buttons, tables, meta lines, nav; compact density    |
+| `text-xs`   | 13 / 18            | badges, table heads, timestamps in dense rows, chart axes; never a full sentence |
 
 ## 5. Spacing, radius, shadow, density
 
@@ -128,8 +131,8 @@ behind it; it never colors a title, a row or a card background.
   ring; a dialog's footer is a hairline to the edges with no tinted band.
 - Density: comfortable (default) for learning and reading; compact for teacher and admin tables. The layout or
   template sets `data-density="compact"` on its region. Features never pass density classes. Our composites use
-  `h-control` (40 / 36 px), `min-h-row` (52 / 44 px) and `gap-gutter` / `p-gutter` (28 / 20 px); the kit's controls use
-  the same tokens. Touch targets stay >= 24 px.
+  `h-control` (44 / 40 px), `min-h-row` (56 / 52 px) and `gap-gutter` / `p-gutter` (28 / 24 px); the kit's controls use
+  the same tokens; a small button is `h-9` (36 px). Touch targets stay >= 24 px.
 
 ## 6. Layouts and templates
 
@@ -148,14 +151,18 @@ truncated), save status, actions right. Used by the activity player, attempt, ac
 | Template        | Anatomy (desktop)                                                                    | At 390 px                                                                 |
 | --------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
 | `ListPage`      | `h1` + count / actions right; filter row (search + filters, all in the URL); `DataTable`; "Show more" | actions: primary stays, rest in a menu; filters behind a "Filters (n)" sheet; `DataList` cards with priority columns |
-| `DetailPage`    | title + meta line (`text-sm text-muted-foreground`) + status + primary action; tab links; `Outlet`. `cover` hero: the picture stands left in a 20rem column, title `text-3xl`, action under it; `coverSize="thumb"` (workspaces): a small picture before the title, action right | cover above the title; primary action full-width under it; the tab row scrolls inside itself |
-| `FocusPage`     | focus top bar; left panel (contents) `w-80`; main column `max-w-[44rem]` or full width for editors; right panel (AI, rubric) `w-96` | panels become sheets opened from top-bar buttons; main column full width |
+| `DetailPage`    | title + meta line (`text-sm text-muted-foreground`) + status + primary action; tab links; `Outlet`. `cover` hero: the picture stands left in a 20rem column, title `text-3xl`, action under it; `coverSize="thumb"` (workspaces): a small picture before a `text-xl` title of at most two lines (the full name is its tooltip), action right. Tabs past the frequent ones go under «Ещё» (`staticData.tabs[].more`) | cover above the title; primary action full-width under it; the tab row scrolls inside itself |
+| `FocusPage`     | focus top bar; left panel (contents) `w-80`; main column `max-w-[44rem]` or full width for editors; right panel (AI, rubric) `w-96`, closed until its named toggle in the bar opens it (remembered per browser, `ab.focus-aside`) | panels become sheets opened from top-bar buttons; main column full width |
 | `SettingsPage`  | section nav (route links) left; stacked sections: `h2` + one-line description + fields + its own Save at the section's end | section nav becomes the tab row; sections stack |
 | `FormDialog`    | title, minimum fields, footer: Cancel (ghost) + Create (primary); on success, navigate to the new entity | the stock dialog at full width minus the gutter; scrolls inside |
 | `ConfirmDialog` | "Delete course «X»?", consequence in one sentence, Cancel + destructive verb; focus starts on Cancel | same, full width |
 
 - Tables switch to `DataList` with a container query (`@container`), not a viewport breakpoint. No page at 390 px
   scrolls horizontally (e2e fixture).
+- A row that opens one thing is a target as a whole: its main link stretches over the row (`Link variant="stretched"`,
+  a column's `stretch: true` in `DataTable`); other controls in it sit above (`relative z-1`). Row checkboxes appear only
+  after «Выбрать несколько» (`SelectToggle`), so a click on a row never toggles a selection by accident.
+- A filter applies on pick; no «Применить» button. The teacher inbox shows its filters only past ten items.
 - Editors (block editor, code-test builder) are the only screens allowed to show a "desktop only" state.
 
 ## 7. Data states
