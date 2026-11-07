@@ -4,7 +4,6 @@ import { m } from '#/paraglide/messages'
 import type { ActivityDropoffRow, CourseId } from '#/shared/api/gen/types.gen'
 import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { KpiTile } from '#/shared/components/charts/kpi-tile'
-import { TimeSeries } from '#/shared/components/charts/time-series'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
 import { Link } from '#/shared/components/link'
@@ -17,6 +16,8 @@ import { courseOptions } from '../queries'
 import { AsOf } from './as-of'
 import { BackLink } from './back-link'
 import { CourseHealth } from './course-health'
+import { TABLE_LOOK } from './table-look'
+import { TrendLine } from './trend-line'
 
 const columns = (courseId: CourseId): DataColumn<ActivityDropoffRow>[] => [
   {
@@ -68,7 +69,7 @@ export function CourseDrill({ filters, courseId }: { filters: Filters; courseId:
     { label: m.analytics_certificates(), value: formatNumber(summary.certificates_issued) },
   ]
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-col items-start gap-2">
         <BackLink />
         <h2 className="text-xl font-semibold wrap-anywhere">{data.course.name}</h2>
@@ -79,7 +80,7 @@ export function CourseDrill({ filters, courseId }: { filters: Filters; courseId:
           <KpiTile key={tile.label} label={tile.label} value={tile.value} />
         ))}
       </KpiStrip>
-      <TimeSeries
+      <TrendLine
         title={m.analytics_engagement_trend()}
         data={data.engagement_trend.map(point => ({
           label: formatDayMonth(point.bucket_start_unix),
@@ -97,12 +98,14 @@ export function CourseDrill({ filters, courseId }: { filters: Filters; courseId:
           emptyText={m.analytics_dropoff_empty()}
           onRetry={() => void refetch()}
         >
-          <DataTable
-            label={m.analytics_dropoff_table()}
-            rows={data.activity_dropoff}
-            columns={columns(courseId)}
-            getKey={row => row.activity_id}
-          />
+          <div className={`${TABLE_LOOK} [&_td:nth-child(n+2)]:text-right [&_th:nth-child(n+2)]:text-right`}>
+            <DataTable
+              label={m.analytics_dropoff_table()}
+              rows={data.activity_dropoff}
+              columns={columns(courseId)}
+              getKey={row => row.activity_id}
+            />
+          </div>
         </ListState>
       </section>
       <CourseHealth filters={filters} courseId={courseId} data={data} />

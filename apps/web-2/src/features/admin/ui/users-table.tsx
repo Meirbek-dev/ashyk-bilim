@@ -4,18 +4,20 @@ import { useNavigate } from '@tanstack/react-router'
 import { m } from '#/paraglide/messages'
 import type { AdminUser } from '#/shared/api/gen/types.gen'
 import type { DataColumn } from '#/shared/components/data-columns'
+import { DataList } from '#/shared/components/data-list'
 import { DataTable } from '#/shared/components/data-table'
 import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { UserAvatar } from '#/shared/components/user-avatar'
 import { formatDate } from '#/shared/i18n/format'
 
 import { usersListOptions, type UsersFilter } from '../queries'
 import { userName } from '../model/admin'
-import { userBadge } from './labels'
+import { userStatus } from './user-state'
+import { UserRow } from './user-row'
 import { RoleNames } from './role-names'
+import { tableOnPage } from './table-layout'
 
 const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
   {
@@ -26,13 +28,13 @@ const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
     cell: user => (
       <span className="flex items-center gap-3">
         <UserAvatar name={userName(user)} avatarKey={user.avatar_key} />
-        <span className="flex min-w-0 flex-col">
+        <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
           <Link variant="title" from="/admin/users" to="/admin/users" search={prev => ({ ...prev, user: user.id })}>
             <span className="font-medium wrap-anywhere">{userName(user)}</span>
           </Link>
           {/* A deleted account's login is a `deleted-<id>` placeholder: nothing to read. */}
           {user.deleted ? null : (
-            <span className="text-sm font-normal wrap-anywhere text-muted-foreground">@{user.username}</span>
+            <span className="font-normal wrap-anywhere text-muted-foreground">@{user.username}</span>
           )}
         </span>
       </span>
@@ -54,15 +56,7 @@ const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
     id: 'status',
     header: m.admin_users_col_status(),
     priority: 2,
-    cell: user => {
-      // The usual state is quiet text; a disabled or deleted account gets a badge, so it stands out in a page of actives.
-      const badge = userBadge(user)
-      return user.status === 'active' ? (
-        <span className="text-muted-foreground">{badge.label()}</span>
-      ) : (
-        <StatusBadge tone={badge.tone}>{badge.label()}</StatusBadge>
-      )
-    },
+    cell: userStatus,
   },
   {
     id: 'created',
@@ -87,7 +81,14 @@ export function UsersTable({ filter, namedRoles }: { filter: UsersFilter; namedR
       onResetFilters={() => void navigate({ to: '/admin/users', search: {} })}
       onRetry={() => void query.refetch()}
     >
-      <DataTable label={m.admin_users_table()} rows={users} columns={columns(namedRoles)} getKey={user => user.id} />
+      <div className={`hidden @2xl:block ${tableOnPage}`}>
+        <DataTable label={m.admin_users_table()} rows={users} columns={columns(namedRoles)} getKey={user => user.id} />
+      </div>
+      <div className="@2xl:hidden">
+        <DataList items={users} getKey={user => user.id} variant="rows">
+          {user => <UserRow user={user} namedRoles={namedRoles} />}
+        </DataList>
+      </div>
       <ShowMore
         hasMore={query.hasNextPage}
         pending={query.isFetchingNextPage}

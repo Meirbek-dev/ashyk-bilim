@@ -45,13 +45,13 @@ export function FilesList({ files }: { files: readonly AttachedFile[] }) {
   const first = files.find(file => showsInline(file.content_type))
   if (files.length === 0) return <p className="text-sm text-muted-foreground">{m.grading_no_files()}</p>
   return (
-    <div className="flex flex-col gap-2">
-      <ul className="flex flex-col divide-y rounded-lg border">
+    <div className="flex flex-col gap-4">
+      <ul className="flex flex-col divide-y border-y">
         {files.map(file => (
-          <li key={file.id} className="flex min-h-row min-w-0 items-center gap-2 px-2">
+          <li key={file.id} className="flex min-h-row min-w-0 items-center gap-2">
             <Button
               variant="ghost"
-              className="min-w-0 flex-1 justify-start"
+              className="-ms-2.5 min-w-0 flex-1 justify-start"
               aria-label={m.grading_download({ name: file.filename })}
               onClick={() => void signed(file).then(path => path && save(path))}
             >

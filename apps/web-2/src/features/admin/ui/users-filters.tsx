@@ -17,7 +17,7 @@ export function UsersFilters({ search, namedRoles }: { search: UsersSearch; name
     void navigate({ to: '/admin/users', search: { ...search, ...patch, user: undefined } })
   const sort = search.sort ?? 'newest'
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="-ml-4 flex flex-col items-start gap-1 @2xl:ml-0 @2xl:flex-row @2xl:flex-wrap @2xl:gap-2">
       <FilterMenu
         choice={{
           label: m.admin_users_sort_label({ sort: sortLabels[sort]() }),

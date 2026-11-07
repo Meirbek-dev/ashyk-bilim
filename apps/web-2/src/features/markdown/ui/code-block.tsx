@@ -37,8 +37,8 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
     void navigator.clipboard.writeText(code).then(() => setCopied(true))
   }
   return (
-    <figure className="ab-code my-4 overflow-hidden rounded-md border border-border bg-muted">
-      <figcaption className="flex items-center justify-between gap-2 border-b border-border pl-3 text-xs text-muted-foreground">
+    <figure className="ab-code my-5 border-y [&_pre]:bg-transparent [&_pre]:px-0 [&_pre]:pt-0">
+      <figcaption className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>{grammar ?? m.markdown_code_plain()}</span>
         <IconButton
           label={copied ? m.markdown_copied() : m.markdown_copy()}

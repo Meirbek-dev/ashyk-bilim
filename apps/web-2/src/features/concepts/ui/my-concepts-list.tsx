@@ -19,9 +19,9 @@ export function MyConceptsList({ courseId }: { courseId: CourseId }) {
         </h2>
         <p className="max-w-prose text-sm text-muted-foreground">{m.concepts_mine_intro()}</p>
       </div>
-      <ul className="flex flex-col gap-4">
+      <ul className="grid border-t @3xl:grid-cols-2 @3xl:gap-x-10">
         {weakFirst(data.concepts).map(concept => (
-          <li key={concept.concept_id}>
+          <li key={concept.concept_id} className="border-b py-3">
             <MasteryItem concept={concept} reviewIn={courseId} />
           </li>
         ))}

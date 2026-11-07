@@ -58,14 +58,17 @@ export function PlatformGeneral({ platform, base }: { platform: Platform; base: 
         <form.AppField name="label">
           {field => <field.TextField label={m.admin_platform_label()} description={m.admin_platform_label_hint()} />}
         </form.AppField>
+        <form.AppField name="email">
+          {field => <field.TextField label={m.admin_platform_email()} type="email" />}
+        </form.AppField>
         <form.AppField name="description">
           {field => <field.TextField label={m.admin_field_description()} />}
         </form.AppField>
         <form.AppField name="about">{field => <field.TextareaField label={m.admin_platform_about()} />}</form.AppField>
         {/* OPEN-G-4: the landing in the visitor's language; blank falls back to the Russian text above. */}
-        <fieldset className="flex flex-col gap-4 rounded-lg border p-4">
-          <legend className="px-1 text-sm font-medium">{m.admin_platform_translations()}</legend>
-          <p className="text-sm text-muted-foreground">{m.admin_platform_translations_hint()}</p>
+        <fieldset className="mt-4 flex flex-col gap-4 border-t pt-6">
+          <legend className="float-left font-heading text-lg font-semibold">{m.admin_platform_translations()}</legend>
+          <p className="-mt-3 text-sm text-muted-foreground">{m.admin_platform_translations_hint()}</p>
           <form.AppField name="description_kk">
             {field => <field.TextField label={m.admin_platform_description_kk()} />}
           </form.AppField>
@@ -79,9 +82,6 @@ export function PlatformGeneral({ platform, base }: { platform: Platform; base: 
             {field => <field.TextareaField label={m.admin_platform_about_en()} />}
           </form.AppField>
         </fieldset>
-        <form.AppField name="email">
-          {field => <field.TextField label={m.admin_platform_email()} type="email" />}
-        </form.AppField>
       </SettingsSection>
       <ConflictDialog {...write.dialog(() => form.handleSubmit())} />
     </>

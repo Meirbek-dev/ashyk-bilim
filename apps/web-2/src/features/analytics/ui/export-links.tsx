@@ -11,9 +11,9 @@ export function ExportLinks({ links }: { links: readonly { href: string; label: 
   const { data: session } = useSuspenseQuery(sessionOptions())
   if (!hasCapability(session, 'analytics.export')) return null
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="-ms-2.5 flex flex-wrap gap-2">
       {links.map(link => (
-        <Anchor key={link.href} className={buttonVariants({ variant: 'outline' })} href={link.href} download>
+        <Anchor key={link.href} className={buttonVariants({ variant: 'ghost', size: 'sm' })} href={link.href} download>
           <Download aria-hidden />
           {link.label}
         </Anchor>

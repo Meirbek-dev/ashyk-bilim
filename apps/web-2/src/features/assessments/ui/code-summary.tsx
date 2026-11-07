@@ -9,7 +9,7 @@ export function CodeSummary({ body }: { body: CodeBody }) {
   const tests = body.tests ?? []
   const visible = tests.filter(test => test.is_visible === true).length
   return (
-    <div className="flex flex-col gap-1 rounded-lg border p-4 text-sm">
+    <div className="flex flex-col gap-1 border-y py-3 text-sm">
       <p>
         {m.assessments_code_summary({
           languages: body.languages?.length ?? 0,

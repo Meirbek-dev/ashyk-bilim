@@ -1,11 +1,11 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { useNavigate, Link as RouterLink } from '@tanstack/react-router'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 
 import { shortcuts } from '#/features/catalog'
 import { m } from '#/paraglide/messages'
 import type { ActivityState, CourseId } from '#/shared/api/gen/types.gen'
-import { buttonVariants } from '#/shared/components/button-variants'
+
+import { NeighbourTurn } from './neighbour-turn'
 
 type NeighbourProps = {
   courseId: CourseId
@@ -15,7 +15,7 @@ type NeighbourProps = {
   nextShown?: boolean
 }
 
-/** Previous and next activity in contents order (← and →); none past either end. */
+/** Previous and next activity in contents order (← and →), named as a book's running foot; none past either end. */
 export function NeighbourLinks({ courseId, prev, next, nextShown = false }: NeighbourProps) {
   const navigate = useNavigate()
   const go = (target: ActivityState | null) => {
@@ -24,29 +24,9 @@ export function NeighbourLinks({ courseId, prev, next, nextShown = false }: Neig
   useHotkey(shortcuts.prev.hotkey, () => go(prev))
   useHotkey(shortcuts.next.hotkey, () => go(next))
   return (
-    <nav aria-label={m.player_neighbours()} className="ms-auto flex items-center gap-2">
-      {prev ? (
-        <RouterLink
-          to="/learn/$courseId/$activityId"
-          params={{ courseId, activityId: prev.id }}
-          className={buttonVariants({ variant: 'ghost' })}
-          aria-label={`${m.player_prev()}: ${prev.title}`}
-        >
-          <ChevronLeft aria-hidden />
-          {m.player_prev()}
-        </RouterLink>
-      ) : null}
-      {next && !nextShown ? (
-        <RouterLink
-          to="/learn/$courseId/$activityId"
-          params={{ courseId, activityId: next.id }}
-          className={buttonVariants({ variant: 'ghost' })}
-          aria-label={`${m.player_next()}: ${next.title}`}
-        >
-          {m.player_next()}
-          <ChevronRight aria-hidden />
-        </RouterLink>
-      ) : null}
+    <nav aria-label={m.player_neighbours()} className="grid grid-cols-2 gap-x-6 empty:hidden">
+      {prev ? <NeighbourTurn courseId={courseId} target={prev} label={m.player_prev()} /> : null}
+      {next && !nextShown ? <NeighbourTurn courseId={courseId} target={next} label={m.player_next()} forward /> : null}
     </nav>
   )
 }

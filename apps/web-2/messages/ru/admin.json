@@ -249,6 +249,7 @@
   "admin_perm_resource_usergroup": "Группы",
   "admin_perm_resource_role": "Роли",
   "admin_perm_resource_api_token": "API-токены",
+  "admin_perm_other_actions": "Другие действия",
   "admin_perm_action_any": "Все действия",
   "admin_perm_action_read": "Просмотр",
   "admin_perm_action_create": "Создание",

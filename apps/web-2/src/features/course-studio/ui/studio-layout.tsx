@@ -1,16 +1,16 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Outlet, useBlocker, useMatch, useMatchRoute, useParams, Link as RouterLink } from '@tanstack/react-router'
+import { Outlet, useBlocker, useMatchRoute, useParams, Link as RouterLink } from '@tanstack/react-router'
 import { ArrowLeft, Eye } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { ActivityDetail, ActivityType } from '#/shared/api/gen/types.gen'
-import { Link } from '#/shared/components/link'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { buttonVariants } from '#/shared/components/button-variants'
 
 import { activityOptions } from '../curriculum-queries'
 import { PublishSwitch } from './publish-switch'
+import { StudioTabs } from './studio-tabs'
 import { activitySaveState, SaveStatusContext, type SaveState, type SaveStates } from './save-status'
 
 const saveLabels: Record<SaveState, () => string> = {
@@ -31,7 +31,6 @@ const HANDED_IN = {
   document: false,
   custom: false,
 } satisfies Record<ActivityType, boolean>
-const WORK_TABS = ['/submissions', '/results']
 
 // The activity as its learner sees it (B-CST-43): graded work on its own page (a preview: never counted), a lesson in
 // the player (staff preview). A file task's hand-in page marks a staff attempt as a preview too (server UX-182).
@@ -56,7 +55,6 @@ type CourseStudioLayoutProps = {
 /** The activity studio (spec 5.4): focus layout, its 4 route tabs, autosave status and the published switch. */
 export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayoutProps) {
   const { courseId, activityId } = useParams({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
-  const { staticData } = useMatch({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
   // The AI panel helps write the lesson; settings, submissions and results get the full width.
   const matchRoute = useMatchRoute()
@@ -69,6 +67,7 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
     to: '/teach/courses/$courseId/activities/$activityId/results',
     params: { courseId, activityId },
   })
+  const writing = Boolean(editing) && activity.activity_type === 'dynamic'
   const [save, setSave] = useState<SaveStates>({})
   const state = activitySaveState(save, activityId)
   // A reload or a closed tab inside the autosave pause (or with a refused save) would drop the edit: the browser asks
@@ -114,22 +113,17 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
       wide
     >
       <div className="flex flex-col gap-gutter">
-        <nav aria-label={m.ui_sections()} className="flex overflow-x-auto border-b">
-          {(staticData.tabs ?? [])
-            .filter(tab => HANDED_IN[activity.activity_type] || !WORK_TABS.some(work => tab.to.endsWith(work)))
-            .map(tab => (
-              <Link key={tab.to} variant="tab" to={tab.to} params={{ courseId, activityId }}>
-                {tab.label()}
-              </Link>
-            ))}
-        </nav>
-        <SaveStatusContext
-          value={(id, next, editorId = id) =>
-            setSave(current => ({ ...current, [id]: { ...current[id], [editorId]: next } }))
-          }
-        >
-          <Outlet />
-        </SaveStatusContext>
+        <StudioTabs handedIn={HANDED_IN[activity.activity_type]} />
+        {/* A teacher's tool is compact (DESIGN 5), except the lesson's page: it is written at the size it is read. */}
+        <div data-density={writing ? undefined : 'compact'} className="flex min-w-0 flex-col">
+          <SaveStatusContext
+            value={(id, next, editorId = id) =>
+              setSave(current => ({ ...current, [id]: { ...current[id], [editorId]: next } }))
+            }
+          >
+            <Outlet />
+          </SaveStatusContext>
+        </div>
       </div>
     </FocusPage>
   )

@@ -39,24 +39,32 @@ export function AddContributors({ courseId }: { courseId: string }) {
     <form
       noValidate
       aria-label={m.studio_team_add()}
-      className="flex flex-col items-start gap-4"
+      className="flex flex-col gap-3 @xl:flex-row @xl:flex-wrap @xl:items-end"
       onSubmit={event => {
         event.preventDefault()
         void form.handleSubmit()
       }}
     >
-      <div className="w-full">
+      <div className="min-w-0 @xl:flex-1">
         <Suspense fallback={<Skeleton className="h-row w-full" />}>
           <PeoplePicker label={m.studio_team_people()} value={people} onValueChange={setPeople} />
         </Suspense>
       </div>
-      <form.AppField name="role">
-        {field => <field.SelectField label={m.studio_role_label()} options={roleOptions} />}
-      </form.AppField>
-      <SubmitButton type="submit" variant="outline" pending={add.isPending} disabled={people.length === 0}>
-        {m.studio_team_add_submit()}
-      </SubmitButton>
-      {add.error ? <ErrorAlert>{presentError(add.error)}</ErrorAlert> : null}
+      <div className="@xl:w-44">
+        <form.AppField name="role">
+          {field => <field.SelectField label={m.studio_role_label()} options={roleOptions} />}
+        </form.AppField>
+      </div>
+      <div>
+        <SubmitButton type="submit" variant="outline" pending={add.isPending} disabled={people.length === 0}>
+          {m.studio_team_add_submit()}
+        </SubmitButton>
+      </div>
+      {add.error ? (
+        <div className="w-full">
+          <ErrorAlert>{presentError(add.error)}</ErrorAlert>
+        </div>
+      ) : null}
     </form>
   )
 }

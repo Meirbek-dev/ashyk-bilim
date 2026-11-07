@@ -1,11 +1,11 @@
 import { m } from '#/paraglide/messages'
 import type { DrillMetric } from '#/shared/api/gen/types.gen'
 import type { DataColumn } from '#/shared/components/data-columns'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDate, formatNumber } from '#/shared/i18n/format'
 
 import type { DrillRow } from '../model/analytics'
 import { hours, percent, score } from './kpi'
+import { ToneText } from './tone-text'
 
 const dash = '—'
 type Column = DataColumn<DrillRow>
@@ -41,9 +41,13 @@ const backlog = (): Column[] => [
     header: m.analytics_col_age(),
     priority: 2,
     cell: row => (
-      <span className="inline-flex flex-wrap items-center gap-1">
-        {hours(row.age_hours)}
-        {row.sla_breached ? <StatusBadge tone="destructive">{m.analytics_sla_breached()}</StatusBadge> : null}
+      <span className="inline-flex flex-col">
+        <span className="tabular-nums">{hours(row.age_hours)}</span>
+        {row.sla_breached ? (
+          <span className="text-xs">
+            <ToneText tone="destructive">{m.analytics_sla_breached()}</ToneText>
+          </span>
+        ) : null}
       </span>
     ),
   },
@@ -62,11 +66,11 @@ const passRate = (): Column[] => [
     // No score yet (awaiting grading, returned for revision) is not «Не сдано».
     cell: row =>
       row.passed ? (
-        <StatusBadge tone="success">{m.analytics_passed()}</StatusBadge>
+        <ToneText tone="success">{m.analytics_passed()}</ToneText>
       ) : row.best_score === null || row.best_score === undefined ? (
-        <StatusBadge tone="neutral">{m.analytics_not_graded()}</StatusBadge>
+        <ToneText tone="neutral">{m.analytics_not_graded()}</ToneText>
       ) : (
-        <StatusBadge tone="neutral">{m.analytics_failed()}</StatusBadge>
+        <ToneText tone="neutral">{m.analytics_failed()}</ToneText>
       ),
   },
 ]
@@ -95,6 +99,14 @@ const progress = (): Column[] => [
     cell: row => (row.last_activity_at_unix ? formatDate(row.last_activity_at_unix) : dash),
   },
 ]
+
+/** Which columns of each drill-through hold figures: they end on one line. */
+export const drillFigures: Record<DrillMetric, string> = {
+  backlog: '[&_td:last-child]:text-right [&_th:last-child]:text-right',
+  pass_rate: '[&_td:nth-child(n+2):nth-child(-n+4)]:text-right [&_th:nth-child(n+2):nth-child(-n+4)]:text-right',
+  completion_rate: '[&_td:nth-child(n+3):nth-child(-n+4)]:text-right [&_th:nth-child(n+3):nth-child(-n+4)]:text-right',
+  active_learners: '[&_td:nth-child(n+3):nth-child(-n+4)]:text-right [&_th:nth-child(n+3):nth-child(-n+4)]:text-right',
+}
 
 /** The columns of each drill-through: the fields its rows carry (see `drillRowSchema`). */
 export function drillColumns(metric: DrillMetric): Column[] {

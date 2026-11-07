@@ -5,7 +5,6 @@ import { useState } from 'react'
 import { m } from '#/paraglide/messages'
 import type { AdminUser } from '#/shared/api/gen/types.gen'
 import { IconButton } from '#/shared/components/icon-button'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { toast } from '#/shared/ui/toast'
 
@@ -13,7 +12,7 @@ import { unassignRoleOptions } from '../queries'
 
 type RoleListProps = { user: AdminUser; manage: boolean; nameOf: (slug: string) => string }
 
-/** The role badges; with `manage_roles` each has «×», which asks before the role goes. */
+/** The roles, one to a line; with `manage_roles` each has «×», which asks before the role goes. */
 export function RoleList({ user, manage, nameOf }: RoleListProps) {
   const unassign = useMutation(unassignRoleOptions(useQueryClient()))
   const [removing, setRemoving] = useState<string | null>(null)
@@ -29,10 +28,10 @@ export function RoleList({ user, manage, nameOf }: RoleListProps) {
     )
   return (
     <>
-      <ul className="flex flex-wrap gap-2">
+      <ul className="flex flex-col">
         {user.roles.map(slug => (
-          <li key={slug} className="flex items-center gap-1">
-            <StatusBadge tone="neutral">{nameOf(slug)}</StatusBadge>
+          <li key={slug} className="flex min-h-9 items-center justify-between gap-2">
+            <span className="min-w-0 wrap-anywhere">{nameOf(slug)}</span>
             {manage ? (
               <IconButton
                 label={m.admin_user_role_remove({ role: nameOf(slug) })}

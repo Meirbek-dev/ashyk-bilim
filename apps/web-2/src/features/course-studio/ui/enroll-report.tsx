@@ -21,7 +21,7 @@ export function EnrollReport({ result, preview = false }: { result: EnrollLearne
   return (
     <section
       aria-label={preview ? m.studio_roster_preview() : m.studio_roster_report()}
-      className="flex flex-col gap-2 rounded-md border p-4 text-sm"
+      className="flex flex-col gap-2 border-y py-3 text-sm"
     >
       <h3 className="font-medium">{preview ? m.studio_roster_preview() : m.studio_roster_report()}</h3>
       <ul className="flex flex-col gap-1">

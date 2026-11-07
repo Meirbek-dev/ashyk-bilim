@@ -13,7 +13,7 @@ export function ContinueSection({ items }: { items: readonly ContinueLearning[] 
     <HomeSection title={m.home_continue_title()}>
       <ContinueHero item={first} />
       {rest.length > 0 ? (
-        <ul className="grid gap-2 @3xl:grid-cols-2">
+        <ul className="grid gap-x-8 border-t pt-1 @3xl:grid-cols-2">
           {rest.map(item => (
             <li key={item.course_id}>
               <ContinueRow item={item} />

@@ -1,24 +1,17 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
-
 import { m } from '#/paraglide/messages'
-import type { AssessmentItem, GradeAction, GradeRequest, TeacherSubmission } from '#/shared/api/gen/types.gen'
-import { useAppForm } from '#/shared/components/form/use-app-form'
+import type { AssessmentItem, TeacherSubmission } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 
 import { transferToGradeForm } from '../model/ai-draft'
-import { gradeForm, gradeFormSchema, gradeRequest, unscoredManual } from '../model/grade-form'
 import { typedItemsPercent } from '../model/scoring'
-import { type ReviewIds, saveGradeOptions } from '../mutations'
-import { reviewOptions } from '../queries'
+import type { ReviewIds } from '../mutations'
 import { AiDraft } from './ai-draft'
+import { GRADE_LINE, SCORE_LINE } from './field-look'
 import { GradeActions } from './grade-actions'
 import { ItemCard } from './item-card'
 import { scoreText } from './labels'
-import { useAdvance } from './review-nav'
-import { useGradeSave } from './use-grade-save'
-import { useFeedbackDraft } from './feedback-draft'
+import { useAssessmentGrade } from './use-assessment-grade'
 
 type AssessmentGradeFormProps = { ids: ReviewIds; submission: TeacherSubmission; items: readonly AssessmentItem[] }
 
@@ -29,35 +22,9 @@ type AssessmentGradeFormProps = { ids: ReviewIds; submission: TeacherSubmission;
  * review still unscored says which, before the server's bare 409.
  */
 export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeFormProps) {
-  const queryClient = useQueryClient()
-  const mutation = useMutation(saveGradeOptions(queryClient, ids))
-  const [initial] = useState(() => gradeForm(submission, items))
-  const action = useRef<GradeAction>('save')
-  const advance = useAdvance(ids.work)
-  const graded = new Map((submission.grading.items ?? []).map(item => [item.item_id, item]))
-  const grade = useGradeSave(
-    (body: GradeRequest, version) =>
-      mutation.mutateAsync({ path: { submission_id: submission.id }, body, headers: { 'If-Match': version } }),
-    async () => (await queryClient.query({ ...reviewOptions(submission.id), staleTime: 0 })).version,
-    submission.version,
-    advance,
-  )
-  const form = useAppForm(gradeFormSchema, {
-    defaultValues: initial,
-    leaveGuard: true,
-    onSubmit: values => grade.save(gradeRequest(values, gradeForm(submission, items), action.current)),
-  })
-  useFeedbackDraft(update => form.setFieldValue('feedback', current => update(current ?? '')))
-  const [unscored, setUnscored] = useState<number[]>([])
-  const submit = (chosen: GradeAction) => {
-    const missing = chosen === 'publish' ? unscoredManual(form.state.values, submission) : []
-    setUnscored(missing)
-    if (missing.length > 0) return
-    action.current = chosen
-    void form.handleSubmit()
-  }
+  const { form, grade, mutation, graded, unscored, submit } = useAssessmentGrade(ids, submission, items)
   return (
-    <form noValidate className="flex flex-col gap-gutter" onSubmit={event => event.preventDefault()}>
+    <form noValidate className="flex flex-col" onSubmit={event => event.preventDefault()}>
       <AiDraft
         ids={ids}
         onTransfer={draft => {
@@ -66,13 +33,16 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
           form.setFieldValue('feedback', next.feedback)
         }}
       />
-      <ol className="flex flex-col gap-4">
+      <ol className="flex flex-col">
         {items.map((item, index) => (
           <ItemCard key={item.id} item={item} answer={submission.answers[item.id]} graded={graded.get(item.id)}>
-            <div className="grid gap-4 @2xl:grid-cols-2">
+            <div className={SCORE_LINE}>
               <form.AppField name={`items[${index}].score`}>
                 {field => <field.TextField label={m.grading_item_score({ max: item.max_score })} inputMode="decimal" />}
               </form.AppField>
+            </div>
+            {/* Most questions get no comment: the box grows with what is typed, a tall one per question only lengthened the page. */}
+            <div className="[&_textarea]:field-sizing-content [&_textarea]:min-h-10">
               <form.AppField name={`items[${index}].feedback`}>
                 {field => <field.TextareaField label={m.grading_item_feedback()} />}
               </form.AppField>
@@ -80,29 +50,38 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
           </ItemCard>
         ))}
       </ol>
-      <form.Subscribe selector={state => state.values.items}>
-        {rows => (
-          <p className="text-sm text-muted-foreground tabular-nums">
-            {m.grading_items_total({ percent: scoreText(typedItemsPercent(rows)) })}
-          </p>
-        )}
-      </form.Subscribe>
-      <div className="max-w-xs">
-        <form.AppField name="final_score">
-          {field => <field.TextField label={m.grading_override()} inputMode="decimal" />}
-        </form.AppField>
+      {/* The whole work: what the learner reads on the left, the grade on the right, under the column of scores. */}
+      <div className="grid gap-x-10 gap-y-4 py-8 @3xl/review:grid-cols-[minmax(0,1fr)_17rem]">
+        <div className="[&_textarea]:min-h-32">
+          <form.AppField name="feedback">{field => <field.TextareaField label={m.grading_feedback()} />}</form.AppField>
+        </div>
+        <div className={`${GRADE_LINE} @3xl/review:order-last`}>
+          <form.AppField name="final_score">
+            {field => <field.TextField label={m.grading_override()} inputMode="decimal" />}
+          </form.AppField>
+        </div>
       </div>
-      <form.AppField name="feedback">{field => <field.TextareaField label={m.grading_feedback()} />}</form.AppField>
       {unscored.length > 0 ? (
         <ErrorAlert>{m.grading_manual_unscored({ numbers: unscored.join(', ') })}</ErrorAlert>
       ) : null}
-      <GradeActions
-        allowed={submission.allowed_actions}
-        published={submission.status === 'published'}
-        pending={grade.pending}
-        onAction={submit}
-        error={mutation.error}
-      />
+      {/* The next step stays in sight down a long work; on a phone it closes the page (three rows would fill the screen). */}
+      <div className="-mx-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t bg-background px-4 py-3 @3xl/review:sticky @3xl/review:bottom-0 @3xl/review:z-10 @3xl:-mx-8 @3xl:px-8">
+        <form.Subscribe selector={state => state.values.items}>
+          {rows => (
+            <p className="font-heading text-lg tabular-nums">
+              {m.grading_items_total({ percent: scoreText(typedItemsPercent(rows)) })}
+            </p>
+          )}
+        </form.Subscribe>
+        <GradeActions
+          allowed={submission.allowed_actions}
+          published={submission.status === 'published'}
+          pending={grade.pending}
+          onAction={submit}
+          error={mutation.error}
+          layout="bar"
+        />
+      </div>
       <ConflictDialog {...grade.dialog} />
     </form>
   )

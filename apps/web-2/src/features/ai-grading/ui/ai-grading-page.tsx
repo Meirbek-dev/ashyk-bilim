@@ -21,7 +21,7 @@ export function AiGradingPage(): ReactElement {
   const { data: settings } = useSuspenseQuery(settingsOptions(courseId))
   const { data: metrics } = useSuspenseQuery(metricsOptions(courseId, search))
   return (
-    <div className="@container flex flex-col gap-8">
+    <div className="@container flex flex-col gap-10">
       <AutoDrafts courseId={courseId} settings={settings} />
       <MetricsSection courseId={courseId} search={search} metrics={metrics} />
       <ActivitiesSection courseId={courseId} rows={metrics.activities} />

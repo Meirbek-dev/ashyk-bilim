@@ -62,7 +62,7 @@ export function LearningPage() {
         onResetFilters={() => void navigate({ to: '/learning', search: {} })}
         onRetry={() => void query.refetch()}
       >
-        <ul className="grid gap-5 @xl:grid-cols-2 @4xl:grid-cols-3">
+        <ul className="grid gap-x-6 gap-y-8 @xl:grid-cols-2 @xl:gap-y-10 @4xl:grid-cols-3">
           {shown.map(run => (
             <li key={run.id}>
               <RunItem run={run} />

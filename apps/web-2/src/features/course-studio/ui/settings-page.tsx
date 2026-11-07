@@ -15,6 +15,9 @@ import { DetailsSection } from './details-section'
 import { LearningsSection } from './learnings-section'
 import { ThumbnailSection } from './thumbnail-section'
 
+/** Sections sit on the paper, split by a hairline (DESIGN 5); a hash link lands under the shell's bar. */
+export const SECTION = 'max-w-prose scroll-mt-20 [&+&]:border-t [&+&]:pt-10'
+
 type Section = { id: string; label: () => string; body: ReactNode }
 
 /**
@@ -76,7 +79,7 @@ export function CourseSettingsPage() {
   return (
     <SettingsPage nav={nav}>
       {sections.map(section => (
-        <div key={section.id} id={section.id}>
+        <div key={section.id} id={section.id} className={SECTION}>
           {section.body}
         </div>
       ))}

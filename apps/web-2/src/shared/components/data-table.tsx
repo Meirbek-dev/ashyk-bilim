@@ -70,7 +70,7 @@ export function DataTable<T extends RowData>({
       <div ref={scrollRegion(label)} className="hidden @2xl:block">
         <Table>
           <TableCaption className="sr-only">{label}</TableCaption>
-          <TableHeader className="bg-muted">
+          <TableHeader>
             {table.getHeaderGroups().map(group => (
               <TableRow key={group.id}>
                 {columns.map(column => (

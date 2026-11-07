@@ -39,7 +39,7 @@ export function SubmissionPage() {
   )
   return (
     <FocusPage back={back} title={courseTitle}>
-      <article className="flex flex-col gap-gutter">
+      <article className="flex flex-col gap-gutter @3xl:gap-8">
         <ActivityHeader type="file_submission" title={title} />
         {preview ? <PreviewNote /> : null}
         {locked ? (

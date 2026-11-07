@@ -44,8 +44,11 @@ export function ItemList({ courseId, activityId, assessment, openId }: ItemListP
     )
   }
   return (
-    <section aria-label={m.assessments_items_label()} className="flex min-w-0 flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <section
+      aria-label={m.assessments_items_label()}
+      className="flex min-w-0 flex-col gap-3 @3xl:sticky @3xl:top-18 @3xl:max-h-[calc(100dvh-5.5rem)] @3xl:self-start"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3">
         <p className="text-sm text-muted-foreground">
           {m.assessments_items_summary({
             count: formatNumber(items.length),
@@ -62,7 +65,8 @@ export function ItemList({ courseId, activityId, assessment, openId }: ItemListP
         </div>
       ) : (
         <DragDropProvider plugins={plugins} onDragEnd={drop}>
-          <ol className="flex flex-col gap-2">
+          {/* An exam holds 150 questions: the list scrolls by itself, so the open question stays one look away. */}
+          <ol className="-mt-3 flex max-h-80 min-h-0 flex-col divide-y overflow-y-auto border-b @3xl:max-h-none @3xl:flex-1">
             {items.map((item, index) => (
               <ItemRow
                 key={item.id}

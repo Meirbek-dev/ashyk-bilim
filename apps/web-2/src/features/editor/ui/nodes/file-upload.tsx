@@ -30,9 +30,7 @@ export function FileUpload({ node, updateAttributes }: ViewProps) {
   if (!activityId || !isFileBlock(name))
     return (
       <Wrapper className="my-4">
-        <p className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-          {m.editor_file_missing()}
-        </p>
+        <p className="rounded-md border border-border p-4 text-sm text-muted-foreground">{m.editor_file_missing()}</p>
       </Wrapper>
     )
   const { purpose, blockType } = FILE_BLOCKS[name]

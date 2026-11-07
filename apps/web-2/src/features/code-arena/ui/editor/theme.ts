@@ -11,7 +11,7 @@ export const highlight = HighlightStyle.define([
   { tag: [tags.typeName, tags.className, tags.namespace], class: 'text-info' },
   { tag: [tags.string, tags.special(tags.string), tags.regexp], class: 'text-success' },
   { tag: [tags.number, tags.bool, tags.null, tags.atom, tags.escape], class: 'text-warning' },
-  { tag: [tags.comment, tags.meta], class: 'text-muted-foreground italic' },
+  { tag: [tags.comment, tags.meta], class: 'text-muted-foreground' },
   {
     tag: [tags.function(tags.variableName), tags.function(tags.propertyName), tags.definition(tags.variableName)],
     class: 'font-medium',
@@ -27,13 +27,22 @@ export const chrome = EditorView.theme({
   '&': { backgroundColor: 'var(--background)', color: 'var(--foreground)' },
   // Inset: the editor sits in clipped frames (the workspace, a bordered desk), an outer ring would be cut off.
   '&.cm-focused': { outline: '2px solid var(--ring)', outlineOffset: '-2px' },
-  '.cm-scroller': { fontFamily: 'var(--font-mono)', lineHeight: '1.6' },
-  '.cm-content': { caretColor: 'var(--foreground)', paddingBlock: '0.5rem' },
+  // The gutter's hairline runs to the foot of the pane, past the last line.
+  '.cm-scroller': { height: '100%', fontFamily: 'var(--font-mono)', lineHeight: '1.6' },
+  '.cm-content': { caretColor: 'var(--foreground)', paddingBlock: '0.625rem', paddingInlineStart: '0.25rem' },
   '.cm-cursor, .cm-dropCursor': { borderLeft: '2px solid var(--foreground)' },
-  '.cm-gutters': { backgroundColor: 'var(--background)', color: 'var(--muted-foreground)', border: 'none' },
+  // The numbers stand off the text across a hairline.
+  '.cm-gutters': {
+    alignSelf: 'stretch',
+    backgroundColor: 'var(--background)',
+    color: 'var(--muted-foreground)',
+    border: 'none',
+    borderInlineEnd: '1px solid var(--border)',
+    fontVariantNumeric: 'tabular-nums',
+  },
   '.cm-lineNumbers .cm-gutterElement': { paddingInline: '0.75rem 0.25rem', minWidth: '2.5rem' },
-  '.cm-activeLine': { backgroundColor: mix('accent', 50) },
-  '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--foreground)' },
+  '.cm-activeLine': { backgroundColor: mix('muted', 55) },
+  '.cm-activeLineGutter': { backgroundColor: 'transparent', color: 'var(--foreground)', fontWeight: '500' },
   '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection': { backgroundColor: mix('ring', 30) },
   '.cm-selectionMatch': { backgroundColor: mix('ring', 15) },
   '.cm-matchingBracket, &.cm-focused .cm-matchingBracket': {

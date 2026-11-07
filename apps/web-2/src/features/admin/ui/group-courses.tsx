@@ -26,38 +26,44 @@ export function GroupCourses({ group }: { group: Pick<Usergroup, 'id'> }) {
         </h2>
         {courses.length > 0 ? <p className="text-sm text-muted-foreground">{m.admin_group_courses_hint()}</p> : null}
       </div>
-      <ListState
-        pending={false}
-        error={query.error}
-        count={courses.length}
-        filtered={false}
-        emptyText={m.admin_group_courses_empty()}
-        onRetry={() => void query.refetch()}
-      >
-        <DataList items={courses} getKey={course => course.id}>
-          {course => (
-            <div className="flex items-center gap-3">
-              <CourseCover seed={course.id} imageKey={course.thumbnail_key} shape="thumb" className="w-20 shrink-0" />
-              <p className="min-w-0 flex-1 wrap-anywhere">
-                {course.can_write ? (
-                  <Link to="/teach/courses/$courseId/learners" params={{ courseId: course.id }}>
-                    {course.name}
-                  </Link>
-                ) : (
-                  <Link to="/courses/$courseId" params={{ courseId: course.id }}>
-                    {course.name}
-                  </Link>
+      {/* Inside a section the empty case is a plain sentence: ListState's line is for a whole page. */}
+      {courses.length === 0 && !query.error ? (
+        <p className="max-w-prose text-sm text-muted-foreground">{m.admin_group_courses_empty()}</p>
+      ) : (
+        <ListState
+          pending={false}
+          error={query.error}
+          count={courses.length}
+          filtered={false}
+          emptyText={m.admin_group_courses_empty()}
+          onRetry={() => void query.refetch()}
+        >
+          <DataList items={courses} getKey={course => course.id} variant="rows">
+            {course => (
+              <div className="flex items-center gap-3">
+                <CourseCover imageKey={course.thumbnail_key} className="w-14 shrink-0 rounded-sm" />
+                <p className="min-w-0 flex-1 text-sm font-medium wrap-anywhere">
+                  {course.can_write ? (
+                    <Link variant="title" to="/teach/courses/$courseId/learners" params={{ courseId: course.id }}>
+                      {course.name}
+                    </Link>
+                  ) : (
+                    <Link variant="title" to="/courses/$courseId" params={{ courseId: course.id }}>
+                      {course.name}
+                    </Link>
+                  )}
+                </p>
+                {/* An archived course is a fact to read; a draft is the exception worth a mark. */}
+                {course.archived ? (
+                  <span className="shrink-0 text-sm text-muted-foreground">{m.admin_group_course_archived()}</span>
+                ) : course.published ? null : (
+                  <StatusBadge tone="warning">{m.admin_group_course_draft()}</StatusBadge>
                 )}
-              </p>
-              {course.archived ? (
-                <StatusBadge tone="neutral">{m.admin_group_course_archived()}</StatusBadge>
-              ) : course.published ? null : (
-                <StatusBadge tone="warning">{m.admin_group_course_draft()}</StatusBadge>
-              )}
-            </div>
-          )}
-        </DataList>
-      </ListState>
+              </div>
+            )}
+          </DataList>
+        </ListState>
+      )}
     </section>
   )
 }

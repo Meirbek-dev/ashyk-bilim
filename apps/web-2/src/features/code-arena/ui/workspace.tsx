@@ -42,7 +42,7 @@ export function Workspace({ courseId, challenge, code, draft, receivedAt }: Work
       data-expanded={expanded || undefined}
       // Viewport-tall under the page bar, so the editor, the console and «Сдать» are all in sight; never cramped.
       style={{ '--ide-height': 'max(30rem, min(calc(100svh - 6rem), 60rem))' } as Height}
-      className="flex h-(--ide-height) min-w-0 flex-col overflow-hidden rounded-xl border bg-background data-expanded:fixed data-expanded:inset-0 data-expanded:z-50 data-expanded:h-auto data-expanded:rounded-none data-expanded:border-0 @5xl:sticky @5xl:top-18"
+      className="flex h-(--ide-height) min-w-0 flex-col overflow-hidden rounded-lg border bg-background data-expanded:fixed data-expanded:inset-0 data-expanded:z-50 data-expanded:h-auto data-expanded:rounded-none data-expanded:border-0 @5xl:sticky @5xl:top-18"
     >
       <h2 id="code-workspace" className="sr-only">
         {m.code_solution()}

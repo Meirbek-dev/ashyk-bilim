@@ -35,11 +35,13 @@ export function GroupPage() {
       {group.allowed_actions.length === 0 ? (
         <p className="max-w-prose text-sm text-muted-foreground">{m.admin_group_read_only()}</p>
       ) : null}
-      <GroupCourses group={group} />
-      <GroupMembers group={group} />
-      {/* Renaming is rare: the courses and people the page is visited for come first. */}
-      {canGroup(group, 'update') ? <GroupEditSection group={group} /> : null}
-      {canGroup(group, 'delete') ? <DeleteGroup group={group} /> : null}
+      <div className="flex flex-col gap-12 pt-4">
+        <GroupCourses group={group} />
+        <GroupMembers group={group} />
+        {/* Renaming is rare: the courses and people the page is visited for come first. */}
+        {canGroup(group, 'update') ? <GroupEditSection group={group} /> : null}
+        {canGroup(group, 'delete') ? <DeleteGroup group={group} /> : null}
+      </div>
     </DetailPage>
   )
 }

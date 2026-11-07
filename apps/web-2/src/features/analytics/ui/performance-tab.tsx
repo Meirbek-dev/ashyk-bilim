@@ -29,8 +29,8 @@ export function PerformanceTab() {
   if (search.courseId) return <CourseDrill filters={filters} courseId={search.courseId} />
   const hrefs = exportHrefs(filters)
   return (
-    <div className="flex flex-col gap-8">
-      <div className="grid gap-gutter @3xl:grid-cols-2">
+    <div className="flex flex-col gap-10">
+      <div className="grid gap-x-12 gap-y-10 @3xl:grid-cols-2">
         <SignalList title={m.analytics_forecasts_title()} items={data.forecasts} courses={data.course_options} />
         <SignalList title={m.analytics_anomalies_title()} items={data.anomalies} courses={data.course_options} />
       </div>

@@ -28,7 +28,10 @@ export function DeleteRole({ role }: { role: Role }) {
       },
     )
   return (
-    <section aria-labelledby="admin_role_delete_section" className="flex max-w-prose flex-col items-start gap-4">
+    <section
+      aria-labelledby="admin_role_delete_section"
+      className="flex max-w-prose flex-col items-start gap-4 border-t pt-8"
+    >
       <div className="flex flex-col gap-1">
         <h2 id="admin_role_delete_section" className="text-xl font-semibold">
           {m.admin_role_delete_section()}

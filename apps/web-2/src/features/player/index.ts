@@ -1,4 +1,5 @@
 export { staffPreview } from './model/player'
+export { valueLine } from './model/value-line'
 export { ensureCompletion, ensureEntry, ensurePlayer, learnerStateOptions } from './queries'
 export { ActivityHeader } from './ui/activity-header'
 export { CompletionPage } from './ui/completion-page'

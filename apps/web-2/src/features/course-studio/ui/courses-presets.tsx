@@ -1,6 +1,7 @@
 import { m } from '#/paraglide/messages'
 import type { CourseSummary } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
+import { revealCurrentTab } from '#/shared/components/templates/settings-page'
 
 import { type CoursesSearch, presetCount, type Preset } from '../model/course'
 
@@ -15,7 +16,12 @@ const PRESETS = ['all', 'drafts', 'published', 'archived'] as const
 /** The preset tabs of `/teach/courses` (`?preset=`), each with its count from the list's `summary`. */
 export function CoursesPresets({ search, summary }: { search: CoursesSearch; summary: CourseSummary | undefined }) {
   return (
-    <nav aria-label={m.studio_preset_label()} className="flex flex-wrap">
+    // Narrow, the row has its own rule and scrolls inside itself; wide, it stands on the rule of the whole filter row.
+    <nav
+      ref={revealCurrentTab}
+      aria-label={m.studio_preset_label()}
+      className="relative flex gap-6 overflow-x-auto border-b @4xl:border-b-0"
+    >
       {PRESETS.map(preset => {
         const value = preset === 'all' ? undefined : preset
         return (

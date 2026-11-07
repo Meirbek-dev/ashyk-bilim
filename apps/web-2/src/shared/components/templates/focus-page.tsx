@@ -80,9 +80,9 @@ export function FocusPage({
           </div>
         ) : null}
         {heading ? (
-          <h1 className="min-w-0 flex-1 truncate text-lg font-semibold">{title}</h1>
+          <h1 className="min-w-0 flex-1 truncate text-lg">{title}</h1>
         ) : (
-          <p className="min-w-0 flex-1 truncate text-lg font-semibold">{title}</p>
+          <p className="min-w-0 flex-1 truncate font-heading text-lg">{title}</p>
         )}
         {saveStatus ? <div className="text-sm text-muted-foreground">{saveStatus}</div> : null}
         {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
@@ -100,8 +100,8 @@ export function FocusPage({
       </header>
       <div className="flex flex-1">
         {contents ? (
-          <nav aria-label={m.ui_contents()} className="hidden w-72 shrink-0 border-r @5xl:block">
-            <div ref={revealCurrentItem} className="sticky top-14 max-h-dvh overflow-y-auto p-4 pb-18">
+          <nav aria-label={m.ui_contents()} className="hidden w-80 shrink-0 border-r @5xl:block">
+            <div ref={revealCurrentItem} className="sticky top-14 max-h-dvh overflow-y-auto px-5 py-6 pb-20">
               {contents}
             </div>
           </nav>
@@ -109,13 +109,13 @@ export function FocusPage({
         <main
           id="main"
           tabIndex={-1}
-          className={`mx-auto w-full px-4 py-gutter @3xl:px-6 ${wide ? '' : 'max-w-prose'}`}
+          className={`mx-auto w-full px-4 py-gutter @3xl:px-8 @3xl:py-10 ${wide ? '' : 'max-w-[44rem]'}`}
         >
           {children}
         </main>
         {aside ? (
           <aside aria-label={aside.label} className="hidden w-96 shrink-0 border-l @5xl:block">
-            <div className="sticky top-14 max-h-dvh overflow-y-auto p-4 pb-18">{aside.content}</div>
+            <div className="sticky top-14 max-h-dvh overflow-y-auto px-5 py-6 pb-20">{aside.content}</div>
           </aside>
         ) : null}
       </div>

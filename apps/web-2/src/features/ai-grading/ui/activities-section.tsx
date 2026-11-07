@@ -18,11 +18,12 @@ const columns = (courseId: CourseId): DataColumn<ActivityDraftStats>[] => [
   {
     id: 'action',
     header: m.ai_grading_col_action(),
+    headerCell: <span className="sr-only">{m.ai_grading_col_action()}</span>,
     priority: 2,
     action: true,
     cell: row => (
       <RouterLink
-        className={buttonVariants({ variant: 'outline' })}
+        className={`-mx-3 ${buttonVariants({ variant: 'ghost', size: 'sm' })}`}
         to="/teach/courses/$courseId/activities/$activityId/submissions"
         params={{ courseId, activityId: row.activity_id }}
         search={{}}
@@ -48,12 +49,14 @@ export function ActivitiesSection({ courseId, rows }: { courseId: CourseId; rows
         emptyText={m.ai_grading_activities_empty()}
         onRetry={() => undefined}
       >
-        <DataTable
-          label={m.ai_grading_activities_title()}
-          rows={rows}
-          columns={columns(courseId)}
-          getKey={row => row.activity_id}
-        />
+        <div className="[&_td:first-child]:ps-0 [&_td:last-child]:pe-0 [&_td:nth-child(n+2)]:text-right [&_th:first-child]:ps-0 [&_th:nth-child(n+2)]:text-right">
+          <DataTable
+            label={m.ai_grading_activities_title()}
+            rows={rows}
+            columns={columns(courseId)}
+            getKey={row => row.activity_id}
+          />
+        </div>
       </ListState>
     </section>
   )

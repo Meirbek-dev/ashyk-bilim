@@ -26,9 +26,12 @@ export function NotificationsList({ unread }: { unread: boolean }) {
       emptyText={unread ? m.notifications_empty_unread() : emptyListText(hasCapability(session, 'teach'))}
       onRetry={() => void query.refetch()}
     >
-      <DataList variant="rows" items={rows} getKey={row => row.notification.id}>
-        {row => <NotificationItem notification={row.notification} folded={row.folded} />}
-      </DataList>
+      {/* The filter's rule is the list's top: no second hairline right under it. */}
+      <div className="-mt-3 [&>ul]:border-t-0">
+        <DataList variant="rows" items={rows} getKey={row => row.notification.id}>
+          {row => <NotificationItem notification={row.notification} folded={row.folded} />}
+        </DataList>
+      </div>
       <ShowMore
         hasMore={query.hasNextPage}
         pending={query.isFetchingNextPage}

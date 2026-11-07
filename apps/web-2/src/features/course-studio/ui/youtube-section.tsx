@@ -55,7 +55,7 @@ export function YoutubeSection({ courseId, activity }: { courseId: string; activ
         </form.AppField>
       </SettingsSection>
       {source.kind === 'youtube' && source.uri ? (
-        <Suspense fallback={<Skeleton className="aspect-video w-full rounded-xl" />}>
+        <Suspense fallback={<Skeleton className="aspect-video w-full rounded-lg" />}>
           <AuthorViewContext value>
             <BlockViewer
               content={{

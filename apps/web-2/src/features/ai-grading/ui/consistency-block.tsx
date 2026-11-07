@@ -32,7 +32,9 @@ export function ConsistencyBlock({ id, title, hint, count, empty, children }: Co
         emptyText={empty}
         onRetry={() => undefined}
       >
-        {children}
+        <div className="[&_td:first-child]:ps-0 [&_td:last-child]:pe-0 [&_th:first-child]:ps-0 [&_th:last-child]:pe-0">
+          {children}
+        </div>
       </ListState>
     </section>
   )

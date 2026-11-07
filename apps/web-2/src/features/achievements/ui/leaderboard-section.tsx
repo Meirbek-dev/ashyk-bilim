@@ -20,9 +20,9 @@ export function LeaderboardSection({ rank }: { rank: number | null }) {
   const rows = query.data.pages.flatMap(page => page.entries)
   const total = query.data.pages.at(-1)?.total_participants ?? rows.length
   return (
-    <section aria-label={m.achievements_leaderboard_title()} className="flex flex-col gap-3">
+    <section aria-label={m.achievements_leaderboard_title()} className="flex min-w-0 flex-col gap-3">
       <h2 className="text-xl font-semibold">{m.achievements_leaderboard_title()}</h2>
-      <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
+      <p className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-sm">
         <span>
           {rank === null
             ? m.achievements_hidden()
@@ -40,7 +40,7 @@ export function LeaderboardSection({ rank }: { rank: number | null }) {
         emptyText={m.achievements_leaderboard_empty()}
         onRetry={() => void query.refetch()}
       >
-        <ol className="flex flex-col divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs">
+        <ol className="flex flex-col divide-y border-y">
           {rows.map(entry => (
             <LeaderboardRow key={entry.user_id} entry={entry} mine={entry.user_id === session.user_id} />
           ))}

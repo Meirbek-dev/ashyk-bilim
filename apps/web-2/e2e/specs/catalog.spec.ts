@@ -116,9 +116,7 @@ test("B-CAT-03 B-CAT-15 the catalog is public, server-rendered, names the author
   )
   await expect(page.getByText(m.catalog_course_state_unpublished({}, ru))).toHaveCount(0)
   // B-CAT-15: the card names the course's authors.
-  await expect(page.getByRole('listitem').filter({ hasText: SEED_COURSE })).toContainText(
-    m.catalog_course_author({ names: '' }, ru).trim(),
-  )
+  await expect(page.getByRole('listitem').filter({ hasText: SEED_COURSE })).toContainText('E2E teacher')
 })
 
 test('B-CAT-05 the catalog search lives in the URL', async ({ page }) => {

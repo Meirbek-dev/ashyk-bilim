@@ -20,8 +20,8 @@ export function DeadlinesSection({ deadlines, nowUnix }: { deadlines: readonly A
     <HomeSection title={m.home_deadlines_title()}>
       {days.length === 0 ? <p className="text-muted-foreground">{m.home_deadlines_empty()}</p> : null}
       {days.map(day => (
-        <div key={day.day} className="flex flex-col gap-2">
-          <p className="text-sm font-medium text-muted-foreground">{dayTitle(day)}</p>
+        <div key={day.day} className="flex flex-col gap-1">
+          <p className="font-heading text-lg">{dayTitle(day)}</p>
           <DataList variant="rows" items={day.deadlines} getKey={deadline => deadline.activity_id}>
             {deadline => <DeadlineItem deadline={deadline} nowUnix={nowUnix} />}
           </DataList>

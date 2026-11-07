@@ -5,7 +5,6 @@ import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { buttonVariants } from '#/shared/components/button-variants'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 
 import { canRole } from '../model/admin'
@@ -33,22 +32,24 @@ export function RolePage() {
         </RouterLink>
       }
       title={roleName(role)}
-      meta={m.admin_role_meta({ slug: role.slug, priority: role.priority })}
-      status={<StatusBadge tone="neutral">{roleKindLabels[role.is_system ? 'system' : 'custom']()}</StatusBadge>}
+      meta={`${roleKindLabels[role.is_system ? 'system' : 'custom']()} · ${m.admin_role_meta({ slug: role.slug, priority: role.priority })}`}
     >
       {description ? <p className="max-w-prose wrap-anywhere">{description}</p> : null}
-      {canRole(role, 'update') ? <RoleEditSection role={role} base={base} /> : null}
-      {canRole(role, 'set_permissions') ? (
-        <RolePermissionsSection role={role} base={base} />
-      ) : (
-        <section aria-labelledby="role-permissions" className="flex flex-col gap-4">
-          <h2 id="role-permissions" className="text-xl font-semibold">
-            {m.admin_role_permissions()}
-          </h2>
-          <RolePermissionList permissions={role.permissions} />
-        </section>
-      )}
-      {canRole(role, 'delete') ? <DeleteRole role={role} /> : null}
+      {/* What this page is for comes first: what the role may do; its name and removal after. */}
+      <div className="flex flex-col gap-12 pt-4">
+        {canRole(role, 'set_permissions') ? (
+          <RolePermissionsSection role={role} base={base} />
+        ) : (
+          <section aria-labelledby="role-permissions" className="flex flex-col gap-4">
+            <h2 id="role-permissions" className="text-xl font-semibold">
+              {m.admin_role_permissions()}
+            </h2>
+            <RolePermissionList permissions={role.permissions} />
+          </section>
+        )}
+        {canRole(role, 'update') ? <RoleEditSection role={role} base={base} /> : null}
+        {canRole(role, 'delete') ? <DeleteRole role={role} /> : null}
+      </div>
     </DetailPage>
   )
 }

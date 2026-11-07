@@ -24,7 +24,7 @@ export function useWorkspaceChoice(session: SessionInfo, current: WorkspaceId): 
   }
 }
 
-/** The top-bar switch (desktop); on phones the same choice sits in the profile menu (DESIGN 6). */
+/** The rail's switch (desktop); on phones the same choice sits in the profile menu (DESIGN 6). */
 export function WorkspaceSwitch({ session, current }: { session: SessionInfo; current: WorkspaceId }) {
   const choice = useWorkspaceChoice(session, current)
   if (!choice) return null
@@ -33,13 +33,13 @@ export function WorkspaceSwitch({ session, current }: { session: SessionInfo; cu
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" aria-label={`${choice.label}: ${label}`}>
+          <Button variant="ghost" aria-label={`${choice.label}: ${label}`} className="w-full justify-between px-3">
             {label}
             <ChevronsUpDown aria-hidden />
           </Button>
         }
       />
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="start">
         <ChoiceItems choice={choice} />
       </DropdownMenuContent>
     </DropdownMenu>

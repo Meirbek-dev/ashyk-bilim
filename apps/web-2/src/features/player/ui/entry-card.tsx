@@ -1,28 +1,11 @@
-import { CalendarClock } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { ActivityState, CourseId, WorkState } from '#/shared/api/gen/types.gen'
-import { StatusBadge } from '#/shared/components/status-badge'
-import { formatDateTime, formatPercent } from '#/shared/i18n/format'
 
 import { activityKind, type ActivityKind } from '../model/player'
 import { AskTeacherNote } from './ask-teacher-note'
-
-type Tone = 'neutral' | 'success' | 'warning' | 'info' | 'destructive'
-
-const workStates = {
-  not_started: { label: m.player_state_not_started, tone: 'neutral' },
-  in_progress: { label: m.player_state_in_progress, tone: 'info' },
-  submitted: { label: m.player_state_submitted, tone: 'info' },
-  needs_grading: { label: m.player_state_needs_grading, tone: 'info' },
-  graded_hidden: { label: m.player_state_graded_hidden, tone: 'info' },
-  returned: { label: m.player_state_returned, tone: 'warning' },
-  passed: { label: m.player_state_passed, tone: 'success' },
-  failed: { label: m.player_state_failed, tone: 'destructive' },
-  complete: { label: m.player_done, tone: 'success' },
-  locked: { label: m.player_state_locked, tone: 'neutral' },
-} satisfies Record<WorkState, { label: () => string; tone: Tone }>
+import { EntryFigures } from './entry-figures'
 
 // What the work is like, for a learner who has not handed anything in yet.
 const hints = {
@@ -53,7 +36,6 @@ export function EntryCard({
   /** An archived course (the note above says so): no hours left, no how-to, no retake to ask for. */
   archived?: boolean
 }) {
-  const status = workStates[entry.state]
   const kind = activityKind(entry.activity_type)
   // Failed with no attempt left (B-PLY-19): the learner is not left at a dead end that «Продолжить» keeps leading to.
   // Due within 48 h and not handed in (B-PLY-21): the hours left in the warning tone, as /home says it.
@@ -73,30 +55,15 @@ export function EntryCard({
     open.has(entry.state) &&
     pastDue &&
     !entry.allowed_actions.some(allowed => allowed === 'start' || allowed === 'continue' || allowed === 'revise')
+  const late = entry.is_late || (!archived && open.has(entry.state) && pastDue)
   return (
-    <div className="flex flex-col items-start gap-4 rounded-xl border bg-card p-gutter text-card-foreground shadow-xs">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
-        {/* Handed in late, or still to do past the learner's due date: the contents and the course page say so too. */}
-        {entry.is_late || (!archived && open.has(entry.state) && pastDue) ? (
-          <StatusBadge tone="warning">{m.player_late()}</StatusBadge>
-        ) : null}
-        {soon === null ? null : <StatusBadge tone="warning">{m.player_hours_left({ hours: soon })}</StatusBadge>}
-      </div>
-      {typeof entry.score === 'number' ? (
-        <p className="font-heading text-xl font-semibold tabular-nums">
-          {/* Open work with a grade is a retake: the grade is the last one. */}
-          {fresh.has(entry.state) || entry.state === 'returned'
-            ? m.player_score_last({ score: formatPercent(entry.score) })
-            : m.player_score({ score: formatPercent(entry.score) })}
-        </p>
-      ) : null}
-      {entry.due_at_unix ? (
-        <p className="flex items-center gap-2 text-sm">
-          <CalendarClock aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-          {m.player_due({ date: formatDateTime(entry.due_at_unix) })}
-        </p>
-      ) : null}
+    <div className="flex flex-col items-start gap-5">
+      <EntryFigures
+        entry={entry}
+        late={late}
+        soon={soon}
+        retake={fresh.has(entry.state) || entry.state === 'returned'}
+      />
       {/* A test's line promises the conditions page, which an attempt in progress has already passed (a timed one
           keeps running: no «stop and continue later»). */}
       {!archived &&
@@ -104,7 +71,7 @@ export function EntryCard({
       kind !== 'lesson' &&
       (kind === 'attempt' ? entry.state === 'not_started' : fresh.has(entry.state)) &&
       entry.score === null ? (
-        <p className="max-w-prose text-sm text-muted-foreground">{hints[kind]()}</p>
+        <p className="max-w-prose font-reading text-muted-foreground">{hints[kind]()}</p>
       ) : null}
       {remediate ? <p className="max-w-prose text-sm text-muted-foreground">{m.player_remediation_hint()}</p> : null}
       {closed ? <AskTeacherNote courseId={courseId}>{m.player_past_due_closed()}</AskTeacherNote> : null}

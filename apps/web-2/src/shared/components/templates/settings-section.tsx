@@ -60,7 +60,7 @@ export function SettingsSection({
       {error && error !== edited ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
       {saveButton ? (
         <div>
-          <SubmitButton type="submit" variant="secondary" pending={pending}>
+          <SubmitButton type="submit" pending={pending}>
             {submitLabel ?? m.ui_save()}
           </SubmitButton>
         </div>

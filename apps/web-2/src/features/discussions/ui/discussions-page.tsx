@@ -15,7 +15,7 @@ export function DiscussionsPage() {
   const { data: session } = useSuspenseQuery(sessionOptions())
   if (!session)
     return (
-      <div className="flex flex-col items-start gap-4 py-8">
+      <div className="flex max-w-prose flex-col items-start gap-4">
         <p className="text-muted-foreground">{m.discussions_guest()}</p>
         <RouterLink
           to="/login"
@@ -27,8 +27,8 @@ export function DiscussionsPage() {
       </div>
     )
   return (
-    <div className="flex flex-col gap-gutter">
-      <section aria-labelledby="discussions-new" className="flex max-w-prose flex-col gap-2">
+    <div className="flex max-w-[46rem] flex-col gap-gutter">
+      <section aria-labelledby="discussions-new" className="flex flex-col gap-3">
         <h2 id="discussions-new" className="text-xl font-semibold">
           {m.discussions_new()}
         </h2>

@@ -10,7 +10,7 @@ import { syllabusSize, type SyllabusChapter } from '../model/course'
 import { SyllabusRow } from './syllabus-row'
 
 /**
- * Chapters and their activities in order, threaded on one seam: solid where the learner is done, dashed ahead. An
+ * Chapters and their activities in order, one under another. An
  * activity the learner may open links into the player; the whole row is the link.
  */
 export function Syllabus({ courseId, chapters }: { courseId: CourseId; chapters: SyllabusChapter[] }) {
@@ -27,12 +27,15 @@ export function Syllabus({ courseId, chapters }: { courseId: CourseId; chapters:
             {m.course_chapters_count({ count: chapters.length })} ·{' '}
             {m.course_activities_count({ count: size.activities })}
           </p>
-        ) : null}
+        ) : (
+          // Nothing published yet: one quiet sentence where the size would stand.
+          <p className="text-sm text-muted-foreground">{m.course_syllabus_empty()}</p>
+        )}
         {/* What it is made of (B-CRS-15): each type's tile and «Видео: 12». */}
         {size.byType.length > 1 && size.activities > 5 ? (
-          <ul aria-label={m.course_composition()} className="flex flex-wrap gap-x-4 gap-y-2 pt-1 text-sm">
+          <ul aria-label={m.course_composition()} className="flex flex-wrap gap-x-5 gap-y-2 pt-2 text-sm">
             {size.byType.map(([type, count]) => (
-              <li key={type} className="flex items-center gap-2">
+              <li key={type} className="flex items-center gap-1.5">
                 <ActivityIcon type={type} size="sm" />
                 <span className="tabular-nums">
                   {activityTypeMeta[type].label()}: {formatNumber(count)}
@@ -42,8 +45,7 @@ export function Syllabus({ courseId, chapters }: { courseId: CourseId; chapters:
           </ul>
         ) : null}
       </div>
-      {chapters.length === 0 ? <p className="text-muted-foreground">{m.course_syllabus_empty()}</p> : null}
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-10 empty:hidden">
         {chapters.map((chapter, index) => {
           const done = chapter.activities.filter(activity => activity.complete).length
           const total = chapter.activities.length
@@ -51,12 +53,12 @@ export function Syllabus({ courseId, chapters }: { courseId: CourseId; chapters:
           const finished = total > 0 && done === total
           return (
             <div key={chapter.id} className="flex flex-col gap-2">
-              <div className="flex items-center gap-3">
+              <div className="flex items-baseline gap-3 border-b pb-2">
                 <span
                   aria-hidden
-                  className={`grid size-7 shrink-0 place-items-center rounded-full font-heading text-sm font-semibold tabular-nums ${finished ? 'bg-primary text-primary-foreground' : 'border-2 border-input bg-background'}`}
+                  className={`w-7 shrink-0 font-heading text-xl tabular-nums ${finished ? 'text-success' : 'text-muted-foreground'}`}
                 >
-                  {finished ? <Check className="size-4" /> : index + 1}
+                  {finished ? <Check className="size-5 translate-y-0.5" /> : index + 1}
                 </span>
                 <h3 className="min-w-0 flex-1 text-lg font-semibold wrap-anywhere">{chapter.title}</h3>
                 {tracked ? (
@@ -65,7 +67,7 @@ export function Syllabus({ courseId, chapters }: { courseId: CourseId; chapters:
                   </span>
                 ) : null}
               </div>
-              <ol className="ml-3.5">
+              <ol className="ml-2.5">
                 {chapter.activities.map(activity => (
                   <SyllabusRow key={activity.id} courseId={courseId} activity={activity} />
                 ))}

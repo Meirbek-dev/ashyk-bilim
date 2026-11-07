@@ -8,6 +8,7 @@ import { Skeleton } from '#/shared/ui/skeleton'
 import { languageOf, languagesIn, type Runner } from '../model/arena'
 import { LanguageSelect } from './language-select'
 import { CodeEditor } from './lazy-editor'
+import { StudioSection } from './studio-section'
 import type { CodeFormApi } from './use-code-item-form'
 
 type LanguageFieldsProps = { form: CodeFormApi; runner: Runner; readOnly: boolean }
@@ -26,8 +27,7 @@ export function LanguageFields({ form, runner, readOnly }: LanguageFieldsProps) 
   const languages = languagesIn(runner)
   const [picked, setPicked] = useState<number | null>(null)
   return (
-    <fieldset className="flex min-w-0 flex-col gap-4">
-      <legend className="mb-2 text-lg font-semibold">{m.code_languages()}</legend>
+    <StudioSection title={m.code_languages()} hint={languages === null ? unavailable(runner) : m.code_languages_hint()}>
       <form.Subscribe selector={state => state.values.languages}>
         {chosen => {
           const offered = [...(languages ?? []).map(language => language.id), ...chosen].filter(
@@ -36,36 +36,31 @@ export function LanguageFields({ form, runner, readOnly }: LanguageFieldsProps) 
           const current = picked !== null && chosen.includes(picked) ? picked : chosen[0]
           return (
             <>
-              {languages === null ? (
-                <p className="text-sm text-muted-foreground">{unavailable(runner)}</p>
-              ) : (
+              {languages === null ? null : (
                 <form.Field name="languages">
                   {field => (
-                    <div className="flex flex-col gap-2">
-                      <p className="text-sm text-muted-foreground">{m.code_languages_hint()}</p>
-                      <ul className="grid gap-2 @xl:grid-cols-3">
-                        {offered.map(id => (
-                          <li key={id} className="flex items-center gap-2">
-                            <Checkbox
-                              id={`code-language-${id}`}
-                              checked={chosen.includes(id)}
-                              disabled={readOnly}
-                              onCheckedChange={on => field.handleChange(toggle(chosen, id, on))}
-                            />
-                            <Label htmlFor={`code-language-${id}`}>
-                              {languageOf(languages, id)?.name ?? m.code_language_unknown({ id })}
-                            </Label>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                    <ul className="grid gap-x-4 gap-y-2 @xl:grid-cols-3">
+                      {offered.map(id => (
+                        <li key={id} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`code-language-${id}`}
+                            checked={chosen.includes(id)}
+                            disabled={readOnly}
+                            onCheckedChange={on => field.handleChange(toggle(chosen, id, on))}
+                          />
+                          <Label htmlFor={`code-language-${id}`}>
+                            {languageOf(languages, id)?.name ?? m.code_language_unknown({ id })}
+                          </Label>
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </form.Field>
               )}
               {current === undefined ? (
                 <p className="text-sm text-muted-foreground">{m.code_no_languages()}</p>
               ) : (
-                <>
+                <div className="flex min-w-0 flex-col gap-4 border-t pt-4">
                   <LanguageSelect
                     label={m.code_code_language()}
                     value={current}
@@ -93,12 +88,12 @@ export function LanguageFields({ form, runner, readOnly }: LanguageFieldsProps) 
                       )}
                     </form.Field>
                   ))}
-                </>
+                </div>
               )}
             </>
           )
         }}
       </form.Subscribe>
-    </fieldset>
+    </StudioSection>
   )
 }

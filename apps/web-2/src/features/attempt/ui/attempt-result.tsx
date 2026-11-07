@@ -5,7 +5,6 @@ import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import type { AssessmentDetail, ReleaseState, StudentSubmission } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { formatPercent } from '#/shared/i18n/format'
 
 import { autoPart, resultVerdict } from '../model/attempt'
@@ -16,6 +15,7 @@ import { ItemComments } from './item-comments'
 import { ResultActions } from './result-actions'
 import { ResultBreakdown } from './result-breakdown'
 import { ScoreHero } from './score-hero'
+import { ToneWord } from './tone-word'
 
 // Why there is no grade to show yet, by release state; `visible` shows the grade instead.
 const waiting = {
@@ -40,16 +40,16 @@ export function AttemptResult({ assessment, attempt }: { assessment: AssessmentD
   const auto = autoPart(attempt, assessment.policy.review_visibility)
   return (
     <AttemptFrame>
-      <article className="flex flex-col gap-gutter">
+      <article className="flex flex-col gap-gutter @3xl:gap-8">
         <header className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold">{m.attempt_number({ number: attempt.attempt_number })}</h1>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
-            {attempt.is_late ? <StatusBadge tone="warning">{m.attempt_late()}</StatusBadge> : null}
-          </div>
+          <p className="flex flex-wrap items-baseline gap-x-3 text-sm">
+            <ToneWord tone={status.tone}>{status.label()}</ToneWord>
+            {attempt.is_late ? <ToneWord tone="warning">{m.attempt_late()}</ToneWord> : null}
+          </p>
         </header>
         <ScoreHero attempt={attempt} state={state} released={released} />
-        <ul className="flex flex-col gap-1 text-sm empty:hidden">
+        <ul className="flex max-w-prose flex-col gap-1 text-sm text-muted-foreground empty:hidden">
           {note ? <li>{note()}</li> : null}
           {auto === null ? null : <li>{m.attempt_auto_part({ score: formatPercent(auto) })}</li>}
           {attempt.auto_submit_reason === 'time_expired' ? <li>{m.attempt_auto_time()}</li> : null}
@@ -65,7 +65,7 @@ export function AttemptResult({ assessment, attempt }: { assessment: AssessmentD
           draftId={state.can_continue && state.draft_id !== attempt.id ? state.draft_id : null}
         />
         {grading?.feedback ? (
-          <section className="flex flex-col gap-2">
+          <section className="flex flex-col gap-3">
             <h2 className="text-xl font-semibold">{m.attempt_feedback_heading()}</h2>
             <Suspense fallback={null}>
               <MarkdownView content={grading.feedback} />

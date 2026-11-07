@@ -72,7 +72,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
       // A document or a video uses the column's full width (a PDF in 65ch opened at 38 %, B-PLY-10).
       wide={(entry.activity_type === 'document' || entry.activity_type === 'video') && !entry.blocked_reason}
     >
-      <article className="flex flex-col gap-gutter">
+      <article className="flex flex-col gap-gutter @3xl:gap-10">
         <ActivityHeader key={`${entry.id}:header`} type={entry.activity_type} title={entry.title} />
         {/* Staff see the lesson as learners do, without a mark (B-PLY-01); the work pages say it the same way. */}
         {lesson && staffPreview(state) ? <PreviewNote lesson /> : null}
@@ -94,7 +94,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
             archived={courseArchived(state)}
           />
         )}
-        <footer className="flex flex-wrap items-start justify-between gap-4 border-t pt-4">
+        <footer className="mt-4 flex flex-col gap-gutter border-t pt-gutter">
           {lesson ? action : null}
           <NeighbourLinks courseId={courseId} prev={prev} next={next} nextShown={lesson && continuesTo === next?.id} />
         </footer>

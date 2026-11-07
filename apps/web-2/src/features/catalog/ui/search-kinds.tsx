@@ -16,7 +16,7 @@ type SearchKindsProps = {
 /** The result sections as links (`?kind=`), each with its hit count: a filter in the URL, not tabs in state. */
 export function SearchKinds({ q, kinds, results, more }: SearchKindsProps) {
   return (
-    <nav aria-label={m.catalog_search_kinds_label()} className="flex overflow-x-auto border-b">
+    <nav aria-label={m.catalog_search_kinds_label()} className="flex gap-6 overflow-x-auto border-b">
       <Link to="/search" search={{ q }} variant="tab" activeOptions={{ exact: true }}>
         {m.catalog_search_kind_all()}
       </Link>

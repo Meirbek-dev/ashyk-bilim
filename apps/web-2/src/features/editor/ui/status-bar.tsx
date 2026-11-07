@@ -16,7 +16,7 @@ export function StatusBar({ editor }: { editor: Editor }) {
     },
   })
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-1 text-xs text-muted-foreground">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-1 text-xs text-muted-foreground @3xl:px-6">
       <p aria-live="polite" className="tabular-nums">
         {m.editor_words({ count: words })}
         {words > 0 ? ` · ${m.editor_reading_time({ minutes: readingMinutes(words) })}` : ''}

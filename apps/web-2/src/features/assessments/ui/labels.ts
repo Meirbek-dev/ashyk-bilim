@@ -147,3 +147,6 @@ export function lockReason(assessment: Pick<AssessmentDetail, 'allowed_actions' 
     ? lockLabels[assessment.edit_lock]()
     : m.assessments_readonly()
 }
+
+/** Short fields side by side once a section has the width: a number does not need a field as wide as a sentence. */
+export const TWO = 'grid gap-4 @xl:grid-cols-2 @xl:items-start'

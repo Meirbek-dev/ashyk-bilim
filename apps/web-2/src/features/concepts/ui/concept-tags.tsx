@@ -16,9 +16,9 @@ export function ConceptTags({ courseId, row, activities }: ConceptTagsProps) {
       {row.tags.length === 0 ? (
         <p className="text-sm text-muted-foreground">{m.concepts_tags_none()}</p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col divide-y border-y">
           {row.tags.map(tag => (
-            <li key={tag.tag.id} className="flex flex-col gap-1">
+            <li key={tag.tag.id} className="flex flex-col gap-1 py-2.5">
               <TagLine tag={tag} />
               <TagActions courseId={courseId} tag={tag} />
             </li>

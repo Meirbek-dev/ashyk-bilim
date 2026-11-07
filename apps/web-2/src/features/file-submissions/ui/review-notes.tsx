@@ -4,13 +4,12 @@ import { Suspense } from 'react'
 import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import type { Attempt } from '#/shared/api/gen/types.gen'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime, formatPercent } from '#/shared/i18n/format'
 import { Skeleton } from '#/shared/ui/skeleton'
 
 import { earlierNotes } from '../model/task'
 import { reviewNotesOptions } from '../queries'
-import { attemptStatus } from './labels'
+import { attemptStatus, toneInk } from './labels'
 
 /**
  * Every released review of the attempt under the work (B-FSB-22): a return comment stays readable after the learner
@@ -32,7 +31,7 @@ export function ReviewNotes({ attempt }: { attempt: Attempt }) {
             <li key={note.id} className="flex flex-col gap-2 py-3">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                 <span className="text-muted-foreground">{formatDateTime(note.created_at_unix)}</span>
-                <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
+                <span className={`font-medium ${toneInk[status.tone]}`}>{status.label()}</span>
                 {note.final_score === null ? null : (
                   <span className="tabular-nums">{formatPercent(note.final_score)}</span>
                 )}

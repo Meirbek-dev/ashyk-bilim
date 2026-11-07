@@ -19,9 +19,9 @@ type ThreadListProps = {
 export function ThreadList({ courseId, threadId, onSelect }: ThreadListProps) {
   const { data: threads } = useSuspenseQuery(threadsOptions(courseId))
   return (
-    <section className="flex flex-col gap-2">
+    <section className="flex flex-col gap-2 border-t pt-4">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-medium">{m.ai_threads()}</h3>
+        <h3 className="text-base font-semibold">{m.ai_threads()}</h3>
         <Button variant="ghost" size="sm" onClick={() => onSelect(undefined)}>
           <Plus data-icon="inline-start" aria-hidden />
           {m.ai_new_thread()}
@@ -38,7 +38,7 @@ export function ThreadList({ courseId, threadId, onSelect }: ThreadListProps) {
                 <Button
                   variant={thread.id === threadId ? 'secondary' : 'ghost'}
                   aria-current={thread.id === threadId ? 'true' : undefined}
-                  className="h-auto min-w-0 flex-1 flex-col items-start gap-0 py-1 text-left"
+                  className="h-auto! min-w-0 flex-1 flex-col items-start gap-0 py-1.5 text-left"
                   onClick={() => onSelect(thread.id)}
                 >
                   <span className="w-full truncate">{title}</span>

@@ -1,9 +1,9 @@
 import { Suspense, useId } from 'react'
 
 import { MarkdownView } from '#/features/markdown'
+import { valueLine } from '#/features/player'
 import { m } from '#/paraglide/messages'
 import type { Attempt } from '#/shared/api/gen/types.gen'
-import { ProgressRing } from '#/shared/components/progress-ring'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 import { Skeleton } from '#/shared/ui/skeleton'
 
@@ -16,22 +16,22 @@ export function GradeDetails({ attempt }: { attempt: Attempt }) {
   const criteria = attempt.rubric_scores?.criteria ?? []
   // Unique per instance: the history shows earlier attempts' grades on the same page.
   const id = useId()
+  const line =
+    score === null ? null : valueLine(m.submission_score({ score: formatPercent(score) }), formatPercent(score))
   return (
-    <div className="flex flex-col gap-4">
-      {score === null ? null : (
-        // The score as the ring the rest of the app uses for a result, its words beside it.
-        <div className="flex items-center gap-4">
-          <ProgressRing value={score} tone="stroke-reward" className="size-16">
-            <span className="font-heading text-sm font-semibold tabular-nums">{formatPercent(score)}</span>
-          </ProgressRing>
-          <div className="flex flex-col gap-1">
-            <p className="text-xl font-semibold tabular-nums">{m.submission_score({ score: formatPercent(score) })}</p>
-            {penalty > 0 && raw !== null ? (
-              <p className="text-sm text-muted-foreground tabular-nums">
-                {m.submission_penalty({ raw: formatPercent(raw), percent: formatPercent(penalty) })}
-              </p>
-            ) : null}
-          </div>
+    <div className="flex flex-col gap-gutter">
+      {line === null ? null : (
+        // The score large, the words beside it: the one number the learner came back for.
+        <div className="flex flex-col gap-1">
+          <p className="flex flex-row-reverse flex-wrap items-baseline justify-end gap-x-3 tabular-nums">
+            <span className="text-sm text-muted-foreground">{line.label}</span>
+            {line.value ? <span className="font-heading text-display font-semibold">{line.value}</span> : null}
+          </p>
+          {penalty > 0 && raw !== null ? (
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {m.submission_penalty({ raw: formatPercent(raw), percent: formatPercent(penalty) })}
+            </p>
+          ) : null}
         </div>
       )}
       {feedback ? (
@@ -51,11 +51,11 @@ export function GradeDetails({ attempt }: { attempt: Attempt }) {
           <h3 id={`${id}-criteria`} className="text-lg font-semibold">
             {m.submission_rubric_scores()}
           </h3>
-          <ul className="flex flex-col divide-y text-sm">
+          <ul className="flex flex-col divide-y border-y text-sm">
             {criteria.map(criterion => (
-              <li key={criterion.criterion_id} className="flex min-h-row items-center justify-between gap-4">
+              <li key={criterion.criterion_id} className="flex items-baseline justify-between gap-4 py-2.5">
                 <span className="wrap-anywhere">{criterion.label}</span>
-                <span className="shrink-0 tabular-nums">
+                <span className="shrink-0 font-heading text-base tabular-nums">
                   {m.submission_criterion_score({
                     score: formatNumber(criterion.score),
                     max: formatNumber(criterion.max_score),

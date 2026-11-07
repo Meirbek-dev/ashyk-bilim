@@ -39,7 +39,7 @@ export function ArenaPage() {
   return (
     <FocusPage back={back} title={courseTitle} wide>
       <article className="mx-auto flex w-full max-w-(--breakpoint-2xl) min-w-0 flex-col gap-gutter">
-        <ActivityHeader type="code_challenge" title={title} />
+        <ActivityHeader type="code_challenge" title={title} tool />
         {preview ? <PreviewNote /> : null}
         {locked ? (
           <p className="text-muted-foreground">{m.code_locked()}</p>

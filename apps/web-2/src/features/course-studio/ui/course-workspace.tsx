@@ -11,7 +11,7 @@ import { buttonVariants } from '#/shared/components/button-variants'
 
 import { can, courseStatus } from '../model/course'
 import { courseOptions } from '../queries'
-import { CourseStatusBadge } from './course-status'
+import { CourseStatusText } from './course-status'
 
 /**
  * The course workspace (spec 5.4): the course's name and status over 7 tab routes (from the route's staticData), and
@@ -29,21 +29,15 @@ export function CourseWorkspace() {
   ))
   return (
     <DetailPage
-      cover={
-        <CourseCover
-          seed={course.id}
-          imageKey={course.thumbnail_key}
-          shape="thumb"
-          className="aspect-video w-full rounded-lg border"
-        />
-      }
+      cover={<CourseCover imageKey={course.thumbnail_key} className="aspect-video w-full rounded-lg border" />}
       coverSize="thumb"
       title={course.name}
-      status={<CourseStatusBadge status={courseStatus(course)} />}
       meta={
         course.archived_at_unix ? (
           <>
-            {m.studio_archived_since({ date: formatDate(course.archived_at_unix) })}
+            <CourseStatusText status={courseStatus(course)} />
+            {' · '}
+            <span>{m.studio_archived_since({ date: formatDate(course.archived_at_unix) })}</span>
             {can(course, 'restore') ? (
               <>
                 {' · '}
@@ -54,7 +48,11 @@ export function CourseWorkspace() {
             ) : null}
           </>
         ) : (
-          m.studio_updated({ date: formatDate(course.updated_at_unix) })
+          <>
+            <CourseStatusText status={courseStatus(course)} />
+            {' · '}
+            <span>{m.studio_updated({ date: formatDate(course.updated_at_unix) })}</span>
+          </>
         )
       }
       primaryAction={

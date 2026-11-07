@@ -7,10 +7,10 @@ type CourseGridProps = {
   level?: 2 | 3
 }
 
-/** Courses as cover cards: one column on phones, two from @xl, three from @4xl of the page's container. */
+/** The shelf: one course across on a phone, two from @lg, three from @4xl of the page's container: pictures stay legible. */
 export function CourseGrid({ courses, level }: CourseGridProps) {
   return (
-    <ul className="grid gap-5 @xl:grid-cols-2 @4xl:grid-cols-3">
+    <ul className="grid gap-x-6 gap-y-10 @lg:grid-cols-2 @4xl:grid-cols-3">
       {courses.map(course => (
         <li key={course.id}>
           <CourseItem course={course} level={level} />

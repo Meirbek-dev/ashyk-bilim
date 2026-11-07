@@ -43,26 +43,28 @@ export function SearchResults({ q, kind }: { q: string; kind: SearchKind | undef
         onResetFilters={() => void navigate({ to: '/search', search: { q } })}
         onRetry={() => void query.refetch()}
       >
-        {shown.map(each => (
-          <SearchSection
-            key={each}
-            kind={each}
-            results={results}
-            footer={
-              !more.includes(each) ? null : kind ? (
-                <ShowMore hasMore pending={query.isFetchingNextPage} onMore={() => void query.fetchNextPage()} />
-              ) : (
-                <RouterLink
-                  to="/search"
-                  search={{ q, kind: each }}
-                  className={buttonVariants({ variant: 'outline', className: 'self-center' })}
-                >
-                  {m.catalog_search_section_all({ section: searchKindLabels[each]() })}
-                </RouterLink>
-              )
-            }
-          />
-        ))}
+        <div className="flex flex-col gap-10">
+          {shown.map(each => (
+            <SearchSection
+              key={each}
+              kind={each}
+              results={results}
+              footer={
+                !more.includes(each) ? null : kind ? (
+                  <ShowMore hasMore pending={query.isFetchingNextPage} onMore={() => void query.fetchNextPage()} />
+                ) : (
+                  <RouterLink
+                    to="/search"
+                    search={{ q, kind: each }}
+                    className={buttonVariants({ variant: 'outline', className: 'self-center' })}
+                  >
+                    {m.catalog_search_section_all({ section: searchKindLabels[each]() })}
+                  </RouterLink>
+                )
+              }
+            />
+          ))}
+        </div>
       </ListState>
     </>
   )

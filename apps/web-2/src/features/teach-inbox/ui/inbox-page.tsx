@@ -29,7 +29,6 @@ export function InboxPage() {
       filters={
         items.length > 0 || active > 0 ? (
           <>
-            <KindFilter search={search} counts={query.data.pages[0]?.kind_counts} />
             <CourseFilter items={items} course={search.course} />
             <SortMenu sort={search.sort} />
           </>
@@ -37,6 +36,7 @@ export function InboxPage() {
       }
       activeFilters={active}
     >
+      {items.length > 0 || active > 0 ? <KindFilter search={search} counts={query.data.pages[0]?.kind_counts} /> : null}
       {items.length === 0 && active === 0 && !query.error ? (
         <EmptyInbox />
       ) : (
@@ -49,15 +49,17 @@ export function InboxPage() {
           onResetFilters={() => void navigate({ search: {} })}
           onRetry={() => void query.refetch()}
         >
-          <DataTable
-            label={m.inbox_table()}
-            rows={items}
-            // No row with a due date: the empty «Срок» column goes.
-            columns={
-              items.some(item => item.due_at_unix !== null) ? inboxColumns : inboxColumns.filter(c => c.id !== 'due')
-            }
-            getKey={item => item.id}
-          />
+          <div className="[&_td:first-child]:ps-0 [&_td:last-child]:pe-0 [&_td:last-child]:text-right [&_th:first-child]:ps-0">
+            <DataTable
+              label={m.inbox_table()}
+              rows={items}
+              // No row with a due date: the empty «Срок» column goes.
+              columns={
+                items.some(item => item.due_at_unix !== null) ? inboxColumns : inboxColumns.filter(c => c.id !== 'due')
+              }
+              getKey={item => item.id}
+            />
+          </div>
         </ListState>
       )}
       <ShowMore

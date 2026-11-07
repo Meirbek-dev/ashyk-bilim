@@ -284,16 +284,16 @@ test('B-EDT-29 a formula template replaces the formula and fills the field', asy
 })
 
 describe('authoring sheet', () => {
-  test('B-EDT-35 focus in the page rings the whole sheet, not the text column', async () => {
+  test('B-EDT-35 focus in the page marks the sheet (the rule under its toolbar), not the text column', async () => {
     const screen = await render(
       <BlockEditor activityId={ACTIVITY} content={null} onChange={vi.fn<(doc: EditorDocument) => void>()} />,
     )
     const page = screen.getByRole('textbox', { name: m.editor_label() })
     await expect.element(page).toBeVisible()
-    const sheet = page.element().closest('.rounded-xl')
-    const rest = sheet && getComputedStyle(sheet).boxShadow
+    const rule = screen.getByRole('toolbar', { name: m.editor_toolbar() }).element()
+    const rest = getComputedStyle(rule).boxShadow
     await page.click()
     expect(getComputedStyle(page.element()).outlineStyle).toBe('none')
-    await expect.poll(() => sheet && getComputedStyle(sheet).boxShadow).not.toBe(rest)
+    await expect.poll(() => getComputedStyle(rule).boxShadow).not.toBe(rest)
   })
 })

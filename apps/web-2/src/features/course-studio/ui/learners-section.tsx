@@ -34,7 +34,12 @@ const columns = (courseId: string, removable: boolean): DataColumn<CourseLearner
         <UserAvatar name={learner.display_name || learner.username} avatarKey={learner.avatar_key} />
         <span className="flex min-w-48 flex-col wrap-anywhere">
           {/* Their grades in this course (the gradebook found by username), not the public profile. */}
-          <Link to="/teach/courses/$courseId/gradebook" params={{ courseId }} search={{ q: learner.username }}>
+          <Link
+            variant="title"
+            to="/teach/courses/$courseId/gradebook"
+            params={{ courseId }}
+            search={{ q: learner.username }}
+          >
             {learner.display_name || learner.username}
           </Link>
           <span className="text-sm font-normal text-muted-foreground">
@@ -127,15 +132,18 @@ export function LearnersSection({
         emptyText={m.studio_learners_empty()}
         onRetry={() => void query.refetch()}
       >
-        <DataTable
-          label={m.studio_learners_title()}
-          rows={query.data}
-          columns={columns(
-            courseId,
-            query.data.some(learner => learner.allowed_actions.includes('remove')),
-          )}
-          getKey={learner => learner.user_id}
-        />
+        {/* The names start on the page's left edge, the removal ends on its right. */}
+        <div className="[&_td:first-child]:ps-0 [&_td:last-child]:pe-0 [&_th:first-child]:ps-0 [&_th:last-child]:pe-0">
+          <DataTable
+            label={m.studio_learners_title()}
+            rows={query.data}
+            columns={columns(
+              courseId,
+              query.data.some(learner => learner.allowed_actions.includes('remove')),
+            )}
+            getKey={learner => learner.user_id}
+          />
+        </div>
         <ShowMore
           hasMore={query.hasNextPage}
           pending={query.isFetchingNextPage}

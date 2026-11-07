@@ -22,14 +22,13 @@ export function TeamPage() {
   const manage = can(course, 'manage_contributors')
   const { team, pending, inactive } = splitRoster(query.data)
   return (
-    <div className="flex max-w-prose flex-col gap-12">
+    <div className="flex max-w-prose flex-col gap-10">
       <section className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <h2 className="text-xl font-semibold">{m.studio_team_title()}</h2>
           <p className="text-sm text-muted-foreground">{m.studio_team_hint()}</p>
         </div>
-        {manage ? <AddContributors courseId={courseId} /> : null}
-        <DataList items={team} getKey={row => row.user_id}>
+        <DataList items={team} getKey={row => row.user_id} variant="rows">
           {row => <ContributorRow courseId={courseId} row={row} manage={manage} />}
         </DataList>
         <ShowMore
@@ -37,11 +36,12 @@ export function TeamPage() {
           pending={query.isFetchingNextPage}
           onMore={() => void query.fetchNextPage()}
         />
+        {manage ? <AddContributors courseId={courseId} /> : null}
       </section>
       {pending.length > 0 ? (
         <section className="flex flex-col gap-4">
           <h2 className="text-xl font-semibold">{m.studio_applications_title()}</h2>
-          <DataList items={pending} getKey={row => row.user_id}>
+          <DataList items={pending} getKey={row => row.user_id} variant="rows">
             {row => <ContributorRow courseId={courseId} row={row} manage={manage} />}
           </DataList>
         </section>
@@ -52,7 +52,7 @@ export function TeamPage() {
             <h2 className="text-xl font-semibold">{m.studio_inactive_title()}</h2>
             <p className="text-sm text-muted-foreground">{m.studio_inactive_hint()}</p>
           </div>
-          <DataList items={inactive} getKey={row => row.user_id}>
+          <DataList items={inactive} getKey={row => row.user_id} variant="rows">
             {row => <ContributorRow courseId={courseId} row={row} manage={manage} />}
           </DataList>
         </section>

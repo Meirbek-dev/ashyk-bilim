@@ -15,20 +15,17 @@ export const percentOf = (item: ContinueLearning) => (item.progress_pct === null
 export const notStarted = (item: ContinueLearning) => !item.started
 
 /**
- * The most recent started course, the page's hero: its picture beside the course, the next activity (type icon and
- * name), the server's progress and the one primary button back into the player.
+ * The most recent started course, the page's hero: its picture, the next activity (type icon and name), the server's
+ * progress and the one primary button back into the player.
  */
 export function ContinueHero({ item }: { item: ContinueLearning }) {
   const percent = percentOf(item)
   return (
-    <article className="grid overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs @2xl:grid-cols-5">
-      {/* The text sets the row's height; an uploaded picture of any shape fills it (it once stretched the card to 440 px). */}
-      <div className="relative aspect-video @2xl:col-span-2 @2xl:aspect-auto @2xl:min-h-60">
-        <CourseCover seed={item.course_id} imageKey={item.thumbnail_key} className="absolute inset-0 size-full" />
-      </div>
-      <div className="flex flex-col justify-center gap-5 p-gutter @2xl:col-span-3 @2xl:px-8">
-        <h3 className="text-2xl font-semibold wrap-anywhere">{item.course_name}</h3>
-        <div className="flex items-center gap-3">
+    <article className="flex flex-col gap-5 @xl:flex-row @xl:items-center @xl:gap-8 @3xl:gap-10">
+      <CourseCover imageKey={item.thumbnail_key} className="shrink-0 @xl:w-56 @3xl:w-80" />
+      <div className="flex min-w-0 flex-1 flex-col gap-4 @xl:gap-5">
+        <h3 className="text-xl font-semibold wrap-anywhere @xl:text-2xl">{item.course_name}</h3>
+        <div className="flex items-start gap-3">
           <ActivityIcon type={item.activity_type} />
           <p className="flex min-w-0 flex-col">
             <span className="text-sm text-muted-foreground">
@@ -49,7 +46,7 @@ export function ContinueHero({ item }: { item: ContinueLearning }) {
           <RouterLink
             to="/learn/$courseId/$activityId"
             params={{ courseId: item.course_id, activityId: item.activity_id }}
-            className={buttonVariants({ size: 'lg', className: 'px-5' })}
+            className={buttonVariants({ size: 'lg' })}
           >
             {notStarted(item) ? m.home_start_action() : m.home_continue_action()}
           </RouterLink>

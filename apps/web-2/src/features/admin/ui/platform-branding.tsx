@@ -56,7 +56,7 @@ export function PlatformBranding({ platform, base }: { platform: Platform; base:
       label: m.admin_platform_thumbnail(),
       name: 'thumbnail_upload_id',
       purpose: 'platform-thumbnail',
-      shape: 'aspect-video w-36',
+      shape: 'aspect-video w-31 sm:mt-6.5',
     },
   ] as const
   return (
@@ -70,7 +70,7 @@ export function PlatformBranding({ platform, base }: { platform: Platform; base:
         saveButton={false}
       >
         {images.map(image => (
-          <div key={image.name} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div key={image.name} className="flex flex-col gap-3 sm:flex-row sm:items-start">
             <PlatformImagePreview imageKey={image.key} label={image.label} shape={image.shape} />
             <div className="min-w-0 flex-1">
               <form.AppField name={image.name} listeners={{ onChange: () => void form.handleSubmit() }}>
@@ -78,20 +78,22 @@ export function PlatformBranding({ platform, base }: { platform: Platform; base:
               </form.AppField>
             </div>
             {image.key ? (
-              <PlatformThumbnailRemove
-                open={removing}
-                onOpenChange={next => {
-                  setRemoving(next)
-                  if (!next) update.reset()
-                }}
-                onConfirm={() =>
-                  void write
-                    .save({ body: { remove_thumbnail: true }, reset: () => setRemoving(false) })
-                    .catch(() => undefined)
-                }
-                pending={update.isPending}
-                error={isStale(update.error) ? null : update.error}
-              />
+              <div className="shrink-0 sm:mt-6.5">
+                <PlatformThumbnailRemove
+                  open={removing}
+                  onOpenChange={next => {
+                    setRemoving(next)
+                    if (!next) update.reset()
+                  }}
+                  onConfirm={() =>
+                    void write
+                      .save({ body: { remove_thumbnail: true }, reset: () => setRemoving(false) })
+                      .catch(() => undefined)
+                  }
+                  pending={update.isPending}
+                  error={isStale(update.error) ? null : update.error}
+                />
+              </div>
             ) : null}
           </div>
         ))}

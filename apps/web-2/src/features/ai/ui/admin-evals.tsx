@@ -9,6 +9,8 @@ import { vAiRunStatus } from '#/shared/api/gen/valibot.gen'
 
 import { runStatusLabels } from '../model/labels'
 import { evalsOptions } from '../queries'
+import { AdminNumbers } from './admin-numbers'
+import { tableOnPage } from './admin-table-layout'
 
 const score = (value: number | null) => (value === null ? '' : formatNumber(Math.round(value * 100) / 100))
 
@@ -33,28 +35,36 @@ export function AdminEvals() {
   return (
     <section id="evals" className="flex flex-col gap-4">
       <h2 className="text-xl font-semibold">{m.ai_admin_evals()}</h2>
-      <div className="flex flex-col gap-1 text-sm">
+      <div className="flex max-w-prose flex-col gap-3">
         <h3 className="font-medium">{m.ai_evals_runs_label()}</h3>
-        <ul className="flex flex-wrap gap-x-6 gap-y-1">
-          {vAiRunStatus.options.map(status => (
-            <li key={status}>
-              {runStatusLabels[status]()}: {formatNumber(runs[status])}
-            </li>
-          ))}
-        </ul>
+        <AdminNumbers
+          columns={5}
+          items={vAiRunStatus.options.map(status => ({
+            key: status,
+            label: runStatusLabels[status](),
+            value: formatNumber(runs[status]),
+          }))}
+        />
       </div>
       {evals.total === 0 ? (
-        <p className="text-sm text-muted-foreground">{m.ai_evals_empty()}</p>
+        <p className="max-w-prose text-sm text-muted-foreground">{m.ai_evals_empty()}</p>
       ) : (
         <>
-          <ul className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+          <ul className="flex flex-wrap gap-x-6 gap-y-1 text-sm tabular-nums">
             <li>{m.ai_evals_total({ count: formatNumber(evals.total) })}</li>
             <li>{m.ai_evals_passed({ count: formatNumber(evals.passed) })}</li>
             <li>{m.ai_evals_failed({ count: formatNumber(evals.failed) })}</li>
             {evals.average_score === null ? null : <li>{m.ai_evals_average({ score: score(evals.average_score) })}</li>}
           </ul>
           <h3 className="font-medium">{m.ai_evals_recent()}</h3>
-          <DataTable label={m.ai_evals_recent()} rows={data.recent_evals} columns={columns()} getKey={row => row.id} />
+          <div className={tableOnPage}>
+            <DataTable
+              label={m.ai_evals_recent()}
+              rows={data.recent_evals}
+              columns={columns()}
+              getKey={row => row.id}
+            />
+          </div>
         </>
       )}
     </section>

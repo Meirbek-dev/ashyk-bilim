@@ -45,26 +45,26 @@ export function SignalList({
   const navigate = useNavigate()
   if (items.length === 0) return null
   return (
-    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-4">
+    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-5">
       <h2 id={id} className="text-xl font-semibold">
         {title}
       </h2>
       {bySeverity(items).map(([severity, group]) => {
         const look = severityLook[severity]
         return (
-          <div key={severity} className="flex flex-col gap-1">
+          <div key={severity} className="flex flex-col gap-2">
             <h3 className={`flex items-center gap-2 text-sm font-medium ${look.ink}`}>
               <look.icon aria-hidden className="size-4" />
               {severityBadges[severity].label()}
               <span className="text-muted-foreground tabular-nums">{formatNumber(group.length)}</span>
             </h3>
-            <ul className="flex flex-col divide-y border-l pl-4">
+            <ul className="flex flex-col divide-y border-y text-sm">
               {group.map(item => {
                 const text = signalText[item.code](item.params)
                 const href = signalTarget(item)
                 const course = courseOf(item, courses)
                 return (
-                  <li key={item.id} className="py-2 wrap-anywhere">
+                  <li key={item.id} className="py-2.5 wrap-anywhere">
                     {href ? (
                       <Anchor
                         href={href}
@@ -88,7 +88,7 @@ export function SignalList({
                     ) : (
                       text
                     )}
-                    {course ? <span className="block text-sm text-muted-foreground">{course}</span> : null}
+                    {course ? <span className="mt-0.5 block text-xs text-muted-foreground">{course}</span> : null}
                   </li>
                 )
               })}

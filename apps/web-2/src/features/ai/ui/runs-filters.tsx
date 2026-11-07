@@ -21,8 +21,10 @@ export function RunsFilters({ search }: { search: AdminAiSearch }) {
   const set = (patch: Partial<AdminAiSearch>) =>
     void navigate({ search: prev => ({ ...prev, ...patch, run: undefined }) })
   return (
-    <div className="flex flex-wrap gap-2">
+    // Two short selects on a phone's first line, the longer controls each on its own; one row when there is room.
+    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
       <NativeSelect
+        className="w-full sm:w-fit"
         aria-label={m.ai_filter_days()}
         value={String(search.days)}
         onChange={event => {
@@ -37,6 +39,7 @@ export function RunsFilters({ search }: { search: AdminAiSearch }) {
         ))}
       </NativeSelect>
       <NativeSelect
+        className="w-full sm:w-fit"
         aria-label={m.ai_filter_status()}
         value={search.status ?? ''}
         onChange={event => set({ status: v.parse(v.optional(vAiRunStatus), event.target.value || undefined) })}
@@ -49,6 +52,7 @@ export function RunsFilters({ search }: { search: AdminAiSearch }) {
         ))}
       </NativeSelect>
       <NativeSelect
+        className="col-span-2 w-full sm:w-fit"
         aria-label={m.ai_filter_kind()}
         value={search.kind ?? ''}
         onChange={event => set({ kind: v.parse(v.optional(vAiRunKind), event.target.value || undefined) })}
@@ -66,13 +70,13 @@ export function RunsFilters({ search }: { search: AdminAiSearch }) {
         aria-label={m.ai_filter_provider()}
         placeholder={m.ai_filter_provider()}
         defaultValue={search.provider ?? ''}
-        className="w-full sm:w-64"
+        className="col-span-2 w-full sm:w-auto sm:min-w-48 sm:flex-1"
         onKeyDown={event => {
           if (event.key === 'Enter') set({ provider: event.currentTarget.value.trim() || undefined })
         }}
       />
       {search.course ? (
-        <Button variant="outline" onClick={() => set({ course: undefined })}>
+        <Button variant="outline" className="col-span-2 sm:col-auto" onClick={() => set({ course: undefined })}>
           {m.ai_filter_course_clear()}
         </Button>
       ) : null}

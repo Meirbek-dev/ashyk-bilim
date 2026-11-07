@@ -2,7 +2,6 @@ import { useId } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { CodeRun } from '#/shared/api/gen/types.gen'
-import { ProgressRing } from '#/shared/components/progress-ring'
 import { formatNumber } from '#/shared/i18n/format'
 
 import { firstDifference } from '../model/ide'
@@ -22,16 +21,9 @@ export function RunView({ run, title, level = 2 }: RunViewProps) {
   return (
     <section aria-labelledby={id} className="flex min-w-0 flex-col gap-4">
       {/* The verdict leads: tests passed as a ring, the verdict word beside it. */}
-      <div className="flex items-center gap-3">
-        {run.total > 0 ? (
-          <ProgressRing value={(run.passed / run.total) * 100} className="size-12">
-            <span className="text-xs font-semibold tabular-nums">
-              {formatNumber(run.passed)}/{formatNumber(run.total)}
-            </span>
-          </ProgressRing>
-        ) : null}
-        <div className="flex min-w-0 flex-col">
-          <Heading id={id} className={level === 2 ? 'text-xl font-semibold' : 'font-semibold'}>
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <Heading id={id} className={level === 2 ? 'text-lg font-semibold' : 'text-base font-semibold'}>
             {title}
           </Heading>
           <p className="flex flex-wrap items-center gap-x-3 text-sm">
@@ -43,6 +35,12 @@ export function RunView({ run, title, level = 2 }: RunViewProps) {
             ) : null}
           </p>
         </div>
+        {run.total > 0 ? (
+          <p aria-hidden className="font-heading text-2xl tabular-nums">
+            {formatNumber(run.passed)}
+            <span className="text-muted-foreground">/{formatNumber(run.total)}</span>
+          </p>
+        ) : null}
       </div>
       {run.compile_output ? <Io label={m.code_compile_output()} text={run.compile_output} /> : null}
       <ol className="flex flex-col divide-y border-y">
@@ -50,13 +48,15 @@ export function RunView({ run, title, level = 2 }: RunViewProps) {
           const kind = caseVerdict(result)
           const verdict = caseStatus[kind]
           return (
-            <li key={result.test_id} className="flex min-w-0 flex-col gap-2 py-3">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <li key={result.test_id} className="flex min-w-0 flex-col gap-2 py-2.5">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
                 <span className="font-medium">{result.description || m.code_case({ number: index + 1 })}</span>
-                <span className="text-sm">
+                <span className="self-center">
                   <Verdict status={verdict} />
                 </span>
-                <Usage result={result} />
+                <span className="ms-auto">
+                  <Usage result={result} />
+                </span>
               </div>
               {result.is_visible ? (
                 <div className="grid min-w-0 gap-2 @3xl:grid-cols-3">

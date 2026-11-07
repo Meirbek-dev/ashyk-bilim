@@ -32,7 +32,7 @@ export function UpdatesSection({ course }: { course: Course }) {
         emptyText={m.studio_updates_empty()}
         onRetry={() => void updates.refetch()}
       >
-        <DataList items={updates.data} getKey={update => update.id}>
+        <DataList items={updates.data} getKey={update => update.id} variant="rows">
           {update => <UpdateItem courseId={course.id} update={update} editable={editable} />}
         </DataList>
         <ShowMore

@@ -12,11 +12,11 @@ type ConceptListProps = { courseId: CourseId; rows: readonly Row[]; editing: boo
 export function ConceptList({ courseId, rows, editing }: ConceptListProps) {
   const [selected, setSelected] = useState<ReadonlySet<ConceptId>>(new Set())
   return (
-    <div className="flex flex-col gap-4">
+    <div className="@container/concepts flex flex-col gap-2">
       {editing ? <ReviewBar courseId={courseId} selected={selected} onDone={() => setSelected(new Set())} /> : null}
-      <ul className="flex flex-col divide-y">
+      <ul className="flex flex-col divide-y border-t">
         {rows.map(row => (
-          <li key={row.concept.id} className="py-4 first:pt-0">
+          <li key={row.concept.id} className="py-3.5">
             <ConceptRow
               courseId={courseId}
               row={row}

@@ -28,7 +28,7 @@ export function TextStyleMenu({ editor, level }: { editor: Editor; level: number
           <Button
             variant="ghost"
             aria-label={m.editor_text_style_current({ style: current })}
-            className="min-w-36 justify-between"
+            className="min-w-32 justify-between"
           />
         }
       >

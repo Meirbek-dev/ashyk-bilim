@@ -20,7 +20,7 @@ type EditorToolbarProps = {
   onInsert?: ((anchor: Element) => void) | undefined
 }
 
-const gap = <Separator orientation="vertical" className="mx-1 h-5 self-center" />
+const gap = <Separator orientation="vertical" className="mx-1 h-5 data-vertical:self-center" />
 
 /**
  * The editor's toolbar in one row (scrolls sideways on a phone rather than wrapping) in groups: history, text style (in words), inline formats and link, block formats, then the
@@ -57,6 +57,7 @@ export function EditorToolbar({ editor, onLink, onInsert }: EditorToolbarProps) 
     <div
       role="toolbar"
       aria-label={m.editor_toolbar()}
+      data-density="compact"
       className="sticky top-14 z-20 flex items-center gap-0.5 overflow-x-auto overscroll-x-contain border-b border-border bg-background py-1 *:shrink-0 *:aria-pressed:bg-accent *:aria-pressed:text-accent-foreground"
     >
       <ToolButton

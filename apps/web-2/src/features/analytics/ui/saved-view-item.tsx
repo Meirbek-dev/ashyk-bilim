@@ -30,7 +30,7 @@ export function SavedViewItem({ view }: { view: SavedView }) {
       },
     )
   return (
-    <span className="inline-flex items-center gap-1 rounded-md border pl-2">
+    <span className="inline-flex items-center gap-0.5">
       <Link to={tabPaths[tab]} search={filters}>
         <span className="wrap-anywhere">{view.name}</span>
       </Link>

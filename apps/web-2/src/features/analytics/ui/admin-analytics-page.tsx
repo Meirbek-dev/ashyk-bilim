@@ -3,7 +3,6 @@ import { useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { AdminCohortRow, AdminCourseRow, AdminProgramRow, AdminTeacherRow } from '#/shared/api/gen/types.gen'
-import { ScoreBar } from '#/shared/components/charts/score-bar'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { Link } from '#/shared/components/link'
 import { ListPage } from '#/shared/components/templates/list-page'
@@ -15,11 +14,12 @@ import { AdminTable } from './admin-table'
 import { AdminFilters } from './admin-filters'
 import { AsOf } from './as-of'
 import { hours, percent, score } from './kpi'
+import { Meter } from './meter'
 
 const name = (text: string) => <span className="font-medium wrap-anywhere">{text}</span>
 /** A 0..100 value as a bar plus its number; a dash when the server has no sample. */
 const bar = (value: number | null | undefined, text: string) =>
-  value === null || value === undefined ? text : <ScoreBar value={value} text={text} />
+  value === null || value === undefined ? text : <Meter value={value} text={text} />
 const count = (value: number) => <span className="tabular-nums">{formatNumber(value)}</span>
 
 const courseColumn = (): DataColumn<AdminCourseRow> => ({
@@ -74,7 +74,9 @@ const teacherColumns = (): DataColumn<AdminTeacherRow>[] => [
         <Link variant="title" to="/admin/users" search={{ user: row.teacher_user_id }}>
           {name(row.teacher_display_name)}
         </Link>
-        <span className="text-xs wrap-anywhere text-muted-foreground">@{row.teacher_username}</span>
+        <span className="font-sans text-xs font-normal wrap-anywhere text-muted-foreground">
+          @{row.teacher_username}
+        </span>
       </span>
     ),
   },
@@ -121,7 +123,9 @@ const programColumns = (): DataColumn<AdminProgramRow>[] => [
             {name(programAuthor(row.program_name) ?? m.analytics_program_unassigned())}
           </Link>
           {row.author_username ? (
-            <span className="text-xs wrap-anywhere text-muted-foreground">@{row.author_username}</span>
+            <span className="font-sans text-xs font-normal wrap-anywhere text-muted-foreground">
+              @{row.author_username}
+            </span>
           ) : null}
         </span>
       ) : (
@@ -154,7 +158,7 @@ export function AdminAnalyticsPage() {
       filters={<AdminFilters search={search} />}
       activeFilters={(search.course ? 1 : 0) + (search.cohort ? 1 : 0)}
     >
-      <div className="flex flex-col gap-12">
+      <div className="flex flex-col gap-10">
         <AsOf at={data.generated_at_unix} />
         <AdminTable
           title={m.analytics_admin_courses()}

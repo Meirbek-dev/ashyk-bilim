@@ -27,10 +27,16 @@ export function UnlistedLesson({ courseId, activityId, title, aside }: UnlistedL
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
   if (activity.course_id !== courseId || activityKind(activity.activity_type) !== 'lesson') return <PlayerNotFound />
   return (
-    <FocusPage back={<BackToCourse courseId={courseId} />} title={title} aside={aside}>
-      <article className="flex flex-col gap-gutter">
-        <PreviewNote lesson />
+    <FocusPage
+      back={<BackToCourse courseId={courseId} />}
+      title={title}
+      aside={aside}
+      // As in the listed player: a document or a video takes the column's full width.
+      wide={activity.activity_type === 'document' || activity.activity_type === 'video'}
+    >
+      <article className="flex flex-col gap-gutter @3xl:gap-10">
         <ActivityHeader type={activity.activity_type} title={activity.name} />
+        <PreviewNote lesson />
         <LessonContent activityId={activity.id} onVideoEnded={() => undefined} />
       </article>
     </FocusPage>

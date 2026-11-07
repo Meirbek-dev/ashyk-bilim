@@ -33,8 +33,11 @@ export function SelectionBar(props: SelectionBarProps) {
   const { work, courseId, rows, total, onAll, onDone, drafts, activityId, onKeep } = props
   if (rows.length === 0) return null
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <p className="text-sm tabular-nums">{m.grading_selected({ count: formatNumber(rows.length) })}</p>
+    // Sticky under the shell's bar: a long queue scrolls while picking, the decision stays in reach.
+    <div className="sticky top-14 z-10 flex flex-wrap items-center gap-2 border-b bg-background py-2">
+      <p className="me-2 text-sm font-medium tabular-nums">
+        {m.grading_selected({ count: formatNumber(rows.length) })}
+      </p>
       {drafts && drafts.size > 0 ? (
         <ApproveSelected
           work={work}

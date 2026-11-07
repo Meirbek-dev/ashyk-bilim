@@ -18,7 +18,7 @@ export function ItemList({ count, onAdd, onRemove, fields }: ItemListProps) {
   return (
     <div className="flex flex-col gap-4">
       {Array.from({ length: count }, (_, index) => (
-        <fieldset key={index} className="flex flex-col gap-4 border-l-2 pl-4">
+        <fieldset key={index} className="flex min-w-0 flex-col gap-4 border-l pl-4">
           <legend className="sr-only">{m.settings_builder_item({ n: index + 1 })}</legend>
           <div className="flex items-center justify-between gap-2">
             <span aria-hidden className="text-sm text-muted-foreground">

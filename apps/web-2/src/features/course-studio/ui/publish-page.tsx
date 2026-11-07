@@ -10,7 +10,7 @@ import { toast } from '#/shared/ui/toast'
 
 import { can, courseStatus } from '../model/course'
 import { courseOptions, lifecycleOptions, readinessOptions } from '../queries'
-import { CourseStatusBadge } from './course-status'
+import { CourseStatusText } from './course-status'
 import { ReadinessList } from './readiness-list'
 import { UnpublishCourse } from './unpublish-course'
 import { UpdatesSection } from './updates-section'
@@ -28,15 +28,17 @@ export function PublishPage() {
       { onSuccess: () => toast.add({ title: m.studio_published() }) },
     )
   return (
-    <div className="flex max-w-prose flex-col gap-12">
+    <div className="flex max-w-prose flex-col gap-10">
       <section aria-label={m.studio_publish_title()} className="flex flex-col items-start gap-4">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-baseline gap-x-3">
           <h2 className="text-xl font-semibold">{m.studio_publish_title()}</h2>
-          <CourseStatusBadge status={status} />
+          <span className="text-sm text-muted-foreground">
+            <CourseStatusText status={status} />
+          </span>
         </div>
         {/* A live course says where learners find it, not that it is "ready to publish" (B-CST-05). */}
         {status === 'published' ? (
-          <p className="flex flex-wrap gap-x-2">
+          <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
             <span>{m.studio_publish_live()}</span>
             <Link to="/courses/$courseId" params={{ courseId }}>
               {m.studio_publish_open_page()}
@@ -49,7 +51,7 @@ export function PublishPage() {
         ) : null}
         {/* An archived course is read-only: what blocks publishing is moot until it is restored. */}
         {status === 'archived' ? (
-          <p className="flex flex-wrap gap-x-2">
+          <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
             <span>{m.studio_publish_archived()}</span>
             <Link to="/teach/courses/$courseId/settings" params={{ courseId }} hash="archive">
               {m.studio_go_settings()}

@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '#/shared/ui/alert'
  */
 export function PreviewNote({ lesson = false }: { lesson?: boolean }) {
   return (
-    <Alert>
+    <Alert className="rounded-none border-0 border-s-2 bg-transparent py-0 ps-4">
       <Eye aria-hidden />
       <AlertTitle>{m.player_preview_title()}</AlertTitle>
       <AlertDescription>{lesson ? m.player_preview_lesson() : m.player_preview_text()}</AlertDescription>

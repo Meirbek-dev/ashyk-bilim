@@ -19,8 +19,10 @@ import { LearnerSearch } from './learner-search'
 import { PrepareDrafts } from './prepare-drafts'
 import { PublishAll } from './publish-all'
 import { queueColumns } from './queue-columns'
-import { QueueFilters } from './queue-filters'
+import { LateToggle } from './late-toggle'
+import { StatusTabs } from './queue-filters'
 import { SelectionBar } from './selection-bar'
+import { TABLE_LOOK } from './table-look'
 import { useRowSelection } from './use-row-selection'
 
 const ROUTE = '/_authed/teach/courses/$courseId_/activities/$activityId/submissions'
@@ -52,26 +54,31 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
     <ListPage
       title={m.platform_tab_submissions()}
       count={m.grading_queue_count({ count: stats.total })}
-      primaryAction={canGrade ? <PublishAll work={work} courseId={courseId} held={stats.graded} /> : null}
+      primaryAction={
+        <div className="flex flex-wrap items-center gap-2 @2xl:justify-end">
+          {drafts && canGrade ? (
+            <PrepareDrafts ids={ids} preparing={draftList?.filter(draft => draft.status === 'queued').length ?? 0} />
+          ) : null}
+          {canGrade ? <PublishAll work={work} courseId={courseId} held={stats.graded} /> : null}
+        </div>
+      }
       search={<LearnerSearch q={search.q} onSearch={q => navigate({ search: prev => ({ ...prev, q }) })} />}
       filters={
         <>
-          <QueueFilters ids={ids} search={search} counts={statusCounts(stats)} />
+          <LateToggle ids={ids} search={search} />
           <GroupFilter
             courseId={courseId}
             group={search.group}
             onGroup={group => navigate({ search: prev => ({ ...prev, group }) })}
           />
-          <Anchor className={buttonVariants({ variant: 'outline' })} href={queueCsvHref(work.kind, work.id)} download>
+          <Anchor className={buttonVariants({ variant: 'ghost' })} href={queueCsvHref(work.kind, work.id)} download>
             {m.grading_export_csv()}
           </Anchor>
         </>
       }
       activeFilters={active}
     >
-      {drafts && canGrade ? (
-        <PrepareDrafts ids={ids} preparing={draftList?.filter(draft => draft.status === 'queued').length ?? 0} />
-      ) : null}
+      <StatusTabs ids={ids} search={search} counts={statusCounts(stats)} />
       <SelectionBar
         work={work}
         courseId={courseId}
@@ -92,14 +99,16 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
         onResetFilters={() => void navigate({ search: {} })}
         onRetry={() => void query.refetch()}
       >
-        <DataTable
-          label={m.grading_queue_table()}
-          rows={rows}
-          columns={queueColumns(ids, search, selection, drafts)}
-          getKey={row => row.id}
-          sort={tableSort(search)}
-          onSortChange={sort => void navigate({ search: prev => ({ ...prev, ...sortSearch(sort) }) })}
-        />
+        <div className={TABLE_LOOK}>
+          <DataTable
+            label={m.grading_queue_table()}
+            rows={rows}
+            columns={queueColumns(ids, search, selection, drafts)}
+            getKey={row => row.id}
+            sort={tableSort(search)}
+            onSortChange={sort => void navigate({ search: prev => ({ ...prev, ...sortSearch(sort) }) })}
+          />
+        </div>
       </ListState>
       <ShowMore
         hasMore={query.hasNextPage}

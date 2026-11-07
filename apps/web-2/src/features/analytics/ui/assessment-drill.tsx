@@ -2,7 +2,6 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { AssessmentKind } from '#/shared/api/gen/types.gen'
-import { Bars } from '#/shared/components/charts/bars'
 import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { KpiTile } from '#/shared/components/charts/kpi-tile'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
@@ -13,6 +12,7 @@ import { assessmentOptions } from '../queries'
 import { AsOf } from './as-of'
 import { AssessmentInsights } from './assessment-insights'
 import { BackLink } from './back-link'
+import { CountBars } from './count-bars'
 import { DrillSection } from './drill-section'
 import { hours, percent } from './kpi'
 
@@ -31,7 +31,7 @@ export function AssessmentDrill({ filters, type, id, page }: AssessmentDrillProp
     { label: m.analytics_col_latency(), value: hours(summary.grading_latency_hours_p50) },
   ]
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-10">
       <div className="flex flex-col items-start gap-2">
         <BackLink />
         <h2 className="text-xl font-semibold wrap-anywhere">{data.title}</h2>
@@ -46,7 +46,7 @@ export function AssessmentDrill({ filters, type, id, page }: AssessmentDrillProp
           <KpiTile key={tile.label} label={tile.label} value={tile.value} />
         ))}
       </KpiStrip>
-      <Bars
+      <CountBars
         title={m.analytics_score_distribution()}
         data={data.score_distribution.map(bucket => ({ label: bucket.label, value: bucket.count }))}
         formatValue={value => formatNumber(value)}

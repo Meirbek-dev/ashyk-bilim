@@ -42,7 +42,9 @@ export function QuickPublish({ courseId, activity, onPublished }: QuickPublishPr
         </span>
       ) : null}
       <SubmitButton
+        data-quick-publish=""
         variant="outline"
+        size="sm"
         aria-label={m.studio_publish_named({ name: activity.name })}
         pending={update.isPending}
         onClick={publish}

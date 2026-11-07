@@ -42,6 +42,7 @@
     "@dnd-kit/dom": "0.5.3",
     "@dnd-kit/helpers": "0.5.3",
     "@dnd-kit/react": "0.5.3",
+    "@fontsource-variable/commissioner": "5.3.0",
     "@fontsource-variable/geist": "5.3.0",
     "@fontsource-variable/geist-mono": "5.3.0",
     "@fontsource-variable/geologica": "5.3.0",

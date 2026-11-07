@@ -37,7 +37,7 @@ export function AttemptTimer({ seconds, attempt, receivedAt }: AttemptTimerProps
       ? m.attempt_days_clock({ days: Math.floor(seconds / DAY_SECONDS), clock: clock(seconds % DAY_SECONDS, true) })
       : clock(seconds)
   return (
-    <p className={`flex items-center gap-1 text-sm font-medium tabular-nums ${tone}`} title={label}>
+    <p className={`flex items-center gap-1.5 font-heading text-lg tabular-nums ${tone}`} title={label}>
       <Icon aria-hidden className="size-4" />
       <span className="sr-only">{label}</span>
       <time dateTime={`PT${seconds}S`}>{face}</time>

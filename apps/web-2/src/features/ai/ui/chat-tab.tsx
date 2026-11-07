@@ -15,7 +15,7 @@ export function ChatTab({ courseId, activityId, threadId }: ChatTabProps) {
   const select = (id: AiThreadId | undefined) =>
     void navigate({ to: '.', search: prev => ({ ...prev, aiThread: id }), replace: true })
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-gutter">
       <Suspense fallback={<ListSkeleton />}>
         {/* Keyed by thread: another thread starts with no turn in flight (the stream of the old one is aborted). */}
         <Conversation

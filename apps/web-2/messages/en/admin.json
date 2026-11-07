@@ -241,6 +241,7 @@
   "admin_perm_resource_usergroup": "Groups",
   "admin_perm_resource_role": "Roles",
   "admin_perm_resource_api_token": "API tokens",
+  "admin_perm_other_actions": "Other actions",
   "admin_perm_action_any": "All actions",
   "admin_perm_action_read": "View",
   "admin_perm_action_create": "Create",

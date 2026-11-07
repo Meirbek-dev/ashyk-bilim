@@ -97,6 +97,20 @@ export function permissionGroups(permissions: readonly string[]): { resource: st
   }))
 }
 
+/** The matrix's own columns: the four everyday actions. Any other action is named in words in the last column. */
+const MATRIX_ACTIONS = ['read', 'create', 'update', 'delete'] as const
+
+export const matrixActions = () => MATRIX_ACTIONS.map(key => ({ key, label: ACTIONS[key]() }))
+
+/** The action a grant sets, as the server spells it. */
+export const grantAction = (grant: string) => grant.split(':')[1] ?? ''
+
+/** Whether the grant reaches beyond the holder's own or assigned objects: the matrix sets those in full ink. */
+export const grantIsBroad = (grant: string) => {
+  const scope = grant.split(':')[2] ?? '*'
+  return scope !== 'own' && scope !== 'assigned'
+}
+
 /** The pickers of the grant editor: every part the server parses, worded. */
 export const resourceChoices = () => Object.entries(RESOURCES).map(([value, label]) => ({ value, label: label() }))
 export const actionChoices = () => Object.entries(ACTIONS).map(([value, label]) => ({ value, label: label() }))

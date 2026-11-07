@@ -8,7 +8,7 @@ const isBlank = (value: ReactNode) => value === null || value === undefined || v
 type DataTableCardsProps<T> = { rows: readonly T[]; columns: readonly DataColumn<T>[]; getKey: (row: T) => string }
 
 /**
- * DataTable at narrow width: one card per row, the first priority 1 column as the title, further priority 1 columns
+ * DataTable at narrow width: one typeset row per row, the first priority 1 column as the title, further priority 1 columns
  * as lines under it (the learner of a work item), priority 2 as labelled lines, the action column last.
  */
 export function DataTableCards<T>({ rows, columns, getKey }: DataTableCardsProps<T>) {
@@ -17,16 +17,22 @@ export function DataTableCards<T>({ rows, columns, getKey }: DataTableCardsProps
   const lines = columns.filter(column => column.priority === 2 && !column.action && !column.select)
   const actions = columns.filter(column => column.priority !== 3 && column.action)
   return (
-    <DataList items={rows} getKey={getKey}>
+    <DataList items={rows} getKey={getKey} variant="rows">
       {row => (
         <>
           {select ? (
             <div className="flex items-start gap-3">
               <div className="pt-0.5">{select.cell(row)}</div>
-              {title ? <h3 className="min-w-0 flex-1 font-medium">{title.cell(row)}</h3> : null}
+              {title ? <h3 className="min-w-0 flex-1 font-sans font-medium">{title.cell(row)}</h3> : null}
+            </div>
+          ) : title && actions.length === 1 ? (
+            // A single action stands on the name's line: on its own line it reads as a row of its own.
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="min-w-0 font-sans font-medium">{title.cell(row)}</h3>
+              <div className="shrink-0">{actions[0]?.cell(row)}</div>
             </div>
           ) : title ? (
-            <h3 className="font-medium">{title.cell(row)}</h3>
+            <h3 className="font-sans font-medium">{title.cell(row)}</h3>
           ) : null}
           {subtitles.map(column => (
             <p key={column.id} className="text-sm">
@@ -42,7 +48,7 @@ export function DataTableCards<T>({ rows, columns, getKey }: DataTableCardsProps
                 // A cell with nothing to say leaves its label out too: a bare «Описание» or «Модель» read as broken.
                 const value = column.cell(row)
                 return isBlank(value) ? null : (
-                  <div key={column.id} className="flex flex-wrap gap-x-1">
+                  <div key={column.id} className="flex flex-wrap gap-x-2">
                     <dt className="text-muted-foreground">{column.header}</dt>
                     <dd>{value}</dd>
                   </div>
@@ -50,7 +56,7 @@ export function DataTableCards<T>({ rows, columns, getKey }: DataTableCardsProps
               })}
             </dl>
           ) : null}
-          {actions.length > 0 ? (
+          {actions.length > 1 || (actions.length === 1 && (select || !title)) ? (
             <div className="mt-2 flex flex-wrap gap-2">
               {actions.map(column => (
                 <Fragment key={column.id}>{column.cell(row)}</Fragment>

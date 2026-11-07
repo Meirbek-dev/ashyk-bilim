@@ -14,7 +14,10 @@ export function Thread({ post }: { post: Discussion }) {
   const query = useSuspenseInfiniteQuery(repliesOptions(post.id))
   const replies = query.data.pages.flatMap(page => page.items)
   return (
-    <section aria-label={m.discussions_replies({ count: post.replies_count })} className="flex flex-col gap-4 pl-6">
+    <section
+      aria-label={m.discussions_replies({ count: post.replies_count })}
+      className="flex flex-col gap-gutter border-l ps-5 @3xl:ms-3"
+    >
       <ListState
         pending={false}
         error={query.error}
@@ -23,7 +26,7 @@ export function Thread({ post }: { post: Discussion }) {
         emptyText={m.discussions_replies_empty()}
         onRetry={() => void query.refetch()}
       >
-        <ul className="flex flex-col gap-4 border-l pl-4">
+        <ul className="flex flex-col gap-gutter">
           {replies.map(reply => (
             <li key={reply.id}>
               <PostItem item={reply} />

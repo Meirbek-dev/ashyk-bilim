@@ -26,12 +26,12 @@ export function MetricTile({ label, card, drill, tab }: MetricTileProps) {
       tone={change?.tone}
       action={
         drill ? (
-          <Link to="." search={prev => ({ ...prev, metric: drill, page: 1 })}>
-            {m.analytics_show_rows()}
+          <Link variant="title" to="." search={prev => ({ ...prev, metric: drill, page: 1 })}>
+            <span className="text-muted-foreground">{m.analytics_show_rows()}</span>
           </Link>
         ) : tab ? (
-          <Link to={tab.to} search={tab.filters}>
-            {m.analytics_show_rows()}
+          <Link variant="title" to={tab.to} search={tab.filters}>
+            <span className="text-muted-foreground">{m.analytics_show_rows()}</span>
           </Link>
         ) : null
       }

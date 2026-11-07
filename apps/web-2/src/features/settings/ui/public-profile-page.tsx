@@ -12,6 +12,7 @@ import { UserAvatar } from '#/shared/components/user-avatar'
 
 import { shownSections } from '../model/profile-sections'
 import { profileCertificatesOptions, publicProfileOptions, userCoursesListOptions } from '../queries'
+import { hangingSection } from './hanging-section'
 import { ProfileCertificates } from './profile-certificates'
 import { PublicSections } from './public-sections'
 
@@ -31,6 +32,12 @@ export function PublicProfilePage() {
     !user.bio && items.length === 0 && certificates.length === 0 && shownSections(user.profile.sections).length === 0
   return (
     <DetailPage
+      cover={
+        // The person, large, in the column the sections below hang from.
+        <div className="[&_[data-slot=avatar]]:size-40 @3xl:[&_[data-slot=avatar]]:size-48">
+          <UserAvatar name={user.display_name} avatarKey={user.avatar_key} size="profile" />
+        </div>
+      }
       title={user.display_name}
       meta={`@${user.username}`}
       primaryAction={
@@ -41,36 +48,37 @@ export function PublicProfilePage() {
         ) : undefined
       }
     >
-      <div className="flex flex-col gap-gutter @2xl:flex-row @2xl:items-start">
-        <UserAvatar name={user.display_name} avatarKey={user.avatar_key} size="profile" />
-        {user.bio ? (
-          <section aria-label={m.settings_user_about()} className="flex flex-col gap-3">
-            <h2 className="text-xl font-semibold">{m.settings_user_about()}</h2>
-            <p className="max-w-prose wrap-anywhere whitespace-pre-line">{user.bio}</p>
-          </section>
-        ) : null}
-        {empty ? <p className="text-muted-foreground @2xl:self-center">{m.settings_user_empty()}</p> : null}
-      </div>
+      {user.bio ? (
+        <section aria-label={m.settings_user_about()} className={hangingSection}>
+          <h2 className="text-xl font-semibold wrap-break-word">{m.settings_user_about()}</h2>
+          <p className="max-w-prose wrap-anywhere whitespace-pre-line">{user.bio}</p>
+        </section>
+      ) : null}
+      {empty ? (
+        <p className="max-w-prose py-6 font-heading text-lg text-muted-foreground">{m.settings_user_empty()}</p>
+      ) : null}
       {/* A learner makes no courses: the section is there only when there is something in it (or it failed). */}
       {items.length > 0 || courses.error ? (
-        <section aria-label={m.settings_user_courses()} className="flex flex-col gap-3">
-          <h2 className="text-xl font-semibold">{m.settings_user_courses()}</h2>
-          <ListState
-            pending={false}
-            error={courses.error}
-            count={items.length}
-            filtered={false}
-            emptyText={m.settings_user_courses_empty()}
-            onRetry={() => void courses.refetch()}
-          >
-            {/* The same cover cards as the catalog: a teacher's courses read as courses, not as a list of links. */}
-            <CourseGrid courses={items} level={3} />
-            <ShowMore
-              hasMore={courses.hasNextPage}
-              pending={courses.isFetchingNextPage}
-              onMore={() => void courses.fetchNextPage()}
-            />
-          </ListState>
+        <section aria-label={m.settings_user_courses()} className={hangingSection}>
+          <h2 className="text-xl font-semibold wrap-break-word">{m.settings_user_courses()}</h2>
+          <div className="flex min-w-0 flex-col gap-6">
+            <ListState
+              pending={false}
+              error={courses.error}
+              count={items.length}
+              filtered={false}
+              emptyText={m.settings_user_courses_empty()}
+              onRetry={() => void courses.refetch()}
+            >
+              {/* The same books as the catalog: a teacher's courses read as courses, not as a list of links. */}
+              <CourseGrid courses={items} level={3} />
+              <ShowMore
+                hasMore={courses.hasNextPage}
+                pending={courses.isFetchingNextPage}
+                onMore={() => void courses.fetchNextPage()}
+              />
+            </ListState>
+          </div>
         </section>
       ) : null}
       <ProfileCertificates certificates={certificates} />

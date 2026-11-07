@@ -3,14 +3,13 @@ import { ChevronDown } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { Attempt, FileAttemptId, FileSubmissionId } from '#/shared/api/gen/types.gen'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime, formatPercent } from '#/shared/i18n/format'
 
 import { opensInHistory } from '../model/task'
 import { historyOptions } from '../queries'
 import { AttemptFiles } from './attempt-files'
 import { GradeDetails } from './grade-details'
-import { attemptStatus } from './labels'
+import { attemptStatus, toneInk } from './labels'
 
 /** One attempt's line: number, date (a draft has none), status, released score. */
 const row = (attempt: Attempt) => {
@@ -21,8 +20,10 @@ const row = (attempt: Attempt) => {
       {attempt.submitted_at_unix === null ? null : (
         <span className="text-muted-foreground">{formatDateTime(attempt.submitted_at_unix)}</span>
       )}
-      <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
-      {attempt.final_score === null ? null : <span className="tabular-nums">{formatPercent(attempt.final_score)}</span>}
+      <span className={`font-medium ${toneInk[status.tone]}`}>{status.label()}</span>
+      {attempt.final_score === null ? null : (
+        <span className="ms-auto font-heading text-base tabular-nums">{formatPercent(attempt.final_score)}</span>
+      )}
     </>
   )
 }
@@ -38,11 +39,11 @@ export function History({ taskId, currentId }: { taskId: FileSubmissionId; curre
   const { data: attempts } = useSuspenseQuery(historyOptions(taskId))
   if (attempts.length < 2) return null
   return (
-    <section aria-labelledby="submission-history" className="flex flex-col gap-2">
+    <section aria-labelledby="submission-history" className="flex flex-col gap-3">
       <h2 id="submission-history" className="text-xl font-semibold">
         {m.submission_history()}
       </h2>
-      <ul className="flex flex-col divide-y text-sm">
+      <ul className="flex flex-col divide-y border-y text-sm">
         {attempts.map(attempt =>
           !opensInHistory(attempt, currentId) ? (
             <li key={attempt.id} className={ROW}>
@@ -55,7 +56,7 @@ export function History({ taskId, currentId }: { taskId: FileSubmissionId; curre
                   {row(attempt)}
                   <ChevronDown
                     aria-hidden
-                    className="ms-auto size-4 text-muted-foreground transition-transform duration-150 group-open:rotate-180"
+                    className="size-4 text-muted-foreground transition-transform duration-150 group-open:rotate-180"
                   />
                 </summary>
                 <div className="flex flex-col gap-4 pb-4">

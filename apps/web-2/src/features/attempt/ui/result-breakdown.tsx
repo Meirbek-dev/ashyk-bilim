@@ -1,30 +1,16 @@
-import { Suspense } from 'react'
-
-import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import type { AssessmentItem, GradedItem } from '#/shared/api/gen/types.gen'
-import { StatusBadge, type StatusTone } from '#/shared/components/status-badge'
 import { formatNumber } from '#/shared/i18n/format'
 
-import { answerText, correctText, ownTitle } from '../model/answer-text'
-import { extraPrompt, verdict, type Verdict } from '../model/attempt'
-
-/** Points to hundredths, as the grader rounds them («1,126 из 3» read as noise). */
-const round2 = (value: number) => Math.round(value * 100) / 100
+import { answerText } from '../model/answer-text'
+import { verdict } from '../model/attempt'
+import { BreakdownRow } from './breakdown-row'
+import { VERDICT_ORDER, verdicts } from './verdict-labels'
 
 const position = (items: AssessmentItem[], entry: GradedItem) => {
   const at = items.findIndex(item => item.id === entry.item_id)
   return at < 0 ? items.length : at
 }
-
-const verdicts: Record<Verdict, { label: () => string; tone: StatusTone }> = {
-  correct: { label: m.attempt_correct, tone: 'success' },
-  partly: { label: m.attempt_partly, tone: 'warning' },
-  wrong: { label: m.attempt_incorrect, tone: 'destructive' },
-  skipped: { label: m.attempt_verdict_unanswered, tone: 'neutral' },
-}
-
-const VERDICT_ORDER: Verdict[] = ['correct', 'partly', 'wrong', 'skipped']
 
 type BreakdownProps = { items: AssessmentItem[]; graded: GradedItem[] }
 
@@ -46,66 +32,18 @@ export function ResultBreakdown({ items, graded }: BreakdownProps) {
     part => part.count > 0,
   )
   return (
-    <section className="flex flex-col gap-2">
+    <section className="flex flex-col gap-3">
       <h2 className="text-xl font-semibold">{m.attempt_breakdown_heading()}</h2>
       {tally.length > 0 && rows.length > 1 ? (
         <p className="text-sm text-muted-foreground tabular-nums">
           {tally.map(part => `${verdicts[part.key].label()}: ${formatNumber(part.count)}`).join(' · ')}
         </p>
       ) : null}
-      <ol className="flex flex-col divide-y">
+      <ol className="flex flex-col divide-y border-y">
         {/* In the order the learner saw (a shuffled test numbers its questions per attempt), unknown ones last. */}
-        {rows.map(({ entry, index, item, given, verdict: shown }) => {
-          // The breakdown keeps points as a share of 100; the learner saw the item's own points («1 балл»).
-          const scale = item && entry.max_score > 0 ? item.max_score / entry.max_score : 1
-          const prompt = item ? extraPrompt(item) : null
-          return (
-            <li key={entry.item_id} className="flex flex-col gap-1 py-4 text-sm">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-medium wrap-anywhere">
-                  {m.attempt_question_number({ number: index + 1 })}
-                  {item && ownTitle(item.title) ? `: ${ownTitle(item.title)}` : ''}
-                </p>
-                {shown ? <StatusBadge tone={verdicts[shown].tone}>{verdicts[shown].label()}</StatusBadge> : null}
-                <span className="text-muted-foreground tabular-nums">
-                  {m.attempt_item_points({
-                    score: formatNumber(round2(entry.score * scale)),
-                    max: formatNumber(round2(entry.max_score * scale)),
-                  })}
-                </span>
-              </div>
-              {prompt ? (
-                <Suspense fallback={null}>
-                  <MarkdownView content={prompt} />
-                </Suspense>
-              ) : null}
-              {/* «Без ответа» in the badge already says it; without a verdict the line does. */}
-              {given || !shown ? (
-                <p className="wrap-anywhere">
-                  {m.attempt_your_answer()}: {given || m.attempt_no_answer()}
-                </p>
-              ) : null}
-              {/* A right answer is its own key: «Правильный ответ: 4» under «Ваш ответ: 4» only repeated it. */}
-              {item && entry.correct_answer && shown !== 'correct' ? (
-                <p className="wrap-anywhere">
-                  {m.attempt_correct_answer()}: {correctText(item.body, entry.correct_answer)}
-                </p>
-              ) : null}
-              {/* The author's «why», sent with the answer key only (review_visibility full). */}
-              {entry.explanation ? (
-                <div className="flex flex-col gap-1 border-l-2 border-border pl-3">
-                  <p className="text-muted-foreground">{m.attempt_explanation()}</p>
-                  <Suspense fallback={null}>
-                    <MarkdownView content={entry.explanation} />
-                  </Suspense>
-                </div>
-              ) : null}
-              {entry.feedback && !entry.feedback_code ? (
-                <p className="wrap-anywhere text-muted-foreground">{entry.feedback}</p>
-              ) : null}
-            </li>
-          )
-        })}
+        {rows.map(row => (
+          <BreakdownRow key={row.entry.item_id} {...row} />
+        ))}
       </ol>
     </section>
   )

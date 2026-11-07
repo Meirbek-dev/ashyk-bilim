@@ -22,7 +22,11 @@ export function SearchPage() {
         />
       }
     >
-      {q ? <SearchResults q={q} kind={kind} /> : <p className="text-muted-foreground">{m.catalog_search_prompt()}</p>}
+      {q ? (
+        <SearchResults q={q} kind={kind} />
+      ) : (
+        <p className="max-w-prose py-6 font-heading text-lg text-muted-foreground">{m.catalog_search_prompt()}</p>
+      )}
     </ListPage>
   )
 }

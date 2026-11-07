@@ -23,7 +23,7 @@ export function ConsistencyPage(): ReactElement {
   const { data: drafts } = useSuspenseQuery(draftsOptions(ids.activityId))
   const labels = labelsFromDrafts(drafts ?? [])
   return (
-    <div className="@container flex flex-col gap-8">
+    <div className="@container flex flex-col gap-10">
       <h1 className="text-2xl font-semibold">{m.ai_grading_consistency_title()}</h1>
       <ConsistencyBlock
         id="ai-grading-pairs"

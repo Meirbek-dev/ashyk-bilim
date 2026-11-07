@@ -44,6 +44,11 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  /* The interface's one colour (never set by themes) */
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-link: var(--link);
+
   /* Derived meaning (never set by themes) */
   --color-success: var(--success);
   --color-warning: var(--warning);
@@ -64,6 +69,7 @@
   /* Type: the [data-font] set below for reading, UI and headings, one mono; seven sizes, three weights */
   --font-sans: var(--typeface-sans);
   --font-heading: var(--typeface-heading);
+  --font-reading: var(--typeface-reading);
   --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -74,17 +80,20 @@
   --text-sm--line-height: 1.25rem;
   --text-base: 1rem;
   --text-base--line-height: 1.5rem;
-  --text-lg: 1.125rem;
+  --text-lg: 1.1875rem;
   --text-lg--line-height: 1.625rem;
-  --text-xl: 1.375rem;
-  --text-xl--line-height: 1.75rem;
-  --text-xl--letter-spacing: -0.01em;
-  --text-2xl: 1.75rem;
-  --text-2xl--line-height: 2.25rem;
-  --text-2xl--letter-spacing: -0.015em;
-  --text-display: clamp(2rem, 1.4rem + 2.4vw, 3rem);
-  --text-display--line-height: 1.08;
-  --text-display--letter-spacing: -0.025em;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 1.9375rem;
+  --text-xl--letter-spacing: -0.012em;
+  --text-2xl: 2.125rem;
+  --text-2xl--line-height: 2.5rem;
+  --text-2xl--letter-spacing: -0.018em;
+  --text-3xl: clamp(1.875rem, 1.55rem + 1.2vw, 2.5rem);
+  --text-3xl--line-height: 1.08;
+  --text-3xl--letter-spacing: -0.02em;
+  --text-display: clamp(2.5rem, 1.55rem + 3.6vw, 4.5rem);
+  --text-display--line-height: 1.03;
+  --text-display--letter-spacing: -0.024em;
 
   /* Radius: one theme value, fixed multiples */
   --radius-sm: calc(var(--radius) * 0.6);
@@ -135,83 +144,88 @@
   color-scheme: light dark;
 
   /* ---- theme: everything in this group may be overridden by public/themes/<slug>.css ---- */
-  /* Ashyq Bilim x Toraighyrov University: the university's blue for actions, its orange for the selected place and
-     rewards, the Ashyq Bilim navy as ink, cool neutral surfaces. */
-  --background: light-dark(oklch(0.985 0.002 248), oklch(0.175 0.025 258));
-  --foreground: light-dark(#162c4a, oklch(0.95 0.01 255));
-  --card: light-dark(oklch(1 0 0), oklch(0.21 0.028 250));
+  /* Plain neutrals with no tint: white with near-black ink by day, near-black with off-white ink by night, hairlines
+     between things. Uploads and meaning colours stand out, not the ground. Primary actions are ink, not colour; the one
+     colour of the interface is blue (--highlight, --link below). Rules: docs/web/DESIGN.md. */
+  --background: light-dark(oklch(1 0 0), oklch(0.145 0 0));
+  --foreground: light-dark(oklch(0.205 0 0), oklch(0.945 0 0));
+  --card: light-dark(oklch(1 0 0), oklch(0.17 0 0));
   --card-foreground: var(--foreground);
-  --popover: light-dark(oklch(1 0 0), oklch(0.225 0.03 250));
+  --popover: light-dark(oklch(1 0 0), oklch(0.195 0 0));
   --popover-foreground: var(--foreground);
-  --primary: light-dark(oklch(0.45 0.125 257), oklch(0.79 0.1 255));
-  --primary-foreground: light-dark(oklch(1 0 0), oklch(0.22 0.05 258));
-  --secondary: light-dark(oklch(0.967 0.003 264), oklch(0.27 0.025 258));
-  --secondary-foreground: light-dark(oklch(0.38 0.035 258), oklch(0.93 0.01 255));
-  --muted: light-dark(oklch(0.96 0.005 255), oklch(0.25 0.025 258));
-  --muted-foreground: light-dark(oklch(0.5 0.025 258), oklch(0.72 0.025 255));
-  --accent: light-dark(oklch(0.955 0.02 252), oklch(0.29 0.045 258));
+  --primary: light-dark(oklch(0.205 0 0), oklch(0.945 0 0));
+  --primary-foreground: light-dark(oklch(0.985 0 0), oklch(0.17 0 0));
+  --secondary: light-dark(oklch(0.965 0 0), oklch(0.235 0 0));
+  --secondary-foreground: var(--foreground);
+  --muted: light-dark(oklch(0.97 0 0), oklch(0.205 0 0));
+  --muted-foreground: light-dark(oklch(0.5 0 0), oklch(0.71 0 0));
+  --accent: light-dark(oklch(0.96 0 0), oklch(0.235 0 0));
   --accent-foreground: var(--foreground);
-  --destructive: light-dark(oklch(0.52 0.19 27), oklch(0.72 0.16 25));
-  --border: light-dark(oklch(0.91 0.008 258), oklch(0.3 0.025 258));
-  --input: light-dark(oklch(0.64 0.025 258), oklch(0.52 0.03 258));
-  --ring: var(--primary);
-  --chart-1: light-dark(oklch(0.52 0.13 257), oklch(0.76 0.11 256));
-  --chart-2: light-dark(oklch(0.661 0.156 45.2), oklch(0.74 0.14 48));
-  --chart-3: light-dark(oklch(0.6 0.1 190), oklch(0.74 0.1 190));
-  --chart-4: light-dark(oklch(0.8 0.14 78), oklch(0.83 0.13 80));
-  --chart-5: light-dark(oklch(0.68 0.07 140), oklch(0.74 0.08 140));
-  --sidebar: light-dark(oklch(0.98 0.004 255), oklch(0.155 0.024 258));
-  --sidebar-foreground: var(--foreground);
-  --sidebar-primary: light-dark(#b9501c, #ec8d5c);
-  --sidebar-primary-foreground: light-dark(oklch(1 0 0), #1c2a40);
-  --sidebar-accent: light-dark(oklch(0.945 0.022 252), oklch(0.26 0.04 258));
-  --sidebar-accent-foreground: light-dark(#162c4a, oklch(0.97 0.01 255));
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--primary);
-  --radius: 0.375rem;
+  --destructive: light-dark(oklch(0.53 0.2 27), oklch(0.72 0.17 24));
+  --border: light-dark(oklch(0.922 0 0), oklch(0.26 0 0));
+  --input: light-dark(oklch(0.675 0 0), oklch(0.5 0 0));
+  --ring: light-dark(oklch(0.546 0.215 262.9), oklch(0.72 0.14 255));
+  --chart-1: light-dark(oklch(0.38 0 0), oklch(0.78 0 0));
+  --chart-2: light-dark(oklch(0.546 0.215 262.9), oklch(0.72 0.14 255));
+  --chart-3: light-dark(oklch(0.55 0.1 185), oklch(0.74 0.09 185));
+  --chart-4: light-dark(oklch(0.68 0.13 75), oklch(0.8 0.12 80));
+  --chart-5: light-dark(oklch(0.52 0.15 300), oklch(0.72 0.11 300));
+  --sidebar: light-dark(oklch(0.985 0 0), oklch(0.145 0 0));
+  --sidebar-foreground: light-dark(oklch(0.27 0 0), oklch(0.86 0 0));
+  --sidebar-primary: light-dark(oklch(0.205 0 0), oklch(0.945 0 0));
+  --sidebar-primary-foreground: light-dark(oklch(0.985 0 0), oklch(0.17 0 0));
+  --sidebar-accent: light-dark(oklch(0.945 0 0), oklch(0.22 0 0));
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: light-dark(oklch(0.922 0 0), oklch(0.26 0 0));
+  --sidebar-ring: var(--ring);
+  --radius: 0.3125rem;
   --shadow-x: 0px;
   --shadow-y: 1px;
-  --shadow-blur: 3px;
+  --shadow-blur: 2px;
   --shadow-spread: 0px;
-  --shadow-color: light-dark(oklch(0.3 0.05 250 / 0.09), oklch(0 0 0 / 0.45));
+  --shadow-color: light-dark(oklch(0 0 0 / 0.08), oklch(0 0 0 / 0.5));
   /* ---- end of theme group ---- */
 
   --shadow-color-weak: color-mix(in oklab, var(--shadow-color) 50%, transparent);
 
-  /* Brand: fixed artwork colours (covers, the brand panel, logos), the same in every theme like an uploaded picture.
-     Navy and orange: the Toraighyrov University brand book; ink: the Ashyq Bilim logo (public/app_logo.svg). */
-  --brand-navy: #1d3d66;
-  --brand-orange: #de6e35;
-  --brand-ink: #162c4a;
+  /* The interface's one colour. Fill: switches, checkboxes, radios and progress, under white. Text: links, on the page.
+     A theme's own colour takes over below. */
+  --highlight: oklch(0.546 0.215 262.9);
+  --highlight-foreground: oklch(1 0 0);
+  --link: light-dark(oklch(0.546 0.215 262.9), oklch(0.72 0.14 255));
+
+  /* Fixed surfaces, the same in every theme and mode like a printed thing: ink (the sign-in panel, the head of a
+     certificate, a finished course's band) and sheet (a certificate's paper). */
+  --surface-ink: oklch(0.145 0 0);
+  --surface-ink-foreground: oklch(1 0 0);
+  --surface-sheet: oklch(1 0 0);
+  --surface-sheet-foreground: oklch(0.205 0 0);
 
   /* Media stage: the video player's frame and its controls, dark in every theme and mode like a screen. The controls
      sit on `bg-media/70` over the picture: white ink on it stays >= 4.5:1 over any frame. */
-  --media: oklch(0.16 0.01 258);
-  --media-foreground: oklch(0.98 0.003 258);
+  --media: oklch(0.145 0 0);
+  --media-foreground: oklch(0.985 0 0);
 
   /* Derived meaning: a fixed hue anchor pulled 25% toward the theme's ink, so contrast follows the theme.
      Text/icon on background, card and on its own /10 tint is >= 4.5:1 in every theme (G-15). */
   --success: color-mix(in oklab, var(--foreground) 25%, light-dark(oklch(0.5 0.13 150), oklch(0.8 0.13 150)));
   --warning: color-mix(in oklab, var(--foreground) 25%, light-dark(oklch(0.5 0.13 60), oklch(0.82 0.12 75)));
   --info: color-mix(in oklab, var(--foreground) 25%, light-dark(oklch(0.5 0.12 240), oklch(0.8 0.1 240)));
-  /* XP, levels, streaks: the university's orange */
-  --reward: color-mix(in oklab, var(--foreground) 22%, light-dark(oklch(0.58 0.16 45), oklch(0.8 0.13 52)));
-  --activity-page: color-mix(in oklab, var(--foreground) 25%, light-dark(oklch(0.5 0.13 260), oklch(0.8 0.1 260)));
-  --activity-video: color-mix(in oklab, var(--foreground) 25%, light-dark(oklch(0.5 0.15 300), oklch(0.8 0.11 300)));
-  --activity-document: color-mix(in oklab, var(--foreground) 25%, light-dark(oklch(0.5 0.09 210), oklch(0.8 0.09 210)));
-  --activity-file-submission: color-mix(
-    in oklab,
-    var(--foreground) 25%,
-    light-dark(oklch(0.5 0.13 45), oklch(0.8 0.11 45))
-  );
-  --activity-quiz: color-mix(in oklab, var(--foreground) 25%, light-dark(oklch(0.5 0.15 340), oklch(0.8 0.1 340)));
-  --activity-exam: color-mix(in oklab, var(--foreground) 25%, light-dark(oklch(0.5 0.11 90), oklch(0.82 0.11 90)));
-  --activity-code: color-mix(in oklab, var(--foreground) 25%, light-dark(oklch(0.5 0.11 160), oklch(0.8 0.11 160)));
+  /* XP, levels, streaks: amber */
+  --reward: color-mix(in oklab, var(--foreground) 12%, light-dark(oklch(0.56 0.15 60), oklch(0.82 0.14 80)));
+  /* Activity types: one quiet ink for every type; the icon's shape tells them apart. */
+  --activity-page: var(--muted-foreground);
+  --activity-video: var(--muted-foreground);
+  --activity-document: var(--muted-foreground);
+  --activity-file-submission: var(--muted-foreground);
+  --activity-quiz: var(--muted-foreground);
+  --activity-exam: var(--muted-foreground);
+  --activity-code: var(--muted-foreground);
 
   /* Density (comfortable = learning, reading) */
-  --density-control: 2.25rem;
-  --density-row: 3rem;
-  --density-gutter: 1.5rem;
+  --density-control: 2.5rem;
+  --density-row: 3.25rem;
+  --density-gutter: 1.75rem;
 
   /* Focus */
   --focus-ring-width: 2px;
@@ -223,6 +237,13 @@
   --duration-slow: 200ms;
 }
 
+/* Any other theme has its own colour: the highlight takes its primary. Links keep the ink, its primary may be too faint for text. */
+:root[data-theme]:not([data-theme='modern-minimal']) {
+  --highlight: var(--primary);
+  --highlight-foreground: var(--primary-foreground);
+  --link: var(--foreground);
+}
+
 :root[data-mode='light'] {
   color-scheme: light;
 }
@@ -232,9 +253,26 @@
 }
 
 /* Typeface sets (DESIGN 4): html[data-font] from the user's choice, or a preview card in settings. No attribute =
-   Inter for reading and UI, Geologica for headings and display numbers. Every face has all 18 Kazakh letters;
-   all are OFL-1.1 except Ubuntu Sans (Ubuntu Font Licence 1.0, web embedding allowed). */
+   the house set: Geologica for headings and big numbers, Commissioner for UI and lesson text. Every face has all 18
+   Kazakh letters; all are OFL-1.1 except Ubuntu Sans (Ubuntu Font Licence 1.0, web embedding allowed). */
 :root,
+[data-font='press'] {
+  --typeface-sans: 'Commissioner Variable', system-ui, sans-serif;
+  --typeface-heading: 'Geologica Variable', system-ui, sans-serif;
+  --typeface-reading: var(--typeface-sans);
+  --heading-weight: 500;
+}
+
+/* The sans sets read everywhere in their own face and keep the weight their headings were drawn at. */
+[data-font] {
+  --typeface-reading: var(--typeface-sans);
+  --heading-weight: 600;
+}
+
+[data-font='press'] {
+  --heading-weight: 500;
+}
+
 [data-font='inter'] {
   --typeface-sans: 'Inter Variable', system-ui, sans-serif;
   --typeface-heading: 'Geologica Variable', var(--typeface-sans);
@@ -302,9 +340,9 @@
 
 /* Compact = teacher/admin tables; set by the layout, never by feature classes */
 [data-density='compact'] {
-  --density-control: 2rem;
-  --density-row: 2.25rem;
-  --density-gutter: 1rem;
+  --density-control: 2.25rem;
+  --density-row: 2.75rem;
+  --density-gutter: 1.25rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -344,6 +382,8 @@
   /* Headings speak in the display family everywhere, lesson content included. */
   :where(h1, h2, h3) {
     font-family: var(--font-heading);
+    font-optical-sizing: auto;
+    text-wrap: balance;
   }
 
   :focus-visible {

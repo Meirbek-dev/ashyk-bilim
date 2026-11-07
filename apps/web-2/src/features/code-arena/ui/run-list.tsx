@@ -26,7 +26,7 @@ export function RunList({ itemId, selected }: { itemId: string; selected: string
   const whole = all || runs.findIndex(run => run.id === selected) >= FIRST
   const shown = whole ? runs : runs.slice(0, FIRST)
   return (
-    <section aria-labelledby="code-runs" className="flex min-w-0 flex-col gap-2">
+    <section aria-labelledby="code-runs" className="flex min-w-0 flex-col gap-3">
       <h2 id="code-runs" className="text-xl font-semibold">
         {m.code_runs()}
       </h2>
@@ -36,7 +36,7 @@ export function RunList({ itemId, selected }: { itemId: string; selected: string
           const open = run.id === selected
           const when = formatDateTime(run.created_at_unix)
           return (
-            <li key={run.id} className="flex min-h-row flex-wrap items-center gap-x-4 gap-y-1 py-2">
+            <li key={run.id} className="flex min-h-row flex-wrap items-center gap-x-3 gap-y-1 py-1.5">
               <span className="text-muted-foreground tabular-nums">{when}</span>
               <Verdict status={status} />
               {run.total > 0 ? (
@@ -48,7 +48,7 @@ export function RunList({ itemId, selected }: { itemId: string; selected: string
                 search={previous => ({ ...previous, run: open ? undefined : run.id })}
                 aria-current={open ? 'true' : undefined}
                 aria-label={m.code_run_open({ when })}
-                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'ms-auto' })}
               >
                 {m.code_run_results()}
               </RouterLink>

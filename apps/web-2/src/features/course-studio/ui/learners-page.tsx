@@ -74,13 +74,13 @@ export function LearnersPage() {
     </ListState>
   )
   return (
-    <div className="flex flex-col gap-12">
+    <div className="flex flex-col gap-10">
       <LearnersSection courseId={courseId} courseName={course.name} add={add} />
-      <div className="grid gap-12 lg:grid-cols-2">
+      <div className="grid gap-10 @3xl:grid-cols-2">
         <section className="flex flex-col gap-2">
           <h2 className="text-xl font-semibold">{m.studio_access_title()}</h2>
-          <p>{accessText[courseStatus(course)]()}</p>
-          <div>
+          <p className="text-sm">{accessText[courseStatus(course)]()}</p>
+          <div className="text-sm">
             <Link to="/teach/courses/$courseId/publish" params={{ courseId }}>
               {m.studio_go_publish()}
             </Link>

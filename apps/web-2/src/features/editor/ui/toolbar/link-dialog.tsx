@@ -26,6 +26,7 @@ export function LinkDialog({ editor, open, onOpenChange }: LinkDialogProps) {
           <DialogTitle>{m.editor_link()}</DialogTitle>
         </DialogHeader>
         <AttrForm
+          bare
           fields={[{ name: 'href', label: m.editor_field_url(), check: value => linkHref(value) !== undefined }]}
           values={{ href }}
           onApply={({ href: next = '' }) =>

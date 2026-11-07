@@ -54,7 +54,7 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
   if (!action && !unmarkable && !error) return null
   return (
     <div className="flex flex-col items-start gap-2 empty:hidden">
-      <div className="flex flex-wrap items-center gap-2 empty:hidden">
+      <div className="flex max-w-full flex-wrap items-center gap-x-4 gap-y-2 empty:hidden">
         {action?.kind === 'mark' ? (
           <SubmitButton onClick={submit} pending={mark.isPending}>
             {m.player_mark()}

@@ -77,7 +77,10 @@ export function ContentPage() {
 
   const create = can(course, 'update') ? <CreateChapterDialog courseId={courseId} /> : null
   return (
-    <section aria-label={m.studio_content_label()} className="flex flex-col gap-gutter">
+    <section
+      aria-label={m.studio_content_label()}
+      className="@container flex flex-col gap-gutter has-[[data-quick-publish]]:[--quick:7.5rem]"
+    >
       {shown.chapters.length > 0 ? <ProgramHeader courseId={courseId} curriculum={curriculum} create={create} /> : null}
       {failed ? <ErrorAlert>{presentError(failed)}</ErrorAlert> : null}
       {shown.chapters.length === 0 ? (
@@ -89,7 +92,7 @@ export function ContentPage() {
           onDragOver={over}
           onDragEnd={drop}
         >
-          <ol className="flex flex-col gap-gutter">
+          <ol className="flex flex-col gap-10">
             {shown.chapters.map((chapter, index) => (
               <ChapterSection key={chapter.id} courseId={courseId} chapter={chapter} index={index} />
             ))}

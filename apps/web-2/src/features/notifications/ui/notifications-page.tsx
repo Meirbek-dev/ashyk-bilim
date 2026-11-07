@@ -44,7 +44,11 @@ export function NotificationsPage() {
     ) : null
   const filter = (
     // Full width under the header, as the search page's sections; «Непрочитанные» counts what is left to read.
-    <nav ref={filters} aria-label={m.notifications_filter_label()} className="flex w-full overflow-x-auto border-b">
+    <nav
+      ref={filters}
+      aria-label={m.notifications_filter_label()}
+      className="flex w-full gap-6 overflow-x-auto border-b"
+    >
       <Link variant="tab" to="/notifications" search={{ unread: undefined }}>
         {m.notifications_filter_all()}
       </Link>

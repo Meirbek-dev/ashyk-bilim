@@ -38,12 +38,12 @@ type Options = {
  * become canonical), external content changes are applied without an update event, and `onChange` gets the
  * canonical JSON (placeholders of never-uploaded files dropped).
  */
-// A lesson page is written at the width the learner reads it, on the page's own sheet (BlockEditor draws the sheet);
-// a post is a field among fields.
+// A lesson page is written at the width the learner reads it: the player's column is 44rem with 2rem margins, 40rem of
+// text (BlockEditor marks the focus, not the text column); a post is a field among fields.
 const surface = {
   view: 'max-w-none',
-  // The sheet around it draws the focus ring (BlockEditor): an outline here would box the text column alone.
-  authoring: 'mx-auto min-h-96 max-w-prose px-4 py-gutter outline-none',
+  // An outline here would box the text column alone.
+  authoring: 'mx-auto min-h-96 w-full max-w-[42rem] flex-1 px-4 pt-6 pb-16 outline-none',
   input: 'max-w-none min-h-40 rounded-md border border-input bg-background p-4',
 }
 

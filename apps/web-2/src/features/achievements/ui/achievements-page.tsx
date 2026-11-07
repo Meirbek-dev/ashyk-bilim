@@ -7,25 +7,28 @@ import { formatNumber } from '#/shared/i18n/format'
 import { achievementsOptions } from '../queries'
 import { ActivityFeed } from './activity-feed'
 import { LeaderboardSection } from './leaderboard-section'
-import { ProgressSection } from './progress-section'
+import { LevelBlock } from './progress-section'
+import { LevelThread } from './level-thread'
+import { TodayAndStreaks } from './today-and-streaks'
 
-/** /achievements: level and streaks, the leaderboard, and the latest XP awards (spec 5.4: off the home page). */
+/**
+ * /achievements: the learner's level as a solid block with the thread to the next one, today and the streaks,
+ * then the two long lists: the leaderboard and the ledger of XP (spec 5.4: off the home page).
+ */
 export function AchievementsPage() {
   const { data } = useSuspenseQuery(achievementsOptions())
   const { profile } = data
   return (
     <DetailPage
+      cover={<LevelBlock level={profile.level} />}
       title={m.platform_nav_achievements()}
       meta={m.achievements_summary({ level: profile.level, xp: formatNumber(profile.total_xp) })}
+      primaryAction={<LevelThread />}
     >
-      <ProgressSection />
-      <div className="grid gap-12 pt-4 @4xl:grid-cols-5 @4xl:gap-8">
-        <div className="@4xl:col-span-3">
-          <LeaderboardSection rank={data.user_rank} />
-        </div>
-        <div className="@4xl:col-span-2">
-          <ActivityFeed />
-        </div>
+      <TodayAndStreaks />
+      <div className="grid gap-12 pt-4 @4xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] @4xl:gap-14">
+        <LeaderboardSection rank={data.user_rank} />
+        <ActivityFeed />
       </div>
     </DetailPage>
   )

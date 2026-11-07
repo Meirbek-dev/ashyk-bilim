@@ -5,7 +5,6 @@ import { Link as RouterLink } from '@tanstack/react-router'
 import { BlockViewer } from '#/features/editor'
 import { m } from '#/paraglide/messages'
 import type { Discussion, DiscussionAction } from '#/shared/api/gen/types.gen'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { UserAvatar } from '#/shared/components/user-avatar'
 import { presentError } from '#/shared/i18n/errors'
@@ -55,17 +54,17 @@ export function PostItem({ item, open = false }: PostItemProps) {
   const cancel = () => (setEditing(false), update.reset())
   return (
     <article className="flex flex-col gap-3">
-      <header className="flex flex-wrap items-center gap-2 text-sm">
+      <header className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm">
         {removed ? (
-          <span className="text-muted-foreground italic">{m.discussions_post_deleted()}</span>
+          <span className="text-muted-foreground">{m.discussions_post_deleted()}</span>
         ) : (
           <>
             <UserAvatar name={author} avatarKey={item.author?.avatar_key} />
             <span className="font-medium wrap-anywhere">{author}</span>
           </>
         )}
-        <span className="text-muted-foreground">{formatDate(item.created_at_unix)}</span>
-        {hidden ? <StatusBadge tone="warning">{m.discussions_hidden()}</StatusBadge> : null}
+        <span className="text-muted-foreground tabular-nums">{formatDate(item.created_at_unix)}</span>
+        {hidden ? <span className="font-medium text-warning">{m.discussions_hidden()}</span> : null}
       </header>
       {editing ? (
         <PostForm
@@ -83,7 +82,7 @@ export function PostItem({ item, open = false }: PostItemProps) {
           <BlockViewer content={item.content} discussion fallback={<PostText content={item.content} />} />
         </Suspense>
       )}
-      <div className="flex flex-wrap items-center gap-1">
+      <div className="-ms-3 flex flex-wrap items-center gap-0.5">
         {can('react') ? <PostReactions item={item} /> : null}
         {!item.parent_id && (!hidden || can('moderate')) ? (
           <RouterLink

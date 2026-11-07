@@ -1,6 +1,5 @@
 import { m } from '#/paraglide/messages'
 import type { Attempt } from '#/shared/api/gen/types.gen'
-import { StatusBadge } from '#/shared/components/status-badge'
 
 import { GradeDetails } from './grade-details'
 
@@ -8,8 +7,8 @@ import { GradeDetails } from './grade-details'
 export function ReturnedNotice({ attempt, revisable }: { attempt: Attempt; revisable: boolean }) {
   return (
     <>
-      <div className="flex flex-col items-start gap-2">
-        <StatusBadge tone="warning">{m.submission_returned()}</StatusBadge>
+      <div className="flex flex-col items-start gap-1 border-l-2 border-warning ps-4">
+        <p className="font-medium text-warning">{m.submission_returned()}</p>
         {/* "Revise and hand in again" only while it can be handed in: past a closed deadline the reason says so. */}
         {revisable ? <p className="text-sm text-muted-foreground">{m.submission_returned_hint()}</p> : null}
       </div>

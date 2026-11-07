@@ -29,8 +29,8 @@ export function GroupMembersAdd({ group }: { group: Usergroup }) {
     )
   }
   return (
-    <form noValidate className="flex max-w-prose flex-col items-start gap-2" onSubmit={submit}>
-      <div className="w-full">
+    <form noValidate className="flex max-w-prose flex-wrap items-end gap-2" onSubmit={submit}>
+      <div className="min-w-48 flex-1">
         <Suspense fallback={<Skeleton className="h-row w-full" />}>
           <PeoplePicker label={m.admin_group_members_add()} value={picked} onValueChange={setPicked} />
         </Suspense>

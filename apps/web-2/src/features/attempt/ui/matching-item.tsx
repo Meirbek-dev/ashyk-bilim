@@ -24,7 +24,7 @@ export function MatchingItem({ body, answer, onChange, disabled }: MatchingProps
     <FieldGroup>
       {body.left.map(left => (
         <Field key={left.id}>
-          <FieldLabel htmlFor={`${id}-${left.id}`} className="wrap-anywhere">
+          <FieldLabel htmlFor={`${id}-${left.id}`} className="font-reading text-base font-normal wrap-anywhere">
             {left.text}
           </FieldLabel>
           <NativeSelect

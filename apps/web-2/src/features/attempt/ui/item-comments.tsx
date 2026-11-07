@@ -17,9 +17,9 @@ export function ItemComments({ submissionId, items, shown }: ItemCommentsProps) 
   const number = (itemId: string | null) => items.findIndex(item => item.id === itemId) + 1
   if (!written.length) return null
   return (
-    <section className="flex flex-col gap-2">
+    <section className="flex flex-col gap-3">
       <h2 className="text-xl font-semibold">{m.attempt_feedback_heading()}</h2>
-      <ul className="flex flex-col gap-2 text-sm">
+      <ul className="flex flex-col divide-y border-y text-sm [&_li]:py-3">
         {written.map(comment => (
           <li
             key={`${comment.item_id ?? 'all'}-${comment.created_at_unix}`}

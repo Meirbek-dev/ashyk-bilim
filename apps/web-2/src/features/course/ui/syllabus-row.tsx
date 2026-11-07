@@ -19,20 +19,20 @@ const inFlightLabels = {
   failed: { label: m.player_state_failed, className: 'text-destructive' },
 } satisfies Record<InFlight, { label: () => string; className: string }>
 
-/** One activity on the chapter's seam: type icon on the thread, title (the row is the link), type, done mark. */
+/** One activity of a chapter: type icon, title (the row is the link), type, done mark. */
 export function SyllabusRow({ courseId, activity }: { courseId: CourseId; activity: SyllabusActivity }) {
   const type = activityType(activity.type)
   const work = inFlight(activity)
   return (
-    <li className={`relative border-l-2 py-0.5 ${activity.complete ? 'border-primary' : 'border-dashed border-input'}`}>
+    <li className={`relative border-l-2 ${activity.complete ? 'border-primary' : 'border-input'}`}>
       {/* py-1.5: a one-line row keeps its height; wrapped titles on a phone no longer run into the next one. */}
       <div
-        className={`-ml-4 flex min-h-row items-center gap-3 rounded-lg py-1.5 pr-3 ${activity.available ? 'transition-colors duration-150 hover:bg-accent hover:text-accent-foreground' : ''}`}
+        className={`-ml-3 flex min-h-11 items-center gap-3 rounded-md py-1.5 pr-3 ${activity.available ? 'transition-colors duration-150 hover:bg-accent hover:text-accent-foreground' : ''}`}
       >
-        <span className="rounded-lg bg-background">
+        <span className="bg-background py-0.5">
           <ActivityIcon type={type} size="sm" />
         </span>
-        <span className="flex min-w-0 flex-1 flex-col wrap-anywhere">
+        <span className="flex min-w-0 flex-col wrap-anywhere @2xl:max-w-[70%]">
           {activity.available ? (
             <Link variant="stretched" to="/learn/$courseId/$activityId" params={{ courseId, activityId: activity.id }}>
               {activity.title}
@@ -57,6 +57,7 @@ export function SyllabusRow({ courseId, activity }: { courseId: CourseId; activi
         {work ? (
           <span className={`text-sm ${inFlightLabels[work].className}`}>{inFlightLabels[work].label()}</span>
         ) : null}
+        <span aria-hidden className="hidden h-px flex-1 border-b border-dotted border-input @2xl:block" />
         <span className="hidden text-sm text-muted-foreground @lg:inline">{activityTypeMeta[type].label()}</span>
         <span className="grid size-5 shrink-0 place-items-center">
           {activity.complete ? (

@@ -15,7 +15,7 @@ export function DraftSummary({ draft }: { draft: GradeDraftView }) {
   const corrections = draft.proposal?.calibration_corrections ?? 0
   return (
     <header className="flex flex-col gap-2">
-      <h2 id="grading-ai-draft" className="text-xl font-semibold">
+      <h2 id="grading-ai-draft" className="text-lg font-semibold">
         {m.grading_ai_draft_title()}
       </h2>
       <p className="text-sm tabular-nums">

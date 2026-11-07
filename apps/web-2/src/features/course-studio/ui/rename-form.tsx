@@ -37,14 +37,15 @@ export function RenameForm({ name, onSave, onCancel, pending, error }: RenameFor
         event.preventDefault()
         void form.handleSubmit()
       }}
-      className="flex min-w-0 flex-1 flex-wrap items-end gap-2"
+      className="flex min-w-0 flex-1 basis-64 flex-wrap items-center gap-2"
     >
-      <div className="min-w-48 flex-1">
+      {/* The row itself says what the field is: its label stays for screen readers. */}
+      <div className="min-w-48 flex-1 [&_label]:sr-only">
         <form.AppField name="name">
           {field => <field.TextField label={m.studio_rename_field({ name })} required />}
         </form.AppField>
       </div>
-      <SubmitButton type="submit" variant="secondary" pending={pending}>
+      <SubmitButton type="submit" pending={pending}>
         {m.ui_save()}
       </SubmitButton>
       <Button variant="ghost" onClick={onCancel}>

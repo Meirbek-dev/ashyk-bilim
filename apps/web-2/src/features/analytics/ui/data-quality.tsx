@@ -43,7 +43,7 @@ export function DataQuality({ quality }: { quality: AnalyticsDataQuality }) {
     { label: m.analytics_dq_excluded_teacher(), value: formatNumber(quality.excluded_teacher_attempts) },
   ]
   return (
-    <section aria-labelledby="analytics-data-quality" className="flex flex-col gap-4">
+    <section aria-labelledby="analytics-data-quality" className="flex flex-col gap-6">
       <h2 id="analytics-data-quality" className="text-xl font-semibold">
         {m.analytics_dq_title()}
       </h2>
@@ -57,9 +57,9 @@ export function DataQuality({ quality }: { quality: AnalyticsDataQuality }) {
         ))}
       </dl>
       {quality.courses_without_enough_data.length > 0 ? (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-2">
           <h3 className="text-lg font-semibold">{m.analytics_dq_thin()}</h3>
-          <ul className="columns-1 gap-gutter text-sm @3xl:columns-2 [&>li]:break-inside-avoid [&>li]:py-0.5">
+          <ul className="grid border-t text-sm @3xl:grid-cols-2 @3xl:gap-x-12 [&>li]:border-b [&>li]:py-2">
             {quality.courses_without_enough_data.map(gap => (
               <li key={gap.course_id} className="wrap-anywhere">
                 {m.analytics_dq_thin_course({ course: gap.course_name, count: formatNumber(gap.learner_count) })}

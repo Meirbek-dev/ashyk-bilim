@@ -6,6 +6,7 @@ import { Anchor } from '#/shared/components/anchor'
 import { formatDate } from '#/shared/i18n/format'
 
 import { sectionHeading, shownSections } from '../model/profile-sections'
+import { hangingSection } from './hanging-section'
 import { skillLevelLabels } from './section-items'
 
 const day = (date: string) => formatDate(Date.parse(date) / 1000)
@@ -26,9 +27,9 @@ type Renderers = { [T in ProfileSection['type']]: (section: Extract<ProfileSecti
 const bodies: Renderers = {
   text: section => <p className="max-w-prose wrap-anywhere whitespace-pre-line">{section.content}</p>,
   links: section => (
-    <ul className="flex flex-col gap-1">
+    <ul className="flex flex-col divide-y border-y">
       {section.links.map((link, at) => (
-        <li key={at} className="wrap-anywhere">
+        <li key={at} className="py-2.5 wrap-anywhere">
           <Anchor href={link.url} target="_blank" rel="noopener noreferrer">
             {link.title || link.url}
           </Anchor>
@@ -37,21 +38,26 @@ const bodies: Renderers = {
     </ul>
   ),
   skills: section => (
-    <ul className="flex flex-col gap-1">
+    <ul className="flex flex-col divide-y border-y">
       {section.skills.map((skill, at) => (
-        <li key={at}>
-          {skill.name}
-          {skill.level ? <span className={muted}> · {skillLevelLabels[skill.level]()}</span> : null}
-          {skill.category ? <span className={muted}> · {skill.category}</span> : null}
+        <li key={at} className="flex items-baseline justify-between gap-4 py-2.5">
+          <span className="wrap-anywhere">{skill.name}</span>
+          {skill.level || skill.category ? (
+            <span className={`text-right ${muted}`}>
+              {skill.level ? skillLevelLabels[skill.level]() : null}
+              {skill.level && skill.category ? ' · ' : null}
+              {skill.category}
+            </span>
+          ) : null}
         </li>
       ))}
     </ul>
   ),
   experience: section => (
-    <ul className="flex flex-col gap-3">
+    <ul className="flex flex-col divide-y border-y">
       {section.experiences.map((item, at) => (
-        <li key={at} className="flex flex-col gap-1">
-          <h3 className="font-medium">{[item.title, item.organization].filter(Boolean).join(' · ')}</h3>
+        <li key={at} className="flex flex-col gap-1 py-3.5">
+          <h3 className="text-lg font-semibold">{[item.title, item.organization].filter(Boolean).join(' · ')}</h3>
           <p className={muted}>{period(item)}</p>
           {item.description ? <p className="whitespace-pre-line">{item.description}</p> : null}
         </li>
@@ -59,10 +65,10 @@ const bodies: Renderers = {
     </ul>
   ),
   education: section => (
-    <ul className="flex flex-col gap-3">
+    <ul className="flex flex-col divide-y border-y">
       {section.education.map((item, at) => (
-        <li key={at} className="flex flex-col gap-1">
-          <h3 className="font-medium">{item.institution}</h3>
+        <li key={at} className="flex flex-col gap-1 py-3.5">
+          <h3 className="text-lg font-semibold">{item.institution}</h3>
           <p className={muted}>{[item.degree, item.field, period(item)].filter(Boolean).join(' · ')}</p>
           {item.description ? <p className="whitespace-pre-line">{item.description}</p> : null}
         </li>
@@ -70,12 +76,12 @@ const bodies: Renderers = {
     </ul>
   ),
   affiliation: section => (
-    <ul className="flex flex-col gap-3">
+    <ul className="flex flex-col divide-y border-y">
       {section.affiliations.map((item, at) => (
-        <li key={at} className="flex items-start gap-3">
+        <li key={at} className="flex items-start gap-3 py-3.5">
           {item.logoUrl ? <img src={item.logoUrl} alt="" className="size-10 rounded-md object-contain" /> : null}
           <div className="flex flex-col gap-1">
-            <h3 className="font-medium">{item.name}</h3>
+            <h3 className="text-lg font-semibold">{item.name}</h3>
             {item.description ? <p className={muted}>{item.description}</p> : null}
           </div>
         </li>
@@ -87,7 +93,7 @@ const bodies: Renderers = {
       {section.images.map((image, at) => (
         <li key={at}>
           <figure className="flex flex-col gap-1">
-            <img src={image.url} alt={image.caption ?? ''} className="aspect-video w-full rounded-md object-cover" />
+            <img src={image.url} alt={image.caption ?? ''} className="aspect-video w-full rounded-sm object-cover" />
             {image.caption ? <figcaption className={muted}>{image.caption}</figcaption> : null}
           </figure>
         </li>
@@ -122,9 +128,9 @@ function body(section: ProfileSection): ReactNode {
 /** The builder sections with something to show, in their saved order, read-only. */
 export function PublicSections({ sections }: { sections: ProfileSection[] }) {
   return shownSections(sections).map(section => (
-    <section key={section.id} aria-label={sectionHeading(section.title)} className="flex flex-col gap-3">
-      <h2 className="text-xl font-semibold wrap-anywhere">{sectionHeading(section.title)}</h2>
-      {body(section)}
+    <section key={section.id} aria-label={sectionHeading(section.title)} className={hangingSection}>
+      <h2 className="text-xl font-semibold wrap-break-word">{sectionHeading(section.title)}</h2>
+      <div className="min-w-0">{body(section)}</div>
     </section>
   ))
 }

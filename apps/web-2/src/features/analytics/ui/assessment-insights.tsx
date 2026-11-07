@@ -4,17 +4,23 @@ import type {
   QuestionDifficultyRow,
   TeacherAssessmentDetailResponse,
 } from '#/shared/api/gen/types.gen'
-import { Bars } from '#/shared/components/charts/bars'
 import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { KpiTile } from '#/shared/components/charts/kpi-tile'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
+import { CountBars } from './count-bars'
 import { hours, percent, score } from './kpi'
+import { FIGURES_AFTER_FIRST, TABLE_LOOK } from './table-look'
 
 const questionColumns = (): DataColumn<QuestionDifficultyRow>[] => [
-  { id: 'question', header: m.analytics_col_question(), priority: 1, cell: row => row.question_label },
+  {
+    id: 'question',
+    header: m.analytics_col_question(),
+    priority: 1,
+    cell: row => <span className="wrap-anywhere">{row.question_label}</span>,
+  },
   { id: 'accuracy', header: m.analytics_col_accuracy(), priority: 2, cell: row => percent(row.accuracy_pct) },
   {
     id: 'discrimination',
@@ -33,7 +39,12 @@ const questionColumns = (): DataColumn<QuestionDifficultyRow>[] => [
 ]
 
 const groupColumns = (): DataColumn<AssessmentCohortRow>[] => [
-  { id: 'group', header: m.analytics_col_group(), priority: 1, cell: row => row.cohort_name },
+  {
+    id: 'group',
+    header: m.analytics_col_group(),
+    priority: 1,
+    cell: row => <span className="wrap-anywhere">{row.cohort_name}</span>,
+  },
   { id: 'eligible', header: m.analytics_col_eligible(), priority: 3, cell: row => formatNumber(row.eligible_learners) },
   { id: 'submission', header: m.analytics_col_submission(), priority: 2, cell: row => percent(row.submission_rate) },
   { id: 'pass', header: m.analytics_col_pass(), priority: 2, cell: row => percent(row.pass_rate) },
@@ -56,7 +67,7 @@ export function AssessmentInsights({ data }: { data: TeacherAssessmentDetailResp
   return (
     <>
       {data.attempt_distribution.length > 0 ? (
-        <Bars
+        <CountBars
           title={m.analytics_attempts_distribution()}
           data={data.attempt_distribution.map(bucket => ({ label: bucket.label, value: bucket.count }))}
           formatValue={value => formatNumber(value)}
@@ -65,9 +76,9 @@ export function AssessmentInsights({ data }: { data: TeacherAssessmentDetailResp
       {data.common_failures.length > 0 ? (
         <section className="flex flex-col gap-2">
           <h3 className="text-lg font-semibold">{m.analytics_common_failures()}</h3>
-          <ul className="flex flex-col gap-1">
+          <ul className="flex max-w-3xl flex-col divide-y border-y text-sm">
             {data.common_failures.map(failure => (
-              <li key={failure.key} className="flex justify-between gap-4">
+              <li key={failure.key} className="flex justify-between gap-4 py-2">
                 <span className="wrap-anywhere">{failure.label}</span>
                 {/* The share of learners who missed the question (a code challenge has none). */}
                 <span className="text-muted-foreground tabular-nums">{formatPercent(failure.count)}</span>
@@ -79,23 +90,27 @@ export function AssessmentInsights({ data }: { data: TeacherAssessmentDetailResp
       {data.question_breakdown.length > 0 ? (
         <section className="flex flex-col gap-4">
           <h3 className="text-lg font-semibold">{m.analytics_questions_title()}</h3>
-          <DataTable
-            label={m.analytics_questions_title()}
-            rows={data.question_breakdown}
-            columns={questionColumns()}
-            getKey={row => row.question_id}
-          />
+          <div className={`${TABLE_LOOK} ${FIGURES_AFTER_FIRST}`}>
+            <DataTable
+              label={m.analytics_questions_title()}
+              rows={data.question_breakdown}
+              columns={questionColumns()}
+              getKey={row => row.question_id}
+            />
+          </div>
         </section>
       ) : null}
       {data.cohort_analytics.length > 0 ? (
         <section className="flex flex-col gap-4">
           <h3 className="text-lg font-semibold">{m.analytics_groups_title()}</h3>
-          <DataTable
-            label={m.analytics_groups_title()}
-            rows={data.cohort_analytics}
-            columns={groupColumns()}
-            getKey={row => row.cohort_id}
-          />
+          <div className={`${TABLE_LOOK} ${FIGURES_AFTER_FIRST}`}>
+            <DataTable
+              label={m.analytics_groups_title()}
+              rows={data.cohort_analytics}
+              columns={groupColumns()}
+              getKey={row => row.cohort_id}
+            />
+          </div>
         </section>
       ) : null}
       {data.diagnostics.manual_grading_required ? (

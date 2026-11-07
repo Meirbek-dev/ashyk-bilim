@@ -25,11 +25,13 @@ export function UpdatesPage() {
       emptyText={m.course_updates_empty()}
       onRetry={() => void query.refetch()}
     >
-      <DataList items={query.data} getKey={update => update.id}>
+      <DataList variant="rows" items={query.data} getKey={update => update.id}>
         {update => (
-          <article className="flex flex-col gap-2">
-            <h2 className="text-lg font-semibold wrap-anywhere">{update.title}</h2>
-            <p className="text-sm text-muted-foreground">{formatDate(update.created_at_unix)}</p>
+          <article className="flex max-w-[46rem] flex-col gap-2 py-2">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+              <h2 className="text-xl font-semibold text-pretty wrap-anywhere">{update.title}</h2>
+              <p className="text-sm text-muted-foreground tabular-nums">{formatDate(update.created_at_unix)}</p>
+            </div>
             <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
               <MarkdownView content={update.content} />
             </Suspense>

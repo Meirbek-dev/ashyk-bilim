@@ -1,9 +1,7 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Check, Circle, CircleDot, Square, SquareCheck } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { AssessmentItem, CorrectAnswer, ItemAnswer, MatchingPair } from '#/shared/api/gen/types.gen'
-import { StatusBadge } from '#/shared/components/status-badge'
-
 import { CodeLanguage } from './code-language'
 
 const isPairs = (key: CorrectAnswer | null): key is MatchingPair[] =>
@@ -26,15 +24,33 @@ function choice(item: AssessmentItem, answer: ItemAnswer | undefined, key: Corre
   const chosen = answer?.kind === 'choice' ? (answer.selected ?? []) : []
   const right = (id: string, flag: boolean | undefined) =>
     flag === true || (Array.isArray(key) && key.some(entry => entry === id))
+  const multiple = item.body.multiple === true || item.body.variant === 'multiple_choice'
+  const Mark = multiple ? Square : Circle
+  const Marked = multiple ? SquareCheck : CircleDot
   return (
-    <ul className="flex flex-col gap-1">
-      {(item.body.options ?? []).map(option => (
-        <li key={option.id} className="flex flex-wrap items-center gap-2">
-          <span className="wrap-anywhere">{option.text}</span>
-          {chosen.includes(option.id) ? <StatusBadge tone="neutral">{m.grading_chosen()}</StatusBadge> : null}
-          {right(option.id, option.is_correct) ? <StatusBadge tone="success">{m.grading_right()}</StatusBadge> : null}
-        </li>
-      ))}
+    <ul className="flex flex-col gap-1.5">
+      {(item.body.options ?? []).map(option => {
+        const picked = chosen.includes(option.id)
+        return (
+          <li key={option.id} className="flex items-baseline gap-2.5">
+            {picked ? (
+              <Marked aria-hidden className="size-4 shrink-0 translate-y-0.5" />
+            ) : (
+              <Mark aria-hidden className="size-4 shrink-0 translate-y-0.5 text-muted-foreground" />
+            )}
+            <span className="flex min-w-0 flex-wrap items-baseline gap-x-3">
+              <span className={`text-base wrap-anywhere ${picked ? '' : 'text-muted-foreground'}`}>{option.text}</span>
+              {picked ? <span className="text-xs text-muted-foreground">{m.grading_chosen()}</span> : null}
+              {right(option.id, option.is_correct) ? (
+                <span className="inline-flex items-center gap-1 text-xs text-success">
+                  <Check aria-hidden className="size-3.5" />
+                  {m.grading_right()}
+                </span>
+              ) : null}
+            </span>
+          </li>
+        )
+      })}
     </ul>
   )
 }
@@ -47,7 +63,7 @@ function given(item: AssessmentItem, answer: ItemAnswer | undefined) {
   if (!answer || blank(answer)) return <p className="text-muted-foreground">{m.grading_no_answer()}</p>
   switch (answer.kind) {
     case 'open_text':
-      return <p className="wrap-anywhere whitespace-pre-wrap">{answer.text}</p>
+      return <p className="max-w-prose text-base wrap-anywhere whitespace-pre-wrap">{answer.text}</p>
     case 'form': {
       const fields = item.body.kind === 'form' ? (item.body.fields ?? []) : []
       return (
@@ -65,7 +81,7 @@ function given(item: AssessmentItem, answer: ItemAnswer | undefined) {
       return (
         <div className="flex flex-col gap-1">
           <CodeLanguage id={answer.language} />
-          <pre className="overflow-x-auto rounded-md border bg-muted p-4 font-mono text-sm">{answer.source}</pre>
+          <pre className="overflow-x-auto border-y bg-muted/50 px-4 py-3 font-mono text-sm">{answer.source}</pre>
         </div>
       )
     case 'matching':
@@ -91,11 +107,11 @@ export function AnswerView({ item, answer, answerKey }: AnswerViewProps) {
       : []
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium">{m.grading_answer()}</p>
+      <p className="text-sm text-muted-foreground">{m.grading_answer()}</p>
       {given(item, answer)}
       {key.length > 0 ? (
         <>
-          <p className="text-sm font-medium">{m.grading_correct_answer()}</p>
+          <p className="text-sm text-muted-foreground">{m.grading_correct_answer()}</p>
           {pairs(key)}
         </>
       ) : null}

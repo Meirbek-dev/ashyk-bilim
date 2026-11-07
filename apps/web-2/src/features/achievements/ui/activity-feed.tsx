@@ -13,7 +13,7 @@ export function ActivityFeed() {
   const query = useSuspenseInfiniteQuery(xpHistoryListOptions())
   const awards = query.data.pages.flatMap(page => page.items)
   return (
-    <section aria-label={m.achievements_feed_title()} className="flex flex-col gap-3">
+    <section aria-label={m.achievements_feed_title()} className="flex min-w-0 flex-col gap-3">
       <h2 className="text-xl font-semibold">{m.achievements_feed_title()}</h2>
       <ListState
         pending={false}
@@ -23,17 +23,17 @@ export function ActivityFeed() {
         emptyText={m.achievements_feed_empty()}
         onRetry={() => void query.refetch()}
       >
-        <ul className="flex flex-col divide-y overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs">
+        <ul className="flex flex-col divide-y border-y">
           {awards.map(award => (
-            <li key={award.id} className="flex items-start justify-between gap-4 px-4 py-3">
-              <div className="flex min-w-0 flex-col gap-1">
-                <p className="font-medium">{sourceLabel[award.source]()}</p>
-                {award.reason ? <p className="text-sm wrap-anywhere">{award.reason}</p> : null}
-                <p className="text-sm text-muted-foreground">{formatDate(award.created_at_unix)}</p>
+            <li key={award.id} className="flex flex-col gap-0.5 py-2.5">
+              <div className="flex items-baseline justify-between gap-4">
+                <p className="text-sm">{sourceLabel[award.source]()}</p>
+                <p className="shrink-0 font-heading text-lg font-semibold tabular-nums">
+                  {formatNumber(award.amount, { signed: true })}
+                </p>
               </div>
-              <p className="shrink-0 font-heading text-lg font-semibold text-reward tabular-nums">
-                {formatNumber(award.amount, { signed: true })}
-              </p>
+              {award.reason ? <p className="text-sm wrap-anywhere text-muted-foreground">{award.reason}</p> : null}
+              <p className="text-xs text-muted-foreground">{formatDate(award.created_at_unix)}</p>
             </li>
           ))}
         </ul>

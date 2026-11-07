@@ -16,6 +16,7 @@ import { ListPage } from '#/shared/components/templates/list-page'
 import { groupsListOptions } from '../group-queries'
 import { searchBoxSchema } from '../model/admin'
 import { CreateGroupDialog } from './create-group-dialog'
+import { tableOnPage } from './table-layout'
 
 const columns: DataColumn<Usergroup>[] = [
   {
@@ -23,8 +24,8 @@ const columns: DataColumn<Usergroup>[] = [
     header: m.admin_field_name(),
     priority: 1,
     cell: group => (
-      <span className="wrap-anywhere">
-        <Link to="/teach/groups/$groupId" params={{ groupId: group.id }}>
+      <span className="font-medium wrap-anywhere">
+        <Link variant="title" to="/teach/groups/$groupId" params={{ groupId: group.id }}>
           {group.name}
         </Link>
       </span>
@@ -34,7 +35,9 @@ const columns: DataColumn<Usergroup>[] = [
     id: 'description',
     header: m.admin_field_description(),
     priority: 2,
-    cell: group => (group.description ? <span className="wrap-anywhere">{group.description}</span> : null),
+    wrap: true,
+    cell: group =>
+      group.description ? <span className="wrap-anywhere text-muted-foreground">{group.description}</span> : null,
   },
   {
     id: 'members',
@@ -89,7 +92,9 @@ export function GroupsPage() {
         emptyText={m.admin_groups_empty()}
         onRetry={() => void query.refetch()}
       >
-        <DataTable label={m.admin_groups_table()} rows={groups} columns={columns} getKey={group => group.id} />
+        <div className={tableOnPage}>
+          <DataTable label={m.admin_groups_table()} rows={groups} columns={columns} getKey={group => group.id} />
+        </div>
         <ShowMore
           hasMore={query.hasNextPage}
           pending={query.isFetchingNextPage}

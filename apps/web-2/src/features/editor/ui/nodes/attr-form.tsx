@@ -19,6 +19,8 @@ type AttrFormProps = {
   values: Record<string, string>
   /** A rejected promise with a 422 puts its field errors under the fields of the same name. */
   onApply: (values: Record<string, string>) => unknown
+  /** Inside a dialog: the dialog is already its box, and «Применить» its one action. */
+  bare?: boolean
 }
 
 const fieldSchema = ({ check }: AttrField) =>
@@ -36,7 +38,7 @@ const fieldSchema = ({ check }: AttrField) =>
  * The authoring form of a block's attributes (URL, formula, question...): validated, applied to the node by «Применить»
  * or when the focus leaves the form with a change in it (a formula typed and left was silently lost on save).
  */
-export function AttrForm({ fields, values, onApply }: AttrFormProps) {
+export function AttrForm({ fields, values, onApply, bare = false }: AttrFormProps) {
   const schema = v.object(Object.fromEntries(fields.map(field => [field.name, fieldSchema(field)])))
   const form = useAppForm(schema, {
     defaultValues: Object.fromEntries(fields.map(field => [field.name, values[field.name] ?? ''])),
@@ -61,7 +63,7 @@ export function AttrForm({ fields, values, onApply }: AttrFormProps) {
       ref={watchLeave}
       noValidate
       onSubmit={submit}
-      className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4"
+      className={bare ? 'flex flex-col gap-4' : 'flex flex-col gap-4 rounded-lg border border-border bg-card p-4'}
     >
       {fields.map(field => (
         <form.AppField key={field.name} name={field.name}>
@@ -71,7 +73,7 @@ export function AttrForm({ fields, values, onApply }: AttrFormProps) {
         </form.AppField>
       ))}
       <div>
-        <Button type="submit" variant="secondary">
+        <Button type="submit" variant={bare ? 'default' : 'secondary'}>
           {m.editor_apply()}
         </Button>
       </div>

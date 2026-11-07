@@ -29,7 +29,7 @@ export function SheetPanel({ trigger, open, onOpenChange, title, side, initialFo
         <SheetHeader className="pr-12">
           <SheetTitle className="wrap-anywhere">{title}</SheetTitle>
         </SheetHeader>
-        <div className="flex flex-col gap-4 overflow-y-auto px-4 pb-4">{children}</div>
+        <div className="flex flex-col gap-4 overflow-y-auto px-5 pb-5">{children}</div>
       </SheetContent>
     </Sheet>
   )

@@ -21,7 +21,15 @@ export function AdminSettings() {
   const source = sources.size === 1 ? (settings.features[0]?.source ?? null) : null
   return (
     <section id="settings" className="flex max-w-prose flex-col gap-4">
-      <h2 className="text-xl font-semibold">{m.ai_admin_settings()}</h2>
+      <div className="flex flex-col gap-1">
+        <h2 className="text-xl font-semibold">{m.ai_admin_settings()}</h2>
+        {/* Each value whole: a long line broke «Токенов на запрос:» from its number on a phone. */}
+        <p className="flex flex-wrap gap-x-4 text-sm text-muted-foreground tabular-nums">
+          <span>{m.ai_model({ model: settings.model })}</span>
+          <span>{m.ai_max_request({ count: formatNumber(settings.max_tokens_per_request) })}</span>
+          <span>{m.ai_max_output({ count: formatNumber(settings.max_output_tokens) })}</span>
+        </p>
+      </div>
       <dl className="flex flex-col divide-y border-y text-sm">
         {[
           { label: m.ai_enabled(), value: flag(settings.ai_enabled) },
@@ -30,18 +38,11 @@ export function AdminSettings() {
         ].map(row => (
           <div key={row.label} className="flex min-h-row items-center justify-between gap-4 py-1">
             <dt>{row.label}</dt>
-            <dd>{row.value}</dd>
+            <dd className="flex">{row.value}</dd>
           </div>
         ))}
       </dl>
-      <p className="text-sm text-muted-foreground">
-        {[
-          m.ai_model({ model: settings.model }),
-          m.ai_max_request({ count: formatNumber(settings.max_tokens_per_request) }),
-          m.ai_max_output({ count: formatNumber(settings.max_output_tokens) }),
-        ].join(' · ')}
-      </p>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 pt-4">
         <h3 className="font-medium">{m.ai_features()}</h3>
         {/* «Управляется в настройках сервера» beside working switches read as if they could not be changed: say what one does. */}
         {source || canSwitch ? (

@@ -2,7 +2,6 @@ import { Suspense } from 'react'
 
 import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { formatNumber } from '#/shared/i18n/format'
 import { Skeleton } from '#/shared/ui/skeleton'
 
@@ -24,13 +23,19 @@ export function Problem({ code: { item, body } }: { code: CodeItem }) {
   ].filter(part => part.text !== '')
   return (
     <section aria-labelledby="code-problem" className="flex max-w-prose min-w-0 flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-1">
         <h2 id="code-problem" className="text-xl font-semibold">
           {m.code_problem()}
         </h2>
-        {difficulty ? <StatusBadge tone="neutral">{difficultyLabels[difficulty]()}</StatusBadge> : null}
+        {difficulty || limits.length > 0 ? (
+          <p className="flex flex-wrap gap-x-2 text-sm text-muted-foreground tabular-nums">
+            {difficulty ? <span className="font-medium text-foreground">{difficultyLabels[difficulty]()}</span> : null}
+            {limits.map(limit => (
+              <span key={limit}>{limit}</span>
+            ))}
+          </p>
+        ) : null}
       </div>
-      {limits.length > 0 ? <p className="text-sm text-muted-foreground">{limits.join(' · ')}</p> : null}
       <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
         {body.prompt ? <MarkdownView content={body.prompt} /> : null}
         {parts.map(part => (
@@ -53,12 +58,14 @@ export function Problem({ code: { item, body } }: { code: CodeItem }) {
       {samples.length > 0 ? (
         <div className="flex flex-col gap-2">
           <h3 className="text-lg font-semibold">{m.code_samples()}</h3>
-          <ol className="flex flex-col gap-4">
+          <ol className="flex flex-col divide-y border-y">
             {samples.map((test, index) => (
-              <li key={test.id} className="flex flex-col gap-2">
+              <li key={test.id} className="flex flex-col gap-2 py-3">
                 <p className="text-sm font-medium">{test.description ?? m.code_sample({ number: index + 1 })}</p>
-                <Io label={m.code_io_input()} text={test.input ?? ''} />
-                <Io label={m.code_io_expected()} text={test.expected_output ?? ''} />
+                <div className="grid min-w-0 gap-2 @xl:grid-cols-2 @xl:gap-4">
+                  <Io label={m.code_io_input()} text={test.input ?? ''} />
+                  <Io label={m.code_io_expected()} text={test.expected_output ?? ''} />
+                </div>
               </li>
             ))}
           </ol>

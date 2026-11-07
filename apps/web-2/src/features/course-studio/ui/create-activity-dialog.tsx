@@ -79,7 +79,7 @@ export function CreateActivityDialog({ courseId, chapter }: { courseId: string; 
       open={open}
       onOpenChange={changeOpen}
       trigger={
-        <Button variant="ghost" aria-label={m.studio_activity_new_in({ name: chapter.name })}>
+        <Button variant="ghost" size="sm" aria-label={m.studio_activity_new_in({ name: chapter.name })}>
           <Plus aria-hidden data-icon="inline-start" />
           {m.studio_activity_new()}
         </Button>

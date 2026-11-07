@@ -35,7 +35,7 @@ export function LearnersTab() {
   ]
   const open = atRisk.items.find(row => row.user_id === learnerId && row.course_id === courseId)
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-10">
       <KpiStrip label={m.analytics_kpis()} columns={3}>
         {tiles.map(tile => (
           <KpiTile key={tile.label} label={tile.label} value={formatNumber(tile.value)} />

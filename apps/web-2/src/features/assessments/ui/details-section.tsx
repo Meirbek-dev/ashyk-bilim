@@ -11,7 +11,7 @@ import { toast } from '#/shared/ui/toast'
 import { detailsBody, detailsForm, detailsFormSchema } from '../model/details'
 import { editMode } from '../model/route'
 import { updateAssessmentOptions } from '../queries'
-import { gradingLabels, lockReason, optionsOf } from './labels'
+import { gradingLabels, lockReason, optionsOf, TWO } from './labels'
 import { MarkdownField } from './markdown-field'
 import { isStale, useVersion } from './use-version'
 
@@ -63,7 +63,7 @@ export function DetailsSection({ activityId, assessment }: DetailsSectionProps) 
         <fieldset
           disabled={mode !== 'all'}
           inert={mode !== 'all'}
-          className={`flex min-w-0 flex-col gap-4 ${mode === 'all' ? '' : '[&_[role=radio]]:opacity-50'}`}
+          className={`${TWO} min-w-0 ${mode === 'all' ? '' : '[&_[role=radio]]:opacity-50'}`}
         >
           <form.AppField name="weight">
             {field => (

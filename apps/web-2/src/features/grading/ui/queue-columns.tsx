@@ -3,7 +3,6 @@ import { Link as RouterLink } from '@tanstack/react-router'
 import { m } from '#/paraglide/messages'
 import type { GradeDraftView } from '#/shared/api/gen/types.gen'
 import type { DataColumn } from '#/shared/components/data-columns'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime, formatNumber } from '#/shared/i18n/format'
 import { buttonVariants } from '#/shared/components/button-variants'
 import { Checkbox } from '#/shared/ui/checkbox'
@@ -11,7 +10,9 @@ import { Checkbox } from '#/shared/ui/checkbox'
 import type { QueueRow } from '../model/queue'
 import type { QueueSearch } from '../route'
 import { AiCell } from './ai-cell'
-import { scoreText, statusMeta } from './labels'
+import { statusMeta } from './labels'
+import { ScoreFigure } from './score-figure'
+import { StatusText } from './status-text'
 
 type Ids = { courseId: string; activityId: string }
 type Selection = {
@@ -29,8 +30,8 @@ function Learner({ row }: { row: QueueRow }) {
     'staff' in row && row.staff ? m.grading_staff() : 'enrolled' in row && !row.enrolled ? m.grading_left() : null
   return (
     <span className="flex flex-col">
-      <span className="wrap-anywhere">{learnerName(row)}</span>
-      <span className="text-xs wrap-anywhere text-muted-foreground">@{row.user.username}</span>
+      <span className="font-medium wrap-anywhere">{learnerName(row)}</span>
+      <span className="font-sans text-xs font-normal wrap-anywhere text-muted-foreground">@{row.user.username}</span>
       {note ? <span className="text-xs text-muted-foreground">{note}</span> : null}
     </span>
   )
@@ -51,6 +52,34 @@ const selectColumn = (selection: Selection): DataColumn<QueueRow> => ({
       onCheckedChange={() => selection.toggle(row.id)}
     />
   ),
+})
+
+/** The action leads into the review of the row's work, keeping the queue's filters (B-GRD-10). */
+const actionColumn = (ids: Ids, search: QueueSearch): DataColumn<QueueRow> => ({
+  id: 'action',
+  header: m.grading_col_action(),
+  headerCell: <span className="sr-only">{m.grading_col_action()}</span>,
+  priority: 2,
+  action: true,
+  cell: row => {
+    // Graded or not, a work still to release is graded (what is left to do stands out); a released or returned one is
+    // opened, and quietly.
+    const toGrade = row.allowed_actions.length > 0 && !['published', 'returned'].includes(row.status)
+    return (
+      <RouterLink
+        className={
+          toGrade
+            ? buttonVariants({ variant: 'outline', size: 'sm' })
+            : `-mx-3 ${buttonVariants({ variant: 'ghost', size: 'sm' })}`
+        }
+        to="/teach/courses/$courseId/activities/$activityId/submissions/$submissionId"
+        params={{ ...ids, submissionId: row.id }}
+        search={search}
+      >
+        {toGrade ? m.grading_action_grade() : m.grading_action_open()}
+      </RouterLink>
+    )
+  },
 })
 
 /**
@@ -79,11 +108,15 @@ export function queueColumns(
       priority: 2,
       sortable: true,
       cell: row => (
-        <span className="flex flex-wrap items-center gap-2">
+        <span className="flex flex-col">
           {row.submitted_at_unix === null ? null : (
             <span className="tabular-nums">{formatDateTime(row.submitted_at_unix)}</span>
           )}
-          {row.is_late ? <StatusBadge tone="warning">{m.grading_late()}</StatusBadge> : null}
+          {row.is_late ? (
+            <span className="text-xs">
+              <StatusText tone="warning">{m.grading_late()}</StatusText>
+            </span>
+          ) : null}
         </span>
       ),
     },
@@ -91,14 +124,7 @@ export function queueColumns(
       id: 'status',
       header: m.grading_col_status(),
       priority: 2,
-      cell: row => <StatusBadge tone={statusMeta[row.status].tone}>{statusMeta[row.status].label()}</StatusBadge>,
-    },
-    {
-      id: 'final_score',
-      header: m.grading_col_score(),
-      priority: 2,
-      sortable: true,
-      cell: row => <span className="tabular-nums">{scoreText(row.final_score)}</span>,
+      cell: row => <StatusText tone={statusMeta[row.status].tone}>{statusMeta[row.status].label()}</StatusText>,
     },
     ...(drafts && drafts.size > 0
       ? [
@@ -111,23 +137,12 @@ export function queueColumns(
         ]
       : []),
     {
-      id: 'action',
-      header: m.grading_col_action(),
+      id: 'final_score',
+      header: m.grading_col_score(),
       priority: 2,
-      action: true,
-      cell: row => (
-        <RouterLink
-          className={buttonVariants({ variant: 'outline' })}
-          to="/teach/courses/$courseId/activities/$activityId/submissions/$submissionId"
-          params={{ ...ids, submissionId: row.id }}
-          search={search}
-        >
-          {/* Graded or not, a work still to release is graded; a released or returned one is opened. */}
-          {row.allowed_actions.length > 0 && !['published', 'returned'].includes(row.status)
-            ? m.grading_action_grade()
-            : m.grading_action_open()}
-        </RouterLink>
-      ),
+      sortable: true,
+      cell: row => <ScoreFigure score={row.final_score} column="wide" />,
     },
+    actionColumn(ids, search),
   ]
 }

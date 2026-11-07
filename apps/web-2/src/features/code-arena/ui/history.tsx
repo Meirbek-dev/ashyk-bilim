@@ -20,7 +20,7 @@ type HistoryProps = { attempts: StudentSubmission[]; code: CodeItem; selected: s
 export function History({ attempts, code, selected }: HistoryProps) {
   if (attempts.length === 0) return null
   return (
-    <section aria-labelledby="code-history" className="flex min-w-0 flex-col gap-2">
+    <section aria-labelledby="code-history" className="flex min-w-0 flex-col gap-3">
       <h2 id="code-history" className="text-xl font-semibold">
         {m.code_history()}
       </h2>
@@ -29,8 +29,8 @@ export function History({ attempts, code, selected }: HistoryProps) {
           const status = attemptStatus[attempt.status]
           const open = attempt.id === selected
           return (
-            <li key={attempt.id} className="flex min-w-0 flex-col gap-4 py-2">
-              <div className="flex min-h-row flex-wrap items-center gap-x-4 gap-y-1">
+            <li key={attempt.id} className="flex min-w-0 flex-col gap-4 py-1.5">
+              <div className="flex min-h-row flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="font-medium">{m.code_attempt({ number: attempt.attempt_number })}</span>
                 {/* A draft says so in its state; «not handed in» beside «Draft» only repeats it. */}
                 {attempt.submitted_at_unix === null && attempt.status === 'draft' ? null : (
@@ -42,7 +42,7 @@ export function History({ attempts, code, selected }: HistoryProps) {
                 )}
                 <Verdict status={status} />
                 {attempt.final_score === null ? null : (
-                  <span className="font-heading text-lg font-semibold tabular-nums">
+                  <span className="ms-auto font-heading text-lg tabular-nums">
                     {formatPercent(attempt.final_score)}
                   </span>
                 )}

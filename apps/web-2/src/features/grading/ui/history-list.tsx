@@ -2,11 +2,12 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { FileGradingEntry, GradingEntry } from '#/shared/api/gen/types.gen'
-import { StatusBadge, type StatusTone } from '#/shared/components/status-badge'
+import type { StatusTone } from '#/shared/components/status-badge'
 import { formatDateTime } from '#/shared/i18n/format'
 
 import { historyOptions, type Work } from '../queries'
 import { scoreText, statusMeta } from './labels'
+import { StatusText } from './status-text'
 
 /**
  * An assessment entry is a draft or published (B-GRD-17); a file attempt's entry carries the status it was saved
@@ -24,7 +25,7 @@ export function HistoryList({ work, id }: { work: Work; id: string }) {
   const { data: entries } = useSuspenseQuery(historyOptions(work, id))
   if (entries.length === 0) return <p className="text-sm text-muted-foreground">{m.grading_history_empty()}</p>
   return (
-    <ol className="flex flex-col divide-y text-sm">
+    <ol className="flex flex-col divide-y border-y text-sm">
       {entries.map(entry => {
         const { label, tone } = badge(entry)
         const feedback = 'status' in entry ? entry.feedback : entry.overall_feedback
@@ -38,7 +39,7 @@ export function HistoryList({ work, id }: { work: Work; id: string }) {
                   {m.grading_penalty({ percent: scoreText(entry.penalty_pct) })}
                 </span>
               ) : null}
-              <StatusBadge tone={tone}>{label}</StatusBadge>
+              <StatusText tone={tone}>{label}</StatusText>
             </div>
             {feedback ? <p className="wrap-anywhere whitespace-pre-wrap text-muted-foreground">{feedback}</p> : null}
           </li>

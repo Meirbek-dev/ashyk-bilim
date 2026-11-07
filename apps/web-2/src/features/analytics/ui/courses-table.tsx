@@ -5,7 +5,6 @@ import { m } from '#/paraglide/messages'
 import type { TeacherCourseRow } from '#/shared/api/gen/types.gen'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
-import { ScoreBar } from '#/shared/components/charts/score-bar'
 import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
@@ -13,7 +12,9 @@ import { formatNumber, formatPercent } from '#/shared/i18n/format'
 import { activeFilters, COURSE_SORTS, type CourseSort, type Filters, tableSort } from '../model/filters'
 import { coursesOptions } from '../queries'
 import { score } from './kpi'
+import { Meter } from './meter'
 import { Pager } from './pager'
+import { FIGURES_AFTER_FIRST, TABLE_LOOK } from './table-look'
 
 const count = (value: number) => <span className="tabular-nums">{formatNumber(value)}</span>
 
@@ -34,7 +35,7 @@ const columns = (): DataColumn<TeacherCourseRow>[] => [
     sortable: true,
     header: m.analytics_col_completion(),
     priority: 2,
-    cell: row => <ScoreBar value={row.completion_rate} text={formatPercent(row.completion_rate)} />,
+    cell: row => <Meter value={row.completion_rate} text={formatPercent(row.completion_rate)} />,
   },
   {
     id: 'active',
@@ -56,7 +57,7 @@ const columns = (): DataColumn<TeacherCourseRow>[] => [
     header: m.analytics_col_health(),
     priority: 3,
     // A 0..100 score, as on the admin ranking (B-ANL-36): a bare «61,4» did not say out of what.
-    cell: row => <ScoreBar value={row.content_health_score} text={score(row.content_health_score)} />,
+    cell: row => <Meter value={row.content_health_score} text={score(row.content_health_score)} />,
   },
   { id: 'ungraded', header: m.analytics_col_ungraded(), priority: 3, cell: row => count(row.ungraded_submissions) },
 ]
@@ -79,17 +80,22 @@ export function CoursesTable({ filters, page, order }: CoursesTableProps) {
         onResetFilters={() => void navigate({ to: '.', search: {} })}
         onRetry={() => void query.refetch()}
       >
-        <DataTable
-          label={m.analytics_courses_table()}
-          rows={query.data.items}
-          columns={columns()}
-          getKey={row => row.course_id}
-          sort={order.sort ? { id: order.sort, desc: order.desc ?? false } : undefined}
-          onSortChange={next => {
-            const { sort, desc } = tableSort(COURSE_SORTS, next)
-            void navigate({ to: '.', search: prev => ({ ...prev, courseSort: sort, courseDesc: desc, coursePage: 1 }) })
-          }}
-        />
+        <div className={`${TABLE_LOOK} ${FIGURES_AFTER_FIRST}`}>
+          <DataTable
+            label={m.analytics_courses_table()}
+            rows={query.data.items}
+            columns={columns()}
+            getKey={row => row.course_id}
+            sort={order.sort ? { id: order.sort, desc: order.desc ?? false } : undefined}
+            onSortChange={next => {
+              const { sort, desc } = tableSort(COURSE_SORTS, next)
+              void navigate({
+                to: '.',
+                search: prev => ({ ...prev, courseSort: sort, courseDesc: desc, coursePage: 1 }),
+              })
+            }}
+          />
+        </div>
         <Pager page={page} total={query.data.total} param="coursePage" />
       </ListState>
     </section>

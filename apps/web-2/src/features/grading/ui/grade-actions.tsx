@@ -6,7 +6,11 @@ import { presentError } from '#/shared/i18n/errors'
 
 import { isStale } from './use-conflict'
 
-const ORDER = ['save', 'return', 'publish'] as const satisfies readonly GradeAction[]
+// The primary first where they stack in a column; in a bar it ends the line, under the eye and the hand.
+const ORDERS = {
+  column: ['publish', 'save', 'return'],
+  bar: ['save', 'return', 'publish'],
+} as const satisfies Record<string, readonly GradeAction[]>
 const labels = {
   save: m.grading_save,
   publish: m.grading_publish,
@@ -23,26 +27,37 @@ type GradeActionsProps = {
   error: unknown
   /** The grade is out already: publishing again updates what the learner sees (B-GRD-36). */
   published?: boolean
+  /** `column`: the marking column's stack; `bar`: one line at the foot of a long form. */
+  layout?: keyof typeof ORDERS
 }
 
 /** Save draft, return for revision, publish (the one primary): each submits the form with its action. */
-export function GradeActions({ allowed, pending, onAction, error, published = false }: GradeActionsProps) {
+export function GradeActions({
+  allowed,
+  pending,
+  onAction,
+  error,
+  published = false,
+  layout = 'column',
+}: GradeActionsProps) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {error && !isStale(error) ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
-      <div className="flex flex-wrap gap-2">
-        {ORDER.filter(action => allowed.includes(action)).map(action => (
-          <SubmitButton
-            key={action}
-            type="button"
-            variant={action === 'publish' ? 'default' : 'outline'}
-            pending={pending === action}
-            disabled={pending !== null}
-            onClick={() => onAction(action)}
-          >
-            {action === 'publish' && published ? m.grading_republish() : labels[action]()}
-          </SubmitButton>
-        ))}
+      <div className={layout === 'column' ? 'flex flex-col gap-2 *:w-full' : 'flex flex-wrap gap-2'}>
+        {ORDERS[layout]
+          .filter(action => allowed.includes(action))
+          .map(action => (
+            <SubmitButton
+              key={action}
+              type="button"
+              variant={action === 'publish' ? 'default' : 'outline'}
+              pending={pending === action}
+              disabled={pending !== null}
+              onClick={() => onAction(action)}
+            >
+              {action === 'publish' && published ? m.grading_republish() : labels[action]()}
+            </SubmitButton>
+          ))}
       </div>
     </div>
   )

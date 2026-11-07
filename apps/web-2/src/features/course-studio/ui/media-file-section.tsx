@@ -73,7 +73,7 @@ export function MediaFileSection({ courseId, activity }: { courseId: string; act
       {preview ? (
         <>
           {/* What the learner gets, played or framed the same way; the link opens the file itself. */}
-          <Suspense fallback={<Skeleton className="aspect-video w-full rounded-xl" />}>
+          <Suspense fallback={<Skeleton className="aspect-video w-full rounded-lg" />}>
             <AuthorViewContext value>
               <BlockViewer content={preview.content} />
             </AuthorViewContext>

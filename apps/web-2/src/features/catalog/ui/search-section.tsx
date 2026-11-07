@@ -15,12 +15,12 @@ type SearchSectionProps = { kind: SearchKind; results: SearchResults; footer?: R
 /** One section of the search answer: its heading, its hits (each a link to the object's page), then `footer`. */
 export function SearchSection({ kind, results, footer }: SearchSectionProps) {
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex flex-col gap-4">
       <h2 className="text-xl font-semibold">{searchKindLabels[kind]()}</h2>
       {kind === 'courses' ? <CourseGrid courses={results.courses} level={3} /> : null}
       {kind === 'lessons' ? <LessonHits lessons={results.lessons ?? []} /> : null}
       {kind === 'collections' ? (
-        <DataList items={results.collections} getKey={collection => collection.id}>
+        <DataList variant="rows" items={results.collections} getKey={collection => collection.id}>
           {collection => (
             <>
               <h3 className="text-lg font-medium wrap-anywhere">
@@ -28,13 +28,17 @@ export function SearchSection({ kind, results, footer }: SearchSectionProps) {
                   {collection.name}
                 </Link>
               </h3>
-              {collection.description ? <p className="line-clamp-3 wrap-anywhere">{collection.description}</p> : null}
+              {collection.description ? (
+                <p className="line-clamp-2 max-w-prose text-sm wrap-anywhere text-muted-foreground">
+                  {collection.description}
+                </p>
+              ) : null}
             </>
           )}
         </DataList>
       ) : null}
       {kind === 'users' ? (
-        <DataList items={results.users} getKey={user => user.id}>
+        <DataList variant="rows" items={results.users} getKey={user => user.id}>
           {user => (
             <div className="flex items-center gap-3">
               <UserAvatar name={user.display_name} avatarKey={user.avatar_key} />

@@ -57,7 +57,7 @@ export function TotpSetup({ form, enrollment, focusRef, pending, error, onCancel
       </form.AppField>
       {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
       <div className="flex gap-2">
-        <SubmitButton type="submit" variant="secondary" pending={pending}>
+        <SubmitButton type="submit" pending={pending}>
           {m.settings_totp_confirm()}
         </SubmitButton>
         <Button variant="ghost" onClick={onCancel}>

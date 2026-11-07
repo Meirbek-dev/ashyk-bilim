@@ -6,6 +6,7 @@ import { Link } from '#/shared/components/link'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { bottleneckLabel } from '../model/signals'
+import { TABLE_LOOK } from './table-look'
 
 const course: DataColumn<ContentBottleneckRow> = {
   id: 'course',
@@ -57,12 +58,14 @@ export function BottlenecksTable({ rows, withCourse }: { rows: ContentBottleneck
   return (
     <section className="flex flex-col gap-4">
       <h3 className="text-lg font-semibold">{m.analytics_bottlenecks_title()}</h3>
-      <DataTable
-        label={m.analytics_bottlenecks_title()}
-        rows={rows}
-        columns={columns(withCourse)}
-        getKey={row => `${row.activity_id}-${row.signal}`}
-      />
+      <div className={`${TABLE_LOOK} [&_td:nth-last-child(-n+2)]:text-right [&_th:nth-last-child(-n+2)]:text-right`}>
+        <DataTable
+          label={m.analytics_bottlenecks_title()}
+          rows={rows}
+          columns={columns(withCourse)}
+          getKey={row => `${row.activity_id}-${row.signal}`}
+        />
+      </div>
     </section>
   )
 }

@@ -34,9 +34,7 @@ export function CollectionPage() {
     <DetailPage
       cover={
         <CourseCover
-          seed={collection.id}
-          imageKey={collection.cover_key}
-          className="aspect-video w-full rounded-xl border"
+          imageKey={collection.cover_key ?? collection.courses.find(course => course.thumbnail_key)?.thumbnail_key}
         />
       }
       title={collection.name}
@@ -48,7 +46,7 @@ export function CollectionPage() {
       primaryAction={collection.allowed_actions.length > 0 ? actions : null}
     >
       {collection.description ? <p className="max-w-prose wrap-anywhere">{collection.description}</p> : null}
-      <h2 className="text-xl font-semibold">{m.collections_courses_title()}</h2>
+      <h2 className="border-t pt-8 text-xl font-semibold">{m.collections_courses_title()}</h2>
       <ListState
         pending={false}
         error={query.error}

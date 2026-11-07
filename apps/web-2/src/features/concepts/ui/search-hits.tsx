@@ -6,9 +6,9 @@ import { Link } from '#/shared/components/link'
 export function SearchHits({ courseId, hits }: { courseId: CourseId; hits: readonly SearchHit[] }) {
   if (hits.length === 0) return <p className="text-sm text-muted-foreground">{m.concepts_search_empty()}</p>
   return (
-    <ul className="flex flex-col gap-4">
+    <ul className="flex flex-col divide-y border-y">
       {hits.map(hit => (
-        <li key={hit.chunk_id} className="flex max-w-prose flex-col gap-1">
+        <li key={hit.chunk_id} className="flex max-w-prose flex-col gap-1 py-3">
           <span className="text-sm font-medium wrap-anywhere">
             {hit.activity_id ? (
               <Link to="/learn/$courseId/$activityId" params={{ courseId, activityId: hit.activity_id }}>

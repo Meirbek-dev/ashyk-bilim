@@ -4,6 +4,7 @@ import { StreakBadge, useLoginStreak } from '#/features/achievements'
 import { learnerWorkOptions } from '#/features/teach-inbox'
 import { m } from '#/paraglide/messages'
 import { ListState } from '#/shared/components/list-state'
+import { formatDate } from '#/shared/i18n/format'
 
 import { attentionWork, isEmptyToday } from '../model/agenda'
 import { homeAgendaOptions } from '../queries'
@@ -30,11 +31,14 @@ export function HomePage() {
   const side = recent_results.length > 0 || course_updates.length > 0
   return (
     <section className="@container flex flex-col gap-10">
-      <header className="flex flex-col gap-4 @2xl:flex-row @2xl:items-end @2xl:justify-between">
-        <h1 className="text-display font-semibold">{m.home_title()}</h1>
+      <header className="flex flex-col gap-4 pt-2 @2xl:flex-row @2xl:items-end @2xl:justify-between">
+        <div className="flex flex-col gap-1">
+          <p className="text-sm text-muted-foreground">{formatDate(Math.floor(agenda.dataUpdatedAt / 1000))}</p>
+          <h1 className="text-3xl font-semibold">{m.home_title()}</h1>
+        </div>
         <StreakBadge />
       </header>
-      <div className="flex flex-col gap-12">
+      <div className="flex flex-col gap-14">
         <ListState
           pending={false}
           error={agenda.error}
@@ -51,7 +55,7 @@ export function HomePage() {
               {/* Nothing to continue beside results or deadlines (the last course just finished): the next step is
                   a new course, not a page of old news (B-HOME-10). */}
               {continue_learning.length > 0 ? <ContinueSection items={continue_learning} /> : <HomeWelcome />}
-              <div className={side ? 'grid gap-12 @4xl:grid-cols-5 @4xl:gap-8' : 'flex flex-col gap-12'}>
+              <div className={side ? 'grid gap-14 @4xl:grid-cols-5 @4xl:gap-12' : 'flex flex-col gap-12'}>
                 <div className="flex flex-col gap-12 @4xl:col-span-3">
                   <AttentionSection items={attention} />
                   <DeadlinesSection deadlines={deadlines} nowUnix={Math.floor(agenda.dataUpdatedAt / 1000)} />

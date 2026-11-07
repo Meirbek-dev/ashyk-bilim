@@ -11,6 +11,7 @@ import { fileGradeForm, fileGradeRequest, fileGradeSchema } from '../model/grade
 import { gradeAttemptOptions, type ReviewIds } from '../mutations'
 import { attemptOptions } from '../queries'
 import { AiDraft } from './ai-draft'
+import { GRADE_LINE, SCORE_LINE } from './field-look'
 import { GradeActions } from './grade-actions'
 import { LatePenaltyNote } from './late-penalty-note'
 import { RubricTotal } from './rubric-total'
@@ -48,7 +49,7 @@ export function FileGradeForm({ ids, attempt, rubric }: FileGradeFormProps) {
     void form.handleSubmit()
   }
   return (
-    <form noValidate className="flex flex-col gap-4" onSubmit={event => event.preventDefault()}>
+    <form noValidate className="flex flex-col gap-6" onSubmit={event => event.preventDefault()}>
       <AiDraft
         ids={ids}
         onTransfer={draft => {
@@ -59,35 +60,40 @@ export function FileGradeForm({ ids, attempt, rubric }: FileGradeFormProps) {
         }}
       />
       {initial.criteria.length > 0 ? (
-        <fieldset className="flex flex-col gap-4">
-          <legend className="mb-2 text-xl font-semibold">{m.grading_rubric()}</legend>
-          {initial.criteria.map((criterion, index) => (
-            // A score is a few digits: a field the width of the page read as a text box.
-            <div key={criterion.criterion_id} className="max-w-xs">
-              <form.AppField name={`criteria[${index}].score`}>
-                {field => (
-                  <field.TextField
-                    label={m.grading_criterion_score({ label: criterion.label, max: criterion.max })}
-                    inputMode="decimal"
-                  />
-                )}
-              </form.AppField>
-            </div>
-          ))}
+        <fieldset className="flex flex-col gap-3">
+          <legend className="mb-3 text-xl font-semibold">{m.grading_rubric()}</legend>
+          <div className={`flex flex-col divide-y border-y ${SCORE_LINE}`}>
+            {initial.criteria.map((criterion, index) => (
+              <div key={criterion.criterion_id} className="py-2">
+                <form.AppField name={`criteria[${index}].score`}>
+                  {field => (
+                    <field.TextField
+                      label={m.grading_criterion_score({ label: criterion.label, max: criterion.max })}
+                      inputMode="decimal"
+                    />
+                  )}
+                </form.AppField>
+              </div>
+            ))}
+          </div>
           <form.Subscribe selector={state => state.values.criteria}>
             {rows => <RubricTotal rows={rows} onApply={total => form.setFieldValue('final_score', String(total))} />}
           </form.Subscribe>
         </fieldset>
       ) : null}
-      <div className="max-w-xs">
-        <form.AppField name="final_score">
-          {field => <field.TextField label={m.grading_final_score()} inputMode="decimal" />}
-        </form.AppField>
+      <div className="flex flex-col gap-1.5">
+        <div className={GRADE_LINE}>
+          <form.AppField name="final_score">
+            {field => <field.TextField label={m.grading_final_score()} inputMode="decimal" />}
+          </form.AppField>
+        </div>
+        <form.Subscribe selector={state => state.values.final_score}>
+          {score => <LatePenaltyNote score={score} penaltyPct={attempt.late_penalty_pct} />}
+        </form.Subscribe>
       </div>
-      <form.Subscribe selector={state => state.values.final_score}>
-        {score => <LatePenaltyNote score={score} penaltyPct={attempt.late_penalty_pct} />}
-      </form.Subscribe>
-      <form.AppField name="feedback">{field => <field.TextareaField label={m.grading_feedback()} />}</form.AppField>
+      <div className="[&_textarea]:min-h-32">
+        <form.AppField name="feedback">{field => <field.TextareaField label={m.grading_feedback()} />}</form.AppField>
+      </div>
       <GradeActions
         allowed={attempt.allowed_actions}
         published={attempt.status === 'published'}

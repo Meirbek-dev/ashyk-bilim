@@ -1,13 +1,14 @@
 import { m } from '#/paraglide/messages'
 import type { GradingBacklogItem, TeacherWorkloadSummary } from '#/shared/api/gen/types.gen'
-import { Bars } from '#/shared/components/charts/bars'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
 import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { formatNumber } from '#/shared/i18n/format'
 
+import { CountBars } from './count-bars'
 import { hours } from './kpi'
+import { TABLE_LOOK } from './table-look'
 
 const columns = (): DataColumn<GradingBacklogItem>[] => [
   {
@@ -49,7 +50,7 @@ export function QueueDetail({ workload, onRetry }: { workload: TeacherWorkloadSu
   const aging = workload.aging_buckets
   return (
     <>
-      <Bars
+      <CountBars
         title={m.analytics_aging_title()}
         data={[
           { label: m.analytics_age_day(), value: aging.h0_24 },
@@ -69,12 +70,14 @@ export function QueueDetail({ workload, onRetry }: { workload: TeacherWorkloadSu
           emptyText={m.analytics_backlog_empty()}
           onRetry={onRetry}
         >
-          <DataTable
-            label={m.analytics_backlog_table()}
-            rows={workload.backlog_by_assessment}
-            columns={columns()}
-            getKey={row => row.activity_id}
-          />
+          <div className={`${TABLE_LOOK} [&_td:nth-child(n+3)]:text-right [&_th:nth-child(n+3)]:text-right`}>
+            <DataTable
+              label={m.analytics_backlog_table()}
+              rows={workload.backlog_by_assessment}
+              columns={columns()}
+              getKey={row => row.activity_id}
+            />
+          </div>
         </ListState>
       </section>
     </>

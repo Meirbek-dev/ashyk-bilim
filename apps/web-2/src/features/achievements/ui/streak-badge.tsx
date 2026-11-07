@@ -25,7 +25,7 @@ export function StreakBadge() {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Link to="/achievements" variant="pill">
-        <ProgressRing value={levelProgress(profile).percent} tone="stroke-reward" className="size-8">
+        <ProgressRing value={levelProgress(profile).percent} className="size-8">
           <span aria-hidden className="font-heading text-xs font-semibold tabular-nums">
             {profile.level}
           </span>

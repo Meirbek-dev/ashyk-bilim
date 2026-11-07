@@ -33,7 +33,7 @@ export function WorkArea({ task, ids }: { task: FileSubmission; ids: WorkIds }) 
   const retry = next && reasons.length === 0 && state.kind === 'done'
   const returned = state.kind === 'edit' && state.attempt?.status === 'returned' ? state.attempt : null
   return (
-    <section aria-labelledby="submission-work" className="flex flex-col gap-4">
+    <section aria-labelledby="submission-work" className="flex flex-col gap-gutter">
       <h2 id="submission-work" className="text-xl font-semibold">
         {state.kind === 'done' ? m.submission_result_title() : m.submission_your_work()}
       </h2>

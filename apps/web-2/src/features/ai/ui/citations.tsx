@@ -14,8 +14,8 @@ export function Citations({ citations }: { citations: Citation[] }) {
   const { courseId } = useParams({ strict: false })
   if (citations.length === 0) return null
   return (
-    <section className="flex flex-col gap-1">
-      <h4 className="text-sm font-medium">{m.ai_citations()}</h4>
+    <section className="mt-1 flex flex-col gap-1 border-t pt-2">
+      <h4 className="text-xs font-normal text-muted-foreground">{m.ai_citations()}</h4>
       <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
         {citations.map(citation => {
           const activityId = citedActivity(citation)

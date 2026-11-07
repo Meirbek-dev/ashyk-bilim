@@ -2,21 +2,29 @@ import { Link as RouterLink } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
 import type { GradebookCell as Cell } from '#/shared/api/gen/types.gen'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { linkVariants } from '#/shared/components/link-variants'
 import { formatNumber } from '#/shared/i18n/format'
-import { cn } from '#/shared/lib/utils'
 
 import { reviewTarget, waitingNote } from '../model/gradebook'
-import { scoreText, statusMeta } from './labels'
+import { statusMeta } from './labels'
+import { ScoreFigure } from './score-figure'
+import { StatusText } from './status-text'
 
-type GradebookCellProps = { courseId: string; cell: Cell | undefined; learner: string; activity: string }
+type GradebookCellProps = {
+  courseId: string
+  cell: Cell | undefined
+  learner: string
+  activity: string
+  /** The column has fractions: the figure keeps the slot that lines them up. */
+  slot?: boolean
+}
 
 /**
  * One learner x activity: grade and status, late and the number of attempts (B-GRD-33), a link into the review of the
- * work waiting first (B-GRD-19). A published grade is the usual state: the grade alone, a badge only for the rest.
+ * work waiting first (B-GRD-19). The figure holds the column; what is unusual about it hangs under it in small type, so
+ * a row keeps one baseline however much a cell has to say. A published grade is the usual state: the grade alone.
  */
-export function GradebookCell({ courseId, cell, learner, activity }: GradebookCellProps) {
+export function GradebookCell({ courseId, cell, learner, activity, slot = false }: GradebookCellProps) {
   if (!cell)
     return (
       <span className="text-muted-foreground">
@@ -27,41 +35,42 @@ export function GradebookCell({ courseId, cell, learner, activity }: GradebookCe
   const target = reviewTarget(cell)
   const status = statusMeta[cell.status]
   const note = waitingNote(cell)
-  const content = (link: boolean) => (
-    // The score on its own line, the badges under it: wrapped inline they sat beside the score in one row and under
-    // it in the next, depending on the column's width.
-    <span className="flex flex-col items-start gap-1">
-      <span className={cn('tabular-nums', link && linkVariants.text)}>{scoreText(cell.final_score)}</span>
-      <span className="flex flex-wrap items-center gap-1 empty:hidden">
+  const content = (
+    <span className="flex flex-col items-end gap-0.5">
+      <span className={target ? linkVariants.title : undefined}>
+        <ScoreFigure score={cell.final_score} slot={slot} />
+      </span>
+      <span className="flex flex-col items-end text-xs empty:hidden">
         {cell.status === 'published' ? (
           <span className="sr-only">{status.label()}</span>
         ) : (
-          <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
+          // A grade not yet published is a state, not an alarm: only what waits for the teacher keeps its ink.
+          <StatusText tone={cell.status === 'graded' ? 'neutral' : status.tone}>{status.label()}</StatusText>
         )}
-        {cell.is_late ? <StatusBadge tone="warning">{m.grading_late()}</StatusBadge> : null}
+        {cell.is_late ? <StatusText tone="warning">{m.grading_late()}</StatusText> : null}
         {cell.attempts > 1 ? (
-          <span className="text-xs text-muted-foreground tabular-nums">
+          <span className="text-muted-foreground tabular-nums">
             {m.grading_cell_attempts({ count: formatNumber(cell.attempts) })}
           </span>
         ) : null}
         {note ? (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground">
             {note === 'release' ? m.grading_cell_waiting_release() : m.grading_cell_waiting()}
           </span>
         ) : null}
       </span>
     </span>
   )
-  if (!target) return content(false)
+  if (!target) return content
   return (
     <RouterLink
       to="/teach/courses/$courseId/activities/$activityId/submissions/$submissionId"
       params={{ courseId, activityId: cell.activity_id, submissionId: target }}
       search={{ from: 'gradebook' }}
-      className="rounded-sm"
+      className="block rounded-sm"
     >
       <span className="sr-only">{m.grading_cell_link({ learner, activity })} </span>
-      {content(true)}
+      {content}
     </RouterLink>
   )
 }

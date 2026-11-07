@@ -7,7 +7,6 @@ import type { FileSubmission } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
@@ -43,11 +42,14 @@ export function PublishSection({ task }: { task: FileSubmission }) {
     )
   return (
     <section aria-labelledby="submission-publishing" className="flex max-w-prose flex-col items-start gap-2">
-      <div className="flex flex-wrap items-center gap-2">
+      {/* The state as a word beside the heading, as on a course: the one amber draft stands out. */}
+      <div className="flex flex-wrap items-baseline gap-x-3">
         <h2 id="submission-publishing" className="text-xl font-semibold">
           {m.submission_publishing()}
         </h2>
-        <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
+        <span className={`text-sm ${task.lifecycle === 'draft' ? 'text-warning' : 'text-muted-foreground'}`}>
+          {status.label()}
+        </span>
       </div>
       <p className="text-sm text-muted-foreground">{lifecycleHints[task.lifecycle]()}</p>
       {allowed.includes('publish') ? (

@@ -3,11 +3,11 @@ import { useMutation } from '@tanstack/react-query'
 import { m } from '#/paraglide/messages'
 import { vConfirmEmailChangeRequest } from '#/shared/api/gen/valibot.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
-import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
 
 import { confirmEmailChangeOptions } from '../queries'
+import { TypesetSection } from './typeset-section'
 
 /** Step 2 of B-SET-22: the code from the email switches the account to the new address. */
 export function EmailConfirmStep({ email, onRestart }: { email: string; onRestart: () => void }) {
@@ -26,7 +26,7 @@ export function EmailConfirmStep({ email, onRestart }: { email: string; onRestar
       ),
   })
   return (
-    <SettingsSection
+    <TypesetSection
       id="email"
       title={m.settings_email_title()}
       description={m.settings_email_code_sent({ email })}
@@ -50,6 +50,6 @@ export function EmailConfirmStep({ email, onRestart }: { email: string; onRestar
           {m.settings_email_other()}
         </Button>
       </div>
-    </SettingsSection>
+    </TypesetSection>
   )
 }

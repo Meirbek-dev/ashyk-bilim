@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { SwitchRows, TypesetSection } from '#/features/settings'
 import { m } from '#/paraglide/messages'
 import { vNotificationSettings } from '#/shared/api/gen/valibot.gen'
 import { hasCapability } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
 import { useAppForm } from '#/shared/components/form/use-app-form'
-import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { toast } from '#/shared/ui/toast'
 
 import { preferenceTypes } from '../model/notifications'
@@ -29,18 +29,20 @@ export function NotificationPreferences() {
       save.mutateAsync({ body }, { onSuccess: () => toast.add({ title: m.notifications_prefs_saved() }) }),
   })
   return (
-    <SettingsSection
+    <TypesetSection
       title={m.notifications_prefs_title()}
       description={m.notifications_prefs_hint()}
       onSubmit={() => form.handleSubmit()}
       pending={save.isPending}
       error={save.error}
     >
-      {preferenceTypes(hasCapability(session, 'teach')).map(type => (
-        <form.AppField key={type} name={type}>
-          {field => <field.SwitchField label={notificationTypeLabels[type]()} />}
-        </form.AppField>
-      ))}
-    </SettingsSection>
+      <SwitchRows>
+        {preferenceTypes(hasCapability(session, 'teach')).map(type => (
+          <form.AppField key={type} name={type}>
+            {field => <field.SwitchField label={notificationTypeLabels[type]()} />}
+          </form.AppField>
+        ))}
+      </SwitchRows>
+    </TypesetSection>
   )
 }

@@ -15,7 +15,7 @@ Production still runs `apps/web`; both take normal fixes. Rollout: `docs/STAGE-2
 | `src/shared/auth/`                  | `session.ts` (session query, guards), `access.ts` (workspaces, capabilities) |
 | `src/shared/i18n/`                  | `format.ts` (dates, numbers), `errors.ts` (`presentError`), `validation.ts`  |
 | `src/shared/lib/`                   | `env.server.ts`, `storage.ts`, `appearance.ts`, `csp.ts`, `client-errors.ts` |
-| `src/shared/ui/`                    | stock shadcn (base-nova): `bunx shadcn@4.23.0 add <name>`; never hand-edit   |
+| `src/shared/ui/`                    | kit: shadcn (`bunx shadcn@4.23.0 add <name>`), restyled in place (DESIGN 8)  |
 | `src/shared/components/`            | ours on top: `templates/` (DESIGN 6), `form/` (`useAppForm` + fields), rest  |
 | `src/shared/hooks/`, `lib/utils.ts` | `useUpload`, `useSwapFocus`; `cn` (shadcn's `cn` package)                    |
 | `src/server.ts`                     | request chain: `/healthz`, `/_client-error`, locale, request id, CSP         |

@@ -61,7 +61,10 @@ export function EmbedView({ node, editor, selected, updateAttributes }: ViewProp
           allow="fullscreen; clipboard-write; encrypted-media; picture-in-picture"
           referrerPolicy="strict-origin-when-cross-origin"
           loading="lazy"
-          className={cn('max-w-full rounded-lg border border-border', type === 'youtube' && 'aspect-video h-auto')}
+          className={cn(
+            'max-w-full rounded-lg border border-border',
+            type === 'youtube' && 'aspect-video h-auto bg-media',
+          )}
         />
       ) : url && (editor.isEditable || !external) ? (
         <p className="text-sm text-destructive">{m.editor_embed_unsafe()}</p>

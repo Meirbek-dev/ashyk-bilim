@@ -10,9 +10,9 @@ import { RadioGroup, RadioGroupItem } from '#/shared/ui/radio-group'
 type ThemePickerProps = { themes: ThemeManifest; value: string; onChange: (slug: string) => void }
 
 /**
- * All shipped themes as stock radio cards; each shows its four preview colors (data from the manifest, not CSS). The
- * 63 cards scroll in a box under a name search, so on a phone mode, language and Save stay a short scroll away; the
- * chosen theme always stays in the list.
+ * All shipped themes as a ruled index; each row shows its four preview colors (data from the manifest, not CSS). The
+ * 63 rows scroll between two hairlines under a name search, so on a phone mode, language and Save stay a short scroll
+ * away; the chosen theme always stays in the list.
  */
 export function ThemePicker({ themes, value, onChange }: ThemePickerProps) {
   const id = useId()
@@ -44,16 +44,16 @@ export function ThemePicker({ themes, value, onChange }: ThemePickerProps) {
         value={value}
         onValueChange={next => onChange(String(next))}
         aria-labelledby={`${id}-legend`}
-        className="relative grid max-h-80 grid-cols-1 gap-2 overflow-y-auto p-0.5 @md:grid-cols-2 @2xl:grid-cols-3"
+        className="relative grid max-h-80 grid-cols-1 gap-x-6 gap-y-0 overflow-y-auto border-y pr-1 @md:grid-cols-2"
       >
         {shown.map(theme => (
           <FieldLabel
             key={theme.slug}
             htmlFor={`${id}-${theme.slug}`}
-            className="flex min-h-row w-full min-w-0 items-center gap-3 rounded-md border px-3 font-normal has-data-checked:border-foreground"
+            className="flex min-h-11 w-full min-w-0 items-center gap-3 border-b font-normal has-data-checked:border-border has-data-checked:bg-transparent has-data-checked:font-medium"
           >
-            <RadioGroupItem id={`${id}-${theme.slug}`} value={theme.slug} />
-            <svg aria-hidden viewBox="0 0 4 1" className="h-4 w-16 shrink-0 rounded-sm border">
+            <RadioGroupItem id={`${id}-${theme.slug}`} value={theme.slug} className="ml-0.5" />
+            <svg aria-hidden viewBox="0 0 4 1" className="h-3 w-12 shrink-0 border">
               {theme.preview.map((color, index) => (
                 <rect key={index} x={index} width="1" height="1" fill={color} />
               ))}

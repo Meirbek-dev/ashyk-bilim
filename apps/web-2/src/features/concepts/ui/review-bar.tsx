@@ -29,7 +29,7 @@ export function ReviewBar({ courseId, selected, onDone }: ReviewBarProps) {
   const deciding = review.isPending ? review.variables.body.status : null
   return (
     // Sticky under the top bar (h-14): a long list scrolls while picking, the decision stays in reach.
-    <div className="sticky top-14 z-10 flex flex-col gap-2 bg-background py-2">
+    <div className="sticky top-14 z-10 flex flex-col gap-2 border-b bg-background py-2">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm tabular-nums">{m.concepts_selected({ count: formatNumber(selected.size) })}</p>
         <SubmitButton variant="outline" pending={deciding === 'approved'} onClick={() => decide('approved')}>

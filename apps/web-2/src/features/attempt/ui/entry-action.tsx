@@ -56,7 +56,7 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
     return (
       <section className="flex flex-col gap-2">
         <h2 className="text-xl font-semibold">{m.attempt_blocked_heading()}</h2>
-        <ul className="flex list-disc flex-col gap-1 pl-5 text-sm">
+        <ul className="flex flex-col divide-y border-y text-sm [&_li]:py-2.5">
           {action.reasons.map(reason => (
             <li key={reason}>{reasons[reason]()}</li>
           ))}

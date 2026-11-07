@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { ShieldCheck, ShieldOff } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { TotpVerifyRequest, UserProfile } from '#/shared/api/gen/types.gen'
@@ -6,7 +7,6 @@ import { vTotpVerifyRequest } from '#/shared/api/gen/valibot.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { useSwapFocus } from '#/shared/hooks/use-swap-focus'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { presentError } from '#/shared/i18n/errors'
 import { toast } from '#/shared/ui/toast'
@@ -43,9 +43,15 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
     },
   })
   const status = profile.mfa_enabled ? (
-    <StatusBadge tone="success">{m.settings_totp_on()}</StatusBadge>
+    <span className="flex items-center gap-1.5 text-success">
+      <ShieldCheck aria-hidden className="size-4" />
+      {m.settings_totp_on()}
+    </span>
   ) : (
-    <StatusBadge tone="neutral">{m.settings_totp_off()}</StatusBadge>
+    <span className="flex items-center gap-1.5 text-muted-foreground">
+      <ShieldOff aria-hidden className="size-4" />
+      {m.settings_totp_off()}
+    </span>
   )
   const pending = enroll.data && !profile.mfa_enabled ? enroll.data : null
   // «Включить», the setup and «Отключить» replace each other: focus follows (to the setup's start, back to «Включить»
@@ -54,7 +60,7 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
   const verifyError = hasCode(verify.error, 'invalid-totp-code') ? null : verify.error
   return (
     <PlainSection title={m.settings_totp_title()} description={m.settings_totp_hint()}>
-      <div>{status}</div>
+      <div className="text-sm">{status}</div>
       {profile.google_linked ? <p className="text-sm">{m.settings_totp_google()}</p> : null}
       {profile.mfa_enabled ? (
         <div ref={swap.focusOn('on')}>

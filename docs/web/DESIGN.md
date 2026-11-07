@@ -5,40 +5,52 @@ rule below is checked by a gate, a lint rule or the reference slice; a rule nobo
 
 ## 1. Principles
 
+Identity: **a calm, exact tool in plain neutrals: white and near-black ink by day, near-black and off-white by night, hairlines between things, one blue**. No tint in the greys, warm or cool. Character comes from type and spacing,
+never from decoration: no ornament, patterns, serif display type or paper-book skeuomorphism. The loudest thing on a screen
+is what people uploaded, so everything around it stays quiet. If a screen could be any SaaS with the logo swapped, or would
+look out of place in a Linear-grade tool, it is not finished.
+
 1. A study tool people look forward to opening. A screen answers one question, shows one next step and the
-   learner's progress (rings, XP, streaks) where they act.
-2. Identity: Ashyq Bilim x Toraighyrov University (`BrandMark`, `UniversityMark`): its blue acts, its orange marks
-   the selected place and rewards. `CourseCover` (a brand tone + the emblem in a hairline per id) and `BrandPanel` are
-   fixed artwork (`--brand-*`). The seam shows progress (solid done, dashed ahead). Pictures are 16:9 (thumbnails carry text).
-3. Hierarchy comes from type size, weight and spacing. No cards inside cards, no boxes around sections.
-4. Color carries meaning (status, activity type, action, reward) and never decorates, except the brand artwork. The
+   learner's progress (the level, the streak, the bar) where they act.
+2. Three things carry the look:
+   - **The type.** Geologica for headings and big numbers, Commissioner for everything else, lesson text included. Large
+     titles, small quiet labels, nothing in between that shouts.
+   - **The page.** Hairline rules, aligned columns, generous margins. A table is a typeset table. A list is rows on the
+     paper. Boxes are the exception. Dotted leaders only in a course's table of contents.
+   - **The picture.** `CourseCover` is a course's upload, whole, at 16:9 (uploads carry their own lettering), or a quiet
+     grey field (`.ab-dye`) with the platform's emblem. It prints nothing: the title is set once, on the page under it.
+3. Quiet tools, a little louder only when a learner arrives somewhere (a finished course, a certificate): bigger type and
+   a solid ink field (`data-dye="ink"`), never decoration. Teacher and admin screens stay compact and quiet. Progress is a solid track.
+4. Hierarchy comes from type size, weight and spacing. No cards inside cards, no boxes around sections.
+5. Color carries meaning (status, activity type, action, reward) and never decorates, except a course's quiet field. The
    meaning always has a second channel too: a label or an icon.
-5. Motion only shows what changed after a user action, and lasts at most 200 ms.
-6. One app shell plus one focus layout. Screens are built from the 6 templates (section 6) and nothing else.
-7. Works from 390 px. WCAG 2.2 AA in all 63 themes, both modes (G-15).
+6. Motion only shows what changed after a user action, and lasts at most 200 ms.
+7. One app shell plus one focus layout. Screens are built from the templates (section 6) and nothing else.
+8. Works from 390 px. WCAG 2.2 AA in all 63 themes, both modes (G-15).
 
 ## 2. Tokens
 
 Our code (features, `shared/components`) uses only these tokens. Tailwind keeps its namespaces for the stock kit:
-palette classes (`bg-red-500`, G-11), `text-3xl`, `font-bold`, `tracking-*`, `shadow-2xl` are forbidden in our code.
+palette classes (`bg-red-500`, G-11), `text-4xl`, `font-bold`, `tracking-*`, `shadow-2xl` are forbidden in our code.
 
 | Token (utility suffix)                          | Meaning                                    | Use                                                       |
 | ----------------------------------------------- | ------------------------------------------ | --------------------------------------------------------- |
 | `background` / `foreground`                     | page surface and body ink                  | page canvas, all body text                                |
 | `card` / `card-foreground`                      | a raised object surface                    | one object in a grid or list (course, submission)         |
 | `popover` / `popover-foreground`                | floating surface                           | menus, popovers, dialogs, sheets                          |
-| `primary` / `primary-foreground`                | the main action                            | the one primary button, selected nav item, progress fill  |
+| `primary` / `primary-foreground`                | the main action                            | the one primary button, in ink, not colour                |
 | `secondary` / `secondary-foreground`            | quieter actions                            | secondary buttons, neutral chips                          |
 | `muted` / `muted-foreground`                    | low-emphasis surface and text              | skeletons, table header bg, meta lines, hints, timestamps |
 | `accent` / `accent-foreground`                  | interactive hover or highlight             | hovered or focused menu and list rows only                |
 | `destructive`                                   | danger, irreversible actions, errors       | delete buttons, field errors, failed status               |
 | `success` / `warning` / `info`                  | status (derived, never set by themes)      | graded/passed, due soon/late, neutral notices             |
-| `reward`                                        | XP, levels, streaks (derived)              | level ring, XP amounts, streak flame, top-3 ranks         |
+| `reward`                                        | XP, levels, streaks (derived)              | XP amounts, streak flame, top-3 ranks                     |
 | `activity-<type>`                               | activity type (derived)                    | the type icon and type label (table in section 3)         |
 | `border`                                        | dividers                                   | table rows, separators, card outline                      |
 | `input`                                         | form control boundary, >= 3:1 on background | input, select, checkbox and switch outlines              |
 | `ring`                                          | keyboard focus                             | the focus outline only                                    |
 | `chart-1..5`                                    | data series                                | charts in slot order                                      |
+| `highlight` / `highlight-foreground`, `link`    | the interface's one colour (derived; other themes: primary, foreground) | switch, checkbox, radio, progress fill; `link`: links on the page |
 | `sidebar-*`                                     | the shell's navigation column              | the app shell sidebar and bottom bar only                 |
 | `media` / `media-foreground`                    | the video stage (fixed, every theme)       | the video player's frame and controls only                |
 
@@ -46,7 +58,7 @@ palette classes (`bg-red-500`, G-11), `text-3xl`, `font-bold`, `tracking-*`, `sh
   never fills. They appear as `text-X`, `border-X/30` or `bg-X/10` with `text-X` (contrast >= 4.5:1 holds on
   background, on card and on the `/10` tint).
 - Primary is never used as text color (`text-primary` is forbidden; it falls below 4.5:1 in about 40 themes). Links
-  use the current text color with `underline underline-offset-4`.
+  use `text-link` with a quiet underline (`Link`'s default look, `.ab-prose a`).
 - Non-color tokens: `--radius`, `--shadow-x|y|blur|spread|color`, `--density-*`, `--focus-ring-*`, `--duration-*`.
 - Themes override only the "theme" group in tokens.css: 31 colors, `--radius` and the shadow parameters; never
   fonts, spacing, tracking or the derived tokens. Mode comes from `html[data-mode="light"|"dark"]`; with no
@@ -64,7 +76,7 @@ palette classes (`bg-red-500`, G-11), `text-3xl`, `font-bold`, `tracking-*`, `sh
 | failed, error, delete            | `destructive` | field errors sit under the field; destructive buttons need a confirm |
 
 Activity types: one `activityTypeMeta` table (icon, label key, token), exhaustive over `ActivityType`; nothing else
-maps a type to an icon or a color. The type color goes on the icon (`text-activity-*`) and may go on a `/10` chip
+maps a type to an icon and a token. Every type token is the same quiet ink by default (the shape tells types apart; a theme may keep it); it goes on the icon (`text-activity-*`) and may go on a `/10` chip
 behind it; it never colors a title, a row or a card background.
 
 | Type              | Lucide icon      | Token                      |
@@ -80,50 +92,55 @@ behind it; it never colors a title, a row or a card background.
 
 ## 4. Typography
 
-- Default set: Inter (reading, UI; roman + italic), Geologica (`font-heading`: every `h1`-`h3`, big numbers); Geist
-  Mono for code in every set. Others, one family each: `geist`, `google`, `plex`, `inter-tight`, `sn-pro`, `rubik`,
-  `ubuntu`, `onest` (no italic), `noto`, `literata` (serif), `system`. Picked in /settings/appearance: cookie `ab_font`
+- Default set `press` (the name is a stored cookie value): Geologica (`font-heading`: every `h1`-`h3`, big numbers) and
+  Commissioner (UI and `font-reading`: lesson text); Geist Mono for code in every set. Others: `inter` (Inter + Geologica), and
+  one family each: `geist`, `google`, `plex`, `inter-tight`, `sn-pro`, `rubik`, `ubuntu`, `onest` (no italic), `noto`,
+  `literata` (serif), `system`. Picked in /settings/appearance: cookie `ab_font`
   (this browser), SSR `html[data-font]`, tokens.css maps it to `--typeface-*`. Each face: 18/18 Kazakh letters and
   tabular digits checked in the shipped woff2 (fail: Manrope, Unbounded, Wix Madefor, Sofia Sans, JetBrains Mono).
-- Weights: `font-normal` (body), `font-medium` (labels, buttons, table headers), `font-semibold` (headings).
+- Weights: `font-normal` (body), `font-medium` (labels, buttons), `font-semibold` (headings; Geologica draws them at 500,
+  `--heading-weight`, so a heading never reads heavy). Bold never.
 - Numbers that line up (tables, scores, timers, counters) use `tabular-nums`.
 - Never all-caps or letter-spaced text. Width at most `max-w-prose` for reading and 80ch for forms.
 
 | Utility     | Size / line height | Use                                                              |
 | ----------- | ------------------ | ---------------------------------------------------------------- |
-| `text-display` | 32-48 / 1.08    | hero `h1` (home, landing, auth, a page with a cover), level number |
-| `text-2xl`  | 28 / 36            | page title (`h1`), one per page; content `h1`                    |
-| `text-xl`   | 22 / 28            | section title (`h2`); content `h2`                               |
-| `text-lg`   | 18 / 26            | focus-layout context title, dialog title; content `h3`           |
+| `text-display` | 40-72 / 1.03    | the landing's `h1`, a level number                               |
+| `text-3xl`  | 30-40 / 1.08       | hero `h1` (home, auth, a page with a cover), status pages        |
+| `text-2xl`  | 34 / 40            | page title (`h1`), one per page; content `h1`                    |
+| `text-xl`   | 24 / 31            | section title (`h2`); content `h2`                               |
+| `text-lg`   | 19 / 26            | focus-layout context title, dialog title, row titles; content `h3` |
 | `text-base` | 16 / 24            | reading text, form fields, comfortable lists                     |
 | `text-sm`   | 14 / 20            | UI default: buttons, tables, meta lines, nav; compact density    |
-| `text-xs`   | 12 / 16            | badges, timestamps in dense rows, chart axes; never a full sentence |
+| `text-xs`   | 12 / 16            | badges, table heads, timestamps in dense rows, chart axes; never a full sentence |
 
 ## 5. Spacing, radius, shadow, density
 
 - Spacing uses the Tailwind scale plus `control`, `row` and `gutter`. Arbitrary values and inline geometry are
   for what the scale cannot say (a seek bar's position, pane sizes, editor and chart layout); colors stay tokens.
 - Rhythm: `gap-1`/`gap-2` inside a control group, `gap-4` between fields, `gap-gutter` between blocks, and
-  `gap-8`/`gap-12` between page sections. Page padding is `px-4` up to `md` and `px-6` above it.
-- Radius (multiples of the theme's `--radius`): `rounded-sm` badges, checkbox; `rounded-md` inputs, buttons;
-  `rounded-lg` popovers, icon tiles; `rounded-xl` cards, panels, dialogs, sheets; `rounded-full` avatars, pills.
-- Shadow: `shadow-xs` on cards and raised controls (nothing else in flow), `shadow-md` for menus and popovers, and
-  `shadow-lg` for dialogs and sheets. `shadow-sm` and `shadow-xl` exist only for kit primitives.
+  `gap-8`/`gap-12` between page sections. Page padding is `px-4` up to `md` and `px-8` above it.
+- Radius (multiples of the theme's `--radius`, 5 px by default): `rounded-sm` badges, checkbox, menu rows; `rounded-md`
+  inputs, buttons; `rounded-lg` cards, popovers, dialogs; `rounded-full` avatars. Sections are not boxes: they sit on the
+  paper, split by hairlines; a card holds one object you could pick up.
+- Shadow: nothing in flow is shadowed or rises. `shadow-md` for menus and
+  popovers, `shadow-lg` for sheets and toasts. Dialogs rest on a plain scrim (`bg-black/40`, no blur) with a hairline
+  ring; a dialog's footer is a hairline to the edges with no tinted band.
 - Density: comfortable (default) for learning and reading; compact for teacher and admin tables. The layout or
   template sets `data-density="compact"` on its region. Features never pass density classes. Our composites use
-  `h-control` (36 / 32 px), `min-h-row` (48 / 36 px) and `gap-gutter` / `p-gutter` (24 / 16 px); stock controls keep
-  their own heights. Touch targets stay >= 24 px.
+  `h-control` (40 / 36 px), `min-h-row` (52 / 44 px) and `gap-gutter` / `p-gutter` (28 / 20 px); the kit's controls use
+  the same tokens. Touch targets stay >= 24 px.
 
 ## 6. Layouts and templates
 
-**App shell** (one for every role). Desktop (>= `lg`): a top bar `h-14` with the full `BrandMark` wordmark and
-`UniversityMark` (from md), space switcher (only with more than one space), a search field with its `Ctrl+K`,
-notifications and the profile menu. Below it, a sidebar `w-60`, collapsible to icons (current item: tint plus a
-primary bar) holding the current space's navigation, then the content. At 390 px: mark only, search icon,
-notifications and profile; the space switcher moves into the profile menu, and the navigation becomes a bottom bar
-`h-14` of at most 5 icon + label items (current: a pill behind the icon). Guests get the same shell without
-navigation. Auth pages use the full wordmark. Navy artwork switches to white in dark mode, including system mode
-before hydration. Content sits in `mx-auto w-full max-w-6xl`.
+**App shell** (one for every role). Desktop (>= `lg`): a full-height rail `w-64` in the sidebar colours (a step off white by day, the page's black by night, split by a hairline),
+collapsible to icons: the wordmark, the space switcher (only with more than one space), the space's navigation (current
+item: a tint), then at its foot `UniversityMark`. Beside it a
+utility bar `h-14` on the paper (search with its `Ctrl+K`, notifications, profile) over the content. At 390 px: mark
+only, search icon, notifications and profile; the space switcher moves into the profile menu, and the navigation becomes
+a bottom bar `h-14` of at most 5 icon + label items. Guests get a bar with the wordmark, `UniversityMark` and public links, and the footer
+(`SiteFooter`: the two marks) under the page. Auth pages: the form on the paper beside a plain ink panel from lg. The university's navy artwork
+switches to white in dark mode, including system mode before hydration. Content sits in `mx-auto w-full max-w-6xl`.
 
 **Focus layout**: no navigation. Top bar (sticky, like the side panels): back, context title (`text-lg`,
 truncated), save status, actions right. Used by the activity player, attempt, activity editor and single-submission review.
@@ -131,8 +148,8 @@ truncated), save status, actions right. Used by the activity player, attempt, ac
 | Template        | Anatomy (desktop)                                                                    | At 390 px                                                                 |
 | --------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
 | `ListPage`      | `h1` + count / actions right; filter row (search + filters, all in the URL); `DataTable`; "Show more" | actions: primary stays, rest in a menu; filters behind a "Filters (n)" sheet; `DataList` cards with priority columns |
-| `DetailPage`    | title + meta line (`text-sm text-muted-foreground`) + status + primary action; tab links; `Outlet`. `cover` hero: the 16:9 picture takes the right two fifths, title `text-display`, action under it; `coverSize="thumb"` (workspaces): a small picture before the title, action right | cover above the title; primary action full-width under it; the tab row scrolls inside itself |
-| `FocusPage`     | focus top bar; left panel (contents) `w-72`; main column `max-w-prose` or full width for editors; right panel (AI, rubric) `w-96` | panels become sheets opened from top-bar buttons; main column full width |
+| `DetailPage`    | title + meta line (`text-sm text-muted-foreground`) + status + primary action; tab links; `Outlet`. `cover` hero: the picture stands left in a 20rem column, title `text-3xl`, action under it; `coverSize="thumb"` (workspaces): a small picture before the title, action right | cover above the title; primary action full-width under it; the tab row scrolls inside itself |
+| `FocusPage`     | focus top bar; left panel (contents) `w-80`; main column `max-w-[44rem]` or full width for editors; right panel (AI, rubric) `w-96` | panels become sheets opened from top-bar buttons; main column full width |
 | `SettingsPage`  | section nav (route links) left; stacked sections: `h2` + one-line description + fields + its own Save at the section's end | section nav becomes the tab row; sections stack |
 | `FormDialog`    | title, minimum fields, footer: Cancel (ghost) + Create (primary); on success, navigate to the new entity | the stock dialog at full width minus the gutter; scrolls inside |
 | `ConfirmDialog` | "Delete course «X»?", consequence in one sentence, Cancel + destructive verb; focus starts on Cancel | same, full width |
@@ -152,8 +169,9 @@ Every data region renders exactly one of the kit's four states:
 
 ## 8. Kit: shadcn base-nova + our composites
 
-- `src/shared/ui/` is stock shadcn (`components.json`, `base-nova` on Base UI; how to add: `apps/web-2/AGENTS.md`),
-  `shadcn diff` shows registry drift. No hand edits beyond those listed in docs/DECISIONS.md.
+- `src/shared/ui/` started as shadcn (`components.json`, `base-nova` on Base UI; how to add: `apps/web-2/AGENTS.md`) and is
+  restyled in place to the house look (control height, radius, table typesetting). A kit file is edited for a look every
+  screen shares, never for one screen.
 - `src/shared/components/` is ours, under every lint and token rule: templates, form fields (`useAppForm`), data
   regions, `IconButton`, `StatusBadge`, `ErrorAlert`, `SheetPanel`, menus. A look the stock kit lacks (status
   tones, link looks, a dialog width) is a variant there; features pass layout classes only, never restyle.
@@ -174,13 +192,13 @@ Every data region renders exactly one of the kit's four states:
 - A toast appears only from a mutation's `onSuccess` (wording: section 11). Errors stay on the page: inline, under
   the field or in the region.
 - Status badges: an exhaustive `Record<Status, {label, token}>`; a list's usual state is quiet text, a badge the exception.
-- A card is one object; sections are split by headings and spacing. Dashboard numbers: `KpiStrip` of `KpiTile`s, not cards.
+- A card is one object you could pick up; sections are split by headings, hairlines and spacing. A course on a list is its
+  picture with the title set under it, and the whole of it opens the course. Dashboard numbers: `KpiStrip` of `KpiTile`s, not cards. No tinted icon tiles: an icon stands on the paper.
 
 ## 10. Motion and focus
 
 - Our code: only `transition-colors|opacity|transform`, `duration-100|150|200` (or `--duration-*`); motion only for
-  overlays, accordions, a rotating chevron and progress; no hover scale, translate, bounce, pulse or entrance
-  animation. Stock overlays animate with tw-animate-css. Reduced motion zeroes every duration (tokens.css).
+  overlays, accordions, a rotating chevron and progress. No hover scale, translate, bounce, pulse or entrance animation. Stock overlays animate with tw-animate-css. Reduced motion zeroes every duration (tokens.css).
 - Focus: the global `:focus-visible` outline in `ring` (2 px, offset 2 px); stock controls draw their own `ring`.
   Never `outline-none` without an equal replacement. Focus order follows visual order.
 
@@ -194,7 +212,8 @@ Every data region renders exactly one of the kit's four states:
 
 ## 12. Never
 
-- gradients outside the brand artwork, glass/blur, decorative icons (`Sparkles`, `Rocket`, `Zap`, `PartyPopper`, `Wand2`; `Flame` = a streak)
+- ornament and patterns, serif or italic display type, paper-book skeuomorphism, a title printed on a cover, dashed or stitched lines as decoration
+- gradients outside uploads, glass/blur, tinted icon tiles, eyebrow labels over every heading, a three-up grid of icons with blurbs, decorative icons (`Sparkles`, `Rocket`, `Zap`, `PartyPopper`, `Wand2`; `Flame` = a streak)
 - cards inside cards, a second primary button, a delete without confirmation; color as the only signal
-- all-caps labels, letter-spacing, `font-bold`, sizes outside the seven above; animations > 200 ms, hover scale or lift
+- all-caps labels, letter-spacing, `font-bold`, sizes outside the table above; animations > 200 ms, hover scale or lift
 - horizontal scroll at 390 px; "desktop only" outside the two editors; tabs in state; edit forms in dialogs

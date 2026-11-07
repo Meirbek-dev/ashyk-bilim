@@ -16,7 +16,7 @@ import { type SitemapPage, sitemapPages } from './model/sitemap'
 
 const PAGE_SIZE = 20
 /** "A few courses" on the landing. */
-const LANDING_COURSES = 6
+const LANDING_COURSES = 14
 
 /** The platform's name and texts: public, the landing reads it before any session exists. */
 export const platformOptions = () => getPlatformOptions()

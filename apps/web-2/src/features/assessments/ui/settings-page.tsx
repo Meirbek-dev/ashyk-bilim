@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 
-import { ActivitySettingsPage } from '#/features/course-studio'
+import { ActivitySettingsPage, SECTION } from '#/features/course-studio'
 import { m } from '#/paraglide/messages'
 import { Link } from '#/shared/components/link'
 import { SettingsPage } from '#/shared/components/templates/settings-page'
@@ -50,22 +50,22 @@ export function AssessmentSettingsPage() {
   ))
   return (
     <SettingsPage title={m.assessments_settings_title()} nav={nav}>
-      <div id="name">
+      <div id="name" className={SECTION}>
         <ActivitySettingsPage lock={wordingLock(assessment)} />
       </div>
-      <div id="details">
+      <div id="details" className={SECTION}>
         <DetailsSection activityId={activityId} assessment={assessment} />
       </div>
-      <div id="rules">
+      <div id="rules" className={SECTION}>
         <PolicySection activityId={activityId} assessment={assessment} />
       </div>
-      <div id="access">
+      <div id="access" className={SECTION}>
         <AccessSection activityId={activityId} assessment={assessment} learners={people} />
       </div>
-      <div id="exceptions">
+      <div id="exceptions" className={SECTION}>
         <OverridesSection assessment={assessment} learners={people} />
       </div>
-      <div id="publishing">
+      <div id="publishing" className={SECTION}>
         <PublishingSection
           courseId={courseId}
           activityId={activityId}
@@ -74,11 +74,11 @@ export function AssessmentSettingsPage() {
         />
       </div>
       {can(assessment, 'duplicate') ? (
-        <div id="copy">
+        <div id="copy" className={SECTION}>
           <CopySection title={assessment.title} assessment={assessment} />
         </div>
       ) : null}
-      <div id="journal">
+      <div id="journal" className={SECTION}>
         <JournalSection assessmentId={assessment.id} learners={people} />
       </div>
     </SettingsPage>

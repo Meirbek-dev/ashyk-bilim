@@ -12,7 +12,7 @@ export function RubricTotal({ rows, onApply }: RubricTotalProps) {
   // Fields check on submit: until then a score above its maximum says why there is no total.
   const outOfRange = rows.some(row => isScoreInputInvalid(row.score, row.max))
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center justify-between gap-2">
       <p className={outOfRange ? 'text-sm text-destructive' : 'text-sm text-muted-foreground tabular-nums'}>
         {outOfRange ? m.grading_rubric_out_of_range() : m.grading_rubric_total({ percent: scoreText(total) })}
       </p>

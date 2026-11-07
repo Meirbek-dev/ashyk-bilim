@@ -7,12 +7,13 @@ import type { ActivityId } from '#/shared/api/gen/types.gen'
 import { Skeleton } from '#/shared/ui/skeleton'
 
 import { lessonDocument, pageWithOutline } from '../model/lesson'
+import bookCss from './lesson-book.css?url'
 import { PageOutline } from './page-outline'
 import { activityOptions } from '../queries'
 
 /**
- * A page, video or document through the editor's view preset (its video player, YouTube embed and PDF frame).
- * `onVideoEnded`: a hosted video played to the end (the player marks the lesson done).
+ * A page, video or document through the editor's view preset (its video player, YouTube embed and PDF frame), set as a
+ * page of a book (`lesson-book.css`). `onVideoEnded`: a hosted video played to the end (the player marks the lesson done).
  */
 // Text-shaped placeholder while the viewer loads and its editor is created (no empty flash before the lesson).
 const lines = (
@@ -30,12 +31,15 @@ export function LessonContent({ activityId, onVideoEnded }: { activityId: Activi
   const page = pageWithOutline(content)
   return (
     <>
+      <link rel="stylesheet" href={bookCss} precedence="ab-book" />
       {page.outline.length > 0 ? <PageOutline outline={page.outline} /> : null}
-      <Suspense fallback={lines}>
-        <VideoEndedContext value={onVideoEnded ?? null}>
-          <BlockViewer content={page.content} fallback={lines} />
-        </VideoEndedContext>
-      </Suspense>
+      <div className="ab-book min-w-0">
+        <Suspense fallback={lines}>
+          <VideoEndedContext value={onVideoEnded ?? null}>
+            <BlockViewer content={page.content} fallback={lines} />
+          </VideoEndedContext>
+        </Suspense>
+      </div>
     </>
   )
 }

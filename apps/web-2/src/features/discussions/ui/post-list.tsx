@@ -28,7 +28,7 @@ export function PostList({ courseId, thread }: { courseId: CourseId; thread: str
       emptyText={canPost ? m.discussions_empty() : m.discussions_empty_readonly()}
       onRetry={() => void query.refetch()}
     >
-      <ul className="flex flex-col gap-3">
+      <ul className="flex flex-col divide-y border-y">
         {linked ? <LinkedThread courseId={courseId} id={linked} landing={linked === landing} /> : null}
         {posts.map(post => (
           <PostRow

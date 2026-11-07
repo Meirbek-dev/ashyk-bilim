@@ -36,9 +36,10 @@ type SectionEditorProps = {
 export function SectionEditor({ form, index, section, last, onMove, onRemove, titleRef }: SectionEditorProps) {
   const kind = sectionTypeLabels[section.type]()
   return (
-    <fieldset className="flex flex-col gap-4 rounded-lg border p-4">
-      <legend className="px-1 text-sm font-medium">{kind}</legend>
-      <div className="flex justify-end gap-1">
+    // The legend breaks the rule like a running head; the rule itself is the section's only frame.
+    <fieldset className="relative flex min-w-0 flex-col gap-4 border-t pt-4 pb-2">
+      <legend className="pr-3 font-heading text-lg">{kind}</legend>
+      <div className="absolute -top-5 right-0 flex gap-1 bg-background pl-2">
         <IconButton
           label={m.settings_builder_up()}
           icon={<ArrowUp aria-hidden />}

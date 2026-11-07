@@ -36,30 +36,31 @@ export function AvatarSection({ profile }: { profile: UserProfile }) {
     })
   return (
     <PlainSection title={m.settings_avatar_title()} description={m.settings_avatar_hint({ mb: AVATAR_MAX_MB })}>
-      {profile.avatar_key ? (
-        // The shared avatar: a photo whose file is gone shows the initials, not a broken-image glyph.
+      <div className="flex items-center gap-5">
+        {/* The shared avatar: a photo whose file is gone shows the initials, not a broken-image glyph. */}
         <UserAvatar name={profile.display_name} avatarKey={profile.avatar_key} size="profile" />
-      ) : (
-        <p className="text-sm text-muted-foreground">{m.settings_avatar_none()}</p>
-      )}
-      <div className="flex flex-wrap gap-2">
-        <FileButton label={m.settings_avatar_choose()} accept="image/*" onFile={pick} pending={replace.isPending} />
-        {profile.avatar_key ? (
-          <ConfirmDialog
-            open={confirming}
-            onOpenChange={next => {
-              setConfirming(next)
-              if (!next) remove.reset()
-            }}
-            trigger={<Button variant="ghost">{m.settings_avatar_remove()}</Button>}
-            title={m.settings_avatar_remove_title()}
-            consequence={m.settings_avatar_remove_consequence()}
-            confirmLabel={m.settings_avatar_remove()}
-            onConfirm={confirmRemove}
-            pending={remove.isPending}
-            error={remove.error}
-          />
-        ) : null}
+        <div className="flex min-w-0 flex-col items-start gap-3">
+          {profile.avatar_key ? null : <p className="text-sm text-muted-foreground">{m.settings_avatar_none()}</p>}
+          <div className="flex flex-wrap gap-2">
+            <FileButton label={m.settings_avatar_choose()} accept="image/*" onFile={pick} pending={replace.isPending} />
+            {profile.avatar_key ? (
+              <ConfirmDialog
+                open={confirming}
+                onOpenChange={next => {
+                  setConfirming(next)
+                  if (!next) remove.reset()
+                }}
+                trigger={<Button variant="ghost">{m.settings_avatar_remove()}</Button>}
+                title={m.settings_avatar_remove_title()}
+                consequence={m.settings_avatar_remove_consequence()}
+                confirmLabel={m.settings_avatar_remove()}
+                onConfirm={confirmRemove}
+                pending={remove.isPending}
+                error={remove.error}
+              />
+            ) : null}
+          </div>
+        </div>
       </div>
       {problem ? <ErrorAlert>{problem}</ErrorAlert> : null}
       {replace.error ? <ErrorAlert>{presentError(replace.error)}</ErrorAlert> : null}

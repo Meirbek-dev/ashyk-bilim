@@ -6,7 +6,6 @@ import { m } from '#/paraglide/messages'
 import { getLocale, locales, setLocale } from '#/paraglide/runtime'
 import { themeManifestOptions } from '#/shared/api/themes'
 import { useAppForm } from '#/shared/components/form/use-app-form'
-import { SettingsSection } from '#/shared/components/templates/settings-section'
 import {
   MODES,
   readAppearance,
@@ -25,11 +24,16 @@ import { startTheme, vAppearance } from '../model/settings'
 import { profileOptions, updateProfileOptions } from '../queries'
 import { FontPicker } from './font-picker'
 import { ThemePicker } from './theme-picker'
+import { TypesetSection } from './typeset-section'
 
 const modeLabels = { system: m.ui_mode_system, light: m.ui_mode_light, dark: m.ui_mode_dark } satisfies Record<
   Mode,
   () => string
 >
+
+/** A short choice runs along one line, as words on a page; the stock field stacks it. */
+const choices =
+  'py-2 [&_[data-slot=radio-group]]:flex [&_[data-slot=radio-group]]:flex-wrap [&_[data-slot=radio-group]]:gap-x-8 [&_[data-slot=radio-group]]:gap-y-2 [&_[data-slot=radio-group]>*]:w-auto'
 
 type Shown = { theme: string; mode: Mode; font: Font }
 
@@ -83,7 +87,7 @@ export function AppearancePage() {
     },
   })
   return (
-    <SettingsSection
+    <TypesetSection
       title={m.settings_appearance_title()}
       description={m.settings_appearance_hint()}
       onSubmit={() => form.handleSubmit()}
@@ -96,25 +100,29 @@ export function AppearancePage() {
       <form.Field name="theme">
         {field => <ThemePicker themes={themes} value={field.state.value} onChange={field.handleChange} />}
       </form.Field>
-      <form.AppField name="mode">
-        {field => (
-          <field.RadioGroupField
-            label={m.settings_field_mode()}
-            options={MODES.map(mode => ({ value: mode, label: modeLabels[mode]() }))}
-          />
-        )}
-      </form.AppField>
+      <div className={choices}>
+        <form.AppField name="mode">
+          {field => (
+            <field.RadioGroupField
+              label={m.settings_field_mode()}
+              options={MODES.map(mode => ({ value: mode, label: modeLabels[mode]() }))}
+            />
+          )}
+        </form.AppField>
+      </div>
       <form.Field name="font">
         {field => <FontPicker value={field.state.value} onChange={field.handleChange} />}
       </form.Field>
-      <form.AppField name="locale">
-        {field => (
-          <field.RadioGroupField
-            label={m.ui_locale()}
-            options={locales.map(locale => ({ value: locale, label: m.ui_locale_name({}, { locale }) }))}
-          />
-        )}
-      </form.AppField>
-    </SettingsSection>
+      <div className={choices}>
+        <form.AppField name="locale">
+          {field => (
+            <field.RadioGroupField
+              label={m.ui_locale()}
+              options={locales.map(locale => ({ value: locale, label: m.ui_locale_name({}, { locale }) }))}
+            />
+          )}
+        </form.AppField>
+      </div>
+    </TypesetSection>
   )
 }

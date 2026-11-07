@@ -1,7 +1,6 @@
 import { m } from '#/paraglide/messages'
 import type { StudentSubmission } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
-import { StatusBadge } from '#/shared/components/status-badge'
 
 import { ARENA_PATH } from './arena-route'
 import { outcome } from './attempt-detail'
@@ -14,13 +13,13 @@ type LastAttemptProps = { attempt: StudentSubmission; passed: boolean | null }
  */
 export function LastAttempt({ attempt, passed }: LastAttemptProps) {
   return (
-    <div className="flex flex-col items-start gap-1 text-sm">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex w-full flex-col items-start gap-1 border-t pt-4 text-sm">
+      <div className="flex flex-wrap items-baseline gap-x-3">
         <span className="font-medium">{m.code_attempt({ number: attempt.attempt_number })}</span>
         {passed === null ? null : (
-          <StatusBadge tone={passed ? 'success' : 'destructive'}>
+          <span className={`font-medium ${passed ? 'text-success' : 'text-destructive'}`}>
             {passed ? m.code_passed() : m.code_not_passed()}
-          </StatusBadge>
+          </span>
         )}
       </div>
       {outcome(attempt).map(line => (

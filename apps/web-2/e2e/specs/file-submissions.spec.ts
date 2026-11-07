@@ -152,7 +152,7 @@ test('B-FSB-07 B-FSB-10 B-FSB-11 a released grade with feedback and criteria; ow
   await tasks.grade(attempt, { action: 'publish', final_score: 85, feedback: 'Хорошая работа', rubric_scores: scores })
   await page.goto(handIn(course, task))
   const result = region(page, m.submission_result_title({}, ru))
-  await expect(result.getByText(m.submission_score({ score: formatPercent(85, 'ru') }, ru))).toBeVisible()
+  await expect(result.getByText(formatPercent(85, 'ru'), { exact: true })).toBeVisible()
   await expect(result.getByText('Хорошая работа')).toBeVisible()
   await expect(result.getByText(m.submission_criterion_score({ score: '8', max: '10' }, ru))).toBeVisible()
 
@@ -181,7 +181,7 @@ test('B-FSB-07 no new attempt once the cap is spent', async ({ page, context, le
   const attempt = await tasks.handIn(task, headers, [await tasks.upload(headers)])
   await tasks.grade(attempt, { action: 'publish', final_score: 50 })
   await page.goto(handIn(course, task))
-  await expect(page.getByText(m.submission_score({ score: formatPercent(50, 'ru') }, ru))).toBeVisible()
+  await expect(page.getByText(formatPercent(50, 'ru'), { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: m.submission_new_attempt({}, ru) })).toHaveCount(0)
 })
 
@@ -205,7 +205,7 @@ test('B-FSB-03 B-FSB-07 late work: the deadline label and the score before the p
   await expect(page.getByText(m.submission_past_due({}, ru))).toBeVisible()
   const penalty = { raw: formatPercent(80, 'ru'), percent: formatPercent(10, 'ru') }
   await expect(page.getByText(m.submission_penalty(penalty, ru))).toBeVisible()
-  await expect(page.getByText(m.submission_score({ score: formatPercent(72, 'ru') }, ru))).toBeVisible()
+  await expect(page.getByText(formatPercent(72, 'ru'), { exact: true })).toBeVisible()
 })
 
 test('B-FSB-08 returned work is revised and handed in again', async ({ page, context, learner, makeCourse, tasks }) => {

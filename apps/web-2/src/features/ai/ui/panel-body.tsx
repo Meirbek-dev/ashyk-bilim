@@ -47,7 +47,7 @@ export function PanelBody({ scope, userId }: { scope: Scope; userId: UserId }) {
       </div>
     )
   return (
-    <div className="flex flex-col gap-4">
+    <div data-density="compact" className="flex flex-col gap-4">
       {caps.context ? (
         <p className="text-xs text-muted-foreground">
           {m.ai_context({ label: caps.context.activity_label ?? caps.context.course_label })} ·{' '}

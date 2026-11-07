@@ -25,14 +25,14 @@ export function OperationsTab() {
   const { data, refetch } = useSuspenseQuery(overviewOptions(filters))
   const workload = data.workload
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-10">
       <KpiStrip label={m.analytics_kpis()} columns={4}>
         <KpiTile
           label={m.analytics_kpi_ungraded_submissions()}
           value={formatNumber(workload.backlog_total)}
           action={
-            <Link to="." search={prev => ({ ...prev, metric: 'backlog', page: 1 })}>
-              {m.analytics_show_rows()}
+            <Link variant="title" to="." search={prev => ({ ...prev, metric: 'backlog', page: 1 })}>
+              <span className="text-muted-foreground">{m.analytics_show_rows()}</span>
             </Link>
           }
         />

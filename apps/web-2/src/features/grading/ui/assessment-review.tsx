@@ -24,14 +24,15 @@ export function AssessmentReview({ courseId, activityId, submissionId, aside }: 
   const items = assessment.items.toSorted((a, b) => a.position - b.position)
   return (
     <ReviewFrame work={ids.work} head={submission} aside={aside}>
-      <section aria-labelledby="grading-answers" className="flex flex-col gap-4">
+      {/* Before the answers: an attempt handed in by the guard or a suspicious one is read differently. */}
+      <ViolationsSection submission={submission} />
+      <section aria-labelledby="grading-answers" className="flex flex-col gap-2">
         <h2 id="grading-answers" className="text-xl font-semibold">
           {m.grading_answers()}
         </h2>
         {/* One form per submission: prev / next swap the work, not the inputs of the last one. */}
         <AssessmentGradeForm key={submission.id} ids={ids} submission={submission} items={items} />
       </section>
-      <ViolationsSection submission={submission} />
       <HistorySection key={`history-${submission.id}`} work={ids.work} submissionId={submission.id} />
     </ReviewFrame>
   )

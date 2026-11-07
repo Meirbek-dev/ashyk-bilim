@@ -4,7 +4,6 @@ import { Suspense } from 'react'
 import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import type { FileSubmission } from '#/shared/api/gen/types.gen'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime, formatNumber, formatPercent } from '#/shared/i18n/format'
 import { Skeleton } from '#/shared/ui/skeleton'
 
@@ -33,28 +32,33 @@ export function TaskHeader({ task, now }: { task: FileSubmission; now: number })
   return (
     <>
       {task.due_at_unix === null ? null : (
-        <div className="flex flex-col gap-1 text-sm">
-          <p className="flex flex-wrap items-center gap-2">
-            <CalendarClock aria-hidden className="size-4" />
-            <span className="font-medium">{m.submission_due({ date: formatDateTime(task.due_at_unix) })}</span>
-            {pastDue(task, now) ? <StatusBadge tone="warning">{m.submission_past_due()}</StatusBadge> : null}
+        <div className="flex flex-col gap-1 border-y py-3 text-sm">
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <CalendarClock aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+            <span className="font-medium tabular-nums">
+              {m.submission_due({ date: formatDateTime(task.due_at_unix) })}
+            </span>
+            {pastDue(task, now) ? <span className="font-medium text-warning">{m.submission_past_due()}</span> : null}
           </p>
-          {rule ? <p className="pl-6 text-muted-foreground">{lateText(rule)}</p> : null}
+          {rule ? <p className="ps-7 text-muted-foreground">{lateText(rule)}</p> : null}
         </div>
       )}
-      <section aria-labelledby="submission-instructions" className="flex flex-col gap-2">
-        <h2 id="submission-instructions" className="text-xl font-semibold">
-          {m.submission_instructions()}
-        </h2>
-        <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
-          <MarkdownView content={task.instructions} />
-        </Suspense>
-      </section>
+      {/* A task published without instructions: no heading over nothing. */}
+      {task.instructions.trim() ? (
+        <section aria-labelledby="submission-instructions" className="flex flex-col gap-3">
+          <h2 id="submission-instructions" className="text-xl font-semibold">
+            {m.submission_instructions()}
+          </h2>
+          <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
+            <MarkdownView content={task.instructions} />
+          </Suspense>
+        </section>
+      ) : null}
       <section aria-labelledby="submission-requirements" className="flex flex-col gap-2">
         <h2 id="submission-requirements" className="text-xl font-semibold">
           {m.submission_requirements()}
         </h2>
-        {/* Three facts on one line, each with its icon: how many, how big, what kind. */}
+        {/* Three short facts, each with its icon, read along one line: how many, how big, what kind. */}
         <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground">
           <li className="flex items-center gap-2">
             <Files aria-hidden />

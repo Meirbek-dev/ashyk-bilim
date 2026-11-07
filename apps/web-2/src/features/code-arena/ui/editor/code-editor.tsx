@@ -12,7 +12,7 @@ const FONT: Record<FontSize, string> = { sm: 'text-xs', md: 'text-sm', lg: 'text
 // A desk tall enough for a short program without scrolling (the studio, a past attempt).
 const DESK = 'min-h-64 overflow-hidden rounded-md border border-input [&_.cm-editor]:min-h-64'
 // The workspace: the editor takes the height its pane gives it and scrolls inside.
-const FILL = 'relative min-h-0 flex-1 [&_.cm-editor]:absolute [&_.cm-editor]:inset-0'
+const FILL = 'relative min-h-0 flex-1 [&_.cm-editor]:absolute! [&_.cm-editor]:inset-0'
 
 type CodeEditorProps = {
   value: string

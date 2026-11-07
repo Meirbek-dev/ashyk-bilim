@@ -7,14 +7,15 @@ import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
 import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
-import { ScoreBar } from '#/shared/components/charts/score-bar'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { activeFilters, type Filters, learnerSort, type LearnerSort } from '../model/filters'
 import { whyNowText } from '../model/signals'
 import { atRiskOptions } from '../queries'
 import { riskLevelBadges, riskTrendLabels } from './labels'
+import { Meter } from './meter'
 import { Pager } from './pager'
+import { TABLE_LOOK } from './table-look'
 
 const riskInk = { destructive: 'text-destructive', warning: 'text-warning', neutral: 'text-muted-foreground' }
 
@@ -25,9 +26,9 @@ const learnerCell = (row: AtRiskLearnerRow) => (
       <span className="font-medium wrap-anywhere">{row.user_display_name}</span>
     </Link>
     {row.user_username ? (
-      <span className="text-xs wrap-anywhere text-muted-foreground">@{row.user_username}</span>
+      <span className="font-sans text-xs font-normal wrap-anywhere text-muted-foreground">@{row.user_username}</span>
     ) : null}
-    <span className="wrap-anywhere text-muted-foreground">{row.course_name}</span>
+    <span className="font-sans text-xs font-normal wrap-anywhere text-muted-foreground">{row.course_name}</span>
   </span>
 )
 
@@ -65,7 +66,7 @@ const columns = (): DataColumn<AtRiskLearnerRow>[] => [
     header: m.analytics_col_progress(),
     priority: 2,
     sortable: true,
-    cell: row => <ScoreBar value={row.progress_pct} text={formatPercent(row.progress_pct)} />,
+    cell: row => <Meter value={row.progress_pct} text={formatPercent(row.progress_pct)} />,
   },
   {
     id: 'activity',
@@ -126,16 +127,20 @@ export function AtRiskTable({ search, filters }: AtRiskTableProps) {
         onResetFilters={() => void navigate({ to: '.', search: {} })}
         onRetry={() => void query.refetch()}
       >
-        <DataTable
-          label={m.analytics_at_risk_table()}
-          rows={query.data.items}
-          columns={columns()}
-          getKey={row => `${row.user_id}:${row.course_id}`}
-          sort={sort}
-          onSortChange={next =>
-            void navigate({ to: '.', search: prev => ({ ...prev, ...learnerSort(next), page: 1 }) })
-          }
-        />
+        <div
+          className={`${TABLE_LOOK} [&_td:nth-child(3)]:text-right [&_td:nth-child(4)]:text-right [&_td:nth-child(7)]:text-right [&_th:nth-child(3)]:text-right [&_th:nth-child(3)_button]:-mr-3 [&_th:nth-child(4)]:text-right [&_th:nth-child(4)_button]:-mr-3 [&_th:nth-child(7)]:text-right`}
+        >
+          <DataTable
+            label={m.analytics_at_risk_table()}
+            rows={query.data.items}
+            columns={columns()}
+            getKey={row => `${row.user_id}:${row.course_id}`}
+            sort={sort}
+            onSortChange={next =>
+              void navigate({ to: '.', search: prev => ({ ...prev, ...learnerSort(next), page: 1 }) })
+            }
+          />
+        </div>
         <Pager page={search.page} total={query.data.total} />
       </ListState>
     </section>

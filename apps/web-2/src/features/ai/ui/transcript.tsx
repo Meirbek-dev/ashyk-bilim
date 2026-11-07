@@ -10,10 +10,13 @@ import { Citations } from './citations'
 export function Transcript({ entries }: { entries: Entry[] }) {
   if (entries.length === 0) return <p className="text-sm text-muted-foreground">{m.ai_chat_empty()}</p>
   return (
-    <ol className="flex flex-col gap-4">
+    <ol className="flex flex-col gap-gutter">
       {entries.map(entry => (
-        <li key={entry.id} className={entry.role === 'user' ? 'rounded-md bg-muted p-3' : 'flex flex-col gap-2'}>
-          <p className="text-xs font-medium text-muted-foreground">
+        <li
+          key={entry.id}
+          className={`flex flex-col gap-1.5 ${entry.role === 'user' ? 'border-s-2 ps-3 font-medium' : ''}`}
+        >
+          <p className="text-xs font-normal text-muted-foreground">
             {entry.role === 'user' ? m.ai_you() : m.ai_assistant()}
           </p>
           {entry.pending && !entry.content ? (

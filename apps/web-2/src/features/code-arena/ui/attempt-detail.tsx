@@ -48,10 +48,12 @@ export function AttemptDetail({ attempt, code }: { attempt: StudentSubmission; c
   const answer = answerOf(attempt, code.item.id)
   const language = answer ? languageOf(languages, answer.language) : null
   return (
-    <div className="flex min-w-0 flex-col gap-2">
-      {outcome(attempt).map(line => (
-        <p key={line}>{line}</p>
-      ))}
+    <div className="flex min-w-0 flex-col gap-3 pb-3">
+      <div className="flex flex-col gap-0.5 tabular-nums empty:hidden">
+        {outcome(attempt).map(line => (
+          <p key={line}>{line}</p>
+        ))}
+      </div>
       {attempt.status === 'draft' ? null : <FinalRun itemId={code.item.id} submissionId={attempt.id} />}
       {/* An empty source (a migrated or blank hand-in) says so, not an empty read-only editor. */}
       {answer?.source.trim() ? (

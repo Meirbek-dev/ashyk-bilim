@@ -13,13 +13,8 @@ import { percentOf } from './continue-hero'
 export function ContinueRow({ item }: { item: ContinueLearning }) {
   const percent = percentOf(item)
   return (
-    <article className="relative flex items-center gap-4 rounded-xl p-2 transition-colors duration-150 hover:bg-accent hover:text-accent-foreground">
-      <CourseCover
-        seed={item.course_id}
-        imageKey={item.thumbnail_key}
-        shape="thumb"
-        className="aspect-video w-24 shrink-0 rounded-lg border @md:w-32"
-      />
+    <article className="relative flex items-center gap-4 rounded-lg py-3 pr-2 transition-colors duration-150 hover:bg-accent hover:text-accent-foreground">
+      <CourseCover imageKey={item.thumbnail_key} className="aspect-video w-20 shrink-0 rounded-sm @md:w-24" />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <h3 className="font-medium wrap-anywhere">
           <Link

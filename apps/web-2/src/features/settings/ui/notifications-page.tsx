@@ -4,11 +4,12 @@ import * as v from 'valibot'
 
 import { m } from '#/paraglide/messages'
 import { useAppForm } from '#/shared/components/form/use-app-form'
-import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { toast } from '#/shared/ui/toast'
 
 import { readSwitches, type GamificationSwitches } from '../model/settings'
 import { gamificationOptions, updatePreferencesOptions } from '../queries'
+import { SwitchRows } from './switch-rows'
+import { TypesetSection } from './typeset-section'
 
 const vSwitches = v.object({
   xpGain: v.boolean(),
@@ -39,7 +40,7 @@ export function NotificationsPage() {
       ),
   })
   return (
-    <SettingsSection
+    <TypesetSection
       id="achievements"
       title={m.settings_gamification_title()}
       description={m.settings_gamification_hint()}
@@ -47,31 +48,36 @@ export function NotificationsPage() {
       pending={update.isPending}
       error={update.error}
     >
-      <form.AppField name="xpGain">{field => <field.SwitchField label={m.settings_field_xp_gain()} />}</form.AppField>
-      <form.AppField name="showOnLeaderboard">
-        {field => (
-          <field.SwitchField label={m.settings_field_leaderboard()} description={m.settings_field_leaderboard_hint()} />
-        )}
-      </form.AppField>
-      <form.AppField name="showCertificates">
-        {field => (
-          <field.SwitchField
-            label={m.settings_field_certificates()}
-            description={m.settings_field_certificates_hint()}
-          />
-        )}
-      </form.AppField>
-      <form.AppField name="showGamification">
-        {field => (
-          <field.SwitchField
-            label={m.settings_field_gamification()}
-            description={m.settings_field_gamification_hint()}
-          />
-        )}
-      </form.AppField>
-      <form.AppField name="showStreaks">
-        {field => <field.SwitchField label={m.settings_field_streaks()} />}
-      </form.AppField>
-    </SettingsSection>
+      <SwitchRows>
+        <form.AppField name="xpGain">{field => <field.SwitchField label={m.settings_field_xp_gain()} />}</form.AppField>
+        <form.AppField name="showOnLeaderboard">
+          {field => (
+            <field.SwitchField
+              label={m.settings_field_leaderboard()}
+              description={m.settings_field_leaderboard_hint()}
+            />
+          )}
+        </form.AppField>
+        <form.AppField name="showCertificates">
+          {field => (
+            <field.SwitchField
+              label={m.settings_field_certificates()}
+              description={m.settings_field_certificates_hint()}
+            />
+          )}
+        </form.AppField>
+        <form.AppField name="showGamification">
+          {field => (
+            <field.SwitchField
+              label={m.settings_field_gamification()}
+              description={m.settings_field_gamification_hint()}
+            />
+          )}
+        </form.AppField>
+        <form.AppField name="showStreaks">
+          {field => <field.SwitchField label={m.settings_field_streaks()} />}
+        </form.AppField>
+      </SwitchRows>
+    </TypesetSection>
   )
 }

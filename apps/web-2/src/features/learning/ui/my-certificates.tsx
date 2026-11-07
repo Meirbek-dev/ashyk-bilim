@@ -13,7 +13,7 @@ import { CertificateItem } from './certificate-item'
 export function MyCertificates() {
   const query = useSuspenseInfiniteQuery(certificatesOptions())
   return (
-    <section aria-labelledby="my-certificates" className="flex flex-col gap-4">
+    <section aria-labelledby="my-certificates" className="flex flex-col gap-4 pt-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 id="my-certificates" className="text-xl font-semibold">
           {m.learning_certificates_title()}
@@ -35,7 +35,7 @@ export function MyCertificates() {
         emptyText={m.learning_certificates_empty()}
         onRetry={() => void query.refetch()}
       >
-        <DataList items={query.data} getKey={issued => issued.certificate.id}>
+        <DataList variant="rows" items={query.data} getKey={issued => issued.certificate.id}>
           {issued => <CertificateItem issued={issued} />}
         </DataList>
         <ShowMore

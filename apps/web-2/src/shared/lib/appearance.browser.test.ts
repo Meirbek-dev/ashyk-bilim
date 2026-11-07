@@ -18,5 +18,8 @@ test('the font set is kept in this browser and shown on <html> at once; the defa
   expect(document.documentElement.dataset['font']).toBe('literata')
   saveFont('inter')
   expect(readAppearance().font).toBe('inter')
+  expect(document.documentElement.dataset['font']).toBe('inter')
+  saveFont('press')
+  expect(readAppearance().font).toBe('press')
   expect(document.documentElement.dataset['font']).toBeUndefined()
 })

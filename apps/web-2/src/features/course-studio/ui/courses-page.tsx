@@ -36,7 +36,6 @@ export function CoursesPage() {
   const summary = query.data.pages[0]?.summary
   // No course at all (not a filter that matches none): no search, order or presets to offer - only the empty state.
   const none = summary !== undefined && hasNoCourses(summary) && !search.q
-  const filters = <CoursesPresets search={search} summary={summary} />
   return (
     <ListPage
       title={m.studio_courses_title()}
@@ -44,18 +43,20 @@ export function CoursesPage() {
       primaryAction={
         hasCapability(session, 'course.create') ? <CreateCourseDialog initiallyOpen={opened === true} /> : null
       }
-      // Keyed by the URL value: "back" to another search refills the box.
       search={
-        // One row with the presets: a wrapper of its own put the order menu on a second line under the search box.
+        // The presets are the list's sections, so they stay in sight on a phone (as tabs, not behind a «Filters» sheet):
+        // wide, one row on one rule with the search and the order.
         none ? undefined : (
-          <>
-            <CoursesSearchBox key={search.q ?? ''} search={search} />
-            <CoursesSortMenu search={search} />
-          </>
+          <div className="flex w-full flex-col gap-3 @4xl:flex-row @4xl:items-end @4xl:justify-between @4xl:gap-6 @4xl:border-b">
+            <CoursesPresets search={search} summary={summary} />
+            <div className="flex flex-wrap items-end gap-2 @4xl:mb-2 @4xl:flex-nowrap">
+              {/* Keyed by the URL value: "back" to another search refills the box. */}
+              <CoursesSearchBox key={search.q ?? ''} search={search} />
+              <CoursesSortMenu search={search} />
+            </div>
+          </div>
         )
       }
-      filters={none ? undefined : filters}
-      activeFilters={search.preset ? 1 : 0}
     >
       <ListState
         pending={false}
@@ -74,11 +75,14 @@ export function CoursesPage() {
           selected={courses.filter(course => selected.has(course.id))}
           onDone={() => setSelected(new Set())}
         />
-        <DataList items={courses} getKey={course => course.id} variant="rows">
-          {course => (
-            <CourseListItem course={course} checked={selected.has(course.id)} onToggle={() => toggle(course.id)} />
-          )}
-        </DataList>
+        {/* The filter row's rule is the table's top on a wide screen. */}
+        <div className="@4xl:-mt-gutter @4xl:[&>ul]:border-t-0">
+          <DataList items={courses} getKey={course => course.id} variant="rows">
+            {course => (
+              <CourseListItem course={course} checked={selected.has(course.id)} onToggle={() => toggle(course.id)} />
+            )}
+          </DataList>
+        </div>
         <ShowMore
           hasMore={query.hasNextPage}
           pending={query.isFetchingNextPage}

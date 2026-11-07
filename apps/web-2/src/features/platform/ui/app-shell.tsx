@@ -10,11 +10,12 @@ import { SkipLink } from '#/shared/components/skip-link'
 
 import { BottomBar } from './bottom-bar'
 import { SidebarNav } from './sidebar-nav'
+import { SiteFooter } from './site-footer'
 import { TopBar } from './top-bar'
 
 /**
- * The one app shell (spec 5.2, DESIGN 6): the top bar, the current workspace's sidebar (a bottom bar on phones)
- * and the content. Guests get it without navigation. A route with `staticData.layout: 'focus'` draws FocusPage
+ * The one app shell (spec 5.2, DESIGN 6): the navy rail of the current workspace (a bottom bar on phones), the
+ * utility bar and the content. Guests get the bar with the brand and public links, and the colophon under the page. A route with `staticData.layout: 'focus'` draws FocusPage
  * itself, so the shell steps aside.
  */
 export function AppShell() {
@@ -27,21 +28,22 @@ export function AppShell() {
   useLiveEvents(useSessionExpired() ? undefined : session?.user.id)
   if (focus) return <Outlet />
   return (
-    <div className="flex min-h-dvh flex-col">
-      {/* The first Tab stop: past the top bar and the sidebar straight to the page (WCAG 2.4.1). */}
+    <div className="flex min-h-dvh">
+      {/* The first Tab stop: past the bars and the rail straight to the page (WCAG 2.4.1). */}
       <SkipLink />
-      <TopBar session={session} workspace={workspace.id} />
-      <div className="flex flex-1">
-        {session ? <SidebarNav session={session} workspace={workspace} /> : null}
+      {session ? <SidebarNav session={session} workspace={workspace} /> : null}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar session={session} workspace={workspace.id} />
         <main
           id="main"
           tabIndex={-1}
           data-density={workspace.id === 'learn' ? undefined : 'compact'}
-          className={`mx-auto w-full max-w-6xl min-w-0 px-4 pt-gutter md:px-6 ${session ? 'pb-24 lg:pb-gutter' : 'pb-gutter'}`}
+          className={`mx-auto w-full max-w-6xl min-w-0 flex-1 px-4 pt-6 md:px-8 ${session ? 'pb-24 lg:pb-16' : 'pb-16'}`}
         >
           {session && !session.user.email_verified ? <EmailBannerSlot /> : null}
           <Outlet />
         </main>
+        {session ? null : <SiteFooter />}
       </div>
       {session ? <BottomBar session={session} workspace={workspace} /> : null}
     </div>

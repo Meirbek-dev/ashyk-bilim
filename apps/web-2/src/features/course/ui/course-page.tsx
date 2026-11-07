@@ -39,13 +39,7 @@ export function CoursePage({ ai }: { ai?: ReactNode }) {
   ]
   return (
     <DetailPage
-      cover={
-        <CourseCover
-          seed={course.id}
-          imageKey={course.thumbnail_key}
-          className="aspect-video w-full rounded-xl border"
-        />
-      }
+      cover={<CourseCover imageKey={course.thumbnail_key} />}
       title={course.name}
       meta={meta.filter(Boolean).join(' · ')}
       status={course.archived_at_unix ? <StatusBadge tone="warning">{m.course_archived()}</StatusBadge> : null}

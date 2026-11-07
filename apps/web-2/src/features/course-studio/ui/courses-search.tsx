@@ -13,7 +13,7 @@ export function CoursesSearchBox({ search }: { search: CoursesSearch }) {
     onSubmit: ({ q }) => navigate({ to: '/teach/courses', search: { ...search, q: q.trim() || undefined } }),
   })
   return (
-    <search className="w-full max-w-sm">
+    <search className="min-w-48 flex-1 @4xl:w-64 @4xl:flex-none">
       <form
         onSubmit={event => {
           event.preventDefault()

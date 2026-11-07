@@ -1,76 +1,91 @@
 import { m } from '#/paraglide/messages'
 import type { GradebookSummary } from '#/shared/api/gen/types.gen'
-import type { DataColumn } from '#/shared/components/data-columns'
 
 import type { GradebookColumn, GradebookRow } from '../model/gradebook'
-import { GradebookCell } from './gradebook-cell'
-import { scoreText } from './labels'
+import { GradebookLine } from './gradebook-line'
+import { ACTIVITY, LEARNER, TOTAL } from './gradebook-layout'
+import { hasFraction, ScoreFigure } from './score-figure'
 
-const learnerName = (row: GradebookRow) => row.user.display_name || row.user.username
-
-/**
- * The learner, their course total (B-GRD-37), then one column per graded activity. At narrow width each learner is a
- * card with a line per activity (priority 2), the phone fallback of B-GRD-21.
- */
-export const gradebookTableColumns = (courseId: string, activities: readonly GradebookColumn[]) => [
-  {
-    id: 'learner',
-    header: m.grading_col_learner(),
-    priority: 1,
-    // The @username under the name: real rosters hold namesakes (two «Аида Солтангазинова» in one course).
-    cell: (row: GradebookRow) => (
-      <span className="flex flex-col">
-        <span className="wrap-anywhere">{learnerName(row)}</span>
-        <span className="text-xs font-normal wrap-anywhere text-muted-foreground">@{row.user.username}</span>
-      </span>
-    ),
-  } satisfies DataColumn<GradebookRow>,
-  {
-    id: 'total',
-    header: m.grading_col_total(),
-    priority: 2,
-    cell: (row: GradebookRow) => (
-      <span className="flex flex-col">
-        <Score value={row.total?.score ?? null} />
-        {row.total && row.total.missing > 0 ? (
-          <span className="text-xs text-muted-foreground">{m.grading_total_missing({ count: row.total.missing })}</span>
-        ) : null}
-      </span>
-    ),
-  } satisfies DataColumn<GradebookRow>,
-  ...activities.map((column): DataColumn<GradebookRow> => ({
-    id: column.activityId,
-    header: column.title,
-    priority: 2,
-    cell: row => (
-      <GradebookCell
-        courseId={courseId}
-        cell={row.cells.get(column.activityId)}
-        learner={learnerName(row)}
-        activity={column.title}
-      />
-    ),
-  })),
-]
-
-/** The average row under the table (B-GRD-37): «Среднее», the mean course total, each column's mean grade. */
-export const gradebookFooter = (summary: GradebookSummary) => (column: DataColumn<GradebookRow>) => {
-  if (column.id === 'learner') return m.grading_average()
-  const average =
-    column.id === 'total'
-      ? summary.course_average
-      : (summary.columns.find(c => c.activity_id === column.id)?.average ?? null)
-  return <Score value={average} />
+type GradebookTableProps = {
+  courseId: string
+  label: string
+  rows: readonly GradebookRow[]
+  activities: readonly GradebookColumn[]
+  summary: GradebookSummary | null | undefined
 }
 
-/** A percent, or a quiet dash read as «Нет оценки» (most rows of a real course have nothing graded yet). */
-function Score({ value }: { value: number | null }) {
-  return value === null ? (
-    <span className="text-muted-foreground">
-      <span aria-hidden>—</span>
-      <span className="sr-only">{m.grading_no_score()}</span>
-    </span>
-  ) : (
-    <span className="font-medium tabular-nums">{scoreText(value)}</span>
+/**
+ * The gradebook as a table set for reading (B-GRD-19..21, B-GRD-37): the learner stays at the left edge and the heads at
+ * the top while the box scrolls under them, a phone included; figures on the decimal point, hairlines between rows, a
+ * rule under the head and over the averages. The box is a named, focusable region, so it scrolls by keyboard.
+ */
+export function GradebookTable({ courseId, label, rows, activities, summary }: GradebookTableProps) {
+  const totalSlot = hasFraction([...rows.map(row => row.total?.score), summary?.course_average])
+  const averageOf = (activityId: string) => summary?.columns.find(c => c.activity_id === activityId)?.average ?? null
+  const slots = new Map(
+    activities.map(({ activityId }) => [
+      activityId,
+      hasFraction([...rows.map(row => row.cells.get(activityId)?.final_score), averageOf(activityId)]),
+    ]),
+  )
+  return (
+    <section
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region must be reachable by keyboard (axe scrollable-region-focusable)
+      tabIndex={0}
+      aria-label={label}
+      className="relative max-h-[calc(100dvh-6rem)] overflow-auto border-t border-foreground/50"
+    >
+      {/* oxlint-disable-next-line react/forbid-elements -- frozen head, learner and total columns need sticky cells of a native table, which DataTable does not offer. */}
+      <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+        <caption className="sr-only">{label}</caption>
+        <thead>
+          <tr className="[&>th]:sticky [&>th]:top-0 [&>th]:border-b [&>th]:border-b-foreground/50 [&>th]:bg-background [&>th]:pt-2.5 [&>th]:pb-2 [&>th]:align-bottom [&>th]:text-xs [&>th]:font-medium [&>th]:text-muted-foreground">
+            <th scope="col" className={`${LEARNER} z-30`}>
+              {m.grading_col_learner()}
+            </th>
+            <th scope="col" className={`${TOTAL} z-20 @3xl:z-30`}>
+              {m.grading_col_total()}
+            </th>
+            {activities.map(column => (
+              <th key={column.activityId} scope="col" className={`${ACTIVITY} z-20`}>
+                {column.title}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(row => (
+            <GradebookLine
+              key={row.user.id}
+              courseId={courseId}
+              row={row}
+              activities={activities}
+              totalSlot={totalSlot}
+              slots={slots}
+            />
+          ))}
+        </tbody>
+        {summary ? (
+          // The average row (B-GRD-37): «Среднее», the mean course total, each column's mean grade. It stays in sight.
+          <tfoot>
+            <tr className="[&>*]:sticky [&>*]:bottom-0 [&>*]:border-t [&>*]:border-t-foreground/50 [&>*]:bg-background [&>*]:py-2.5 [&>*]:align-baseline">
+              <th scope="row" className={`${LEARNER} z-30 font-medium`}>
+                {m.grading_average()}
+              </th>
+              <td className={`${TOTAL} z-20 @3xl:z-30`}>
+                <span className="font-heading text-base">
+                  <ScoreFigure score={summary.course_average} slot={totalSlot} />
+                </span>
+              </td>
+              {activities.map(column => (
+                <td key={column.activityId} className={`${ACTIVITY} z-20`}>
+                  <ScoreFigure score={averageOf(column.activityId)} slot={slots.get(column.activityId) ?? false} />
+                </td>
+              ))}
+            </tr>
+          </tfoot>
+        ) : null}
+      </table>
+    </section>
   )
 }

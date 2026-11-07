@@ -47,10 +47,15 @@ export function AttemptFiles({ files, onRemove, disabled = false }: AttemptFiles
   if (files.length === 0) return <p className="text-sm text-muted-foreground">{m.submission_no_files()}</p>
   return (
     <div className="flex flex-col gap-2">
-      <ul className="flex flex-col divide-y rounded-lg border">
+      <ul className="flex flex-col divide-y border-y">
         {files.map(file => (
-          <li key={file.id} className="flex min-h-row min-w-0 items-center gap-2 px-2">
-            <Button variant="ghost" className="min-w-0 flex-1 justify-start" onClick={() => void open(file)}>
+          <li key={file.id} className="flex min-h-row min-w-0 items-center gap-2">
+            {/* Flush with the page's left edge: the name is the row, the hairlines are its frame. */}
+            <Button
+              variant="ghost"
+              className="min-w-0 flex-1 justify-start pr-1 pl-0! hover:bg-transparent hover:underline"
+              onClick={() => void open(file)}
+            >
               <Download data-icon="inline-start" aria-hidden />
               <span className="truncate">{file.filename}</span>
             </Button>

@@ -13,7 +13,7 @@ export function StateFilter({ runs }: { runs: readonly Enrollment[] }) {
     ...RUN_STATES.map(state => ({ state, label: runStateMeta[state].label(), count: counts[state] })),
   ]
   return (
-    <nav aria-label={m.learning_filter_label()} className="flex flex-wrap">
+    <nav aria-label={m.learning_filter_label()} className="flex flex-wrap gap-x-6">
       {options.map(option => (
         <Link
           key={option.state ?? 'all'}

@@ -40,8 +40,14 @@ export function TestFilesBar({ tests, onImport, lead }: TestFilesBarProps) {
   }
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex flex-wrap gap-2">
-        {lead}
+      {/* The add leads; the file moves are the rare ones and stand quiet at the far end. */}
+      <div className="flex flex-wrap items-center gap-2">
+        {lead ? (
+          <>
+            {lead}
+            <span className="grow" />
+          </>
+        ) : null}
         {onImport ? (
           <FileButton
             label={m.code_cases_import()}
@@ -53,7 +59,7 @@ export function TestFilesBar({ tests, onImport, lead }: TestFilesBarProps) {
           <>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() => save(testsToJson(tests), 'application/json', 'tests.json')}
             >
               <Download aria-hidden data-icon="inline-start" />
@@ -61,7 +67,7 @@ export function TestFilesBar({ tests, onImport, lead }: TestFilesBarProps) {
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               onClick={() => save(testsToCsv(tests), 'text/csv;charset=utf-8', 'tests.csv')}
             >
               <Download aria-hidden data-icon="inline-start" />

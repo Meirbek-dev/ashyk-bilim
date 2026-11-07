@@ -23,9 +23,9 @@ export function OverviewPage() {
   const pulse = <CoursePulse courseId={courseId} />
   // An archived course is read-only: the header offers «Восстановить»; readiness would only point at locked pages.
   if (status === 'archived' || (live && readiness.blockers.length + readiness.warnings.length === 0))
-    return <div className="@container flex flex-col gap-8">{pulse}</div>
+    return <div className="@container flex flex-col gap-10">{pulse}</div>
   return (
-    <div className="@container flex flex-col gap-8">
+    <div className="@container flex flex-col gap-10">
       {live ? pulse : null}
       <section className="flex max-w-prose flex-col gap-4">
         <h2 className="text-xl font-semibold">{live ? m.studio_readiness_improve() : m.studio_readiness_title()}</h2>

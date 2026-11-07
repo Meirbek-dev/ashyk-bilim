@@ -15,7 +15,7 @@ const actionLabels = {
 export function WorkActionLink({ item }: { item: WorkItem }) {
   const action = rowAction(item)
   if (!action) return null
-  const className = buttonVariants({ variant: 'outline' })
+  const className = `-mx-3 ${buttonVariants({ variant: 'ghost', size: 'sm' })}`
   const params = { courseId: item.course_id, activityId: item.activity_id }
   const submissionId = submissionIdOf(item)
   return submissionId ? (

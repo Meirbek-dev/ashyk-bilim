@@ -11,8 +11,9 @@ import { ListState } from '#/shared/components/list-state'
 import { drillRowKey, drillRows } from '../model/analytics'
 import { activeFilters, type Filters } from '../model/filters'
 import { drillOptions } from '../queries'
-import { drillColumns } from './drill-columns'
+import { drillColumns, drillFigures } from './drill-columns'
 import { Pager } from './pager'
+import { TABLE_LOOK } from './table-look'
 
 type DrillSectionProps = {
   title: string
@@ -52,7 +53,9 @@ export function DrillSection({ title, metric, page, filters, assessment, closabl
         onResetFilters={() => void navigate({ to: '.', search: {} })}
         onRetry={() => void query.refetch()}
       >
-        <DataTable label={title} rows={rows} columns={drillColumns(metric)} getKey={drillRowKey} />
+        <div className={`${TABLE_LOOK} ${drillFigures[metric]}`}>
+          <DataTable label={title} rows={rows} columns={drillColumns(metric)} getKey={drillRowKey} />
+        </div>
         <Pager page={page} total={query.data.total} />
       </ListState>
     </section>

@@ -264,11 +264,11 @@ test('B-GRD-19 B-GRD-20 the gradebook leads each cell into its review; search an
   await expect(cells).toHaveCount(1)
 })
 
-test('B-GRD-21 on a phone the gradebook is a card per learner', async ({ page, signInAs, graded }) => {
+test('B-GRD-21 on a phone the gradebook stays a table, scrolling inside itself', async ({ page, signInAs, graded }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await signInAs('teacher')
   await page.goto(`/teach/courses/${graded.courseId}/gradebook`)
-  await expect(page.getByRole('table')).toBeHidden()
+  await expect(page.getByRole('table')).toBeVisible()
   await expect(page.getByRole('link', { name: new RegExp(graded.quiz) })).toHaveCount(2)
 })
 

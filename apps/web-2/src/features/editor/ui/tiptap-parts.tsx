@@ -15,10 +15,10 @@ const TIPTAP_PARTS: Parts = {
 }
 
 /** EditorContent with the block views built of Tiptap's own parts (node views render inside its portals). */
-export function DocumentContent({ editor }: { editor: Editor | null }) {
+export function DocumentContent({ editor, className }: { editor: Editor | null; className?: string }) {
   return (
     <NodeParts value={TIPTAP_PARTS}>
-      <EditorContent editor={editor} />
+      <EditorContent editor={editor} className={className} />
     </NodeParts>
   )
 }

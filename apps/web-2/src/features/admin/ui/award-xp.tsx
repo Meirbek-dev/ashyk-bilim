@@ -45,20 +45,25 @@ export function AwardXp({ user }: { user: AdminUser }) {
     <form
       noValidate
       aria-labelledby="user-award"
-      className="flex flex-col gap-2"
+      className="flex flex-col gap-3 border-t pt-4"
       onSubmit={event => {
         event.preventDefault()
         void form.handleSubmit()
       }}
     >
-      <h3 id="user-award" className="font-medium">
-        {m.admin_award_title()}
-      </h3>
-      <p className="text-sm text-muted-foreground">{m.admin_award_hint()}</p>
-      <form.AppField name="amount">
-        {field => <field.TextField label={m.admin_award_amount()} inputMode="numeric" required />}
-      </form.AppField>
-      <form.AppField name="reason">{field => <field.TextField label={m.admin_award_reason()} />}</form.AppField>
+      <div className="flex flex-col gap-0.5">
+        <h3 id="user-award" className="font-medium">
+          {m.admin_award_title()}
+        </h3>
+        <p className="text-muted-foreground">{m.admin_award_hint()}</p>
+      </div>
+      {/* A short number beside a line of words. */}
+      <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-start gap-3">
+        <form.AppField name="amount">
+          {field => <field.TextField label={m.admin_award_amount()} inputMode="numeric" required />}
+        </form.AppField>
+        <form.AppField name="reason">{field => <field.TextField label={m.admin_award_reason()} />}</form.AppField>
+      </div>
       {award.error ? <ErrorAlert>{presentError(award.error)}</ErrorAlert> : null}
       <div>
         <SubmitButton type="submit" variant="outline" pending={award.isPending}>

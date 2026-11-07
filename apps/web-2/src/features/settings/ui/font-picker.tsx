@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from '#/shared/ui/radio-group'
 
 // Typeface names are brands and read the same in every language; the system face is described, not named.
 const names: Record<Font, () => string> = {
+  press: () => 'Geologica + Commissioner',
   inter: () => 'Inter + Geologica',
   geist: () => 'Geist',
   google: () => 'Google Sans',
@@ -22,6 +23,7 @@ const names: Record<Font, () => string> = {
 }
 
 const hints: Record<Font, () => string> = {
+  press: m.settings_font_press_hint,
   inter: m.settings_font_inter_hint,
   geist: m.settings_font_geist_hint,
   google: m.settings_font_google_hint,
@@ -39,7 +41,7 @@ const hints: Record<Font, () => string> = {
 type FontPickerProps = { value: Font; onChange: (font: Font) => void }
 
 /**
- * The font sets of tokens.css as radio cards. Each card carries its own `data-font`, so its name and the sample of
+ * The font sets of tokens.css as a specimen sheet. Each row carries its own `data-font`, so its name and the sample of
  * Kazakh letters are drawn in that set whatever the page shows now.
  */
 export function FontPicker({ value, onChange }: FontPickerProps) {
@@ -57,24 +59,24 @@ export function FontPicker({ value, onChange }: FontPickerProps) {
           if (font) onChange(font)
         }}
         aria-labelledby={`${id}-legend`}
-        className="grid grid-cols-1 gap-2 @md:grid-cols-2"
+        className="flex flex-col gap-0 border-t"
       >
         {FONTS.map(font => (
           <FieldLabel
             key={font}
             htmlFor={`${id}-${font}`}
             data-font={font}
-            className="flex w-full min-w-0 items-start gap-3 rounded-md border p-3 font-sans font-normal has-data-checked:border-foreground"
+            className="flex w-full min-w-0 items-start gap-3 border-b py-3.5 font-sans font-normal has-data-checked:border-border has-data-checked:bg-transparent"
           >
             <RadioGroupItem
               id={`${id}-${font}`}
               value={font}
               aria-labelledby={`${id}-${font}-name`}
               aria-describedby={`${id}-${font}-hint`}
-              className="mt-0.5"
+              className="mt-1 ml-0.5"
             />
             <span className="flex min-w-0 flex-col gap-1">
-              <span id={`${id}-${font}-name`} className="font-heading text-base font-semibold">
+              <span id={`${id}-${font}-name`} className="font-heading text-lg font-semibold">
                 {names[font]()}
               </span>
               <span aria-hidden className="text-sm">

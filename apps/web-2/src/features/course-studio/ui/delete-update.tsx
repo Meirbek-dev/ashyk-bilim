@@ -30,7 +30,11 @@ export function DeleteUpdate({ courseId, update }: { courseId: string; update: C
         setOpen(next)
         if (!next) remove.reset()
       }}
-      trigger={<Button variant="outline">{m.studio_delete()}</Button>}
+      trigger={
+        <Button variant="ghost" size="sm">
+          {m.studio_delete()}
+        </Button>
+      }
       title={m.studio_update_delete_title({ title: update.title })}
       consequence={m.studio_update_delete_consequence()}
       confirmLabel={m.studio_delete()}

@@ -10,6 +10,7 @@ export function SidebarToggle({ collapsed, onToggle }: { collapsed: boolean; onT
       label={collapsed ? m.platform_nav_expand() : m.platform_nav_collapse()}
       icon={collapsed ? <PanelLeftOpen aria-hidden /> : <PanelLeftClose aria-hidden />}
       aria-expanded={!collapsed}
+      data-rail-toggle
       onClick={onToggle}
     />
   )

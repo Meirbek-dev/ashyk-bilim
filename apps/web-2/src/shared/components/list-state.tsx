@@ -38,9 +38,9 @@ export function ListState({ emptyText, emptyAction, onResetFilters, onRetry, chi
     )
   const noMatches = status === 'no-matches'
   return (
-    <div className="flex flex-col items-start gap-4 py-2">
+    <div className="flex flex-col items-start gap-4 pb-6">
       {/* The text may quote what was typed (a search): a long unbroken query wraps instead of widening the page. */}
-      <p className="max-w-full text-sm wrap-anywhere text-muted-foreground">
+      <p className="max-w-prose text-base wrap-anywhere text-muted-foreground in-data-[density=compact]:text-sm">
         {noMatches ? m.ui_no_matches() : emptyText}
       </p>
       {noMatches && onResetFilters ? (

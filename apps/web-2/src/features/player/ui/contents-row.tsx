@@ -18,7 +18,7 @@ type RowProps = {
 // Work in flight beside the title (B-PLY-20): started and not handed in (an exam's clock may be running), waiting for
 // a grade, returned, failed; an icon with its name for readers.
 const flight: Partial<Record<WorkState, { icon: LucideIcon; className: string; label: () => string }>> = {
-  in_progress: { icon: PenLine, className: 'text-primary', label: m.player_state_in_progress },
+  in_progress: { icon: PenLine, className: 'text-info', label: m.player_state_in_progress },
   submitted: { icon: Clock, className: 'text-muted-foreground', label: m.player_state_submitted },
   needs_grading: { icon: Clock, className: 'text-muted-foreground', label: m.player_state_needs_grading },
   graded_hidden: { icon: Clock, className: 'text-muted-foreground', label: m.player_state_graded_hidden },
@@ -43,7 +43,7 @@ export function ContentsRow({ courseId, activity, onPick, nowUnix }: RowProps) {
   )
   if (activity.blocked_reason)
     return (
-      <span className="flex min-h-control items-center gap-3 px-3 text-sm text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0">
+      <span className="flex min-h-control items-center gap-3 px-3 py-1.5 text-sm text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0">
         {label}
         <Lock aria-hidden />
         <span className="sr-only">
@@ -57,7 +57,7 @@ export function ContentsRow({ courseId, activity, onPick, nowUnix }: RowProps) {
     <Link
       to="/learn/$courseId/$activityId"
       params={{ courseId, activityId: activity.id }}
-      variant="nav"
+      variant="contents"
       onClick={onPick}
     >
       {label}

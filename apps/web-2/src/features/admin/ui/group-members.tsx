@@ -24,25 +24,29 @@ export function GroupMembers({ group }: { group: Usergroup }) {
         {m.admin_group_members()}
       </h2>
       {manage ? <GroupMembersAdd group={group} /> : null}
-      <ListState
-        pending={false}
-        error={query.error}
-        count={members.length}
-        filtered={false}
-        emptyText={m.admin_group_members_empty()}
-        onRetry={() => void query.refetch()}
-      >
-        <ul className="flex flex-col divide-y border-y">
-          {members.map(member => (
-            <GroupMemberRow key={member.id} group={group} member={member} manage={manage} />
-          ))}
-        </ul>
-        <ShowMore
-          hasMore={query.hasNextPage}
-          pending={query.isFetchingNextPage}
-          onMore={() => void query.fetchNextPage()}
-        />
-      </ListState>
+      {members.length === 0 && !query.error ? (
+        <p className="max-w-prose text-sm text-muted-foreground">{m.admin_group_members_empty()}</p>
+      ) : (
+        <ListState
+          pending={false}
+          error={query.error}
+          count={members.length}
+          filtered={false}
+          emptyText={m.admin_group_members_empty()}
+          onRetry={() => void query.refetch()}
+        >
+          <ul className="flex flex-col divide-y border-y">
+            {members.map(member => (
+              <GroupMemberRow key={member.id} group={group} member={member} manage={manage} />
+            ))}
+          </ul>
+          <ShowMore
+            hasMore={query.hasNextPage}
+            pending={query.isFetchingNextPage}
+            onMore={() => void query.fetchNextPage()}
+          />
+        </ListState>
+      )}
     </section>
   )
 }

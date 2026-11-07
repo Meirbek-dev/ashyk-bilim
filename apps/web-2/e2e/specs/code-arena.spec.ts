@@ -109,8 +109,8 @@ test('B-COD-03 B-COD-04 B-COD-05 B-COD-06 B-COD-09 B-COD-12 the statement, a sta
 
   const problem = region(page, m.code_problem({}, ru))
   await expect(problem.getByText(m.code_difficulty_easy({}, ru))).toBeVisible()
-  const limits = `${m.code_limit_time({ seconds: '2' }, ru)} · ${m.code_limit_memory({ mb: '128' }, ru)}`
-  await expect(problem.getByText(limits)).toBeVisible()
+  await expect(problem.getByText(m.code_limit_time({ seconds: '2' }, ru))).toBeVisible()
+  await expect(problem.getByText(m.code_limit_memory({ mb: '128' }, ru))).toBeVisible()
   await expect(problem.getByText('сумму')).toBeVisible()
   await expect(problem.getByText('1 <= a, b <= 100')).toBeVisible()
   await expect(problem.getByText('1 2', { exact: true })).toBeVisible()

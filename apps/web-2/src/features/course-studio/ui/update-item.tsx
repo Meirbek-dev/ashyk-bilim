@@ -69,16 +69,19 @@ export function UpdateItem({ courseId, update, editable }: UpdateItemProps) {
       </div>
     )
   return (
-    <article className="flex flex-col gap-2">
-      <h3 className="text-lg font-semibold wrap-anywhere">{update.title}</h3>
-      <p className="text-sm text-muted-foreground">{formatDate(update.created_at_unix)}</p>
+    <article className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+        <h3 className="min-w-0 text-lg font-semibold wrap-anywhere">{update.title}</h3>
+        <p className="text-sm text-muted-foreground tabular-nums">{formatDate(update.created_at_unix)}</p>
+      </div>
       <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
         <MarkdownView content={update.content} />
       </Suspense>
       {editable ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="-ms-3 flex flex-wrap gap-1">
           <Button
-            variant="outline"
+            variant="ghost"
+            size="sm"
             aria-label={m.studio_update_edit_named({ title: update.title })}
             onClick={() => setEditing(true)}
           >

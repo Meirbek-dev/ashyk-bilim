@@ -6,9 +6,9 @@ import { revealCurrentTab } from './settings-page'
 type DetailPageProps = {
   /** A ghost link with ArrowLeft above the title: back to the list the object belongs to. */
   back?: ReactNode
-  /** The object's picture (a 16:9 `CourseCover`): a course or collection cover. */
+  /** The object's picture: a course's or a collection's `CourseCover`. */
   cover?: ReactNode
-  /** `hero`: the cover fills the right of the header, as big as the title (the page a learner reads); `thumb`: a small
+  /** `hero`: the picture stands left of a large title (the page a learner reads); `thumb`: a small
    * picture before the title (a workspace whose tabs are the content). */
   coverSize?: 'hero' | 'thumb'
   title: string
@@ -34,7 +34,7 @@ export function DetailPage(props: DetailPageProps) {
         {/* A workspace's tabs are its content: on a phone a 96-character course name took six lines above them. */}
         <h1
           title={hero ? undefined : title}
-          className={`min-w-0 font-semibold wrap-anywhere ${hero ? 'text-display' : 'line-clamp-2 text-2xl @2xl:line-clamp-none'}`}
+          className={`min-w-0 font-semibold wrap-anywhere ${hero ? 'text-3xl' : 'line-clamp-2 text-2xl @2xl:line-clamp-none'}`}
         >
           {title}
         </h1>
@@ -47,9 +47,9 @@ export function DetailPage(props: DetailPageProps) {
     <section className="@container flex flex-col gap-gutter">
       {back ? <div className="-mb-3 -ml-2.5 self-start">{back}</div> : null}
       {hero ? (
-        <header className="grid gap-6 @3xl:grid-cols-5 @3xl:items-center @3xl:gap-10">
-          <div className="@3xl:order-last @3xl:col-span-2">{cover}</div>
-          <div className="flex min-w-0 flex-col gap-6 @3xl:col-span-3">
+        <header className="grid gap-8 pt-4 @3xl:grid-cols-[20rem_minmax(0,1fr)] @3xl:items-center @3xl:gap-10">
+          <div>{cover}</div>
+          <div className="flex min-w-0 flex-col gap-6">
             {heading}
             {primaryAction ? <div className="flex flex-col @2xl:flex-row">{primaryAction}</div> : null}
           </div>
@@ -64,7 +64,11 @@ export function DetailPage(props: DetailPageProps) {
         </header>
       )}
       {tabs ? (
-        <nav ref={revealCurrentTab} aria-label={m.ui_sections()} className="relative flex overflow-x-auto border-b">
+        <nav
+          ref={revealCurrentTab}
+          aria-label={m.ui_sections()}
+          className="relative flex gap-6 overflow-x-auto border-b"
+        >
           {tabs}
         </nav>
       ) : null}

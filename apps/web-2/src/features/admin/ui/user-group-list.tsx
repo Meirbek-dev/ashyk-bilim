@@ -26,9 +26,9 @@ export function UserGroupList({ user, member }: { user: AdminUser; member: Userg
   if (page.items.length === 0) return <p className="text-sm text-muted-foreground">{m.admin_user_groups_empty()}</p>
   return (
     <>
-      <ul className="flex flex-col gap-1">
+      <ul className="flex flex-col">
         {page.items.map(group => (
-          <li key={group.id} className="flex items-center justify-between gap-2">
+          <li key={group.id} className="flex min-h-9 items-center justify-between gap-2">
             <span className="min-w-0 wrap-anywhere">
               <Link to="/teach/groups/$groupId" params={{ groupId: group.id }}>
                 {group.name}

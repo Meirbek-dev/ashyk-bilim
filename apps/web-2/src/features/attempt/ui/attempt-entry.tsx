@@ -25,7 +25,7 @@ export function AttemptEntry({ assessment }: { assessment: AssessmentDetail }) {
   const handedIn = attempts.some(attempt => attempt.status !== 'draft')
   return (
     <AttemptFrame>
-      <article className="flex flex-col gap-gutter">
+      <article className="flex flex-col gap-gutter @3xl:gap-8">
         <ActivityHeader type={assessment.kind} title={title} />
         {assessment.description ? (
           <Suspense fallback={null}>

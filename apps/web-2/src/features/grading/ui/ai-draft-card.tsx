@@ -29,7 +29,7 @@ export function DraftCard({ draft, onTransfer, onDiscard, discarding, discardErr
   return (
     <section
       aria-labelledby="grading-ai-draft"
-      className="flex flex-col gap-4 rounded-xl border bg-card p-gutter text-card-foreground shadow-xs"
+      className="flex flex-col gap-4 rounded-lg border bg-card p-4 text-card-foreground"
     >
       <DraftSummary draft={draft} />
       {(proposal?.parts ?? []).map(part => (

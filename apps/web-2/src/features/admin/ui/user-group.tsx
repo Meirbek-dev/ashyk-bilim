@@ -39,7 +39,7 @@ export function UserGroup({ user }: { user: AdminUser }) {
       ),
   })
   return (
-    <section aria-labelledby="user-groups" className="flex flex-col gap-2">
+    <section aria-labelledby="user-groups" className="flex flex-col gap-3 border-t pt-4">
       <h3 id="user-groups" className="font-medium">
         {m.admin_user_group_title()}
       </h3>
@@ -55,17 +55,19 @@ export function UserGroup({ user }: { user: AdminUser }) {
             void form.handleSubmit()
           }}
         >
-          <form.AppField name="group">
-            {field => (
-              <field.SelectField
-                label={m.admin_user_group_field()}
-                options={[
-                  { value: '', label: m.admin_user_group_choose() },
-                  ...addable.map(group => ({ value: group.id, label: group.name })),
-                ]}
-              />
-            )}
-          </form.AppField>
+          <div className="min-w-40 flex-1">
+            <form.AppField name="group">
+              {field => (
+                <field.SelectField
+                  label={m.admin_user_group_field()}
+                  options={[
+                    { value: '', label: m.admin_user_group_choose() },
+                    ...addable.map(group => ({ value: group.id, label: group.name })),
+                  ]}
+                />
+              )}
+            </form.AppField>
+          </div>
           <SubmitButton type="submit" variant="outline" pending={add.isPending}>
             {m.admin_user_group_add()}
           </SubmitButton>

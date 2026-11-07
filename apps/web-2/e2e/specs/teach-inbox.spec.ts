@@ -145,8 +145,8 @@ test('B-INB-04 B-INB-05 B-INB-10 kind, course and order live in the URL and go t
   await expect(page).toHaveURL(/kind=needs_grading/)
   await expect(row(page, handedIn.quiz)).toBeVisible()
   await expect(page.getByRole('row').filter({ hasNotText: handedIn.courseName })).toHaveCount(1) // the header
-  expect(asked.at(-1)?.get('course_id')).toBe(handedIn.courseId)
-  expect(asked.at(-1)?.get('kind')).toBe('needs_grading')
+  // Not the last request: the shared teacher's other events re-read the inbox too (see above).
+  expect(asked.some(q => q.get('course_id') === handedIn.courseId && q.get('kind') === 'needs_grading')).toBe(true)
   await page.keyboard.press('Escape') // a radio menu stays open after a pick
 
   await page.getByRole('button', { name: m.inbox_sort_label({ sort: m.inbox_sort_priority({}, ru) }, ru) }).click()

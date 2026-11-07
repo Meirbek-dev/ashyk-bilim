@@ -1,4 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { CircleAlert, TriangleAlert } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { ReadinessItem } from '#/shared/api/gen/types.gen'
@@ -58,31 +59,46 @@ function where(courseId: string, item: ReadinessItem) {
 export function ReadinessList({ courseId, live = false }: { courseId: string; live?: boolean }) {
   const { data: readiness } = useSuspenseQuery(readinessOptions(courseId))
   const groups = [
-    { title: m.studio_readiness_blockers(), items: readiness.blockers },
-    { title: m.studio_readiness_warnings(), items: readiness.warnings },
+    {
+      title: m.studio_readiness_blockers(),
+      items: readiness.blockers,
+      icon: <CircleAlert aria-hidden className="size-4 shrink-0 translate-y-0.5 text-destructive" />,
+    },
+    {
+      title: m.studio_readiness_warnings(),
+      items: readiness.warnings,
+      icon: <TriangleAlert aria-hidden className="size-4 shrink-0 translate-y-0.5 text-warning" />,
+    },
   ].filter(group => group.items.length > 0)
   return (
-    <div className="flex flex-col gap-4">
-      {readiness.ready && !live ? <p className="text-success">{m.studio_readiness_ready()}</p> : null}
+    // A live course's lists have no headings of their own: one list, split by the same hairline.
+    <div className={live ? 'flex w-full flex-col [&>section+section_ul]:border-t-0' : 'flex w-full flex-col gap-6'}>
+      {readiness.ready && !live ? <p className="text-sm text-success">{m.studio_readiness_ready()}</p> : null}
       {groups.map(group => (
         <section key={group.title} aria-label={group.title} className="flex flex-col gap-2">
-          <h3 className="text-base font-medium">{group.title}</h3>
-          <ul className="flex flex-col gap-2">
+          {/* A live course's section is already titled «Что ещё улучшить»: no second heading right under it. */}
+          <h3 className={live ? 'sr-only' : 'text-base font-semibold'}>{group.title}</h3>
+          <ul className="flex flex-col divide-y border-y">
             {/* Seven drafts are one line with seven links, not seven identical lines (B-CST-48). */}
             {groupReadiness(group.items).map(({ code, items }) => (
-              <li key={code} className="flex flex-wrap gap-x-2 gap-y-1 text-sm">
-                <span>{label(code, items.length)}</span>
-                {items.slice(0, SHOWN).map((item, index) => (
-                  <span key={item.activity_id ?? index}>
-                    {where(courseId, item)}
-                    {index < Math.min(items.length, SHOWN) - 1 ? ',' : null}
-                  </span>
-                ))}
-                {items.length > SHOWN ? (
-                  <Link to="/teach/courses/$courseId/content" params={{ courseId }}>
-                    {m.studio_readiness_more({ count: items.length - SHOWN })}
-                  </Link>
-                ) : null}
+              <li key={code} className="flex items-start gap-2 py-2.5 text-sm">
+                {group.icon}
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="wrap-anywhere">{label(code, items.length)}</span>
+                  {/* Real activity names run to two lines: one under another, never a wrapped run of commas. */}
+                  {items.slice(0, SHOWN).map((item, index) => (
+                    <span key={item.activity_id ?? index} className="wrap-anywhere">
+                      {where(courseId, item)}
+                    </span>
+                  ))}
+                  {items.length > SHOWN ? (
+                    <span>
+                      <Link to="/teach/courses/$courseId/content" params={{ courseId }}>
+                        {m.studio_readiness_more({ count: items.length - SHOWN })}
+                      </Link>
+                    </span>
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>

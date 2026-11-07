@@ -9,7 +9,6 @@ import { presentError } from '#/shared/i18n/errors'
 import { isRunnerDown, languagesIn, type CodeItem } from '../model/arena'
 import { runnerStateOptions } from '../queries'
 import { CaseFields } from './case-fields'
-import { TestFilesBar } from './test-files-bar'
 import { LanguageFields } from './language-fields'
 import { LimitFields } from './limit-fields'
 import { ReferenceResults } from './reference-results'
@@ -46,32 +45,28 @@ export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps)
     <form
       noValidate
       aria-labelledby="code-studio"
-      className="flex max-w-3xl min-w-0 flex-col gap-8"
+      className="flex max-w-5xl min-w-0 flex-col gap-8"
       onSubmit={event => {
         event.preventDefault()
         void form.handleSubmit()
       }}
     >
-      <div className="flex flex-col gap-1">
+      <div className="flex max-w-prose flex-col gap-1">
         <h2 id="code-studio" className="text-xl font-semibold">
           {m.code_studio_title()}
         </h2>
         <p className="text-sm text-muted-foreground">{editable ? m.code_studio_hint() : readOnlyReason(challenge)}</p>
       </div>
-      <fieldset disabled={mode === 'none'} className="flex min-w-0 flex-col gap-8">
+      <fieldset disabled={mode === 'none'} className="min-w-0">
         <StatementFields form={form} />
-        <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-8">
-          <LanguageFields form={form} runner={runner} readOnly={!editable} />
-          <CaseFields form={form} editable={editable} />
-          <LimitFields form={form} />
-        </fieldset>
       </fieldset>
-      {editable ? null : (
-        // A locked challenge's cases still download (the fieldset would disable the buttons).
-        <form.Subscribe selector={state => state.values.tests}>
-          {tests => <TestFilesBar tests={tests} />}
-        </form.Subscribe>
-      )}
+      <fieldset disabled={!editable} className="min-w-0">
+        <LanguageFields form={form} runner={runner} readOnly={!editable} />
+      </fieldset>
+      <CaseFields form={form} editable={editable} />
+      <fieldset disabled={!editable} className="min-w-0">
+        <LimitFields form={form} />
+      </fieldset>
       {update.error ? <ErrorAlert>{presentError(update.error)}</ErrorAlert> : null}
       {runner.state === 'down' || isRunnerDown(check.error) ? (
         <RunnerDown
@@ -84,8 +79,10 @@ export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps)
       ) : check.error ? (
         <ErrorAlert>{presentError(check.error)}</ErrorAlert>
       ) : null}
+      {check.data ? <ReferenceResults results={check.data.results} languages={languages} /> : null}
+      {/* A form taller than the screen: its one Save stays in reach at the foot of the window, wherever the edit was. */}
       {mode === 'none' ? null : (
-        <div className="flex flex-wrap gap-2">
+        <div className="sticky bottom-0 z-10 flex flex-wrap gap-2 border-t bg-background py-3">
           <form.Subscribe selector={state => unsaved(state.values)}>
             {changed => (
               <SubmitButton type="submit" pending={update.isPending} disabled={!changed}>
@@ -106,7 +103,6 @@ export function CodeItemForm({ activityId, challenge, code }: CodeItemFormProps)
           ) : null}
         </div>
       )}
-      {check.data ? <ReferenceResults results={check.data.results} languages={languages} /> : null}
     </form>
   )
 }

@@ -19,7 +19,11 @@ export function RevokeSession({ handle, device }: { handle: string; device: stri
         setOpen(next)
         if (!next) revoke.reset()
       }}
-      trigger={<Button variant="outline">{m.settings_session_revoke()}</Button>}
+      trigger={
+        <Button variant="ghost" size="sm">
+          {m.settings_session_revoke()}
+        </Button>
+      }
       title={m.settings_session_revoke_title({ device })}
       consequence={m.settings_session_revoke_consequence()}
       confirmLabel={m.settings_session_revoke()}

@@ -57,18 +57,18 @@ export function ThumbnailSection({ course }: { course: Course }) {
       >
         {course.thumbnail_key ? (
           <div className="flex flex-col items-start gap-2">
-            <img
-              src={`/content/${course.thumbnail_key}`}
-              alt={m.studio_thumbnail_alt()}
-              className="aspect-video w-full max-w-sm rounded-lg border object-cover"
-            />
+            {/* A picture that fails to load gives way to the plain cover, as everywhere else. */}
+            {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- CourseCover's own img is decorative and swaps to a plain cover. */}
+            <div role="img" aria-label={m.studio_thumbnail_alt()} className="w-full max-w-sm">
+              <CourseCover imageKey={course.thumbnail_key} className="aspect-video w-full rounded-lg border" />
+            </div>
             <SubmitButton variant="outline" onClick={remove} pending={update.isPending}>
               {m.studio_thumbnail_remove()}
             </SubmitButton>
           </div>
         ) : (
           <div className="flex flex-col items-start gap-2">
-            <CourseCover seed={course.id} className="aspect-video w-full max-w-sm rounded-lg border" />
+            <CourseCover className="aspect-video w-full max-w-sm rounded-lg border" />
             <p className="text-sm text-muted-foreground">{m.studio_thumbnail_none()}</p>
           </div>
         )}

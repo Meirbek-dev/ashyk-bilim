@@ -10,7 +10,7 @@ export function SavedViews() {
   const { data } = useSuspenseQuery(savedViewsOptions())
   if (data.items.length === 0) return null
   return (
-    <section aria-label={m.analytics_views_title()} className="flex flex-wrap items-center gap-2 text-sm">
+    <section aria-label={m.analytics_views_title()} className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
       <span className="text-muted-foreground">{m.analytics_views_title()}</span>
       {data.items.map(view => (
         <SavedViewItem key={view.id} view={view} />

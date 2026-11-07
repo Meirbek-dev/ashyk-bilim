@@ -14,6 +14,7 @@ import { outlierLabels } from '../model/signals'
 import { assessmentsOptions } from '../queries'
 import { hours, percent } from './kpi'
 import { Pager } from './pager'
+import { TABLE_LOOK } from './table-look'
 
 const columns = (): DataColumn<AssessmentOutlierRow>[] => [
   {
@@ -21,36 +22,21 @@ const columns = (): DataColumn<AssessmentOutlierRow>[] => [
     sortable: true,
     header: m.analytics_col_assessment(),
     priority: 1,
+    // The kind and the course under the name: two more columns squeezed the figures off the right edge.
     cell: row => (
-      <Link
-        variant="title"
-        to="."
-        search={prev => ({ ...prev, assessmentType: row.assessment_type, assessmentId: row.assessment_id, page: 1 })}
-      >
-        <span className="font-medium wrap-anywhere">{row.title}</span>
-      </Link>
-    ),
-  },
-  {
-    id: 'type',
-    header: m.analytics_col_type(),
-    priority: 2,
-    cell: row => {
-      const meta = activityTypeMeta[row.assessment_type]
-      return (
-        <span className="inline-flex items-center gap-1">
-          <meta.icon aria-hidden className={`size-4 ${meta.ink}`} />
-          {meta.label()}
+      <span className="flex flex-col">
+        <Link
+          variant="title"
+          to="."
+          search={prev => ({ ...prev, assessmentType: row.assessment_type, assessmentId: row.assessment_id, page: 1 })}
+        >
+          <span className="font-medium wrap-anywhere">{row.title}</span>
+        </Link>
+        <span className="font-sans text-xs font-normal wrap-anywhere text-muted-foreground">
+          {activityTypeMeta[row.assessment_type].label()} · {row.course_name}
         </span>
-      )
-    },
-  },
-  {
-    id: 'course',
-    header: m.analytics_col_course(),
-    priority: 2,
-    wrap: true,
-    cell: row => <span className="wrap-anywhere">{row.course_name}</span>,
+      </span>
+    ),
   },
   {
     id: 'submission',
@@ -95,16 +81,20 @@ export function AssessmentsTable({ filters, page, order }: AssessmentsTableProps
         onResetFilters={() => void navigate({ to: '.', search: {} })}
         onRetry={() => void query.refetch()}
       >
-        <DataTable
-          label={m.analytics_assessments_table()}
-          rows={query.data.items}
-          columns={columns()}
-          getKey={row => row.assessment_id}
-          sort={order.sort ? { id: order.sort, desc: order.desc ?? false } : undefined}
-          onSortChange={next =>
-            void navigate({ to: '.', search: prev => ({ ...prev, ...tableSort(ASSESSMENT_SORTS, next), page: 1 }) })
-          }
-        />
+        <div
+          className={`${TABLE_LOOK} [&_td:nth-child(n+2):nth-child(-n+5)]:text-right [&_th:nth-child(n+2):nth-child(-n+5)]:text-right [&_th:nth-child(n+2):nth-child(-n+5)_button]:-mr-3`}
+        >
+          <DataTable
+            label={m.analytics_assessments_table()}
+            rows={query.data.items}
+            columns={columns()}
+            getKey={row => row.assessment_id}
+            sort={order.sort ? { id: order.sort, desc: order.desc ?? false } : undefined}
+            onSortChange={next =>
+              void navigate({ to: '.', search: prev => ({ ...prev, ...tableSort(ASSESSMENT_SORTS, next), page: 1 }) })
+            }
+          />
+        </div>
         <Pager page={page} total={query.data.total} />
       </ListState>
     </section>

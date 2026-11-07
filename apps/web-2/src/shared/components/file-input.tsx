@@ -174,7 +174,7 @@ export function FileInput(props: FileInputProps) {
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={drop}
-        className="relative flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-dashed border-input p-4 text-sm text-muted-foreground transition-colors duration-150 data-dragging:border-ring data-dragging:bg-accent"
+        className="relative flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border border-input p-4 text-sm text-muted-foreground transition-colors duration-150 data-dragging:border-ring data-dragging:bg-accent"
       >
         <Input
           id={id}

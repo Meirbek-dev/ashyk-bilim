@@ -15,7 +15,7 @@ type PagerProps = { current: number; total: number; onFinish: () => void; disabl
  */
 export function ItemPager({ current, total, onFinish, disabled }: PagerProps) {
   return (
-    <nav aria-label={m.attempt_questions_nav()} className="flex items-center justify-between gap-2 border-t pt-4">
+    <nav aria-label={m.attempt_questions_nav()} className="flex items-center justify-between gap-2">
       {current > 1 ? (
         <RouterLink
           from={ATTEMPT_PATH}

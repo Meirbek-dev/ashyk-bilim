@@ -13,6 +13,7 @@ import { toast } from '#/shared/ui/toast'
 import { isStale, REWARD_SOURCES, rulesBody, rulesForm, rulesFormSchema } from '../model/admin'
 import { configOptions, configVersion, updateConfigOptions } from '../queries'
 import { rewardLabels } from './labels'
+import { RuleField } from './rule-field'
 import { useIfMatch } from './use-if-match'
 
 /**
@@ -53,35 +54,37 @@ export function GamificationPage() {
           pending={update.isPending}
           error={isStale(update.error) ? null : update.error}
         >
-          <form.AppField name="daily_xp_limit">
-            {field => (
-              <field.TextField
-                label={m.admin_gamification_daily_limit()}
-                inputMode="numeric"
-                placeholder={formatNumber(config.default_daily_xp_limit)}
-                suffix={m.admin_gamification_xp()}
-                description={m.admin_gamification_default({ value: formatNumber(config.default_daily_xp_limit) })}
-              />
-            )}
-          </form.AppField>
-          {/* Nine small numbers: two to a row, each with its unit and the default shown in the empty box. */}
-          <fieldset className="grid gap-x-gutter gap-y-4 sm:grid-cols-2">
-            <legend className="mb-2 font-medium">{m.admin_gamification_rewards()}</legend>
-            {REWARD_SOURCES.map(source => (
-              <form.AppField key={source} name={`rewards.${source}`}>
-                {field => (
-                  <field.TextField
-                    label={rewardLabels[source]()}
-                    inputMode="numeric"
-                    placeholder={formatNumber(config.default_rewards[source] ?? 0)}
-                    suffix={m.admin_gamification_xp()}
-                    description={m.admin_gamification_default({
-                      value: formatNumber(config.default_rewards[source] ?? 0),
-                    })}
-                  />
-                )}
-              </form.AppField>
-            ))}
+          <div className="border-y">
+            <form.AppField name="daily_xp_limit">
+              {() => (
+                <RuleField
+                  label={m.admin_gamification_daily_limit()}
+                  placeholder={formatNumber(config.default_daily_xp_limit)}
+                  suffix={m.admin_gamification_xp()}
+                  description={m.admin_gamification_default({ value: formatNumber(config.default_daily_xp_limit) })}
+                />
+              )}
+            </form.AppField>
+          </div>
+          {/* Nine small numbers: one to a ruled line, the boxes in one column. */}
+          <fieldset className="flex flex-col pt-2">
+            <legend className="mb-2 font-heading text-lg font-semibold">{m.admin_gamification_rewards()}</legend>
+            <div className="flex flex-col divide-y border-y">
+              {REWARD_SOURCES.map(source => (
+                <form.AppField key={source} name={`rewards.${source}`}>
+                  {() => (
+                    <RuleField
+                      label={rewardLabels[source]()}
+                      placeholder={formatNumber(config.default_rewards[source] ?? 0)}
+                      suffix={m.admin_gamification_xp()}
+                      description={m.admin_gamification_default({
+                        value: formatNumber(config.default_rewards[source] ?? 0),
+                      })}
+                    />
+                  )}
+                </form.AppField>
+              ))}
+            </div>
           </fieldset>
         </SettingsSection>
         <ConflictDialog {...write.dialog(() => form.handleSubmit())} />

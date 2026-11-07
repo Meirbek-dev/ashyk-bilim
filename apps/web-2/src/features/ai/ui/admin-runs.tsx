@@ -17,6 +17,7 @@ import { runsFilter, type AdminAiSearch } from '../route'
 import { kindLabels, runErrorText, runStatusLabels } from '../model/labels'
 import { runsOptions } from '../queries'
 import { AdminRunDetail } from './admin-run-detail'
+import { tableOnPage } from './admin-table-layout'
 import { RunsFilters } from './runs-filters'
 
 // A function: the headers are read in the current locale at render.
@@ -26,9 +27,11 @@ const columns = (): DataColumn<AdminRun>[] => [
     header: m.ai_col_kind(),
     priority: 1,
     cell: run => (
-      <Link from="/admin/ai" to="." search={prev => ({ ...prev, run: run.id })}>
-        {kindLabels[run.feature]()}
-      </Link>
+      <span className="font-medium">
+        <Link variant="title" from="/admin/ai" to="." search={prev => ({ ...prev, run: run.id })}>
+          {kindLabels[run.feature]()}
+        </Link>
+      </span>
     ),
   },
   {
@@ -37,10 +40,13 @@ const columns = (): DataColumn<AdminRun>[] => [
     priority: 2,
     cell: run => (
       <span className="flex flex-col items-start gap-1">
-        <span className="flex flex-wrap gap-1">
-          <StatusBadge tone={run.status === 'failed' ? 'destructive' : 'neutral'}>
-            {runStatusLabels[run.status]()}
-          </StatusBadge>
+        {/* The usual state is quiet text; a failed or stuck run gets the badge, so it stands out in the page. */}
+        <span className="flex flex-wrap items-center gap-1">
+          {run.status === 'failed' ? (
+            <StatusBadge tone="destructive">{runStatusLabels[run.status]()}</StatusBadge>
+          ) : (
+            <span className="text-muted-foreground">{runStatusLabels[run.status]()}</span>
+          )}
           {run.stuck ? <StatusBadge tone="warning">{m.ai_stuck()}</StatusBadge> : null}
         </span>
         {/* Why it failed, in words (the code is in the run's panel): a raw COURSE_ANALYSIS_FAILED column widened
@@ -49,8 +55,18 @@ const columns = (): DataColumn<AdminRun>[] => [
       </span>
     ),
   },
-  { id: 'started', header: m.ai_col_started(), priority: 2, cell: run => formatDateTime(run.started_at_unix) },
-  { id: 'model', header: m.ai_col_model(), priority: 3, cell: run => run.model_name },
+  {
+    id: 'started',
+    header: m.ai_col_started(),
+    priority: 2,
+    cell: run => <span className="tabular-nums">{formatDateTime(run.started_at_unix)}</span>,
+  },
+  {
+    id: 'model',
+    header: m.ai_col_model(),
+    priority: 3,
+    cell: run => <span className="text-muted-foreground">{run.model_name}</span>,
+  },
   {
     id: 'course',
     header: m.ai_col_course(),
@@ -62,8 +78,13 @@ const columns = (): DataColumn<AdminRun>[] => [
       run.context.course_id ? (
         <span className="flex flex-col items-start gap-0.5">
           {run.course_name ? <span className="wrap-anywhere">{run.course_name}</span> : null}
-          <span className="text-sm">
-            <Link from="/admin/ai" to="." search={prev => ({ ...prev, course: run.context.course_id, run: undefined })}>
+          <span className="text-sm text-muted-foreground">
+            <Link
+              variant="title"
+              from="/admin/ai"
+              to="."
+              search={prev => ({ ...prev, course: run.context.course_id, run: undefined })}
+            >
               {m.ai_filter_this_course()}
             </Link>
           </span>
@@ -84,7 +105,9 @@ export function AdminRuns({ search }: { search: AdminAiSearch }) {
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{m.ai_runs_empty()}</p>
       ) : (
-        <DataTable label={m.ai_admin_runs()} rows={rows} columns={columns()} getKey={run => run.id} />
+        <div className={tableOnPage}>
+          <DataTable label={m.ai_admin_runs()} rows={rows} columns={columns()} getKey={run => run.id} />
+        </div>
       )}
       <ShowMore hasMore={runs.hasNextPage} pending={runs.isFetchingNextPage} onMore={() => void runs.fetchNextPage()} />
       <SheetPanel

@@ -67,7 +67,7 @@ export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
                 {field => <field.TextField label={m.assessments_field_title()} />}
               </form.AppField>
             </div>
-            <fieldset disabled={mode !== 'all'} className="w-32">
+            <fieldset disabled={mode !== 'all'} className="w-24">
               <form.AppField name="points">
                 {field => <field.TextField label={m.assessments_field_points()} inputMode="decimal" />}
               </form.AppField>

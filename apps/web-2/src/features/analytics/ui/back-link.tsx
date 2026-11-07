@@ -8,7 +8,7 @@ import { buttonVariants } from '#/shared/components/button-variants'
 export function BackLink() {
   return (
     <RouterLink
-      className={buttonVariants({ variant: 'ghost' })}
+      className={buttonVariants({ variant: 'ghost', className: '-ms-4 self-start' })}
       to="."
       search={prev => ({ ...prev, courseId: undefined, assessmentType: undefined, assessmentId: undefined, page: 1 })}
     >

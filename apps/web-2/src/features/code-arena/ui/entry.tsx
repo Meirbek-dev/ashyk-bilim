@@ -47,16 +47,16 @@ export function Entry({ courseId, assessmentId, activityId, last }: EntryProps) 
     // Where the editor will be: an empty desk in its place, so the page shows what "Start" opens.
     <section
       aria-labelledby="code-entry"
-      className="flex min-h-64 flex-col items-start justify-center gap-4 rounded-xl border border-dashed p-gutter"
+      className="flex min-h-64 flex-col items-start gap-4 rounded-lg border bg-card p-gutter text-card-foreground @5xl:sticky @5xl:top-18"
     >
-      <span className="flex items-center gap-3">
+      <span className="flex items-center gap-2.5">
         <ActivityIcon type="code_challenge" />
         <h2 id="code-entry" className="text-xl font-semibold">
           {m.code_solution()}
         </h2>
       </span>
       {last ? <LastAttempt attempt={last} passed={passed} /> : null}
-      <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
+      <ul className="flex w-full flex-col gap-1 border-t pt-4 text-sm text-muted-foreground">
         <li>{max === null ? m.code_attempts_unlimited({ used }) : m.code_attempts_used({ used, max })}</li>
         {due === null ? null : <li>{m.code_due({ date: formatDateTime(due) })}</li>}
         {due === null ? null : <li>{lateText(state.effective)}</li>}

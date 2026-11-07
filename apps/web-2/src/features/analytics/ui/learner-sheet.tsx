@@ -39,7 +39,7 @@ export function LearnerSheet({ learnerId, courseId, row }: LearnerSheetProps) {
       title={row?.user_display_name ?? m.analytics_col_learner()}
     >
       {row ? (
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+        <dl className="grid grid-cols-[minmax(0,8rem)_minmax(0,1fr)] gap-x-4 gap-y-2 border-y py-3 text-sm">
           <dt className="text-muted-foreground">{m.analytics_col_course()}</dt>
           <dd className="wrap-anywhere">{row.course_name}</dd>
           <dt className="text-muted-foreground">{m.analytics_col_why_now()}</dt>
@@ -66,13 +66,13 @@ export function LearnerSheet({ learnerId, courseId, row }: LearnerSheetProps) {
         <InterventionDialog learnerId={learnerId} courseId={courseId} />
         {row ? <LearnerLinks row={row} /> : null}
       </div>
-      <h3 className="font-medium">{m.analytics_interventions_title()}</h3>
+      <h3 className="text-lg font-semibold">{m.analytics_interventions_title()}</h3>
       {data.items.length === 0 ? (
         <p className="text-sm text-muted-foreground">{m.analytics_interventions_empty()}</p>
       ) : (
-        <ul className="flex flex-col gap-4">
+        <ul className="flex flex-col divide-y border-y">
           {data.items.map(item => (
-            <li key={item.id} className="flex flex-col gap-1 text-sm">
+            <li key={item.id} className="flex flex-col gap-1 py-3 text-sm">
               <span className="font-medium">{interventionTypeLabels[item.intervention_type]()}</span>
               <span className="text-muted-foreground">
                 {interventionStatusLabels[item.status]()} · {formatDate(item.created_at_unix)}

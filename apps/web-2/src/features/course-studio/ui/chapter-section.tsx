@@ -15,6 +15,7 @@ import { ActivityRow } from './activity-row'
 import { CreateActivityDialog } from './create-activity-dialog'
 import { DeleteChapter } from './delete-chapter'
 import { RenameForm } from './rename-form'
+import { HANDLE, QUIET, ROW_TOOLS } from './row-tools'
 import { useIfMatch } from './use-if-match'
 
 type ChapterSectionProps = { courseId: string; chapter: CurriculumChapter; index: number }
@@ -63,16 +64,22 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
   const { renaming, setRenaming, renameButton, rename, done, save, dialog } = useRename(courseId, chapter)
   return (
     // Without `move` the row is not a sortable at all: dnd-kit would make the row itself a button.
-    <li ref={allowed('move') ? ref : undefined} className={`flex flex-col gap-3 ${isDragging ? 'opacity-60' : ''}`}>
-      <div className="flex flex-wrap items-center gap-2">
+    <li ref={allowed('move') ? ref : undefined} className={`flex flex-col ${isDragging ? 'opacity-60' : ''}`}>
+      <div className="group/row relative flex flex-wrap items-center gap-x-2 border-b pb-1.5">
         {allowed('move') ? (
-          <IconButton
-            ref={handleRef}
-            aria-roledescription={m.studio_drag_role()}
-            label={m.studio_drag_named({ name: chapter.name })}
-            icon={<GripVertical aria-hidden />}
-          />
+          <div className={`${HANDLE} ${QUIET}`}>
+            <IconButton
+              ref={handleRef}
+              aria-roledescription={m.studio_drag_role()}
+              label={m.studio_drag_named({ name: chapter.name })}
+              icon={<GripVertical aria-hidden />}
+            />
+          </div>
         ) : null}
+        {/* The hanging numeral: activities' icons stand under it, their names under the chapter's. */}
+        <span aria-hidden className="w-7 shrink-0 font-heading text-lg text-muted-foreground tabular-nums @3xl:text-xl">
+          {index + 1}
+        </span>
         {renaming ? (
           <RenameForm
             name={chapter.name}
@@ -82,32 +89,34 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
             error={isStale(rename.error) ? null : rename.error}
           />
         ) : (
-          <h2 className="min-w-0 flex-1 text-xl font-semibold wrap-anywhere">{chapter.name}</h2>
+          <h2 className="min-w-0 flex-1 basis-40 text-lg font-semibold wrap-anywhere @3xl:text-xl">{chapter.name}</h2>
         )}
-        {/* Stays mounted while renaming: focus comes back to it after Save or Escape (UX-214). */}
-        {allowed('update') ? (
-          <IconButton
-            ref={renameButton}
-            label={m.studio_rename_named({ name: chapter.name })}
-            icon={<Pencil aria-hidden />}
-            onClick={() => setRenaming(true)}
-          />
-        ) : null}
+        <div className={`ms-auto flex items-center ${ROW_TOOLS} ${QUIET}`}>
+          {/* Stays mounted while renaming: focus comes back to it after Save or Escape (UX-214). */}
+          {allowed('update') ? (
+            <IconButton
+              ref={renameButton}
+              label={m.studio_rename_named({ name: chapter.name })}
+              icon={<Pencil aria-hidden />}
+              onClick={() => setRenaming(true)}
+            />
+          ) : null}
+          {/* Without `delete` (learner work) the dialog explains and offers to hide it instead. */}
+          {allowed('delete') || allowed('update') ? <DeleteChapter courseId={courseId} chapter={chapter} /> : null}
+        </div>
         <ConflictDialog {...dialog} />
-        {/* Without `delete` (learner work) the dialog explains and offers to hide it instead. */}
-        {allowed('delete') || allowed('update') ? <DeleteChapter courseId={courseId} chapter={chapter} /> : null}
       </div>
       {chapter.activities.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{m.studio_chapter_empty()}</p>
+        <p className="border-b py-3 ps-9 text-sm text-muted-foreground">{m.studio_chapter_empty()}</p>
       ) : (
-        <ol className="flex flex-col divide-y rounded-xl border bg-card shadow-xs">
+        <ol className="flex flex-col divide-y border-b">
           {chapter.activities.map((activity, at) => (
             <ActivityRow key={activity.id} courseId={courseId} activity={activity} index={at} />
           ))}
         </ol>
       )}
       {allowed('add_activity') ? (
-        <div>
+        <div className="-ms-2.5 pt-1.5">
           <CreateActivityDialog courseId={courseId} chapter={chapter} />
         </div>
       ) : null}

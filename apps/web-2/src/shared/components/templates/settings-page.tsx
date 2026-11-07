@@ -33,7 +33,7 @@ export function SettingsPage({ title, nav, children }: SettingsPageProps) {
           <nav
             ref={revealCurrentTab}
             aria-label={m.ui_sections()}
-            className="relative flex shrink-0 overflow-x-auto border-b @3xl:sticky @3xl:top-20 @3xl:w-48 @3xl:flex-col @3xl:self-start @3xl:border-b-0 @3xl:*:border-b-0 @3xl:*:border-l-2"
+            className="relative flex shrink-0 gap-x-5 overflow-x-auto border-b @3xl:sticky @3xl:top-20 @3xl:w-48 @3xl:flex-col @3xl:gap-x-0 @3xl:self-start @3xl:border-b-0 @3xl:*:border-b-0 @3xl:*:border-l-2 @3xl:*:pl-3"
           >
             {nav}
           </nav>

@@ -19,8 +19,8 @@ export function ReturnNote({ attempt }: { attempt: StudentSubmission }) {
   const feedback = returned?.grading?.feedback
   if (!feedback) return null
   return (
-    <section className="flex flex-col gap-1 rounded-lg border p-4 text-sm">
-      <h2 className="font-semibold">{m.attempt_feedback_heading()}</h2>
+    <section className="flex flex-col gap-2 border-l-2 border-warning ps-4">
+      <h2 className="text-lg font-semibold">{m.attempt_feedback_heading()}</h2>
       <Suspense fallback={null}>
         <MarkdownView content={feedback} />
       </Suspense>

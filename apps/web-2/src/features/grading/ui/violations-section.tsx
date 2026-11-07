@@ -20,12 +20,14 @@ export function ViolationsSection({
       <h2 id="grading-violations" className="text-xl font-semibold">
         {m.grading_violations_title()}
       </h2>
-      <p>{m.grading_violations_count({ count: formatNumber(submission.violation_count) })}</p>
-      <ul className="flex flex-col gap-1 text-sm">
+      <p className="text-sm text-warning">
+        {m.grading_violations_count({ count: formatNumber(submission.violation_count) })}
+      </p>
+      <ul className="flex flex-col divide-y border-y text-sm">
         {orderedViolations(submission.violations).map((event, index) => {
           const kind = violationKind(event.kind)
           return (
-            <li key={`${event.at}-${index}`} className="flex flex-wrap gap-x-3">
+            <li key={`${event.at}-${index}`} className="flex flex-wrap gap-x-4 py-1.5">
               <span className="text-muted-foreground tabular-nums">{formatDateTime(event.at)}</span>
               <span>{kind ? violationLabels[kind]() : event.kind}</span>
               {event.detail ? <span className="wrap-anywhere text-muted-foreground">{event.detail}</span> : null}

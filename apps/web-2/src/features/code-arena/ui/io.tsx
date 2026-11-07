@@ -17,19 +17,19 @@ export function Io({ label, text, mark = null }: IoProps) {
   if (text === '')
     return (
       <div className="flex min-w-0 flex-col gap-1 text-sm">
-        <span className="text-muted-foreground">{label}</span>
-        <p className="rounded-md border border-dashed p-2 text-muted-foreground">{m.code_io_empty()}</p>
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <p className="py-1.5 text-muted-foreground">{m.code_io_empty()}</p>
       </div>
     )
   return (
     <div className="flex min-w-0 flex-col gap-1 text-sm">
-      <span className="flex flex-wrap gap-x-3 text-muted-foreground">
+      <span className="flex flex-wrap gap-x-3 text-xs text-muted-foreground">
         {label}
         {mark === null ? null : (
           <span className="text-destructive">{m.code_diff_line({ line: formatNumber(mark + 1) })}</span>
         )}
       </span>
-      <pre className="max-h-80 overflow-auto rounded-md bg-muted p-2 font-mono whitespace-pre">
+      <pre className="max-h-80 overflow-auto rounded-sm bg-muted px-2.5 py-1.5 font-mono leading-relaxed whitespace-pre">
         {mark === null
           ? text
           : text.split('\n').map((line, index) => (

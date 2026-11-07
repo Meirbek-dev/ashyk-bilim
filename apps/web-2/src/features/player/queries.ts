@@ -5,6 +5,7 @@ import { ApiError } from '#/shared/api/errors'
 import {
   completeActivityMutation,
   getActivityOptions,
+  getCourseOptions,
   listEnrollmentsQueryKey,
   learnerCourseStateOptions,
   myCertificatesPageInfiniteQueryKey,
@@ -18,6 +19,8 @@ import { activityKind, locate, staffPreview } from './model/player'
 
 // The same keys as the course page: one learner state per course in the cache.
 export const learnerStateOptions = (id: CourseId) => learnerCourseStateOptions({ path: { course_id: id } })
+/** The course page's read, for the summary's picture only. */
+export const courseCoverOptions = (id: CourseId) => getCourseOptions({ path: { course_id: id } })
 export const activityOptions = (id: ActivityId) => getActivityOptions({ path: { activity_id: id } })
 /** The caller's certificates for the course: reading them issues one to a finished course that has none yet. */
 export const courseCertificatesOptions = (id: CourseId) => myCourseCertificatesOptions({ path: { course_id: id } })
@@ -85,7 +88,11 @@ export async function ensureEntry(queryClient: QueryClient, courseId: CourseId, 
 /** The summary's loader: the learner state, then the course's certificates (issued on the spot when due). */
 export async function ensureCompletion(queryClient: QueryClient, courseId: CourseId) {
   await ensureLearner(queryClient, courseId)
-  await queryClient.query({ ...courseCertificatesOptions(courseId), staleTime: 'static' })
+  await Promise.all([
+    queryClient.query({ ...courseCertificatesOptions(courseId), staleTime: 'static' }),
+    // The picture is not worth an error page: without the read the summary shows the plain field.
+    queryClient.query({ ...courseCoverOptions(courseId), staleTime: 'static' }).catch(() => null),
+  ])
 }
 
 /**

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { RefObject } from 'react'
 
+import { PlainSection } from '#/features/settings'
 import { m } from '#/paraglide/messages'
 import type { Collection } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
@@ -36,13 +37,7 @@ export function CoverSection({ collection, base }: CoverSectionProps) {
       },
     )
   return (
-    <section aria-labelledby="collection-cover" className="flex max-w-prose flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <h2 id="collection-cover" className="text-xl font-semibold">
-          {m.collections_cover_title()}
-        </h2>
-        <p className="text-sm text-muted-foreground">{m.collections_cover_hint()}</p>
-      </div>
+    <PlainSection title={m.collections_cover_title()} description={m.collections_cover_hint()}>
       {collection.cover_key ? (
         <div className="flex flex-col items-start gap-2">
           <img
@@ -68,6 +63,6 @@ export function CoverSection({ collection, base }: CoverSectionProps) {
         onUploaded={upload => save(upload.id)}
       />
       {update.error ? <ErrorAlert>{presentError(update.error)}</ErrorAlert> : null}
-    </section>
+    </PlainSection>
   )
 }

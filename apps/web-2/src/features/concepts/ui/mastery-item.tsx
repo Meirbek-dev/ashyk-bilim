@@ -24,10 +24,12 @@ export function MasteryItem({ concept, reviewIn }: MasteryItemProps) {
   ].filter(fact => fact !== null)
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <span className="min-w-0 font-medium wrap-anywhere">{concept.name}</span>
-        <StatusBadge tone={meta.tone}>{meta.label()}</StatusBadge>
-        {concept.stale ? <StatusBadge tone="warning">{m.concepts_stale()}</StatusBadge> : null}
+        <span className="flex items-center gap-2">
+          {concept.stale ? <StatusBadge tone="warning">{m.concepts_stale()}</StatusBadge> : null}
+          <StatusBadge tone={meta.tone}>{meta.label()}</StatusBadge>
+        </span>
       </div>
       <p className="text-sm text-muted-foreground tabular-nums">{facts.join(' · ')}</p>
       {reviewIn && concept.review.length > 0 ? (

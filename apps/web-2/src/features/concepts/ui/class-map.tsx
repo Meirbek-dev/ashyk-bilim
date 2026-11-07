@@ -2,7 +2,6 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 
 import { m } from '#/paraglide/messages'
 import type { ClassConcept, CourseId } from '#/shared/api/gen/types.gen'
-import { ScoreBar } from '#/shared/components/charts/score-bar'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
 import { Link } from '#/shared/components/link'
@@ -11,6 +10,7 @@ import { formatNumber, formatPercent } from '#/shared/i18n/format'
 import { LEVELS, percentOf } from '../model/mastery'
 import { classOptions } from '../queries'
 import { levelMeta } from './labels'
+import { Meter } from './meter'
 
 // A function: the headers are read in the current locale at render.
 const columns = (courseId: CourseId): DataColumn<ClassConcept>[] => [
@@ -21,7 +21,7 @@ const columns = (courseId: CourseId): DataColumn<ClassConcept>[] => [
     priority: 2,
     cell: concept => {
       const percent = percentOf(concept.mean_p)
-      return percent === null ? m.concepts_no_evidence() : <ScoreBar value={percent} text={formatPercent(percent)} />
+      return percent === null ? m.concepts_no_evidence() : <Meter value={percent} text={formatPercent(percent)} />
     },
   },
   ...LEVELS.map((level): DataColumn<ClassConcept> => ({
@@ -37,7 +37,7 @@ const columns = (courseId: CourseId): DataColumn<ClassConcept>[] => [
     wrap: true,
     cell: concept =>
       concept.struggling_learners.length === 0 ? null : (
-        <span className="flex flex-wrap gap-x-2 gap-y-1">
+        <span className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
           {concept.struggling_learners.map(learner => (
             <Link
               key={learner.user_id}
@@ -65,12 +65,14 @@ export function ClassMap({ courseId }: { courseId: CourseId }) {
       <p className="text-sm text-muted-foreground tabular-nums">
         {m.concepts_class_learners({ count: formatNumber(data.learners) })}
       </p>
-      <DataTable
-        label={m.concepts_class_title()}
-        rows={data.concepts}
-        columns={columns(courseId)}
-        getKey={concept => concept.concept_id}
-      />
+      <div className="[&_td:first-child]:ps-0 [&_td:last-child]:pe-0 [&_td:not(:first-child):not(:last-child)]:text-right [&_th:first-child]:ps-0 [&_th:last-child]:pe-0 [&_th:not(:first-child):not(:last-child)]:text-right">
+        <DataTable
+          label={m.concepts_class_title()}
+          rows={data.concepts}
+          columns={columns(courseId)}
+          getKey={concept => concept.concept_id}
+        />
+      </div>
     </div>
   )
 }

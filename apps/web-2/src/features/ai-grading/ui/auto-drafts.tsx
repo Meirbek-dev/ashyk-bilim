@@ -19,10 +19,15 @@ export function AutoDrafts({ courseId, settings }: { courseId: CourseId; setting
   const toggle = useMutation(settingsSwitchOptions(courseId))
   return (
     <section aria-labelledby={labelId} className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-4">
-        <h2 id={labelId} className="text-xl font-semibold">
-          {m.ai_grading_auto_title()}
-        </h2>
+      <div className="flex items-start justify-between gap-6 border-b pb-4">
+        <div className="flex flex-col gap-1">
+          <h2 id={labelId} className="text-xl font-semibold">
+            {m.ai_grading_auto_title()}
+          </h2>
+          <p id={hintId} className="max-w-prose text-sm text-muted-foreground">
+            {m.ai_grading_auto_hint()}
+          </p>
+        </div>
         <Switch
           aria-labelledby={labelId}
           aria-describedby={hintId}
@@ -36,9 +41,6 @@ export function AutoDrafts({ courseId, settings }: { courseId: CourseId; setting
           }
         />
       </div>
-      <p id={hintId} className="max-w-prose text-sm text-muted-foreground">
-        {m.ai_grading_auto_hint()}
-      </p>
       {toggle.error ? (
         <p role="alert" className="text-sm text-destructive">
           {presentError(toggle.error)}

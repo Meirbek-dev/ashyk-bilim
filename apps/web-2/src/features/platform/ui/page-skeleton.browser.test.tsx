@@ -17,6 +17,6 @@ const thumbnailWidth = async (width: 'w-90' | 'w-250') => {
 }
 
 test('«Мои курсы» loads as thumbnail rows on a phone and as cover cards on a wide page, like its items', async () => {
-  expect(await thumbnailWidth('w-90')).toBe(96) // 360 px
+  expect(await thumbnailWidth('w-90')).toBe(112) // 360 px
   expect(await thumbnailWidth('w-250')).toBeGreaterThan(200) // 1000 px
 })

@@ -4,7 +4,6 @@ import { useSearch } from '@tanstack/react-router'
 import { m } from '#/paraglide/messages'
 import type { TeacherOverviewSummary, TeacherOverviewTrends } from '#/shared/api/gen/types.gen'
 import { KpiStrip } from '#/shared/components/charts/kpi-strip'
-import { TimeSeries } from '#/shared/components/charts/time-series'
 import { formatDayMonth, formatNumber } from '#/shared/i18n/format'
 
 import { pickFilters, tabPaths, type TileMetric } from '../model/filters'
@@ -14,6 +13,7 @@ import { DrillSection } from './drill-section'
 import { drillTitles, kpiLabels } from './labels'
 import { MetricTile } from './metric-tile'
 import { SignalList } from './signal-list'
+import { TrendLine } from './trend-line'
 
 /** Each KPI in reading order, with the drill-through behind it (if the server has one). */
 const tiles: readonly { name: keyof TeacherOverviewSummary; drill?: TileMetric; tab?: 'learners' | 'performance' }[] = [
@@ -38,7 +38,7 @@ export function OverviewTab() {
   const filters = pickFilters(search)
   const { data } = useSuspenseQuery(overviewOptions(filters))
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-10">
       <AsOf at={data.generated_at_unix} />
       <KpiStrip label={m.analytics_kpis()} columns={3}>
         {tiles.map(({ name, drill, tab }) => (
@@ -60,15 +60,15 @@ export function OverviewTab() {
           closable
         />
       ) : null}
-      <div className="grid gap-gutter @3xl:grid-cols-2">
+      <div className="grid gap-x-12 gap-y-10 @3xl:grid-cols-2">
         <SignalList title={m.analytics_alerts_title()} items={data.alerts} courses={data.course_options} />
         <SignalList title={m.analytics_insights_title()} items={data.insights} courses={data.course_options} />
       </div>
-      <section className="flex flex-col gap-4">
+      <section className="flex flex-col gap-6">
         <h2 className="text-xl font-semibold">{m.analytics_trends_title()}</h2>
-        <div className="grid gap-gutter @3xl:grid-cols-2">
+        <div className="grid gap-x-12 gap-y-10 @3xl:grid-cols-2">
           {series.map(({ name, label }) => (
-            <TimeSeries
+            <TrendLine
               key={name}
               title={label()}
               data={data.trends[name].map(point => ({

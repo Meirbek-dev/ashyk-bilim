@@ -5,7 +5,6 @@ import { Suspense, useRef, type ReactNode } from 'react'
 import { m } from '#/paraglide/messages'
 import { ListSkeleton } from '#/shared/components/list-skeleton'
 import type { SubmissionStatus, FileAttemptStatus, UserSummary } from '#/shared/api/gen/types.gen'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { formatDateTime } from '#/shared/i18n/format'
 
@@ -16,6 +15,8 @@ import { FeedbackDraft } from './feedback-draft'
 import type { ReviewAside } from './review-aside'
 import { ReviewBack } from './review-back'
 import { ReviewNav } from './review-nav'
+import { ReviewPosition } from './review-position'
+import { StatusText } from './status-text'
 
 const ROUTE = '/_authed/teach/courses/$courseId_/activities/$activityId_/submissions/$submissionId'
 
@@ -63,6 +64,7 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
       <FocusPage
         back={back}
         title={activity.name}
+        actions={<ReviewNav work={work} />}
         aside={
           aside
             ? {
@@ -82,35 +84,39 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
         }
         wide
       >
-        <div className="flex flex-col gap-gutter">
-          <header className="flex flex-col gap-2">
+        <div className="@container/review flex flex-col gap-8">
+          <header className="flex flex-col gap-1.5">
             <h1 className="text-2xl font-semibold wrap-anywhere">{name}</h1>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
-              {head.is_late ? <StatusBadge tone="warning">{m.grading_late()}</StatusBadge> : null}
-              {/* One line of facts, a dot between them as elsewhere: spaces alone ran «Сдана …» into «Нет оценки». */}
-              <span className="tabular-nums">
-                {[
-                  m.grading_attempt_label({ number: head.attempt_number }),
-                  head.started_at_unix === null
-                    ? null
-                    : m.grading_started_at({ date: formatDateTime(head.started_at_unix) }),
-                  head.submitted_at_unix === null
-                    ? null
-                    : m.grading_submitted_at({ date: formatDateTime(head.submitted_at_unix) }),
-                  check === null
-                    ? null
-                    : (check.returned ? m.grading_returned_at : check.draft ? m.grading_draft_at : m.grading_graded_at)(
-                        { date: formatDateTime(check.at) },
-                      ),
-                  head.late_penalty_pct ? m.grading_penalty({ percent: scoreText(head.late_penalty_pct) }) : null,
-                  scoreLine(head.final_score),
-                ]
-                  .filter(fact => fact !== null)
-                  .join(' · ')}
-              </span>
-            </div>
-            <ReviewNav work={work} />
+            {/* One line of facts, a dot between them as elsewhere: spaces alone ran «Сдана …» into «Нет оценки». */}
+            <p className="text-sm text-muted-foreground tabular-nums">
+              <StatusText tone={status.tone}>{status.label()}</StatusText>
+              {head.is_late ? (
+                <>
+                  {' · '}
+                  <StatusText tone="warning">{m.grading_late()}</StatusText>
+                </>
+              ) : null}
+              {' · '}
+              {[
+                m.grading_attempt_label({ number: head.attempt_number }),
+                head.started_at_unix === null
+                  ? null
+                  : m.grading_started_at({ date: formatDateTime(head.started_at_unix) }),
+                head.submitted_at_unix === null
+                  ? null
+                  : m.grading_submitted_at({ date: formatDateTime(head.submitted_at_unix) }),
+                check === null
+                  ? null
+                  : (check.returned ? m.grading_returned_at : check.draft ? m.grading_draft_at : m.grading_graded_at)({
+                      date: formatDateTime(check.at),
+                    }),
+                head.late_penalty_pct ? m.grading_penalty({ percent: scoreText(head.late_penalty_pct) }) : null,
+                scoreLine(head.final_score),
+              ]
+                .filter(fact => fact !== null)
+                .join(' · ')}
+            </p>
+            <ReviewPosition work={work} className="@3xl:hidden" />
           </header>
           {children}
         </div>

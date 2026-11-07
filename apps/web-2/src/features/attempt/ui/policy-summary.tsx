@@ -68,46 +68,48 @@ export function PolicySummary({ assessment, state }: { assessment: AssessmentDet
   const rules = protections(assessment.policy)
   const minutes = effective.time_limit_seconds === null ? null : Math.ceil(effective.time_limit_seconds / 60)
   return (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold">{m.attempt_entry_heading()}</h2>
-      <ul className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_svg]:mt-0.5 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground">
-        <li>
-          <ListOrdered aria-hidden />
-          {m.attempt_questions({ count: formatNumber(assessment.items.length) })}
-        </li>
-        <li>
-          <Timer aria-hidden />
-          {minutes === null ? m.attempt_no_time_limit() : m.attempt_time_limit({ minutes: formatNumber(minutes) })}
-        </li>
-        <li>
-          <RotateCcw aria-hidden />
-          {attemptsText(state)}
-        </li>
-        <li>
-          <Target aria-hidden />
-          {m.attempt_passing_score({ score: formatPercent(effective.passing_score) })}
-        </li>
-        {effective.due_at_unix ? (
+    <section className="flex flex-col gap-gutter">
+      <div className="flex flex-col gap-3">
+        <h2 className="text-xl font-semibold">{m.attempt_entry_heading()}</h2>
+        <ul className="flex flex-col divide-y border-y text-sm [&_li]:flex [&_li]:items-start [&_li]:gap-3 [&_li]:py-2.5 [&_svg]:mt-0.5 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground">
           <li>
-            <CalendarClock aria-hidden />
-            {m.attempt_due({ date: formatDateTime(effective.due_at_unix) })}
+            <ListOrdered aria-hidden />
+            {m.attempt_questions({ count: formatNumber(assessment.items.length) })}
           </li>
-        ) : null}
-        {effective.due_at_unix ? (
           <li>
-            <CalendarX aria-hidden />
-            {lateText(effective)}
+            <Timer aria-hidden />
+            {minutes === null ? m.attempt_no_time_limit() : m.attempt_time_limit({ minutes: formatNumber(minutes) })}
           </li>
-        ) : null}
-        <li>
-          <Eye aria-hidden />
-          {visibility[assessment.policy.review_visibility]()}
-        </li>
-      </ul>
+          <li>
+            <RotateCcw aria-hidden />
+            {attemptsText(state)}
+          </li>
+          <li>
+            <Target aria-hidden />
+            {m.attempt_passing_score({ score: formatPercent(effective.passing_score) })}
+          </li>
+          {effective.due_at_unix ? (
+            <li>
+              <CalendarClock aria-hidden />
+              {m.attempt_due({ date: formatDateTime(effective.due_at_unix) })}
+            </li>
+          ) : null}
+          {effective.due_at_unix ? (
+            <li>
+              <CalendarX aria-hidden />
+              {lateText(effective)}
+            </li>
+          ) : null}
+          <li>
+            <Eye aria-hidden />
+            {visibility[assessment.policy.review_visibility]()}
+          </li>
+        </ul>
+      </div>
       {rules.length ? (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <h2 className="text-xl font-semibold">{m.attempt_rules_heading()}</h2>
-          <ul className="flex list-disc flex-col gap-1 pl-5 text-sm">
+          <ul className="flex flex-col divide-y border-y text-sm [&_li]:py-2.5">
             {rules.map(rule => (
               <li key={rule}>{ruleLabels[rule]()}</li>
             ))}

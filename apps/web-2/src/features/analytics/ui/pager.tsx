@@ -22,7 +22,7 @@ export function Pager({ page, total, param = 'page' }: PagerProps) {
     <nav aria-label={m.analytics_pager()} className="flex flex-wrap items-center gap-2 text-sm">
       {page > 1 ? (
         <RouterLink
-          className={buttonVariants({ variant: 'outline' })}
+          className={buttonVariants({ variant: 'ghost', size: 'sm' })}
           to="."
           search={prev => ({ ...prev, [param]: page - 1 })}
         >
@@ -34,7 +34,7 @@ export function Pager({ page, total, param = 'page' }: PagerProps) {
       </span>
       {page < count ? (
         <RouterLink
-          className={buttonVariants({ variant: 'outline' })}
+          className={buttonVariants({ variant: 'ghost', size: 'sm' })}
           to="."
           search={prev => ({ ...prev, [param]: page + 1 })}
         >

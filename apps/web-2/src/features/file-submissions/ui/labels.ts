@@ -12,6 +12,15 @@ import type { TypeGroup } from '../model/types'
 
 type Status = { label: () => string; tone: StatusTone }
 
+/** A state as a word on the paper, in its status ink: attempts are rows of text, not rows of pills. */
+export const toneInk = {
+  neutral: 'text-muted-foreground',
+  success: 'text-success',
+  warning: 'text-warning',
+  info: 'text-info',
+  destructive: 'text-destructive',
+} satisfies Record<StatusTone, string>
+
 export const attemptStatus = {
   draft: { label: m.submission_status_draft, tone: 'warning' },
   // The work area's words for the same state (Receipt): one attempt, one name.

@@ -5,11 +5,11 @@ import { m } from '#/paraglide/messages'
 import type { UpdateProfileRequest, UserProfile } from '#/shared/api/gen/types.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { Link } from '#/shared/components/link'
-import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { toast } from '#/shared/ui/toast'
 
 import { vProfileDetailsForm } from '../model/settings'
 import { updateProfileOptions } from '../queries'
+import { TypesetSection } from './typeset-section'
 
 /** Name, organization and bio; login and email are shown (the email changes on «Безопасность», B-SET-22). */
 export function ProfileDetails({ profile }: { profile: UserProfile }) {
@@ -26,27 +26,23 @@ export function ProfileDetails({ profile }: { profile: UserProfile }) {
     onSubmit: body => update.mutateAsync({ body }, { onSuccess: () => toast.add({ title: m.settings_saved() }) }),
   })
   return (
-    <SettingsSection
+    <TypesetSection
       title={m.settings_details_title()}
       description={m.settings_details_hint()}
       onSubmit={() => form.handleSubmit()}
       pending={update.isPending}
       error={update.error}
     >
-      <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm @md:grid-cols-3">
+      <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2 text-sm">
         <dt className="text-muted-foreground">{m.settings_field_username()}</dt>
-        <dd className="wrap-anywhere @md:col-span-2">{profile.username}</dd>
+        <dd className="wrap-anywhere">{profile.username}</dd>
         <dt className="text-muted-foreground">{m.settings_field_email()}</dt>
-        <dd className="wrap-anywhere @md:col-span-2">
-          {profile.email}{' '}
-          <span className="whitespace-nowrap">
-            <Link to="/settings/security" hash="email">
-              {m.settings_email_change_link()}
-            </Link>
-          </span>
-        </dd>
+        <dd className="wrap-anywhere">{profile.email}</dd>
       </dl>
-      <p className="text-sm">
+      <p className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+        <Link to="/settings/security" hash="email">
+          {m.settings_email_change_link()}
+        </Link>
         <Link to="/users/$username" params={{ username: profile.username }}>
           {m.settings_public_link()}
         </Link>
@@ -65,6 +61,6 @@ export function ProfileDetails({ profile }: { profile: UserProfile }) {
         )}
       </form.AppField>
       <form.AppField name="bio">{field => <field.TextareaField label={m.settings_field_bio()} />}</form.AppField>
-    </SettingsSection>
+    </TypesetSection>
   )
 }

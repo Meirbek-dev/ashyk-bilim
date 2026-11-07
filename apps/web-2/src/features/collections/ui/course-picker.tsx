@@ -28,18 +28,21 @@ export function CoursePicker({ initial, onChange }: CoursePickerProps) {
   const q = useDeferredValue(settled)
   const { data: found } = useSuspenseQuery(pickableCoursesOptions(q))
   return (
-    <MultiCombobox
-      label={m.collections_field_courses()}
-      description={m.collections_field_courses_hint()}
-      placeholder={m.collections_courses_placeholder()}
-      options={found.items.map(course => ({ value: course.id, label: course.name }))}
-      value={picked}
-      onValueChange={next => {
-        setPicked(next)
-        onChange(next.map(course => course.value))
-      }}
-      onQueryChange={setText}
-      pending={text.trim() !== q}
-    />
+    // Course names run long: a chip wraps instead of pushing the page sideways on a phone.
+    <div>
+      <MultiCombobox
+        label={m.collections_field_courses()}
+        description={m.collections_field_courses_hint()}
+        placeholder={m.collections_courses_placeholder()}
+        options={found.items.map(course => ({ value: course.id, label: course.name }))}
+        value={picked}
+        onValueChange={next => {
+          setPicked(next)
+          onChange(next.map(course => course.value))
+        }}
+        onQueryChange={setText}
+        pending={text.trim() !== q}
+      />
+    </div>
   )
 }

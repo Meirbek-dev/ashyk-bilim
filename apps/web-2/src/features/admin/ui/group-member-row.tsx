@@ -23,13 +23,15 @@ export function GroupMemberRow({ group, member, manage }: GroupMemberRowProps) {
   const remove = useMutation(removeMembersOptions(useQueryClient()))
   const name = member.display_name || member.username
   return (
-    <li className="flex min-h-row items-center gap-3 py-2">
+    <li className="flex items-center gap-3 py-1.5 text-sm">
       <UserAvatar name={name} avatarKey={member.avatar_key} />
-      <p className="min-w-0 flex-1 wrap-anywhere">
-        <Link to="/users/$username" params={{ username: member.username }}>
-          {name}
-        </Link>{' '}
-        <span className="text-sm text-muted-foreground">@{member.username}</span>
+      <p className="flex min-w-0 flex-1 flex-col wrap-anywhere sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-2">
+        <span className="font-medium">
+          <Link variant="title" to="/users/$username" params={{ username: member.username }}>
+            {name}
+          </Link>
+        </span>
+        <span className="text-muted-foreground">@{member.username}</span>
       </p>
       {manage ? (
         <ConfirmDialog

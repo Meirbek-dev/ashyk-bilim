@@ -34,15 +34,27 @@ export function DeadlinesSection({ task }: { task: FileSubmission }) {
         pending={write.pending}
         error={write.error}
       >
-        <form.AppField name="due_at">
-          {field => (
-            <field.TextField
-              label={m.submission_field_due()}
-              description={m.submission_field_due_hint()}
-              type="datetime-local"
-            />
-          )}
-        </form.AppField>
+        {/* The two limits the teacher sets first, side by side; what happens after the deadline follows. */}
+        <div className="grid gap-4 @xl:grid-cols-2 @xl:items-start">
+          <form.AppField name="due_at">
+            {field => (
+              <field.TextField
+                label={m.submission_field_due()}
+                description={m.submission_field_due_hint()}
+                type="datetime-local"
+              />
+            )}
+          </form.AppField>
+          <form.AppField name="max_attempts">
+            {field => (
+              <field.TextField
+                label={m.submission_field_max_attempts()}
+                description={m.submission_blank_no_limit()}
+                inputMode="numeric"
+              />
+            )}
+          </form.AppField>
+        </div>
         <form.AppField name="allow_late">
           {field => <field.SwitchField label={m.submission_field_allow_late()} />}
         </form.AppField>
@@ -54,14 +66,14 @@ export function DeadlinesSection({ task }: { task: FileSubmission }) {
                   {field => <field.RadioGroupField label={m.submission_field_late_policy()} options={lateOptions()} />}
                 </form.AppField>
                 {kind === 'penalty' ? (
-                  <>
+                  <div className="grid gap-4 @xl:grid-cols-2 @xl:items-start">
                     <form.AppField name="late_policy.percent_per_day">
                       {field => <field.TextField label={m.submission_field_percent()} inputMode="decimal" required />}
                     </form.AppField>
                     <form.AppField name="late_policy.max_days">
                       {field => <field.TextField label={m.submission_field_max_days()} inputMode="numeric" required />}
                     </form.AppField>
-                  </>
+                  </div>
                 ) : null}
                 {kind === 'cutoff' ? (
                   <form.AppField name="late_policy.cutoff_at">
@@ -72,15 +84,6 @@ export function DeadlinesSection({ task }: { task: FileSubmission }) {
             )
           }
         </form.Subscribe>
-        <form.AppField name="max_attempts">
-          {field => (
-            <field.TextField
-              label={m.submission_field_max_attempts()}
-              description={m.submission_blank_no_limit()}
-              inputMode="numeric"
-            />
-          )}
-        </form.AppField>
         <form.AppField name="grade_release_mode">
           {field => <field.RadioGroupField label={m.submission_field_release()} options={releaseOptions()} />}
         </form.AppField>

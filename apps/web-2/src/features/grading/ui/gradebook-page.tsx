@@ -5,7 +5,6 @@ import type { ReactElement } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { Anchor } from '#/shared/components/anchor'
-import { DataTable } from '#/shared/components/data-table'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 import { buttonVariants } from '#/shared/components/button-variants'
@@ -13,7 +12,7 @@ import { buttonVariants } from '#/shared/components/button-variants'
 import { gradebookCsvHref } from '../model/exports'
 import { gradebookColumns, gradebookRows, gradebookSummary } from '../model/gradebook'
 import { curriculumOptions, gradebookOptions } from '../queries'
-import { gradebookFooter, gradebookTableColumns } from './gradebook-columns'
+import { GradebookTable } from './gradebook-columns'
 import { GroupFilter } from './group-filter'
 import { scoreText } from './labels'
 import { LearnerSearch } from './learner-search'
@@ -22,7 +21,7 @@ const ROUTE = '/_authed/teach/courses/$courseId/gradebook'
 
 // ponytail: a plain table (100 learners per page x the course's graded activities); virtualize when a measured
 // course makes it slow.
-/** The course gradebook (B-GRD-19..21, B-GRD-24, B-GRD-37): learners x graded activities, cards per learner when narrow. */
+/** The course gradebook (B-GRD-19..21, B-GRD-24, B-GRD-37): learners x graded activities, scrolling inside its own box. */
 export function GradebookPage(): ReactElement {
   const { courseId } = useParams({ from: ROUTE })
   const search = useSearch({ from: ROUTE })
@@ -30,7 +29,7 @@ export function GradebookPage(): ReactElement {
   const query = useSuspenseInfiniteQuery(gradebookOptions(courseId, search))
   const rows = gradebookRows(query.data.pages)
   const { data: curriculum } = useSuspenseQuery(curriculumOptions(courseId))
-  const columns = gradebookTableColumns(courseId, gradebookColumns(query.data.pages, curriculum))
+  const activities = gradebookColumns(query.data.pages, curriculum)
   const active = [search.q, search.pending, search.group].filter(Boolean).length
   const summary = gradebookSummary(query.data.pages)
   return (
@@ -41,16 +40,18 @@ export function GradebookPage(): ReactElement {
         </h2>
         {rows.length > 0 ? (
           <p className="max-w-prose text-sm text-muted-foreground">
-            {summary?.course_average != null
-              ? `${m.grading_course_average({ value: scoreText(summary.course_average) })} `
-              : null}
+            {summary?.course_average != null ? (
+              <span className="text-foreground">
+                {m.grading_course_average({ value: scoreText(summary.course_average) })}{' '}
+              </span>
+            ) : null}
             {m.grading_total_legend()}
           </p>
         ) : null}
       </div>
       {/* No learner at all (and no filter): nothing to search, filter or export - only the empty state. */}
       {rows.length === 0 && active === 0 ? null : (
-        <div className="flex flex-wrap items-end gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <LearnerSearch q={search.q} onSearch={q => navigate({ search: prev => ({ ...prev, q }) })} />
           <RouterLink
             to="/teach/courses/$courseId/gradebook"
@@ -67,7 +68,11 @@ export function GradebookPage(): ReactElement {
             group={search.group}
             onGroup={group => navigate({ search: prev => ({ ...prev, group }) })}
           />
-          <Anchor className={buttonVariants({ variant: 'outline' })} href={gradebookCsvHref(courseId)} download>
+          <Anchor
+            className={`${buttonVariants({ variant: 'ghost' })} -ms-2.5 @3xl:ms-auto`}
+            href={gradebookCsvHref(courseId)}
+            download
+          >
             {m.grading_export_csv()}
           </Anchor>
         </div>
@@ -81,12 +86,12 @@ export function GradebookPage(): ReactElement {
         onResetFilters={() => void navigate({ search: {} })}
         onRetry={() => void query.refetch()}
       >
-        <DataTable
+        <GradebookTable
+          courseId={courseId}
           label={m.grading_gradebook_table()}
           rows={rows}
-          columns={columns}
-          getKey={row => row.user.id}
-          footer={summary ? gradebookFooter(summary) : undefined}
+          activities={activities}
+          summary={summary}
         />
         <ShowMore
           hasMore={query.hasNextPage}

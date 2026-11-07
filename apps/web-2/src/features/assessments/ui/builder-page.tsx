@@ -19,9 +19,9 @@ export function AssessmentEditPage() {
   return (
     <div className="@container flex flex-col gap-gutter">
       {lock ? <p className="text-sm text-muted-foreground">{lock}</p> : null}
-      <div className="grid gap-gutter @3xl:grid-cols-3">
+      <div className="grid gap-gutter @3xl:grid-cols-[17rem_minmax(0,1fr)] @3xl:gap-x-8">
         <ItemList courseId={courseId} activityId={activityId} assessment={assessment} openId={open?.id} />
-        <div className="min-w-0 @3xl:col-span-2">
+        <div className="min-w-0">
           {open ? <ItemEditor key={open.id} activityId={activityId} assessment={assessment} item={open} /> : null}
         </div>
       </div>

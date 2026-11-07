@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { m } from '#/paraglide/messages'
 import { DataList } from '#/shared/components/data-list'
 import { ShowMore } from '#/shared/components/show-more'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime } from '#/shared/i18n/format'
 
 import { deviceLabel, orderSessions } from '../model/settings'
@@ -37,7 +36,9 @@ export function SessionsSection() {
               <div className="flex min-w-0 flex-col gap-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-medium">{device}</h3>
-                  {session.current ? <StatusBadge tone="info">{m.settings_session_current()}</StatusBadge> : null}
+                  {session.current ? (
+                    <span className="text-sm text-success">{m.settings_session_current()}</span>
+                  ) : null}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {m.settings_session_seen({ date: formatDateTime(session.last_seen_unix) })}

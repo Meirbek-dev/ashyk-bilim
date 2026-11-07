@@ -1,0 +1,203 @@
+/*
+ * A lesson's reading page, on top of prose.css (the shared reading type): measure, rhythm, listings between hairlines,
+ * three-rule tables, callouts as side notes. Unlayered on purpose: it wins over prose.css's layer however the two links
+ * are ordered, and only inside `.ab-book`. Colours are tokens.
+ */
+.ab-book .ab-prose {
+  --prose-gap: 1.05em;
+  font-size: 1.0625rem;
+  line-height: 1.62;
+  text-wrap: pretty;
+}
+@container (min-width: 48rem) {
+  .ab-book .ab-prose {
+    font-size: 1.125rem;
+    line-height: 1.64;
+  }
+}
+
+/* The measure: running text stops at a readable line; tables, listings and pictures keep the column's full width. */
+.ab-book .ab-prose > :where(p, ul, ol, blockquote, h1, h2, h3, h4, h5, h6) {
+  max-width: 38rem;
+}
+
+/* Headings: air above, close to their own text. */
+.ab-book .ab-prose :where(h1, h2, h3, h4, h5, h6) {
+  text-wrap: balance;
+  scroll-margin-top: 5rem;
+}
+.ab-book .ab-prose h1,
+.ab-book .ab-prose h2 {
+  margin-block: 2.6em 0.7em;
+  font-size: 1.5rem;
+  line-height: 1.25;
+}
+.ab-book .ab-prose :where(h3, h4, h5, h6) {
+  margin-block: 2em 0.45em;
+  font-size: 1.1875rem;
+  line-height: 1.3;
+}
+.ab-book .ab-prose > :first-child {
+  margin-block-start: 0;
+}
+.ab-book .ab-prose strong {
+  font-weight: 600;
+}
+.ab-book .ab-prose a {
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--muted-foreground);
+}
+.ab-book .ab-prose a:hover {
+  text-decoration-color: currentcolor;
+}
+
+/* Lists: quiet markers, tight items. */
+.ab-book .ab-prose :where(ul, ol) {
+  padding-inline-start: 1.5em;
+}
+.ab-book .ab-prose li::marker {
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+.ab-book .ab-prose li {
+  padding-inline-start: 0.1em;
+}
+.ab-book .ab-prose li + li {
+  margin-block-start: 0.3em;
+}
+.ab-book .ab-prose li > p {
+  margin-block: 0;
+}
+
+/* A quotation: set in behind a hairline, under no box. */
+.ab-book .ab-prose blockquote {
+  margin-block: 1.5em;
+  margin-inline: 0;
+  padding: 0 0 0 1.25em;
+  border: 0;
+  border-inline-start: 1px solid var(--foreground);
+  color: var(--foreground);
+  font-style: normal;
+}
+.ab-book .ab-prose blockquote p {
+  margin-block: 0.5em;
+}
+
+/* A section break: a hairline with air around it. */
+.ab-book .ab-prose hr {
+  margin-block: 2.4em;
+  border: 0;
+  border-block-start: 1px solid var(--border);
+}
+
+/* Inline code sits in the line: a shade behind it, no pill. */
+.ab-book .ab-prose :not(pre) > code {
+  padding: 0.08em 0.28em;
+  font-size: 0.84em;
+  background: var(--muted);
+}
+
+/* A listing between two hairlines, flush with the text. Long lines wrap on a phone (as the editor draws them). */
+.ab-book .ab-prose pre,
+.ab-book .ab-prose .ab-code {
+  margin-block: 1.5em;
+}
+.ab-book .ab-prose pre {
+  padding: 0.85rem 0;
+  border-block: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.875rem;
+  line-height: 1.62;
+}
+.ab-book .ab-prose pre code {
+  background: transparent;
+  font-size: inherit;
+}
+
+/* A table with three rules, as a printed one: none between columns, no shaded head. */
+.ab-book .ab-prose .tableWrapper {
+  margin-block: 1.75em;
+  overflow-x: auto;
+}
+.ab-book .ab-prose table {
+  display: table;
+  width: 100%;
+  margin-block: 0;
+  border-block: 1px solid var(--foreground);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+.ab-book .ab-prose :where(th, td) {
+  padding: 0.55rem 1.25rem 0.55rem 0;
+  border: 0;
+  border-block-end: 1px solid var(--border);
+}
+.ab-book .ab-prose :where(th, td):last-child {
+  padding-inline-end: 0;
+}
+.ab-book .ab-prose tr:last-child > :where(th, td) {
+  border-block-end: 0;
+}
+.ab-book .ab-prose th {
+  background: transparent;
+  font-weight: 500;
+}
+.ab-book .ab-prose tr:first-child > th {
+  border-block-end-color: var(--foreground);
+}
+.ab-book .ab-prose :where(th, td) p {
+  margin: 0;
+}
+
+/* A callout is a note beside the text: its rule and icon carry the status, the words stay ink on the paper. */
+.ab-book .ab-prose [data-callout] {
+  align-items: baseline;
+  max-width: 38rem;
+  margin-block: 1.6em;
+  padding: 0.1em 0 0.1em 1rem;
+  border: 0;
+  border-inline-start: 2px solid var(--callout-rule);
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+.ab-book .ab-prose [data-callout='info'] {
+  --callout-rule: var(--info);
+}
+.ab-book .ab-prose [data-callout='warning'] {
+  --callout-rule: var(--warning);
+}
+.ab-book .ab-prose [data-callout] > svg {
+  align-self: flex-start;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-block-start: 0.15em;
+}
+.ab-book .ab-prose [data-callout] p {
+  margin-block: 0.4em;
+}
+.ab-book .ab-prose [data-callout] p:first-child {
+  margin-block-start: 0;
+}
+.ab-book .ab-prose [data-callout] p:last-child {
+  margin-block-end: 0;
+}
+
+/* Pictures take the column with a plain caption; a display formula stands apart, centred. */
+.ab-book .ab-prose img {
+  margin-block: 1.75em;
+  border-radius: var(--radius-sm);
+}
+.ab-book .ab-prose figcaption {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  font-style: normal;
+}
+.ab-book .ab-prose .katex-display {
+  margin-block: 1.6em;
+  padding-block: 0.25em;
+  font-size: 1.05em;
+}

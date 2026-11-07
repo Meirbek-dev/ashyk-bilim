@@ -1,10 +1,11 @@
-import { Award } from 'lucide-react'
-
+import { CertificateMini } from '#/features/certificates'
 import { m } from '#/paraglide/messages'
 import type { ProfileCertificate } from '#/shared/api/gen/types.gen'
 import { DataList } from '#/shared/components/data-list'
 import { Link } from '#/shared/components/link'
 import { formatDate } from '#/shared/i18n/format'
+
+import { hangingSection } from './hanging-section'
 
 /**
  * The certificates the person shows on their profile (B-SET-21), each leading to its public verification page; the
@@ -13,14 +14,14 @@ import { formatDate } from '#/shared/i18n/format'
 export function ProfileCertificates({ certificates }: { certificates: readonly ProfileCertificate[] }) {
   if (certificates.length === 0) return null
   return (
-    <section aria-labelledby="profile-certificates" className="flex flex-col gap-3">
-      <h2 id="profile-certificates" className="text-xl font-semibold">
+    <section aria-labelledby="profile-certificates" className={hangingSection}>
+      <h2 id="profile-certificates" className="text-xl font-semibold wrap-break-word">
         {m.settings_user_certificates()}
       </h2>
-      <DataList items={certificates} getKey={certificate => certificate.verify_code}>
+      <DataList variant="rows" items={certificates} getKey={certificate => certificate.verify_code}>
         {certificate => (
-          <div className="flex items-start gap-3">
-            <Award aria-hidden className="mt-0.5 size-5 shrink-0 text-reward" />
+          <div className="flex items-start gap-4">
+            <CertificateMini className="w-16 shrink-0" />
             <div className="flex min-w-0 flex-col">
               <h3 className="font-medium wrap-anywhere">
                 <Link to="/certificates/$certificateId/verify" params={{ certificateId: certificate.verify_code }}>

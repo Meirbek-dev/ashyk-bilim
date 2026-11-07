@@ -20,7 +20,7 @@ export function KindFilter({ search, counts }: { search: InboxSearch; counts: re
     ...INBOX_KINDS.map(kind => ({ kind, label: kindMeta[kind].label() })),
   ]
   return (
-    <nav aria-label={m.inbox_state()} className="flex flex-wrap">
+    <nav aria-label={m.inbox_state()} className="flex gap-6 overflow-x-auto border-b">
       {options.map(option => {
         const count = countOf(option.kind)
         return (

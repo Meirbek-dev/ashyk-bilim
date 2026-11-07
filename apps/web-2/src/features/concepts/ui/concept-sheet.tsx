@@ -33,11 +33,11 @@ export function ConceptSheet({ courseId, graph, row, activities, onClose }: Conc
       {/* Keyed by the concept: another one opened from the list starts from its own values. */}
       <ConceptForm key={row.concept.id} courseId={courseId} concept={row.concept} />
       <section className="flex flex-col gap-2 border-t pt-4">
-        <h3 className="font-medium">{m.concepts_prerequisites_title()}</h3>
+        <h3 className="text-lg font-semibold">{m.concepts_prerequisites_title()}</h3>
         <PrerequisitesEditor key={row.concept.id} courseId={courseId} graph={graph} conceptId={row.concept.id} />
       </section>
       <section className="flex flex-col gap-2 border-t pt-4">
-        <h3 className="font-medium">{m.concepts_tags_title()}</h3>
+        <h3 className="text-lg font-semibold">{m.concepts_tags_title()}</h3>
         <ConceptTags courseId={courseId} row={row} activities={activities} />
       </section>
       <div className="flex justify-end border-t pt-4">

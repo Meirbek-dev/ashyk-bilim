@@ -20,35 +20,33 @@ export function PrepareDrafts({ ids, preparing }: PrepareDraftsProps) {
   const prepare = useMutation(queueDraftsOptions(ids.activityId))
   const report = prepare.data
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <SubmitButton
-          type="button"
-          variant="outline"
-          pending={prepare.isPending}
-          onClick={() => prepare.mutate({ path: { activity_id: ids.activityId }, body: {} })}
-        >
-          {m.grading_ai_prepare()}
-        </SubmitButton>
-        <RouterLink
-          className={buttonVariants({ variant: 'ghost' })}
-          to="/teach/courses/$courseId/activities/$activityId/consistency"
-          params={ids}
-        >
-          {m.grading_ai_consistency()}
-        </RouterLink>
-        <output className="text-sm text-muted-foreground tabular-nums">
-          {report
-            ? m.grading_ai_prepared({
-                queued: formatNumber(report.queued.length),
-                skipped: formatNumber(report.skipped),
-              })
-            : preparing > 0
-              ? m.grading_ai_preparing({ count: formatNumber(preparing) })
-              : null}
-        </output>
-      </div>
+    <>
       {prepare.error ? <ErrorAlert>{presentError(prepare.error)}</ErrorAlert> : null}
-    </div>
+      <output className="text-sm text-muted-foreground tabular-nums empty:hidden">
+        {report
+          ? m.grading_ai_prepared({
+              queued: formatNumber(report.queued.length),
+              skipped: formatNumber(report.skipped),
+            })
+          : preparing > 0
+            ? m.grading_ai_preparing({ count: formatNumber(preparing) })
+            : null}
+      </output>
+      <RouterLink
+        className={`-ms-2.5 @2xl:ms-0 ${buttonVariants({ variant: 'ghost' })}`}
+        to="/teach/courses/$courseId/activities/$activityId/consistency"
+        params={ids}
+      >
+        {m.grading_ai_consistency()}
+      </RouterLink>
+      <SubmitButton
+        type="button"
+        variant="outline"
+        pending={prepare.isPending}
+        onClick={() => prepare.mutate({ path: { activity_id: ids.activityId }, body: {} })}
+      >
+        {m.grading_ai_prepare()}
+      </SubmitButton>
+    </>
   )
 }

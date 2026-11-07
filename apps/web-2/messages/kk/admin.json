@@ -241,6 +241,7 @@
   "admin_perm_resource_usergroup": "Топтар",
   "admin_perm_resource_role": "Рөлдер",
   "admin_perm_resource_api_token": "API токендері",
+  "admin_perm_other_actions": "Басқа әрекеттер",
   "admin_perm_action_any": "Барлық әрекеттер",
   "admin_perm_action_read": "Қарау",
   "admin_perm_action_create": "Құру",

@@ -1,6 +1,5 @@
 import { m } from '#/paraglide/messages'
 import type { AssessmentDetail } from '#/shared/api/gen/types.gen'
-import { StatusBadge } from '#/shared/components/status-badge'
 import { formatDateTime } from '#/shared/i18n/format'
 
 import { can } from '../model/route'
@@ -16,18 +15,21 @@ export function PublishingSection({ courseId, activityId, title, assessment }: P
   return (
     <section aria-labelledby="publishing-title" className="flex max-w-prose flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 id="publishing-title" className="text-xl font-semibold">
-          {m.assessments_nav_publishing()}
-        </h2>
-        <p className="text-sm text-muted-foreground">{m.assessments_publishing_hint()}</p>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusBadge tone={badge.tone}>{badge.label()}</StatusBadge>
-        {assessment.scheduled_at_unix ? (
-          <span className="text-sm text-muted-foreground">
-            {m.assessments_scheduled_at({ date: formatDateTime(assessment.scheduled_at_unix) })}
+        {/* The state as a word beside the heading (DESIGN 9), as on a course: the one amber draft stands out. */}
+        <div className="flex flex-wrap items-baseline gap-x-3">
+          <h2 id="publishing-title" className="text-xl font-semibold">
+            {m.assessments_nav_publishing()}
+          </h2>
+          <span className={`text-sm ${assessment.lifecycle === 'draft' ? 'text-warning' : 'text-muted-foreground'}`}>
+            {badge.label()}
           </span>
-        ) : null}
+          {assessment.scheduled_at_unix ? (
+            <span className="text-sm text-muted-foreground">
+              {m.assessments_scheduled_at({ date: formatDateTime(assessment.scheduled_at_unix) })}
+            </span>
+          ) : null}
+        </div>
+        <p className="text-sm text-muted-foreground">{m.assessments_publishing_hint()}</p>
       </div>
       <ReadinessList courseId={courseId} activityId={activityId} assessment={assessment} />
       {can(assessment, 'transition') ? (

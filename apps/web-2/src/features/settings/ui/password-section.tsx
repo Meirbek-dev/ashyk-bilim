@@ -4,12 +4,12 @@ import { m } from '#/paraglide/messages'
 import type { ChangePasswordRequest } from '#/shared/api/gen/types.gen'
 import { vChangePasswordRequest } from '#/shared/api/gen/valibot.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
-import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { toast } from '#/shared/ui/toast'
 
 import { hasCode } from '../model/settings'
 import { changePasswordOptions } from '../queries'
 import { PlainSection } from './plain-section'
+import { TypesetSection } from './typeset-section'
 
 const defaultValues: ChangePasswordRequest = { current_password: '', new_password: '' }
 
@@ -42,7 +42,7 @@ export function PasswordSection({ hasPassword }: { hasPassword: boolean }) {
     )
   }
   return (
-    <SettingsSection
+    <TypesetSection
       title={m.settings_password_title()}
       description={m.settings_password_hint()}
       onSubmit={() => form.handleSubmit()}
@@ -70,6 +70,6 @@ export function PasswordSection({ hasPassword }: { hasPassword: boolean }) {
           />
         )}
       </form.AppField>
-    </SettingsSection>
+    </TypesetSection>
   )
 }

@@ -7,6 +7,8 @@ import { DataTable } from '#/shared/components/data-table'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 
+import { FIGURES_AFTER_FIRST, TABLE_LOOK } from './table-look'
+
 type AdminTableProps<T> = {
   title: string
   /** One line on what the ranking measures, when its numbers need it. */
@@ -39,7 +41,9 @@ export function AdminTable<T extends RowData>({ title, description, rows, column
         emptyText={m.analytics_admin_empty()}
         onRetry={() => undefined}
       >
-        <DataTable label={title} rows={all ? rows : rows.slice(0, FIRST)} columns={columns} getKey={getKey} />
+        <div className={`${TABLE_LOOK} ${FIGURES_AFTER_FIRST}`}>
+          <DataTable label={title} rows={all ? rows : rows.slice(0, FIRST)} columns={columns} getKey={getKey} />
+        </div>
         <ShowMore hasMore={!all && rows.length > FIRST} pending={false} onMore={() => setAll(true)} />
       </ListState>
     </section>

@@ -11,10 +11,10 @@ export function LearnerDetail({ courseId, userId }: { courseId: CourseId; userId
   const { data } = useSuspenseQuery(learnerOptions(courseId, userId))
   return (
     <>
-      <p className="font-medium wrap-anywhere">{data.learner.name}</p>
-      <ul className="flex flex-col gap-4">
+      <p className="text-lg font-semibold wrap-anywhere">{data.learner.name}</p>
+      <ul className="flex flex-col divide-y border-y">
         {weakFirst(data.concepts).map(concept => (
-          <li key={concept.concept_id}>
+          <li key={concept.concept_id} className="py-3">
             <MasteryItem concept={concept} />
           </li>
         ))}

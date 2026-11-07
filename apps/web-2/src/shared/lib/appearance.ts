@@ -7,8 +7,9 @@ import { cookieItem } from './storage'
 export const MODES = ['system', 'light', 'dark'] as const
 export type Mode = (typeof MODES)[number]
 
-/** Typeface sets of tokens.css `[data-font]` (DESIGN 4); `inter` is the default and needs no attribute. */
+/** Typeface sets of tokens.css `[data-font]` (DESIGN 4); `press` is the default and needs no attribute. */
 export const FONTS = [
+  'press',
   'inter',
   'geist',
   'google',
@@ -38,7 +39,7 @@ const fontCookie = cookieItem('ab_font', v.picklist(FONTS))
  */
 export function readAppearance(profileTheme?: string | null): { theme: string; mode: Mode; font: Font } {
   const theme = profileTheme === undefined ? themeCookie.get() : v.is(vThemeSlug, profileTheme) ? profileTheme : null
-  return { theme: theme ?? DEFAULT_THEME, mode: modeCookie.get() ?? 'system', font: fontCookie.get() ?? 'inter' }
+  return { theme: theme ?? DEFAULT_THEME, mode: modeCookie.get() ?? 'system', font: fontCookie.get() ?? 'press' }
 }
 
 export const themeHref = (theme: string) => `/themes/${theme}.css`
@@ -47,7 +48,7 @@ export const themeHref = (theme: string) => `/themes/${theme}.css`
 export const modeAttribute = (mode: Mode) => (mode === 'system' ? undefined : mode)
 
 /** `<html data-font>`: absent for the default set. */
-export const fontAttribute = (font: Font) => (font === 'inter' ? undefined : font)
+export const fontAttribute = (font: Font) => (font === 'press' ? undefined : font)
 
 /** Swaps the open document's theme stylesheet (RootDocument's link) without saving: a preview. */
 export function showTheme(theme: string): void {

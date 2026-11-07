@@ -20,8 +20,8 @@ export function AboutPage() {
   const { data: session } = useSuspenseQuery(sessionOptions())
   // `about` is a plain short text; the old page showed it only when there was no description.
   const description = course.description || course.about
-  return (
-    <div className="flex flex-col gap-8">
+  const about = (
+    <>
       {description ? (
         <div className="max-w-prose">
           <Suspense fallback={<Skeleton className="h-4 w-2/3" />}>
@@ -30,14 +30,14 @@ export function AboutPage() {
         </div>
       ) : null}
       {course.learnings.length > 0 ? (
-        <section aria-labelledby="course-learnings" className="flex flex-col gap-2">
+        <section aria-labelledby="course-learnings" className="flex flex-col gap-3">
           <h2 id="course-learnings" className="text-xl font-semibold">
             {m.course_learnings_title()}
           </h2>
           {/* Two columns of outcomes, each marked by its own emoji or a check (B-CRS-08). */}
-          <ul className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
+          <ul className="grid gap-x-10 gap-y-2 sm:grid-cols-2">
             {course.learnings.map(learning => (
-              <li key={learning.id} className="flex items-start gap-2 wrap-anywhere">
+              <li key={learning.id} className="flex items-start gap-3 wrap-anywhere">
                 {learning.emoji ? (
                   <span aria-hidden className="w-5 shrink-0 text-center">
                     {learning.emoji}
@@ -51,7 +51,18 @@ export function AboutPage() {
           </ul>
         </section>
       ) : null}
-      {session ? <LearnerOutline course={course} /> : <GuestOutline courseId={courseId} />}
+    </>
+  )
+  return (
+    <div className="flex flex-col gap-10">
+      {session ? (
+        <LearnerOutline course={course} about={about} />
+      ) : (
+        <>
+          {about}
+          <GuestOutline courseId={courseId} />
+        </>
+      )}
       {session ? <ContributorApplication course={course} userId={session.user_id} /> : null}
     </div>
   )

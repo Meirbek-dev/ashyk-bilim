@@ -42,7 +42,7 @@ export function UserRoles({ user }: { user: AdminUser }) {
   })
   const error = assign.error
   return (
-    <section aria-labelledby="user-roles" className="flex flex-col gap-2">
+    <section aria-labelledby="user-roles" className="flex flex-col gap-3">
       <h3 id="user-roles" className="font-medium">
         {m.admin_users_col_roles()}
       </h3>
@@ -56,17 +56,19 @@ export function UserRoles({ user }: { user: AdminUser }) {
             void form.handleSubmit()
           }}
         >
-          <form.AppField name="role">
-            {field => (
-              <field.SelectField
-                label={m.admin_user_role_add()}
-                options={[
-                  { value: '', label: m.admin_user_role_choose() },
-                  ...addable.map(role => ({ value: role.slug, label: roleName(role) })),
-                ]}
-              />
-            )}
-          </form.AppField>
+          <div className="min-w-40 flex-1">
+            <form.AppField name="role">
+              {field => (
+                <field.SelectField
+                  label={m.admin_user_role_add()}
+                  options={[
+                    { value: '', label: m.admin_user_role_choose() },
+                    ...addable.map(role => ({ value: role.slug, label: roleName(role) })),
+                  ]}
+                />
+              )}
+            </form.AppField>
+          </div>
           <SubmitButton type="submit" variant="outline" pending={assign.isPending}>
             {m.admin_add()}
           </SubmitButton>

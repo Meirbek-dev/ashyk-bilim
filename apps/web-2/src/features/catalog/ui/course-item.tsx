@@ -5,8 +5,7 @@ import type { Course, CourseListItem } from '#/shared/api/gen/types.gen'
 import { CourseCover } from '#/shared/components/course-cover'
 import { Link } from '#/shared/components/link'
 import { Progress } from '#/shared/components/progress'
-import { StatusBadge } from '#/shared/components/status-badge'
-import { formatDate, formatPercent } from '#/shared/i18n/format'
+import { formatPercent } from '#/shared/i18n/format'
 
 import { authorNames, courseState, type CourseState } from '../model/catalog'
 
@@ -18,8 +17,8 @@ const stateLabels = {
 type CourseItemProps = { course: Course & Partial<Pick<CourseListItem, 'authors' | 'progress'>>; level?: 2 | 3 }
 
 /**
- * One course card: its cover (thumbnail or brand cover), name (the whole card opens the course), description, authors,
- * the signed-in learner's progress, date, a badge for unusual states and one when finishing it earns a certificate. Search hits are plain `Course`s: no
+ * One course on the shelf: its picture, then its name set on the paper (the whole card opens the course), authors, the
+ * signed-in learner's progress, one or two lines of description, unusual states. Search hits are plain `Course`s: no
  * authors or progress there.
  */
 export function CourseItem({ course, level = 2 }: CourseItemProps) {
@@ -28,43 +27,37 @@ export function CourseItem({ course, level = 2 }: CourseItemProps) {
   const authors = authorNames(course.authors ?? [])
   const percent = course.progress ? Math.round(course.progress.progress_pct) : null
   return (
-    <article className="relative flex h-full flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs transition-colors hover:border-input">
-      <CourseCover seed={course.id} imageKey={course.thumbnail_key} className="aspect-video w-full" />
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Heading className="min-w-0 text-lg font-semibold wrap-anywhere">
-            <Link variant="stretched" to="/courses/$courseId" params={{ courseId: course.id }}>
-              {course.name}
-            </Link>
-          </Heading>
-          {state ? <StatusBadge tone="neutral">{stateLabels[state]()}</StatusBadge> : null}
-          {course.certificate_offered ? (
-            <StatusBadge tone="info">
-              <Award aria-hidden data-icon="inline-start" />
-              {m.catalog_course_certificate()}
-            </StatusBadge>
-          ) : null}
-        </div>
-        {authors ? (
-          <p className="line-clamp-1 text-sm wrap-anywhere text-muted-foreground">
-            {(course.authors?.length === 1 ? m.catalog_course_author : m.catalog_course_authors)({ names: authors })}
+    <article className="relative flex h-full flex-col gap-3">
+      <CourseCover imageKey={course.thumbnail_key} />
+      <div className="flex flex-1 flex-col gap-1.5">
+        <Heading className="font-heading text-lg/snug font-medium wrap-anywhere">
+          <Link variant="stretched" to="/courses/$courseId" params={{ courseId: course.id }}>
+            {course.name}
+          </Link>
+        </Heading>
+        {authors ? <p className="line-clamp-1 text-sm wrap-anywhere text-muted-foreground">{authors}</p> : null}
+        {percent === null ? null : (
+          <div className="flex items-center gap-3 py-1">
+            <Progress aria-hidden value={percent} className="flex-1" />
+            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+              {m.catalog_course_progress({ percent: formatPercent(percent) })}
+            </span>
+          </div>
+        )}
+        {course.description ? (
+          <p className="line-clamp-2 text-sm wrap-anywhere text-muted-foreground">{course.description}</p>
+        ) : null}
+        {state || course.certificate_offered ? (
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 text-xs text-muted-foreground">
+            {state ? <span className="font-medium text-foreground">{stateLabels[state]()}</span> : null}
+            {course.certificate_offered ? (
+              <span className="flex items-center gap-1">
+                <Award aria-hidden className="size-3.5" />
+                {m.catalog_course_certificate()}
+              </span>
+            ) : null}
           </p>
         ) : null}
-        {course.description ? <p className="line-clamp-2 text-sm wrap-anywhere">{course.description}</p> : null}
-        <div className="mt-auto pt-2">
-          {percent === null ? (
-            <p className="text-xs text-muted-foreground">
-              {m.catalog_course_updated({ date: formatDate(course.updated_at_unix) })}
-            </p>
-          ) : (
-            <div className="flex items-center gap-3">
-              <Progress aria-hidden value={percent} className="flex-1" />
-              <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
-                {m.catalog_course_progress({ percent: formatPercent(percent) })}
-              </span>
-            </div>
-          )}
-        </div>
       </div>
     </article>
   )

@@ -36,7 +36,10 @@ export function UserStatus({ user }: { user: AdminUser }) {
   }
   const name = user.display_name || user.username
   return (
-    <section aria-labelledby="user-access" className="flex flex-col items-start gap-2">
+    <section
+      aria-labelledby="user-access"
+      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t pt-4"
+    >
       <h3 id="user-access" className="font-medium">
         {m.admin_user_access_title()}
       </h3>

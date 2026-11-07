@@ -5,7 +5,6 @@ import { m } from '#/paraglide/messages'
 import type { ProfileSections } from '#/shared/api/gen/types.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
-import { SettingsSection } from '#/shared/components/templates/settings-section'
 import { toast } from '#/shared/ui/toast'
 
 import { newSection, normalizeSections, vBuilderDocument } from '../model/profile-sections'
@@ -13,6 +12,7 @@ import { isStale } from '../model/settings'
 import { profileOptions, updateProfileOptions } from '../queries'
 import { AddSectionMenu } from './add-section-menu'
 import { SectionEditor, sectionTypeLabels } from './section-editor'
+import { TypesetSection } from './typeset-section'
 
 const useBuilderForm = (defaultValues: ProfileSections, onSubmit: (value: ProfileSections) => unknown) =>
   useAppForm(vBuilderDocument, { defaultValues, onSubmit, leaveGuard: true })
@@ -52,7 +52,7 @@ export function ProfileBuilder() {
     await form.handleSubmit()
   }
   return (
-    <SettingsSection
+    <TypesetSection
       title={m.settings_builder_title()}
       description={m.settings_builder_hint()}
       onSubmit={() => form.handleSubmit()}
@@ -95,6 +95,6 @@ export function ProfileBuilder() {
         onRetry={() => void reloadAndRetry()}
         pending={update.isPending || query.isFetching}
       />
-    </SettingsSection>
+    </TypesetSection>
   )
 }

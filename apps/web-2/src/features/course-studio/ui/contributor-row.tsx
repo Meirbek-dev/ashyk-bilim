@@ -6,6 +6,7 @@ import type { Contributor, UpdateContributorRequest } from '#/shared/api/gen/typ
 import { ChoiceItems } from '#/shared/components/choice-items'
 import { Link } from '#/shared/components/link'
 import { SubmitButton } from '#/shared/components/submit-button'
+import { UserAvatar } from '#/shared/components/user-avatar'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '#/shared/ui/dropdown-menu'
@@ -44,11 +45,14 @@ export function ContributorRow({ courseId, row, manage }: ContributorRowProps) {
   const changeable = manage && role !== 'creator' && !applying && !inactive
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <p className="min-w-0 grow basis-48 wrap-anywhere">
-          <Link to="/users/$username" params={{ username: row.username }}>
-            {name}
-          </Link>{' '}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <UserAvatar name={name} avatarKey={row.avatar_key} />
+        <p className="flex min-w-0 grow basis-40 flex-col wrap-anywhere">
+          <span className="text-sm font-medium">
+            <Link variant="title" to="/users/$username" params={{ username: row.username }}>
+              {name}
+            </Link>
+          </span>
           <span className="text-sm text-muted-foreground">@{row.username}</span>
         </p>
         {changeable ? (

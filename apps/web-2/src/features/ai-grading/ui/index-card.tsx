@@ -35,21 +35,18 @@ export function IndexCard({ courseId }: { courseId: CourseId }) {
     [m.ai_grading_index_model(), status.model],
   ] as const
   return (
-    <section
-      aria-labelledby="ai-grading-index"
-      className="flex max-w-prose flex-col gap-4 rounded-xl border bg-card p-gutter text-card-foreground shadow-xs"
-    >
+    <section aria-labelledby="ai-grading-index" className="flex max-w-2xl flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 id="ai-grading-index" className="text-xl font-semibold">
           {m.ai_grading_index_title()}
         </h2>
         <p className="text-sm text-muted-foreground">{m.ai_grading_index_hint()}</p>
       </div>
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+      <dl className="flex flex-col divide-y border-y text-sm">
         {facts.map(([label, value]) => (
-          <div key={label} className="contents">
+          <div key={label} className="flex items-baseline justify-between gap-4 py-2">
             <dt className="text-muted-foreground">{label}</dt>
-            <dd className="wrap-anywhere tabular-nums">{value}</dd>
+            <dd className="text-right wrap-anywhere tabular-nums">{value}</dd>
           </div>
         ))}
       </dl>

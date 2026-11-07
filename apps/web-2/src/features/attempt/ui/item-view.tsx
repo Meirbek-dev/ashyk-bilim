@@ -7,6 +7,7 @@ import { formatNumber } from '#/shared/i18n/format'
 
 import { extraPrompt } from '../model/attempt'
 import { ItemAnswerControl } from './item-answer-control'
+import { TitleText } from './title-text'
 
 type ItemViewProps = {
   item: AssessmentItem
@@ -17,7 +18,10 @@ type ItemViewProps = {
   disabled: boolean
 }
 
-/** One question: its number, points, title, the author's prompt (markdown) and the answer control of its kind. */
+/**
+ * One question, as on an exam paper: its number hanging in the margin (where there is one), points, title, the author's
+ * prompt (markdown) and the answer control of its kind.
+ */
 export function ItemView(props: ItemViewProps) {
   const { item, number, total } = props
   const prompt = extraPrompt(item)
@@ -29,13 +33,21 @@ export function ItemView(props: ItemViewProps) {
   }, [])
   return (
     <section className="flex flex-col gap-gutter">
-      <header className="flex flex-col gap-1">
+      <header className="flex flex-col gap-2">
         <p className="text-sm text-muted-foreground tabular-nums">
           {m.attempt_question_of({ number, total })} · {m.attempt_points({ points: formatNumber(item.max_score) })}
         </p>
-        <h1 ref={heading} tabIndex={-1} className="text-2xl font-semibold wrap-anywhere outline-none">
-          {item.title}
-        </h1>
+        <div className="relative">
+          <span
+            aria-hidden
+            className="absolute end-full top-0 me-6 hidden font-heading text-2xl text-muted-foreground tabular-nums @5xl:block"
+          >
+            {number}
+          </span>
+          <h1 ref={heading} tabIndex={-1} className="text-2xl font-semibold text-pretty wrap-anywhere outline-none">
+            <TitleText text={item.title} />
+          </h1>
+        </div>
       </header>
       {prompt ? (
         <Suspense fallback={null}>
