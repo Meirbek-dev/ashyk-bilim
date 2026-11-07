@@ -316,14 +316,19 @@ async function commit(args: string[]): Promise<number> {
 }
 
 // `just push [bookmark]` (default main). git push runs the pre-push hook; `jj git push` would skip it. Under jj the
-// bookmark first moves forward to @- (the last commit; jj refuses a backwards or sideways move).
+// bookmark first moves forward to @- (the last commit; jj refuses a backwards or sideways move). A checkout sitting
+// behind the bookmark, on purpose while it serves a dev stack, has nothing to move: the bookmark is pushed as it is.
 function push(args: string[]): number {
   const bookmark = args[0] ?? 'main'
   if (jj()) {
-    const moved = Bun.spawnSync(['jj', 'bookmark', 'move', bookmark, '--to', '@-'], {
-      cwd: top,
-      stdio: ['inherit', 'inherit', 'inherit'],
-    })
+    const parent = sync(['jj', 'log', '-r', '@-', '--no-graph', '-T', 'commit_id', '--ignore-working-copy'], top).out
+    const behind = sync(['git', 'merge-base', '--is-ancestor', parent, bookmark], top).code === 0
+    const moved = behind
+      ? { exitCode: 0 }
+      : Bun.spawnSync(['jj', 'bookmark', 'move', bookmark, '--to', '@-'], {
+          cwd: top,
+          stdio: ['inherit', 'inherit', 'inherit'],
+        })
     if (moved.exitCode !== 0) return moved.exitCode ?? 1
   }
   return (

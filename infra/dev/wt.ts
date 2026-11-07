@@ -121,7 +121,8 @@ function land(name?: string): void {
   const wt = target(name)
   if (!existsSync(wt.path)) fail(`no worktree ${wt.path}`)
   if (sh(['git', 'status', '--porcelain'], wt.path).out) fail(`${wt.path} has uncommitted changes: commit or discard`)
-  if (git('symbolic-ref', '--short', 'HEAD').out !== 'main') fail(`${main} is not on main`)
+  const jj = existsSync(join(main, '.jj')) // colocated: git's HEAD is detached, the main bookmark is what lands
+  if (!jj && git('symbolic-ref', '--short', 'HEAD').out !== 'main') fail(`${main} is not on main`)
   console.log(`wt: rebasing ${wt.branch} onto main`)
   if (sh(['git', 'rebase', 'main'], wt.path).code !== 0) {
     sh(['git', 'rebase', '--abort'], wt.path)
@@ -131,11 +132,29 @@ function land(name?: string): void {
     console.log('wt: no `just check` recipe on this branch: skipped')
   else if (sh(['just', 'check', '--fast'], wt.path, true).code !== 0)
     fail(`just check --fast is red in ${wt.path}; fix, commit, land again`)
-  const ff = git('merge', '--ff-only', '--quiet', wt.branch)
-  if (ff.code !== 0) fail(`fast-forward of main failed (main moved or local changes in the way):\n${ff.out}`)
-  console.log(`wt: main is now ${git('log', '--oneline', '-1').out}`)
+  if (jj) landJj(wt.branch)
+  else {
+    const ff = git('merge', '--ff-only', '--quiet', wt.branch)
+    if (ff.code !== 0) fail(`fast-forward of main failed (main moved or local changes in the way):\n${ff.out}`)
+  }
+  console.log(`wt: main is now ${git('log', '--oneline', '-1', 'main').out}`)
   remove(wt, false)
-  console.log('wt: push when ready: git push origin main (pre-push runs just check --fast)')
+  console.log(`wt: push when ready: ${jj ? 'just push' : 'git push origin main'} (pre-push runs just check --fast)`)
+}
+
+// The bookmark moves forward only (jj refuses otherwise). A checkout with nothing of its own follows it; one with
+// work, or one left on an older commit, stays where it is.
+function landJj(branch: string): void {
+  const jj = (...args: string[]) => sh(['jj', ...args], main)
+  const before = git('rev-parse', 'main').out
+  const parent = jj('log', '-r', '@-', '--no-graph', '-T', 'commit_id').out
+  const empty = jj('log', '-r', '@', '--no-graph', '-T', 'empty').out === 'true'
+  const moved = jj('bookmark', 'move', 'main', '--to', git('rev-parse', branch).out)
+  if (moved.code !== 0) fail(`moving main failed (main moved?):\n${moved.out}`)
+  if (empty && parent === before) {
+    const followed = jj('new', 'main')
+    if (followed.code !== 0) fail(`main moved, but the checkout did not follow it:\n${followed.out}`)
+  } else console.log(`wt: ${main} stays on its own commit; \`jj new main\` or \`jj rebase -d main\` when ready`)
 }
 
 function drop(name?: string, force = false): void {
