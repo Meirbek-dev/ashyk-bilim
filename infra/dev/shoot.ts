@@ -3,6 +3,7 @@
 //
 //   just shoot [--slot N] [--pages file.json] [--page name=/path ...] [--as <login>] [--filter <regex>]
 //              [--widths 1440,390] [--modes light,dark] [--label after] [--ref <git-ref>] [--locale kk|en]
+//              [--size large|larger]
 //
 // Pages: `--pages` is a JSON list of { "name", "path", "as"? } (`as`: a username or email, signed in through the
 // dev-only /auth/dev-login; none: `--as`, else a guest). `--page name=/path` adds one more.
@@ -36,6 +37,7 @@ function parse(argv: string[]) {
     label: '',
     ref: '',
     locale: '',
+    size: '',
   }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i] ?? ''
@@ -57,6 +59,7 @@ function parse(argv: string[]) {
     else if (arg === '--modes') o.modes = value().split(',')
     else if (arg === '--label') o.label = value()
     else if (arg === '--locale') o.locale = value()
+    else if (arg === '--size') o.size = value()
     else if (arg === '--ref') o.ref = value()
     else die(`unknown argument ${arg} (see the header of infra/dev/shoot.ts)`)
   }
@@ -126,7 +129,7 @@ async function main(): Promise<void> {
     for (const page of pages)
       for (const mode of o.modes)
         for (const width of o.widths)
-          await shot(browser, { page, mode, width, base, out, cookie: cookies.get(page.as), locale: o.locale })
+          await shot(browser, { page, mode, width, base, out, cookie: cookies.get(page.as), locale: o.locale, size: o.size })
   } finally {
     await browser.close()
     server?.stop()
@@ -143,9 +146,11 @@ type ShotArgs = {
   cookie: string | undefined
   /** The web's ab_locale cookie (none: ru, the base locale). */
   locale: string
+  /** The web's ab_size cookie (settings, text size; none: normal). */
+  size: string
 }
 
-async function shot(browser: import('playwright').Browser, { page, mode, width, base, out, cookie, locale }: ShotArgs) {
+async function shot(browser: import('playwright').Browser, { page, mode, width, base, out, cookie, locale, size }: ShotArgs) {
   const height = width > 800 ? 900 : 844
   const context = await browser.newContext({
     viewport: { width, height },
@@ -154,6 +159,7 @@ async function shot(browser: import('playwright').Browser, { page, mode, width, 
   })
   if (cookie) await context.addCookies([{ name: 'ab_session', value: cookie, domain: 'localhost', path: '/' }])
   if (locale) await context.addCookies([{ name: 'ab_locale', value: locale, domain: 'localhost', path: '/' }])
+  if (size) await context.addCookies([{ name: 'ab_size', value: size, domain: 'localhost', path: '/' }])
   const tab = await context.newPage()
   const flags: string[] = []
   tab.on('pageerror', error => flags.push(`ERR ${error.message.slice(0, 160)}`))

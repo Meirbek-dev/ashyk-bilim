@@ -39,7 +39,7 @@
   "ai_grading_index_model": "Модель эмбеддингов",
   "ai_grading_reindex": "Переиндексировать",
   "ai_grading_reindexed": "Переиндексация запущена",
-  "ai_grading_consistency_title": "Согласованность оценок",
+  "ai_grading_consistency_title": "Сравнение оценок",
   "ai_grading_pairs_title": "Похожие работы с разными оценками",
   "ai_grading_pairs_hint": "Ответы почти одинаковы по смыслу, а оценки за вопрос различаются на 15 % и больше.",
   "ai_grading_pairs_empty": "Похожих работ с разными оценками нет.",

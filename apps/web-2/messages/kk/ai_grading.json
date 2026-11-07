@@ -39,7 +39,7 @@
   "ai_grading_index_model": "Эмбеддинг моделі",
   "ai_grading_reindex": "Қайта индекстеу",
   "ai_grading_reindexed": "Қайта индекстеу басталды",
-  "ai_grading_consistency_title": "Бағалардың үйлесімділігі",
+  "ai_grading_consistency_title": "Бағаларды салыстыру",
   "ai_grading_pairs_title": "Бағалары әртүрлі ұқсас жұмыстар",
   "ai_grading_pairs_hint": "Жауаптардың мағынасы дерлік бірдей, ал сұрақ бойынша бағалар 15 % және одан көп ерекшеленеді.",
   "ai_grading_pairs_empty": "Бағалары әртүрлі ұқсас жұмыстар жоқ.",

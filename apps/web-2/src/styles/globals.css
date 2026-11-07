@@ -54,6 +54,15 @@ html {
   scroll-padding-top: 4.5rem;
 }
 
+/* Text size (settings, appearance): the browser's 16 px base times this; every token is in rem, so all of it scales. */
+html[data-size='large'] {
+  font-size: 112.5%;
+}
+
+html[data-size='larger'] {
+  font-size: 125%;
+}
+
 body {
   @apply bg-background text-foreground antialiased;
   word-spacing: 0.05em;

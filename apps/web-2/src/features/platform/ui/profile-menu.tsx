@@ -12,6 +12,7 @@ import { AccountMenu } from '#/shared/components/account-menu'
 import { IconButton } from '#/shared/components/icon-button'
 import { localeChoice } from '#/shared/components/locale-switch'
 import { useModeChoice } from '#/shared/components/mode-switch'
+import { useSizeChoice } from '#/shared/components/size-choice'
 import { UserAvatar, userInitials } from '#/shared/components/user-avatar'
 import { cookieItem } from '#/shared/lib/storage'
 
@@ -21,13 +22,14 @@ import { useWorkspaceChoice } from './workspace-switch'
 const dualWeb = cookieItem('ab_dual', v.literal('1'))
 
 /**
- * The profile menu: the public profile, settings, the way back to the old web while both run, appearance, language, the
+ * The profile menu: the public profile, settings, the way back to the old web while both run, mode, text size, language, the
  * workspace (phones) and sign out.
  */
 export function ProfileMenu({ session, current }: { session: SessionInfo; current: WorkspaceId }) {
   const navigate = useNavigate()
   const logout = useLogout()
   const mode = useModeChoice()
+  const size = useSizeChoice()
   const workspace = useWorkspaceChoice(session, current)
   const update = useMutation(updateProfileOptions(useQueryClient()))
   // A signed-in user's language lives in the profile (the server renders their pages in it): save, then reload in it.
@@ -65,7 +67,7 @@ export function ProfileMenu({ session, current }: { session: SessionInfo; curren
             ]
           : []),
       ]}
-      submenus={[mode, language]}
+      submenus={[mode, size, language]}
       final={{ label: m.auth_logout(), onSelect: logout }}
     />
   )

@@ -39,7 +39,7 @@
   "ai_grading_index_model": "Embedding model",
   "ai_grading_reindex": "Reindex",
   "ai_grading_reindexed": "Reindexing started",
-  "ai_grading_consistency_title": "Grade consistency",
+  "ai_grading_consistency_title": "Comparing grades",
   "ai_grading_pairs_title": "Similar submissions with different grades",
   "ai_grading_pairs_hint": "The answers mean nearly the same, yet the grades for the question differ by 15% or more.",
   "ai_grading_pairs_empty": "No similar submissions with different grades.",

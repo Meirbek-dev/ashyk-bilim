@@ -5,7 +5,7 @@ import { getLocale } from '#/paraglide/runtime'
 import { useSessionExpired } from '#/shared/api/held-session'
 import { LeaveConfirmHost } from '#/shared/components/leave-confirm'
 import { RouteAnnouncer } from '#/shared/components/route-announcer'
-import { fontAttribute, modeAttribute, readAppearance, themeHref } from '#/shared/lib/appearance'
+import { fontAttribute, modeAttribute, readAppearance, sizeAttribute, themeHref } from '#/shared/lib/appearance'
 import { Toaster } from '#/shared/ui/toast'
 
 // Only while a held upload outlives the session (rare): not in the entry either.
@@ -22,10 +22,16 @@ const SessionExpiredNotice = lazy(() =>
  */
 export function RootDocument({ children }: { children: ReactNode }) {
   const session = useRouteContext({ from: rootRouteId, select: context => context.session })
-  const { theme, mode, font } = readAppearance(session ? session.user.theme : undefined)
+  const { theme, mode, font, size } = readAppearance(session ? session.user.theme : undefined)
   const expired = useSessionExpired()
   return (
-    <html lang={getLocale()} data-theme={theme} data-mode={modeAttribute(mode)} data-font={fontAttribute(font)}>
+    <html
+      lang={getLocale()}
+      data-theme={theme}
+      data-mode={modeAttribute(mode)}
+      data-font={fontAttribute(font)}
+      data-size={sizeAttribute(size)}
+    >
       <head>
         <HeadContent />
         <link rel="stylesheet" href={themeHref(theme)} />

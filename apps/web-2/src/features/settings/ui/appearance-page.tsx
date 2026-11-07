@@ -8,16 +8,21 @@ import { themeManifestOptions } from '#/shared/api/themes'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import {
   MODES,
+  SIZES,
   readAppearance,
   saveFont,
   saveMode,
+  saveSize,
   saveTheme,
   showFont,
   showMode,
+  showSize,
   showTheme,
   type Font,
   type Mode,
+  type Size,
 } from '#/shared/lib/appearance'
+import { sizeLabels } from '#/shared/components/size-choice'
 import { toast } from '#/shared/ui/toast'
 
 import { startTheme, vAppearance } from '../model/settings'
@@ -35,27 +40,32 @@ const modeLabels = { system: m.ui_mode_system, light: m.ui_mode_light, dark: m.u
 const choices =
   'py-2 [&_[data-slot=radio-group]]:flex [&_[data-slot=radio-group]]:flex-wrap [&_[data-slot=radio-group]]:gap-x-8 [&_[data-slot=radio-group]]:gap-y-2 [&_[data-slot=radio-group]>*]:w-auto'
 
-type Shown = { theme: string; mode: Mode; font: Font }
+type Shown = { theme: string; mode: Mode; font: Font; size: Size }
 
-/** The picked theme, mode and font on the open page while the user chooses; leaving unsaved puts back the saved ones. */
-function Preview({ theme, mode, font, saved }: Shown & { saved: { current: Shown } }) {
+/** The picked theme, mode, size and font on the open page while the user chooses; leaving unsaved puts back the saved ones. */
+function Preview({ theme, mode, font, size, saved }: Shown & { saved: { current: Shown } }) {
   useEffect(() => {
     showTheme(theme)
     showMode(mode)
     showFont(font)
-  }, [theme, mode, font])
+    showSize(size)
+  }, [theme, mode, font, size])
   useEffect(
     () => () => {
       showTheme(saved.current.theme)
       showMode(saved.current.mode)
       showFont(saved.current.font)
+      showSize(saved.current.size)
     },
     [saved],
   )
   return null
 }
 
-/** /settings/appearance: theme, mode, font and language. A pick shows at once; Save keeps it (theme in the profile). */
+/**
+ * /settings/appearance: mode and text size first (the short, common choices), then theme, font and language. A pick
+ * shows at once; Save keeps it (theme in the profile).
+ */
 export function AppearancePage() {
   const { data: profile } = useSuspenseQuery(profileOptions())
   const { data: themes } = useSuspenseQuery(themeManifestOptions())
@@ -63,24 +73,20 @@ export function AppearancePage() {
   const [defaultValues] = useState<v.InferOutput<typeof vAppearance>>(() => {
     const shown = readAppearance()
     const slugs = themes.map(theme => theme.slug)
-    return {
-      theme: startTheme(profile.theme, shown.theme, slugs),
-      mode: shown.mode,
-      font: shown.font,
-      locale: getLocale(),
-    }
+    return { ...shown, theme: startTheme(profile.theme, shown.theme, slugs), locale: getLocale() }
   })
   // What the document shows outside this page: the appearance it opened with, then each saved one.
-  const saved = useRef<Shown>({ theme: defaultValues.theme, mode: defaultValues.mode, font: defaultValues.font })
+  const saved = useRef<Shown>({ ...defaultValues })
   const form = useAppForm(vAppearance, {
     defaultValues,
     leaveGuard: true,
-    onSubmit: async ({ theme, mode, font, locale }) => {
+    onSubmit: async ({ theme, mode, font, size, locale }) => {
       await update.mutateAsync({ body: { theme, locale } })
       saveTheme(theme)
       saveMode(mode)
       saveFont(font)
-      saved.current = { theme, mode, font }
+      saveSize(size)
+      saved.current = { theme, mode, font, size }
       // Paraglide stores the new language and reloads the page in it.
       if (locale === getLocale()) toast.add({ title: m.settings_saved() })
       else await setLocale(locale)
@@ -95,11 +101,10 @@ export function AppearancePage() {
       error={update.error}
     >
       <form.Subscribe selector={state => state.values}>
-        {values => <Preview theme={values.theme} mode={values.mode} font={values.font} saved={saved} />}
+        {values => (
+          <Preview theme={values.theme} mode={values.mode} font={values.font} size={values.size} saved={saved} />
+        )}
       </form.Subscribe>
-      <form.Field name="theme">
-        {field => <ThemePicker themes={themes} value={field.state.value} onChange={field.handleChange} />}
-      </form.Field>
       <div className={choices}>
         <form.AppField name="mode">
           {field => (
@@ -110,6 +115,19 @@ export function AppearancePage() {
           )}
         </form.AppField>
       </div>
+      <div className={choices}>
+        <form.AppField name="size">
+          {field => (
+            <field.RadioGroupField
+              label={m.ui_size()}
+              options={SIZES.map(size => ({ value: size, label: sizeLabels[size]() }))}
+            />
+          )}
+        </form.AppField>
+      </div>
+      <form.Field name="theme">
+        {field => <ThemePicker themes={themes} value={field.state.value} onChange={field.handleChange} />}
+      </form.Field>
       <form.Field name="font">
         {field => <FontPicker value={field.state.value} onChange={field.handleChange} />}
       </form.Field>

@@ -1,6 +1,6 @@
 import { expect, test } from 'vite-plus/test'
 
-import { readAppearance, saveFont, saveTheme } from './appearance'
+import { readAppearance, saveFont, saveSize, saveTheme } from './appearance'
 
 test("a signed-in user's theme wins over the theme this browser kept (BUG-362/380)", () => {
   saveTheme('bold-tech')
@@ -22,4 +22,13 @@ test('the font set is kept in this browser and shown on <html> at once; the defa
   saveFont('press')
   expect(readAppearance().font).toBe('press')
   expect(document.documentElement.dataset['font']).toBeUndefined()
+})
+
+test('the text size is kept in this browser and shown on <html> at once; normal needs no attribute', () => {
+  saveSize('larger')
+  expect(readAppearance().size).toBe('larger')
+  expect(document.documentElement.dataset['size']).toBe('larger')
+  saveSize('normal')
+  expect(readAppearance().size).toBe('normal')
+  expect(document.documentElement.dataset['size']).toBeUndefined()
 })

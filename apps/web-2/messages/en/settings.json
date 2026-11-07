@@ -108,7 +108,7 @@
   "settings_totp_disabled": "Two-factor authentication turned off",
   "settings_totp_google": "Signing in with Google does not ask for the code.",
   "settings_appearance_title": "Appearance",
-  "settings_appearance_hint": "Your choice shows on the page right away. After Save, the theme and language follow you to every device, and the mode and font stay with this browser.",
+  "settings_appearance_hint": "Your choice shows on the page right away. After Save, the theme and language follow you to every device, and the mode, text size and font stay with this browser.",
   "settings_field_theme": "Theme",
   "settings_theme_search": "Find a theme",
   "settings_field_mode": "Mode",

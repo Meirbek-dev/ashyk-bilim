@@ -4,7 +4,6 @@ import { Check } from 'lucide-react'
 import type { ReactElement } from 'react'
 
 import { m } from '#/paraglide/messages'
-import { Anchor } from '#/shared/components/anchor'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 import { buttonVariants } from '#/shared/components/button-variants'
@@ -13,6 +12,7 @@ import { gradebookCsvHref } from '../model/exports'
 import { gradebookColumns, gradebookRows, gradebookSummary } from '../model/gradebook'
 import { curriculumOptions, gradebookOptions } from '../queries'
 import { GradebookTable } from './gradebook-columns'
+import { CsvLink } from './csv-link'
 import { GroupFilter } from './group-filter'
 import { scoreText } from './labels'
 import { LearnerSearch } from './learner-search'
@@ -68,13 +68,7 @@ export function GradebookPage(): ReactElement {
             group={search.group}
             onGroup={group => navigate({ search: prev => ({ ...prev, group }) })}
           />
-          <Anchor
-            className={`${buttonVariants({ variant: 'ghost' })} -ms-2.5 @3xl:ms-auto`}
-            href={gradebookCsvHref(courseId)}
-            download
-          >
-            {m.grading_export_csv()}
-          </Anchor>
+          <CsvLink className="-ms-2.5 @3xl:ms-auto" href={gradebookCsvHref(courseId)} />
         </div>
       )}
       <ListState

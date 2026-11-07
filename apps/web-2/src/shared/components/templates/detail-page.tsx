@@ -31,10 +31,11 @@ export function DetailPage(props: DetailPageProps) {
   const heading = (
     <div className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        {/* A workspace's tabs are its content: on a phone a 96-character course name took six lines above them. */}
+        {/* A workspace's tabs are its content: a 96-character course name took six lines above them on a phone and
+            three at 1440 px, so its title is a step smaller and stops at two lines (the full name is its tooltip). */}
         <h1
           title={hero ? undefined : title}
-          className={`min-w-0 font-semibold wrap-anywhere ${hero ? 'text-3xl' : 'line-clamp-2 text-2xl @2xl:line-clamp-none'}`}
+          className={`min-w-0 font-semibold wrap-anywhere ${hero ? 'text-3xl' : 'line-clamp-2 text-xl'}`}
         >
           {title}
         </h1>
@@ -57,7 +58,7 @@ export function DetailPage(props: DetailPageProps) {
       ) : (
         <header className="flex flex-col gap-4 @2xl:flex-row @2xl:items-center @2xl:justify-between">
           <div className="flex min-w-0 items-center gap-4">
-            {cover ? <div className="hidden w-32 shrink-0 @xl:block">{cover}</div> : null}
+            {cover ? <div className="hidden w-28 shrink-0 @xl:block">{cover}</div> : null}
             {heading}
           </div>
           {primaryAction ? <div className="flex flex-col @2xl:block">{primaryAction}</div> : null}

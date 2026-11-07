@@ -47,6 +47,17 @@ describe('prose (styles/prose.css)', () => {
     expect(style('article').maxWidth).toBe('none')
   })
 
+  test('a larger text size (settings) scales text and headings: every size is in rem', async () => {
+    document.documentElement.dataset['size'] = 'large'
+    try {
+      const style = await renderProse()
+      expect(style('p').fontSize).toBe('19.125px')
+      expect(style('h1').fontSize).toBe('38.25px')
+    } finally {
+      delete document.documentElement.dataset['size']
+    }
+  })
+
   test('compact density shrinks text and headings one step', async () => {
     const style = await renderProse('compact')
     expect(style('p').fontSize).toBe('15px')

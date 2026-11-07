@@ -25,6 +25,10 @@ export const FONTS = [
 ] as const
 export type Font = (typeof FONTS)[number]
 
+/** Text size: every token is in rem, so `<html data-size>` scales the whole interface; `normal` needs no attribute. */
+export const SIZES = ['normal', 'large', 'larger'] as const
+export type Size = (typeof SIZES)[number]
+
 const DEFAULT_THEME = 'modern-minimal'
 
 // The slug becomes a URL path: only the shape of public/themes/<slug>.css names is accepted.
@@ -32,14 +36,20 @@ const vThemeSlug = v.pipe(v.string(), v.regex(/^[a-z0-9-]{1,64}$/))
 const themeCookie = cookieItem('ab_theme', vThemeSlug)
 const modeCookie = cookieItem('ab_mode', v.picklist(MODES))
 const fontCookie = cookieItem('ab_font', v.picklist(FONTS))
+const sizeCookie = cookieItem('ab_size', v.picklist(SIZES))
 
 /**
  * `profileTheme`: the signed-in user's `theme` (null = the default), absent for a guest. The account's theme wins over
  * this browser's cookie, so it follows the user to any device and never comes from a previous account (BUG-362/380).
  */
-export function readAppearance(profileTheme?: string | null): { theme: string; mode: Mode; font: Font } {
+export function readAppearance(profileTheme?: string | null): { theme: string; mode: Mode; font: Font; size: Size } {
   const theme = profileTheme === undefined ? themeCookie.get() : v.is(vThemeSlug, profileTheme) ? profileTheme : null
-  return { theme: theme ?? DEFAULT_THEME, mode: modeCookie.get() ?? 'system', font: fontCookie.get() ?? 'press' }
+  return {
+    theme: theme ?? DEFAULT_THEME,
+    mode: modeCookie.get() ?? 'system',
+    font: fontCookie.get() ?? 'press',
+    size: sizeCookie.get() ?? 'normal',
+  }
 }
 
 export const themeHref = (theme: string) => `/themes/${theme}.css`
@@ -49,6 +59,9 @@ export const modeAttribute = (mode: Mode) => (mode === 'system' ? undefined : mo
 
 /** `<html data-font>`: absent for the default set. */
 export const fontAttribute = (font: Font) => (font === 'press' ? undefined : font)
+
+/** `<html data-size>`: absent for the normal size. */
+export const sizeAttribute = (size: Size) => (size === 'normal' ? undefined : size)
 
 /** Swaps the open document's theme stylesheet (RootDocument's link) without saving: a preview. */
 export function showTheme(theme: string): void {
@@ -86,4 +99,17 @@ export function saveMode(mode: Mode): void {
 export function saveFont(font: Font): void {
   fontCookie.set(font)
   showFont(font)
+}
+
+/** Applies the text size to the open document without saving: a preview. */
+export function showSize(size: Size): void {
+  const attribute = sizeAttribute(size)
+  if (attribute) document.documentElement.dataset['size'] = attribute
+  else delete document.documentElement.dataset['size']
+}
+
+/** Saves the text size (this browser only, like the mode) and applies it at once. */
+export function saveSize(size: Size): void {
+  sizeCookie.set(size)
+  showSize(size)
 }

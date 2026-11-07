@@ -5,7 +5,7 @@ import { locales } from '#/paraglide/runtime'
 import { ApiError } from '#/shared/api/errors'
 import { vChangeEmailRequest, vUpdateProfileRequest } from '#/shared/api/gen/valibot.gen'
 import { checkUpload, maxUploadBytes } from '#/shared/api/upload'
-import { FONTS, MODES } from '#/shared/lib/appearance'
+import { FONTS, MODES, SIZES } from '#/shared/lib/appearance'
 import type { GamificationSettings, SessionSummary } from '#/shared/api/gen/types.gen'
 
 const MB = 1024 * 1024
@@ -26,6 +26,7 @@ export const vAppearance = v.object({
   theme: v.string(),
   mode: v.picklist(MODES),
   font: v.picklist(FONTS),
+  size: v.picklist(SIZES),
   locale: v.picklist(locales),
 })
 
