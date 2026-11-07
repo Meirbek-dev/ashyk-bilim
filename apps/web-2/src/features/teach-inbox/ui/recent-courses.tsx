@@ -30,9 +30,13 @@ export function RecentCourses() {
           <ArrowRight aria-hidden className="size-4" />
         </RouterLink>
       </div>
-      <ul className="grid gap-x-6 gap-y-8 @xl:grid-cols-2 @4xl:grid-cols-3">
+      <ul className="grid gap-x-6 gap-y-4 @xl:grid-cols-2 @xl:gap-y-8 @4xl:grid-cols-3">
         {data.items.map(course => (
-          <li key={course.id} className="group relative flex flex-col gap-3">
+          // Narrow, a row (a small picture beside the name): six full-width pictures were six screens of scrolling.
+          <li
+            key={course.id}
+            className="group relative grid grid-cols-[6rem_minmax(0,1fr)] items-center gap-4 @xl:flex @xl:flex-col @xl:items-stretch @xl:gap-3"
+          >
             <CourseCover
               imageKey={course.thumbnail_key}
               className="aspect-video w-full rounded-lg border transition-opacity duration-150 group-hover:opacity-90"
