@@ -14,6 +14,7 @@
   "grading_not_found": "Работа не найдена",
   "grading_queue_table": "Сданные работы",
   "grading_queue_empty": "Здесь появятся работы учащихся, когда они их сдадут.",
+  "grading_queue_empty_status": "Здесь сейчас нет работ.",
   "grading_no_work": "В этой активности нечего сдавать.",
   "grading_search_label": "Поиск учащегося",
   "grading_late_only": "Только с опозданием",

@@ -50,6 +50,9 @@ export const fileQuery = (search: QueueSearch): NonNullable<FileSubmissionReview
 export const activeFilters = (search: QueueSearch): number =>
   [search.status, search.q, search.late, search.group].filter(Boolean).length
 
+/** The filters past the status tab: a status tab alone is a place, so an empty one offers no reset. */
+export const narrowing = (search: QueueSearch): number => [search.q, search.late, search.group].filter(Boolean).length
+
 /** DataTable's sort <-> the URL: the server's default (newest first) is no sort at all. */
 export const tableSort = (search: QueueSearch) =>
   search.sort ? { id: search.sort, desc: (search.order ?? 'desc') === 'desc' } : undefined

@@ -12,6 +12,7 @@
   "grading_not_found": "Submission not found",
   "grading_queue_table": "Submitted work",
   "grading_queue_empty": "Learners’ submissions will appear here once they hand them in.",
+  "grading_queue_empty_status": "No work here right now.",
   "grading_no_work": "This activity takes no hand-ins, so there is nothing here.",
   "grading_search_label": "Search learners",
   "grading_late_only": "Late only",

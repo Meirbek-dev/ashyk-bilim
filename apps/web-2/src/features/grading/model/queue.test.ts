@@ -6,6 +6,7 @@ import type { FileReviewItem, FileReviewStats, ReviewItem, Stats } from '#/share
 import {
   activeFilters,
   assessmentQuery,
+  narrowing,
   extendOutcome,
   extensionTargets,
   fileQuery,
@@ -82,6 +83,9 @@ describe('queue', () => {
     })
     expect(activeFilters(junk)).toBe(0)
     expect(activeFilters({ ...junk, status: 'returned', q: 'x' })).toBe(2)
+    // A status tab alone narrows nothing: its empty state offers no reset.
+    expect(narrowing({ ...junk, status: 'returned' })).toBe(0)
+    expect(narrowing({ ...junk, status: 'returned', q: 'x' })).toBe(1)
   })
 
   test('B-GRD-02 the filters go to the server; the file queue calls "needs grading" submitted', () => {

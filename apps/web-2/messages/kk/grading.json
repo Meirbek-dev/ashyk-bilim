@@ -12,6 +12,7 @@
   "grading_not_found": "Жұмыс табылмады",
   "grading_queue_table": "Тапсырылған жұмыстар",
   "grading_queue_empty": "Білім алушылар тапсырған жұмыстар осында пайда болады.",
+  "grading_queue_empty_status": "Мұнда қазір жұмыс жоқ.",
   "grading_no_work": "Бұл белсенділік тапсырылмайды, сондықтан мұнда ештеңе жоқ.",
   "grading_search_label": "Білім алушыны іздеу",
   "grading_late_only": "Тек кешіккендер",

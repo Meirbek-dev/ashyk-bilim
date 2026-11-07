@@ -10,7 +10,7 @@ import { ShowMore } from '#/shared/components/show-more'
 import { ListPage } from '#/shared/components/templates/list-page'
 
 import { draftsBySubject } from '../model/ai-draft'
-import { activeFilters, sortSearch, statusCounts, tableSort } from '../model/queue'
+import { activeFilters, narrowing, sortSearch, statusCounts, tableSort } from '../model/queue'
 import { draftsOptions, queueOptions, type Work } from '../queries'
 import { LearnerSearch } from './learner-search'
 import { PrepareDrafts } from './prepare-drafts'
@@ -93,8 +93,8 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
         pending={false}
         error={query.error}
         count={rows.length}
-        filtered={active > 0}
-        emptyText={m.grading_queue_empty()}
+        filtered={narrowing(search) > 0}
+        emptyText={search.status ? m.grading_queue_empty_status() : m.grading_queue_empty()}
         onResetFilters={() => void navigate({ search: {} })}
         onRetry={() => void query.refetch()}
       >
