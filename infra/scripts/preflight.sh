@@ -46,11 +46,11 @@ elif [[ $db_user == ashyq_app ]] &&
   fail "server.env: the ashyq_app password in AB__DATABASE__URL is not ASHYQ_APP_DB_PASSWORD of .env"
 fi
 
-# RUNBOOK 3.15: Zitadel's database in its own instance. Pointing Zitadel at zitadel-db while its data is still in
+# RUNBOOK 3.14: Zitadel's database in its own instance. Pointing Zitadel at zitadel-db while its data is still in
 # db would start a new, empty Zitadel instance (every account unable to sign in).
 zhost=$(env_get ZITADEL_DB_HOST)
 case ${zhost:-db} in
-  db) warn ".env: Zitadel's database shares the app's db; move it with just zitadel-db-move (RUNBOOK 3.15)" ;;
+  db) warn ".env: Zitadel's database shares the app's db; move it with just zitadel-db-move (RUNBOOK 3.14)" ;;
   zitadel-db)
     # shellcheck disable=SC2016 # expanded in the db container
     if [[ -n $(compose ps -q db 2>/dev/null) ]] &&

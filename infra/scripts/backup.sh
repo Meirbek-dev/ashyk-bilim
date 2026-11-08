@@ -28,7 +28,7 @@ compose exec -T db sh -c 'set -e; cd /dumps
 compose exec -T redis redis-cli SAVE >/dev/null
 
 # Point-in-time recovery: tonight's base backup of each instance, older bases and their WAL pruned
-# (RUNBOOK 3.14). A failure does not stop the snapshot; the run still ends non-zero.
+# (RUNBOOK 3.13). A failure does not stop the snapshot; the run still ends non-zero.
 pitr_failed=0
 for svc in db zitadel-db; do
   # shellcheck disable=SC2016

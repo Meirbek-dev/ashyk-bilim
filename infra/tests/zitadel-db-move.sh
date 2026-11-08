@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rehearsal of infra/scripts/zitadel-db-move.sh (RUNBOOK 3.15) on a throwaway project of the production files
+# Rehearsal of infra/scripts/zitadel-db-move.sh (RUNBOOK 3.14) on a throwaway project of the production files
 # (compose.yaml + compose.prod.yaml, smoke's throwaway secrets, no published ports, only the data services and
 # Zitadel started): Zitadel set up on db as on a stack from before 2026-11, moved to zitadel-db, back, moved
 # again; then a fresh install straight on zitadel-db. After each step the provisioner PAT still authenticates

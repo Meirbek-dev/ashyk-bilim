@@ -916,7 +916,7 @@ Done:
 Decided, not done:
 
 1. **Recovery point** (changed 2026-11-01, done in the repo): point-in-time recovery through WAL archiving and
-   nightly base backups into the backup directory of the production host (RUNBOOK 3.14), built-in tools only
+   nightly base backups into the backup directory of the production host (RUNBOOK 3.13), built-in tools only
    (`archive_command`, `pg_basebackup`, `pg_archivecleanup`: no extra image to build and pin). Backups stay on
    the production host (FINDINGS 3). Turned on by the first deploy of the change (it recreates db).
 2. **Drop `content_chunks.published`** with its trigger `content_chunks_published` and the index
@@ -943,7 +943,7 @@ Decided, not done:
    differ" refusal and a failed deploy rolls back by itself (`infra/scripts/migrations.sh`, INFRA "Build and
    release").
 8. **Zitadel in its own Postgres instance** until phase 4 removes it (done in the repo, 2026-11): compose service
-   `zitadel-db`, `ZITADEL_DB_HOST`; production moved 2026-11-03 (`just zitadel-db-move`, RUNBOOK 3.15).
+   `zitadel-db`, `ZITADEL_DB_HOST`; production moved 2026-11-03 (`just zitadel-db-move`, RUNBOOK 3.14).
 9. **Schemas** (core, learning, ai, analytics, ops) and an `extensions` schema (review 43; ARCHITECTURE §8
     rule 8). Done in the repo (2026-11): expand `20261102090000` creates the schemas, the mapping
     `app_table_schema()`, grants and default privileges per schema, and sets the `search_path` on the database
@@ -1340,8 +1340,8 @@ static build of section 7 items 1–3, with the server filling page meta; dual w
 dual-web profile, `WEB_LINKS`, the deprecated operations, the Next CI jobs and the docs
 listed in section 14. Exit: no Node container in prod, `apps/web` gone from `main`.
 Done 2026-11-08: prod moved to web-2 through dual web (the new web the default); `apps/web`, the
-`web2` service, the dual-web profile and the Next CI jobs deleted from `main` (first deploy:
-RUNBOOK 3.12). Left: the `web` container still runs web-2 on Node (SSR), so the SPA build of
+`web2` service, the dual-web profile and the Next CI jobs deleted from `main`; production runs
+without the old web since 2026-11-08 (`834909a3`). Left: the `web` container still runs web-2 on Node (SSR), so the SPA build of
 section 7, `WEB_LINKS`, the deprecated operations, `migrate-editor-docs --after-cutover` and the
 section 14 docs remain (`STAGE-2-CUTOVER.md`).
 

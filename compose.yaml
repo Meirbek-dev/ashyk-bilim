@@ -15,7 +15,7 @@ x-logging: &logging
     max-file: '5'
 
 # Zitadel's database lives in its own instance (zitadel-db) with ZITADEL_DB_HOST=zitadel-db, else in the app's
-# db: a stack created before 2026-11 until infra/scripts/zitadel-db-move.sh moves it (RUNBOOK 3.15).
+# db: a stack created before 2026-11 until infra/scripts/zitadel-db-move.sh moves it (RUNBOOK 3.14).
 x-zitadel-db: &zitadel-db
   ZITADEL_DATABASE_POSTGRES_HOST: ${ZITADEL_DB_HOST:-db}
   ZITADEL_DATABASE_POSTGRES_PORT: 5432
@@ -65,7 +65,7 @@ services:
 
   # Zitadel's own Postgres (same image and superuser as db): its eventstore load, vacuum, locks and memory stay
   # off the app's instance, and either can be restarted, upgraded or recovered alone. Holds the zitadel database
-  # once ZITADEL_DB_HOST=zitadel-db; idles empty on a stack whose Zitadel still uses db (RUNBOOK 3.15).
+  # once ZITADEL_DB_HOST=zitadel-db; idles empty on a stack whose Zitadel still uses db (RUNBOOK 3.14).
   zitadel-db:
     image: *pg-image
     command: >-

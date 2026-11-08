@@ -274,9 +274,14 @@ ordinary archived one, and unarchiving it there answers 500 (the `deleted_at` ch
 (`ashyq admin restore-course`) or leave them archived before rolling back past it.
 
 Rollback switches image tags only. If the bad release also changed compose or
-`infra/` files, `git checkout <previous sha>` first. A checkout older than `zitadel-db` (3.15) points Zitadel
+`infra/` files, `git checkout <previous sha>` first. A checkout older than `zitadel-db` (3.14) points Zitadel
 back at db, where its database is now `zitadel_moved_*`, and Zitadel would initialise a new, empty instance
 there: run `just zitadel-db-move --back` before such a checkout.
+
+A release from before 2026-11-08 (`a1478442` and older) still runs the old web next to web-2 (profile `dual-web`).
+Rolling back past it needs that `git checkout` plus the `.env` lines its compose files read, which the first deploy
+without the old web removed from the host: `COMPOSE_PROFILES=runner,dual-web`, `WEB_IMAGE_NAME`, `WEB_MEMORY` and
+`NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` (any new random value; RUNBOOK 3.12 of `834909a3` has the details).
 
 ### 3.3 Manual backup
 
@@ -318,7 +323,7 @@ just deploy           # records .deploy-history so rollback works
 ```
 
 `restore.sh` only restores into a project without a `postgres_data` or `zitadel_pg_data` volume; the snapshot's
-`.env` decides where `zitadel` goes (`ZITADEL_DB_HOST`, 3.15).
+`.env` decides where `zitadel` goes (`ZITADEL_DB_HOST`, 3.14).
 On the existing prod host that means `dc down -v` first, which deletes every
 data volume of the project: do it only with a snapshot that passed
 `just restore-drill`. Legacy offen archives (`backup-*.tar.zst`, before
@@ -479,39 +484,15 @@ just restic stats latest
 docker system df
 ```
 
-The PITR archive (`backups/pitr`, 3.14) holds three base backups plus their WAL; `PITR_BASE_KEEP=2` in `.env`
-shrinks it. A growing `pg_wal` inside the db volume means archiving fails (3.14).
+The PITR archive (`backups/pitr`, 3.13) holds three base backups plus their WAL; `PITR_BASE_KEEP=2` in `.env`
+shrinks it. A growing `pg_wal` inside the db volume means archiving fails (3.13).
 Free space with: old `dumps/pre-*.dump` (nothing prunes them); `docker image
 prune` (deploy.sh keeps 5 releases); `docker builder prune`. Not: `docker volume
 prune` (legacy `app_content` and stopped projects' data), `backups/legacy-final-*`.
 The restic repository grows only by new objects and changed dumps; Sunday runs
 forget and prune old snapshots (INFRA "Backup and restore").
 
-### 3.12 First deploy without the old web (one time)
-
-The release that deleted `apps/web` runs `web` from `ashyq-web-2` and has no `dual-web` profile and no `web2`
-service. On a host still set up for dual web, before `just deploy`:
-
-```bash
-env_set() { grep -q "^$1=" .env && sed -i "s|^$1=.*|$1=$2|" .env || echo "$1=$2" >>.env; }
-grep -n '^COMPOSE_PROFILES=' .env
-env_set COMPOSE_PROFILES runner                 # runner,dual-web -> runner (keep any other profile)
-sed -i '/^WEB_IMAGE_NAME=/d; /^WEB_MEMORY=/d; /^NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=/d' .env
-```
-
-Then `just deploy` (it recreates nginx, whose env changed). The old `web2` container is now an orphan:
-
-```bash
-dc up -d --no-build --wait --remove-orphans     # or: dc rm -sf web2
-docker ps --format '{{.Names}} {{.Image}}' | grep web   # only <project>-web-1 on ashyq-web-2:<sha>
-```
-
-`AB__SERVER__WEB_LINKS` stays `legacy` (the web answers the old addresses with a 301). A rollback to an
-earlier release keeps this checkout: `just rollback <sha>` runs `ashyq-web-2:<sha>`, which exists for the recent
-releases (`docker manifest inspect ghcr.io/meirbek-dev/ashyq-web-2:<sha>`). The compose files of an older commit
-need the dropped `.env` lines back. Still open after this: `docs/STAGE-2-CUTOVER.md`.
-
-### 3.13 Code runner (go-judge)
+### 3.12 Code runner (go-judge)
 
 Code activities run in `runner` (profile `runner`, image `ashyq-runner:<sha>` from `infra/runner`; INFRA
 "Services"). Languages and their compile/run commands live in `apps/server/crates/clients/src/gojudge/languages.rs`
@@ -533,7 +514,7 @@ docker volume rm "$(sed -n 's/^COMPOSE_PROJECT_NAME=//p' .env)_judge0_box" 2>/de
 
 Stored runs and answers keep their language ids and verdicts; the old runs keep their Judge0 token.
 
-### 3.14 Point-in-time recovery
+### 3.13 Point-in-time recovery
 
 Owner decision 2026-11-01: a mistake (a wrong `DELETE`, a bad migration, a broken import) can be undone to the
 minute, not only to last night's dump. Postgres archives every WAL segment into `${BACKUP_DIR}/pitr/wal`
@@ -541,7 +522,7 @@ minute, not only to last night's dump. Postgres archives every WAL segment into 
 `just backup` (the nightly timer) adds a base backup to `${BACKUP_DIR}/pitr/base/<UTC stamp>` and keeps the newest
 `PITR_BASE_KEEP` (3), deleting WAL older than the oldest kept base. The window is the last three nights; older
 points come from the restic dumps (3.4). Both sit on the backup disk of this host, like the restic repository
-(FINDINGS 3: not a disk-failure protection). Zitadel's own instance (zitadel-db, 3.15) is archived the same way
+(FINDINGS 3: not a disk-failure protection). Zitadel's own instance (zitadel-db, 3.14) is archived the same way
 into `${BACKUP_DIR}/pitr-zitadel`. `just pitr-test` rehearses it on throwaway containers; `just ci-infra` runs it.
 
 The base backup connects over the instance's socket for replication (`pg_hba.conf` of the image: `local
@@ -562,7 +543,7 @@ after the target is gone, so take `just backup` first if the current state may s
 ```bash
 just pitr-restore '2026-11-02 10:15:00+05'      # just before the mistake; asks, then stops server/worker/db
 just pitr-restore latest                        # everything archived (a lost data directory, same disk)
-PITR_SERVICE=zitadel-db just pitr-restore '<time>'   # Zitadel's own instance only (after 3.15)
+PITR_SERVICE=zitadel-db just pitr-restore '<time>'   # Zitadel's own instance only (after 3.14)
 ```
 
 It picks the newest base finished before the target, keeps the current data directory in the volume as
@@ -577,7 +558,7 @@ or a new volume) met the old archive: `restore.sh` moves it aside to `pitr/befor
 move `pitr/wal` and `pitr/base` aside and recreate db. A logical restore always starts a new archive: run `just backup`
 right after it so the new cluster has a base.
 
-### 3.15 Zitadel in its own Postgres instance
+### 3.14 Zitadel in its own Postgres instance
 
 Schema review item 47: Zitadel's eventstore (writes on every sign-in and token, its own vacuum and locks) runs in
 the compose service `zitadel-db` (same image and superuser as db, 512m, volume `zitadel_pg_data`), so it cannot

@@ -318,7 +318,7 @@ restic *args:
 restore archive:
     {{ bash_bin }} infra/scripts/restore.sh "$@"
 
-# Point-in-time recovery of the production cluster in place from the WAL archive (RUNBOOK 3.14):
+# Point-in-time recovery of the production cluster in place from the WAL archive (RUNBOOK 3.13):
 # `just pitr-restore '2026-11-02 10:15:00+05' [base]` or `just pitr-restore latest`.
 pitr-restore target *base:
     {{ bash_bin }} infra/scripts/pitr-restore.sh "$@"
@@ -327,7 +327,7 @@ pitr-restore target *base:
 pitr-test:
     {{ bash_bin }} infra/tests/pitr.sh
 
-# Move Zitadel's database from the app's db into its own instance zitadel-db (RUNBOOK 3.15); `--back` undoes it.
+# Move Zitadel's database from the app's db into its own instance zitadel-db (RUNBOOK 3.14); `--back` undoes it.
 zitadel-db-move *args:
     {{ bash_bin }} infra/scripts/zitadel-db-move.sh "$@"
 

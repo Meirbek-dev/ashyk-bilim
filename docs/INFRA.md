@@ -77,7 +77,7 @@ makes it non-internal to publish ports), `exec-net` (`internal`; same in dev).
 | worker | prod | edge-net, data-net, exec-net | same env; healthcheck `true`; `stop_grace_period: 60s` |
 | server-migrate | prod, profile `maintenance` | data-net | one-shot `ashyq migrate` |
 | db | shared | data-net | `pgvector/pgvector:0.8.7-pg18-trixie` by digest (trixie = glibc collation of the prod cluster); prod adds the `db_dumps` volume |
-| zitadel-db | shared | data-net | Zitadel's own instance, same image and superuser; holds `zitadel` once `ZITADEL_DB_HOST=zitadel-db` (RUNBOOK 3.15), else idles empty; prod adds WAL archiving into `${BACKUP_DIR}/pitr-zitadel` and `db_dumps` |
+| zitadel-db | shared | data-net | Zitadel's own instance, same image and superuser; holds `zitadel` once `ZITADEL_DB_HOST=zitadel-db` (RUNBOOK 3.14), else idles empty; prod adds WAL archiving into `${BACKUP_DIR}/pitr-zitadel` and `db_dumps` |
 | db-init | shared | data-net | one-shot `db-init.sh` as the superuser (db, and zitadel-db when Zitadel lives there) |
 | redis | shared | data-net | `--requirepass` |
 | volume-init | shared | none | one-shot: `zitadel_machinekey` to uid 1000, mode 0700 |
@@ -144,7 +144,7 @@ pgvector still lives in `public` until the superuser step of RUNBOOK 2.6 (`vecto
 | Database | Owner | Notes |
 | --- | --- | --- |
 | `ashyq` (`ASHYQ_DATABASES`; dev: `ashyq_dev,ashyq_test`) | `ashyq` | |
-| `zitadel` | `zitadel` | in `zitadel-db` with `ZITADEL_DB_HOST=zitadel-db` (fresh installs; prod after RUNBOOK 3.15), else in `db`; after the move db keeps `zitadel_moved_<stamp>` until dropped |
+| `zitadel` | `zitadel` | in `zitadel-db` with `ZITADEL_DB_HOST=zitadel-db` (fresh installs; prod after RUNBOOK 3.14), else in `db`; after the move db keeps `zitadel_moved_<stamp>` until dropped |
 | `cs_mooc` (`openu` until 2026-10-25) | `cs_mooc` | prod only, legacy; kept, unused, not backed up |
 
 db-init runs `infra/postgres/db-init.sh`: `init.sql`, then `roles.sql` on `template1` and on each database of
@@ -191,13 +191,13 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 | | `IMAGE_TAG` | image tag; written by deploy.sh |
 | Postgres | `POSTGRES_USER`, `POSTGRES_PASSWORD` | db, zitadel-db (initdb only), db-init, zitadel-init |
 | | `PG_LOG_MIN_DURATION_STATEMENT` (default `300` ms) | db, zitadel-db slow-query log |
-| | `PG_ARCHIVE_MODE` (default `on`), `PG_ARCHIVE_TIMEOUT` (default `300` s), `PITR_BASE_KEEP` (default 3, shell) | prod WAL archiving (RUNBOOK 3.14) |
+| | `PG_ARCHIVE_MODE` (default `on`), `PG_ARCHIVE_TIMEOUT` (default `300` s), `PITR_BASE_KEEP` (default 3, shell) | prod WAL archiving (RUNBOOK 3.13) |
 | | `ASHYQ_DB_PASSWORD`, `ASHYQ_DATABASES` | db-init; server-migrate's owner URL |
 | | `ASHYQ_APP_DB_PASSWORD`, `ASHYQ_RO_DB_PASSWORD` (unset: roles not created) | db-init (`roles.sql`); the app password also in `server.env` |
 | Zitadel | `ZITADEL_MASTERKEY` (exactly 32 chars; losing it loses every account) | zitadel; preflight |
 | | `ZITADEL_DB_PASSWORD` | db-init, zitadel-init, zitadel |
 | | `ZITADEL_PAT_EXPIRATION` | zitadel first-instance setup; preflight expiry check |
-| | `ZITADEL_DB_HOST` (`zitadel-db`, or unset = `db` until the move, RUNBOOK 3.15) | zitadel, zitadel-init, db-init, backup, restore; preflight |
+| | `ZITADEL_DB_HOST` (`zitadel-db`, or unset = `db` until the move, RUNBOOK 3.14) | zitadel, zitadel-init, db-init, backup, restore; preflight |
 | Storage | `RUSTFS_DATA_DIR` (prod `/data/cs-mooc/content`; default the `rustfs_data` volume) | rustfs, backup |
 | | `RUSTFS_ACCESS_KEY`, `RUSTFS_SECRET_KEY` | rustfs, storage-init, server/worker (`AB__STORAGE__*`) |
 | Backup | `BACKUP_DIR` (default `./backups`; prod `/data/cs-mooc/backups`) | restic repository `${BACKUP_DIR}/restic` |

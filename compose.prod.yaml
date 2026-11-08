@@ -194,7 +194,7 @@ services:
   # ---------------------------------------------------------------------------
   # Overrides of compose.yaml services
   # ---------------------------------------------------------------------------
-  # Point-in-time recovery (RUNBOOK 3.14): every WAL segment is archived into ${BACKUP_DIR}/pitr/wal
+  # Point-in-time recovery (RUNBOOK 3.13): every WAL segment is archived into ${BACKUP_DIR}/pitr/wal
   # (infra/postgres/wal-archive.sh), at the latest after PG_ARCHIVE_TIMEOUT seconds (default 300 = the recovery
   # point); backup.sh adds a nightly base backup to ${BACKUP_DIR}/pitr/base. Keep the flags of compose.yaml.
   db:
@@ -215,7 +215,7 @@ services:
       pitr-init:
         condition: service_completed_successfully
 
-  # Zitadel's own instance, archived the same way into ${BACKUP_DIR}/pitr-zitadel (RUNBOOK 3.14, 3.15).
+  # Zitadel's own instance, archived the same way into ${BACKUP_DIR}/pitr-zitadel (RUNBOOK 3.13, 3.14).
   zitadel-db:
     command: >-
       postgres

@@ -32,7 +32,7 @@ with the API's env (`apps/server/.env`): `E2E_PASSWORD=... just server seed-e2e`
   the server builds follows it: verification / reset emails, the Google sign-in error
   redirect, the certificate PDF's QR code, `next_action.href`, work-queue
   hrefs. Phase 9 makes `v2` the only map. Code: `ab_core::links`.
-- **Data migrations** (`docs/STAGE-2-CUTOVER.md` section 2), idempotent, `--dry-run` prints counts;
+- **Data migrations** (`docs/STAGE-2-CUTOVER.md` section 1), idempotent, `--dry-run` prints counts;
   same env as the API:
   - `ashyq admin migrate-editor-docs [--dry-run] [--after-cutover]` - D-01:
     `blockEmbed` → `embedBlock`, plain-paragraph HTML posts → JSON documents.

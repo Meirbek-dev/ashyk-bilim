@@ -2,7 +2,7 @@
 
 Everything the server kept only for the old web (`apps/web`, deleted 2026-11-08): dead compatibility, no client
 uses it (production still sets `WEB_LINKS=legacy`; web-2 redirects those links). The contract step
-(`docs/STAGE-2-CUTOVER.md` section 3 item 3, gate G-07) deletes it. One row per removal; `target` is an
+(`docs/STAGE-2-CUTOVER.md` section 2 item 3, gate G-07) deletes it. One row per removal; `target` is an
 `operationId`, a `Schema.field`, a behaviour or a setting; `replacement` is
 what web-2 uses instead (`-` = nothing, just delete). Deprecated
 operations are also marked in `openapi.v2.json` (`deprecated: true` +

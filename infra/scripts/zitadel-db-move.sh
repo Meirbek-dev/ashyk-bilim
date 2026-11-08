@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Move Zitadel's database from the app's instance (db) into its own (zitadel-db), RUNBOOK 3.15:
+# Move Zitadel's database from the app's instance (db) into its own (zitadel-db), RUNBOOK 3.14:
 #   zitadel-db-move.sh          STACK=prod by default; `just zitadel-db-move`
 #   zitadel-db-move.sh --back   undo: Zitadel on db again, on the copy the move left there (later writes are lost)
 # Zitadel is stopped for the copy (sign-in is unavailable for that time; the app keeps serving): pg_dump of db's
@@ -90,7 +90,7 @@ if [[ -n $(q zitadel-db "SELECT 1 FROM pg_database WHERE datname = 'zitadel'") ]
   tables=$(q zitadel-db "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
     WHERE c.relkind IN ('r', 'p') AND n.nspname NOT IN ('pg_catalog', 'information_schema')" zitadel)
   [[ $tables == 0 ]] || die "zitadel-db already has a zitadel database with $tables tables (an earlier attempt?):
-    check it, then rename or drop it there (RUNBOOK 3.15)"
+    check it, then rename or drop it there (RUNBOOK 3.14)"
 fi
 size=$(q db "SELECT pg_size_pretty(pg_database_size('zitadel'))")
 confirm "Zitadel stops while its database ($size) is copied from db to zitadel-db."
@@ -120,4 +120,4 @@ if ! start_zitadel || ! smoke; then
   back
   die "the move was undone; see compose logs zitadel zitadel-db"
 fi
-log "moved. Drop db/zitadel_moved_$stamp after a week without problems (RUNBOOK 3.15)"
+log "moved. Drop db/zitadel_moved_$stamp after a week without problems (RUNBOOK 3.14)"

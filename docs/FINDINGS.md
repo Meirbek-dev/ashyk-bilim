@@ -13,7 +13,7 @@ application *and* every backup of it.
 
 **Owner decision 2026-10-02: no offsite backups** (reconfirmed 2026-11-01). Since 2026-11-01 the recovery point
 is minutes, not a day: WAL archiving and nightly base backups allow point-in-time recovery over the last three
-nights (RUNBOOK 3.14), into the same backup directory. Kept here as an accepted risk. Stage 1 reduced what it can: snapshots are logical dumps plus volumes and
+nights (RUNBOOK 3.13), into the same backup directory. Kept here as an accepted risk. Stage 1 reduced what it can: snapshots are logical dumps plus volumes and
 secrets, restorable by one script and checked by `just restore-drill`
 (RUNBOOK 3.5). Copying the repository off the host by hand before risky work is
 the only offsite protection left (`restic copy` to any second repository).

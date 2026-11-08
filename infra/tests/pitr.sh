@@ -2,7 +2,7 @@
 # Point-in-time recovery rehearsal on throwaway Postgres containers of the stack's image (no network, own
 # volumes, all removed on exit): archive WAL with infra/postgres/wal-archive.sh, take a base backup with
 # pitr-base.sh, write before and after a target time, then pitr-prepare.sh restores
-#   1. in place (the data directory moved aside, as RUNBOOK 3.14 does on production) to the target time:
+#   1. in place (the data directory moved aside, as RUNBOOK 3.13 does on production) to the target time:
 #      the rows before it are back, the row after it is not;
 #   2. into a new volume to the end of the archive: every row is back;
 #   3. from a base taken after recovery 1 (it carries that recovery's settings) to the end of the archive:

@@ -13,7 +13,7 @@ id=$(pg_controldata . | sed -n 's/^Database system identifier: *//p')
 if [ ! -f /pitr/wal/SYSTEM_ID ]; then
   echo "$id" >/pitr/wal/SYSTEM_ID
 elif [ "$(cat /pitr/wal/SYSTEM_ID)" != "$id" ]; then
-  echo "wal-archive: /pitr/wal belongs to cluster $(cat /pitr/wal/SYSTEM_ID), this is $id: move it aside (RUNBOOK 3.14)" >&2
+  echo "wal-archive: /pitr/wal belongs to cluster $(cat /pitr/wal/SYSTEM_ID), this is $id: move it aside (RUNBOOK 3.13)" >&2
   exit 1
 fi
 if [ -f "$dst" ]; then

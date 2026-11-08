@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Point-in-time recovery of the stack's Postgres cluster in place (RUNBOOK 3.14):
+# Point-in-time recovery of the stack's Postgres cluster in place (RUNBOOK 3.13):
 #   pitr-restore.sh '<YYYY-MM-DD HH:MM:SS+05>' [base stamp]    replay the WAL archive up to that moment
 #   pitr-restore.sh latest [base stamp]                       replay everything archived (lost data dir, same disk)
 # STACK=prod by default; PITR_SERVICE=db (default: the app's instance, archive pitr/) or zitadel-db (Zitadel's,
-# pitr-zitadel/, once it moved there: RUNBOOK 3.15). Stops the instance's clients (server and worker, plus
+# pitr-zitadel/, once it moved there: RUNBOOK 3.14). Stops the instance's clients (server and worker, plus
 # Zitadel while it shares db; Zitadel for zitadel-db), then the instance; lays the newest base backup older than
 # the target (or the given one) into the data volume with infra/postgres/pitr-prepare.sh, which keeps the
 # current data directory beside it (<PGDATA>.before-pitr-<stamp>, same volume); starts it, waits until recovery
@@ -73,4 +73,4 @@ compose up -d --wait
 scheme=$(envval PUBLIC_SCHEME)
 origin=${SMOKE_ORIGIN:-${scheme:-https}://$(envval NGINX_SERVER_NAME)}
 SMOKE_RESOLVE_IP=${SMOKE_RESOLVE_IP:-127.0.0.1} bash "$ROOT/infra/scripts/smoke.sh" "$origin"
-log "point-in-time recovery done; the replaced data directory stays in the volume until removed (RUNBOOK 3.14)"
+log "point-in-time recovery done; the replaced data directory stays in the volume until removed (RUNBOOK 3.13)"
