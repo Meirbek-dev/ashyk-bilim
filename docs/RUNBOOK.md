@@ -223,7 +223,10 @@ dc run --rm server admin prune-superseded-code-runs --dry-run   # how many
 dc run --rm server admin prune-superseded-code-runs
 ```
 
-Then `VACUUM (ANALYZE) learning.code_runs;` as the owner to return the space to the table.
+Then `VACUUM (ANALYZE) learning.code_runs;` as the owner: the space is reused, but the file keeps its size (on the
+dev copy 16 MB of heap for 15 live rows after the prune). To give it back to the disk, `VACUUM (FULL, ANALYZE)
+learning.code_runs;` in a quiet hour: it holds ACCESS EXCLUSIVE on the table while it copies the live rows, a
+moment for a table this small, but a hand-in that runs code waits for it.
 
 ## 3. Routine
 

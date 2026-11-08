@@ -472,10 +472,10 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   trigger `users_reissue_certificates` does it for the previous release until a contract drops it.
 - **A deleted account stays disabled**: `deleted_at IS NULL OR disabled_at IS NOT NULL`.
 - **Account state is timestamps** (`20261102011100`): `users.disabled_at` (NULL = active) and
-  `users.email_verified_at` (NULL = not confirmed). The old `status` / `email_verified` columns are mirrored both
-  ways by `users_sync_state` for the previous release; `status` goes in a contract migration, `email_verified`
-  stays while it still marks accounts whose state is not known yet (`NULL`, resolved from Zitadel on first read).
-  The API still says `status: active|disabled` and `email_verified: bool`.
+  `users.email_verified_at` (NULL = not confirmed); `status` is gone. `email_verified` stays, mirrored both ways by
+  `users_sync_state`, while it marks accounts whose state is not known yet (`NULL`, resolved from Zitadel on first
+  read; owner Q-2026-11-02-1, `just contracts-pending`). The API says `status: active|disabled` and
+  `email_verified: bool`.
 - **Every foreign key has an index led by its columns** (`crates/db/tests/fk_index_audit.rs`); the exceptions are
   actor/audit columns onto `users` (never deleted by the app), each listed with its reason.
 - **Retention** (`maintenance:retention`, daily, windows `AB__RETENTION__*`): a job is deleted when it succeeds
@@ -510,9 +510,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   setting `ab.time_zone`, which every pool passes from the config at connect (`ab_db::with_platform_zone`, the
   test pools too); a session without it (psql, `just db sql`) uses `Asia/Almaty`. The functions are STABLE:
   never use them in an index or a generated column. Today's XP (`daily_xp_earned` in the API) is summed from
-  `xp_transactions` at read time, never stored: the server no longer writes the column; the trigger
-  `gamification_profiles_daily_xp` (`20261102071100`) keeps it as the previous release reads it (UTC day, from the
-  journal) until the lane C2 contract drops both.
+  `xp_transactions` at read time and has no column.
 - **Membership is an `enrolments` row** (`20261102030100_enrolments.sql`, REWRITE 5.6 n5): `(course_id, user_id)` PK,
   written on a join, an enrolment by a roster manager or a first mark, and deleted on leave / removal; every member predicate (`has_trail_run`, `course_members`, `takes_assessments`, the work queue,
   analytics, notifications, `course_visible` for archived courses), the roster (`GET /courses/{id}/learners`, keyset
@@ -522,14 +520,13 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   history in `trail_legacy_marks`, which nothing reads and which counts for no progress.
 - **A completion is a `completions` row** (`20261102030500_completions.sql`, REWRITE 5.6 n8): `(activity_id,
   user_id)` PK, `completed_at`. A learner's mark writes it, un-marking and leaving delete it (the leave's
-  `enrolment_events` row keeps what it reset); the lesson projection and the trail's steps read it. Graded kinds complete through their projection: the projector's graded write keeps the row equal
-  to `activity_progress.completed_at` in the same transaction (`sync_graded_completion`); the trigger
-  `activity_progress_sync_completion` does the same for the previous release until the lane C2 contract drops it.
-- **`course_progress` derives what follows from it** (`20261102030200_course_progress_derived.sql`): `progress_pct`
-  (completed / total, two decimals, numeric rounding) and `certificate_eligible` (every required activity done and
-  `completed_at` set; a leaver's `completed_at` is cleared) are set by a BEFORE trigger, never by the code; the
-  counts are `0 <= completed <= total` and `completed_at` only on a completed course. The lane C contract turns
-  both into virtual generated columns.
+  `enrolment_events` row keeps what it reset); the lesson projection and the trail's steps read it. Graded kinds
+  complete through their projection: the projector's graded write keeps the row equal to
+  `activity_progress.completed_at` in the same transaction (`sync_graded_completion`); no trigger does it.
+- **`course_progress` derives what follows from it** (`20261103030100_course_progress_generated.sql`):
+  `progress_pct` (completed / total, two decimals, numeric rounding) and `certificate_eligible` (every required
+  activity done and `completed_at` set; a leaver's `completed_at` is cleared) are virtual generated columns, never
+  written by the code; the counts are `0 <= completed <= total` and `completed_at` only on a completed course.
 - **`course_progress_v` computes the completion half of `course_progress`** (`20261102071000`, REWRITE 5.6 n8
   step 4) from enrolments (members only), published required activities (graded always; others unless
   `settings.required` is false; never an assessment restricted away from the member) and completions. Nothing
@@ -554,7 +551,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **A course update links activities by key** (`course_update_activities`, cascading from both sides), not by
   an unchecked uuid array.
 - **Audit IPs are `inet`** (`auth_audit_log.ip_address`): a forwarded value that is not an address is stored as
-  NULL (`inet_or_null`), never rejecting the row; the text `ip` goes in a contract migration.
+  NULL (`inet_or_null`), never rejecting the row. There is no text copy.
 - **No index repeats another** (`crates/db/tests/index_audit.rs`): an index whose keys prefix another index's on
   the same table (same predicate, operator classes, order) is dropped; a unique one stays unless a unique twin
   has exactly its columns. Exceptions are listed with their reason.
@@ -564,8 +561,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   through the person's submissions and attempts; it gets a real key with the merge).
 - **Translations are rows** (`translations (entity, entity_id, field, lang, text)`, fields listed in
   `translatable_fields`): the platform's Kazakh / English `description` / `about`; the base column holds the
-  default-language text, no row = not translated. Until the contract migration triggers mirror them into the old
-  `platforms.*_kk` / `*_en` columns; a translation change moves the platform's version.
+  default-language text, no row = not translated; the old `platforms.*_kk` / `*_en` columns are gone. A translation
+  change moves the platform's version (`translations_touch_platform`).
 - **Scores are exact numerics behind domains** (`20261102020100_score_domains`, contract
   `20261103020000_scores_numeric`): percentages and penalties are `percent` (numeric(5,2), 0..100), points
   `score_points` and weights `score_weight` (numeric(8,2), >= 0, no `'NaN'`), on submissions, grading entries,
@@ -600,8 +597,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   content-addressed (`content_hash` = `assessment_content_hash(items, policy)`, computed by Postgres) and frozen;
   `max_points` is the items' total `max_score`. The hand-in creates or reuses it in its own short transaction
   before the hand-in's (`assessment_versions::ensure`, per-assessment advisory lock for the number) and names
-  it in the hand-in UPDATE; `submissions.assessment_version_id` is then write-once like the snapshots. The
-  snapshots stay the record until readers move (REWRITE 5.6 n15).
+  it in the hand-in UPDATE; `submissions.assessment_version_id` is then write-once like the snapshots. Readers
+  take items and policy from the version (`20261108000200`); the snapshot columns wait for a contract.
 - **A grade entry keeps its points** (`20261102070100_grading_points`): `grading_entries.max_points` (the
   attempt's `assessment_versions.max_points`), `raw_points`, `final_points` (`score_points`) are set by a BEFORE
   INSERT trigger from the percentages, whoever writes the entry (both releases), and frozen with the row. The rule
