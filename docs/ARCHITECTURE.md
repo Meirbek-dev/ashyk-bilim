@@ -601,13 +601,10 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   round(points × 100 / max, 2)` (numeric, half away from zero; NULL for max 0): a percentage that passes through
   points returns within 0.5 / max_points percentage points. A hand-in without a version has no points. The
   percentage is still what the code writes and reads.
-- **One attempt status vocabulary** (`20261102070000_attempt_status_vocabulary`): submissions and file
-  attempts are `draft → submitted → graded → released → returned` in storage. The API keeps `pending` /
-  `published` (`attempt_status_enum!` in ab-core: serde and `as_str` are the API spelling, the sqlx encoding
-  writes `stored()` and decodes either spelling); SQL literals name both spellings (`status IN ('submitted',
-  'pending')`, `IN ('released', 'published')`) and filters bind `stored_spellings()`. Until contract
-  `20261103070000` rewrites the rows and narrows the checks, a BEFORE trigger stores the previous spelling so
-  the previous release reads every row.
+- **One attempt status vocabulary** (`20261102070000_attempt_status_vocabulary`, contract `20261103070000`):
+  submissions and file attempts are `draft → submitted → graded → released → returned` in storage, and the CHECKs
+  refuse anything else. The API keeps `pending` / `published` (`attempt_status_enum!` in ab-core: serde and `as_str`
+  are the API spelling, the sqlx encoding reads and writes `stored()`); SQL literals name the stored words only.
 - **Code-run verdicts are the platform's own** (`code_run_cases.verdict`, `TestVerdict`: accepted, wrong_answer,
   time_limit, memory_limit, output_limit, compile_error, runtime_error, internal_error). The API's case
   `status_id` is derived from it (`legacy_status_id`, Judge0's numbers the web maps); the stored

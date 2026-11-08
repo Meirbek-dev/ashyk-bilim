@@ -695,7 +695,7 @@ pub async fn submission_fact(pool: &PgPool, id: uuid::Uuid) -> Result<Option<Sub
         SubmissionFact,
         r#"SELECT s.user_id AS "user_id: UserId", s.course_id AS "course_id: CourseId",
                   a.activity_id AS "activity_id: ActivityId", s.preview,
-                  (s.status IN ('released', 'published') OR (s.status = 'graded' AND EXISTS (
+                  (s.status = 'released' OR (s.status = 'graded' AND EXISTS (
                        SELECT 1 FROM grading_entries g
                        WHERE g.submission_id = s.id AND g.published_at IS NOT NULL))) AS "visible!",
                   submission_breakdown(s.id, s.auto_breakdown) AS "grading!",
@@ -728,7 +728,7 @@ pub async fn file_attempt_fact(pool: &PgPool, id: uuid::Uuid) -> Result<Option<F
         FileAttemptFact,
         r#"SELECT t.user_id AS "user_id: UserId", f.course_id AS "course_id: CourseId",
                   f.activity_id AS "activity_id: ActivityId", t.preview,
-                  (t.status IN ('released', 'published')) AS "published!", t.final_score::float8 AS "final_score?",
+                  (t.status = 'released') AS "published!", t.final_score::float8 AS "final_score?",
                   extract(epoch FROM COALESCE(t.graded_at, t.submitted_at, t.started_at))::bigint
                       AS "observed_at!"
            FROM file_submission_attempts t JOIN file_submissions f ON f.id = t.file_submission_id
@@ -830,11 +830,11 @@ pub async fn course_fact_ids(
 ) -> Result<Vec<(String, uuid::Uuid)>> {
     let rows = sqlx::query!(
         r#"SELECT 'item' AS "kind!", s.id AS "id!" FROM submissions s
-           WHERE s.course_id = $1 AND NOT s.preview AND s.status IN ('graded', 'released', 'published')
+           WHERE s.course_id = $1 AND NOT s.preview AND s.status IN ('graded', 'released')
            UNION ALL
            SELECT 'file_attempt', t.id FROM file_submission_attempts t
            JOIN file_submissions f ON f.id = t.file_submission_id
-           WHERE f.course_id = $1 AND NOT t.preview AND t.status IN ('released', 'published')
+           WHERE f.course_id = $1 AND NOT t.preview AND t.status = 'released'
            UNION ALL
            SELECT 'code_run', r.id FROM code_runs r JOIN assessments a ON a.id = r.assessment_id
            WHERE a.course_id = $1 AND r.purpose = 'visible'

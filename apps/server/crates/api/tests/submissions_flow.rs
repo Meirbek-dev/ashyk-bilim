@@ -1356,7 +1356,7 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
         second.text()
     );
     let published: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM submissions WHERE id = $1 AND status IN ('released', 'published')",
+        "SELECT count(*) FROM submissions WHERE id = $1 AND status = 'released'",
     )
     .bind(uuid::Uuid::parse_str(&sub_id).unwrap())
     .fetch_one(&app.pool)

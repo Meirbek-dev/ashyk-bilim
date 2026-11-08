@@ -688,7 +688,7 @@ pub async fn gradebook_members(
              AND (NOT $6
                   OR EXISTS (SELECT 1 FROM submissions s
                              WHERE s.course_id = $1 AND s.user_id = t.user_id AND NOT s.preview
-                               AND s.status IN ('submitted', 'pending', 'graded'))
+                               AND s.status IN ('submitted', 'graded'))
                   OR EXISTS (SELECT 1 FROM file_submission_attempts fa
                              WHERE fa.course_id = $1 AND fa.user_id = t.user_id AND NOT fa.preview
                                AND fa.status IN ('submitted', 'graded')))
@@ -745,11 +745,11 @@ pub async fn gradebook_cells(
                   c.attempt_id AS "attempt_id?: FileAttemptId",
                   c.status AS "status!: SubmissionStatus", c.attempt_number AS "attempt_number!",
                   1::bigint AS "attempts!",
-                  CASE WHEN c.status IN ('submitted', 'pending', 'graded') THEN c.attempt_number END
+                  CASE WHEN c.status IN ('submitted', 'graded') THEN c.attempt_number END
                       AS "pending_attempt?",
-                  CASE WHEN c.status IN ('submitted', 'pending', 'graded')
+                  CASE WHEN c.status IN ('submitted', 'graded')
                        THEN COALESCE(c.submission_id, c.attempt_id) END AS "pending_attempt_id?",
-                  CASE WHEN c.status IN ('submitted', 'pending', 'graded') THEN c.status END
+                  CASE WHEN c.status IN ('submitted', 'graded') THEN c.status END
                       AS "pending_attempt_status?: SubmissionStatus",
                   c.final_score::float8 AS "final_score?", c.is_late AS "is_late!",
                   (extract(epoch FROM c.due_at_override))::bigint AS "due_at_override?",
@@ -936,9 +936,9 @@ pub async fn stats(
 ) -> Result<SubmissionStats> {
     let row = sqlx::query!(
         r#"SELECT count(*) FILTER (WHERE status <> 'draft') AS "total!",
-                  count(*) FILTER (WHERE status IN ('submitted', 'pending')) AS "pending!",
+                  count(*) FILTER (WHERE status = 'submitted') AS "pending!",
                   count(*) FILTER (WHERE status = 'graded') AS "graded!",
-                  count(*) FILTER (WHERE status IN ('released', 'published')) AS "published!",
+                  count(*) FILTER (WHERE status = 'released') AS "published!",
                   count(*) FILTER (WHERE status = 'returned') AS "returned!",
                   count(*) FILTER (WHERE status <> 'draft' AND is_late) AS "late!"
            FROM submissions s WHERE assessment_id = $1 AND NOT preview
@@ -967,7 +967,7 @@ pub async fn graded_scores(
 ) -> Result<Vec<f64>> {
     let scores = sqlx::query_scalar!(
         r#"SELECT final_score::float8 AS "final_score!" FROM submissions s
-           WHERE assessment_id = $1 AND status IN ('graded', 'released', 'published')
+           WHERE assessment_id = $1 AND status IN ('graded', 'released')
              AND final_score IS NOT NULL AND NOT preview
              AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
                   WHERE m.usergroup_id = $2 AND m.user_id = s.user_id))"#,
@@ -1005,7 +1005,7 @@ pub async fn list_releasable(
                   items_snapshot, policy_snapshot, preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM submissions WHERE assessment_id = $1 AND status IN ('graded', 'released', 'published')
+           FROM submissions WHERE assessment_id = $1 AND status IN ('graded', 'released')
              AND NOT preview ORDER BY id"#,
         assessment_id.0
     )

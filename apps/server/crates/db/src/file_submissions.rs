@@ -736,7 +736,7 @@ pub async fn review_counts(
         r#"SELECT count(*) AS "total!",
                   count(*) FILTER (WHERE status = 'submitted') AS "submitted!",
                   count(*) FILTER (WHERE status = 'graded') AS "graded!",
-                  count(*) FILTER (WHERE status IN ('released', 'published')) AS "published!",
+                  count(*) FILTER (WHERE status = 'released') AS "published!",
                   count(*) FILTER (WHERE status = 'returned') AS "returned!",
                   count(*) FILTER (WHERE is_late) AS "late!"
            FROM file_submission_attempts a
@@ -767,7 +767,7 @@ pub async fn graded_scores(
 ) -> Result<Vec<f64>> {
     let scores = sqlx::query_scalar!(
         r#"SELECT final_score::float8 AS "final_score!" FROM file_submission_attempts a
-           WHERE a.file_submission_id = $1 AND a.status IN ('graded', 'released', 'published')
+           WHERE a.file_submission_id = $1 AND a.status IN ('graded', 'released')
              AND a.final_score IS NOT NULL AND NOT a.preview
              AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
                   WHERE m.usergroup_id = $2 AND m.user_id = a.user_id))"#,

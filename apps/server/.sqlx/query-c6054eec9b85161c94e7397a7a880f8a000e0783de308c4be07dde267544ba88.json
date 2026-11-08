@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT final_score::float8 AS \"final_score!\" FROM submissions s\n           WHERE assessment_id = $1 AND status IN ('graded', 'released')\n             AND final_score IS NOT NULL AND NOT preview\n             AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m\n                  WHERE m.usergroup_id = $2 AND m.user_id = s.user_id))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "final_score!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "c6054eec9b85161c94e7397a7a880f8a000e0783de308c4be07dde267544ba88"
+}
