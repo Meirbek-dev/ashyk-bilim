@@ -673,6 +673,12 @@ pub async fn delete_rollups_for_date(conn: &mut sqlx::PgConnection, date: Day) -
     .execute(&mut *conn)
     .await?;
     sqlx::query!(
+        "DELETE FROM daily_platform_metrics WHERE metric_date = $1",
+        date as _
+    )
+    .execute(&mut *conn)
+    .await?;
+    sqlx::query!(
         "DELETE FROM daily_course_metrics WHERE metric_date = $1",
         date as _
     )
@@ -761,6 +767,10 @@ pub async fn prune_retention(pool: &PgPool) -> Result<PruneCounts> {
             SELECT ctid FROM daily_teacher_metrics
             WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
     ) + prune!(
+        "DELETE FROM daily_platform_metrics WHERE ctid = ANY(ARRAY(
+            SELECT ctid FROM daily_platform_metrics
+            WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
+    ) + prune!(
         "DELETE FROM daily_course_metrics WHERE ctid = ANY(ARRAY(
             SELECT ctid FROM daily_course_metrics
             WHERE metric_date < platform_date(now()) - interval '2 years' LIMIT 5000))"
@@ -835,6 +845,65 @@ pub async fn insert_teacher_metrics(
               generated_at = EXCLUDED.generated_at",
         date as _,
         w.teacher_user_id.map(|u| u.0),
+        w.managed_course_count,
+        w.active_learners_7d,
+        w.active_learners_28d,
+        w.active_learners_90d,
+        w.returning_learners_28d,
+        w.completion_rate,
+        w.avg_progress_pct,
+        w.at_risk_learners,
+        w.ungraded_submissions,
+        w.courses_with_negative_engagement,
+        w.certificates_issued_28d,
+        epoch(Some(generated_at))
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
+}
+
+/// The platform aggregate of one day (`daily_platform_metrics`).
+///
+/// Schema review 2026-11-08, item 16. Until the contract it also writes the NULL-teacher row of
+/// `daily_teacher_metrics` the previous release reads.
+pub async fn insert_platform_metrics(
+    conn: &mut sqlx::PgConnection,
+    date: Day,
+    generated_at: i64,
+    w: &TeacherMetricsWrite,
+) -> Result<()> {
+    insert_teacher_metrics(
+        &mut *conn,
+        date,
+        generated_at,
+        &TeacherMetricsWrite {
+            teacher_user_id: None,
+            ..w.clone()
+        },
+    )
+    .await?;
+    sqlx::query!(
+        r"INSERT INTO daily_platform_metrics
+              (metric_date, managed_course_count, active_learners_7d, active_learners_28d,
+               active_learners_90d, returning_learners_28d, completion_rate, avg_progress_pct,
+               at_risk_learners, ungraded_submissions, courses_with_negative_engagement,
+               certificates_issued_28d, generated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, to_timestamp($13))
+          ON CONFLICT (metric_date) DO UPDATE SET
+              managed_course_count = EXCLUDED.managed_course_count,
+              active_learners_7d = EXCLUDED.active_learners_7d,
+              active_learners_28d = EXCLUDED.active_learners_28d,
+              active_learners_90d = EXCLUDED.active_learners_90d,
+              returning_learners_28d = EXCLUDED.returning_learners_28d,
+              completion_rate = EXCLUDED.completion_rate,
+              avg_progress_pct = EXCLUDED.avg_progress_pct,
+              at_risk_learners = EXCLUDED.at_risk_learners,
+              ungraded_submissions = EXCLUDED.ungraded_submissions,
+              courses_with_negative_engagement = EXCLUDED.courses_with_negative_engagement,
+              certificates_issued_28d = EXCLUDED.certificates_issued_28d,
+              generated_at = EXCLUDED.generated_at",
+        date as _,
         w.managed_course_count,
         w.active_learners_7d,
         w.active_learners_28d,
@@ -1172,6 +1241,9 @@ pub async fn latest_teacher_metrics_before(
     teacher_user_id: Option<UserId>,
     before: Day,
 ) -> Result<Option<TeacherMetricsRow>> {
+    let Some(teacher) = teacher_user_id else {
+        return latest_platform_metrics_before(pool, before).await;
+    };
     let row = sqlx::query_as!(
         TeacherMetricsRow,
         r#"SELECT metric_date::text AS "metric_date!", teacher_user_id AS "teacher_user_id: UserId",
@@ -1181,9 +1253,32 @@ pub async fn latest_teacher_metrics_before(
                   certificates_issued_28d,
                   (extract(epoch FROM generated_at))::bigint AS "generated_at!"
            FROM daily_teacher_metrics
-           WHERE teacher_user_id IS NOT DISTINCT FROM $1 AND metric_date < $2
+           WHERE teacher_user_id = $1 AND metric_date < $2
            ORDER BY metric_date DESC LIMIT 1"#,
-        teacher_user_id.map(|u| u.0),
+        teacher.0,
+        before as _
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+/// The newest platform rollup strictly before `before`, shaped as a teacher row without a teacher.
+async fn latest_platform_metrics_before(
+    pool: &PgPool,
+    before: Day,
+) -> Result<Option<TeacherMetricsRow>> {
+    let row = sqlx::query_as!(
+        TeacherMetricsRow,
+        r#"SELECT metric_date::text AS "metric_date!", NULL::uuid AS "teacher_user_id: UserId",
+                  managed_course_count, active_learners_7d, active_learners_28d,
+                  active_learners_90d, returning_learners_28d, completion_rate, avg_progress_pct,
+                  at_risk_learners, ungraded_submissions, courses_with_negative_engagement,
+                  certificates_issued_28d,
+                  (extract(epoch FROM generated_at))::bigint AS "generated_at!"
+           FROM daily_platform_metrics
+           WHERE metric_date < $1
+           ORDER BY metric_date DESC LIMIT 1"#,
         before as _
     )
     .fetch_optional(pool)
@@ -1311,6 +1406,7 @@ pub async fn latest_risk_score<'e>(
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct RollupCounts {
     pub teacher_rows: i64,
+    pub platform_rows: i64,
     pub course_rows: i64,
     pub engagement_rows: i64,
     pub assessment_rows: i64,
@@ -1321,7 +1417,9 @@ pub struct RollupCounts {
 pub async fn rollup_counts(pool: &PgPool, date: Day) -> Result<RollupCounts> {
     let row = sqlx::query!(
         r#"SELECT
-             (SELECT count(*) FROM daily_teacher_metrics WHERE metric_date = $1) AS "teacher_rows!",
+             (SELECT count(*) FROM daily_teacher_metrics
+               WHERE metric_date = $1 AND teacher_user_id IS NOT NULL) AS "teacher_rows!",
+             (SELECT count(*) FROM daily_platform_metrics WHERE metric_date = $1) AS "platform_rows!",
              (SELECT count(*) FROM daily_course_metrics WHERE metric_date = $1) AS "course_rows!",
              (SELECT count(*) FROM daily_course_engagement WHERE metric_date = $1) AS "engagement_rows!",
              (SELECT count(*) FROM daily_assessment_metrics WHERE metric_date = $1) AS "assessment_rows!",
@@ -1333,6 +1431,7 @@ pub async fn rollup_counts(pool: &PgPool, date: Day) -> Result<RollupCounts> {
     .await?;
     Ok(RollupCounts {
         teacher_rows: row.teacher_rows,
+        platform_rows: row.platform_rows,
         course_rows: row.course_rows,
         engagement_rows: row.engagement_rows,
         assessment_rows: row.assessment_rows,

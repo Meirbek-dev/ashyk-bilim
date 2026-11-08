@@ -856,13 +856,14 @@ async fn analytics_rollup(
     for (date, counts) in &report {
         writeln!(
             std::io::stdout(),
-            "{date}: {} course, {} engagement, {} learner-course, {} risk, {} assessment, {} teacher row(s)",
+            "{date}: {} course, {} engagement, {} learner-course, {} risk, {} assessment, {} teacher, {} platform row(s)",
             counts.course_rows,
             counts.engagement_rows,
             counts.progress_rows,
             counts.risk_rows,
             counts.assessment_rows,
-            counts.teacher_rows
+            counts.teacher_rows,
+            counts.platform_rows
         )?;
     }
     Ok(())

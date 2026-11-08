@@ -67,6 +67,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`analytics.daily_assessment_metrics`](#daily_assessment_metrics): Daily rollup per assessment: submission, pass and score figures
 - [`analytics.daily_course_engagement`](#daily_course_engagement): Daily rollup per course step: learners who started/completed it, drop-off
 - [`analytics.daily_course_metrics`](#daily_course_metrics): Daily rollup per course: enrolment, activity, completion, risk, grading backlog
+- [`analytics.daily_platform_metrics`](#daily_platform_metrics): Rollup: the platform-wide teacher metrics of one platform day (every course)
 - [`analytics.daily_teacher_metrics`](#daily_teacher_metrics): Daily rollup per teacher (or platform-wide when teacher_user_id is NULL)
 - [`analytics.daily_user_course_progress`](#daily_user_course_progress): Daily snapshot of each learner's progress in each course
 - [`core.discussion_reactions`](#discussion_reactions): A like or dislike of a discussion post by an account
@@ -1811,6 +1812,28 @@ Daily rollup per course: enrolment, activity, completion, risk, grading backlog.
 - Foreign key `daily_course_metrics_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE SET NULL`
 - Index `daily_course_metrics_course_idx`: `CREATE INDEX daily_course_metrics_course_idx ON analytics.daily_course_metrics USING btree (course_id, metric_date DESC)`
 - Index `daily_course_metrics_date_brin`: `CREATE INDEX daily_course_metrics_date_brin ON analytics.daily_course_metrics USING brin (metric_date)`
+
+## daily_platform_metrics
+
+Rollup: the platform-wide teacher metrics of one platform day (every course). Rebuilt with the day; kept 2 years.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| metric_date | date |  |  |
+| managed_course_count | integer |  | `0` |
+| active_learners_7d | integer |  | `0` |
+| active_learners_28d | integer |  | `0` |
+| active_learners_90d | integer |  | `0` |
+| returning_learners_28d | integer |  | `0` |
+| completion_rate | double precision | null |  |
+| avg_progress_pct | double precision | null |  |
+| at_risk_learners | integer |  | `0` |
+| ungraded_submissions | integer |  | `0` |
+| courses_with_negative_engagement | integer |  | `0` |
+| certificates_issued_28d | integer |  | `0` |
+| generated_at | timestamp with time zone |  | `now()` |
+
+- Primary key `daily_platform_metrics_pkey`: `PRIMARY KEY (metric_date)`
 
 ## daily_teacher_metrics
 

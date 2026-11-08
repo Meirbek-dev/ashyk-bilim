@@ -862,6 +862,18 @@ constraint daily_course_metrics daily_course_metrics_metric_date_not_null NOT NU
 constraint daily_course_metrics daily_course_metrics_pkey PRIMARY KEY (metric_date, course_id)
 constraint daily_course_metrics daily_course_metrics_teacher_user_id_fkey FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE SET NULL
 constraint daily_course_metrics daily_course_metrics_ungraded_submissions_not_null NOT NULL ungraded_submissions
+constraint daily_platform_metrics daily_platform_metrics_active_learners_28d_not_null NOT NULL active_learners_28d
+constraint daily_platform_metrics daily_platform_metrics_active_learners_7d_not_null NOT NULL active_learners_7d
+constraint daily_platform_metrics daily_platform_metrics_active_learners_90d_not_null NOT NULL active_learners_90d
+constraint daily_platform_metrics daily_platform_metrics_at_risk_learners_not_null NOT NULL at_risk_learners
+constraint daily_platform_metrics daily_platform_metrics_certificates_issued_28d_not_null NOT NULL certificates_issued_28d
+constraint daily_platform_metrics daily_platform_metrics_courses_with_negative_engagemen_not_null NOT NULL courses_with_negative_engagement
+constraint daily_platform_metrics daily_platform_metrics_generated_at_not_null NOT NULL generated_at
+constraint daily_platform_metrics daily_platform_metrics_managed_course_count_not_null NOT NULL managed_course_count
+constraint daily_platform_metrics daily_platform_metrics_metric_date_not_null NOT NULL metric_date
+constraint daily_platform_metrics daily_platform_metrics_pkey PRIMARY KEY (metric_date)
+constraint daily_platform_metrics daily_platform_metrics_returning_learners_28d_not_null NOT NULL returning_learners_28d
+constraint daily_platform_metrics daily_platform_metrics_ungraded_submissions_not_null NOT NULL ungraded_submissions
 constraint daily_teacher_metrics daily_teacher_metrics_active_learners_28d_not_null NOT NULL active_learners_28d
 constraint daily_teacher_metrics daily_teacher_metrics_active_learners_7d_not_null NOT NULL active_learners_7d
 constraint daily_teacher_metrics daily_teacher_metrics_active_learners_90d_not_null NOT NULL active_learners_90d
@@ -2643,6 +2655,7 @@ index CREATE UNIQUE INDEX courses_pkey ON core.courses USING btree (id)
 index CREATE UNIQUE INDEX daily_assessment_metrics_pkey ON analytics.daily_assessment_metrics USING btree (metric_date, assessment_id)
 index CREATE UNIQUE INDEX daily_course_engagement_pkey ON analytics.daily_course_engagement USING btree (metric_date, activity_id)
 index CREATE UNIQUE INDEX daily_course_metrics_pkey ON analytics.daily_course_metrics USING btree (metric_date, course_id)
+index CREATE UNIQUE INDEX daily_platform_metrics_pkey ON analytics.daily_platform_metrics USING btree (metric_date)
 index CREATE UNIQUE INDEX daily_teacher_metrics_metric_date_teacher_user_id_key ON analytics.daily_teacher_metrics USING btree (metric_date, teacher_user_id) NULLS NOT DISTINCT
 index CREATE UNIQUE INDEX daily_teacher_metrics_pkey ON analytics.daily_teacher_metrics USING btree (id)
 index CREATE UNIQUE INDEX daily_user_course_progress_pkey ON analytics.daily_user_course_progress USING btree (metric_date, user_id, course_id)
@@ -2993,6 +3006,19 @@ table analytics.daily_course_metrics last_content_update_at timestamp with time 
 table analytics.daily_course_metrics metric_date date NOT NULL DEFAULT -
 table analytics.daily_course_metrics teacher_user_id uuid DEFAULT -
 table analytics.daily_course_metrics ungraded_submissions integer NOT NULL DEFAULT 0
+table analytics.daily_platform_metrics active_learners_28d integer NOT NULL DEFAULT 0
+table analytics.daily_platform_metrics active_learners_7d integer NOT NULL DEFAULT 0
+table analytics.daily_platform_metrics active_learners_90d integer NOT NULL DEFAULT 0
+table analytics.daily_platform_metrics at_risk_learners integer NOT NULL DEFAULT 0
+table analytics.daily_platform_metrics avg_progress_pct double precision DEFAULT -
+table analytics.daily_platform_metrics certificates_issued_28d integer NOT NULL DEFAULT 0
+table analytics.daily_platform_metrics completion_rate double precision DEFAULT -
+table analytics.daily_platform_metrics courses_with_negative_engagement integer NOT NULL DEFAULT 0
+table analytics.daily_platform_metrics generated_at timestamp with time zone NOT NULL DEFAULT now()
+table analytics.daily_platform_metrics managed_course_count integer NOT NULL DEFAULT 0
+table analytics.daily_platform_metrics metric_date date NOT NULL DEFAULT -
+table analytics.daily_platform_metrics returning_learners_28d integer NOT NULL DEFAULT 0
+table analytics.daily_platform_metrics ungraded_submissions integer NOT NULL DEFAULT 0
 table analytics.daily_teacher_metrics active_learners_28d integer NOT NULL DEFAULT 0
 table analytics.daily_teacher_metrics active_learners_7d integer NOT NULL DEFAULT 0
 table analytics.daily_teacher_metrics active_learners_90d integer NOT NULL DEFAULT 0

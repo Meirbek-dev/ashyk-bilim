@@ -614,8 +614,9 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert_eq!(first.progress_rows, 2);
     assert_eq!(first.risk_rows, 1);
     assert_eq!(first.assessment_rows, 1);
-    // teacher + carol + the platform aggregate
-    assert_eq!(first.teacher_rows, 3);
+    // teacher + carol; the platform aggregate has its own table
+    assert_eq!(first.teacher_rows, 2);
+    assert_eq!(first.platform_rows, 1);
     assert_eq!(first.engagement_rows, 2);
     let second = service.run_rollup(None).await.unwrap();
     assert_eq!(second, first);
@@ -629,6 +630,22 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     .await
     .unwrap();
     assert_eq!(platform_row, 2);
+    // The overview reads the platform aggregate from daily_platform_metrics (schema review 2026-11-08, item 16):
+    // without the NULL-teacher row the previous release still gets, it is found.
+    sqlx::query("DELETE FROM daily_teacher_metrics WHERE teacher_user_id IS NULL")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let platform = ab_db::analytics::latest_teacher_metrics_before(
+        &pool,
+        None,
+        "9999-12-31".parse::<ab_core::time::Day>().unwrap(),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(platform.managed_course_count, 2);
+    assert!(platform.teacher_user_id.is_none());
     let range = service
         .run_rollup_range("2026-01-01", "2026-01-03")
         .await

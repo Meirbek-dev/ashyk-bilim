@@ -333,7 +333,7 @@ pub async fn run_rollup(pool: &PgPool, date: Day) -> Result<RollupCounts> {
         &course_rows,
         &filters,
     );
-    ab_db::analytics::insert_teacher_metrics(&mut tx, date, generated_at, &platform).await?;
+    ab_db::analytics::insert_platform_metrics(&mut tx, date, generated_at, &platform).await?;
 
     for course_id in &course_ids {
         for w in engagement_rows(&ctx, *course_id, &events) {

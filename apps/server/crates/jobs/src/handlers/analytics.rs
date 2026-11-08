@@ -52,6 +52,7 @@ impl JobHandler for AnalyticsRollup {
                 risk = counts.risk_rows,
                 assessments = counts.assessment_rows,
                 teachers = counts.teacher_rows,
+                platform = counts.platform_rows,
                 "analytics rollup written"
             );
             let pruned = ab_db::analytics::prune_retention(&pool).await?;

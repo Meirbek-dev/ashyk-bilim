@@ -1,0 +1,65 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n             (SELECT count(*) FROM daily_teacher_metrics\n               WHERE metric_date = $1 AND teacher_user_id IS NOT NULL) AS \"teacher_rows!\",\n             (SELECT count(*) FROM daily_platform_metrics WHERE metric_date = $1) AS \"platform_rows!\",\n             (SELECT count(*) FROM daily_course_metrics WHERE metric_date = $1) AS \"course_rows!\",\n             (SELECT count(*) FROM daily_course_engagement WHERE metric_date = $1) AS \"engagement_rows!\",\n             (SELECT count(*) FROM daily_assessment_metrics WHERE metric_date = $1) AS \"assessment_rows!\",\n             (SELECT count(*) FROM daily_user_course_progress WHERE metric_date = $1) AS \"progress_rows!\",\n             (SELECT count(*) FROM learner_risk_snapshots WHERE snapshot_date = $1) AS \"risk_rows!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "teacher_rows!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "platform_rows!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "course_rows!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "engagement_rows!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "assessment_rows!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "progress_rows!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "risk_rows!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "20c72e5ddd39c24ded53a09c98e868c4080a1e1c1d2398941d6e117aaa809171"
+}
