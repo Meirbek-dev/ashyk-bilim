@@ -47,9 +47,10 @@ Compilation uses the committed SQLx cache by default; `prepare` and `sqlx-check`
 - Migrations deploy during classes and the previous release must run on the new schema (`migration_rules.rs`):
   start with `SET LOCAL lock_timeout = '5s';`, build an index on an existing table CONCURRENTLY in its own
   `-- no-transaction` file, and DROP COLUMN / DROP TABLE / RENAME only a release after the code stopped using it,
-  in a file marked `-- contract: <why>`.
+  in a file marked `-- contract: <why>`. An expand step that leaves something for a contract adds a row to
+  `crates/db/pending-contracts.tsv` (`just contracts-pending` lists them); the contract removes it.
 - The server runs as `ashyq_app` (RUNBOOK 2.5): rows only, no DDL, insert-only journals. A new append-only journal
-  or a table holding secrets/contact data extends `apply_role_grants` (current body in migration `20261107002500`, CREATE OR
+  or a table holding secrets/contact data extends `apply_role_grants` (current body in migration `20261108000100`, CREATE OR
   REPLACE + call) in its own migration; a delete the app must do on a journal goes through a SECURITY DEFINER
   function owned by the schema owner (`prune_auth_audit_log`).
 - Migrations change schema, not data. A row change in a migration is the backfill of a column/table the change adds

@@ -3337,3 +3337,41 @@ async fn hashes_say_what_they_hold(pool: PgPool) {
     .unwrap();
     assert_eq!(score, "percent");
 }
+
+/// Schema review 2026-11-08, item 1: every object `crates/db/pending-contracts.tsv` says a later release drops
+/// still exists (a contract that dropped it removes its row), and every row is well formed.
+#[ab_testdb::test]
+async fn pending_contracts_name_live_objects(pool: PgPool) {
+    let list = include_str!("../pending-contracts.tsv");
+    let mut gone = Vec::new();
+    for line in list
+        .lines()
+        .filter(|l| !l.trim().is_empty() && !l.starts_with('#'))
+    {
+        let fields: Vec<&str> = line.split('\t').collect();
+        assert_eq!(fields.len(), 4, "kind, object, waits for, doc: {line:?}");
+        let (kind, object) = (fields[0], fields[1]);
+        let sql = match kind {
+            "trigger" => "SELECT EXISTS (SELECT FROM pg_trigger WHERE NOT tgisinternal AND tgname = $1)",
+            "constraint" => "SELECT EXISTS (SELECT FROM pg_constraint WHERE conname = $1)",
+            "table" => "SELECT to_regclass($1) IS NOT NULL",
+            "column" => {
+                "SELECT EXISTS (SELECT FROM pg_attribute WHERE attrelid = to_regclass(split_part($1, '.', 1))
+                         AND attname = split_part($1, '.', 2) AND attnum > 0 AND NOT attisdropped)"
+            }
+            other => panic!("unknown kind {other:?} in {line:?}"),
+        };
+        let exists: bool = sqlx::query_scalar(sql)
+            .bind(object)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        if !exists {
+            gone.push(format!("{kind} {object}"));
+        }
+    }
+    assert!(
+        gone.is_empty(),
+        "dropped already, remove the row from pending-contracts.tsv: {gone:?}"
+    );
+}

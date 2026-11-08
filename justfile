@@ -344,6 +344,10 @@ restore-test *args:
     {{ smoke_cert }}
     {{ bash_bin }} infra/scripts/restore-test.sh "$@"
 
+# Objects a later release drops (apps/server/crates/db/pending-contracts.tsv): what each waits for.
+contracts-pending:
+    @awk -F'\t' '!/^#/ && NF == 4 { printf "%-10s %-34s %s  (%s)\n", $1, $2, $3, $4 }' apps/server/crates/db/pending-contracts.tsv
+
 # Regenerate docs/agents/SCHEMA.md from the migrations (a test template on the dev Postgres); the server suite
 # fails while it is stale.
 schema-docs:

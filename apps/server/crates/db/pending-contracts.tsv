@@ -1,0 +1,11 @@
+# Objects a later release drops (expand/contract, apps/server/AGENTS.md): what, why it waits, where it is explained.
+# Columns: kind (trigger | column | table | constraint), object (name or table.column), waits for, doc. Tab-separated.
+# A contract file that drops an object removes its row; `schema_review::pending_contracts_name_live_objects`
+# fails on a row whose object is gone, and `just contracts-pending` prints the list.
+trigger	users_reissue_certificates	the release after 3ba18e76 (writers re-issue themselves)	ARCHITECTURE §8 "A certificate states what was issued"
+trigger	users_sync_state	owner Q-2026-11-02-1, then resolve-email-verified in production	REWRITE 5.6 n10
+column	users.email_verified	owner Q-2026-11-02-1, then resolve-email-verified in production	REWRITE 5.6 n10
+trigger	activities_required_from_settings	activity settings move into the typed body	REWRITE 5.6 n8 step 3
+column	blocks.legacy_uuid	an admin rewrite of the lesson links to block ids	REWRITE 5
+column	users.zitadel_user_id	phase 4 (Zitadel removed)	REWRITE 5.1
+table	course_progress	four weekly zero-drift runs, then readers move to course_progress_v	REWRITE 5.6 n8 step 4-5
