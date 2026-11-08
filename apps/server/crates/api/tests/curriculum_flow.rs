@@ -1570,3 +1570,35 @@ async fn media_lessons_publish_only_with_their_media(pool: PgPool) {
     assert_eq!(emptied.status, StatusCode::CONFLICT, "{}", emptied.text());
     assert_eq!(emptied.json()["details"]["reason"], "video-link-missing");
 }
+
+/// The activity kinds are a lookup table the server's pair list mirrors (schema review 2026-11-08, item 11): the
+/// two hold the same pairs, and the foreign key refuses a pair the table does not name.
+#[ab_testdb::test]
+async fn activity_kinds_match_the_server_list(pool: PgPool) {
+    let mut stored: Vec<(String, String)> =
+        sqlx::query_as("SELECT kind, sub_kind FROM activity_kinds")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+    stored.sort();
+    let mut listed: Vec<(String, String)> = ab_domain::catalog::curriculum::TYPE_SUBTYPES
+        .iter()
+        .flat_map(|(t, subs)| subs.iter().map(|s| ((*t).to_owned(), (*s).to_owned())))
+        .collect();
+    listed.sort();
+    assert_eq!(stored, listed);
+
+    let err = sqlx::query(
+        "WITH c AS (INSERT INTO courses (name) VALUES ('kinds') RETURNING id),
+              ch AS (INSERT INTO chapters (course_id, name, position) SELECT id, 'ch', 1 FROM c RETURNING id, course_id)
+         INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, position)
+         SELECT id, course_id, 'a', 'video', 'quiz_standard', 1 FROM ch",
+    )
+    .execute(&pool)
+    .await
+    .unwrap_err();
+    assert_eq!(
+        err.as_database_error().and_then(|e| e.constraint()),
+        Some("activities_kind_fkey")
+    );
+}

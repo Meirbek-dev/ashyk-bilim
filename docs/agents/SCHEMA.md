@@ -6,6 +6,7 @@ UI word and ready queries: `DATA.md`. Rules behind the shapes: `docs/ARCHITECTUR
 listed as `schema.table`; SQL names it unqualified (the search_path covers every schema, §8 rule 8).
 
 - [`core.activities`](#activities): A lesson step inside a chapter: page, video, document, quiz, exam, code challenge, file task
+- [`core.activity_kinds`](#activity_kinds): Lookup: the activity kinds (type and sub-type pairs) an activity can have; mirrors catalog::curriculum::TYPE_SUBTYPES
 - [`learning.activity_progress`](#activity_progress): Projection: a learner's state in one activity (from submissions, hand-ins and steps), rebuilt by progress-backfill
 - [`ai.ai_approvals`](#ai_approvals): A staff approval an AI action waits for
 - [`ai.ai_artifacts`](#ai_artifacts): An output an AI run produced
@@ -141,16 +142,27 @@ A lesson step inside a chapter: page, video, document, quiz, exam, code challeng
 - Foreign key `activities_chapter_id_fkey`: `FOREIGN KEY (chapter_id, course_id) REFERENCES chapters(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `activities_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `activities_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
+- Foreign key `activities_kind_fkey`: `FOREIGN KEY (activity_type, activity_sub_type) REFERENCES activity_kinds(kind, sub_kind) ON UPDATE CASCADE`
 - Check `activities_content_object`: `CHECK ((jsonb_typeof(content) = 'object'::text))`
 - Check `activities_details_object`: `CHECK ((jsonb_typeof(details) = 'object'::text))`
 - Check `activities_name_check`: `CHECK ((char_length(name) <= 500))`
 - Check `activities_position_check`: `CHECK (("position" >= 1))`
 - Check `activities_settings_object`: `CHECK ((jsonb_typeof(settings) = 'object'::text))`
-- Check `activities_type_subtype_valid`: `CHECK (((((((((((((activity_type = 'dynamic'::text) AND (activity_sub_type = 'dynamic_page'::text)) OR ((activity_type = 'video'::text) AND (activity_sub_type = 'video_youtube'::text))) OR ((activity_type = 'video'::text) AND (activity_sub_type = 'video_hosted'::text))) OR ((activity_type = 'document'::text) AND (activity_sub_type = 'document_pdf'::text))) OR ((activity_type = 'document'::text) AND (activity_sub_type = 'document_doc'::text))) OR ((activity_type = 'quiz'::text) AND (activity_sub_type = 'quiz_standard'::text))) OR ((activity_type = 'exam'::text) AND (activity_sub_type = 'exam_standard'::text))) OR ((activity_type = 'code_challenge'::text) AND (activity_sub_type = 'code_general'::text))) OR ((activity_type = 'code_challenge'::text) AND (activity_sub_type = 'code_competitive'::text))) OR ((activity_type = 'file_submission'::text) AND (activity_sub_type = 'file_submission_standard'::text))) OR ((activity_type = 'custom'::text) AND (activity_sub_type = 'custom'::text))))`
 - Index `activities_course_idx`: `CREATE INDEX activities_course_idx ON core.activities USING btree (course_id)`
 - Index `activities_search_trgm_idx`: `CREATE INDEX activities_search_trgm_idx ON core.activities USING gin (search_fold(name) gin_trgm_ops)`
 - Trigger `activities_keep_assessment_type`: `CREATE TRIGGER activities_keep_assessment_type BEFORE UPDATE OF activity_type ON core.activities FOR EACH ROW WHEN ((old.activity_type IS DISTINCT FROM new.activity_type)) EXECUTE FUNCTION activities_keep_assessment_type()`
 - Trigger `activities_required_from_settings`: `CREATE TRIGGER activities_required_from_settings BEFORE INSERT OR UPDATE OF settings ON core.activities FOR EACH ROW EXECUTE FUNCTION activities_required_from_settings()`
+
+## activity_kinds
+
+Lookup: the activity kinds (type and sub-type pairs) an activity can have; mirrors catalog::curriculum::TYPE_SUBTYPES.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| kind | text |  |  |
+| sub_kind | text |  |  |
+
+- Primary key `activity_kinds_pkey`: `PRIMARY KEY (kind, sub_kind)`
 
 ## activity_progress
 

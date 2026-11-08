@@ -19,7 +19,7 @@ use crate::files::uploads::UNREFERENCED_GRACE;
 use crate::identity::Actor;
 use crate::progress::{Followup, ProgressProjector};
 
-/// The legacy `_VALID_SUBTYPES` map, mirrored by the DB CHECK constraint.
+/// The legacy `_VALID_SUBTYPES` map, mirrored by the `activity_kinds` table (`activity_kinds_match_the_server_list`).
 pub const TYPE_SUBTYPES: &[(&str, &[&str])] = &[
     ("dynamic", &["dynamic_page"]),
     ("video", &["video_youtube", "video_hosted"]),

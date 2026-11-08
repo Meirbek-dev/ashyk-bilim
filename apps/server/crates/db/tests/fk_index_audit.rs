@@ -24,6 +24,12 @@ const LOOKUP: &str = "lookup value: the app never deletes or renames one";
 
 /// `(child table, child columns, parent table)` → reason.
 const ALLOWED: &[(&str, &str, &str, &str)] = &[
+    (
+        "activities",
+        "activity_type,activity_sub_type",
+        "activity_kinds",
+        LOOKUP,
+    ),
     ("activities", "creator_id", "users", ACTOR),
     ("ai_approvals", "requested_by", "users", ACTOR),
     ("ai_approvals", "resolved_by", "users", ACTOR),

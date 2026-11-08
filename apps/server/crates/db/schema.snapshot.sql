@@ -12,6 +12,7 @@ constraint activities activities_details_not_null NOT NULL details
 constraint activities activities_details_object CHECK ((jsonb_typeof(details) = 'object'::text))
 constraint activities activities_id_course_key UNIQUE (id, course_id)
 constraint activities activities_id_not_null NOT NULL id
+constraint activities activities_kind_fkey FOREIGN KEY (activity_type, activity_sub_type) REFERENCES activity_kinds(kind, sub_kind) ON UPDATE CASCADE
 constraint activities activities_name_check CHECK ((char_length(name) <= 500))
 constraint activities activities_name_not_null NOT NULL name
 constraint activities activities_pkey PRIMARY KEY (id)
@@ -22,9 +23,11 @@ constraint activities activities_published_not_null NOT NULL published
 constraint activities activities_required_not_null NOT NULL required
 constraint activities activities_settings_not_null NOT NULL settings
 constraint activities activities_settings_object CHECK ((jsonb_typeof(settings) = 'object'::text))
-constraint activities activities_type_subtype_valid CHECK (((((((((((((activity_type = 'dynamic'::text) AND (activity_sub_type = 'dynamic_page'::text)) OR ((activity_type = 'video'::text) AND (activity_sub_type = 'video_youtube'::text))) OR ((activity_type = 'video'::text) AND (activity_sub_type = 'video_hosted'::text))) OR ((activity_type = 'document'::text) AND (activity_sub_type = 'document_pdf'::text))) OR ((activity_type = 'document'::text) AND (activity_sub_type = 'document_doc'::text))) OR ((activity_type = 'quiz'::text) AND (activity_sub_type = 'quiz_standard'::text))) OR ((activity_type = 'exam'::text) AND (activity_sub_type = 'exam_standard'::text))) OR ((activity_type = 'code_challenge'::text) AND (activity_sub_type = 'code_general'::text))) OR ((activity_type = 'code_challenge'::text) AND (activity_sub_type = 'code_competitive'::text))) OR ((activity_type = 'file_submission'::text) AND (activity_sub_type = 'file_submission_standard'::text))) OR ((activity_type = 'custom'::text) AND (activity_sub_type = 'custom'::text))))
 constraint activities activities_updated_at_not_null NOT NULL updated_at
 constraint activities activities_version_not_null NOT NULL version
+constraint activity_kinds activity_kinds_kind_not_null NOT NULL kind
+constraint activity_kinds activity_kinds_pkey PRIMARY KEY (kind, sub_kind)
+constraint activity_kinds activity_kinds_sub_kind_not_null NOT NULL sub_kind
 constraint activity_progress activity_progress_activity_id_fkey FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE
 constraint activity_progress activity_progress_activity_id_not_null NOT NULL activity_id
 constraint activity_progress activity_progress_attempt_count_check CHECK ((attempt_count >= 0))
@@ -2544,6 +2547,7 @@ index CREATE INDEX xp_transactions_user_recent_idx ON learning.xp_transactions U
 index CREATE UNIQUE INDEX activities_id_course_key ON core.activities USING btree (id, course_id)
 index CREATE UNIQUE INDEX activities_pkey ON core.activities USING btree (id)
 index CREATE UNIQUE INDEX activities_position_key ON core.activities USING btree (chapter_id, "position")
+index CREATE UNIQUE INDEX activity_kinds_pkey ON core.activity_kinds USING btree (kind, sub_kind)
 index CREATE UNIQUE INDEX activity_progress_pkey ON learning.activity_progress USING btree (activity_id, user_id)
 index CREATE UNIQUE INDEX ai_approvals_pkey ON ai.ai_approvals USING btree (id)
 index CREATE UNIQUE INDEX ai_artifacts_pkey ON ai.ai_artifacts USING btree (id)
@@ -3035,6 +3039,8 @@ table core.activities required boolean NOT NULL DEFAULT true
 table core.activities settings jsonb NOT NULL DEFAULT '{}'::jsonb
 table core.activities updated_at timestamp with time zone NOT NULL DEFAULT now()
 table core.activities version integer NOT NULL DEFAULT 1
+table core.activity_kinds kind text NOT NULL DEFAULT -
+table core.activity_kinds sub_kind text NOT NULL DEFAULT -
 table core.block_uploads block_id uuid NOT NULL DEFAULT -
 table core.block_uploads upload_id uuid NOT NULL DEFAULT -
 table core.blocks activity_id uuid NOT NULL DEFAULT -
