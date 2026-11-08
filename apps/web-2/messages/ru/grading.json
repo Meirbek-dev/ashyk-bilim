@@ -154,6 +154,7 @@
   "grading_col_total": "Итог курса",
   "grading_average": "Среднее",
   "grading_course_average": "Средний итог курса: {value}.",
+  "grading_total_how": "Как считается итог",
   "grading_total_legend": "Итог — средняя оценка с учётом веса заданий. Несданная работа считается как 0 только после истечения срока. Работы на проверке пока не учитываются.",
   "grading_total_missing": [
     {

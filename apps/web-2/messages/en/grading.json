@@ -152,6 +152,7 @@
   "grading_col_total": "Course total",
   "grading_average": "Average",
   "grading_course_average": "Average course total: {value}.",
+  "grading_total_how": "How the total is counted",
   "grading_total_legend": "The total is the weighted average grade. A missing submission counts as 0 only after its deadline; submissions awaiting review do not count yet.",
   "grading_total_missing": [
     {

@@ -13,8 +13,8 @@ import { gradebookColumns, gradebookRows, gradebookSummary } from '../model/grad
 import { curriculumOptions, gradebookOptions } from '../queries'
 import { GradebookTable } from './gradebook-columns'
 import { CsvLink } from './csv-link'
+import { GradebookLegend } from './gradebook-legend'
 import { GroupFilter } from './group-filter'
-import { scoreText } from './labels'
 import { LearnerSearch } from './learner-search'
 
 const ROUTE = '/_authed/teach/courses/$courseId/gradebook'
@@ -38,16 +38,7 @@ export function GradebookPage(): ReactElement {
         <h2 id="grading-gradebook" className="text-xl font-semibold">
           {m.grading_gradebook_table()}
         </h2>
-        {rows.length > 0 ? (
-          <p className="max-w-prose text-sm text-muted-foreground">
-            {summary?.course_average != null ? (
-              <span className="text-foreground">
-                {m.grading_course_average({ value: scoreText(summary.course_average) })}{' '}
-              </span>
-            ) : null}
-            {m.grading_total_legend()}
-          </p>
-        ) : null}
+        {rows.length > 0 ? <GradebookLegend average={summary?.course_average} /> : null}
       </div>
       {/* No learner at all (and no filter): nothing to search, filter or export - only the empty state. */}
       {rows.length === 0 && active === 0 ? null : (
