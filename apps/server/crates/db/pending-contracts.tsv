@@ -12,3 +12,8 @@ table	course_progress	four weekly zero-drift runs, then readers move to course_p
 column	submissions.items_snapshot	the release after the readers moved to assessment_versions (20261108000200); re-run the 20261102020600 backfill first	REWRITE 5.6 n16 "Versions as the record"
 column	submissions.policy_snapshot	the release after the readers moved to assessment_versions (20261108000200)	REWRITE 5.6 n16 "Versions as the record"
 column	submissions.violations	the release after the readers moved to submission_violation_log (20261108000200); record_violation stops writing it	ARCHITECTURE §8 "History stays"
+trigger	course_discussions_recount_replies	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
+trigger	discussion_reactions_recount	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
+column	course_discussions.likes_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
+column	course_discussions.dislikes_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
+column	course_discussions.replies_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation

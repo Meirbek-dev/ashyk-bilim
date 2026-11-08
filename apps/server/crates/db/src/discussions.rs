@@ -48,7 +48,14 @@ pub async fn get_discussion(
                   (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
                   (SELECT u.display_name FROM users u WHERE u.id = d.user_id) AS "display_name?",
                   (SELECT u.avatar_key FROM users u WHERE u.id = d.user_id) AS "avatar_key?",
-                  d.likes_count AS "likes_count!", d.dislikes_count AS "dislikes_count!", d.replies_count AS "replies_count!",
+                  -- Counted on read (schema review 2026-11-08, item 14): the stored counters stay for the
+                  -- previous release until a contract drops them.
+                  (SELECT count(*)::int4 FROM discussion_reactions r
+                    WHERE r.discussion_id = d.id AND r.reaction = 'like') AS "likes_count!",
+                  (SELECT count(*)::int4 FROM discussion_reactions r
+                    WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS "dislikes_count!",
+                  (SELECT count(*)::int4 FROM course_discussions c
+                    WHERE c.parent_id = d.id AND c.status = 'active') AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
@@ -84,7 +91,14 @@ pub async fn list_posts(
                   (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
                   (SELECT u.display_name FROM users u WHERE u.id = d.user_id) AS "display_name?",
                   (SELECT u.avatar_key FROM users u WHERE u.id = d.user_id) AS "avatar_key?",
-                  d.likes_count AS "likes_count!", d.dislikes_count AS "dislikes_count!", d.replies_count AS "replies_count!",
+                  -- Counted on read (schema review 2026-11-08, item 14): the stored counters stay for the
+                  -- previous release until a contract drops them.
+                  (SELECT count(*)::int4 FROM discussion_reactions r
+                    WHERE r.discussion_id = d.id AND r.reaction = 'like') AS "likes_count!",
+                  (SELECT count(*)::int4 FROM discussion_reactions r
+                    WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS "dislikes_count!",
+                  (SELECT count(*)::int4 FROM course_discussions c
+                    WHERE c.parent_id = d.id AND c.status = 'active') AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
@@ -92,7 +106,8 @@ pub async fn list_posts(
            FROM course_discussions d
            WHERE d.course_id = $1 AND d.parent_id IS NULL
              AND (d.status = 'active' OR ($5 AND d.status = 'hidden')
-                  OR (d.status = 'deleted' AND d.replies_count > 0))
+                  OR (d.status = 'deleted' AND EXISTS (SELECT 1 FROM course_discussions c
+                                                       WHERE c.parent_id = d.id AND c.status = 'active')))
              AND ($3::uuid IS NULL OR d.id < $3)
            ORDER BY d.id DESC
            LIMIT $4"#,
@@ -126,7 +141,14 @@ pub async fn list_replies(
                   (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
                   (SELECT u.display_name FROM users u WHERE u.id = d.user_id) AS "display_name?",
                   (SELECT u.avatar_key FROM users u WHERE u.id = d.user_id) AS "avatar_key?",
-                  d.likes_count AS "likes_count!", d.dislikes_count AS "dislikes_count!", d.replies_count AS "replies_count!",
+                  -- Counted on read (schema review 2026-11-08, item 14): the stored counters stay for the
+                  -- previous release until a contract drops them.
+                  (SELECT count(*)::int4 FROM discussion_reactions r
+                    WHERE r.discussion_id = d.id AND r.reaction = 'like') AS "likes_count!",
+                  (SELECT count(*)::int4 FROM discussion_reactions r
+                    WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS "dislikes_count!",
+                  (SELECT count(*)::int4 FROM course_discussions c
+                    WHERE c.parent_id = d.id AND c.status = 'active') AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
@@ -166,7 +188,14 @@ pub async fn list_replies_for(
                   (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
                   (SELECT u.display_name FROM users u WHERE u.id = d.user_id) AS "display_name?",
                   (SELECT u.avatar_key FROM users u WHERE u.id = d.user_id) AS "avatar_key?",
-                  d.likes_count AS "likes_count!", d.dislikes_count AS "dislikes_count!", d.replies_count AS "replies_count!",
+                  -- Counted on read (schema review 2026-11-08, item 14): the stored counters stay for the
+                  -- previous release until a contract drops them.
+                  (SELECT count(*)::int4 FROM discussion_reactions r
+                    WHERE r.discussion_id = d.id AND r.reaction = 'like') AS "likes_count!",
+                  (SELECT count(*)::int4 FROM discussion_reactions r
+                    WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS "dislikes_count!",
+                  (SELECT count(*)::int4 FROM course_discussions c
+                    WHERE c.parent_id = d.id AND c.status = 'active') AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",

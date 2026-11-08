@@ -3065,10 +3065,16 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("blocks_upload_ids", "derived"),
         ("chapters_upload_ids", "derived"),
         ("collections_upload_ids", "derived"),
-        ("course_discussions_recount_replies", "derived"),
+        (
+            "course_discussions_recount_replies",
+            "derived; reads count on read, a contract drops it",
+        ),
         ("course_discussions_upload_ids", "derived"),
         ("courses_upload_ids", "derived"),
-        ("discussion_reactions_recount", "derived"),
+        (
+            "discussion_reactions_recount",
+            "derived; reads count on read, a contract drops it",
+        ),
         ("file_grading_entries_number", "derived"),
         ("grading_entries_number", "derived"),
         ("grading_entries_points", "derived"),
