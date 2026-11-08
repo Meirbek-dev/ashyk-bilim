@@ -135,6 +135,13 @@ enum AdminCommand {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Delete final code runs that never executed (runner down or rejecting, no cases) and that a later
+    /// final run of the same submission and item replaced; the run a grade reads stays (RUNBOOK 2.9).
+    /// Idempotent; prints counts.
+    PruneSupersededCodeRuns {
+        #[arg(long)]
+        dry_run: bool,
+    },
     /// D-03: `users.locale` `ru-RU|kk-KZ|en-US` → `ru|kk|en` (needs
     /// migration 20261003000020; responses keep the legacy `locale`).
     MigrateLocales {
@@ -309,6 +316,13 @@ async fn main() -> anyhow::Result<()> {
             let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
             let report = ab_domain::maintenance::clock_unreferenced_uploads(&pool, dry_run).await?;
             print_report("clock-unreferenced-uploads", &report)
+        }
+        Command::Admin {
+            command: AdminCommand::PruneSupersededCodeRuns { dry_run },
+        } => {
+            let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
+            let report = ab_domain::maintenance::prune_superseded_code_runs(&pool, dry_run).await?;
+            print_report("prune-superseded-code-runs", &report)
         }
         Command::Admin {
             command: AdminCommand::MigrateThemes { dry_run },

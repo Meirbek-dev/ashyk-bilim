@@ -210,6 +210,21 @@ dc run --rm server admin clock-unreferenced-uploads             # start their 24
 
 A row that names one again within the grace keeps it (the reaper re-checks `upload_referenced`).
 
+### 2.9 Final code runs a retry replaced
+
+A hand-in whose code run could not execute (runner down or rejecting) releases the run's key and runs again, so
+each retry leaves a `degraded` / `internal_error` final run with no cases. The legacy runner retried one preview
+hand-in every 30 s for two weeks (2026-07/08): 41 155 such rows, most of `code_runs`. The prune deletes the ones a
+later final run of the same submission and item replaced; the newest one (what grading reads) stays. After
+`just backup`:
+
+```bash
+dc run --rm server admin prune-superseded-code-runs --dry-run   # how many
+dc run --rm server admin prune-superseded-code-runs
+```
+
+Then `VACUUM (ANALYZE) learning.code_runs;` as the owner to return the space to the table.
+
 ## 3. Routine
 
 ### 3.1 Deploy

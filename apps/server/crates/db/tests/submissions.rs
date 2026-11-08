@@ -1,10 +1,13 @@
 //! Schema guarantees of migration 0011 that the domain leans on: one open
-//! draft per learner, an append-only grading ledger, idempotency replay.
+//! draft per learner, an append-only grading ledger, idempotency replay; and the prune of final code runs a
+//! retry replaced.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use ab_core::assessments::{AutoSubmitReason, SubmissionStatus};
-use ab_core::id::{AssessmentId, CourseId, SubmissionId, UserId};
-use ab_db::submissions::{self, NewGradingEntry, SubmitOutcome};
+use ab_core::assessments::{
+    AutoSubmitReason, CodeRunPurpose, CodeRunStatus, SubmissionStatus, TestVerdict,
+};
+use ab_core::id::{AssessmentId, AssessmentItemId, CodeRunId, CourseId, SubmissionId, UserId};
+use ab_db::submissions::{self, NewCodeRun, NewGradingEntry, SubmitOutcome};
 use sqlx::PgPool;
 
 const HASH_1: &str = "1111111111111111111111111111111111111111111111111111111111111111";
@@ -313,5 +316,151 @@ async fn idempotency_heartbeat_defers_the_stale_takeover(pool: PgPool) {
         !submissions::reserve_idempotent(&pool, user, "k", HASH_1)
             .await
             .unwrap()
+    );
+}
+
+/// One code run of `item` on `submission`, finished with `status`; `cleared` releases its key the way a retry
+/// does (`clear_idempotency_key`).
+async fn code_run(
+    pool: &PgPool,
+    w: (UserId, AssessmentId, AssessmentItemId, SubmissionId),
+    purpose: CodeRunPurpose,
+    status: CodeRunStatus,
+    key: &str,
+    cleared: bool,
+) -> CodeRunId {
+    let (user, assessment, item, submission) = w;
+    let id = submissions::insert_code_run(
+        pool,
+        NewCodeRun {
+            assessment_id: assessment,
+            item_id: item,
+            submission_id: Some(submission),
+            user_id: user,
+            purpose,
+            language_id: 71,
+            source_sha256: HASH_1,
+            stdin_sha256: None,
+            idempotency_key: Some(key),
+            total: 1,
+        },
+    )
+    .await
+    .unwrap()
+    .expect("a fresh key");
+    submissions::finish_code_run(pool, id, status, 0, None, None, Some("runner down"))
+        .await
+        .unwrap();
+    if cleared {
+        submissions::clear_idempotency_key(pool, id).await.unwrap();
+    }
+    id
+}
+
+/// `prune-superseded-code-runs`: a final run that never executed and that a retry replaced goes; the newest
+/// final run (what grading reads), a run with cases, a practice run and a run still holding its key stay.
+#[ab_testdb::test]
+async fn superseded_failed_final_runs_are_pruned(pool: PgPool) {
+    use CodeRunPurpose::{Final, Visible};
+    use CodeRunStatus::{Accepted, Degraded, InternalError};
+    let (user, course, assessment) = seed(&pool).await;
+    let item: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO assessment_items (assessment_id, kind, position, body)
+         VALUES ($1, 'code', 1, '{\"kind\": \"code\"}') RETURNING id",
+    )
+    .bind(assessment.0)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let item = AssessmentItemId(item);
+    let draft = submissions::insert_draft(&pool, assessment, course, user, 1, 1, false)
+        .await
+        .unwrap()
+        .unwrap();
+    let w = (user, assessment, item, draft);
+
+    let practice = code_run(&pool, w, Visible, Degraded, "v", true).await;
+    let gone_1 = code_run(&pool, w, Final, Degraded, "f1", true).await;
+    let gone_2 = code_run(&pool, w, Final, InternalError, "f2", true).await;
+    let with_cases = code_run(&pool, w, Final, InternalError, "f3", true).await;
+    submissions::insert_code_run_cases(
+        &pool,
+        with_cases,
+        &[submissions::CodeRunCaseRow {
+            position: 1,
+            test_id: "t1".into(),
+            stdin: None,
+            expected_output: None,
+            description: String::new(),
+            weight: 1.0,
+            is_visible: true,
+            verdict: TestVerdict::Accepted,
+            status_description: "Accepted".into(),
+            passed: true,
+            stdout: None,
+            stderr: None,
+            compile_output: None,
+            message: None,
+            time_seconds: None,
+            memory_kb: None,
+        }],
+    )
+    .await
+    .unwrap();
+    let keyed = code_run(&pool, w, Final, Degraded, "f4", false).await;
+    let latest = code_run(&pool, w, Final, Accepted, "f5", false).await;
+    // The newest final run stays even when it failed: nothing replaced it.
+    let other_item: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO assessment_items (assessment_id, kind, position, body)
+         VALUES ($1, 'code', 2, '{\"kind\": \"code\"}') RETURNING id",
+    )
+    .bind(assessment.0)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let alone = code_run(
+        &pool,
+        (user, assessment, AssessmentItemId(other_item), draft),
+        Final,
+        Degraded,
+        "o1",
+        true,
+    )
+    .await;
+
+    assert_eq!(
+        submissions::count_superseded_failed_final_runs(&pool)
+            .await
+            .unwrap(),
+        2
+    );
+    assert_eq!(
+        submissions::delete_superseded_failed_final_runs(&pool)
+            .await
+            .unwrap(),
+        2
+    );
+    let left: Vec<uuid::Uuid> = sqlx::query_scalar("SELECT id FROM code_runs ORDER BY id")
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+    let mut kept = vec![practice.0, with_cases.0, keyed.0, latest.0, alone.0];
+    kept.sort();
+    assert_eq!(left, kept);
+    assert!(!left.contains(&gone_1.0) && !left.contains(&gone_2.0));
+    assert_eq!(
+        submissions::latest_final_run(&pool, draft, item)
+            .await
+            .unwrap()
+            .unwrap()
+            .id,
+        latest
+    );
+    // Idempotent.
+    assert_eq!(
+        submissions::delete_superseded_failed_final_runs(&pool)
+            .await
+            .unwrap(),
+        0
     );
 }

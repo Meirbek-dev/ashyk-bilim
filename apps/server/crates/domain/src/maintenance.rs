@@ -14,6 +14,8 @@
 //!   migration `20261003000020`; responses keep answering the legacy form).
 //! - `resolve-email-verified` (schema review 28): accounts whose email state
 //!   is not known yet get Zitadel's answer, so `users.email_verified` can go.
+//! - `prune-superseded-code-runs`: final code runs that never executed and that a retry replaced go
+//!   (RUNBOOK 2.9).
 
 use ab_core::{Error, Result};
 use regex::Regex;
@@ -400,6 +402,24 @@ pub async fn clock_unreferenced_uploads(pool: &PgPool, dry_run: bool) -> Result<
         .unwrap_or(i64::MAX)
     };
     report.add("uploads_clocked", n);
+    Ok(report)
+}
+
+/// `prune-superseded-code-runs`: delete the final code runs that a retry replaced.
+///
+/// The rule is `ab_db::submissions::delete_superseded_failed_final_runs`.
+pub async fn prune_superseded_code_runs(pool: &PgPool, dry_run: bool) -> Result<Report> {
+    let mut report = Report {
+        dry_run,
+        ..Report::default()
+    };
+    let n = if dry_run {
+        ab_db::submissions::count_superseded_failed_final_runs(pool).await?
+    } else {
+        i64::try_from(ab_db::submissions::delete_superseded_failed_final_runs(pool).await?)
+            .unwrap_or(i64::MAX)
+    };
+    report.add("code_runs_deleted", n);
     Ok(report)
 }
 

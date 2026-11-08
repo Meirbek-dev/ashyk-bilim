@@ -1534,6 +1534,43 @@ pub async fn latest_final_run(
     Ok(row)
 }
 
+/// Delete the final runs that never executed and that a retry replaced.
+///
+/// Such a run is `degraded` / `internal_error` with no cases, and a later final run of the same submission and
+/// item exists: the retry released its key (`clear_idempotency_key`) and [`latest_final_run`] never picks it.
+/// The legacy runner retried one preview hand-in every 30 s for two weeks
+/// (2026-07/08): 41 156 such rows. Counted by [`count_superseded_failed_final_runs`].
+pub async fn delete_superseded_failed_final_runs(pool: &PgPool) -> Result<u64> {
+    let done = sqlx::query!(
+        r#"DELETE FROM code_runs r
+           WHERE r.purpose = 'final' AND r.status IN ('degraded', 'internal_error')
+             AND r.idempotency_key IS NULL AND r.submission_id IS NOT NULL
+             AND NOT EXISTS (SELECT 1 FROM code_run_cases c WHERE c.run_id = r.id)
+             AND EXISTS (SELECT 1 FROM code_runs n
+                         WHERE n.submission_id = r.submission_id AND n.item_id = r.item_id
+                           AND n.purpose = 'final' AND n.id > r.id)"#
+    )
+    .execute(pool)
+    .await?;
+    Ok(done.rows_affected())
+}
+
+/// What [`delete_superseded_failed_final_runs`] would delete.
+pub async fn count_superseded_failed_final_runs(pool: &PgPool) -> Result<i64> {
+    let n = sqlx::query_scalar!(
+        r#"SELECT count(*) AS "n!" FROM code_runs r
+           WHERE r.purpose = 'final' AND r.status IN ('degraded', 'internal_error')
+             AND r.idempotency_key IS NULL AND r.submission_id IS NOT NULL
+             AND NOT EXISTS (SELECT 1 FROM code_run_cases c WHERE c.run_id = r.id)
+             AND EXISTS (SELECT 1 FROM code_runs n
+                         WHERE n.submission_id = r.submission_id AND n.item_id = r.item_id
+                           AND n.purpose = 'final' AND n.id > r.id)"#
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(n)
+}
+
 #[derive(Debug, Clone)]
 pub struct CodeRunCaseRow {
     pub position: i32,

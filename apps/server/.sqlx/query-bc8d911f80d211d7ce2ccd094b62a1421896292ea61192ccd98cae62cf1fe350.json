@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM code_runs r\n           WHERE r.purpose = 'final' AND r.status IN ('degraded', 'internal_error')\n             AND r.idempotency_key IS NULL AND r.submission_id IS NOT NULL\n             AND NOT EXISTS (SELECT 1 FROM code_run_cases c WHERE c.run_id = r.id)\n             AND EXISTS (SELECT 1 FROM code_runs n\n                         WHERE n.submission_id = r.submission_id AND n.item_id = r.item_id\n                           AND n.purpose = 'final' AND n.id > r.id)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "bc8d911f80d211d7ce2ccd094b62a1421896292ea61192ccd98cae62cf1fe350"
+}
