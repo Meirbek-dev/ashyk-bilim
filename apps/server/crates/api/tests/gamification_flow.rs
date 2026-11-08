@@ -437,7 +437,7 @@ async fn parallel_awards_respect_the_daily_cap(pool: PgPool) {
         .create_user("racer", "racer@example.com", &["user"])
         .await;
     let service = GamificationService::new(pool.clone());
-    let ids: Vec<String> = (0..16).map(|i| format!("course-{i}")).collect();
+    let ids: Vec<String> = (0..16).map(|_| uuid::Uuid::now_v7().to_string()).collect();
     let results = futures::future::join_all(ids.iter().map(|id| {
         let service = service.clone();
         async move {
@@ -492,16 +492,27 @@ async fn the_platform_day_starts_at_almaty_midnight(pool: PgPool) {
         reason: None,
         idempotency_key: None,
     };
-    service.award(award("a")).await.unwrap();
-    service.award(award("b")).await.unwrap();
+    service
+        .award(award("00000000-0000-7000-8000-00000000000a"))
+        .await
+        .unwrap();
+    service
+        .award(award("00000000-0000-7000-8000-00000000000b"))
+        .await
+        .unwrap();
     // 400 of 500 today: a third 200 is over the cap.
-    assert!(service.award(award("c")).await.is_err());
+    assert!(
+        service
+            .award(award("00000000-0000-7000-8000-00000000000c"))
+            .await
+            .is_err()
+    );
     // Move one award to a minute before Almaty midnight: yesterday's, so today
     // holds 200 and the third award fits.
     sqlx::query(
         "UPDATE xp_transactions SET created_at = platform_day_start(platform_date(now()))
                                                  - interval '1 minute'
-         WHERE user_id = $1 AND source_id = 'a'",
+         WHERE user_id = $1 AND source_id = '00000000-0000-7000-8000-00000000000a'",
     )
     .bind(user.0)
     .execute(&pool)
@@ -512,7 +523,10 @@ async fn the_platform_day_starts_at_almaty_midnight(pool: PgPool) {
         .unwrap()
         .unwrap();
     assert_eq!(profile.daily_xp_earned, 200);
-    service.award(award("c")).await.unwrap();
+    service
+        .award(award("00000000-0000-7000-8000-00000000000c"))
+        .await
+        .unwrap();
 
     // The last login `before` the start of today's platform day.
     let streak_after = |before: &'static str| {

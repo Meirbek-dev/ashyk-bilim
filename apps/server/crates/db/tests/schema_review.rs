@@ -659,7 +659,7 @@ async fn gamification_totals_are_reconciled_from_the_journals(pool: PgPool) {
         .await
         .unwrap();
         sqlx::query(
-            "INSERT INTO gamification_completions (user_id, kind, source_id) VALUES ($1, 'activity', 'a')",
+            "INSERT INTO gamification_completions (user_id, kind, source_id) VALUES ($1, 'activity', uuidv7()::text)",
         )
         .bind(id)
         .execute(&pool)
@@ -3380,4 +3380,49 @@ async fn pending_contracts_name_live_objects(pool: PgPool) {
         gone.is_empty(),
         "dropped already, remove the row from pending-contracts.tsv: {gone:?}"
     );
+}
+
+/// An award's source is an id, or a day number for the login bonus (schema review 2026-11-08, item 23): the
+/// journals refuse anything else. The same row with a good and a bad source id.
+#[ab_testdb::test]
+async fn award_sources_are_ids_or_days(pool: PgPool) {
+    let w = world(&pool).await;
+    let skipped: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM schema_skipped_checks WHERE name LIKE '%source_id_shape'
+            OR name IN ('assessment_items_tags_check', 'assessment_items_outcome_ids_check',
+                        'ai_lecture_reviews_dismissed_suggestion_ids_check')",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(skipped, 0);
+    let cases = [
+        (
+            "INSERT INTO xp_transactions (user_id, amount, source, source_id, previous_level)
+             VALUES ($1, 10, 'course_completion', $2, 1)",
+            "0193f3a0-0000-7000-8000-000000000001",
+            "course-1",
+        ),
+        (
+            "INSERT INTO xp_transactions (user_id, amount, source, source_id, previous_level)
+             VALUES ($1, 10, 'login_bonus', $2, 1)",
+            "20400",
+            "2026-11-08",
+        ),
+        (
+            "INSERT INTO gamification_completions (user_id, kind, source_id) VALUES ($1, 'activity', $2)",
+            "0193f3a0-0000-7000-8000-000000000002",
+            "a",
+        ),
+    ];
+    for (sql, good, bad) in cases {
+        sqlx::query(sql)
+            .bind(w.user)
+            .bind(good)
+            .execute(&pool)
+            .await
+            .unwrap();
+        let refused = sqlx::query(sql).bind(w.user).bind(bad).execute(&pool).await;
+        assert!(refused.is_err(), "{sql} with {bad}");
+    }
 }

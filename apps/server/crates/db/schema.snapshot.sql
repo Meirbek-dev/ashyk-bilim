@@ -187,6 +187,7 @@ constraint ai_lecture_reviews ai_lecture_reviews_activity_id_fkey FOREIGN KEY (a
 constraint ai_lecture_reviews ai_lecture_reviews_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint ai_lecture_reviews ai_lecture_reviews_course_id_not_null NOT NULL course_id
 constraint ai_lecture_reviews ai_lecture_reviews_created_at_not_null NOT NULL created_at
+constraint ai_lecture_reviews ai_lecture_reviews_dismissed_suggestion_ids_check CHECK (text_list_ok(dismissed_suggestion_ids, 500, 200))
 constraint ai_lecture_reviews ai_lecture_reviews_dismissed_suggestion_ids_not_null NOT NULL dismissed_suggestion_ids
 constraint ai_lecture_reviews ai_lecture_reviews_id_not_null NOT NULL id
 constraint ai_lecture_reviews ai_lecture_reviews_language_not_null NOT NULL language
@@ -378,11 +379,13 @@ constraint assessment_items assessment_items_id_not_null NOT NULL id
 constraint assessment_items assessment_items_kind_check CHECK ((kind = ANY (ARRAY['choice'::text, 'open_text'::text, 'form'::text, 'code'::text, 'matching'::text])))
 constraint assessment_items assessment_items_kind_not_null NOT NULL kind
 constraint assessment_items assessment_items_max_score_not_null NOT NULL max_score
+constraint assessment_items assessment_items_outcome_ids_check CHECK (text_list_ok(outcome_ids, 50, 64))
 constraint assessment_items assessment_items_outcome_ids_not_null NOT NULL outcome_ids
 constraint assessment_items assessment_items_pkey PRIMARY KEY (id)
 constraint assessment_items assessment_items_position_check CHECK (("position" >= 1))
 constraint assessment_items assessment_items_position_key UNIQUE (assessment_id, "position") DEFERRABLE INITIALLY DEFERRED
 constraint assessment_items assessment_items_position_not_null NOT NULL "position"
+constraint assessment_items assessment_items_tags_check CHECK (text_list_ok(tags, 50, 64))
 constraint assessment_items assessment_items_tags_not_null NOT NULL tags
 constraint assessment_items assessment_items_title_not_null NOT NULL title
 constraint assessment_items assessment_items_updated_at_not_null NOT NULL updated_at
@@ -1014,6 +1017,7 @@ constraint gamification_completions gamification_completions_kind_check CHECK ((
 constraint gamification_completions gamification_completions_kind_not_null NOT NULL kind
 constraint gamification_completions gamification_completions_pkey PRIMARY KEY (user_id, kind, source_id)
 constraint gamification_completions gamification_completions_source_id_not_null NOT NULL source_id
+constraint gamification_completions gamification_completions_source_id_shape CHECK ((source_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text))
 constraint gamification_completions gamification_completions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 constraint gamification_completions gamification_completions_user_id_not_null NOT NULL user_id
 constraint gamification_config gamification_config_id_check CHECK ((id = 1))
@@ -1373,6 +1377,11 @@ constraint xp_transactions xp_transactions_pkey PRIMARY KEY (id)
 constraint xp_transactions xp_transactions_previous_level_check CHECK ((previous_level >= 1))
 constraint xp_transactions xp_transactions_previous_level_not_null NOT NULL previous_level
 constraint xp_transactions xp_transactions_source_check CHECK ((source = ANY (ARRAY['activity_completion'::text, 'course_completion'::text, 'login_bonus'::text, 'quiz_completion'::text, 'exam_completion'::text, 'streak_bonus'::text, 'admin_award'::text, 'code_challenge_completion'::text, 'code_challenge_perfect'::text, 'code_challenge_first_solve'::text])))
+constraint xp_transactions xp_transactions_source_id_shape CHECK (((source_id IS NULL) OR
+CASE
+    WHEN (source = 'login_bonus'::text) THEN (source_id ~ '^[0-9]{1,6}$'::text)
+    ELSE (source_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text)
+END))
 constraint xp_transactions xp_transactions_source_not_null NOT NULL source
 constraint xp_transactions xp_transactions_triggered_level_up_not_null NOT NULL triggered_level_up
 constraint xp_transactions xp_transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT

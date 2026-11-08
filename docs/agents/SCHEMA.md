@@ -502,6 +502,7 @@ AI suggestions for one lesson activity.
 - Foreign key `ai_lecture_reviews_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_lecture_reviews_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_lecture_reviews_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
+- Check `ai_lecture_reviews_dismissed_suggestion_ids_check`: `CHECK (text_list_ok(dismissed_suggestion_ids, 500, 200))`
 - Check `ai_lecture_reviews_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
 - Check `ai_lecture_reviews_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'superseded'::text])))`
 - Check `ai_lecture_reviews_suggestions_object`: `CHECK ((jsonb_typeof(suggestions) = 'object'::text))`
@@ -892,7 +893,9 @@ A question or task of an assessment (typed body by kind), ordered by position, m
 - Check `assessment_items_difficulty_check`: `CHECK (((difficulty IS NULL) OR (difficulty = ANY (ARRAY['easy'::text, 'medium'::text, 'hard'::text]))))`
 - Check `assessment_items_estimated_minutes_check`: `CHECK (((estimated_minutes IS NULL) OR (estimated_minutes >= 0)))`
 - Check `assessment_items_kind_check`: `CHECK ((kind = ANY (ARRAY['choice'::text, 'open_text'::text, 'form'::text, 'code'::text, 'matching'::text])))`
+- Check `assessment_items_outcome_ids_check`: `CHECK (text_list_ok(outcome_ids, 50, 64))`
 - Check `assessment_items_position_check`: `CHECK (("position" >= 1))`
+- Check `assessment_items_tags_check`: `CHECK (text_list_ok(tags, 50, 64))`
 
 ## assessment_overrides
 
@@ -2112,6 +2115,7 @@ Completion facts that award XP once (source kind + id per learner).
 - Primary key `gamification_completions_pkey`: `PRIMARY KEY (user_id, kind, source_id)`
 - Foreign key `gamification_completions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Check `gamification_completions_kind_check`: `CHECK ((kind = ANY (ARRAY['activity'::text, 'course'::text])))`
+- Check `gamification_completions_source_id_shape`: `CHECK ((source_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text))`
 
 ## gamification_config
 
@@ -2872,4 +2876,5 @@ XP journal: every award with its source; the profile totals are derived from it.
 - Check `xp_transactions_amount_check`: `CHECK ((amount > 0))`
 - Check `xp_transactions_previous_level_check`: `CHECK ((previous_level >= 1))`
 - Check `xp_transactions_source_check`: `CHECK ((source = ANY (ARRAY['activity_completion'::text, 'course_completion'::text, 'login_bonus'::text, 'quiz_completion'::text, 'exam_completion'::text, 'streak_bonus'::text, 'admin_award'::text, 'code_challenge_completion'::text, 'code_challenge_perfect'::text, 'code_challenge_first_solve'::text])))`
+- Check `xp_transactions_source_id_shape`: `CHECK (((source_id IS NULL) OR CASE WHEN (source = 'login_bonus'::text) THEN (source_id ~ '^[0-9]{1,6}$'::text) ELSE (source_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text) END))`
 - Index `xp_transactions_user_recent_idx`: `CREATE INDEX xp_transactions_user_recent_idx ON learning.xp_transactions USING btree (user_id, created_at DESC)`
