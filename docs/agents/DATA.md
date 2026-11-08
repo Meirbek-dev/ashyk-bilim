@@ -1,8 +1,8 @@
 # Finding real data (dev stack)
 
 Run SQL with `just db sql [--slot N | --db NAME] "<sql>"` (or `-f file.sql`): the slot's database, Unicode-safe,
-`|`-separated with a header, read-only as `ashyq_ro` (emails, bios, IPs, secrets, answers, messages, feedback text and
-names on certificates are not readable: select named columns, find people by `username`); `--rw` runs as the owner for writes and email lookups. Sign in as anyone
+`|`-separated with a header, read-only as `ashyq_ro` (emails, bios, IPs, secrets, answers, messages, posts, feedback text,
+override notes, AI memory/analyses/drafts, uploaded file names and names on certificates are not readable: select named columns, find people by `username`); `--rw` runs as the owner for writes and email lookups. Sign in as anyone
 with `just login-as <username|email> [slot]`; screenshot pages with
 `just shoot`. Real data: a slot on a local restored copy (`just stack up 1 --db <name>`, RUNBOOK 5.3); change its rows
 freely, never production's.

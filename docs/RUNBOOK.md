@@ -123,7 +123,7 @@ Owner decision 2026-11-01 (Q-2026-11-01-2): the server does not run as the schem
 | --- | --- | --- |
 | `ashyq` | `server-migrate` only (compose.prod.yaml builds its URL from `ASHYQ_DB_PASSWORD`) | own every object, run DDL |
 | `ashyq_app` | server, worker, `dc run --rm server admin ...` (server.env `AB__DATABASE__URL`) | rows of every table, no DDL/TRUNCATE; `grading_entries`, `file_grading_entries`, `assessment_audit_events`, `auth_audit_log` insert-only (retention: SECURITY DEFINER `prune_auth_audit_log`); `_sqlx_migrations` read-only; statement 120 s, idle-in-transaction 60 s, lock 30 s |
-| `ashyq_ro` | people and agents reading prod, analytics | read-only transactions (30 s), no `users.email/bio/profile`, `auth_audit_log.ip/user_agent/metadata`, `google_accounts` ids, `platforms.email`, `idempotency_keys` |
+| `ashyq_ro` | people and agents reading prod, analytics | read-only transactions (30 s), no `users.email/bio/profile`, `auth_audit_log.ip/user_agent/metadata`, `google_accounts` ids, `platforms.email`, `idempotency_keys`, nor free text a person wrote (answers, messages, posts, feedback, notes, AI memory/analyses/drafts, file names; `apply_role_grants`); a new table is readable whole only once `infra/tests/db-roles.sh` lists it |
 
 db-init (`infra/postgres/db-init.sh`, every `up`) creates the two roles from `ASHYQ_APP_DB_PASSWORD` /
 `ASHYQ_RO_DB_PASSWORD` in `.env` (`roles.sql`; unset = skipped) and re-applies the grants. What each role may touch

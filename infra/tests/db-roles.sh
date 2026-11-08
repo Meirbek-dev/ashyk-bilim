@@ -77,6 +77,22 @@ probe() {
         AND has_column_privilege('ashyq_ro', format('%I.%I', c.table_schema, c.table_name), c.column_name, 'SELECT');
       IF leaks IS NOT NULL THEN RAISE EXCEPTION 'ashyq_ro reads %', leaks; END IF;
     END \$\$"
+  # Schema review 2026-11-08 (item 45): free text a person wrote stays out, the rest of the row is readable.
+  check ashyq_ro ok "SELECT id, status, created_at FROM course_discussions"
+  check ashyq_ro denied "SELECT content FROM course_discussions"
+  check ashyq_ro denied "SELECT overall_feedback FROM grading_entries"
+  check ashyq_ro denied "SELECT memory_text FROM ai_student_memory"
+  # Opt-in for whole tables: ashyq_ro reads every column only of the tables reviewed here as holding no one's free
+  # text or contact data. A new table (default privileges grant it) fails until it is added here or its columns
+  # are hidden in apply_role_grants.
+  check ashyq ok "DO \$\$ DECLARE unreviewed text; BEGIN
+      SELECT string_agg(c.relname, ', ' ORDER BY c.relname) INTO unreviewed
+      FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname IN ('public', 'core', 'learning', 'ai', 'analytics', 'ops') AND c.relkind IN ('r', 'p')
+        AND NOT c.relispartition AND has_table_privilege('ashyq_ro', c.oid, 'SELECT')
+        AND c.relname <> ALL (string_to_array('_sqlx_migrations activities activity_progress ai_approvals ai_course_analyses ai_course_settings ai_eval_results ai_events ai_feature_switches ai_lecture_reviews ai_remediation_sessions ai_runs ai_token_ledger ai_token_reservations ai_work_embeddings analytics_events analytics_saved_views assessment_access_usergroups assessment_access_users assessment_audit_events assessment_items assessment_versions assessments block_uploads blocks bulk_actions certifications chapters code_runs collection_courses collection_staff collections completions concept_mastery concept_prerequisites concept_tags content_chunks content_index_state course_concepts course_progress course_staff course_update_activities course_updates courses daily_assessment_metrics daily_course_engagement daily_course_metrics daily_teacher_metrics daily_user_course_progress discussion_reactions enrolment_events enrolments feature_activations file_submissions gamification_completions gamification_config gamification_profiles job_schedules learner_risk_snapshots mastery_evidence notification_kinds notification_opt_outs notifications post_uploads role_permissions roles schema_skipped_checks trail_legacy_marks translatable_fields translations upload_purposes uploads user_roles usergroup_courses usergroup_members usergroups xp_transactions', ' '));
+      IF unreviewed IS NOT NULL THEN RAISE EXCEPTION 'ashyq_ro reads every column of unreviewed %', unreviewed; END IF;
+    END \$\$"
   # Schema review 43: the tables sit in their schemas, found through the database's search_path.
   check ashyq_app ok "SELECT count(*) FROM core.users, learning.submissions, ops.jobs, ai.ai_runs, analytics.analytics_events"
   check ashyq_app ok "SELECT analytics_events_ensure_partitions(1), analytics_events_drop_partitions(now() - interval '1000 days')"

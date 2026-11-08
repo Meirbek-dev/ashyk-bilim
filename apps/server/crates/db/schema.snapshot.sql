@@ -1601,7 +1601,22 @@ BEGIN
             ('item_feedback', ARRAY['comment']),
             ('certificate_users', ARRAY['holder_name']),
             ('jobs', ARRAY['payload', 'last_error']),
-            ('submission_violations', ARRAY['event'])
+            ('submission_violations', ARRAY['event']),
+            -- Schema review 2026-11-08: free text a person wrote or that is about one person, missed above.
+            ('course_discussions', ARRAY['content']),
+            ('grading_entries', ARRAY['overall_feedback']),
+            ('file_grading_entries', ARRAY['feedback']),
+            ('file_submission_attempts', ARRAY['feedback']),
+            ('assessment_overrides', ARRAY['note']),
+            ('file_submission_overrides', ARRAY['reason']),
+            ('ai_threads', ARRAY['title']),
+            ('ai_student_memory', ARRAY['memory_text']),
+            ('ai_submission_analyses', ARRAY['analysis', 'evidence']),
+            ('ai_grade_drafts', ARRAY['proposal']),
+            ('ai_grade_corrections', ARRAY['excerpt', 'teacher_feedback']),
+            ('ai_evidence', ARRAY['excerpt']),
+            ('ai_artifacts', ARRAY['content']),
+            ('file_submission_files', ARRAY['display_name'])
         ) AS x(name, hidden)
         JOIN pg_class c ON c.relname = x.name
          AND c.relnamespace::regnamespace::name = ANY (ARRAY['public']::name[] || app_schemas())
