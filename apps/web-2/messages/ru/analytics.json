@@ -124,9 +124,9 @@
   "analytics_avg_progress": "Средний прогресс",
   "analytics_certificates": "Выдано сертификатов",
   "analytics_engagement_trend": "Активность учащихся",
-  "analytics_dropoff_table": "Отсев по активностям",
-  "analytics_dropoff_empty": "Данных по активностям пока нет.",
-  "analytics_col_activity": "Активность",
+  "analytics_dropoff_table": "Отсев по занятиям",
+  "analytics_dropoff_empty": "Данных по занятиям пока нет.",
+  "analytics_col_activity": "Занятие",
   "analytics_col_dropoff": "Отсев",
   "analytics_col_completed": "Завершили",
   "analytics_eligible": "Допущено",
@@ -301,7 +301,7 @@
   "analytics_admin_group": "Группа: {group}",
   "analytics_admin_all": "все",
   "analytics_admin_roi": "Отдача контента",
-  "analytics_admin_roi_hint": "(Доля завершений в % + состояние курса) / число активностей. Чем выше значение, тем больше результата даёт каждая активность. При равных показателях короткий курс окажется выше длинного.",
+  "analytics_admin_roi_hint": "(Доля завершений в % + состояние курса) / число занятий. Чем выше значение, тем больше результата даёт каждое занятие. При равных показателях короткий курс окажется выше длинного.",
   "analytics_admin_courses_hint": "Состояние — показатель курса от 0 до 100. Курсы, которые ещё никто не начал, стоят в конце.",
   "analytics_program_unassigned": "Без автора"
 }

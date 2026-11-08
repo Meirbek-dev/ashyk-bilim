@@ -23,7 +23,7 @@
   "inbox_kind_needs_grading": "Ждёт проверки",
   "inbox_kind_awaiting_release": "Ждёт публикации",
   "inbox_kind_other": "Требует внимания",
-  "inbox_col_activity": "Активность",
+  "inbox_col_activity": "Занятие",
   "inbox_col_course": "Курс",
   "inbox_col_learner": "Учащийся",
   "inbox_sort_label": "Порядок: {sort}",

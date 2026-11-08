@@ -6,7 +6,7 @@
   "ai_tab_critique": "Критика материала",
   "ai_tab_remediation": "Разбор ошибок",
   "ai_unavailable_disabled": "ИИ отключён на платформе.",
-  "ai_unavailable_restricted": "На этой активности ИИ недоступен.",
+  "ai_unavailable_restricted": "В этом занятии ИИ недоступен.",
   "ai_unavailable_other": "Здесь нет доступных функций ИИ.",
   "ai_panel_error": "Не удалось загрузить панель ИИ.",
   "ai_context": "Отвечает по материалам: {label}",

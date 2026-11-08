@@ -21,7 +21,7 @@
   "inbox_kind_needs_grading": "Тексеруді күтуде",
   "inbox_kind_awaiting_release": "Жариялауды күтуде",
   "inbox_kind_other": "Назар аударуды қажет етеді",
-  "inbox_col_activity": "Белсенділік",
+  "inbox_col_activity": "Сабақ",
   "inbox_col_course": "Курс атауы",
   "inbox_col_learner": "Білім алушы",
   "inbox_sort_label": "Реті: {sort}",

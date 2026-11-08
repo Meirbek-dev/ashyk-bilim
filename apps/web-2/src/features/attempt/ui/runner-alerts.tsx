@@ -60,7 +60,7 @@ export function RunnerAlerts({ guard, closed, expired, runningOut, changed, atte
           <ErrorAlert>
             {expired === 'due' ? m.attempt_due_up() : expired === 'time' ? m.attempt_time_up() : closedText(closed)}
           </ErrorAlert>
-          {/* A test gone from the course has nothing to reread: the way out is «К активности» above. */}
+          {/* A test gone from the course has nothing to reread: the way out is «К занятию» above. */}
           {attemptGone(closed) ? null : (
             <Button variant="outline" size="sm" onClick={refresh}>
               {m.attempt_refresh()}

@@ -79,6 +79,6 @@
   "player_remediation_hint": "Before another attempt, your teacher asks you to review the mistakes of the last one.",
   "player_hours_left": "{hours} h left",
   "player_archived_title": "Course archived",
-  "player_archived_text": "The materials and your results stay readable. New attempts, hand-ins and marks are no longer accepted.",
+  "player_archived_text": "The materials and your results stay readable. New attempts, hand-ins and activity marks are no longer accepted.",
   "player_nothing_yet": "This course has nothing to complete yet. Once the author publishes lessons, your progress will show here."
 }

@@ -48,12 +48,12 @@
       "declarations": ["input count", "local countPlural = count: plural"],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "{count} белсенділік",
-        "countPlural=other": "{count} белсенділік"
+        "countPlural=one": "{count} сабақ",
+        "countPlural=other": "{count} сабақ"
       }
     }
   ],
-  "course_syllabus_empty": "Курста әзірге белсенділіктер жоқ.",
+  "course_syllabus_empty": "Курста әзірге сабақтар жоқ.",
   "course_apply": "Бірлескен автор болу",
   "course_applied": "Өтінім жіберілді",
   "course_application_pending": "Бірлескен авторлыққа өтініміңіз қаралуда.",

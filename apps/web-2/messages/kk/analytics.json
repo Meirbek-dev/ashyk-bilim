@@ -124,9 +124,9 @@
   "analytics_avg_progress": "Орташа ілгерілеу",
   "analytics_certificates": "Берілген сертификаттар",
   "analytics_engagement_trend": "Білім алушылардың белсенділігі",
-  "analytics_dropoff_table": "Белсенділіктер бойынша шығып қалу",
-  "analytics_dropoff_empty": "Белсенділіктер бойынша деректер әлі жоқ.",
-  "analytics_col_activity": "Белсенділік",
+  "analytics_dropoff_table": "Сабақтар бойынша шығып қалу",
+  "analytics_dropoff_empty": "Сабақтар бойынша деректер әлі жоқ.",
+  "analytics_col_activity": "Сабақ",
   "analytics_col_dropoff": "Шығып қалу",
   "analytics_col_completed": "Аяқтағандар",
   "analytics_eligible": "Рұқсат етілген",
@@ -301,7 +301,7 @@
   "analytics_admin_group": "Топ: {group}",
   "analytics_admin_all": "барлығы",
   "analytics_admin_roi": "Мазмұн қайтарымы",
-  "analytics_admin_roi_hint": "Аяқтау (%) мен курс денсаулығының қосындысы оның белсенділіктер санына бөлінеді: неғұрлым жоғары болса, әр белсенділік соғұрлым көп нәтиже береді. Көрсеткіштері бірдей қысқа курс ұзын курстан жоғары тұрады.",
+  "analytics_admin_roi_hint": "Аяқтау (%) мен курс денсаулығының қосындысы оның сабақтар санына бөлінеді: неғұрлым жоғары болса, әр сабақ соғұрлым көп нәтиже береді. Көрсеткіштері бірдей қысқа курс ұзын курстан жоғары тұрады.",
   "analytics_admin_courses_hint": "Денсаулық — курстың 0-ден 100-ге дейінгі бағасы; әлі ешкім бастамаған курстар — соңында.",
   "analytics_program_unassigned": "Авторы жоқ"
 }

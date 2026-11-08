@@ -47,7 +47,7 @@ const session = (activityId: string, status: RemediationSession['status'] = 'ass
   id: `0190a5d2-0000-7000-8000-0000000000${activityId === ACTIVITY ? 'f4' : 'f5'}`,
   language: 'ru',
   lecture: {
-    title: `Работа по ${activityId === ACTIVITY ? 'этой' : 'другой'} активности`,
+    title: `Работа по ${activityId === ACTIVITY ? 'этому' : 'другому'} занятию`,
     micro_lecture_markdown: 'Текст',
   },
   passed_at_unix: status === 'passed' ? 1_760_000_100 : null,
@@ -92,8 +92,8 @@ describe('RemediationGate (where the gate blocks the learner)', () => {
         </Suspense>
       </QueryClientProvider>,
     )
-    await expect.element(screen.getByRole('heading', { name: 'Работа по этой активности' })).toBeVisible()
-    await expect.element(screen.getByText('Работа по другой активности')).not.toBeInTheDocument()
+    await expect.element(screen.getByRole('heading', { name: 'Работа по этому занятию' })).toBeVisible()
+    await expect.element(screen.getByText('Работа по другому занятию')).not.toBeInTheDocument()
     const before = reads
     const added = vi.spyOn(toast, 'add')
     await userEvent.fill(screen.getByRole('textbox', { name: m.ai_remediation_answer({ number: 1 }) }), 'Ответ')

@@ -215,7 +215,7 @@ Every data region renders exactly one of the kit's four states:
   it in the past tense: «Сохранено» / «Сақталды» / "Saved".
 - Errors say what happened and what to do next, never apologize or blame: «Файл больше 50 МБ. Выберите файл поменьше.»
 - Formal «вы» (ru, lowercase) and «сіз» (kk); en: American spelling, curly quotes. Confirmations name the object and
-  the consequence; empty states invite one action. Terms: `messages/glossary.json` (G-03); dates, numbers: format module.
+  the consequence; empty states invite one action. Terms: `messages/glossary.json` (G-03); a course unit is «занятие» / «сабақ» / activity, while «активность» means only learner engagement (analytics); dates, numbers: format module.
 
 ## 12. Never
 

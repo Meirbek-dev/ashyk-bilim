@@ -16,7 +16,7 @@
   "course_next_review_completion": "Итоги курса",
   "course_leave": "Покинуть курс",
   "course_leave_title": "Покинуть курс «{name}»?",
-  "course_leave_consequence": "Отметки о пройденных уроках и продлённые сроки сбросятся. Оценки и сданные работы сохранятся. Записаться снова можно в любой момент.",
+  "course_leave_consequence": "Отметки о пройденных занятиях и продлённые сроки сбросятся. Оценки и сданные работы сохранятся. Записаться снова можно в любой момент.",
   "course_left": "Вы покинули курс",
   "course_progress_title": "Ваш прогресс",
   "course_completed_title": "Курс пройден",
@@ -50,14 +50,14 @@
       "declarations": ["input count", "local countPlural = count: plural"],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "{count} активность",
-        "countPlural=few": "{count} активности",
-        "countPlural=many": "{count} активностей",
-        "countPlural=other": "{count} активности"
+        "countPlural=one": "{count} занятие",
+        "countPlural=few": "{count} занятия",
+        "countPlural=many": "{count} занятий",
+        "countPlural=other": "{count} занятия"
       }
     }
   ],
-  "course_syllabus_empty": "В курсе пока нет активностей.",
+  "course_syllabus_empty": "В курсе пока нет занятий.",
   "course_apply": "Стать соавтором",
   "course_applied": "Заявка отправлена",
   "course_application_pending": "Ваша заявка в соавторы на рассмотрении.",
