@@ -15,13 +15,16 @@ STACK=restore bash infra/scripts/bootstrap.sh
 compose up -d --wait
 compose exec -T -e AB__ENVIRONMENT=development -e E2E_PASSWORD server ashyq admin seed-e2e --learners 2
 
+# The stand's host name and certificate live in its env file (smoke.env), not in the shell.
+host=$(envval NGINX_SERVER_NAME) tls_dir=$(envval TLS_DIR)
+[[ -n $host && -n $tls_dir ]] || die "NGINX_SERVER_NAME or TLS_DIR is missing from $COMPOSE_ENV_FILES"
 edge_ip=$("$CTR" inspect "$(compose ps -q nginx)" --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
 [[ -n $edge_ip ]] || die "the stand's edge is not running"
 root=$(pwd -W 2>/dev/null || pwd)
 "$CTR" run --rm --init --network "${COMPOSE_PROJECT_NAME}_edge-net" \
-  --add-host "$NGINX_SERVER_NAME:$edge_ip" -v "$root:/repo" -w /repo \
+  --add-host "$host:$edge_ip" -v "$root:/repo" -w /repo \
   -e "E2E_PASSWORD=$E2E_PASSWORD" -e NODE_EXTRA_CA_CERTS=/repo/tmp/smoke/certs/cert.pem \
-  -e "E2E_BASE_URL=https://$NGINX_SERVER_NAME" \
+  -e "E2E_BASE_URL=https://$host" \
   "docker.io/library/node:$(tr -d '[:space:]' <.node-version)-alpine" node /repo/infra/tests/restore-fixture.mjs
 course_id=$(<tmp/restore-test/course-id)
 # A synthetic earned certificate complements the API-created template and graded learner work.
@@ -43,8 +46,8 @@ SELECT EXISTS (SELECT 1 FROM submissions s JOIN assessments a ON a.id = s.assess
 SQL
 key=$(<tmp/restore-test/object-key)
 https_port=${HTTPS_PORT:-443}
-curl -fsS --cacert "$TLS_DIR/cert.pem" --resolve "$NGINX_SERVER_NAME:$https_port:127.0.0.1" \
-  "https://$NGINX_SERVER_NAME:$https_port/content/$key" | sha256sum | cut -d' ' -f1 >tmp/restore-test/object.sha256
+curl -fsS --cacert "$tls_dir/cert.pem" --resolve "$host:$https_port:127.0.0.1" \
+  "https://$host:$https_port/content/$key" | sha256sum | cut -d' ' -f1 >tmp/restore-test/object.sha256
 # Freeze writers before taking the expected manifest and invoking the real backup hooks.
 compose stop worker server web >/dev/null
 compose exec -T db sh -c 'psql -XAtq -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d ashyq' \
