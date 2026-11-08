@@ -7,8 +7,8 @@ import { RadioGroup, RadioGroupItem } from '#/shared/ui/radio-group'
 
 // Typeface names are brands and read the same in every language; the system face is described, not named.
 const names: Record<Font, () => string> = {
-  press: () => 'Geologica + Commissioner',
   inter: () => 'Inter + Geologica',
+  press: () => 'Geologica + Commissioner',
   geist: () => 'Geist',
   google: () => 'Google Sans',
   plex: () => 'IBM Plex Sans',
@@ -23,8 +23,8 @@ const names: Record<Font, () => string> = {
 }
 
 const hints: Record<Font, () => string> = {
-  press: m.settings_font_press_hint,
   inter: m.settings_font_inter_hint,
+  press: m.settings_font_press_hint,
   geist: m.settings_font_geist_hint,
   google: m.settings_font_google_hint,
   plex: m.settings_font_plex_hint,

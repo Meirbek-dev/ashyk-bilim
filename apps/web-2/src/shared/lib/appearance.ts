@@ -7,10 +7,10 @@ import { cookieItem } from './storage'
 export const MODES = ['system', 'light', 'dark'] as const
 export type Mode = (typeof MODES)[number]
 
-/** Typeface sets of tokens.css `[data-font]` (DESIGN 4); `press` is the default and needs no attribute. */
+/** Typeface sets of tokens.css `[data-font]` (DESIGN 4); `inter` is the default and needs no attribute. */
 export const FONTS = [
-  'press',
   'inter',
+  'press',
   'geist',
   'google',
   'plex',
@@ -47,7 +47,7 @@ export function readAppearance(profileTheme?: string | null): { theme: string; m
   return {
     theme: theme ?? DEFAULT_THEME,
     mode: modeCookie.get() ?? 'system',
-    font: fontCookie.get() ?? 'press',
+    font: fontCookie.get() ?? 'inter',
     size: sizeCookie.get() ?? 'normal',
   }
 }
@@ -58,7 +58,7 @@ export const themeHref = (theme: string) => `/themes/${theme}.css`
 export const modeAttribute = (mode: Mode) => (mode === 'system' ? undefined : mode)
 
 /** `<html data-font>`: absent for the default set. */
-export const fontAttribute = (font: Font) => (font === 'press' ? undefined : font)
+export const fontAttribute = (font: Font) => (font === 'inter' ? undefined : font)
 
 /** `<html data-size>`: absent for the normal size. */
 export const sizeAttribute = (size: Size) => (size === 'normal' ? undefined : size)

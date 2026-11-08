@@ -13,7 +13,7 @@ look out of place in a Linear-grade tool, it is not finished.
 1. A study tool people look forward to opening. A screen answers one question, shows one next step and the
    learner's progress (the level, the streak, the bar) where they act.
 2. Three things carry the look:
-   - **The type.** Geologica for headings and big numbers, Commissioner for everything else, lesson text included. Large
+   - **The type.** Geologica for headings and big numbers, Inter for everything else, lesson text included. Large
      titles, small quiet labels, nothing in between that shouts.
    - **The page.** Hairline rules, aligned columns, generous margins. A table is a typeset table. A list is rows on the
      paper. Boxes are the exception. Dotted leaders only in a course's table of contents.
@@ -92,14 +92,15 @@ behind it; it never colors a title, a row or a card background.
 
 ## 4. Typography
 
-- Default set `press` (the name is a stored cookie value): Geologica (`font-heading`: every `h1`-`h3`, big numbers) and
-  Commissioner (UI and `font-reading`: lesson text); Geist Mono for code in every set. Others: `inter` (Inter + Geologica), and
-  one family each: `geist`, `google`, `plex`, `inter-tight`, `sn-pro`, `rubik`, `ubuntu`, `onest` (no italic), `noto`,
+- Default set `inter`: Geologica (`font-heading`: every `h1`-`h3`, big numbers, at 600) and Inter (UI and
+  `font-reading`: lesson text); Geist Mono for code in every set. Others: `press` (Geologica at 500 + Commissioner, the
+  house set until 2026-11-08; the name is a stored cookie value), and one family each: `geist`, `google`, `plex`,
+  `inter-tight`, `sn-pro`, `rubik`, `ubuntu`, `onest` (no italic), `noto`,
   `literata` (serif), `system`. Picked in /settings/appearance: cookie `ab_font`
   (this browser), SSR `html[data-font]`, tokens.css maps it to `--typeface-*`. Each face: 18/18 Kazakh letters and
   tabular digits checked in the shipped woff2 (fail: Manrope, Unbounded, Wix Madefor, Sofia Sans, JetBrains Mono).
-- Weights: `font-normal` (body), `font-medium` (labels, buttons), `font-semibold` (headings; Geologica draws them at 500,
-  `--heading-weight`, so a heading never reads heavy). Bold never.
+- Weights: `font-normal` (body), `font-medium` (labels, buttons), `font-semibold` (headings, drawn at
+  `--heading-weight`: 600 by default, 500 in `press`). Bold never.
 - Numbers that line up (tables, scores, timers, counters) use `tabular-nums`.
 - Never all-caps or letter-spaced text. Width at most `max-w-prose` for reading and 80ch for forms.
 - The scale is a step larger than a typical web app's: many teachers are older and read at arm's length. Text size

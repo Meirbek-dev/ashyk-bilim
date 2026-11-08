@@ -260,14 +260,14 @@
 }
 
 /* Typeface sets (DESIGN 4): html[data-font] from the user's choice, or a preview card in settings. No attribute =
-   the house set: Geologica for headings and big numbers, Commissioner for UI and lesson text. Every face has all 18
+   the house set: Inter for UI and lesson text, Geologica for headings and big numbers. Every face has all 18
    Kazakh letters; all are OFL-1.1 except Ubuntu Sans (Ubuntu Font Licence 1.0, web embedding allowed). */
 :root,
-[data-font='press'] {
-  --typeface-sans: 'Commissioner Variable', system-ui, sans-serif;
+[data-font='inter'] {
+  --typeface-sans: 'Inter Variable', system-ui, sans-serif;
   --typeface-heading: 'Geologica Variable', system-ui, sans-serif;
   --typeface-reading: var(--typeface-sans);
-  --heading-weight: 500;
+  --heading-weight: 600;
 }
 
 /* The sans sets read everywhere in their own face and keep the weight their headings were drawn at. */
@@ -276,13 +276,11 @@
   --heading-weight: 600;
 }
 
+/* The earlier house set: Geologica headings at 500 over Commissioner. */
 [data-font='press'] {
+  --typeface-sans: 'Commissioner Variable', system-ui, sans-serif;
+  --typeface-heading: 'Geologica Variable', system-ui, sans-serif;
   --heading-weight: 500;
-}
-
-[data-font='inter'] {
-  --typeface-sans: 'Inter Variable', system-ui, sans-serif;
-  --typeface-heading: 'Geologica Variable', var(--typeface-sans);
 }
 
 [data-font='geist'] {
