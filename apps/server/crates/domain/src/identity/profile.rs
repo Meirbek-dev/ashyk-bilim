@@ -16,11 +16,12 @@ pub const MAX_SECTIONS: usize = 20;
 pub const MAX_ITEMS_PER_SECTION: usize = 50;
 /// Serialized document cap (bytes) - a few hundred filled items.
 pub const MAX_PROFILE_BYTES: usize = 64 * 1024;
-/// The web theme registry (`apps/web/src/lib/theme-store.json` item names).
+/// The web theme registry (`apps/web-2/public/themes/manifest.json` slugs).
 ///
 /// A closed set: an unknown slug would render as the default and the web
 /// would then persist that fallback (BUG-365). The
-/// `theme_slugs_mirror_the_web_registry` test keeps the two in step.
+/// `theme_slugs_match_the_new_web_manifest` test (maintenance.rs) keeps the
+/// two in step.
 pub const THEME_SLUGS: [&str; 63] = [
     "modern-minimal",
     "t3-chat",
@@ -701,24 +702,6 @@ mod tests {
         assert!(theme_slug("black").is_err());
         assert!(theme_slug("").is_err());
         assert!(theme_slug("bad slug!").is_err());
-    }
-
-    /// One source of truth: the web registry file the theme picker reads.
-    #[test]
-    fn theme_slugs_mirror_the_web_registry() {
-        let path = concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../web/src/lib/theme-store.json"
-        );
-        let registry: serde_json::Value =
-            serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
-        let names: Vec<&str> = registry["items"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|item| item["name"].as_str().unwrap())
-            .collect();
-        assert_eq!(names, THEME_SLUGS);
     }
 
     fn validation_fields(parsed: &mut ProfileSections) -> Vec<(String, String)> {

@@ -1,8 +1,8 @@
 # Rewrite spec (v3)
 
 Status: proposed 2026-10-21, revised the same day after a system audit (prod host, public
-site, repo). In progress: parts of phase 0 and the first phase-5 restructuring are done (section 15),
-phase 1 waits for the owner's date (section 16). Replaces `apps/web`, the current stack topology and the shape of
+site, repo). In progress: parts of phase 0, phase 1 and the first phase-5 restructuring are done (section 15);
+the rest of phase 1 waits for the owner's date (section 16). Replaces `apps/web`, the current stack topology and the shape of
 `apps/server`; `apps/web-2` survives as the frontend (converted to an SPA). Until phase 6
 lands, `ARCHITECTURE.md`, `INFRA.md` and `RUNBOOK.md` describe production; this file
 describes where it goes and in what order.
@@ -910,7 +910,7 @@ Done:
   course access stays with the caller): `20261102000300_content_chunks_visibility_at_query`, `ai_first_flow.rs`.
   The server no longer writes `content_chunks.published`; an insert trigger fills it for the previous release.
 - Certificates freeze what was issued (`20261102000200_certificates_freeze_issued`, `certificates.rs`): holder,
-  course and certificate names, instructor and grade; verification, the PDF and both webs show them; a display-name
+  course and certificate names, instructor and grade; verification, the PDF and the web show them; a display-name
   change re-issues. Certificates issued before the migration took what their course stated on that day.
 
 Decided, not done:
@@ -1269,9 +1269,9 @@ and nothing else breaks.
   2. `web`: format, lint, typecheck, unit, codegen drift, build.
   3. `e2e`: build the image, start the stack from it, Playwright, then push the image as
      `<sha>` (on `main`, green only).
-- Deleted: `stack-smoke` and its stub web, the dual-web and nginx-check tests (after
-  phase 1), the `ci-<sha>` → `<sha>` retag job, `infra/tests/development.test.mjs`, the
-  web (Next) jobs (phase 1).
+- Deleted: `stack-smoke` and its stub web, the nginx-check test (after phase 1), the
+  `ci-<sha>` → `<sha>` retag job, `infra/tests/development.test.mjs`. The dual-web test and
+  the web (Next) jobs went 2026-11-08.
 - A failing e2e test is fixed or quarantined (skipped with a line in `apps/web-2/BACKLOG.md`)
   the same day. A phase exit requires two consecutive green runs on `main`.
 
@@ -1339,6 +1339,11 @@ static build of section 7 items 1–3, with the server filling page meta; dual w
 7-day watch, then delete `apps/web`, the Node `web` and `web2` containers, the
 dual-web profile, `WEB_LINKS`, the deprecated operations, the Next CI jobs and the docs
 listed in section 14. Exit: no Node container in prod, `apps/web` gone from `main`.
+Done 2026-11-08: prod moved to web-2 through dual web (the new web the default); `apps/web`, the
+`web2` service, the dual-web profile and the Next CI jobs deleted from `main` (first deploy:
+RUNBOOK 3.12). Left: the `web` container still runs web-2 on Node (SSR), so the SPA build of
+section 7, `WEB_LINKS`, the deprecated operations, `migrate-editor-docs --after-cutover` and the
+section 14 docs remain (`STAGE-2-CUTOVER.md`).
 
 **Phase 2 — host.** VMs `ashyq` and `judge` (11.1), stack moved with a dump/restore and a
 media copy in a short maintenance window, deploys by tag (11.3), backups and drill

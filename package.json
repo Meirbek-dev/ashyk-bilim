@@ -1,31 +1,16 @@
 {
   "name": "ashyq-bilim",
   "private": true,
-  "workspaces": [
-    "apps/web"
-  ],
   "devDependencies": {
-    "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
+    "vite-plus": "1.4.0"
   },
   "overrides": {
-    "dompurify": "3.4.17",
-    "katex": "0.19.1",
-    "prosemirror-model": "1.25.12",
-    "vite": "catalog:",
-    "vitest": "catalog:",
-    "zod": "4.6.7"
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
+    "vitest": "5.0.5"
   },
   "engines": {
     "bun": ">=1.4.4"
   },
-  "packageManager": "bun@1.4.4",
-  "catalog": {
-    "@vitest/browser-playwright": "5.0.5",
-    "@vitest/coverage-v8": "5.0.5",
-    "@vitest/ui": "5.0.5",
-    "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
-    "vite-plus": "1.4.0",
-    "vitest": "5.0.5"
-  }
+  "packageManager": "bun@1.4.4"
 }

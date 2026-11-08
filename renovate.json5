@@ -46,19 +46,11 @@
       groupName: 'rust crates',
     },
     {
+      // The root package.json holds only the formatter (vite-plus), which moves with web-2's.
       matchManagers: ['bun'],
-      matchFileNames: ['apps/web-2/package.json'],
+      matchFileNames: ['package.json', 'apps/web-2/package.json'],
       matchUpdateTypes: ['minor', 'patch'],
       groupName: 'web-2 dependencies',
-    },
-    {
-      // The old web retires after the stage 2 rollback window: monthly, security fixes still at once. Its
-      // `catalog:` versions (root package.json) are not extracted by the bun manager: bump those by hand.
-      matchManagers: ['bun'],
-      matchFileNames: ['package.json', 'apps/web/package.json'],
-      matchUpdateTypes: ['minor', 'patch'],
-      groupName: 'web dependencies',
-      schedule: ['before 6am on the first day of the month'],
     },
     {
       // gates/ and codegen run the TypeScript 6 compiler API through this alias (TypeScript 7 has none).

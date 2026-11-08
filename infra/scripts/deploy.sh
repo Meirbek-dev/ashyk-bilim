@@ -102,12 +102,9 @@ fi
 
 sha=$(short_sha "${1:-HEAD}")
 [[ -n $sha ]] || die "unknown commit: ${1:-HEAD} (git fetch first)"
-images=(server web)
-# Dual web (COMPOSE_PROFILES has dual-web) runs ashyq-web-2 at the same tag; the code runner
-# (profile runner) ashyq-runner.
-services=$(compose config --services)
-if grep -qx web2 <<<"$services"; then images+=(web-2); fi
-if grep -qx runner <<<"$services"; then images+=(runner); fi
+images=(server web-2)
+# The code runner (profile runner): ashyq-runner.
+if compose config --services | grep -qx runner; then images+=(runner); fi
 for img in "${images[@]}"; do
   docker manifest inspect "$IMAGE_REPO/ashyq-$img:$sha" >/dev/null 2>&1 ||
     die "$IMAGE_REPO/ashyq-$img:$sha is not in the registry (CI red or not finished)"

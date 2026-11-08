@@ -24,22 +24,21 @@ default:
     @{{ just_bin }} --list
 
 # Install pinned tools/dependencies and the commit gate. Needs Git Bash on Windows.
-setup: setup-server setup-web setup-web2
+setup: setup-server setup-web2
     {{ just_bin }} doctor
 
-# One app only (setup-web, setup-web2 likewise); `just doctor` checks the full set.
+# One app only (setup-web2 likewise); `just doctor` checks the full set.
 setup-server: _setup-repo
     {{ just_bin }} server setup
-
-setup-web: _setup-repo
-    bun install --frozen-lockfile
 
 # Chromium: the vitest browser project in verify (Playwright e2e may need more browsers).
 setup-web2: _setup-repo
     cd apps/web-2 && bun install --frozen-lockfile && bun run codegen messages && bunx playwright install chromium
 
+# The root workspace holds only the formatter (vite.config.ts) the hooks and `just fmt` run.
 _setup-repo: skills-sync
     git config --local core.hooksPath .vite-hooks
+    bun install --frozen-lockfile
 
 # Rewrite CRLF working copies of unmodified text files as LF (Windows tools; sqlx checksums migrations).
 eol:
@@ -48,10 +47,6 @@ eol:
 # Format files the way the commit hook checks them (same result from any cwd): web files, infra/dev, .rs.
 fmt +files:
     bun infra/dev/hooks.ts fmt "$@"
-
-# Rebuild phone icons, sharing artwork and PNG wordmarks from the existing SVG brand.
-brand-assets:
-    node apps/web/scripts/generate-brand-assets.mjs
 
 # jj runs no git hooks: a failed check undoes the jj commit (`jj op restore`); git runs its own hook.
 # Commit with the pre-commit checks under git or jj: `just commit -m "msg" [paths | jj filesets]`.
@@ -85,7 +80,7 @@ doctor:
 check *args:
     @bun infra/dev/check.ts "$@"
 
-# Export openapi.v2.json, accept its snapshots, regenerate both web clients, list the drift (tmp/contract/).
+# Export openapi.v2.json, accept its snapshots, regenerate the web client, list the drift (tmp/contract/).
 contract:
     @bun infra/dev/contract.ts
 
@@ -104,18 +99,10 @@ dev-data:
 
 # All local application and infra gates; needs dependencies and the dev stack.
 # Hosted image builds, secret scans and E2E remain separate CI jobs.
-ci: ci-server ci-web ci-web2 ci-infra
+ci: ci-server ci-web2 ci-infra
 
 ci-server:
     {{ just_bin }} server ci
-
-ci-web:
-    {{ just_bin }} web lint
-    {{ just_bin }} web typecheck
-    {{ just_bin }} web test
-    {{ just_bin }} web check:contracts
-    {{ just_bin }} web check:error-codes
-    {{ just_bin }} web check:messages
 
 ci-web2:
     {{ just_bin }} web2 verify
@@ -143,7 +130,7 @@ dev-reset:
 dev-runner:
     {{ lib }} && use_dev && COMPOSE_PROFILES=runner compose up -d --build --wait runner
 
-# Apps of one slot (API, worker, web-2 dev, legacy dev; ports 8000/3100/3200 + 10*slot) under a
+# Apps of one slot (API, worker, web-2 dev; ports 8000/3100 + 10*slot) under a
 # supervisor, containers via dev-up: `just stack up|down|status|logs|restart [..] [slot]` (no args: usage).
 stack *args:
     @JUST_EXECUTABLE={{ just_bin }} bun infra/dev/stack.ts "$@"
@@ -163,12 +150,12 @@ shoot *args:
     @bun infra/dev/shoot.ts "$@"
 
 # Playwright against a production build + own API on a fresh database (cloned from ashyq_seed):
-# `just e2e [web2|web] [--slot N] [--keep] [--no-build] [--changed] [playwright args]` (`--changed`: the web-2 specs the
+# `just e2e [web2] [--slot N] [--keep] [--no-build] [--changed] [playwright args]` (`--changed`: the web-2 specs the
 # diff reaches). Logs: tmp/e2e/<app>-<slot>/
 e2e *args:
     @JUST_EXECUTABLE={{ just_bin }} bun infra/dev/e2e.ts "$@"
 
-# Playwright against a running slot's dev servers: `just e2e-dev [web2|web] [--slot N] [playwright args]`.
+# Playwright against a running slot's dev servers: `just e2e-dev [web2] [--slot N] [playwright args]`.
 e2e-dev *args:
     @JUST_EXECUTABLE={{ just_bin }} bun infra/dev/e2e.ts --dev "$@"
 
@@ -264,15 +251,11 @@ web2-e2e *args:
 web2-stand-down:
     {{ lib }} && use_web2 && compose down -v --remove-orphans && rm -rf tmp/web2
 
-# Exact production image, isolated at its baked domain (E2E_WEB_HOST).
-web-release-e2e action *args:
-    {{ bash_bin }} infra/scripts/web-e2e.sh "$@"
-
 redis-test:
     {{ bash_bin }} infra/tests/redis-persistence.sh
 
-# Infra gates: compose config, shell syntax, database roles, PITR, nginx, dual-web routing, Redis persistence
-# with backup mounted and the Zitadel database move.
+# Infra gates: compose config, shell syntax, database roles, PITR, nginx, Redis persistence with backup mounted
+# and the Zitadel database move.
 [script]
 ci-infra:
     source infra/scripts/lib.sh
@@ -281,8 +264,8 @@ ci-infra:
         IMAGE_TAG=ci compose config -q)
     (use_smoke; IMAGE_TAG=ci compose config -q)
     (use_web2; IMAGE_TAG=ci compose config -q)
-    (export E2E_WEB_HOST=ashyq.test; use_web_e2e; IMAGE_TAG=ci compose config -q)
-    log "compose config ok: dev, prod, smoke, web2, web-e2e"
+    (use_restore; IMAGE_TAG=ci compose config -q)
+    log "compose config ok: dev, prod, smoke, web2, restore"
     for f in infra/scripts/*.sh infra/storage/*.sh infra/tests/*.sh infra/postgres/*.sh; do {{ bash_bin }} -n "$f"; done
     log "bash -n ok"
     {{ bash_bin }} infra/tests/rollback-rule.sh
@@ -294,7 +277,7 @@ ci-infra:
     # need networks of their own, so they are skipped here and run in hosted CI.
     if ! probe=$("$CTR" network create "ashyq-ci-probe-$$" 2>&1); then
         if [[ $probe == *"address pools"* ]]; then
-            log "no free container network address pool: nginx -t, dual-web and redis checks skipped (CI runs them)"
+            log "no free container network address pool: nginx -t and redis checks skipped (CI runs them)"
             exit 0
         fi
         echo "$probe" >&2
@@ -312,7 +295,6 @@ ci-infra:
     "$CTR" logs "$check_id"
     "$CTR" rm "$check_id" >/dev/null
     [[ $status == 0 ]]
-    {{ bash_bin }} infra/tests/dual-web.sh
     {{ bash_bin }} infra/tests/redis-persistence.sh
     {{ bash_bin }} infra/tests/zitadel-db-move.sh
 
@@ -356,9 +338,11 @@ zitadel-db-move-test:
 restore-drill *archive:
     {{ bash_bin }} infra/scripts/restore-drill.sh "$@"
 
-# Synthetic backup integrity on the isolated production browser stand; never uses production archives.
-restore-test:
-    {{ bash_bin }} infra/scripts/restore-test.sh
+# Backup and restore of synthetic user work on a throwaway stand of the release images (needs IMAGE_TAG);
+# never uses production archives. `just restore-test down` removes the stand.
+restore-test *args:
+    {{ smoke_cert }}
+    {{ bash_bin }} infra/scripts/restore-test.sh "$@"
 
 # Regenerate docs/agents/SCHEMA.md from the migrations (a test template on the dev Postgres); the server suite
 # fails while it is stale.
@@ -368,10 +352,6 @@ schema-docs:
 # Recipes of apps/server/justfile against the dev stack (just server test).
 server *args:
     export TEST_REDIS_URL="${TEST_REDIS_URL:-$(sed -n 's/^TEST_REDIS_URL=//p' infra/env/dev.env)}" && cd apps/server && {{ just_bin }} "$@"
-
-# Scripts of apps/web/package.json (just web dev).
-web *args:
-    bun run --cwd apps/web "$@"
 
 # Scripts of the replacement frontend (just web2 test --project unit).
 web2 *args:

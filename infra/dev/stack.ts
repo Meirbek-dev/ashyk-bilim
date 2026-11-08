@@ -1,5 +1,5 @@
 // `just stack <up|down|status|logs|restart> [slot]` and `just login-as <user> [slot]` (docs/RUNBOOK.md "Dev stack").
-// One slot = API + worker + web-2 dev + legacy web dev on ports base + 10*slot, kept alive by supervisor.ts, against
+// One slot = API + worker + web-2 dev on ports base + 10*slot, kept alive by supervisor.ts, against
 // the shared dev containers (`just dev-up`). Logs and the manifest: tmp/stack/<slot>/, tmp/stack/<slot>.json.
 import './cargo-target.ts' // first: CARGO_TARGET_DIR for this checkout, before anything reads or spawns cargo
 import { createHash, createHmac } from 'node:crypto'
@@ -36,7 +36,7 @@ import {
   writeJson,
 } from './lib.ts'
 
-const SERVICES = ['api', 'worker', 'web2', 'web'] as const
+const SERVICES = ['api', 'worker', 'web2'] as const
 const just = process.env['JUST_EXECUTABLE'] ?? 'just'
 
 // --- secrets -------------------------------------------------------------------------------------------------------
@@ -230,19 +230,11 @@ interface UpOptions {
   seed: boolean
 }
 
-/** apps/web/tsconfig.slot<N>.json (gitignored): extends tsconfig.json; next adds the slot's type folders to it. */
-function slotTsconfig(slot: string): string {
-  const name = `tsconfig.slot${slot}.json`
-  const path = join(root, 'apps/web', name)
-  if (!existsSync(path)) writeFileSync(path, '{ "extends": "./tsconfig.json" }\n')
-  return name
-}
-
 function services(o: UpOptions, env: Record<string, string>, role: DbRole = 'owner'): ServiceSpec[] {
   const ports = slotPorts(Number(o.slot))
   const dir = slotDir(o.slot)
   const origins = webOrigins(ports)
-  const server = serverEnv({ ...ports, db: o.db, origins, webUrl: `http://localhost:${ports.web}`, role })
+  const server = serverEnv({ ...ports, db: o.db, origins, webUrl: `http://localhost:${ports.web2}`, role })
   const bun = process.execPath
   const all: ServiceSpec[] = [
     ...(['api', 'worker'] as const).map(name => ({
@@ -268,25 +260,6 @@ function services(o: UpOptions, env: Record<string, string>, role: DbRole = 'own
       },
       log: join(dir, 'web2.log'),
       health: `http://localhost:${ports.web2}/favicon.ico`,
-    },
-    {
-      name: 'web',
-      command: bun,
-      args: ['x', 'next', 'dev', '--turbopack', '-H', '127.0.0.1', '-p', String(ports.web)],
-      cwd: join(root, 'apps/web'),
-      env: {
-        NEXT_PUBLIC_API_URL: `http://localhost:${ports.api}/api/v2/`,
-        INTERNAL_API_URL: `http://127.0.0.1:${ports.api}/api/v2/`,
-        NEXT_PUBLIC_SITE_URL: `http://localhost:${ports.web}/`,
-        NEXT_PUBLIC_MEDIA_URL: `http://localhost:${ports.web}/`,
-        APP_URL: `http://localhost:${ports.web}`,
-        CONTENT_REWRITE_TARGET: `${env['AB__STORAGE__ENDPOINT']}/${env['AB__STORAGE__PUBLIC_BUCKET']}`,
-        NEXT_TELEMETRY_DISABLED: '1',
-        // One `next dev` per output folder: slots other than 0 build into their own (next.config.ts).
-        ...(o.slot === '0' ? {} : { NEXT_DIST_DIR: `.next-slot${o.slot}`, NEXT_TSCONFIG_PATH: slotTsconfig(o.slot) }),
-      },
-      log: join(dir, 'web.log'),
-      health: `http://localhost:${ports.web}/favicon.ico`,
     },
   ]
   return all.filter(s => !o.without.includes(s.name))
@@ -324,14 +297,14 @@ async function up(o: UpOptions): Promise<void> {
   const ports = slotPorts(Number(o.slot))
   const specs0 = services(o, devEnv())
   for (const spec of specs0) {
-    const port = ports[spec.name as 'api' | 'web2' | 'web']
+    const port = ports[spec.name as 'api' | 'web2']
     if (port && (await tcpOpen(port))) throw new Error(`port ${port} (${spec.name}) is taken by another process`)
   }
   const env = ensureLocalEnv()
   await containers(env, o.runner)
   if (o.build || !existsSync(builtServer)) buildServer(join(dir, 'build.log'))
   const created = await ensureDatabase(env, o.db)
-  const cli = serverEnv({ ...ports, db: o.db, origins: [], webUrl: `http://localhost:${ports.web}` })
+  const cli = serverEnv({ ...ports, db: o.db, origins: [], webUrl: `http://localhost:${ports.web2}` })
   await adoptLfChecksums(env, o.db)
   ashyq(o.slot, ['migrate'], cli, join(dir, 'migrate.log'))
   if (o.seed || created) seed(o.slot, o.db)
@@ -368,7 +341,7 @@ function seed(slot: string, db: string): void {
   const log = join(slotDir(slot), 'seed.log')
   say(`seed-e2e on ${db} (${learners} pool learners; log ${log})`)
   const ports = slotPorts(Number(slot))
-  const cli = serverEnv({ ...ports, db, origins: [], webUrl: `http://localhost:${ports.web}` })
+  const cli = serverEnv({ ...ports, db, origins: [], webUrl: `http://localhost:${ports.web2}` })
   ashyq(slot, ['admin', 'seed-e2e', '--learners', learners], { ...cli, E2E_PASSWORD: env['E2E_PASSWORD'] ?? '' }, log)
 }
 
@@ -463,12 +436,12 @@ function parse(argv: string[]) {
   return { flags, positional }
 }
 
-const USAGE = `usage: just stack up [slot] [--db NAME] [--runner] [--seed] [--no-build] [--without web,web2]
+const USAGE = `usage: just stack up [slot] [--db NAME] [--runner] [--seed] [--no-build] [--without web2]
        just stack down|status|seed [slot]
-       just stack logs <api|worker|web2|web|supervisor|build|migrate|seed> [slot] [--lines N]
-       just stack restart <api|worker|server|web2|web> [slot]
+       just stack logs <api|worker|web2|supervisor|build|migrate|seed> [slot] [--lines N]
+       just stack restart <api|worker|server|web2> [slot]
        just login-as <username|email> [slot]
-slot N: api 8000+10N, web-2 3100+10N, legacy web 3200+10N, Redis db 4+N`
+slot N: api 8000+10N, web-2 3100+10N, Redis db 4+N`
 
 async function main(): Promise<void> {
   const [command, ...rest] = process.argv.slice(2)

@@ -221,10 +221,6 @@
 
 ### Веб
 
-- `apps/web`: vitest `src/tests/courses/course-archiving.test.tsx` (только метка `archived`, права редактирования
-  погашены, `parsePreset('archived')`, диалог показывает только ненулевые строки); Playwright
-  `e2e/journey/10-course-archiving.ts` (преподаватель архивирует → курс пропал из каталога → учащийся видит его в
-  «Моём обучении», открывает свою оценку, сдать нельзя → восстановление → курс снова в каталоге).
 - `apps/web-2`: поведения `B-CST-12`, `B-CST-22` (course-studio), `B-LRN-06`, `B-HOME-10`, `B-CRS-16` и их тесты.
 
 Прогон: `just server test -E 'binary(course_archive_flow)'`, затем `just check`.

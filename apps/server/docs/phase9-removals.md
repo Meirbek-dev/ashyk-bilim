@@ -1,14 +1,14 @@
 # Phase 9 removals (stage 2 contract step)
 
-Everything the server keeps only for the old web (`apps/web`) and deletes at
-the contract step (`docs/STAGE-2-CUTOVER.md` section 4, gate G-07), once the new web is
-live and the rollback window has closed. One row per removal; `target` is an
+Everything the server kept only for the old web (`apps/web`, deleted 2026-11-08): dead compatibility, no client
+uses it (production still sets `WEB_LINKS=legacy`; web-2 redirects those links). The contract step
+(`docs/STAGE-2-CUTOVER.md` section 3 item 3, gate G-07) deletes it. One row per removal; `target` is an
 `operationId`, a `Schema.field`, a behaviour or a setting; `replacement` is
-what the new web uses instead (`-` = nothing, just delete). Deprecated
+what web-2 uses instead (`-` = nothing, just delete). Deprecated
 operations are also marked in `openapi.v2.json` (`deprecated: true` +
 `x-replaced-by`, from `ab_api::RENAMED`), which G-07 skips.
 
-A change that schedules a removal appends a row; an operation the new web consumes again leaves the list
+A change that schedules a removal appends a row; an operation web-2 consumes again leaves the list
 (`apps/web-2/gates/server-removals.json` mirrors the unconsumed operations; its api-coverage gate fails on
 an entry that has a consumer).
 

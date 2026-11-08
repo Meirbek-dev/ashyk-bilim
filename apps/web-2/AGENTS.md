@@ -1,8 +1,8 @@
 # apps/web-2
 
-The new web (stage 2): React 19 + TanStack Start, Router, Query, Form + Paraglide, served by srvx on
-Node from `.node-version`. Standalone bun project (own `bun.lock`, not in the root workspace).
-Production still runs `apps/web`; both take normal fixes. Rollout: `docs/STAGE-2-CUTOVER.md`; open work: `BACKLOG.md`.
+The web frontend (the only one; image `ashyq-web-2`): React 19 + TanStack Start, Router, Query, Form + Paraglide,
+served by srvx on Node from `.node-version`. Standalone bun project (own `bun.lock`, not in the root workspace).
+What is left of the cutover: `docs/STAGE-2-CUTOVER.md`; open work: `BACKLOG.md`.
 
 ## Map
 

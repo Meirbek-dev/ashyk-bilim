@@ -48,4 +48,3 @@ apps/server/crates/core/src/error/snapshots/*.snap    linguist-generated
 apps/server/.sqlx/**                                  linguist-generated -diff
 apps/web-2/src/shared/api/gen/**                      linguist-generated -diff -merge
 apps/web-2/src/routeTree.gen.ts                       linguist-generated
-apps/web/src/lib/api/generated/**                     linguist-generated -diff -merge

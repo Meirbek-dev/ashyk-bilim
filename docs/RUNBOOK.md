@@ -2,8 +2,8 @@
 
 Operations for the stack described in `docs/INFRA.md`. Prod host: deploy dir
 `~/cs-mooc`, compose project `cs-mooc`, domain `cs-mooc.tou.edu.kz`,
-TLS-terminating university proxy in front. The Rust stack is live; the
-Next.js frontend remains in production. Frontend replacement: `docs/STAGE-2-CUTOVER.md`.
+TLS-terminating university proxy in front. Production runs the Rust API and the TanStack web
+(`apps/web-2`); what is left of the frontend switch: `docs/STAGE-2-CUTOVER.md`.
 
 ## 0. Conventions
 
@@ -356,7 +356,6 @@ for k in POSTGRES_PASSWORD ASHYQ_DB_PASSWORD ASHYQ_APP_DB_PASSWORD ASHYQ_RO_DB_P
   sed -i "s/^$k=CHANGE_ME$/$k=$(openssl rand -hex 32)/" .env
 done
 sed -i "s/^ZITADEL_MASTERKEY=CHANGE_ME$/ZITADEL_MASTERKEY=$(openssl rand -hex 16)/" .env
-sed -i "s|^NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=CHANGE_ME$|NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$(openssl rand -base64 32)|" .env
 pw=$(sed -n 's/^ASHYQ_APP_DB_PASSWORD=//p' .env); sed -i "s|CHANGE_ME|$pw|" server.env; unset pw
 ```
 
@@ -433,9 +432,6 @@ consistent). `ALTER ROLE` uses the helper from section 0.
   --wait` (rustfs, server, worker recreated; storage-init reruns). In-flight
   presigned URLs fail. Not exercised yet: take `just backup` first; rollback =
   the old values from that snapshot's `.env`.
-- **`NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`**:
-  `sed -i "s|^NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=.*|NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$(openssl rand -base64 32)|" .env`,
-  `dc up -d --wait web` (open pages must reload once).
 - **`server.env` integrations** (Google, Resend, AI keys, OTLP header): edit
   `server.env`, `dc up -d --wait server worker`.
 - **TLS key**: 3.7.
@@ -491,25 +487,29 @@ prune` (legacy `app_content` and stopped projects' data), `backups/legacy-final-
 The restic repository grows only by new objects and changed dumps; Sunday runs
 forget and prune old snapshots (INFRA "Backup and restore").
 
-### 3.12 Dual web (both frontends on one origin)
+### 3.12 First deploy without the old web (one time)
 
-INFRA "Dual web". The new web is the default; the old one stays one click away per
-user (`/ui/classic`, back with `/ui/new`). On:
+The release that deleted `apps/web` runs `web` from `ashyq-web-2` and has no `dual-web` profile and no `web2`
+service. On a host still set up for dual web, before `just deploy`:
 
 ```bash
 env_set() { grep -q "^$1=" .env && sed -i "s|^$1=.*|$1=$2|" .env || echo "$1=$2" >>.env; }
-env_set COMPOSE_PROFILES runner,dual-web        # keep the profiles already there
-docker manifest inspect ghcr.io/meirbek-dev/ashyq-web-2:$(sed -n 's/^IMAGE_TAG=//p' .env) >/dev/null
-dc up -d --no-build --wait                      # starts web2, recreates nginx (its env changed)
-curl -sI https://cs-mooc.tou.edu.kz/ | grep -i 'set-cookie: ab_dual'
-curl -s -o /dev/null -w '%{http_code}\n' https://cs-mooc.tou.edu.kz/home   # 200 from web2
+grep -n '^COMPOSE_PROFILES=' .env
+env_set COMPOSE_PROFILES runner                 # runner,dual-web -> runner (keep any other profile)
+sed -i '/^WEB_IMAGE_NAME=/d; /^WEB_MEMORY=/d; /^NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=/d' .env
 ```
 
-Watch `docker stats --no-stream | grep web` (both webs) and the 3.10 logs of
-`web2`. Off: remove `dual-web` from `COMPOSE_PROFILES`, `dc rm -sf web2 && dc up
--d --no-build --wait`. Everyone lands on the old web; the `ab_ui` cookie does
-nothing until it is on again. While it is on, deploys need
-`ashyq-web-2:<sha>` too (deploy.sh checks it).
+Then `just deploy` (it recreates nginx, whose env changed). The old `web2` container is now an orphan:
+
+```bash
+dc up -d --no-build --wait --remove-orphans     # or: dc rm -sf web2
+docker ps --format '{{.Names}} {{.Image}}' | grep web   # only <project>-web-1 on ashyq-web-2:<sha>
+```
+
+`AB__SERVER__WEB_LINKS` stays `legacy` (the web answers the old addresses with a 301). A rollback to an
+earlier release keeps this checkout: `just rollback <sha>` runs `ashyq-web-2:<sha>`, which exists for the recent
+releases (`docker manifest inspect ghcr.io/meirbek-dev/ashyq-web-2:<sha>`). The compose files of an older commit
+need the dropped `.env` lines back. Still open after this: `docs/STAGE-2-CUTOVER.md`.
 
 ### 3.13 Code runner (go-judge)
 
@@ -625,7 +625,7 @@ The `zitadel` role stays in db (it owns nothing there any more); restores of old
 
 | Message | Meaning, action |
 | --- | --- |
-| `... ashyq-<img>:<sha> is not in the registry (CI red or not finished)` | CI has not finished `publish` (`publish-web2` for `ashyq-web-2`) for that commit, or it failed. Check the run; deploy a green commit |
+| `... ashyq-<img>:<sha> is not in the registry (CI red or not finished)` | CI has not finished `publish` for that commit, or it failed. Check the run; deploy a green commit |
 | `unknown commit: <x> (git fetch first)` | `git fetch` / `git pull` |
 | `another deploy or rollback is running` | `flock` on `.deploy.lock` is held; find it with `pgrep -af deploy.sh` |
 | `no previous release to roll back to` | `.deploy-history` has no other release; give a sha |
@@ -671,7 +671,7 @@ skipped).
 
 - **Upload fails with HTTP 413 (or "no network") at the public origin**: the
   university TLS proxy rejects single request bodies over about 100 MiB
-  (FINDINGS 32); our `/ab-*` routes allow 2 GiB. Both webs send videos over
+  (FINDINGS 32); our `/ab-*` routes allow 2 GiB. The web sends videos over
   32 MiB as 32 MiB multipart parts, so a 413 means an old cached page (reload)
   or another large single PUT. Owner decision 2026-10-31: multipart is the
   permanent answer; no proxy change is requested from university IT. Smoke on
@@ -730,8 +730,7 @@ agent workflow: root `AGENTS.md`; server-only details: `apps/server/docs/DEVELOP
 ### 5.2 Worktrees
 
 `just wt new <name>` -> `../ashyq-wt/<name>` on `wt/<name>` from main with its own `bun install` (root,
-apps/web, apps/web-2, ~40 s from bun's cache; a linked node_modules breaks turbopack's `next build`), apps/web's
-`.env`/`.env.local` copied, its own cargo target `<base>-<name>` (cargo names artifacts the same in every
+apps/web-2, from bun's cache), its own cargo target `<base>-<name>` (cargo names artifacts the same in every
 checkout, so a shared dir runs another tree's code; `just server`, `just check`, `just stack` and `.cargo/config.toml`
 apply it, plain `cargo` with `CARGO_TARGET_DIR` set does not), Paraglide generated. Commit there; `just wt
 land <name>` rebases onto main, runs `just check`, fast-forwards main in the main checkout and removes
@@ -752,21 +751,20 @@ Containers (`just dev-up`; `dev-down` stops, keeps data; `dev-reset` drops the v
 | RustFS | 9002 | `ashyq-dev` / `ashyq-dev-secret`; buckets `ab-public`, `ab-private` |
 | Code runner (optional) | 5050 | token `ashyq-dev` |
 
-`just stack up [slot] [--db NAME] [--runner] [--seed] [--no-build] [--without web,web2]` starts what a slot
+`just stack up [slot] [--db NAME] [--runner] [--seed] [--no-build] [--without web2]` starts what a slot
 needs: the dev containers (`just dev-up` unless all answer), a debug build of the server, the database
 (created when missing, from `ashyq_seed` if it exists, then migrated; a new one is seeded), then API +
-worker + web-2 `vp dev` + legacy `next dev` under a supervisor that restarts a crashed process with
-backoff. Ports: slot N = API 8000+10N, web-2 3100+10N, legacy web 3200+10N; Redis db 4+N; one
+worker + web-2 `vp dev` under a supervisor that restarts a crashed process with
+backoff. Ports: slot N = API 8000+10N, web-2 3100+10N (the API's `AB__SERVER__WEB_URL`); Redis db 4+N; one
 Postgres/Zitadel/RustFS for all slots. CORS of the API and of both buckets follows the running slots.
 
-- `just stack status` (all slots + containers), `logs <api|worker|web2|web|supervisor|build|migrate|seed> [slot]`,
-  `restart <api|worker|server|web2|web> [slot]` (api/worker/server rebuild first), `seed [slot]`, `down [slot]`.
+- `just stack status` (all slots + containers), `logs <api|worker|web2|supervisor|build|migrate|seed> [slot]`,
+  `restart <api|worker|server|web2> [slot]` (api/worker/server rebuild first), `seed [slot]`, `down [slot]`.
 - Files: `tmp/stack/<slot>.json` (ports, pids, db), `tmp/stack/<slot>/*.log` (no ANSI).
 - Env: `infra/env/dev.env` (committed) + `infra/env/dev.local.env` (gitignored, created by `stack up`):
   `AB__ZITADEL__PAT` (copied from `just dev-up`'s `tmp/dev/zitadel-pat.txt`) and `E2E_PASSWORD`, the
   password of the seed-e2e accounts (`e2e-admin`, `e2e-teacher`, `e2e-student1/2`, `e2e-learner-NNN`).
-  Other keys there (machine quirks such as `SWC_NATIVE_BINDING_CACHE` where Next's SWC cache root is not
-  writable) reach every process `just stack`, `just e2e` and `just check` start.
+  Other keys there (machine quirks) reach every process `just stack`, `just e2e` and `just check` start.
 - `just login-as <username|email> [slot]` prints `ab_session=...` for any active account (debug build +
   `AB__ENVIRONMENT=development` + loopback only; DECISIONS 2026-10-13). For a real-data copy:
   `just stack up 1 --db ashyq_prod`, then `just login-as <their username> 1`.
@@ -774,11 +772,11 @@ Postgres/Zitadel/RustFS for all slots. CORS of the API and of both buckets follo
 
 ### 5.4 e2e
 
-- `just e2e [web2|web] [--slot N] [--keep] [--no-build] [--changed] [playwright args]`: Playwright against a
-  production build (web-2: `vp build` + `serve.ts` behind `e2e/prod-stand.ts`, CSP as on the stand; legacy:
-  `next build` + `next start`) with its own API + worker on a fresh database `e2e_<app>_<slot>` cloned from
-  `ashyq_seed` (built first when missing). Rebuilds only when the app's sources changed; `--changed` runs only
-  the web-2 specs the diff reaches. Ports: slot N = API 8005+10N, web-2 stand 3105+10N, legacy 3205+10N, so runs
+- `just e2e [web2] [--slot N] [--keep] [--no-build] [--changed] [playwright args]`: Playwright against a
+  production build of web-2 (`vp build` + `serve.ts` behind `e2e/prod-stand.ts`, CSP as on the stand) with its
+  own API + worker on a fresh database `e2e_<app>_<slot>` cloned from `ashyq_seed` (built first when missing).
+  Rebuilds only when the sources changed; `--changed` runs only the specs the diff reaches. Ports: slot N =
+  API 8005+10N, stand 3105+10N, so runs
   in different slots do not collide. Prints the summary; everything else is in `tmp/e2e/<app>-<slot>/`
   (playwright.log, api.log, build.log). The database is dropped afterwards unless `--keep` (servers stop either way).
 - Debug loop: `just e2e web2 --serve` builds and starts the stand once and leaves it running; then
@@ -787,28 +785,27 @@ Postgres/Zitadel/RustFS for all slots. CORS of the API and of both buckets follo
   server or toolchain changes refuse reuse: `just e2e web2 --stop`, then `--serve`. Stop keeps the database; the
   next start resets it. Run the focused scenario and related ones; CI runs the full suite (locally too when a
   shared mechanism changed or the affected scope is unclear).
-- `just e2e-dev [web2|web] [--slot N] [args]`: the same suites against a running slot's dev servers (web-2 warms
+- `just e2e-dev [web2] [--slot N] [args]`: the same suite against a running slot's dev servers (web-2 warms
   every route first).
 - Both take the seed password from `infra/env/dev.local.env` and hand the suites their accounts, API log and learner
   pool; nothing to export by hand.
-- Image stands (what CI runs): INFRA "Stage 2 e2e stand" (`just web2-*`) and "Production web image stand"
-  (`just web-release-e2e up|seed|test <specs>|down`, `just restore-test`; set `E2E_WEB_HOST` to the image's baked
-  domain and `IMAGE_TAG`).
+- Image stands (what CI runs): INFRA "E2E stand" (`just web2-*`) and the restore test (`just restore-test
+  [down]`, INFRA "Backup and restore"); both need `IMAGE_TAG`.
 
 ### 5.5 Checks and the contract
 
 - `just check` runs only the gates the change touches (vs origin/main, plus the working tree; `--wip`: only the
   uncommitted batch, `--staged`, `--base <ref>`, `--all`): server fmt + clippy + nextest of the touched crates and
-  their dependents (all tests for migrations/Cargo/.sqlx) + openapi drift; legacy typecheck + lint + vitest
-  `related`; web-2 `vp check` + vitest `related` + gates; contract drift for both clients; infra `ci-infra` +
+  their dependents (all tests for migrations/Cargo/.sqlx) + openapi drift; web-2 `vp check` + vitest `related` +
+  gates; contract drift of the client; infra `ci-infra` +
   `test-dev`. One line per gate, live logs in `tmp/check/<gate>.log`; an area's first failure stops its later
-  gates. `--fast` (pre-push) drops the server DB tests and openapi drift, the web-2 browser tests and gates, the
-  legacy contract checks and `ci-infra`. Documentation-only edits (`.md`, `.txt`) run no checks.
+  gates. `--fast` (pre-push) drops the server DB tests and openapi drift, the web-2 browser tests and gates and
+  `ci-infra`. Documentation-only edits (`.md`, `.txt`) run no checks.
   Server tests use 127.0.0.1 (Windows: `localhost` hangs). `--isolated-db` runs the server
   tests on a disposable memory-backed Postgres container with the pinned image instead of the dev one. For one
   integration test, include both `binary(...)` and `test(...)` in the nextest filter to skip unrelated executables.
 - `just contract` after a DTO / route / ErrorCode / upload-policy change: exports `openapi.v2.json`, accepts
-  its two snapshots, regenerates both clients (incl. the upload-policy constants), lists what changed and
+  its two snapshots, regenerates the web-2 client (incl. the upload-policy constants), lists what changed and
   the error codes still missing a message. Generated files are `linguist-generated` (.gitattributes):
   on a merge conflict regenerate instead of merging.
 - `just ci-watch <run-id>` watches one GitHub run, prints job/step changes and one warning for a step over five

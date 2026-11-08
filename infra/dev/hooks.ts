@@ -4,7 +4,6 @@
 // written as a tree and checked out into tmp/hooks/snap with an incremental read-tree, node_modules linked in; the
 // tools run there. Unstaged work in progress - yours or another agent's - can neither fail nor pass a commit.
 //   web-2:  vp fmt of staged files
-//   web:    vp fmt of staged files
 //   server: rustfmt --check of the staged .rs files; refuses edits to migrations already on origin/main
 // pre-push runs `just check --fast --base <remote tip>` on the pushed commit; only CI skips it.
 import { lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
@@ -59,7 +58,7 @@ const git = (...args: string[]) => sync(['git', ...args])
 const top = git('rev-parse', '--show-toplevel').out
 process.chdir(top)
 
-// node_modules/.bin/vp nearest to dir (bun hoists apps/web's to the root on Linux).
+// node_modules/.bin/vp nearest to dir (apps/web-2's own, else the root's).
 function vp(dir: string): string {
   for (let d = dir; ; d = dirname(d)) {
     const bin = join(d, 'node_modules', '.bin', win ? 'vp.exe' : 'vp')
@@ -152,7 +151,7 @@ function pushCheckout(sha: string): string {
 // node_modules links (junction on Windows, symlink elsewhere) and web-2's gitignored Paraglide output, regenerated
 // when the checked-out catalogs changed.
 function prepare(dir: string, tree: string, paraglide: boolean): void {
-  for (const sub of ['.', 'apps/web', 'apps/web-2']) {
+  for (const sub of ['.', 'apps/web-2']) {
     const real = join(top, sub, 'node_modules')
     const link = join(dir, sub, 'node_modules')
     if (exists(real) && exists(dirname(link)) && !exists(link)) symlinkSync(real, link, 'junction')
@@ -270,17 +269,15 @@ async function checkChange(hook: string, changed: string[], tree: () => string, 
     })
   const files = {
     web2: under(changed, 'apps/web-2/'),
-    web: under(changed, 'apps/web/'),
     server: under(changed, 'apps/server/'),
   }
-  if (files.web2.length || files.web.length || files.server.some(f => f.endsWith('.rs'))) {
+  if (files.web2.length || files.server.some(f => f.endsWith('.rs'))) {
     const treeish = tree()
     const snap = snapshot(treeish)
     prepare(snap, treeish, false)
     results.push(
       ...(await Promise.all([
         ...web(snap, 'web-2', files.web2),
-        ...web(snap, 'web', files.web),
         ...server(snap, files.server),
       ])),
     )

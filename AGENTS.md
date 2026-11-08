@@ -1,11 +1,10 @@
 # Repository map
 
 - `justfile` - the single entry point. `just stack up [slot]` runs the local dev stack (docs/RUNBOOK.md 5.3), `just server <recipe>`
-  and `just web <script>` / `just web2 <script>` proxy into the apps, `just deploy` / `rollback` / `backup` / `restore`
+  and `just web2 <script>` proxy into the apps, `just deploy` / `rollback` / `backup` / `restore`
   run production ops. Add a recipe instead of documenting ad-hoc commands.
 - `apps/server/` - Rust API (axum + sqlx), `/api/v2`. Read `apps/server/AGENTS.md` first.
-- `apps/web/` - production Next.js frontend (rollback 2026-10-04); normal fixes allowed. Read its `AGENTS.md`.
-- `apps/web-2/` - replacement TanStack frontend; read its `AGENTS.md` before changes.
+- `apps/web-2/` - the web frontend (TanStack Start), the only one; read its `AGENTS.md` before changes.
 - `infra/` and `compose*.yaml` - stack definition (nginx, Postgres, go-judge runner, storage, env templates,
   ops scripts).
 - `QUESTIONS.md` - decisions only the owner can make.
@@ -25,7 +24,7 @@
 - `docs/REWRITE.md` - v3 rewrite plan (ops fixes first, then delete-in-place to one binary,
   Postgres only, web-2 as SPA): schema, auth, contract, stack, CI, tooling, docs, phases, cut list.
   In progress (its section 15); the other docs describe production as it runs now.
-- `docs/STAGE-2-CUTOVER.md` - frontend rollout: constraints, acceptance, cutover, rollback, cleanup;
+- `docs/STAGE-2-CUTOVER.md` - what is still open after the frontend switch (host steps, phase 9 cleanup);
   `apps/web-2/BACKLOG.md` lists open work.
 - Large references (`DECISIONS.md`, `ARCHITECTURE.md`, `INFRA.md`, `RUNBOOK.md`):
   use `rg -n '^##' <doc>` as the index; read only the matching section.
@@ -45,7 +44,7 @@
   is green; majors and stateful images (Postgres, Redis, Zitadel, RustFS, go-judge, restic) wait as PRs. Its
   Dependency Dashboard issue lists what is pending.
 - `just setup` installs pinned tools/dependencies, generates skill copies and enables the git hooks;
-  `just setup-server`, `setup-web`, `setup-web2` do one app. `just doctor` checks the full setup in the
+  `just setup-server`, `setup-web2` do one app. `just doctor` checks the full setup in the
   recipe shell. Windows needs Git Bash (`sh` on PATH), not WSL Bash.
 - Commit with `just commit -m "..." [paths]` and push with `just push` (skill `ship`). The checkout is jj colocated
   with git; jj runs no git hooks, so plain `jj commit` / `jj git push` skip every check. `just commit` runs the
@@ -61,8 +60,8 @@
 - `just fmt <files>` formats exactly like the hook (root `vite.config.ts` holds the one web format config,
   same result from any cwd; rustfmt for `.rs`). `just eol` rewrites CRLF working copies (Windows) as LF.
 - Run focused checks for the changed behavior during an edit batch; do not repeat a green check on unchanged
-  inputs. `just ci-server`, `ci-web`, `ci-web2` validate each app (CI runs
-  all three); `just ci` runs all local app/infra gates (not hosted image, E2E or secret scans).
+  inputs. `just ci-server`, `ci-web2` validate each app (CI runs
+  both); `just ci` runs all local app/infra gates (not hosted image, E2E or secret scans).
 - `.agents/skills` is canonical. `.claude/skills` is an ignored compatibility copy made by
   `just skills-sync`; never edit the copy. Project skills: `server-slice`, `web2-slice`, `debug-e2e`, `ship`;
   third-party ones (`skills-lock.json`) only where the app uses the library. Read only the docs relevant to the task.

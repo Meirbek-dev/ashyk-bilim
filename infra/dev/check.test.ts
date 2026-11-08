@@ -20,15 +20,13 @@ test('a migration runs every server test and an API change checks the contract',
   expect(gates(['apps/server/crates/api/src/app.rs']).server).toContain('server:openapi')
 })
 
-test('a contract change re-checks both clients', () => {
-  const areas = gates(['apps/server/openapi.v2.json'])
-  expect(areas.web).toContain('web:contracts')
-  expect(areas.web2).toContain('web2:gates')
+test('a contract change re-checks the web client', () => {
+  expect(gates(['apps/server/openapi.v2.json']).web2).toContain('web2:gates')
 })
 
 test('docs alone run nothing; --all runs every area', () => {
   expect(gates(['docs/RUNBOOK.md'])).toEqual({})
-  expect(Object.keys(gates([], true)).sort()).toEqual(['infra', 'server', 'web', 'web2'])
+  expect(Object.keys(gates([], true)).sort()).toEqual(['infra', 'server', 'web2'])
 })
 
 test('fast checks avoid database setup, browser suites and container gates while retaining unit checks', () => {

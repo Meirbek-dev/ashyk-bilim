@@ -1,15 +1,10 @@
 {
   "configurations": [
     {
-      "name": "web",
+      "name": "web-2",
       "runtimeExecutable": "bun",
-      "runtimeArgs": [
-        "run",
-        "--cwd",
-        "apps/web",
-        "dev"
-      ],
-      "port": 3000
+      "runtimeArgs": ["run", "--cwd", "apps/web-2", "dev"],
+      "port": 3100
     }
   ],
   "version": "0.0.1"

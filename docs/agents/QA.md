@@ -5,8 +5,8 @@ only for a sweep the owner asks for by name; a single bug fix follows the app's 
 
 Hand this file to every QA/fix agent together with its lane (cluster of features). The owner wants every function
 to work for every role; agents test exhaustively, fix at the root cause, verify, and commit. Locales: ru (default),
-kk, en. Apps: `apps/server` (Rust API), `apps/web-2` (new frontend), `apps/web` (legacy, in production: keep it
-working). Read the root `AGENTS.md` and the AGENTS.md of every app you touch first.
+kk, en. Apps: `apps/server` (Rust API), `apps/web-2` (the web frontend). Read the root `AGENTS.md` and the
+AGENTS.md of every app you touch first.
 
 ## Orchestration
 
@@ -14,7 +14,7 @@ working). Read the root `AGENTS.md` and the AGENTS.md of every app you touch fir
   anything a sweep finds; a sweep lane without a production signal tests what real users hit most (below).
 - Run sweep lanes on a fast model; the orchestrator and the contract lane on the strongest one.
 - At most 3 agents per checkout at once (or one per worktree: `just wt new <name>`, `just wt land <name>`).
-- One lane owns contract changes (server DTO/route, `openapi.v2.json`, both generated clients): `just contract`.
+- One lane owns contract changes (server DTO/route, `openapi.v2.json`, the generated web-2 client): `just contract`.
   Other lanes ask the orchestrator; they never run codegen themselves.
 - Each agent writes progress to `<scratch>/<lane>/REPORT.txt` as it goes (it survives a rate limit or a crash).
 - Commit per finished item, right away; never leave files staged; push only when the orchestrator says so.
@@ -22,8 +22,8 @@ working). Read the root `AGENTS.md` and the AGENTS.md of every app you touch fir
 
 ## Stack and accounts
 
-- `just stack up [slot]` / `status` / `logs <svc>` / `restart <svc>`: containers + API + worker + both webs on the
-  slot's ports (slot 0: API 8000, web-2 3100, legacy 3200). Never kill other people's processes or recreate
+- `just stack up [slot]` / `status` / `logs <svc>` / `restart <svc>`: containers + API + worker + web-2 on the
+  slot's ports (slot 0: API 8000, web-2 3100). Never kill other people's processes or recreate
   containers. After a server `.rs` change: `just stack restart api` (builds) once per batch.
 - Fresh data: `just db fresh <name>` (clone of the seeded template in ~1 s). Sign in as anyone on a local copy:
   `just login-as <user> [slot]` (dev-only endpoint).
@@ -44,15 +44,12 @@ working). Read the root `AGENTS.md` and the AGENTS.md of every app you touch fir
 
 ## How to fix
 
-- Root cause, in the shared function every caller goes through (grep callers first). A fix in shared server
-  behaviour keeps BOTH frontends working; a bug fixed in one web is checked in the other.
-- A regression test per non-trivial fix (web-2 vitest/e2e, legacy `apps/web/src/tests/**`, Rust `crates/*/tests`),
-  then re-run the failing scenario.
-- Messages: web-2 `apps/web-2/messages/<locale>/<feature>.json`, legacy `apps/web/src/messages/*.json`; all three
-  locales; small edits, never rewrite a catalog.
+- Root cause, in the shared function every caller goes through (grep callers first).
+- A regression test per non-trivial fix (web-2 vitest/e2e, Rust `crates/*/tests`), then re-run the failing scenario.
+- Messages: `apps/web-2/messages/<locale>/<feature>.json`; all three locales; small edits, never rewrite a catalog.
 - Commit only your files: `just commit -m "<subject>" <paths>` (jj runs no git hooks; this runs the checks and
   undoes a failing commit). Never `add -A`, `commit -a`, stash, checkout or reset of files you did not edit, never
-  `--no-verify`. Subject `fix(web-2|web|server): <user-visible outcome>`,
+  `--no-verify`. Subject `fix(web-2|server): <user-visible outcome>`,
   body ends with the `Co-Authored-By` line. The pre-commit hook checks only what you stage (`just fmt <files>`
   fixes formatting); `just check` runs the gates for what changed.
 

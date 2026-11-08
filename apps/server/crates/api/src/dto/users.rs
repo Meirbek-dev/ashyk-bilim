@@ -167,7 +167,7 @@ pub struct UpdateProfileRequest {
     /// with `profile.sections[i]…` field errors.
     #[garde(skip)]
     pub profile: Option<ProfileSections>,
-    /// UI theme registry slug (the web `theme-store.json` names, e.g.
+    /// UI theme registry slug (the web `themes/manifest.json` slugs, e.g.
     /// `modern-minimal`); `null` clears it.
     #[garde(skip)]
     #[serde(default, deserialize_with = "super::double_option")]

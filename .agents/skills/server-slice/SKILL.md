@@ -17,7 +17,7 @@ Rules live in `apps/server/AGENTS.md` (invariants, slice loop); this is the shor
    `just server prepare` and commit `.sqlx/`.
 5. Access: decide in the domain service (`actor.require`), not the handler; then the route's row in
    `crates/api/tests/permission_matrix.rs` (the test names unclassified routes).
-6. Contract: `just contract` regenerates both web clients; read the printed drift.
+6. Contract: `just contract` regenerates the web client; read the printed drift.
 7. Validate the changed behavior with focused checks; full server CI is not required before every commit. Then
    `just commit -m "fix(<domain>): ..."` (the `ship` skill).
 

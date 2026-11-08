@@ -17,7 +17,7 @@ Setup, `just check`, `just contract`, `just db`, commits and worktrees: root `AG
 - `migrate`: migrate the dev DB from `apps/server/.env`; `migration NAME` (or root `just new migration NAME`)
   appends one.
 - `prepare`: refresh `.sqlx/` after SQL/schema changes; commit the cache.
-- `openapi`: export `openapi.v2.json`; read and commit the contract diff (`just contract` also regenerates the webs).
+- `openapi`: export `openapi.v2.json`; read and commit the contract diff (`just contract` also regenerates the web client).
 - `dev` / `serve`: watch (bacon) / run the API.
 
 Keep workspace builds: selecting a crate with `-p` changes TLS feature unification on Windows.
@@ -73,7 +73,7 @@ Compilation uses the committed SQLx cache by default; `prepare` and `sqlx-check`
 - Grading math keeps its property tests (`crates/domain/src/grading/grader.rs`, proptest) green: bounds,
   single-answer multi-pick = 0, monotone partial credit, shuffle invariance, shares sum to 100.
 - Upload caps live only in `policy` of `crates/domain/src/files/uploads.rs`; the contract exports them
-  (`x-upload-policy`) and `just contract` regenerates the webs' constants.
+  (`x-upload-policy`) and `just contract` regenerates the web's constants.
 - Static SQL uses `query!`/`query_as!`; dynamic SQL uses `QueryBuilder`. `AssertSqlSafe` needs
   a `// SAFETY:` comment. SQL/schema edits require `prepare` and the committed `.sqlx/` cache.
 - Enqueue jobs inside the transaction that creates the underlying fact.

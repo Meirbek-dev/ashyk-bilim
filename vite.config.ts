@@ -1,6 +1,6 @@
 // Formatting for the whole repo: a file formats the same from any cwd (`vp fmt` uses the nearest config with a `fmt`
-// block). apps/web is in this workspace (its `vp check` reads this block); apps/web-2 is its own workspace, so its
-// block lives in apps/web-2/fmt.config.ts and is applied here as an override. Formats the web apps, infra/dev and this file.
+// block). apps/web-2 is its own workspace, so its block lives in apps/web-2/fmt.config.ts and is applied here as an
+// override. Formats the web app, infra/dev and this file.
 import { fmt as web2 } from './apps/web-2/fmt.config.ts'
 
 const { ignorePatterns: web2Ignored, sortTailwindcss: web2Tailwind, ...web2Options } = web2
@@ -14,10 +14,9 @@ export default {
     arrowParens: 'avoid',
     endOfLine: 'lf',
     sortPackageJson: true,
-    // apps/web: default Tailwind theme order (its tokens sort as unknown classes, first); web-2 overrides with its CSS.
     sortTailwindcss: true,
     ignorePatterns: [
-      // Everything outside the two web apps.
+      // Everything outside the web app.
       '.agents/',
       '.claude/',
       '.codex/',
@@ -39,14 +38,6 @@ export default {
       '/*.md',
       '/*.yaml',
       '**/node_modules/',
-      // apps/web
-      'apps/web/.next/',
-      'apps/web/out/',
-      'apps/web/build/',
-      'apps/web/coverage/',
-      'apps/web/reports/',
-      'apps/web/next-env.d.ts',
-      'apps/web/src/lib/api/generated/',
       ...web2Ignored.map(pattern => `apps/web-2/${pattern}`),
     ],
     overrides: [

@@ -65,8 +65,6 @@ const metrics: Record<string, number | string> = {
   'server migrations': files.filter(f => /^apps\/server\/migrations\/.*\.sql$/.test(f)).length,
   'database tables (ashyq_dev)': await tables(),
   'api operations (openapi)': operations,
-  'web (legacy) ts, hand-written lines': lines(f => ts('web')(f) && !tsTest(f)),
-  'web (legacy) ts, test lines': lines(f => ts('web')(f) && tsTest(f)),
   'web-2 ts, hand-written lines': lines(f => ts('web-2')(f) && !tsTest(f) && !f.startsWith('apps/web-2/gates/')),
   'web-2 ts, test lines': lines(f => ts('web-2')(f) && tsTest(f)),
   'web-2 gates lines': lines(f => f.startsWith('apps/web-2/gates/') && f.endsWith('.ts')),

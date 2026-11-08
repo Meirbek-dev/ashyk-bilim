@@ -1,13 +1,11 @@
 // `just wt new|ls|land|rm <name>`: one git worktree per parallel task, next to the main checkout.
-//   new <name>   ../ashyq-wt/<name> on branch wt/<name> from main: its own `bun install` (root + apps/web, apps/web-2;
-//                ~40 s from bun's cache - linked node_modules break turbopack, which refuses a link leaving its root),
-//                apps/web's gitignored .env files copied, its own cargo target dir, Paraglide output generated.
+//   new <name>   ../ashyq-wt/<name> on branch wt/<name> from main: its own `bun install` (root, apps/web-2; from bun's
+//                cache), its own cargo target dir, Paraglide output generated.
 //   ls           worktrees with their branch, commits ahead of main and uncommitted files
 //   land <name>  rebase onto main, `just check --fast`, fast-forward main (the main checkout), remove the worktree
 //   rm <name>    remove the worktree and branch (refuses unlanded or uncommitted work without --force)
 import {
   appendFileSync,
-  copyFileSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -19,8 +17,7 @@ import { dirname, join } from 'node:path'
 
 import { cargoTargetDir } from './cargo-target.ts'
 
-const LINKED = ['.', 'apps/web', 'apps/web-2'] // node_modules links made by earlier versions of this script
-const ENV_FILES = ['apps/web/.env', 'apps/web/.env.local'] // gitignored local config of the legacy app
+const LINKED = ['.', 'apps/web-2'] // node_modules links made by earlier versions of this script
 
 function sh(cmd: string[], cwd?: string, inherit = false): { code: number; out: string } {
   const p = Bun.spawnSync(cmd, { cwd, stdout: inherit ? 'inherit' : 'pipe', stderr: inherit ? 'inherit' : 'pipe' })
@@ -57,7 +54,6 @@ async function create(name?: string): Promise<void> {
   mkdirSync(root, { recursive: true })
   const add = git('worktree', 'add', '-b', wt.branch, wt.path, 'main')
   if (add.code !== 0) fail(add.out)
-  for (const file of ENV_FILES) if (existsSync(join(main, file))) copyFileSync(join(main, file), join(wt.path, file))
   const installs = await Promise.all(
     ['.', 'apps/web-2'].map(async dir => {
       const p = Bun.spawn(['bun', 'install', '--frozen-lockfile'], {

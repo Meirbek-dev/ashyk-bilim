@@ -27,18 +27,17 @@ with the API's env (`apps/server/.env`): `E2E_PASSWORD=... just server seed-e2e`
 
 ## Stage 2 cutover switches
 
-- **Web links** `AB__SERVER__WEB_LINKS`: `legacy` (default, the old web's
-  URLs) or `v2` (the new web's URL map). Every link the server
-  builds follows it: verification / reset emails, the Google sign-in error
+- **Web links** `AB__SERVER__WEB_LINKS`: `legacy` (default, the deleted old web's
+  URLs, which web-2 answers with a 301; production still runs it) or `v2` (web-2's URL map). Every link
+  the server builds follows it: verification / reset emails, the Google sign-in error
   redirect, the certificate PDF's QR code, `next_action.href`, work-queue
-  hrefs. Set `v2` in the release that switches the web; a web rollback sets
-  `legacy` again (no server rollback). Code: `ab_core::links`.
-- **Data migrations** (`docs/STAGE-2-CUTOVER.md`), idempotent, `--dry-run` prints counts,
-  safe while the old web runs; same env as the API:
+  hrefs. Phase 9 makes `v2` the only map. Code: `ab_core::links`.
+- **Data migrations** (`docs/STAGE-2-CUTOVER.md` section 2), idempotent, `--dry-run` prints counts;
+  same env as the API:
   - `ashyq admin migrate-editor-docs [--dry-run] [--after-cutover]` - D-01:
     `blockEmbed` → `embedBlock`, plain-paragraph HTML posts → JSON documents.
-    Refuses while an embed would become type `url` (the old web cannot render
-    it) unless `--after-cutover`.
+    Refuses while an embed would become type `url` (the old web could not render
+    it) unless `--after-cutover` (one way, an owner step on production).
   - `ashyq admin migrate-themes [--dry-run]` - D-02: unknown themes → `NULL`.
   - `ashyq admin migrate-locales [--dry-run]` - D-03: `ru-RU|kk-KZ|en-US` →
     `ru|kk|en` (after migration `20261003000020`).
@@ -47,7 +46,7 @@ with the API's env (`apps/server/.env`): `E2E_PASSWORD=... just server seed-e2e`
   operations are `deprecated: true` + `x-replaced-by` in `openapi.v2.json`
   (`ab_api::RENAMED`); phase 9 deletes them.
 - **Phase 9 list**: [`phase9-removals.md`](phase9-removals.md) names every
-  operation, field, behaviour and setting kept only for the old web, with
+  operation, field, behaviour and setting kept only for the deleted old web, with
   its replacement. Adding a replacement or a dual path = appending a row.
 
 ## Auth throttles (`AB__AUTH__LIMITS__*`)
@@ -74,7 +73,7 @@ codes are logged (`resend not configured: … code not delivered`, field
 
 ## Running against the dev containers
 
-`just stack up` runs the API, worker and both webs (RUNBOOK 5.3, which also lists
+`just stack up` runs the API, worker and web-2 (RUNBOOK 5.3, which also lists
 the container ports and credentials). For cargo/sqlx alone: `just dev-up`, then
 `cp apps/server/.env.example apps/server/.env` (it already matches `infra/env/dev.env`)
 and paste `tmp/dev/zitadel-pat.txt` into `AB__ZITADEL__PAT`. From the repo root:

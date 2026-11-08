@@ -30,15 +30,11 @@ const CRATES: Record<string, string> = {
   testkit: 'ab-testkit',
 }
 
-// The areas run at once: a legacy test with a 10 s budget (upload-session) timed out under that load.
-const LOADED = ['--testTimeout=30000']
-
 // The sqlx macros compile against the committed .sqlx cache: online they would check every query against whatever
 // DATABASE_URL names (the tests' half-built ashyq_test failed with 638 errors). Only `prepare`/`sqlx-check` go online.
 const OFFLINE = { SQLX_OFFLINE: 'true', CARGO_BUILD_JOBS: process.env['CARGO_BUILD_JOBS'] ?? '4' }
 
 const isServer = (f: string) => f.startsWith('apps/server/')
-const isLegacy = (f: string) => f.startsWith('apps/web/') || f === 'package.json' || f === 'bun.lock'
 const isWeb2 = (f: string) => f.startsWith('apps/web-2/')
 const isInfra = (f: string) =>
   f.startsWith('infra/') || /^compose[^/]*\.yaml$/.test(f) || f === 'justfile' || f.startsWith('.github/')
@@ -49,7 +45,6 @@ const isTs = (f: string) => /\.(ts|tsx|mts|js|mjs|jsx)$/.test(f)
 export function plan(files: string[], all: boolean, fast = false): Record<string, Gate[]> {
   files = files.filter(f => !/\.(md|txt)$/.test(f))
   const server = resolve(root, 'apps/server')
-  const web = resolve(root, 'apps/web')
   const web2 = resolve(root, 'apps/web-2')
   const areas: Record<string, Gate[]> = {}
 
@@ -98,36 +93,6 @@ export function plan(files: string[], all: boolean, fast = false): Record<string
   }
 
   const contract = all || files.some(isContract)
-  const legacyFiles = files.filter(f => f.startsWith('apps/web/'))
-  if (all || contract || files.some(isLegacy)) {
-    const tsFiles = legacyFiles.filter(isTs).map(f => f.slice('apps/web/'.length))
-    areas.web = [
-      { name: 'web:typecheck', cwd: web, cmd: ['bun', 'run', 'typecheck'] },
-      all || tsFiles.length === 0
-        ? { name: 'web:lint', cwd: web, cmd: ['bun', 'run', 'lint'] }
-        : { name: 'web:lint', cwd: web, cmd: ['bun', 'run', 'lint', '--no-error-on-unmatched-pattern', ...tsFiles] },
-      ...(all
-        ? [{ name: 'web:test', cwd: web, cmd: ['node', 'scripts/run-vitest.mjs', 'run', ...LOADED] }]
-        : tsFiles.length > 0
-          ? [
-              {
-                name: 'web:test',
-                cwd: web,
-                cmd: ['node', 'scripts/run-vitest.mjs', 'related', '--run', '--passWithNoTests', ...LOADED, ...tsFiles],
-              },
-            ]
-          : []),
-      ...(!fast &&
-      (contract || legacyFiles.some(f => f.startsWith('apps/web/src/messages/') || f.startsWith('apps/web/scripts/')))
-        ? [
-            { name: 'web:contracts', cwd: web, cmd: ['bun', 'run', 'check:contracts'] },
-            { name: 'web:error-codes', cwd: web, cmd: ['bun', 'run', 'check:error-codes'] },
-            { name: 'web:messages', cwd: web, cmd: ['bun', 'run', 'check:messages'] },
-          ]
-        : []),
-    ]
-  }
-
   const web2Files = files.filter(isWeb2).map(f => f.slice('apps/web-2/'.length))
   if (all || contract || web2Files.length > 0) {
     const checkable = web2Files.filter(f => existsSync(resolve(web2, f)) && /\.(ts|tsx|js|mjs|json|css)$/.test(f))

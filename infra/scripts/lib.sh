@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # Sourced by every infra script: strict mode, ROOT (cwd = repo root), log/die,
 # `compose` (docker compose, else podman compose; env passes through) and the
-# stack selectors use_prod / use_dev / use_smoke / use_web2 / use_stack ($STACK).
+# stack selectors use_prod / use_dev / use_smoke / use_web2 / use_restore / use_stack ($STACK).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -97,7 +97,7 @@ use_smoke() {
   [[ -f $SERVER_ENV_FILE ]] || cp infra/env/smoke.server.env "$SERVER_ENV_FILE"
 }
 
-# Stage 2 e2e stand: the smoke stack with web = ashyq-web-2, https at the edge
+# E2E stand: the smoke stack with https at the edge
 # (self-signed cert; the session cookie is Secure). Own project and server env.
 use_web2() {
   export COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-ashyq-web2}
@@ -118,17 +118,14 @@ use_web2() {
   export E2E_PASSWORD
 }
 
-# Production browser gate: match the image's baked NEXT_PUBLIC_* domain without contacting production.
-use_web_e2e() {
-  export COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-ashyq-web-e2e}
+# Backup/restore rehearsal (restore-test.sh): the e2e stand under its own project, server env and backup directory.
+use_restore() {
+  export COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-ashyq-restore}
   use_web2
-  export COMPOSE_FILE=$COMPOSE_FILE:compose.web-e2e.yaml
-  export NGINX_SERVER_NAME=${E2E_WEB_HOST:?set E2E_WEB_HOST to the image build domain}
-  export TLS_DIR=./tmp/web-e2e/certs WEB_LINKS=legacy STACK_ENV_FILE=./infra/env/smoke.env
-  export SERVER_ENV_FILE=./tmp/web-e2e/server.env
-  mkdir -p tmp/web-e2e
+  export STACK_ENV_FILE=./infra/env/smoke.env BACKUP_DIR=./tmp/restore-test-archives
+  export SERVER_ENV_FILE=./tmp/restore-test/server.env
+  mkdir -p tmp/restore-test
   [[ -f $SERVER_ENV_FILE ]] || cp infra/env/smoke.server.env "$SERVER_ENV_FILE"
-  export BACKUP_DIR=./tmp/restore-test-archives
 }
 
 use_stack() {
@@ -137,12 +134,12 @@ use_stack() {
     dev) use_dev ;;
     smoke) use_smoke ;;
     web2) use_web2 ;;
-    web-e2e) use_web_e2e ;;
+    restore) use_restore ;;
     # Throwaway rehearsals (infra/tests/zitadel-db-move.sh): the caller sets the files, env file and project.
     custom)
       [[ -n ${COMPOSE_FILE:-} && -n ${COMPOSE_ENV_FILES:-} && -n ${COMPOSE_PROJECT_NAME:-} ]] ||
         die "STACK=custom needs COMPOSE_FILE, COMPOSE_ENV_FILES and COMPOSE_PROJECT_NAME"
       ;;
-    *) die "STACK must be dev, prod, smoke, web2 or web-e2e (got '$STACK')" ;;
+    *) die "STACK must be dev, prod, smoke, web2 or restore (got '$STACK')" ;;
   esac
 }

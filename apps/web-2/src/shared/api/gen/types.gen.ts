@@ -7162,7 +7162,7 @@ export type UpdateProfileRequest = {
      */
     profile?: ProfileSections;
     /**
-     * UI theme registry slug (the web `theme-store.json` names, e.g.
+     * UI theme registry slug (the web `themes/manifest.json` slugs, e.g.
      * `modern-minimal`); `null` clears it.
      */
     theme?: string | null;

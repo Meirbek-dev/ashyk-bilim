@@ -1,6 +1,6 @@
 ---
 name: debug-e2e
-description: Reproduce and fix a failing or flaky Playwright e2e test of web-2 or the legacy web in ashyq-bilim, locally or from CI.
+description: Reproduce and fix a failing or flaky Playwright e2e test of web-2 in ashyq-bilim, locally or from CI.
 ---
 
 # Debug e2e

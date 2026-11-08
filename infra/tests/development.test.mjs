@@ -11,32 +11,26 @@ const just = process.env.JUST_EXECUTABLE ?? 'just'
 const jobs = `jobs=${availableParallelism() >= 24 ? 16 : 4}`
 const run = (command, args, options = {}) => spawnSync(command, args, { encoding: 'utf8', ...options })
 
-test('production release and replacement stands keep separate identity configuration', () => {
+test('the restore stand keeps its own server configuration beside the e2e stand', () => {
   const dir = mkdtempSync(join(tmpdir(), 'ashyq-stands-'))
   try {
     mkdirSync(join(dir, 'infra/scripts'), { recursive: true })
     mkdirSync(join(dir, 'infra/env'), { recursive: true })
     writeFileSync(join(dir, 'infra/scripts/lib.sh'), readFileSync(join(root, 'infra/scripts/lib.sh')))
-    writeFileSync(join(dir, 'infra/scripts/web-e2e.sh'), readFileSync(join(root, 'infra/scripts/web-e2e.sh')))
+    writeFileSync(join(dir, 'infra/scripts/restore-test.sh'), readFileSync(join(root, 'infra/scripts/restore-test.sh')))
     writeFileSync(join(dir, 'infra/env/smoke.server.env'), 'template\n')
     writeFileSync(join(dir, 'compose.yaml'), 'image: &pg-image test-postgres\n')
     writeFileSync(join(dir, 'compose.prod.yaml'), 'image: &restic-image test-restic\n')
-    writeFileSync(join(dir, '.node-version'), readFileSync(join(root, '.node-version')))
     const shell = process.platform === 'win32' ? 'sh' : 'bash'
-    const options = { cwd: dir, env: { ...process.env, E2E_WEB_HOST: 'release.test', E2E_PASSWORD: 'fixture-password', PATH: `${dir}${delimiter}${process.env.PATH}` } }
-    const result = run(shell, ['-c', 'source infra/scripts/lib.sh; use_web2; printf "old-stand\\n" > "$SERVER_ENV_FILE"; use_web_e2e; cat "$SERVER_ENV_FILE"; cat tmp/web2/server.env'], options)
+    const options = { cwd: dir, env: { ...process.env, E2E_PASSWORD: 'fixture-password', PATH: `${dir}${delimiter}${process.env.PATH}` } }
+    const result = run(shell, ['-c', 'source infra/scripts/lib.sh; use_web2; printf "old-stand\\n" > "$SERVER_ENV_FILE"; unset COMPOSE_PROJECT_NAME; use_restore; echo "$COMPOSE_PROJECT_NAME"; cat "$SERVER_ENV_FILE"; cat tmp/web2/server.env'], options)
     assert.equal(result.status, 0, result.stderr)
-    assert.equal(result.stdout.replaceAll('\r\n', '\n'), 'template\nold-stand\n')
+    assert.equal(result.stdout.replaceAll('\r\n', '\n'), 'ashyq-restore\ntemplate\nold-stand\n')
     writeFileSync(join(dir, 'docker'), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
-    const stopped = run(shell, ['infra/scripts/web-e2e.sh', 'down'], options)
+    const stopped = run(shell, ['infra/scripts/restore-test.sh', 'down'], options)
     assert.equal(stopped.status, 0, stopped.stderr)
-    assert.equal(existsSync(join(dir, 'tmp/web-e2e/server.env')), false)
+    assert.equal(existsSync(join(dir, 'tmp/restore-test/server.env')), false)
     assert.equal(readFileSync(join(dir, 'tmp/web2/server.env'), 'utf8'), 'old-stand\n')
-    writeFileSync(join(dir, 'docker'), '#!/bin/sh\ncase "$1" in compose) echo edge-fixture; exit;; inspect) echo 192.0.2.1; exit;; esac\nprintf "%s\\n" "$@" > run-args\nfor arg do case "$arg" in docker.io/library/node:*) printf "%s\\n" "$arg";; esac; done\n', { mode: 0o755 })
-    const fixture = run(shell, ['infra/scripts/web-e2e.sh', 'fixture'], options)
-    assert.equal(fixture.status, 0, fixture.stderr)
-    assert.equal(fixture.stdout.trim(), `docker.io/library/node:${readFileSync(join(root, '.node-version'), 'utf8').trim()}-alpine`)
-    assert.match(readFileSync(join(dir, 'run-args'), 'utf8'), /--add-host\nrelease\.test:192\.0\.2\.1\n/)
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
@@ -85,35 +79,6 @@ test('root server proxy preserves filters, bounds build jobs and defaults to cac
     ])
   } finally {
     rmSync(dir, { recursive: true, force: true })
-  }
-})
-
-test('web contract check regenerates and rejects a stale, incomplete or orphaned committed client', () => {
-  for (const mode of ['clean', 'modified', 'deleted', 'new']) {
-    const dir = mkdtempSync(join(tmpdir(), 'ashyq-contracts-'))
-    try {
-      const web = join(dir, 'apps/web')
-      mkdirSync(join(web, 'scripts'), { recursive: true })
-      mkdirSync(join(web, 'src/lib/api/generated/zod'), { recursive: true })
-      writeFileSync(join(web, 'scripts/check_contracts.mjs'), readFileSync(join(root, 'apps/web/scripts/check_contracts.mjs')))
-      writeFileSync(join(web, 'scripts/postprocess-orval-output.mjs'), '')
-      // Stands in for orval: what the current contract generates.
-      writeFileSync(join(web, 'scripts/generate-api-types.mjs'), `import { mkdirSync, writeFileSync } from 'node:fs'
-const out = process.env.ORVAL_OUTPUT_DIR
-mkdirSync(out + '/zod', { recursive: true })
-writeFileSync(out + '/index.ts', 'index\\n')
-writeFileSync(out + '/zod/a.zod.ts', 'a\\n')
-`)
-      const committed = join(web, 'src/lib/api/generated')
-      writeFileSync(join(committed, 'index.ts'), 'index\n')
-      if (mode !== 'deleted') writeFileSync(join(committed, 'zod/a.zod.ts'), mode === 'modified' ? 'stale\n' : 'a\n')
-      if (mode === 'new') writeFileSync(join(committed, 'zod/orphan.zod.ts'), 'orphan\n')
-      const result = run(process.execPath, ['scripts/check_contracts.mjs'], { cwd: web })
-      assert.equal(result.status === 0, mode === 'clean', `${mode}: ${result.stderr}`)
-      assert.deepEqual(readdirSync(join(web, 'src/lib/api')), ['generated'], 'scratch output is removed')
-    } finally {
-      rmSync(dir, { recursive: true, force: true })
-    }
   }
 })
 
@@ -206,7 +171,7 @@ test('compiler versions match Docker and local CI executes the backend suite onc
   const node = read('.node-version').trim()
   assert.ok(rust)
   assert.ok(read('apps/server/Dockerfile').includes(`rust:${rust}-slim-trixie`))
-  for (const path of ['apps/web/Dockerfile', 'apps/web-2/Dockerfile']) assert.ok(read(path).includes(`node:${node}-alpine`))
+  assert.ok(read('apps/web-2/Dockerfile').includes(`node:${node}-alpine`))
   const result = run(just, ['--justfile', 'apps/server/justfile', '--dry-run', 'ci'], { cwd: root })
   assert.equal(result.status, 0, result.stderr)
   assert.equal((result.stderr.match(/cargo (?:llvm-cov )?nextest run|cargo llvm-cov nextest/g) ?? []).length, 1)

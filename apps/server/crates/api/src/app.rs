@@ -650,8 +650,8 @@ fn cors_layer(config: &Config) -> Result<CorsLayer> {
             // Optimistic locking (ARCHITECTURE §6): teacher grade saves and
             // file-attempt grading send `If-Match: "<version>"`.
             header::IF_MATCH,
-            // The web client stamps W3C trace context on every request
-            // (apps/web/src/lib/api-client.ts).
+            // W3C trace context the web forwards from its own requests
+            // (apps/web-2/src/shared/api/client.ts).
             HeaderName::from_static("traceparent"),
             HeaderName::from_static(REQUEST_ID_HEADER),
             HeaderName::from_static("last-event-id"),

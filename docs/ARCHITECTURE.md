@@ -33,12 +33,12 @@ Companion documents:
 
 ```
                     ┌────────────────────────── VPS (docker compose) ─────────────────────────┐
- Browser ── https ─►│ nginx ──► web (Next.js 16, apps/web) │ web2 (apps/web-2, profile dual-web)│
+ Browser ── https ─►│ nginx ──► web (TanStack Start, apps/web-2, image ashyq-web-2)           │
                     │   │                                                                     │
                     │   ├─ /api/v2/*            ──► server  (ashyq serve, Axum)               │
                     │   ├─ /content/*           ──► rustfs  (ab-public, cached)               │
                     │   ├─ /ab-public|ab-private ─► rustfs  (presigned S3 URLs)               │
-                    │   └─ /*                   ──► web or web2                               │
+                    │   └─ /*                   ──► web                                       │
                     │                                                                         │
                     │ server ◄─ data-net ─► postgres 18 (app db: FTS, job queue; pgvector ext)│
                     │ server ◄───────────► redis 8      (sessions, SSE streams, rate limits)  │
@@ -203,8 +203,7 @@ pub enum Error {
 }
 ```
 
-- **All messages are English.** The frontends translate from `code` / `field_errors[].code`: `apps/web` checks
-  its catalogs with `bun run check:error-codes` (`apps/web/scripts/sync-error-codes.mjs`); `apps/web-2` maps
+- **All messages are English.** The web translates from `code` / `field_errors[].code`: `apps/web-2` maps
   every `ErrorCode` exhaustively in `src/shared/i18n/errors.ts`, so a new code fails its type check.
 - `IntoResponse` is implemented **once**, in `ab_api::error`. Handlers return `Result<T, ab_core::Error>` — they
   never construct responses from errors.
@@ -219,7 +218,7 @@ pub enum Error {
   (`utoipa-axum` `OpenApiRouter` + `routes!`). **A route cannot exist without a documented operation and typed
   response.**
 - `just server openapi` writes `apps/server/openapi.v2.json`, the contract artifact; `just contract` regenerates
-  both web clients from it (§15). CI checks the committed file (`openapi-check`) and an `insta` snapshot
+  the web client from it (§15). CI checks the committed file (`openapi-check`) and an `insta` snapshot
   (`crates/api/tests/openapi.rs`) makes every contract change visible in the diff. The document passes through
   one export-time pass (`crates/api/src/openapi.rs`, DECISIONS 2026-10-03 "Generator-friendly contract" and its
   part 2) before it is served or exported. Request DTOs declare their garde limits as schema constraints; stored
@@ -251,7 +250,7 @@ pub enum Error {
 - **Renames (expand)**: a renamed path is a twin handler with its own `operationId`; the export marks the old
   operation `deprecated: true` + `x-replaced-by` (`openapi::RENAMED`) until phase 9 removes it.
 - **Web links**: every URL into the web app is built by `ab_core::links::WebLink` in the scheme
-  `AB__SERVER__WEB_LINKS` selects (`legacy` | `v2`), anchored at `AB__SERVER__WEB_URL` where a full URL is needed
+  `AB__SERVER__WEB_LINKS` selects (`legacy` | `v2`; production still `legacy`, which web-2 redirects), anchored at `AB__SERVER__WEB_URL` where a full URL is needed
   (emails, redirects, the certificate QR).
 - **SSE**: `axum::response::Sse`. Event log per stream in **Redis Streams** (`XADD` with `MAXLEN ~`),
   `Last-Event-ID` resumes via `XRANGE`. 25s keepalive comments; per-user cap of 10 open streams (Redis lease set).
@@ -266,7 +265,7 @@ pub enum Error {
   problem+json 413 → `?lang=` → CSRF guard (reject cross-site `Sec-Fetch-Site` on mutations) → routes. The
   session is an extractor, not a layer.
 
-"Phase 9" is the post-cutover cleanup of `docs/STAGE-2-CUTOVER.md` section 4; the server items are listed in
+"Phase 9" is the post-cutover cleanup in `docs/STAGE-2-CUTOVER.md`; the server items are listed in
 `apps/server/docs/phase9-removals.md`.
 
 ## 7. Authentication & authorization
@@ -611,7 +610,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   the previous release reads every row.
 - **Code-run verdicts are the platform's own** (`code_run_cases.verdict`, `TestVerdict`: accepted, wrong_answer,
   time_limit, memory_limit, output_limit, compile_error, runtime_error, internal_error). The API's case
-  `status_id` is derived from it (`legacy_status_id`, Judge0's numbers that both web clients map); the stored
+  `status_id` is derived from it (`legacy_status_id`, Judge0's numbers the web maps); the stored
   Judge0 `status_id` / `judge0_token` are gone (contract `20261103020300`).
 
 ### SQLx usage
@@ -808,7 +807,7 @@ Layered, all runnable via `just` (single source of truth; CI calls the same reci
 | RBAC sweep | `crates/api/tests/rbac_sweep.rs` over the route list | no unclassified mutating endpoint |
 | Supply chain | `just deny`, `just machete` | advisories, licenses, dead deps |
 | Coverage | `just cov` (`cargo llvm-cov nextest`; CI: nightly `coverage.yaml`) | floor: 80% lines, workspace (`main.rs` excluded); ratchet up, never down |
-| E2E | Playwright suites of both webs (`just e2e`, CI `web2-e2e`, `web-release-e2e`) | real browser against a full stack |
+| E2E | web-2's Playwright suite (`just e2e`, CI `web2-e2e`) | real browser against a full stack |
 
 `TestApp::spawn(pool)` boots the full router (whole middleware stack) against the test database and returns
 request helpers plus `mint_session` / `create_user` for any role. Wiremock stubs pin the wire shapes of Zitadel,
@@ -827,9 +826,9 @@ published as `<sha>` only after every gate and the full-stack smoke passed (`doc
 
 ## 15. Frontend integration
 
-Both frontends consume `/api/v2` from `apps/server/openapi.v2.json`; `just contract` regenerates both clients.
-Read their app-specific `AGENTS.md` for client conventions and `docs/INFRA.md` for the web/edge contract.
-`apps/web` (Next.js) is in production; `apps/web-2` replaces it per `docs/STAGE-2-CUTOVER.md`.
+`apps/web-2`, the only frontend, consumes `/api/v2` from `apps/server/openapi.v2.json`; `just contract`
+regenerates its client. Read `apps/web-2/AGENTS.md` for client conventions and `docs/INFRA.md` for the web/edge
+contract. Server compatibility kept for the deleted old web waits for phase 9 (`docs/STAGE-2-CUTOVER.md`).
 
 ## 16. Configuration & secrets
 
@@ -854,7 +853,7 @@ Read their app-specific `AGENTS.md` for client conventions and `docs/INFRA.md` f
   dashboards bucket by the zone the client sends.
 - Data migrations that rewrite stored shapes (`ashyq admin migrate-editor-docs`, `migrate-themes`,
   `migrate-locales`) are idempotent commands with `--dry-run`, not SQL migrations: they run against live data on
-  the operator's schedule (`docs/STAGE-2-CUTOVER.md`).
+  the operator's schedule (`apps/server/docs/DEVELOPMENT.md`; the open one: `docs/STAGE-2-CUTOVER.md`).
 
 ## 17. Known gotchas & risk register
 

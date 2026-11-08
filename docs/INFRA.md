@@ -1,19 +1,18 @@
 # Infrastructure (as built)
 
-Production runs the Rust API and Next.js frontend at `cs-mooc.tou.edu.kz`
-from `~/cs-mooc`, behind the university TLS proxy. The replacement
-TanStack frontend is pending cutover (`docs/STAGE-2-CUTOVER.md`).
+Production runs the Rust API and the TanStack frontend (`apps/web-2`, image `ashyq-web-2`) at
+`cs-mooc.tou.edu.kz` from `~/cs-mooc`, behind the university TLS proxy. Open steps after the frontend
+switch: `docs/STAGE-2-CUTOVER.md`.
 Operations: `docs/RUNBOOK.md`; design rationale: `docs/DECISIONS.md`.
 
 ## Layout
 
 ```
 compose.yaml          shared tier: db, zitadel-db, redis, zitadel, rustfs, runner (profile runner), init jobs
-compose.prod.yaml     nginx, web, web2 (profile dual-web), server, worker, server-migrate, backup; prod overrides
+compose.prod.yaml     nginx, web, server, worker, server-migrate, backup; prod overrides
 compose.dev.yaml      dev overrides: ports on 127.0.0.1, data-net and exec-net not internal
 compose.smoke.yaml    smoke overrides: nginx ports on 127.0.0.1 only
-compose.web2.yaml     Stage 2 e2e stand: web = ashyq-web-2
-compose.web-e2e.yaml  production web image stand at its baked domain
+compose.web2.yaml     E2E stand (also the restore-test stand): WEB2_IMAGE, stand cert, Zitadel bcrypt cost
 justfile              single entry point (`just --list`)
 infra/
   env/                prod.env.example, server.env.example, dev.env, smoke.env, smoke.server.env
@@ -25,20 +24,19 @@ infra/
   storage/            init.sh (storage-init job), cors.json.template, public-policy.json
   host/               backup.service, backup.timer (nightly systemd timer)
   smoke/stub-web/     stand-in web image for the edge-independence smoke (R-09)
-  compose.*-check.yaml  overlays for the ci-infra nginx, dual-web and Redis checks
-  tests/              dual-web.sh, redis-persistence.sh, db-roles.sh, pitr.sh, zitadel-db-move.sh, restore
+  compose.*-check.yaml  overlays for the ci-infra nginx and Redis checks
+  tests/              redis-persistence.sh, db-roles.sh, pitr.sh, zitadel-db-move.sh, rollback-rule.sh, restore
                       fixtures, development.test.mjs
   scripts/            lib.sh, bootstrap, deploy, rollback, preflight, smoke, backup, restore, pitr-restore,
-                      zitadel-db-move, restore-drill, restore-test, web-e2e, renew-certificate, split-env, doctor
+                      zitadel-db-move, restore-drill, restore-test, renew-certificate, split-env, doctor
   dev/                Bun dev tooling behind `just stack|e2e|check|db|wt|...` (RUNBOOK 5)
-.github/workflows/ci.yaml   gates, images, stack smoke, e2e, publish
+.github/workflows/ci.yaml   gates, images, stack smoke, e2e, restore test, publish
 ```
 
 Ops recipes: `bootstrap`, `preflight`, `deploy`, `rollback`, `backup`, `restic`, `restore`, `pitr-restore`,
 `zitadel-db-move`, `restore-drill`; rehearsals `pitr-test`, `zitadel-db-move-test`. Stacks: `dev-up`, `dev-down`, `dev-reset`, `dev-runner`, `stack-up`, `stack-down`,
-`smoke`, `web2-stand-up`/`-seed`/`-e2e`/`-stand-down`, `web-release-e2e`, `restore-test`, `ci-infra`.
-App recipes: `server *args` (`apps/server/justfile`, with `TEST_REDIS_URL` from `dev.env`), `web *args`,
-`web2 *args`.
+`smoke`, `web2-stand-up`/`-seed`/`-e2e`/`-stand-down`, `restore-test [down]`, `ci-infra`.
+App recipes: `server *args` (`apps/server/justfile`, with `TEST_REDIS_URL` from `dev.env`), `web2 *args`.
 
 ## Stacks
 
@@ -47,19 +45,19 @@ repo root, sets `set -euo pipefail`, `MSYS_NO_PATHCONV=1` (Git Bash) and
 `COMPOSE_PATH_SEPARATOR=:`, picks `docker`, else `podman` (`compose` =
 `$CTR compose`), reads the pinned db and restic images into `PG_IMAGE` and
 `RESTIC_IMAGE`, and provides the selectors below. `use_stack` maps
-`STACK=dev|prod|smoke|web2|web-e2e` (default `prod`).
+`STACK=dev|prod|smoke|web2|restore|custom` (default `prod`).
 
 | Stack | `COMPOSE_FILE` | Interpolation env | Server env | Project | Recipes |
 | --- | --- | --- | --- | --- | --- |
 | dev | `compose.yaml:compose.dev.yaml` | `infra/env/dev.env` (`COMPOSE_ENV_FILES`); the shell's `POSTGRES_USER`/`POSTGRES_PASSWORD` are ignored | none: the apps run on the host (RUNBOOK 5.3) | `ashyq-dev` | `dev-up`, `dev-down`, `dev-reset`, `dev-runner` |
 | smoke | `compose.yaml:compose.prod.yaml:compose.smoke.yaml` | `infra/env/smoke.env` | `tmp/smoke/server.env` (copied from `infra/env/smoke.server.env`) | `ashyq-smoke` | `stack-up`, `smoke`, `stack-down` |
 | web2 | smoke files + `compose.web2.yaml` | `infra/env/smoke.env` | `tmp/web2/server.env` | `ashyq-web2` | `web2-stand-up`, `web2-seed`, `web2-e2e`, `web2-stand-down` |
-| web-e2e | web2 files + `compose.web-e2e.yaml` | `infra/env/smoke.env` | `tmp/web-e2e/server.env` | `ashyq-web-e2e` | `web-release-e2e up\|seed\|test\|down`, `restore-test` |
+| restore | web2 files | `infra/env/smoke.env` | `tmp/restore-test/server.env` | `ashyq-restore` | `restore-test [down]` (backups in `tmp/restore-test-archives`) |
 | prod | `compose.yaml:compose.prod.yaml` | `./.env` (compose default) | `./server.env` | from `.env`: `cs-mooc` | `bootstrap`, `preflight`, `deploy`, `rollback`, `backup`, `restore` |
 | drill | prod files | the snapshot's `.env` | the snapshot's `server.env` | `ashyq-drill` | `restore-drill` |
 
 A `COMPOSE_PROJECT_NAME` in the shell overrides the non-prod defaults
-(`ci-infra` uses `ashyq-ci-<pid>`, its dual-web check `ashyq-dual-<pid>`).
+(`ci-infra` uses `ashyq-ci-<pid>`).
 Smoke serves plain http on `ashyq.test` (`PUBLIC_SCHEME=http`, `FORCE_HTTPS=0`),
 self-signed cert in `tmp/smoke/certs`, code runner off.
 
@@ -74,8 +72,7 @@ makes it non-internal to publish ports), `exec-net` (`internal`; same in dev).
 | Service | File | Networks | Notes |
 | --- | --- | --- | --- |
 | nginx | prod | edge-net, alias `${NGINX_SERVER_NAME}` | the only published ports (`HTTP_PORT`/`HTTPS_PORT`, 80/443) |
-| web | prod | edge-net | env: `PUBLIC_ORIGIN`, `INTERNAL_API_URL`, `APP_URL`, `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`; healthcheck from the image |
-| web2 | prod, profile `dual-web` | edge-net | `ashyq-web-2`, env `PUBLIC_ORIGIN`, `INTERNAL_API_URL` ("Dual web") |
+| web | prod | edge-net | `ashyq-web-2` (`apps/web-2/Dockerfile`; `WEB_IMAGE` swaps it), env `PUBLIC_ORIGIN`, `INTERNAL_API_URL=http://server:8000`; healthcheck from the image |
 | server | prod | edge-net, data-net, exec-net | `env_file: server.env` + `x-server-env`; liveness healthcheck from the image |
 | worker | prod | edge-net, data-net, exec-net | same env; healthcheck `true`; `stop_grace_period: 60s` |
 | server-migrate | prod, profile `maintenance` | data-net | one-shot `ashyq migrate` |
@@ -106,7 +103,7 @@ Trust zones:
   through it, without NAT loopback or `host-gateway`.
 
 All services log through `x-logging` (json-file, 10 MB x 5). Memory limits:
-web 2g (`WEB_MEMORY`), web2 512m; db, server, worker, zitadel, nginx 1g; zitadel-db, rustfs 512m; redis 256m.
+db, server, worker, zitadel, nginx 1g; web, zitadel-db, rustfs 512m; redis 256m.
 Nginx uses two workers with its one-CPU quota (`infra/nginx/nginx.conf`),
 128k response-header buffers and eight 32k response-body buffers per proxied request.
 
@@ -183,8 +180,8 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 | Group | Variable | Consumers |
 | --- | --- | --- |
 | Project | `COMPOSE_PROJECT_NAME=cs-mooc` | compose (volume prefix); preflight checks it is set and its `postgres_data` volume exists |
-| | `COMPOSE_PROFILES=runner` | compose; bootstrap detects the runner from it; nginx turns dual web on for `dual-web` |
-| Edge | `NGINX_SERVER_NAME` | nginx `server_name` and edge-net alias; server CORS, `WEB_URL`, storage endpoint; web `PUBLIC_ORIGIN`, `APP_URL` and build args; storage-init CORS origin; deploy smoke target |
+| | `COMPOSE_PROFILES=runner` | compose; bootstrap and deploy detect the runner from it |
+| Edge | `NGINX_SERVER_NAME` | nginx `server_name` and edge-net alias; server CORS, `WEB_URL`, storage endpoint; web `PUBLIC_ORIGIN`; storage-init CORS origin; deploy smoke target |
 | | `PUBLIC_SCHEME` (default `https`) | same consumers as above |
 | | `FORCE_HTTPS` (default `1`) | nginx :80 redirect |
 | | `TRUSTED_PROXY_CIDR` (empty = `127.0.0.1/32`) | nginx `set_real_ip_from` and trusted `X-Forwarded-Proto` |
@@ -192,7 +189,6 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 | | `ACME_WEBROOT` (default `/var/www/certbot`), `HTTP_PORT`, `HTTPS_PORT` | nginx |
 | Release | `IMAGE_REPO` (default `ghcr.io/meirbek-dev`) | image names; deploy.sh |
 | | `IMAGE_TAG` | image tag; written by deploy.sh |
-| Web | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | web |
 | Postgres | `POSTGRES_USER`, `POSTGRES_PASSWORD` | db, zitadel-db (initdb only), db-init, zitadel-init |
 | | `PG_LOG_MIN_DURATION_STATEMENT` (default `300` ms) | db, zitadel-db slow-query log |
 | | `PG_ARCHIVE_MODE` (default `on`), `PG_ARCHIVE_TIMEOUT` (default `300` s), `PITR_BASE_KEEP` (default 3, shell) | prod WAL archiving (RUNBOOK 3.14) |
@@ -211,9 +207,8 @@ Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 
 Not in the template (overrides; path values must start with `./` or `/`):
 `SERVER_ENV_FILE` (default `./server.env`), `STACK_ENV_FILE` (the `.env` the
-backup copies), `WEB_IMAGE` (smoke stub), `WEB_IMAGE_NAME` (default `ashyq-web`;
-`ashyq-web-2` at the stage 2 cutover), `WEB_MEMORY` (web limit, default `2g`),
-`WEB2_IMAGE` (web2 / stand image), `WEB_LINKS` (server `AB__SERVER__WEB_LINKS`,
+backup copies), `WEB_IMAGE` (smoke stub),
+`WEB2_IMAGE` (e2e stand web image), `WEB_LINKS` (server `AB__SERVER__WEB_LINKS`,
 default `legacy`), `ASHYQ_DB_CREATEDB`, `STORAGE_CORS_ORIGINS` (dev; prod derives
 it), `DEV_PG_PORT`, `DEV_REDIS_PORT`, `DEV_ZITADEL_PORT`, `DEV_RUSTFS_PORT`,
 `DEV_RUNNER_PORT`, `RUNNER_IMAGE`, `RUNNER_CPUS` (default 4), `RUNNER_MEMORY`
@@ -266,8 +261,7 @@ Prints key names, never values.
 | `/api/v2` | server | `api_limit` 30 r/s, burst 60; buffering enabled, 60 s timeouts |
 | `/content/` | rustfs, rewritten to `/ab-public/` (query dropped) | anonymous read; `content_cache` 7 days in 1 MB slices; `Cache-Control: public, max-age=604800, immutable`; user-content headers |
 | `~ ^/(ab-public\|ab-private)(/\|$)` | rustfs, verbatim (SigV4 signs host and path) | presigned URLs; 2G bodies, no request buffering, 300 s; 403 for a query without a signature (no `X-Amz-Signature`, no `Authorization`); user-content headers |
-| `= /ui/new`, `= /ui/classic` | none | dual-web switch cookie, `302 /` |
-| `/` | web (or web2, "Dual web") | `app_cache` only when the upstream says `immutable`; `Link` response header dropped |
+| `/` | web | `app_cache` only when the upstream says `immutable`; `Link` response header dropped |
 
 - **Server blocks.** `:80` serves ACME challenges from `ACME_WEBROOT`,
   redirects to https when `FORCE_HTTPS=1` unless the request carries
@@ -356,18 +350,16 @@ line floor (`just cov`) nightly.
 
 | Job | When | What |
 | --- | --- | --- |
-| changes | always | path filters `server`, `web` (`apps/web/**`, root `package.json`/`bun.lock`, `openapi.v2.json`, the web-e2e/restore scripts, `ci.yaml`), `web2` (`apps/web-2/**`, `openapi.v2.json`, `.node-version`, `compose.web2.yaml`, `justfile`, `ci.yaml`), `infra`; all true on `main` and `release/**`; `sha` = first 8 chars of the commit |
+| changes | always | path filters `server`, `web2` (`apps/web-2/**`, `openapi.v2.json`, `.node-version`, `compose.web2.yaml`, `justfile`, `ci.yaml`), `infra`; all true on `main` and `release/**`; `sha` = first 8 chars of the commit |
 | server-lint | server or infra changed | `apps/server` recipes against the committed `.sqlx`: `fmt-check`, `clippy`, `deny`, `machete`, `openapi-check` |
 | server-test | server or infra changed | `just dev-up` (Postgres with `DEV_PG_ARGS`: fsync off), then `migrate`, `sqlx-check`, `test --partition hash:N/2` in two jobs (`sqlx-check` in the first only); nextest profile `ci`, JUnit report uploaded on failure. The line floor (`just cov`) runs nightly in `coverage.yaml` |
-| web-gates | web changed | `just ci-web`: lint, typecheck, unit tests, `check:contracts`, `check:error-codes`, `check:messages` |
 | web2-gates | web2 changed | in the Playwright image, `apps/web-2`: `bun install`, `codegen messages`, `verify` (check, tests, gates; its codegen gate diffs the committed SDK and route tree), `build`, `g15` (contrast of every theme and mode) |
-| infra-gates | always | `just ci-infra` (compose config for dev/prod/smoke/web2/web-e2e, `bash -n`, `nginx -t`, dual-web routing, Redis persistence), `just test-dev`, shellcheck, actionlint, gitleaks |
-| images | push, in parallel with the gates | `ci-<sha>` of `ashyq-server` always, `ashyq-web` when `web` changed, `ashyq-web-2` when `web2` changed (all three on `main` and `release/**`); web build args from the repo variable `PROD_DOMAIN` |
-| stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` and `just smoke` again; without an `ashyq-web` build the stub web from the start (on `release/**` also `ashyq-web:latest`, the rollback target, smoked against the release server); when `ashyq-web-2` was built, web swapped for it via `WEB_IMAGE_NAME` and `just smoke` again |
-| web2-e2e | after images, web2 changed | six stands ("Stage 2 e2e stand"): shards 1-5 `just web2-e2e --grep-invert @runner --shard=N/5` (`PWTEST_SHARD_WEIGHTS`), shard `runner` with the `runner` profile `--grep @runner`; Playwright retries a failed test once on CI (reported as flaky) |
-| web-release-e2e | after images, web changed | the `ashyq-web:ci-<sha>` image at `PROD_DOMAIN` ("Production web image stand"): smoke, auth, release and video-upload specs, then `just restore-test` |
-| publish | `main` or `release/**`, every gate, stack-smoke and web-release-e2e green (not web2-e2e) | `imagetools create`, no rebuild: `ashyq-server` `ci-<sha>` -> `<sha>`/`latest`; `ashyq-web` the same when built, else `<sha>` = `ashyq-web:latest` |
-| publish-web2 | after publish, web2-e2e green | `ashyq-web-2` `ci-<sha>` -> `<sha>`/`latest` |
+| infra-gates | always | `just ci-infra` (compose config for dev/prod/smoke/web2/restore, `bash -n`, rollback rule, `nginx -t`, Redis persistence, Zitadel database move), `just test-dev`, shellcheck, actionlint, gitleaks |
+| images | push, in parallel with the gates | `ci-<sha>` of `ashyq-server` and `ashyq-runner` always, `ashyq-web-2` when `web2` changed (always on `main` and `release/**`) |
+| stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` (`WEB_IMAGE`) and `just smoke` again; without an `ashyq-web-2` build the stub web from the start |
+| web2-e2e | after images, web2 changed | six stands ("E2E stand"): shards 1-5 `just web2-e2e --grep-invert @runner --shard=N/5` (`PWTEST_SHARD_WEIGHTS`), shard `runner` with the `runner` profile `--grep @runner`; Playwright retries a failed test once on CI (reported as flaky) |
+| restore-test | after images, web2 and (server or infra) changed | `just restore-test` on its own stand of the `ci-<sha>` images ("Backup and restore"), logs and manifests uploaded on failure, `just restore-test down` |
+| publish | `main` or `release/**`, every gate, stack-smoke, web2-e2e and restore-test green | `imagetools create`, no rebuild: `ashyq-server`, `ashyq-runner`, `ashyq-web-2` `ci-<sha>` -> `<sha>`/`latest` |
 
 Tags: `ci-<sha>` = built, not verified; `<sha>` = gates and stack smoke passed;
 `latest` = newest green `main`. GHCR packages are public: the host pulls
@@ -377,8 +369,8 @@ without credentials.
 
 1. Takes `flock` on `.deploy.lock`.
 2. Resolves `sha` to 8 chars (must be known to git).
-3. Refuses unless `ashyq-server:<sha>` and `ashyq-web:<sha>` (and
-   `ashyq-web-2:<sha>` while `web2` is in the stack) exist in the registry
+3. Refuses unless `ashyq-server:<sha>` and `ashyq-web-2:<sha>` (and
+   `ashyq-runner:<sha>` with the `runner` profile) exist in the registry
    (`docker manifest inspect`).
 4. Runs preflight with `IMAGE_TAG=<sha>`.
 5. `compose pull`.
@@ -472,19 +464,20 @@ prints `users`/`courses` counts and elapsed time, fails on zero rows, then tears
 everything down. `RESTORE_DIR` sets the scratch dir (default
 `${TMPDIR:-/tmp}/ashyq-restore`).
 
-`restore-test.sh` (`just restore-test`, CI web-release-e2e) runs the real
-backup.sh and restore-drill.sh on the web-e2e stand with synthetic learner work
-(a grade, a certificate, an image) and compares table counts/hashes
-(`infra/tests/restore-manifest.sql`) and the object's SHA-256; never a production archive.
+`restore-test.sh` (`just restore-test`, CI `restore-test`; needs `IMAGE_TAG`) brings up its own throwaway
+stand of the release images (`STACK=restore`, "Stacks"), seeds it, creates synthetic learner work
+(`infra/tests/restore-fixture.mjs`: a grade, a certificate, an image), then runs the real backup.sh and
+restore-drill.sh and compares table counts/hashes (`infra/tests/restore-manifest.sql`) and the object's
+SHA-256; never a production archive. `just restore-test down` removes the stand.
 
 ## Quality gates
 
 Local gates: root `AGENTS.md` (`just check`, `just ci*`) and RUNBOOK 5.5; hosted
 CI: "Build and release".
 
-## Web contract for stage 2
+## Web contract
 
-What the stage 1 infrastructure guarantees the web app and requires from it:
+What the infrastructure guarantees the web app and requires from it:
 
 | Aspect | Contract |
 | --- | --- |
@@ -496,31 +489,17 @@ What the stage 1 infrastructure guarantees the web app and requires from it:
 | Headers | baseline headers come from the edge; CSP is the web app's job; no preload `Link` headers (FINDINGS 31) |
 | CI | package scripts only: `codegen`, `verify`, `build`, `g15`, `e2e` |
 | API contract | the client is generated from `apps/server/openapi.v2.json`; drift = red CI |
-| Acceptance | the Stage 2 e2e stand below |
+| Acceptance | the E2E stand below |
 
-Next.js leftovers stage 2 must remove:
-
-- `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_MEDIA_URL` build
-  args: `compose.prod.yaml` (web `build.args`), `ci.yaml` (images job
-  `build-args`, repo variable `PROD_DOMAIN`), `apps/web/Dockerfile` (`ARG`s).
-  Today the published web image is bound to `cs-mooc.tou.edu.kz`.
-- `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`: `compose.prod.yaml` web env,
-  `compose.web-e2e.yaml`, `infra/env/prod.env.example`, `infra/env/smoke.env`.
-  It is the one secret in the web container.
-- `APP_URL`: `compose.prod.yaml` web env (cookie domain derivation).
-- Hard-coded `cs-mooc.tou.edu.kz` in `apps/web/next.config.ts`
-  (`serverActions.allowedOrigins`, `allowedDevOrigins`) and the dev-only
-  `CONTENT_REWRITE_TARGET` rewrite.
-
-## Stage 2 e2e stand
+## E2E stand
 
 Playwright against the `ashyq-web-2` image on the smoke stack. `STACK=web2`
 (`lib.sh use_web2`) = the smoke files plus `compose.web2.yaml`, project
 `ashyq-web2`, server env `tmp/web2/server.env`, `PUBLIC_SCHEME=https`,
 `FORCE_HTTPS=1`, `WEB_LINKS=v2`, self-signed cert of the smoke stack.
 
-- `web`: `ashyq-web-2:${IMAGE_TAG}` (`WEB2_IMAGE` overrides), env `PUBLIC_ORIGIN`
-  and `INTERNAL_API_URL` only, 512m.
+- `web`: compose.prod.yaml's `ashyq-web-2:${IMAGE_TAG}` (`WEB2_IMAGE` overrides).
+  `just restore-test` runs the same files under project `ashyq-restore`.
 - Origin `https://ashyq.test`. The server presigns S3 URLs for
   `AB__STORAGE__ENDPOINT` (already the public origin), so uploads stay
   same-origin; it reaches storage through nginx and trusts the self-signed cert
@@ -565,44 +544,7 @@ then `IMAGE_REPO=localhost IMAGE_TAG=dev just web2-stand-up`.
 
 CI job `web2-e2e`: the four recipes per stand (30 min, the `runner` stand 45);
 on failure the HTML report, traces and server and compose logs as an artifact.
-Gates only the `ashyq-web-2` retag (`publish-web2`).
-
-## Production web image stand
-
-`just web-release-e2e up|seed|test|down` (`infra/scripts/web-e2e.sh`,
-`STACK=web-e2e`): the web2 stand with `web` = the exact `ashyq-web:${IMAGE_TAG}`
-image, served at its baked domain `E2E_WEB_HOST` (CI: `PROD_DOMAIN`) through an
-nginx alias on the isolated `edge-net`, so browser and API traffic never leave the
-stand. Own cert (`tmp/web-e2e/certs`), `WEB_LINKS=legacy`, backups in
-`tmp/restore-test-archives`. `seed` creates the seed-e2e accounts with two pool
-learners; `test <specs>` runs `apps/web`'s Playwright in a container on the
-stand network.
-
-## Dual web
-
-Both webs on one origin, the new one by default and the old one opt-in (RUNBOOK 3.12). `dual-web` in
-`COMPOSE_PROFILES` starts `web2` (`ashyq-web-2:${IMAGE_TAG}`, `WEB2_IMAGE`
-overrides, 512m) and switches the edge's routing on; without it everything goes
-to `web` and the cookies below mean nothing.
-
-| Request | Goes to |
-| --- | --- |
-| `/_next/*`, `/api/*` (not `/api/v2`), `/app_logo*`, `/empty_*` | `web` (old) |
-| `/home`, `/learning`, `/achievements`, `/notifications`, `/login`, `/signup`, `/reset-password`, `/verify-email`, `/_client-error`, `/learn/*`, `/teach/*`, `/admin/*`, `/settings/*`, `/assets/*`, `/themes/*`, `/courses/<id>`, `/collections/<id>`, `/users/<name>` | `web2` (new): only it has them, so a link someone copied in the new web always opens |
-| everything else (`/`, `/courses`, `/search`, `/<locale>/...`, `/certificates/...`) | `web` with cookie `ab_ui=classic`, else `web2` |
-
-- `/ui/classic` sets `ab_ui=classic` (a year), `/ui/new` clears it; both answer `302 /`
-  (relative). Each web's profile menu links the other while the edge sets
-  `ab_dual=1` (readable, 1 day) on web responses.
-- One session for both: same origin, same `ab_session`, same `/api/v2`. Emails
-  keep `WEB_LINKS=legacy`; the new web answers those addresses with a 301 to its pages.
-- Documents: the old web renders the new web's `embedBlock {type: 'url'}` by host
-  (its embed catalog); an address off that catalog shows "unknown embed" there.
-  Step 2.8 of the cutover still waits for the end.
-- Old-web answers kept only in the browser do not move across a switch (server
-  drafts do): switch outside an attempt.
-- Gate: `infra/tests/dual-web.sh` (in `just ci-infra`) checks this table against
-  stub webs, on and off.
+Gates `publish`.
 
 ## Known gaps
 
@@ -611,10 +553,10 @@ to `web` and the cookies below mean nothing.
   The edge drops `Link` on web responses and smoke fails when the home page
   headers exceed 3500 bytes; smoke still does not go through the proxy itself.
 - **The proxy rejects single request bodies over about 100 MiB with 413**
-  (FINDINGS 32). Both webs upload videos above 32 MiB as 32 MiB multipart parts;
+  (FINDINGS 32). The web uploads videos above 32 MiB as 32 MiB multipart parts;
   owner decision 2026-10-31: multipart is the permanent answer, the proxy stays as is.
 - **Releases come from `main` or `release/**`** (all gates run before
-  publishing). Stage 2 cutover: `docs/STAGE-2-CUTOVER.md`.
+  publishing).
 - **stack-smoke runs without the runner** (privileged); only the web2-e2e
   `runner` stand starts it.
 - **No external monitoring** (owner decision 2026-10-02: no external
@@ -622,8 +564,7 @@ to `web` and the cookies below mean nothing.
 - **Backups are local only** (owner decision 2026-10-02), the PITR archive too. A disk failure or host
   compromise loses the site and its backups (FINDINGS 3).
 - **Presigned PUT/GET not in smoke** (needs a verified login; the session
-  cookie is `Secure`). CI covers them in web-release-e2e (video upload) and
-  web2-e2e; on prod check by hand after a deploy.
+  cookie is `Secure`). CI covers them in web2-e2e and restore-test; on prod check by hand after a deploy.
 - `restore.sh` does not run `runner-check`; run `just bootstrap` after a
   restore on a host with the runner.
 - `restore-drill.sh` always tears down; there is no persistent drill stack.

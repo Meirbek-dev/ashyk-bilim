@@ -35,8 +35,8 @@ decisions 16.4 and 16.5 there).
 ### 31. University proxy response-header limit (operating constraint)
 The university proxy answers 502 when response headers overflow its 4 KiB buffer.
 The edge hides `Link` on web responses and deployment smoke checks require headers
-below 3500 bytes. Preserve both guards when switching frontends: the Stage 2 web
-contract forbids preload `Link` headers. See `docs/INFRA.md` for the proxy contract.
+below 3500 bytes. Preserve both guards: the web contract forbids preload `Link`
+headers. See `docs/INFRA.md` for the proxy contract.
 
 ### 32. University proxy rejects large single PUTs (operating constraint)
 The public origin returns HTTP 413 for a signed PUT declaring 308 MiB or more (100 MiB is accepted);
@@ -44,7 +44,7 @@ the same PUT through the stack's nginx succeeds, and the app and stack permit 2 
 TLS proxy is the limit. **Owner decision 2026-10-31: multipart is the permanent answer**; no proxy change
 will be requested from university IT.
 
-Both frontends send videos above 32 MiB as 32 MiB multipart parts (a 308 MiB production probe through the
+The web sends videos above 32 MiB as 32 MiB multipart parts (a 308 MiB production probe through the
 public hostname completed and verified, 2026-10-13), and map a storage 413 to `payload-too-large` instead
 of claiming the user is offline. Keep the multipart path and the 413 mapping. Server tests cover
 assembly/finalize, ownership, replay, cancellation, reaping and the exact 2 GiB boundary.
@@ -53,7 +53,7 @@ assembly/finalize, ownership, replay, cancellation, reaping and the exact 2 GiB 
 
 ### 33. shadcn CLI retains an unpatched braces dependency
 
-Both frontends' development dependency chain `shadcn -> @shadcn/registry -> fast-glob -> micromatch -> braces`
+`apps/web-2`'s development dependency chain `shadcn -> @shadcn/registry -> fast-glob -> micromatch -> braces`
 includes `braces@3.0.3`. [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) rates its
 stack-exhaustion denial of service high; no patched release is available as of 2026-10-17. It is used by tooling,
 not the application runtime. Avoid processing untrusted glob patterns with the CLI. Remove this finding when
@@ -72,7 +72,7 @@ Legacy progress hard-coded `required = True` for every submission-backed
 activity; v2 keeps that behaviour (so migrated courses complete the same way) and
 carries the flag as `assessments.required`. Owner decision 2026-10-31: keep it
 inert until after the Stage 2 cutover, then revisit (switching it on now would make
-most existing assessments optional overnight).
+most existing assessments optional overnight). The old web is gone; the revisit is QUESTIONS Q-2026-11-07-4.
 
 ### 25. Imported data: duplicate email addresses
 Two imported users shared `Nurgul287@mail.ru`; the import gave the duplicates

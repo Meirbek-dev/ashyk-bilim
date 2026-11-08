@@ -20721,7 +20721,7 @@ expression: json
             "description": "The whole profile builder document (replaces the stored one). Unknown\nsection kinds/fields, non-`http(s)` URLs and oversized text are 422\nwith `profile.sections[i]…` field errors."
           },
           "theme": {
-            "description": "UI theme registry slug (the web `theme-store.json` names, e.g.\n`modern-minimal`); `null` clears it.",
+            "description": "UI theme registry slug (the web `themes/manifest.json` slugs, e.g.\n`modern-minimal`); `null` clears it.",
             "type": [
               "string",
               "null"

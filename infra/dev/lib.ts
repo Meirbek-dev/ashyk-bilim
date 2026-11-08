@@ -61,10 +61,10 @@ export function setLocalEnv(key: string, value: string): void {
   writeFileSync(localEnvFile, `${[...rest, `${key}=${value}`].join('\n')}\n`)
 }
 
-/** Slot N = every app port + 10*N (slot 0 = 8000 / 3100 / 3200). Redis db 4+N. */
+/** Slot N = every app port + 10*N (slot 0 = 8000 / 3100). Redis db 4+N. */
 export function slotPorts(slot: number) {
   const offset = slot * 10
-  return { api: 8000 + offset, web2: 3100 + offset, web: 3200 + offset, redisDb: 4 + slot }
+  return { api: 8000 + offset, web2: 3100 + offset, redisDb: 4 + slot }
 }
 
 /** `ab_session=...` for an existing account on a running slot (dev-only `/auth/dev-login`, no password). */
@@ -85,8 +85,8 @@ export async function devLogin(
   return { cookie, username: info.user?.username ?? user, roles: info.roles ?? [] }
 }
 
-export function webOrigins(ports: { web2: number; web: number }): string[] {
-  return [ports.web2, ports.web].flatMap(port => [`http://localhost:${port}`, `http://127.0.0.1:${port}`])
+export function webOrigins(ports: { web2: number }): string[] {
+  return [`http://localhost:${ports.web2}`, `http://127.0.0.1:${ports.web2}`]
 }
 
 /** Login roles of an app database (infra/postgres/roles.sql): the owner runs migrations, the app role serves. */
