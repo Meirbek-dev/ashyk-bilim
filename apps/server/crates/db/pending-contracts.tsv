@@ -9,3 +9,6 @@ trigger	activities_required_from_settings	activity settings move into the typed 
 column	blocks.legacy_uuid	an admin rewrite of the lesson links to block ids	REWRITE 5
 column	users.zitadel_user_id	phase 4 (Zitadel removed)	REWRITE 5.1
 table	course_progress	four weekly zero-drift runs, then readers move to course_progress_v	REWRITE 5.6 n8 step 4-5
+column	submissions.items_snapshot	the release after the readers moved to assessment_versions (20261108000200); re-run the 20261102020600 backfill first	REWRITE 5.6 n16 "Versions as the record"
+column	submissions.policy_snapshot	the release after the readers moved to assessment_versions (20261108000200)	REWRITE 5.6 n16 "Versions as the record"
+column	submissions.violations	the release after the readers moved to submission_violation_log (20261108000200); record_violation stops writing it	ARCHITECTURE §8 "History stays"

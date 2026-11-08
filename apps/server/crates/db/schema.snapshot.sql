@@ -2189,6 +2189,17 @@ BEGIN
     END IF;
 END;
 $function$
+function CREATE OR REPLACE FUNCTION public.submission_violation_log(p_submission uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+    SELECT coalesce(jsonb_agg(e.event ORDER BY e.created_at, e.id), '[]'::jsonb)
+      FROM (SELECT v.event, v.created_at, v.id FROM submission_violations v
+             WHERE v.submission_id = p_submission
+             ORDER BY v.created_at DESC, v.id DESC LIMIT 200) e
+$function$
 function CREATE OR REPLACE FUNCTION public.submissions_current_grade_check()
  RETURNS trigger
  LANGUAGE plpgsql

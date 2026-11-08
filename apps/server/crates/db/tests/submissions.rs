@@ -464,3 +464,89 @@ async fn superseded_failed_final_runs_are_pruned(pool: PgPool) {
         0
     );
 }
+
+/// Schema review 2026-11-08, items 6 and 12: a submission's items and policy are read from its assessment
+/// version and its anti-cheat events from `submission_violations` (newest 200, oldest first), so the copies
+/// `items_snapshot`, `policy_snapshot` and `violations` can go in a contract: blanked by hand, the reads stay.
+#[ab_testdb::test]
+async fn hand_ins_read_their_version_and_the_violation_journal(pool: PgPool) {
+    let (user, course, assessment) = seed(&pool).await;
+    let draft = submissions::insert_draft(&pool, assessment, course, user, 1, 1, false)
+        .await
+        .unwrap()
+        .unwrap();
+    for n in 0..203 {
+        submissions::record_violation(
+            &pool,
+            draft,
+            &serde_json::json!({ "kind": "tab_switch", "n": n }),
+            200,
+        )
+        .await
+        .unwrap()
+        .unwrap();
+    }
+    let items = serde_json::json!({ "items": [{ "id": "q1" }] });
+    let policy = serde_json::json!({ "max_attempts": 2 });
+    let version = ab_db::assessment_versions::ensure(&pool, assessment, &items, &policy)
+        .await
+        .unwrap();
+    let answers = serde_json::json!({});
+    let breakdown = serde_json::json!({ "items": [] });
+    assert!(
+        submissions::persist_submit(
+            &pool,
+            draft,
+            SubmitOutcome {
+                status: SubmissionStatus::Pending,
+                answers: &answers,
+                auto_breakdown: &breakdown,
+                auto_score: None,
+                final_score: None,
+                is_late: false,
+                late_penalty_pct: 0.0,
+                violation_count: 203,
+                auto_submit_reason: None,
+                graded: false,
+                duration_seconds: None,
+                submitted_at: None,
+                read_draft_version: 1,
+                read_violation_count: 203,
+                items_snapshot: &items,
+                policy_snapshot: &policy,
+                assessment_version_id: version,
+            },
+        )
+        .await
+        .unwrap()
+    );
+    let before = submissions::get_submission(&pool, draft)
+        .await
+        .unwrap()
+        .unwrap();
+
+    // Blank the copies with the freeze guard off for this one statement.
+    sqlx::query(
+        "DO $$ BEGIN
+             ALTER TABLE submissions DISABLE TRIGGER submissions_snapshots_frozen;
+             UPDATE submissions SET items_snapshot = '{}', policy_snapshot = '{}', violations = '[]';
+             ALTER TABLE submissions ENABLE TRIGGER submissions_snapshots_frozen;
+         END $$",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let after = submissions::get_submission(&pool, draft)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(after.items_snapshot.as_ref(), Some(&items));
+    assert_eq!(after.policy_snapshot.as_ref(), Some(&policy));
+    assert_eq!(after.items_snapshot, before.items_snapshot);
+    let log = after.violations.as_array().unwrap();
+    assert_eq!(log.len(), 200, "the newest 200");
+    assert_eq!(log[0]["n"], 3, "oldest kept first");
+    assert_eq!(log[199]["n"], 202);
+    assert_eq!(after.violations, before.violations);
+}

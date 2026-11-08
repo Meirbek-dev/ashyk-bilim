@@ -417,7 +417,8 @@ One migration set for the database `ashyq`. Rules:
 - **Grades are numbered.** `grading_entries.revision` and `file_grading_entries.revision` count per attempt under the
   attempt's row lock; the highest revision is current. `item_feedback` is frozen once written, one row per item.
 - **History stays.** `enrolment_events` keeps joins and leaves past the course; `submission_violations` keeps every
-  anti-cheat event, beyond the bounded array the API reads.
+  anti-cheat event, and the API reads its newest 200 (`submission_violation_log`); the bounded array
+  `submissions.violations` is still written for the previous release (`pending-contracts.tsv`).
 - **The schema is checked at deploy.** `crates/db/schema.snapshot.sql` is the migrated schema as text;
   `ashyq admin schema-verify` compares it with the live database (RUNBOOK 2.4).
 - **Who is in a course.** `course_members` is enrolments without staff, and member queries read it, never
@@ -576,7 +577,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `20261103020400_handed_in_snapshots_check`, `20261107002000_snapshots_check_cutoff`): a submission that is not a
   `draft` has `items_snapshot` and `policy_snapshot` (CHECK `submissions_handed_in_snapshots_check`; the hand-in
   UPDATE writes them; rows created before 2026-11-07 are exempt, production holds hand-ins without them); once
-  written neither changes (`submissions_snapshots_frozen`); both are JSON objects.
+  written neither changes (`submissions_snapshots_frozen`); both are JSON objects. Readers take them from the
+  submission's `assessment_versions` row (the same items and policy, `20261108000200`); the hand-in still writes the
+  columns for the previous release.
 - **One current grade** (`20261102020300_current_grade_matches_journal`): `grading_entries` is the journal,
   `submissions.final_score` its one current value. At COMMIT a submission with entries has its
   latest entry's (highest id) `final_score`; checked when an entry is appended or the
