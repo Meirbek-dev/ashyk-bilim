@@ -3076,7 +3076,9 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("platforms_upload_ids", "derived"),
         ("translations_touch_platform", "derived"),
         ("users_upload_ids", "derived"),
-        // Business steps, known debts: move to the code that issues and renames.
+        // Business steps, known debts: move to the code that issues and renames. The renaming writers re-issue
+        // themselves since 2026-11-08 (`certificates::renaming_writers_reissue_without_the_trigger`): a contract
+        // a release later drops `users_reissue_certificates`.
         ("users_reissue_certificates", "debt"),
         ("users_sync_state", "debt"),
     ];

@@ -159,3 +159,83 @@ async fn a_certificate_keeps_what_it_was_issued_with(pool: PgPool) {
         .unwrap();
     assert_eq!(erased.holder_name, "");
 }
+
+/// The code that renames a person re-issues their certificates itself, so the trigger
+/// `users_reissue_certificates` (kept for the previous release) can go in a contract: with the trigger off, a
+/// profile rename and an erasure still re-issue, and a profile write that keeps the name does not.
+#[ab_testdb::test]
+async fn renaming_writers_reissue_without_the_trigger(pool: PgPool) {
+    let teacher = user(&pool, "Aigerim Teacher").await;
+    let learner = user(&pool, "Dana Learner").await;
+    let course: Uuid = sqlx::query_scalar(
+        "INSERT INTO courses (name, creator_id) VALUES ('Algebra', $1) RETURNING id",
+    )
+    .bind(teacher)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let certification: Uuid =
+        sqlx::query_scalar("INSERT INTO certifications (course_id) VALUES ($1) RETURNING id")
+            .bind(course)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert!(
+        issue_certificate(
+            &pool,
+            CertificationId(certification),
+            UserId(learner),
+            "EEEE-FFFF-GGGG-HHHH",
+            None
+        )
+        .await
+        .unwrap()
+    );
+    sqlx::query("ALTER TABLE users DISABLE TRIGGER users_reissue_certificates")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let read = || get_certificate_by_code(&pool, "EEEE-FFFF-GGGG-HHHH");
+
+    // Same name, other fields: nothing to re-issue.
+    ab_db::identity::update_profile(
+        &pool,
+        UserId(learner),
+        Some("Dana Learner"),
+        Some("bio"),
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(read().await.unwrap().unwrap().reissued_at, None);
+
+    ab_db::identity::update_profile(
+        &pool,
+        UserId(learner),
+        Some("Dana Married-Name"),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    let renamed = read().await.unwrap().unwrap();
+    assert_eq!(renamed.holder_name, "Dana Married-Name");
+    assert!(renamed.reissued_at.is_some());
+
+    let mut tx = pool.begin().await.unwrap();
+    ab_db::identity::anonymise_user(&mut tx, UserId(learner), "deleted-y")
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(read().await.unwrap().unwrap().holder_name, "");
+}

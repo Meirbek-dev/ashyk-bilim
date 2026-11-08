@@ -231,6 +231,26 @@ pub async fn issue_certificate<'e>(
     Ok(inserted.rows_affected() == 1)
 }
 
+/// Re-issue the person's certificates under `holder_name`; returns how many.
+///
+/// A display-name change, or erasure with `''`: the name changes and `reissued_at` is stamped; a certificate already carrying the name is left alone. Called in the transaction that changes the name (ARCHITECTURE §8 "A certificate states
+/// what was issued"); the trigger `users_reissue_certificates` does the same for the previous release.
+pub async fn reissue_for_holder<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    user_id: UserId,
+    holder_name: &str,
+) -> Result<u64> {
+    let done = sqlx::query!(
+        "UPDATE certificate_users SET holder_name = $2, reissued_at = now()
+          WHERE user_id = $1 AND holder_name IS DISTINCT FROM $2",
+        user_id.0,
+        holder_name
+    )
+    .execute(db)
+    .await?;
+    Ok(done.rows_affected())
+}
+
 pub async fn list_user_certificates_for_course(
     pool: &PgPool,
     course_id: CourseId,

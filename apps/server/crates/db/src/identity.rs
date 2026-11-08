@@ -178,6 +178,7 @@ pub async fn update_profile(
     theme: Option<Option<&str>>,
     expected_version: Option<i32>,
 ) -> Result<Option<ProfileRow>> {
+    let mut tx = pool.begin().await?;
     let row = sqlx::query_as!(
         ProfileRow,
         r#"UPDATE users SET
@@ -203,8 +204,14 @@ pub async fn update_profile(
         expected_version,
         organization
     )
-    .fetch_optional(pool)
+    .fetch_optional(&mut *tx)
     .await?;
+    // A new display name re-issues the person's certificates (the name they carry).
+    if let (Some(updated), Some(_)) = (&row, display_name) {
+        crate::certifications::reissue_for_holder(&mut *tx, updated.id, &updated.display_name)
+            .await?;
+    }
+    tx.commit().await?;
     Ok(row)
 }
 
@@ -913,6 +920,7 @@ pub async fn anonymise_user(
     if updated.rows_affected() == 0 {
         return Ok(false);
     }
+    crate::certifications::reissue_for_holder(&mut *tx, user_id, "").await?;
     sqlx::query!("DELETE FROM google_accounts WHERE user_id = $1", user_id.0)
         .execute(&mut *tx)
         .await?;
