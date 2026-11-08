@@ -6,7 +6,7 @@ export function AuthSwitch({ to, redirect }: { to: '/login' | '/signup'; redirec
   return (
     <p className="text-sm text-muted-foreground">
       {to === '/signup' ? m.auth_login_no_account() : m.auth_signup_have_account()}{' '}
-      <Link to={to} search={{ redirect }}>
+      <Link to={to} search={{ redirect }} variant="accent">
         {to === '/signup' ? m.platform_nav_signup() : m.auth_login_submit()}
       </Link>
     </p>

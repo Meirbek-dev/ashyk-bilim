@@ -146,6 +146,11 @@ div.font-heading,
   }
 }
 
+/* Selected text takes the interface's blue, faintly. */
+::selection {
+  background: color-mix(in oklab, var(--highlight) 22%, transparent);
+}
+
 /* Inside the rail the kit's quiet buttons speak the rail's colours. */
 .ab-rail {
   --muted: var(--sidebar-accent);

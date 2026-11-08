@@ -38,7 +38,7 @@ palette classes (`bg-red-500`, G-11), `text-4xl`, `font-bold`, `tracking-*`, `sh
 | `background` / `foreground`                     | page surface and body ink                  | page canvas, all body text                                |
 | `card` / `card-foreground`                      | a raised object surface                    | one object in a grid or list (course, submission)         |
 | `popover` / `popover-foreground`                | floating surface                           | menus, popovers, dialogs, sheets                          |
-| `primary` / `primary-foreground`                | the main action                            | the one primary button, in ink, not colour                |
+| `primary` / `primary-foreground`                | the main action                            | ink fills (badges, the dark band); the primary button is `highlight` |
 | `secondary` / `secondary-foreground`            | quieter actions                            | secondary buttons, neutral chips                          |
 | `muted` / `muted-foreground`                    | low-emphasis surface and text              | skeletons, table header bg, meta lines, hints, timestamps |
 | `accent` / `accent-foreground`                  | interactive hover or highlight             | hovered or focused menu and list rows only                |
@@ -50,7 +50,7 @@ palette classes (`bg-red-500`, G-11), `text-4xl`, `font-bold`, `tracking-*`, `sh
 | `input`                                         | form control boundary, >= 3:1 on background | input, select, checkbox and switch outlines              |
 | `ring`                                          | keyboard focus                             | the focus outline only                                    |
 | `chart-1..5`                                    | data series                                | charts in slot order                                      |
-| `highlight` / `highlight-foreground`, `link`    | the interface's one colour (derived; other themes: primary, foreground) | switch, checkbox, radio, progress fill; `link`: links on the page |
+| `highlight` / `highlight-foreground`, `link`    | the interface's one colour (derived; other themes: primary, foreground) | the one primary button, switch, checkbox, radio, progress, current tab and nav icon, notification count, chart-1; `highlight-soft`: the current nav item and initials; `link`: links on the page and short "way on" links (`Link variant="accent"`) |
 | `sidebar-*`                                     | the shell's navigation column              | the app shell sidebar and bottom bar only                 |
 | `media` / `media-foreground`                    | the video stage (fixed, every theme)       | the video player's frame and controls only                |
 

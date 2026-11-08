@@ -73,7 +73,9 @@ export function VerifyEmailPage() {
           }
         />
       </AuthForm>
-      <Link to="/login">{m.auth_verify_to_login()}</Link>
+      <Link to="/login" variant="accent">
+        {m.auth_verify_to_login()}
+      </Link>
     </AuthPage>
   )
 }

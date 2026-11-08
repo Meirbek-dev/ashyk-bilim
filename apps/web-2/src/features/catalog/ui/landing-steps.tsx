@@ -4,9 +4,23 @@ import { Link } from '#/shared/components/link'
 /** How to start: three steps joined by a hairline. */
 export function LandingSteps() {
   const steps = [
-    { id: 'browse', body: <Link to="/courses">{m.catalog_landing_step_browse()}</Link> },
+    {
+      id: 'browse',
+      body: (
+        <Link to="/courses" variant="accent">
+          {m.catalog_landing_step_browse()}
+        </Link>
+      ),
+    },
     // Sign-up links to sign-in too, so one link serves both halves of the sentence.
-    { id: 'signup', body: <Link to="/signup">{m.catalog_landing_step_signup()}</Link> },
+    {
+      id: 'signup',
+      body: (
+        <Link to="/signup" variant="accent">
+          {m.catalog_landing_step_signup()}
+        </Link>
+      ),
+    },
     { id: 'learn', body: m.catalog_landing_step_learn() },
   ]
   return (

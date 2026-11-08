@@ -25,7 +25,7 @@ export function NotificationBell() {
       {count > 0 ? (
         <span
           aria-hidden
-          className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs leading-none text-primary-foreground tabular-nums"
+          className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-highlight px-1 text-xs leading-none text-highlight-foreground tabular-nums"
         >
           {badgeCount(count, formatNumber)}
         </span>

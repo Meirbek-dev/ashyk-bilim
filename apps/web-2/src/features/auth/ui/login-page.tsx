@@ -8,13 +8,13 @@ import { ApiError } from '#/shared/api/errors'
 import type { LoginRequest } from '#/shared/api/gen/types.gen'
 import { vLoginRequest } from '#/shared/api/gen/valibot.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
-import { Link } from '#/shared/components/link'
 import { SubmitButton } from '#/shared/components/submit-button'
 import { Button } from '#/shared/ui/button'
 
 import { loginOptions } from '../queries'
 import { AuthForm } from './auth-form'
 import { AuthSwitch } from './auth-switch'
+import { ForgotLink } from './forgot-link'
 import { AuthPage } from './auth-page'
 import { GoogleSignIn } from './google-sign-in'
 import { LoginError } from './login-error'
@@ -86,7 +86,7 @@ export function LoginPage() {
                 />
               )}
             </form.AppField>
-            <Link to="/reset-password">{m.auth_login_forgot()}</Link>
+            <ForgotLink />
           </>
         )}
         <LoginError error={login.error} googleError={totpStep ? undefined : search.error} />

@@ -22,7 +22,9 @@ export function ResetPasswordPage() {
       ) : (
         <ResetConfirmForm login={login} code={search.code} onRestart={() => setLogin(undefined)} />
       )}
-      <Link to="/login">{m.auth_verify_to_login()}</Link>
+      <Link to="/login" variant="accent">
+        {m.auth_verify_to_login()}
+      </Link>
     </AuthPage>
   )
 }

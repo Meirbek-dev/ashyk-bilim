@@ -47,6 +47,7 @@
   /* The interface's one colour (never set by themes) */
   --color-highlight: var(--highlight);
   --color-highlight-foreground: var(--highlight-foreground);
+  --color-highlight-soft: var(--highlight-soft);
   --color-link: var(--link);
 
   /* Derived meaning (never set by themes) */
@@ -145,8 +146,9 @@
 
   /* ---- theme: everything in this group may be overridden by public/themes/<slug>.css ---- */
   /* Plain neutrals with no tint: white with near-black ink by day, near-black with off-white ink by night, hairlines
-     between things. Uploads and meaning colours stand out, not the ground. Primary actions are ink, not colour; the one
-     colour of the interface is blue (--highlight, --link below). Rules: docs/web/DESIGN.md. */
+     between things. Uploads and meaning colours stand out, not the ground. The one
+     colour of the interface is blue (--highlight, --link below): the primary button, checks, progress, the current
+     tab and nav item, charts, links. Rules: docs/web/DESIGN.md. */
   --background: light-dark(oklch(1 0 0), oklch(0.145 0 0));
   --foreground: light-dark(oklch(0.205 0 0), oklch(0.945 0 0));
   --card: light-dark(oklch(1 0 0), oklch(0.17 0 0));
@@ -165,8 +167,8 @@
   --border: light-dark(oklch(0.922 0 0), oklch(0.26 0 0));
   --input: light-dark(oklch(0.675 0 0), oklch(0.5 0 0));
   --ring: light-dark(oklch(0.546 0.215 262.9), oklch(0.72 0.14 255));
-  --chart-1: light-dark(oklch(0.38 0 0), oklch(0.78 0 0));
-  --chart-2: light-dark(oklch(0.546 0.215 262.9), oklch(0.72 0.14 255));
+  --chart-1: light-dark(oklch(0.546 0.215 262.9), oklch(0.72 0.14 255));
+  --chart-2: light-dark(oklch(0.38 0 0), oklch(0.78 0 0));
   --chart-3: light-dark(oklch(0.55 0.1 185), oklch(0.74 0.09 185));
   --chart-4: light-dark(oklch(0.68 0.13 75), oklch(0.8 0.12 80));
   --chart-5: light-dark(oklch(0.52 0.15 300), oklch(0.72 0.11 300));
@@ -191,6 +193,11 @@
   /* The interface's one colour. Fill: switches, checkboxes, radios and progress, under white. Text: links, on the page.
      A theme's own colour takes over below. */
   --highlight: oklch(0.546 0.215 262.9);
+  /* A faint wash of it under ink: the current nav item, initials. Stronger by night, where 10% vanishes. */
+  --highlight-soft: light-dark(
+    color-mix(in oklab, var(--highlight) 10%, var(--background)),
+    color-mix(in oklab, var(--highlight) 24%, var(--background))
+  );
   --highlight-foreground: oklch(1 0 0);
   --link: light-dark(oklch(0.546 0.215 262.9), oklch(0.72 0.14 255));
 
