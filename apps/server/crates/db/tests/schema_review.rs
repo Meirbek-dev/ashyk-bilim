@@ -2998,6 +2998,8 @@ async fn children_of_a_course_scoped_parent_bind_the_course(pool: PgPool) {
         ("certificate_users", "certifications"),
         // A notification's course is informational and goes on its own.
         ("notifications", "activities"),
+        // A personal message's context is a link; the course and the activity go on their own.
+        ("messages", "activities"),
         // Rollups recomputed nightly from the facts: nothing reads the pair as truth.
         ("daily_assessment_metrics", "activities"),
         ("daily_assessment_metrics", "assessments"),

@@ -1,0 +1,157 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT r.id AS \"id!: MessageReportId\", r.message_id AS \"message_id!: MessageId\",\n                  m.conversation_id AS \"conversation_id!: ConversationId\",\n                  r.reported_by AS \"reported_by!: UserId\", m.user_id AS \"author_id!: UserId\",\n                  r.reason AS \"reason!\", r.body_snapshot AS \"body_snapshot!\", r.status AS \"status!\",\n                  r.resolved_by AS \"resolved_by?: UserId\", r.resolution AS \"resolution?\",\n                  (extract(epoch FROM r.resolved_at))::bigint AS \"resolved_at?\",\n                  (extract(epoch FROM r.created_at))::bigint AS \"created_at!\",\n                  EXISTS (SELECT 1 FROM message_bans b WHERE b.user_id = m.user_id) AS \"author_banned!\"\n           FROM message_reports r JOIN messages m ON m.id = r.message_id\n           WHERE r.id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!: MessageReportId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "message_reports",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "message_id!: MessageId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "message_reports",
+            "name": "message_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "conversation_id!: ConversationId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "messages",
+            "name": "conversation_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "reported_by!: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "message_reports",
+            "name": "reported_by"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "author_id!: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "messages",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "reason!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "message_reports",
+            "name": "reason"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "body_snapshot!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "message_reports",
+            "name": "body_snapshot"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "status!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "message_reports",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "resolved_by?: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "message_reports",
+            "name": "resolved_by"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "resolution?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "message_reports",
+            "name": "resolution"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "resolved_at?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 12,
+        "name": "author_banned!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "bd44616b6105988a727f9b551fec5ecb01923d165db3c2643447f472ed21010a"
+}

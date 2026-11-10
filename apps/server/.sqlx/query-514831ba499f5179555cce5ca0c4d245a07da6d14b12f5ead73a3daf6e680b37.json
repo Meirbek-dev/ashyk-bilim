@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE messages SET status = 'deleted', body = '', deleted_at = coalesce(deleted_at, now())\n         WHERE user_id = $1 AND status = 'active'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "514831ba499f5179555cce5ca0c4d245a07da6d14b12f5ead73a3daf6e680b37"
+}

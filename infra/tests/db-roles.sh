@@ -82,6 +82,12 @@ probe() {
   check ashyq_ro denied "SELECT content FROM course_discussions"
   check ashyq_ro denied "SELECT overall_feedback FROM grading_entries"
   check ashyq_ro denied "SELECT memory_text FROM ai_student_memory"
+  # Personal messages (docs/DIALOGS.md 7): who wrote to whom and when stays readable, never the text.
+  check ashyq_ro ok "SELECT id, conversation_id, user_id, status, created_at FROM messages"
+  check ashyq_ro denied "SELECT body FROM messages"
+  check ashyq_ro denied "SELECT body_snapshot FROM message_reports"
+  check ashyq_ro denied "SELECT reason FROM message_reports"
+  check ashyq_ro denied "SELECT reason FROM message_bans"
   # Opt-in for whole tables: ashyq_ro reads every column only of the tables reviewed here as holding no one's free
   # text or contact data. A new table (default privileges grant it) fails until it is added here or its columns
   # are hidden in apply_role_grants.
@@ -90,7 +96,7 @@ probe() {
       FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname IN ('public', 'core', 'learning', 'ai', 'analytics', 'ops') AND c.relkind IN ('r', 'p')
         AND NOT c.relispartition AND has_table_privilege('ashyq_ro', c.oid, 'SELECT')
-        AND c.relname <> ALL (string_to_array('_sqlx_migrations activities activity_kinds activity_progress ai_approvals ai_course_analyses ai_course_settings ai_eval_results ai_events ai_feature_switches ai_lecture_reviews ai_remediation_sessions ai_runs ai_token_ledger ai_token_reservations ai_work_embeddings analytics_events analytics_saved_views assessment_access_usergroups assessment_access_users assessment_audit_events assessment_items assessment_versions assessments block_uploads blocks bulk_actions certifications chapters code_runs collection_courses collection_staff collections completions concept_mastery concept_prerequisites concept_tags content_chunks content_index_state course_concepts course_progress course_staff course_update_activities course_updates courses daily_assessment_metrics daily_course_engagement daily_course_metrics daily_platform_metrics daily_teacher_metrics daily_user_course_progress discussion_reactions enrolment_events enrolments feature_activations file_submissions gamification_completions gamification_config gamification_profiles job_schedules learner_risk_snapshots mastery_evidence notification_kinds notification_opt_outs notifications post_uploads role_permissions roles schema_skipped_checks trail_legacy_marks translatable_fields translations upload_purposes uploads user_roles usergroup_courses usergroup_members usergroups xp_transactions', ' '));
+        AND c.relname <> ALL (string_to_array('_sqlx_migrations activities activity_kinds activity_progress ai_approvals ai_course_analyses ai_course_settings ai_eval_results ai_events ai_feature_switches ai_lecture_reviews ai_remediation_sessions ai_runs ai_token_ledger ai_token_reservations ai_work_embeddings analytics_events analytics_saved_views assessment_access_usergroups assessment_access_users assessment_audit_events assessment_items assessment_versions assessments block_uploads blocks bulk_actions certifications chapters code_runs collection_courses collection_staff collections completions concept_mastery concept_prerequisites concept_tags content_chunks content_index_state conversation_members conversations course_concepts course_progress course_staff course_update_activities course_updates courses daily_assessment_metrics daily_course_engagement daily_course_metrics daily_platform_metrics daily_teacher_metrics daily_user_course_progress discussion_reactions enrolment_events enrolments feature_activations file_submissions gamification_completions gamification_config gamification_profiles job_schedules learner_risk_snapshots mastery_evidence notification_kinds notification_opt_outs notifications post_uploads role_permissions roles schema_skipped_checks trail_legacy_marks translatable_fields translations upload_purposes uploads user_roles usergroup_courses usergroup_members usergroups xp_transactions', ' '));
       IF unreviewed IS NOT NULL THEN RAISE EXCEPTION 'ashyq_ro reads every column of unreviewed %', unreviewed; END IF;
     END \$\$"
   # Schema review 43: the tables sit in their schemas, found through the database's search_path.

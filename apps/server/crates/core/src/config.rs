@@ -83,6 +83,9 @@ pub struct RetentionConfig {
     /// Grace period of a deleted course: the purge hard-deletes it (learner work and grades
     /// included) after this many days; `ashyq admin restore-course` brings it back before.
     pub deleted_courses_days: i32,
+    /// Personal conversations without a new message for this long are
+    /// deleted whole (docs/DIALOGS.md 7; 3 years).
+    pub messages_days: i32,
 }
 
 impl Default for RetentionConfig {
@@ -95,6 +98,7 @@ impl Default for RetentionConfig {
             ai_events_days: 180,
             ai_records_days: 400,
             deleted_courses_days: 30,
+            messages_days: 1095,
         }
     }
 }
@@ -732,6 +736,7 @@ impl Config {
             r.ai_events_days,
             r.ai_records_days,
             r.deleted_courses_days,
+            r.messages_days,
         ]
         .iter()
         .any(|days| *days < 1)

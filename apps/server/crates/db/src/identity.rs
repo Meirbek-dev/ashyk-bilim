@@ -1016,6 +1016,38 @@ pub async fn erase_personal_data(tx: &mut sqlx::PgConnection, user_id: UserId) -
         .execute(&mut *tx)
         .await?
         .rows_affected();
+    removed += erase_messages(tx, uid).await?;
+    Ok(removed)
+}
+
+/// Personal messages (docs/DIALOGS.md 7): the person's messages become
+/// tombstones (the other side keeps the conversation, with a deleted user),
+/// the copies of their text in reports are blanked, their own reports and
+/// send ban go.
+async fn erase_messages(tx: &mut sqlx::PgConnection, uid: uuid::Uuid) -> Result<u64> {
+    let mut removed = sqlx::query!(
+        "UPDATE messages SET status = 'deleted', body = '', deleted_at = coalesce(deleted_at, now())
+         WHERE user_id = $1 AND status = 'active'",
+        uid
+    )
+    .execute(&mut *tx)
+    .await?
+    .rows_affected();
+    sqlx::query!(
+        "UPDATE message_reports SET body_snapshot = ''
+         WHERE message_id IN (SELECT id FROM messages WHERE user_id = $1)",
+        uid
+    )
+    .execute(&mut *tx)
+    .await?;
+    removed += sqlx::query!("DELETE FROM message_reports WHERE reported_by = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    removed += sqlx::query!("DELETE FROM message_bans WHERE user_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
     Ok(removed)
 }
 

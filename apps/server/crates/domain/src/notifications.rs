@@ -10,8 +10,9 @@
 
 use ab_core::assessments::NotificationType;
 use ab_core::id::{
-    ActivityId, AiRemediationSessionId, AssessmentId, CourseId, CourseUpdateId, DiscussionId,
-    FileAttemptId, FileSubmissionId, NotificationId, SubmissionId, UserId,
+    ActivityId, AiRemediationSessionId, AssessmentId, ConversationId, CourseId, CourseUpdateId,
+    DiscussionId, FileAttemptId, FileSubmissionId, MessageReportId, NotificationId, SubmissionId,
+    UserId,
 };
 use ab_core::{Error, FieldError, Result};
 use ab_db::notifications::NotificationRow;
@@ -172,6 +173,12 @@ pub enum NotificationPayload {
         session_id: AiRemediationSessionId,
         gate: bool,
     },
+    /// An administrator decided on a personal message the recipient
+    /// reported (docs/DIALOGS.md 6); the message's author is never told.
+    MessageReportResolved {
+        report_id: MessageReportId,
+        conversation_id: ConversationId,
+    },
 }
 
 impl NotificationPayload {
@@ -189,6 +196,7 @@ impl NotificationPayload {
             Self::CourseTeamAdded { .. } => NotificationType::CourseTeamAdded,
             Self::WorkSubmitted { .. } => NotificationType::WorkSubmitted,
             Self::RemediationAssigned { .. } => NotificationType::RemediationAssigned,
+            Self::MessageReportResolved { .. } => NotificationType::MessageReportResolved,
         }
     }
 }

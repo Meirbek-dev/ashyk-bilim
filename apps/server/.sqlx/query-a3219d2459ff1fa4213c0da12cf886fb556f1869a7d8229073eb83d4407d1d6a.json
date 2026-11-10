@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id!: MessageId\" FROM messages WHERE user_id = $1 AND client_key = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!: MessageId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "messages",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a3219d2459ff1fa4213c0da12cf886fb556f1869a7d8229073eb83d4407d1d6a"
+}

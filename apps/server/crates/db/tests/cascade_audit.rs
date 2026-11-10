@@ -43,6 +43,26 @@ const ATTEMPT_DELETE: &str = "only preview attempts are deleted on their own";
 
 /// `(child table, child columns, parent table)` → reason.
 const ALLOWED: &[(&str, &str, &str, &str)] = &[
+    // Personal messages (docs/DIALOGS.md 7): only retention deletes a conversation, after 3 years without a
+    // message; nothing else deletes one or a message (a delete by the author is a tombstone).
+    (
+        "conversation_members",
+        "conversation_id",
+        "conversations",
+        "retention deletes a conversation 3 years after its last message",
+    ),
+    (
+        "messages",
+        "conversation_id",
+        "conversations",
+        "retention deletes a conversation 3 years after its last message",
+    ),
+    (
+        "message_reports",
+        "message_id",
+        "messages",
+        "a message is deleted only with its conversation (retention); reports live with it",
+    ),
     (
         "activity_progress",
         "course_id,activity_id",

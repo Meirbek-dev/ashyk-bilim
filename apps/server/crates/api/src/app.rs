@@ -72,6 +72,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "file-submissions", description = "File-submission activities: authoring, attempts, grading"),
         (name = "progress", description = "Personal trail and learner-facing course state"),
         (name = "discussions", description = "Course discussions: posts, replies, reactions, moderation"),
+        (name = "conversations", description = "Personal messages: conversations of two people, reports and send bans"),
         (name = "certifications", description = "Certification templates, issued certificates, public verification"),
         (name = "gamification", description = "XP, levels, streaks, leaderboard; admin awards and policy"),
         (name = "work-queue", description = "Unified inbox: ranked learner and teacher work items"),
@@ -94,6 +95,7 @@ fn api_router() -> OpenApiRouter<AppState> {
         .merge(file_submission_routes())
         .merge(progress_routes())
         .merge(discussion_routes())
+        .merge(conversation_routes())
         .merge(certification_routes())
         .merge(gamification_routes())
         .merge(work_queue_routes())
@@ -267,6 +269,23 @@ fn discussion_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::discussions::toggle_like))
         .routes(routes!(routes::discussions::toggle_dislike))
         .routes(routes!(routes::discussions::list_replies))
+}
+
+fn conversation_routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(routes::conversations::list_conversations))
+        .routes(routes!(routes::conversations::conversations_unread_count))
+        .routes(routes!(routes::conversations::conversation_with_peer))
+        .routes(routes!(routes::conversations::message_recipients))
+        .routes(routes!(routes::conversations::list_messages))
+        .routes(routes!(routes::conversations::send_message))
+        .routes(routes!(routes::conversations::mark_conversation_read))
+        .routes(routes!(routes::conversations::delete_message))
+        .routes(routes!(routes::conversations::report_message))
+        .routes(routes!(routes::conversations::list_message_reports))
+        .routes(routes!(routes::conversations::get_message_report))
+        .routes(routes!(routes::conversations::resolve_message_report))
+        .routes(routes!(routes::conversations::delete_message_ban))
 }
 
 fn progress_routes() -> OpenApiRouter<AppState> {

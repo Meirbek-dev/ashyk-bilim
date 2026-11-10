@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH people AS (\n               SELECT cs.course_id, cs.user_id FROM course_staff cs WHERE cs.status = 'active'\n               UNION SELECT c.id, c.creator_id FROM courses c WHERE c.creator_id IS NOT NULL\n               UNION SELECT m.course_id, m.user_id FROM learning.course_members m\n           )\n           SELECT c.id AS \"id!: CourseId\", c.name AS \"name!\"\n           FROM courses c\n           WHERE c.deleted_at IS NULL AND c.archived_at IS NULL\n             AND EXISTS (SELECT 1 FROM people p WHERE p.course_id = c.id AND p.user_id = $1)\n             AND EXISTS (SELECT 1 FROM people p WHERE p.course_id = c.id AND p.user_id = $2)\n           ORDER BY c.id DESC\n           LIMIT 3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "name"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a8d93b430f4e9df99914fd8d98bc9572dce3a3a1fdaa8582c9d21bac950e6a22"
+}

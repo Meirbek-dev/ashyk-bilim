@@ -1889,6 +1889,51 @@ export type ContributorRole = 'maintainer' | 'contributor' | 'reporter';
 export type ContributorStatus = 'pending' | 'active' | 'inactive';
 
 /**
+ * One row of the caller's conversation list.
+ */
+export type Conversation = {
+    allowed_actions: Array<ConversationAction>;
+    deny_reason: DenyReason | null;
+    id: ConversationId;
+    last_message: LastMessage | null;
+    peer: Person;
+    /**
+     * The other side's active messages after the caller's read pointer.
+     */
+    unread_count: number;
+};
+
+/**
+ * What the caller may do in a conversation.
+ */
+export type ConversationAction = 'send';
+
+export type ConversationId = string;
+
+export type ConversationPage = {
+    items: Array<Conversation>;
+    next_cursor: MessageId | null;
+};
+
+/**
+ * `GET /me/conversations/unread-count`.
+ */
+export type ConversationUnreadCount = {
+    /**
+     * Conversations holding an unread message (the top bar badge).
+     */
+    conversations: number;
+};
+
+/**
+ * LIVE: a conversation of the recipient changed otherwise (a message
+ * deleted, a side's read pointer moved).
+ */
+export type ConversationUpdated = {
+    conversation_id: ConversationId;
+};
+
+/**
  * The answer key shown after grading: correct option ids (choice) or the
  * expected pairs (matching); `null` for kinds without a key.
  */
@@ -2698,6 +2743,11 @@ export type DeleteAccountRequest = {
  */
 export type DenialReason = 'course_archived' | 'staff_preview';
 
+/**
+ * Why sending is closed (the composer shows it instead of the input).
+ */
+export type DenyReason = 'no_relation' | 'banned' | 'peer_unavailable';
+
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export type Direction = 'up' | 'down' | 'flat';
@@ -3085,7 +3135,7 @@ export type Enrollments = {
 /**
  * Stable, closed set of machine-readable error codes.
  */
-export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'activity-media-missing' | 'activity-has-learner-work' | 'course-has-learner-work' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'account-has-roles' | 'account-deleted' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'enrollment-required' | 'discussion-enrollment-required' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable' | 'concept-cycle';
+export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'activity-media-missing' | 'activity-has-learner-work' | 'course-has-learner-work' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'account-has-roles' | 'account-deleted' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'enrollment-required' | 'discussion-enrollment-required' | 'message-recipient-not-allowed' | 'messages-banned' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable' | 'concept-cycle';
 
 export type EvalDashboard = {
     evals: EvalSummary;
@@ -4182,6 +4232,20 @@ export type LanguageRequest = {
 };
 
 /**
+ * The latest message of a conversation, as its list row quotes it.
+ */
+export type LastMessage = {
+    created_at_unix: UnixTime;
+    deleted: boolean;
+    /**
+     * Plain text, at most 140 characters; empty when deleted.
+     */
+    excerpt: string;
+    id: MessageId;
+    user_id: UserId;
+};
+
+/**
  * Late-submission handling.
  */
 export type LatePolicy = {
@@ -4387,6 +4451,13 @@ export type LoginRequest = {
     totp_code?: string;
 };
 
+export type MarkReadRequest = {
+    /**
+     * The latest message shown; the pointer only moves forward.
+     */
+    last_read_message_id: MessageId;
+};
+
 /**
  * What the learner and the teacher see.
  */
@@ -4454,6 +4525,73 @@ export type MediaContent = {
     uri?: string;
 };
 
+export type Message = {
+    allowed_actions: Array<MessageAction>;
+    /**
+     * Markdown; empty when deleted.
+     */
+    body: string;
+    context: MessageContext | null;
+    conversation_id: ConversationId;
+    created_at_unix: UnixTime;
+    deleted: boolean;
+    id: MessageId;
+    /**
+     * The author.
+     */
+    user_id: UserId;
+};
+
+/**
+ * What the caller may do to a message.
+ */
+export type MessageAction = 'delete' | 'report';
+
+/**
+ * What a message is about: where the writer started from.
+ */
+export type MessageContext = {
+    activity_id: ActivityId | null;
+    activity_name: string | null;
+    activity_type: ActivityType | null;
+    course_id: CourseId;
+    /**
+     * Null once the course is gone.
+     */
+    course_name: string | null;
+};
+
+/**
+ * LIVE: a personal message was sent in a conversation of the recipient
+ * (to both sides: the author's other tabs follow).
+ */
+export type MessageCreated = {
+    conversation_id: ConversationId;
+    message_id: MessageId;
+    /**
+     * The author.
+     */
+    user_id: UserId;
+};
+
+export type MessageId = string;
+
+/**
+ * A page of messages, newest first, with the conversation's state.
+ */
+export type MessagePage = {
+    allowed_actions: Array<ConversationAction>;
+    deny_reason: DenyReason | null;
+    items: Array<Message>;
+    last_read_message_id: MessageId | null;
+    next_cursor: MessageId | null;
+    peer: Person;
+    /**
+     * Up to three live courses both sides belong to, newest first.
+     */
+    shared_courses: Array<SharedCourse>;
+};
+
 /**
  * A message placeholder, including lists of codes such as missing event sources.
  */
@@ -4464,6 +4602,50 @@ export type MessageParam = string | number | Array<string>;
  */
 export type MessageParams = {
     [key: string]: MessageParam;
+};
+
+/**
+ * A report as administrators list it.
+ */
+export type MessageReport = {
+    author: Person;
+    /**
+     * The author is banned from sending now.
+     */
+    author_banned: boolean;
+    /**
+     * The message's text when it was reported.
+     */
+    body_snapshot: string;
+    conversation_id: ConversationId;
+    created_at_unix: UnixTime;
+    id: MessageReportId;
+    message_id: MessageId;
+    reason: string;
+    reporter: Person;
+    resolution: string | null;
+    resolved_at_unix: UnixTime | null;
+    resolved_by: UserId | null;
+    status: ReportStatus;
+};
+
+/**
+ * One report with the messages around the reported one.
+ */
+export type MessageReportDetail = {
+    /**
+     * Up to five messages on each side of the reported one, in their
+     * current state, oldest first (the reported one included).
+     */
+    context: Array<Message>;
+    report: MessageReport;
+};
+
+export type MessageReportId = string;
+
+export type MessageReportPage = {
+    items: Array<MessageReport>;
+    next_cursor: MessageReportId | null;
 };
 
 export type MetricCard = {
@@ -4695,6 +4877,10 @@ export type NotificationPayload = {
     gate: boolean;
     session_id: AiRemediationSessionId;
     type: 'remediation_assigned';
+} | {
+    conversation_id: ConversationId;
+    report_id: MessageReportId;
+    type: 'message_report_resolved';
 };
 
 export type NotificationPreferences = {
@@ -4726,6 +4912,10 @@ export type NotificationSettings = {
     discussion_reply: boolean;
     grade_published: boolean;
     /**
+     * An administrator decided on a personal message the user reported.
+     */
+    message_report_resolved?: boolean;
+    /**
      * A teacher assigned the user a remediation (разбор ошибок).
      */
     remediation_assigned?: boolean;
@@ -4739,7 +4929,7 @@ export type NotificationSettings = {
 /**
  * In-app notification types (S-07; `notifications.kind`).
  */
-export type NotificationType = 'grade_published' | 'submission_returned' | 'deadline_extended' | 'deadline_approaching' | 'course_update' | 'discussion_reply' | 'contributor_application' | 'discussion_post' | 'course_team_added' | 'work_submitted' | 'remediation_assigned';
+export type NotificationType = 'grade_published' | 'submission_returned' | 'deadline_extended' | 'deadline_approaching' | 'course_update' | 'discussion_reply' | 'contributor_application' | 'discussion_post' | 'course_team_added' | 'work_submitted' | 'remediation_assigned' | 'message_report_resolved';
 
 export type OpenTextBody = {
     min_words: number | null;
@@ -4791,6 +4981,30 @@ export type PasswordResetRequest = {
      * Username or email.
      */
     login: string;
+};
+
+/**
+ * The caller and one person, before or after their first message.
+ */
+export type PeerConversation = {
+    allowed_actions: Array<ConversationAction>;
+    conversation_id: ConversationId | null;
+    deny_reason: DenyReason | null;
+    peer: Person;
+};
+
+/**
+ * A person as conversations show them (no email).
+ */
+export type Person = {
+    /**
+     * False once the account is disabled or erased: nobody can write to it.
+     */
+    available: boolean;
+    avatar_key: string | null;
+    display_name: string | null;
+    id: UserId;
+    username: string;
 };
 
 export type Platform = {
@@ -5543,6 +5757,30 @@ export type RecentResult = {
     submission_id: SubmissionId | null;
 };
 
+/**
+ * Someone the caller may start a conversation with, and through which
+ * course.
+ */
+export type Recipient = {
+    course_id: CourseId;
+    course_name: string;
+    person: Person;
+    /**
+     * The person's place in that course.
+     */
+    role: RecipientRole;
+};
+
+export type RecipientPage = {
+    items: Array<Recipient>;
+    /**
+     * Pass back as `cursor` (an offset).
+     */
+    next_cursor: string | null;
+};
+
+export type RecipientRole = 'teacher' | 'observer' | 'learner';
+
 export type Recommendation = {
     action?: string;
     priority?: Level;
@@ -5692,11 +5930,28 @@ export type ReorderItemsRequest = {
     items: Array<AssessmentItemId>;
 };
 
+export type ReportMessageRequest = {
+    reason: string;
+};
+
+export type ReportStatus = 'open' | 'resolved';
+
 /**
  * Ask for a fresh email verification code.
  */
 export type ResendVerificationRequest = {
     email: string;
+};
+
+export type ResolveReportRequest = {
+    /**
+     * Also ban the message's author from sending.
+     */
+    ban?: boolean;
+    /**
+     * What was decided (the reporter is told that it was decided, not this).
+     */
+    resolution: string;
 };
 
 /**
@@ -6238,6 +6493,28 @@ export type SearchResults = {
     users: Array<UserHit>;
 };
 
+export type SendMessageRequest = {
+    /**
+     * An activity of `course_id` (or of its own course when `course_id`
+     * is left out).
+     */
+    activity_id?: ActivityId;
+    /**
+     * Markdown, 1..=4000 characters after trimming.
+     */
+    body: string;
+    /**
+     * A key the client makes per message: a resend with the same key
+     * returns the stored message instead of sending twice.
+     */
+    client_key: string;
+    /**
+     * What the message is about (where the writer started from).
+     */
+    course_id?: CourseId;
+    to_user_id: UserId;
+};
+
 /**
  * The current session, as the frontend sees it (client-side permission
  * gating mirrors the legacy `Session` contract).
@@ -6337,6 +6614,14 @@ export type SetUserStatusRequest = {
 };
 
 export type Severity = 'info' | 'warning' | 'critical';
+
+/**
+ * A course the two sides share.
+ */
+export type SharedCourse = {
+    id: CourseId;
+    name: string;
+};
 
 export type SignedDownload = {
     content_type: string;
@@ -7365,6 +7650,22 @@ export type UserStreamEvent = {
      */
     sent_at: number;
 } | {
+    event: 'message.created';
+    event_id: string;
+    payload: MessageCreated;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+} | {
+    event: 'conversation.updated';
+    event_id: string;
+    payload: ConversationUpdated;
+    /**
+     * Unix seconds.
+     */
+    sent_at: number;
+} | {
     code: ErrorCode;
     event: 'closed';
 };
@@ -7960,6 +8261,163 @@ export type MoveActivityResponses = {
 };
 
 export type MoveActivityResponse = MoveActivityResponses[keyof MoveActivityResponses];
+
+export type DeleteMessageBanData = {
+    body?: never;
+    path: {
+        /**
+         * The banned person
+         */
+        user_id: UserId;
+    };
+    query?: never;
+    url: '/api/v2/admin/message-bans/{user_id}';
+};
+
+export type DeleteMessageBanErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * No `admin.users`
+     */
+    403: Problem;
+    /**
+     * No ban
+     */
+    404: Problem;
+};
+
+export type DeleteMessageBanError = DeleteMessageBanErrors[keyof DeleteMessageBanErrors];
+
+export type DeleteMessageBanResponses = {
+    /**
+     * Lifted
+     */
+    204: void;
+};
+
+export type DeleteMessageBanResponse = DeleteMessageBanResponses[keyof DeleteMessageBanResponses];
+
+export type ListMessageReportsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Only reports in this state.
+         */
+        status?: ReportStatus;
+        cursor?: MessageReportId;
+        /**
+         * 1..=50, default 20.
+         */
+        limit?: number;
+    };
+    url: '/api/v2/admin/message-reports';
+};
+
+export type ListMessageReportsErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * No `admin.users`
+     */
+    403: Problem;
+};
+
+export type ListMessageReportsError = ListMessageReportsErrors[keyof ListMessageReportsErrors];
+
+export type ListMessageReportsResponses = {
+    /**
+     * Page of reports
+     */
+    200: MessageReportPage;
+};
+
+export type ListMessageReportsResponse = ListMessageReportsResponses[keyof ListMessageReportsResponses];
+
+export type GetMessageReportData = {
+    body?: never;
+    path: {
+        /**
+         * Report id
+         */
+        report_id: MessageReportId;
+    };
+    query?: never;
+    url: '/api/v2/admin/message-reports/{report_id}';
+};
+
+export type GetMessageReportErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * No `admin.users`
+     */
+    403: Problem;
+    /**
+     * Unknown report
+     */
+    404: Problem;
+};
+
+export type GetMessageReportError = GetMessageReportErrors[keyof GetMessageReportErrors];
+
+export type GetMessageReportResponses = {
+    /**
+     * The report and its context
+     */
+    200: MessageReportDetail;
+};
+
+export type GetMessageReportResponse = GetMessageReportResponses[keyof GetMessageReportResponses];
+
+export type ResolveMessageReportData = {
+    body: ResolveReportRequest;
+    path: {
+        /**
+         * Report id
+         */
+        report_id: MessageReportId;
+    };
+    query?: never;
+    url: '/api/v2/admin/message-reports/{report_id}/resolve';
+};
+
+export type ResolveMessageReportErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * No `admin.users`
+     */
+    403: Problem;
+    /**
+     * Unknown report
+     */
+    404: Problem;
+    /**
+     * Already resolved
+     */
+    409: Problem;
+};
+
+export type ResolveMessageReportError = ResolveMessageReportErrors[keyof ResolveMessageReportErrors];
+
+export type ResolveMessageReportResponses = {
+    /**
+     * Resolved
+     */
+    200: MessageReport;
+};
+
+export type ResolveMessageReportResponse = ResolveMessageReportResponses[keyof ResolveMessageReportResponses];
 
 export type AdminEvalsData = {
     body?: never;
@@ -12888,6 +13346,87 @@ export type UpdateCollectionResponses = {
 
 export type UpdateCollectionResponse = UpdateCollectionResponses[keyof UpdateCollectionResponses];
 
+export type ListMessagesData = {
+    body?: never;
+    path: {
+        /**
+         * Conversation id
+         */
+        conversation_id: ConversationId;
+    };
+    query?: {
+        /**
+         * The previous page's `next_cursor` (older messages).
+         */
+        cursor?: MessageId;
+        /**
+         * 1..=50, default 30.
+         */
+        limit?: number;
+    };
+    url: '/api/v2/conversations/{conversation_id}/messages';
+};
+
+export type ListMessagesErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Unknown, or not the caller's
+     */
+    404: Problem;
+};
+
+export type ListMessagesError = ListMessagesErrors[keyof ListMessagesErrors];
+
+export type ListMessagesResponses = {
+    /**
+     * Page of messages
+     */
+    200: MessagePage;
+};
+
+export type ListMessagesResponse = ListMessagesResponses[keyof ListMessagesResponses];
+
+export type MarkConversationReadData = {
+    body: MarkReadRequest;
+    path: {
+        /**
+         * Conversation id
+         */
+        conversation_id: ConversationId;
+    };
+    query?: never;
+    url: '/api/v2/conversations/{conversation_id}/read';
+};
+
+export type MarkConversationReadErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Unknown, or not the caller's
+     */
+    404: Problem;
+    /**
+     * Not a message of this conversation
+     */
+    422: Problem;
+};
+
+export type MarkConversationReadError = MarkConversationReadErrors[keyof MarkConversationReadErrors];
+
+export type MarkConversationReadResponses = {
+    /**
+     * Saved
+     */
+    204: void;
+};
+
+export type MarkConversationReadResponse = MarkConversationReadResponses[keyof MarkConversationReadResponses];
+
 export type DeleteCourseUpdateData = {
     body?: never;
     headers?: {
@@ -16271,6 +16810,107 @@ export type MyCertificatesPageResponses = {
 
 export type MyCertificatesPageResponse = MyCertificatesPageResponses[keyof MyCertificatesPageResponses];
 
+export type ListConversationsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * The previous page's `next_cursor`.
+         */
+        cursor?: MessageId;
+        /**
+         * 1..=50, default 20.
+         */
+        limit?: number;
+        /**
+         * Only conversations with unread messages (default false).
+         */
+        unread_only?: boolean;
+    };
+    url: '/api/v2/me/conversations';
+};
+
+export type ListConversationsErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Bad `limit`
+     */
+    422: Problem;
+};
+
+export type ListConversationsError = ListConversationsErrors[keyof ListConversationsErrors];
+
+export type ListConversationsResponses = {
+    /**
+     * Page of conversations
+     */
+    200: ConversationPage;
+};
+
+export type ListConversationsResponse = ListConversationsResponses[keyof ListConversationsResponses];
+
+export type ConversationWithPeerData = {
+    body?: never;
+    path: {
+        /**
+         * The other person
+         */
+        user_id: UserId;
+    };
+    query?: never;
+    url: '/api/v2/me/conversations/peers/{user_id}';
+};
+
+export type ConversationWithPeerErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Unknown person, or the caller
+     */
+    404: Problem;
+};
+
+export type ConversationWithPeerError = ConversationWithPeerErrors[keyof ConversationWithPeerErrors];
+
+export type ConversationWithPeerResponses = {
+    /**
+     * Conversation state
+     */
+    200: PeerConversation;
+};
+
+export type ConversationWithPeerResponse = ConversationWithPeerResponses[keyof ConversationWithPeerResponses];
+
+export type ConversationsUnreadCountData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v2/me/conversations/unread-count';
+};
+
+export type ConversationsUnreadCountErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+};
+
+export type ConversationsUnreadCountError = ConversationsUnreadCountErrors[keyof ConversationsUnreadCountErrors];
+
+export type ConversationsUnreadCountResponses = {
+    /**
+     * Conversations with unread messages
+     */
+    200: ConversationUnreadCount;
+};
+
+export type ConversationsUnreadCountResponse = ConversationsUnreadCountResponses[keyof ConversationsUnreadCountResponses];
+
 export type MyEventsData = {
     body?: never;
     headers?: {
@@ -16305,6 +16945,52 @@ export type MyEventsResponses = {
 };
 
 export type MyEventsResponse = MyEventsResponses[keyof MyEventsResponses];
+
+export type MessageRecipientsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Part of a name or username.
+         */
+        q?: string;
+        /**
+         * Only people of this course.
+         */
+        course_id?: CourseId;
+        /**
+         * The previous page's `next_cursor`.
+         */
+        cursor?: string;
+        /**
+         * 1..=50, default 20.
+         */
+        limit?: number;
+    };
+    url: '/api/v2/me/message-recipients';
+};
+
+export type MessageRecipientsErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Bad `cursor` or `limit`
+     */
+    422: Problem;
+};
+
+export type MessageRecipientsError = MessageRecipientsErrors[keyof MessageRecipientsErrors];
+
+export type MessageRecipientsResponses = {
+    /**
+     * One row per person and course
+     */
+    200: RecipientPage;
+};
+
+export type MessageRecipientsResponse = MessageRecipientsResponses[keyof MessageRecipientsResponses];
 
 export type GetNotificationPreferencesData = {
     body?: never;
@@ -16485,6 +17171,127 @@ export type MarkNotificationReadResponses = {
 };
 
 export type MarkNotificationReadResponse = MarkNotificationReadResponses[keyof MarkNotificationReadResponses];
+
+export type SendMessageData = {
+    body: SendMessageRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v2/messages';
+};
+
+export type SendMessageErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * `message-recipient-not-allowed` (`details.reason`), or `messages-banned`
+     */
+    403: Problem;
+    /**
+     * Unknown recipient
+     */
+    404: Problem;
+    /**
+     * Empty or too long text, the caller as recipient, or a context they cannot see
+     */
+    422: Problem;
+    /**
+     * `rate-limited`: `details.limit` (minute, day, conversations) and `retry_after_seconds`
+     */
+    429: Problem;
+};
+
+export type SendMessageError = SendMessageErrors[keyof SendMessageErrors];
+
+export type SendMessageResponses = {
+    /**
+     * Sent
+     */
+    201: Message;
+};
+
+export type SendMessageResponse = SendMessageResponses[keyof SendMessageResponses];
+
+export type DeleteMessageData = {
+    body?: never;
+    path: {
+        /**
+         * Message id
+         */
+        message_id: MessageId;
+    };
+    query?: never;
+    url: '/api/v2/messages/{message_id}';
+};
+
+export type DeleteMessageErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Not the author
+     */
+    403: Problem;
+    /**
+     * Unknown, already deleted, or not in the caller's conversations
+     */
+    404: Problem;
+};
+
+export type DeleteMessageError = DeleteMessageErrors[keyof DeleteMessageErrors];
+
+export type DeleteMessageResponses = {
+    /**
+     * Deleted
+     */
+    204: void;
+};
+
+export type DeleteMessageResponse = DeleteMessageResponses[keyof DeleteMessageResponses];
+
+export type ReportMessageData = {
+    body: ReportMessageRequest;
+    path: {
+        /**
+         * Message id
+         */
+        message_id: MessageId;
+    };
+    query?: never;
+    url: '/api/v2/messages/{message_id}/report';
+};
+
+export type ReportMessageErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * The caller's own message
+     */
+    403: Problem;
+    /**
+     * Unknown, deleted, or not in the caller's conversations
+     */
+    404: Problem;
+    /**
+     * Already reported by the caller
+     */
+    409: Problem;
+};
+
+export type ReportMessageError = ReportMessageErrors[keyof ReportMessageErrors];
+
+export type ReportMessageResponses = {
+    /**
+     * Reported
+     */
+    204: void;
+};
+
+export type ReportMessageResponse = ReportMessageResponses[keyof ReportMessageResponses];
 
 export type GetPlatformData = {
     body?: never;

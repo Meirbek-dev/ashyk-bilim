@@ -4,8 +4,9 @@
 use ab_core::assessments::NotificationType;
 use ab_core::id::UserId;
 use ab_domain::events::user::{
-    AdminListUpdated, CollectionUpdated, DeadlineExtended, DiscussionUpdated, GradingUpdated,
-    NotificationRead, ProgressUpdated, SubmissionUpdated, XpAwarded,
+    AdminListUpdated, CollectionUpdated, ConversationUpdated, DeadlineExtended, DiscussionUpdated,
+    GradingUpdated, MessageCreated, NotificationRead, ProgressUpdated, SubmissionUpdated,
+    XpAwarded,
 };
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -98,6 +99,20 @@ pub enum UserStreamEvent {
         /// Unix seconds.
         sent_at: i64,
     },
+    #[serde(rename = "message.created")]
+    MessageCreated {
+        event_id: String,
+        payload: MessageCreated,
+        /// Unix seconds.
+        sent_at: i64,
+    },
+    #[serde(rename = "conversation.updated")]
+    ConversationUpdated {
+        event_id: String,
+        payload: ConversationUpdated,
+        /// Unix seconds.
+        sent_at: i64,
+    },
     /// The session is gone; the stream ends.
     #[serde(rename = "closed")]
     Closed { code: ab_core::ErrorCode },
@@ -165,6 +180,10 @@ pub struct NotificationSettings {
     #[garde(skip)]
     #[serde(default = "switched_on")]
     pub remediation_assigned: bool,
+    /// An administrator decided on a personal message the user reported.
+    #[garde(skip)]
+    #[serde(default = "switched_on")]
+    pub message_report_resolved: bool,
 }
 
 const fn switched_on() -> bool {
@@ -172,7 +191,7 @@ const fn switched_on() -> bool {
 }
 
 impl NotificationSettings {
-    const fn switches(&self) -> [(NotificationType, bool); 11] {
+    const fn switches(&self) -> [(NotificationType, bool); 12] {
         [
             (NotificationType::GradePublished, self.grade_published),
             (
@@ -196,6 +215,10 @@ impl NotificationSettings {
             (
                 NotificationType::RemediationAssigned,
                 self.remediation_assigned,
+            ),
+            (
+                NotificationType::MessageReportResolved,
+                self.message_report_resolved,
             ),
         ]
     }
@@ -224,6 +247,7 @@ impl NotificationSettings {
             course_team_added: on(NotificationType::CourseTeamAdded),
             work_submitted: on(NotificationType::WorkSubmitted),
             remediation_assigned: on(NotificationType::RemediationAssigned),
+            message_report_resolved: on(NotificationType::MessageReportResolved),
         }
     }
 }

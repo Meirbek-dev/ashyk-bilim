@@ -685,6 +685,37 @@ const MATRIX: &[(&str, &str, u8)] = &[
     ("GET", "/api/v2/me/notification-preferences", SIGNED),
     ("PUT", "/api/v2/me/notification-preferences", SIGNED),
     ("GET", "/api/v2/me/notifications", SIGNED),
+    // Personal messages (docs/DIALOGS.md): the seeded conversation is the admin's with the learner; the
+    // message is the learner's (deleted by them, reported by the admin). Asking about oneself is 404.
+    ("GET", "/api/v2/me/conversations", SIGNED),
+    ("GET", "/api/v2/me/conversations/unread-count", SIGNED),
+    (
+        "GET",
+        "/api/v2/me/conversations/peers/{user_id}",
+        SIGNED & !LRN,
+    ),
+    ("GET", "/api/v2/me/message-recipients", SIGNED),
+    (
+        "GET",
+        "/api/v2/conversations/{conversation_id}/messages",
+        LRN | ADM,
+    ),
+    (
+        "PUT",
+        "/api/v2/conversations/{conversation_id}/read",
+        LRN | ADM,
+    ),
+    ("POST", "/api/v2/messages", SIGNED),
+    ("DELETE", "/api/v2/messages/{message_id}", LRN),
+    ("POST", "/api/v2/messages/{message_id}/report", ADM),
+    ("GET", "/api/v2/admin/message-reports", ADM),
+    ("GET", "/api/v2/admin/message-reports/{report_id}", ADM),
+    (
+        "POST",
+        "/api/v2/admin/message-reports/{report_id}/resolve",
+        ADM,
+    ),
+    ("DELETE", "/api/v2/admin/message-bans/{user_id}", ADM),
     ("POST", "/api/v2/me/notifications/read-all", SIGNED),
     ("GET", "/api/v2/me/notifications/unread-count", SIGNED),
     // The learner's own notification.
@@ -1310,6 +1341,49 @@ async fn world(app: &TestApp) -> World {
     .await
     .unwrap();
     ids.insert("notification_id", notification.to_string());
+    let admin = s(ADM);
+    ok(
+        &app.post_as(
+            &admin,
+            "/api/v2/messages",
+            &json!({ "to_user_id": learner.user_id, "body": "From support", "client_key": uuid::Uuid::now_v7() }),
+        )
+        .await,
+        "admin message",
+    );
+    let reply = ok(
+        &app.post_as(
+            &learner,
+            "/api/v2/messages",
+            &json!({ "to_user_id": admin.user_id, "body": "A reply", "client_key": uuid::Uuid::now_v7() }),
+        )
+        .await,
+        "reply",
+    );
+    let message_id = reply["id"].as_str().unwrap().to_owned();
+    ids.insert(
+        "conversation_id",
+        reply["conversation_id"].as_str().unwrap().to_owned(),
+    );
+    let reported = app
+        .post_as(
+            &admin,
+            &format!("/api/v2/messages/{message_id}/report"),
+            &json!({ "reason": "probe" }),
+        )
+        .await;
+    assert_eq!(
+        reported.status,
+        StatusCode::NO_CONTENT,
+        "report: {}",
+        reported.text()
+    );
+    let report: uuid::Uuid = sqlx::query_scalar("SELECT id FROM message_reports")
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    ids.insert("report_id", report.to_string());
+    ids.insert("message_id", message_id);
     let handles = ok(
         &app.get_as(&learner, "/api/v2/auth/sessions").await,
         "sessions",

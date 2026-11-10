@@ -902,6 +902,28 @@ export const vContributorStatus = v.picklist([
 ]);
 
 /**
+ * What the caller may do in a conversation.
+ */
+export const vConversationAction = v.picklist(['send']);
+
+export const vConversationId = v.pipe(v.string(), v.uuid());
+
+/**
+ * `GET /me/conversations/unread-count`.
+ */
+export const vConversationUnreadCount = v.object({
+    conversations: v.pipe(v.number(), v.integer())
+});
+
+/**
+ * LIVE: a conversation of the recipient changed otherwise (a message
+ * deleted, a side's read pointer moved).
+ */
+export const vConversationUpdated = v.object({
+    conversation_id: vConversationId
+});
+
+/**
  * What the caller may do to a course right now (`Course.allowed_actions`).
  * Each variant is the gate of the mutation it names - [`CoursesService::allowed_actions`].
  */
@@ -1223,6 +1245,15 @@ export const vCoursePermissions = v.object({
     denial_reason: v.nullable(vDenialReason)
 });
 
+/**
+ * Why sending is closed (the composer shows it instead of the input).
+ */
+export const vDenyReason = v.picklist([
+    'no_relation',
+    'banned',
+    'peer_unavailable'
+]);
+
 export const vDifficulty = v.picklist([
     'easy',
     'medium',
@@ -1439,6 +1470,8 @@ export const vErrorCode = v.picklist([
     'remediation-required',
     'enrollment-required',
     'discussion-enrollment-required',
+    'message-recipient-not-allowed',
+    'messages-banned',
     'grade-not-released',
     'grade-own-attempt',
     'ai-disabled',
@@ -2287,6 +2320,28 @@ export const vActivityDetail = v.intersect([vActivity, v.object({
     })]);
 
 /**
+ * What the caller may do to a message.
+ */
+export const vMessageAction = v.picklist(['delete', 'report']);
+
+/**
+ * What a message is about: where the writer started from.
+ */
+export const vMessageContext = v.object({
+    activity_id: v.nullable(vActivityId),
+    activity_name: v.nullable(v.string()),
+    activity_type: v.nullable(vActivityType),
+    course_id: vCourseId,
+    course_name: v.nullable(v.string())
+});
+
+export const vMessageId = v.pipe(v.string(), v.uuid());
+
+export const vMarkReadRequest = v.strictObject({
+    last_read_message_id: vMessageId
+});
+
+/**
  * A message placeholder, including lists of codes such as missing event sources.
  */
 export const vMessageParam = v.union([
@@ -2299,6 +2354,8 @@ export const vMessageParam = v.union([
  * Placeholders for a stable message `code`, by name.
  */
 export const vMessageParams = v.object({});
+
+export const vMessageReportId = v.pipe(v.string(), v.uuid());
 
 export const vMetricCard = v.object({
     benchmark: v.nullable(v.number()),
@@ -2394,6 +2451,7 @@ export const vNotificationSettings = v.strictObject({
     discussion_post: v.optional(v.boolean()),
     discussion_reply: v.boolean(),
     grade_published: v.boolean(),
+    message_report_resolved: v.optional(v.boolean()),
     remediation_assigned: v.optional(v.boolean()),
     submission_returned: v.boolean(),
     work_submitted: v.optional(v.boolean())
@@ -2413,7 +2471,8 @@ export const vNotificationType = v.picklist([
     'discussion_post',
     'course_team_added',
     'work_submitted',
-    'remediation_assigned'
+    'remediation_assigned',
+    'message_report_resolved'
 ]);
 
 export const vOpenTextBody = v.object({
@@ -2945,6 +3004,12 @@ export const vReadiness = v.object({
     warning_count: v.pipe(v.number(), v.integer(), v.minValue(0))
 });
 
+export const vRecipientRole = v.picklist([
+    'teacher',
+    'observer',
+    'learner'
+]);
+
 export const vRecommendation = v.object({
     action: v.optional(v.string()),
     priority: v.optional(vLevel),
@@ -3074,11 +3139,22 @@ export const vReorderItemsRequest = v.strictObject({
     items: v.pipe(v.array(vAssessmentItemId), v.minLength(1), v.maxLength(200))
 });
 
+export const vReportMessageRequest = v.strictObject({
+    reason: v.pipe(v.string(), v.minLength(1), v.maxLength(1000))
+});
+
+export const vReportStatus = v.picklist(['open', 'resolved']);
+
 /**
  * Ask for a fresh email verification code.
  */
 export const vResendVerificationRequest = v.strictObject({
     email: v.pipe(v.string(), v.maxLength(320))
+});
+
+export const vResolveReportRequest = v.strictObject({
+    ban: v.optional(v.boolean()),
+    resolution: v.pipe(v.string(), v.minLength(1), v.maxLength(2000))
 });
 
 /**
@@ -3572,6 +3648,14 @@ export const vInsightFeedItem = v.object({
     params: vMessageParams,
     priority: v.pipe(v.number(), v.integer()),
     severity: vSeverity
+});
+
+/**
+ * A course the two sides share.
+ */
+export const vSharedCourse = v.object({
+    id: vCourseId,
+    name: v.string()
 });
 
 export const vSkillLevel = v.picklist([
@@ -5450,6 +5534,17 @@ export const vIssuedCertificatePage = v.object({
     next_cursor: v.nullable(v.string())
 });
 
+/**
+ * The latest message of a conversation, as its list row quotes it.
+ */
+export const vLastMessage = v.object({
+    created_at_unix: vUnixTime,
+    deleted: v.boolean(),
+    excerpt: v.string(),
+    id: vMessageId,
+    user_id: vUserId
+});
+
 export const vLeaderboardEntry = v.object({
     avatar_key: v.nullable(v.string()),
     display_name: v.string(),
@@ -5513,6 +5608,27 @@ export const vLectureReview = v.object({
     suggestions: vLectureReviewReport,
     superseded_at_unix: v.nullable(vUnixTime),
     triggered_by: v.nullable(vUserId)
+});
+
+export const vMessage = v.object({
+    allowed_actions: v.array(vMessageAction),
+    body: v.string(),
+    context: v.nullable(vMessageContext),
+    conversation_id: vConversationId,
+    created_at_unix: vUnixTime,
+    deleted: v.boolean(),
+    id: vMessageId,
+    user_id: vUserId
+});
+
+/**
+ * LIVE: a personal message was sent in a conversation of the recipient
+ * (to both sides: the author's other tabs follow).
+ */
+export const vMessageCreated = v.object({
+    conversation_id: vConversationId,
+    message_id: vMessageId,
+    user_id: vUserId
 });
 
 /**
@@ -5622,6 +5738,11 @@ export const vNotificationPayload = v.union([
         gate: v.boolean(),
         session_id: vAiRemediationSessionId,
         type: v.picklist(['remediation_assigned'])
+    }),
+    v.object({
+        conversation_id: vConversationId,
+        report_id: vMessageReportId,
+        type: v.picklist(['message_report_resolved'])
     })
 ]);
 
@@ -5642,6 +5763,89 @@ export const vNotification = v.object({
 export const vNotificationPage = v.object({
     items: v.array(vNotification),
     next_cursor: v.nullable(v.string())
+});
+
+/**
+ * A person as conversations show them (no email).
+ */
+export const vPerson = v.object({
+    available: v.boolean(),
+    avatar_key: v.nullable(v.string()),
+    display_name: v.nullable(v.string()),
+    id: vUserId,
+    username: v.string()
+});
+
+/**
+ * One row of the caller's conversation list.
+ */
+export const vConversation = v.object({
+    allowed_actions: v.array(vConversationAction),
+    deny_reason: v.nullable(vDenyReason),
+    id: vConversationId,
+    last_message: v.nullable(vLastMessage),
+    peer: vPerson,
+    unread_count: v.pipe(v.number(), v.integer())
+});
+
+export const vConversationPage = v.object({
+    items: v.array(vConversation),
+    next_cursor: v.nullable(vMessageId)
+});
+
+/**
+ * A page of messages, newest first, with the conversation's state.
+ */
+export const vMessagePage = v.object({
+    allowed_actions: v.array(vConversationAction),
+    deny_reason: v.nullable(vDenyReason),
+    items: v.array(vMessage),
+    last_read_message_id: v.nullable(vMessageId),
+    next_cursor: v.nullable(vMessageId),
+    peer: vPerson,
+    shared_courses: v.array(vSharedCourse)
+});
+
+/**
+ * A report as administrators list it.
+ */
+export const vMessageReport = v.object({
+    author: vPerson,
+    author_banned: v.boolean(),
+    body_snapshot: v.string(),
+    conversation_id: vConversationId,
+    created_at_unix: vUnixTime,
+    id: vMessageReportId,
+    message_id: vMessageId,
+    reason: v.string(),
+    reporter: vPerson,
+    resolution: v.nullable(v.string()),
+    resolved_at_unix: v.nullable(vUnixTime),
+    resolved_by: v.nullable(vUserId),
+    status: vReportStatus
+});
+
+/**
+ * One report with the messages around the reported one.
+ */
+export const vMessageReportDetail = v.object({
+    context: v.array(vMessage),
+    report: vMessageReport
+});
+
+export const vMessageReportPage = v.object({
+    items: v.array(vMessageReport),
+    next_cursor: v.nullable(vMessageReportId)
+});
+
+/**
+ * The caller and one person, before or after their first message.
+ */
+export const vPeerConversation = v.object({
+    allowed_actions: v.array(vConversationAction),
+    conversation_id: v.nullable(vConversationId),
+    deny_reason: v.nullable(vDenyReason),
+    peer: vPerson
 });
 
 /**
@@ -5669,6 +5873,22 @@ export const vQaMessage = v.object({
     role: vQaMessageRole,
     thread_id: vAiThreadId,
     user_id: v.nullable(vUserId)
+});
+
+/**
+ * Someone the caller may start a conversation with, and through which
+ * course.
+ */
+export const vRecipient = v.object({
+    course_id: vCourseId,
+    course_name: v.string(),
+    person: vPerson,
+    role: vRecipientRole
+});
+
+export const vRecipientPage = v.object({
+    items: v.array(vRecipient),
+    next_cursor: v.nullable(v.string())
 });
 
 export const vRemediationSession = v.object({
@@ -5747,6 +5967,14 @@ export const vSavedViewList = v.object({
     generated_at_unix: vUnixTime,
     items: v.array(vSavedView),
     total: v.pipe(v.number(), v.integer())
+});
+
+export const vSendMessageRequest = v.strictObject({
+    activity_id: v.optional(vActivityId),
+    body: v.pipe(v.string(), v.minLength(1), v.maxLength(4000)),
+    client_key: v.pipe(v.string(), v.uuid()),
+    course_id: v.optional(vCourseId),
+    to_user_id: vUserId
 });
 
 /**
@@ -6753,6 +6981,18 @@ export const vUserStreamEvent = v.union([
         sent_at: v.pipe(v.number(), v.integer())
     }),
     v.object({
+        event: v.picklist(['message.created']),
+        event_id: v.string(),
+        payload: vMessageCreated,
+        sent_at: v.pipe(v.number(), v.integer())
+    }),
+    v.object({
+        event: v.picklist(['conversation.updated']),
+        event_id: v.string(),
+        payload: vConversationUpdated,
+        sent_at: v.pipe(v.number(), v.integer())
+    }),
+    v.object({
         code: vErrorCode,
         event: v.picklist(['closed'])
     })
@@ -6855,6 +7095,46 @@ export const vMoveActivityPath = v.object({
  * Moved
  */
 export const vMoveActivityResponse = v.void();
+
+export const vDeleteMessageBanPath = v.object({
+    user_id: vUserId
+});
+
+/**
+ * Lifted
+ */
+export const vDeleteMessageBanResponse = v.void();
+
+export const vListMessageReportsQuery = v.object({
+    status: v.optional(vReportStatus),
+    cursor: v.optional(vMessageReportId),
+    limit: v.optional(v.pipe(v.number(), v.integer()))
+});
+
+/**
+ * Page of reports
+ */
+export const vListMessageReportsResponse = vMessageReportPage;
+
+export const vGetMessageReportPath = v.object({
+    report_id: vMessageReportId
+});
+
+/**
+ * The report and its context
+ */
+export const vGetMessageReportResponse = vMessageReportDetail;
+
+export const vResolveMessageReportBody = vResolveReportRequest;
+
+export const vResolveMessageReportPath = v.object({
+    report_id: vMessageReportId
+});
+
+/**
+ * Resolved
+ */
+export const vResolveMessageReportResponse = vMessageReport;
 
 /**
  * Run aggregate + eval summary
@@ -8530,6 +8810,31 @@ export const vUpdateCollectionPath = v.object({
  */
 export const vUpdateCollectionResponse = vCollection;
 
+export const vListMessagesPath = v.object({
+    conversation_id: vConversationId
+});
+
+export const vListMessagesQuery = v.object({
+    cursor: v.optional(vMessageId),
+    limit: v.optional(v.pipe(v.number(), v.integer()))
+});
+
+/**
+ * Page of messages
+ */
+export const vListMessagesResponse = vMessagePage;
+
+export const vMarkConversationReadBody = vMarkReadRequest;
+
+export const vMarkConversationReadPath = v.object({
+    conversation_id: vConversationId
+});
+
+/**
+ * Saved
+ */
+export const vMarkConversationReadResponse = v.void();
+
 export const vDeleteCourseUpdateHeaders = v.object({
     'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
 });
@@ -9698,6 +10003,31 @@ export const vMyCertificatesPageQuery = v.object({
  */
 export const vMyCertificatesPageResponse = vIssuedCertificatePage;
 
+export const vListConversationsQuery = v.object({
+    cursor: v.optional(vMessageId),
+    limit: v.optional(v.pipe(v.number(), v.integer())),
+    unread_only: v.optional(v.boolean())
+});
+
+/**
+ * Page of conversations
+ */
+export const vListConversationsResponse = vConversationPage;
+
+export const vConversationWithPeerPath = v.object({
+    user_id: vUserId
+});
+
+/**
+ * Conversation state
+ */
+export const vConversationWithPeerResponse = vPeerConversation;
+
+/**
+ * Conversations with unread messages
+ */
+export const vConversationsUnreadCountResponse = vConversationUnreadCount;
+
 export const vMyEventsHeaders = v.object({
     'Last-Event-ID': v.nullish(v.string())
 });
@@ -9706,6 +10036,18 @@ export const vMyEventsHeaders = v.object({
  * Event stream: each message's `data` is one event
  */
 export const vMyEventsResponse = vUserStreamEvent;
+
+export const vMessageRecipientsQuery = v.object({
+    q: v.optional(v.string()),
+    course_id: v.optional(vCourseId),
+    cursor: v.optional(v.string()),
+    limit: v.optional(v.pipe(v.number(), v.integer()))
+});
+
+/**
+ * One row per person and course
+ */
+export const vMessageRecipientsResponse = vRecipientPage;
 
 /**
  * One switch per type
@@ -9748,6 +10090,33 @@ export const vMarkNotificationReadPath = v.object({
  * Marked; the unread count after
  */
 export const vMarkNotificationReadResponse = vUnreadCount;
+
+export const vSendMessageBody = vSendMessageRequest;
+
+/**
+ * Sent
+ */
+export const vSendMessageResponse = vMessage;
+
+export const vDeleteMessagePath = v.object({
+    message_id: vMessageId
+});
+
+/**
+ * Deleted
+ */
+export const vDeleteMessageResponse = v.void();
+
+export const vReportMessageBody = vReportMessageRequest;
+
+export const vReportMessagePath = v.object({
+    message_id: vMessageId
+});
+
+/**
+ * Reported
+ */
+export const vReportMessageResponse = v.void();
 
 /**
  * Platform settings

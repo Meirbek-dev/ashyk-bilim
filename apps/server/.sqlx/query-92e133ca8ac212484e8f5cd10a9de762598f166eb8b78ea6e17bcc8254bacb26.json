@@ -1,0 +1,101 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH target AS (SELECT conversation_id, id FROM messages WHERE id = $1),\n           near AS (\n               (SELECT m.* FROM messages m, target t\n                 WHERE m.conversation_id = t.conversation_id AND m.id <= t.id\n                 ORDER BY m.id DESC LIMIT $2::bigint + 1)\n               UNION ALL\n               (SELECT m.* FROM messages m, target t\n                 WHERE m.conversation_id = t.conversation_id AND m.id > t.id\n                 ORDER BY m.id LIMIT $2)\n           )\n           SELECT m.id AS \"id!: MessageId\", m.conversation_id AS \"conversation_id!: ConversationId\",\n                  m.user_id AS \"user_id!: UserId\", m.body AS \"body!\", (m.status = 'deleted') AS \"deleted!\",\n                  m.course_id AS \"course_id?: CourseId\",\n                  (SELECT c.name FROM courses c WHERE c.id = m.course_id) AS \"course_name?\",\n                  m.activity_id AS \"activity_id?: ActivityId\",\n                  (SELECT a.name FROM activities a WHERE a.id = m.activity_id) AS \"activity_name?\",\n                  (SELECT a.activity_type FROM activities a WHERE a.id = m.activity_id) AS \"activity_type?\",\n                  false AS \"reported!\",\n                  (extract(epoch FROM m.created_at))::bigint AS \"created_at!\"\n           FROM near m\n           ORDER BY m.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!: MessageId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "conversation_id!: ConversationId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id!: UserId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "body!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "deleted!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "course_id?: CourseId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 6,
+        "name": "course_name?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "activity_id?: ActivityId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "activity_name?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "activity_type?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "reported!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "92e133ca8ac212484e8f5cd10a9de762598f166eb8b78ea6e17bcc8254bacb26"
+}

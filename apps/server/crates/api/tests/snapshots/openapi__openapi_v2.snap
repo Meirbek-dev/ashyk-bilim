@@ -5581,6 +5581,118 @@ expression: json
         ],
         "type": "string"
       },
+      "Conversation": {
+        "description": "One row of the caller's conversation list.",
+        "properties": {
+          "allowed_actions": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationAction"
+            },
+            "type": "array"
+          },
+          "deny_reason": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DenyReason",
+                "description": "Set exactly when `send` is not allowed."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/ConversationId"
+          },
+          "last_message": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LastMessage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "peer": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "unread_count": {
+            "description": "The other side's active messages after the caller's read pointer.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "peer",
+          "unread_count",
+          "allowed_actions",
+          "deny_reason",
+          "last_message"
+        ],
+        "type": "object"
+      },
+      "ConversationAction": {
+        "description": "What the caller may do in a conversation.",
+        "enum": [
+          "send"
+        ],
+        "type": "string"
+      },
+      "ConversationId": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "ConversationPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Conversation"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MessageId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "type": "object"
+      },
+      "ConversationUnreadCount": {
+        "description": "`GET /me/conversations/unread-count`.",
+        "properties": {
+          "conversations": {
+            "description": "Conversations holding an unread message (the top bar badge).",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "conversations"
+        ],
+        "type": "object"
+      },
+      "ConversationUpdated": {
+        "description": "LIVE: a conversation of the recipient changed otherwise (a message\ndeleted, a side's read pointer moved).",
+        "properties": {
+          "conversation_id": {
+            "$ref": "#/components/schemas/ConversationId"
+          }
+        },
+        "required": [
+          "conversation_id"
+        ],
+        "type": "object"
+      },
       "CorrectAnswer": {
         "description": "The answer key shown after grading: correct option ids (choice) or the\nexpected pairs (matching); `null` for kinds without a key.",
         "oneOf": [
@@ -7580,6 +7692,15 @@ expression: json
         ],
         "type": "string"
       },
+      "DenyReason": {
+        "description": "Why sending is closed (the composer shows it instead of the input).",
+        "enum": [
+          "no_relation",
+          "banned",
+          "peer_unavailable"
+        ],
+        "type": "string"
+      },
       "Difficulty": {
         "enum": [
           "easy",
@@ -8671,6 +8792,8 @@ expression: json
           "remediation-required",
           "enrollment-required",
           "discussion-enrollment-required",
+          "message-recipient-not-allowed",
+          "messages-banned",
           "grade-not-released",
           "grade-own-attempt",
           "ai-disabled",
@@ -11954,6 +12077,35 @@ expression: json
         },
         "type": "object"
       },
+      "LastMessage": {
+        "description": "The latest message of a conversation, as its list row quotes it.",
+        "properties": {
+          "created_at_unix": {
+            "$ref": "#/components/schemas/UnixTime"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "excerpt": {
+            "description": "Plain text, at most 140 characters; empty when deleted.",
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/MessageId"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        },
+        "required": [
+          "id",
+          "user_id",
+          "excerpt",
+          "created_at_unix",
+          "deleted"
+        ],
+        "type": "object"
+      },
       "LatePolicy": {
         "description": "Late-submission handling.",
         "oneOf": [
@@ -12598,6 +12750,19 @@ expression: json
         ],
         "type": "object"
       },
+      "MarkReadRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "last_read_message_id": {
+            "$ref": "#/components/schemas/MessageId",
+            "description": "The latest message shown; the pointer only moves forward."
+          }
+        },
+        "required": [
+          "last_read_message_id"
+        ],
+        "type": "object"
+      },
       "MasteryLevel": {
         "description": "What the learner and the teacher see.",
         "enum": [
@@ -12741,6 +12906,207 @@ expression: json
         },
         "type": "object"
       },
+      "Message": {
+        "properties": {
+          "allowed_actions": {
+            "items": {
+              "$ref": "#/components/schemas/MessageAction"
+            },
+            "type": "array"
+          },
+          "body": {
+            "description": "Markdown; empty when deleted.",
+            "type": "string"
+          },
+          "context": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MessageContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "conversation_id": {
+            "$ref": "#/components/schemas/ConversationId"
+          },
+          "created_at_unix": {
+            "$ref": "#/components/schemas/UnixTime"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "id": {
+            "$ref": "#/components/schemas/MessageId"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId",
+            "description": "The author."
+          }
+        },
+        "required": [
+          "id",
+          "conversation_id",
+          "user_id",
+          "body",
+          "deleted",
+          "allowed_actions",
+          "created_at_unix",
+          "context"
+        ],
+        "type": "object"
+      },
+      "MessageAction": {
+        "description": "What the caller may do to a message.",
+        "enum": [
+          "delete",
+          "report"
+        ],
+        "type": "string"
+      },
+      "MessageContext": {
+        "description": "What a message is about: where the writer started from.",
+        "properties": {
+          "activity_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActivityId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "activity_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "activity_type": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActivityType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_name": {
+            "description": "Null once the course is gone.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "course_id",
+          "activity_id",
+          "activity_name",
+          "activity_type",
+          "course_name"
+        ],
+        "type": "object"
+      },
+      "MessageCreated": {
+        "description": "LIVE: a personal message was sent in a conversation of the recipient\n(to both sides: the author's other tabs follow).",
+        "properties": {
+          "conversation_id": {
+            "$ref": "#/components/schemas/ConversationId"
+          },
+          "message_id": {
+            "$ref": "#/components/schemas/MessageId"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId",
+            "description": "The author."
+          }
+        },
+        "required": [
+          "conversation_id",
+          "message_id",
+          "user_id"
+        ],
+        "type": "object"
+      },
+      "MessageId": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "MessagePage": {
+        "description": "A page of messages, newest first, with the conversation's state.",
+        "properties": {
+          "allowed_actions": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationAction"
+            },
+            "type": "array"
+          },
+          "deny_reason": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DenyReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "type": "array"
+          },
+          "last_read_message_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MessageId",
+                "description": "The caller's read pointer before this read (the «new messages»\ndivider goes after it)."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next_cursor": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MessageId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "peer": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "shared_courses": {
+            "description": "Up to three live courses both sides belong to, newest first.",
+            "items": {
+              "$ref": "#/components/schemas/SharedCourse"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "peer",
+          "shared_courses",
+          "allowed_actions",
+          "deny_reason",
+          "last_read_message_id",
+          "next_cursor"
+        ],
+        "type": "object"
+      },
       "MessageParam": {
         "description": "A message placeholder, including lists of codes such as missing event sources.",
         "oneOf": [
@@ -12767,6 +13133,134 @@ expression: json
         "propertyNames": {
           "type": "string"
         },
+        "type": "object"
+      },
+      "MessageReport": {
+        "description": "A report as administrators list it.",
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "author_banned": {
+            "description": "The author is banned from sending now.",
+            "type": "boolean"
+          },
+          "body_snapshot": {
+            "description": "The message's text when it was reported.",
+            "type": "string"
+          },
+          "conversation_id": {
+            "$ref": "#/components/schemas/ConversationId"
+          },
+          "created_at_unix": {
+            "$ref": "#/components/schemas/UnixTime"
+          },
+          "id": {
+            "$ref": "#/components/schemas/MessageReportId"
+          },
+          "message_id": {
+            "$ref": "#/components/schemas/MessageId"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "reporter": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "resolution": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resolved_at_unix": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolved_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReportStatus"
+          }
+        },
+        "required": [
+          "id",
+          "message_id",
+          "conversation_id",
+          "reporter",
+          "author",
+          "reason",
+          "body_snapshot",
+          "status",
+          "created_at_unix",
+          "author_banned",
+          "resolution",
+          "resolved_at_unix",
+          "resolved_by"
+        ],
+        "type": "object"
+      },
+      "MessageReportDetail": {
+        "description": "One report with the messages around the reported one.",
+        "properties": {
+          "context": {
+            "description": "Up to five messages on each side of the reported one, in their\ncurrent state, oldest first (the reported one included).",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "type": "array"
+          },
+          "report": {
+            "$ref": "#/components/schemas/MessageReport"
+          }
+        },
+        "required": [
+          "report",
+          "context"
+        ],
+        "type": "object"
+      },
+      "MessageReportId": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "MessageReportPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MessageReport"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MessageReportId"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
         "type": "object"
       },
       "MetricCard": {
@@ -13524,6 +14018,29 @@ expression: json
               "type"
             ],
             "type": "object"
+          },
+          {
+            "description": "An administrator decided on a personal message the recipient\nreported (docs/DIALOGS.md 6); the message's author is never told.",
+            "properties": {
+              "conversation_id": {
+                "$ref": "#/components/schemas/ConversationId"
+              },
+              "report_id": {
+                "$ref": "#/components/schemas/MessageReportId"
+              },
+              "type": {
+                "enum": [
+                  "message_report_resolved"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "report_id",
+              "conversation_id",
+              "type"
+            ],
+            "type": "object"
           }
         ]
       },
@@ -13588,6 +14105,10 @@ expression: json
           "grade_published": {
             "type": "boolean"
           },
+          "message_report_resolved": {
+            "description": "An administrator decided on a personal message the user reported.",
+            "type": "boolean"
+          },
           "remediation_assigned": {
             "description": "A teacher assigned the user a remediation (разбор ошибок).",
             "type": "boolean"
@@ -13624,7 +14145,8 @@ expression: json
           "discussion_post",
           "course_team_added",
           "work_submitted",
-          "remediation_assigned"
+          "remediation_assigned",
+          "message_report_resolved"
         ],
         "type": "string"
       },
@@ -13740,6 +14262,83 @@ expression: json
         },
         "required": [
           "login"
+        ],
+        "type": "object"
+      },
+      "PeerConversation": {
+        "description": "The caller and one person, before or after their first message.",
+        "properties": {
+          "allowed_actions": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationAction"
+            },
+            "type": "array"
+          },
+          "conversation_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ConversationId",
+                "description": "Null until the first message."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deny_reason": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DenyReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "peer": {
+            "$ref": "#/components/schemas/Person"
+          }
+        },
+        "required": [
+          "peer",
+          "allowed_actions",
+          "conversation_id",
+          "deny_reason"
+        ],
+        "type": "object"
+      },
+      "Person": {
+        "description": "A person as conversations show them (no email).",
+        "properties": {
+          "available": {
+            "description": "False once the account is disabled or erased: nobody can write to it.",
+            "type": "boolean"
+          },
+          "avatar_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "available",
+          "avatar_key",
+          "display_name"
         ],
         "type": "object"
       },
@@ -15923,6 +16522,61 @@ expression: json
         ],
         "type": "object"
       },
+      "Recipient": {
+        "description": "Someone the caller may start a conversation with, and through which\ncourse.",
+        "properties": {
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "course_name": {
+            "type": "string"
+          },
+          "person": {
+            "$ref": "#/components/schemas/Person"
+          },
+          "role": {
+            "$ref": "#/components/schemas/RecipientRole",
+            "description": "The person's place in that course."
+          }
+        },
+        "required": [
+          "person",
+          "course_id",
+          "course_name",
+          "role"
+        ],
+        "type": "object"
+      },
+      "RecipientPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Recipient"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Pass back as `cursor` (an offset).",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "type": "object"
+      },
+      "RecipientRole": {
+        "enum": [
+          "teacher",
+          "observer",
+          "learner"
+        ],
+        "type": "string"
+      },
       "Recommendation": {
         "properties": {
           "action": {
@@ -16357,6 +17011,27 @@ expression: json
         ],
         "type": "object"
       },
+      "ReportMessageRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "type": "object"
+      },
+      "ReportStatus": {
+        "enum": [
+          "open",
+          "resolved"
+        ],
+        "type": "string"
+      },
       "ResendVerificationRequest": {
         "additionalProperties": false,
         "description": "Ask for a fresh email verification code.",
@@ -16368,6 +17043,25 @@ expression: json
         },
         "required": [
           "email"
+        ],
+        "type": "object"
+      },
+      "ResolveReportRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "ban": {
+            "description": "Also ban the message's author from sending.",
+            "type": "boolean"
+          },
+          "resolution": {
+            "description": "What was decided (the reporter is told that it was decided, not this).",
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "resolution"
         ],
         "type": "object"
       },
@@ -17873,6 +18567,39 @@ expression: json
         ],
         "type": "object"
       },
+      "SendMessageRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId",
+            "description": "An activity of `course_id` (or of its own course when `course_id`\nis left out)."
+          },
+          "body": {
+            "description": "Markdown, 1..=4000 characters after trimming.",
+            "maxLength": 4000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "client_key": {
+            "description": "A key the client makes per message: a resend with the same key\nreturns the stored message instead of sending twice.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId",
+            "description": "What the message is about (where the writer started from)."
+          },
+          "to_user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        },
+        "required": [
+          "to_user_id",
+          "body",
+          "client_key"
+        ],
+        "type": "object"
+      },
       "SessionInfo": {
         "description": "The current session, as the frontend sees it (client-side permission\ngating mirrors the legacy `Session` contract).",
         "properties": {
@@ -18075,6 +18802,22 @@ expression: json
           "critical"
         ],
         "type": "string"
+      },
+      "SharedCourse": {
+        "description": "A course the two sides share.",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
       },
       "SignedDownload": {
         "properties": {
@@ -21359,6 +22102,60 @@ expression: json
             "type": "object"
           },
           {
+            "properties": {
+              "event": {
+                "enum": [
+                  "message.created"
+                ],
+                "type": "string"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "payload": {
+                "$ref": "#/components/schemas/MessageCreated"
+              },
+              "sent_at": {
+                "description": "Unix seconds.",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "event_id",
+              "payload",
+              "sent_at",
+              "event"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "event": {
+                "enum": [
+                  "conversation.updated"
+                ],
+                "type": "string"
+              },
+              "event_id": {
+                "type": "string"
+              },
+              "payload": {
+                "$ref": "#/components/schemas/ConversationUpdated"
+              },
+              "sent_at": {
+                "description": "Unix seconds.",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "event_id",
+              "payload",
+              "sent_at",
+              "event"
+            ],
+            "type": "object"
+          },
+          {
             "description": "The session is gone; the stream ends.",
             "properties": {
               "code": {
@@ -22641,6 +23438,274 @@ expression: json
         "summary": "Move an activity within its chapter, or to another chapter of the same\ncourse via `chapter_id`.",
         "tags": [
           "courses"
+        ]
+      }
+    },
+    "/api/v2/admin/message-bans/{user_id}": {
+      "delete": {
+        "operationId": "delete_message_ban",
+        "parameters": [
+          {
+            "description": "The banned person",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Lifted"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No `admin.users`"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No ban"
+          }
+        },
+        "summary": "Lift a person's send ban (`admin.users`).",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/api/v2/admin/message-reports": {
+      "get": {
+        "operationId": "list_message_reports",
+        "parameters": [
+          {
+            "description": "Only reports in this state.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ReportStatus"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/MessageReportId"
+            }
+          },
+          {
+            "description": "1..=50, default 20.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageReportPage"
+                }
+              }
+            },
+            "description": "Page of reports"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No `admin.users`"
+          }
+        },
+        "summary": "Reports on personal messages, newest first (`admin.users`).",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/api/v2/admin/message-reports/{report_id}": {
+      "get": {
+        "operationId": "get_message_report",
+        "parameters": [
+          {
+            "description": "Report id",
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MessageReportId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageReportDetail"
+                }
+              }
+            },
+            "description": "The report and its context"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No `admin.users`"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown report"
+          }
+        },
+        "summary": "One report with the text as reported and up to five messages on each\nside (`admin.users`; the read is audited).",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/api/v2/admin/message-reports/{report_id}/resolve": {
+      "post": {
+        "operationId": "resolve_message_report",
+        "parameters": [
+          {
+            "description": "Report id",
+            "in": "path",
+            "name": "report_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MessageReportId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageReport"
+                }
+              }
+            },
+            "description": "Resolved"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No `admin.users`"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown report"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Already resolved"
+          }
+        },
+        "summary": "Decide an open report; `ban` also bans the author from sending. The\nreporter gets a notification.",
+        "tags": [
+          "conversations"
         ]
       }
     },
@@ -31611,6 +32676,141 @@ expression: json
         ]
       }
     },
+    "/api/v2/conversations/{conversation_id}/messages": {
+      "get": {
+        "operationId": "list_messages",
+        "parameters": [
+          {
+            "description": "Conversation id",
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ConversationId"
+            }
+          },
+          {
+            "description": "The previous page's `next_cursor` (older messages).",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/MessageId"
+            }
+          },
+          {
+            "description": "1..=50, default 30.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagePage"
+                }
+              }
+            },
+            "description": "Page of messages"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown, or not the caller's"
+          }
+        },
+        "summary": "Messages of one of the caller's conversations, newest first, with the\nconversation's state.",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/api/v2/conversations/{conversation_id}/read": {
+      "put": {
+        "operationId": "mark_conversation_read",
+        "parameters": [
+          {
+            "description": "Conversation id",
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ConversationId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkReadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Saved"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown, or not the caller's"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not a message of this conversation"
+          }
+        },
+        "summary": "Move the caller's read pointer forward (never back). Emits\n`conversation.updated` when it moved.",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
     "/api/v2/course-updates/{update_id}": {
       "delete": {
         "operationId": "delete_course_update",
@@ -37367,6 +38567,159 @@ expression: json
         ]
       }
     },
+    "/api/v2/me/conversations": {
+      "get": {
+        "operationId": "list_conversations",
+        "parameters": [
+          {
+            "description": "The previous page's `next_cursor`.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/MessageId"
+            }
+          },
+          {
+            "description": "1..=50, default 20.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only conversations with unread messages (default false).",
+            "in": "query",
+            "name": "unread_only",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationPage"
+                }
+              }
+            },
+            "description": "Page of conversations"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad `limit`"
+          }
+        },
+        "summary": "The caller's conversations, the latest message first (keyset).",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/api/v2/me/conversations/peers/{user_id}": {
+      "get": {
+        "operationId": "conversation_with_peer",
+        "parameters": [
+          {
+            "description": "The other person",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeerConversation"
+                }
+              }
+            },
+            "description": "Conversation state"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown person, or the caller"
+          }
+        },
+        "summary": "The caller and one person: their conversation (null before the first\nmessage) and whether the caller may write.",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/api/v2/me/conversations/unread-count": {
+      "get": {
+        "operationId": "conversations_unread_count",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationUnreadCount"
+                }
+              }
+            },
+            "description": "Conversations with unread messages"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          }
+        },
+        "summary": "How many of the caller's conversations hold an unread message.",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
     "/api/v2/me/events": {
       "get": {
         "description": "Event names: `connected`, then the closed set of user events -\n`grading.updated` (courses the caller grades), `submission.updated`\n(the caller's own work), `notification.created`, `notification.read`,\n`xp.awarded` - and `closed` (session gone; the stream ends). `data` is\n`{event_id, event, payload, sent_at}`; `id` is the stream id to send\nback as `Last-Event-ID` on reconnect (the stream keeps the last ~500\nevents for 7 days). Comment heartbeats every 25 s.",
@@ -37420,6 +38773,85 @@ expression: json
         "summary": "Everything addressed to the caller as `text/event-stream` (S-06): one\nstream per session replaces polling.",
         "tags": [
           "me"
+        ]
+      }
+    },
+    "/api/v2/me/message-recipients": {
+      "get": {
+        "operationId": "message_recipients",
+        "parameters": [
+          {
+            "description": "Part of a name or username.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only people of this course.",
+            "in": "query",
+            "name": "course_id",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          },
+          {
+            "description": "The previous page's `next_cursor`.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "1..=50, default 20.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipientPage"
+                }
+              }
+            },
+            "description": "One row per person and course"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad `cursor` or `limit`"
+          }
+        },
+        "summary": "People the caller may start a conversation with, through which course,\nby name.",
+        "tags": [
+          "conversations"
         ]
       }
     },
@@ -37684,6 +39116,217 @@ expression: json
         "summary": "Mark one notification read (idempotent); emits `notification.read`.",
         "tags": [
           "me"
+        ]
+      }
+    },
+    "/api/v2/messages": {
+      "post": {
+        "operationId": "send_message",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            },
+            "description": "Sent"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`message-recipient-not-allowed` (`details.reason`), or `messages-banned`"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown recipient"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Empty or too long text, the caller as recipient, or a context they cannot see"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`rate-limited`: `details.limit` (minute, day, conversations) and `retry_after_seconds`"
+          }
+        },
+        "summary": "Send a message; the pair's conversation is created with the first one.\nA resend with the same `client_key` returns the stored message and\nsends nothing. Emits `message.created` to both sides.",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/api/v2/messages/{message_id}": {
+      "delete": {
+        "operationId": "delete_message",
+        "parameters": [
+          {
+            "description": "Message id",
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MessageId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not the author"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown, already deleted, or not in the caller's conversations"
+          }
+        },
+        "summary": "The author deletes their message: it stays as a tombstone.",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/api/v2/messages/{message_id}/report": {
+      "post": {
+        "operationId": "report_message",
+        "parameters": [
+          {
+            "description": "Message id",
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MessageId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportMessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Reported"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The caller's own message"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown, deleted, or not in the caller's conversations"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Already reported by the caller"
+          }
+        },
+        "summary": "Report the other side's message to the administrators (once).",
+        "tags": [
+          "conversations"
         ]
       }
     },
@@ -41195,6 +42838,10 @@ expression: json
     {
       "description": "Course discussions: posts, replies, reactions, moderation",
       "name": "discussions"
+    },
+    {
+      "description": "Personal messages: conversations of two people, reports and send bans",
+      "name": "conversations"
     },
     {
       "description": "Certification templates, issued certificates, public verification",

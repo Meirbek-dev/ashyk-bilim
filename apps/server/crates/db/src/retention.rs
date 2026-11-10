@@ -29,6 +29,8 @@ pub struct RetentionCounts {
     pub ai_messages: u64,
     pub ai_threads: u64,
     pub ai_analyses: u64,
+    /// Personal conversations past `messages_days` without a message.
+    pub conversations: u64,
 }
 
 /// Runs a `LIMIT 5000` statement until it touches fewer rows; the total.
@@ -115,6 +117,16 @@ pub async fn sweep(pool: &PgPool, windows: &RetentionConfig) -> Result<Retention
     );
     let (ai_grade_drafts, ai_runs, ai_messages, ai_threads, ai_analyses) =
         ai_records(pool, windows.ai_records_days).await?;
+    let conversations = {
+        let mut total = 0_u64;
+        loop {
+            let n = crate::messages::prune_quiet(pool, windows.messages_days).await?;
+            total += n;
+            if n < BATCH {
+                break total;
+            }
+        }
+    };
     Ok(RetentionCounts {
         jobs,
         auth_audit,
@@ -125,6 +137,7 @@ pub async fn sweep(pool: &PgPool, windows: &RetentionConfig) -> Result<Retention
         ai_messages,
         ai_threads,
         ai_analyses,
+        conversations,
     })
 }
 

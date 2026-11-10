@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO message_bans (user_id, banned_by, reason) VALUES ($1, $2, $3)\n         ON CONFLICT (user_id) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "80ed7cf09509e92de7376aec56cb2e52d4885eaa3713fd53fde6351d20764530"
+}

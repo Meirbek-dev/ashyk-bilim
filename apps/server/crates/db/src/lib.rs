@@ -20,6 +20,7 @@ pub mod gamification;
 pub mod grade_drafts;
 pub mod identity;
 pub mod maintenance;
+pub mod messages;
 pub mod notifications;
 pub mod platform;
 pub mod progress;

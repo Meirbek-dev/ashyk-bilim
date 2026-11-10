@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n             (SELECT count(*) FROM messages WHERE user_id = $1 AND created_at > now() - interval '1 minute') AS \"minute!\",\n             (SELECT count(*) FROM messages WHERE user_id = $1 AND created_at > now() - interval '1 day') AS \"day!\",\n             (SELECT count(*) FROM conversation_members cm\n               WHERE cm.user_id = $1 AND cm.created_at > now() - interval '1 day'\n                 AND (SELECT m.user_id FROM messages m WHERE m.conversation_id = cm.conversation_id\n                      ORDER BY m.id LIMIT 1) = $1) AS \"started!\",\n             (SELECT ceil(extract(epoch FROM min(created_at) + interval '1 minute' - now()))::bigint\n                FROM messages WHERE user_id = $1 AND created_at > now() - interval '1 minute') AS \"minute_frees?\",\n             (SELECT ceil(extract(epoch FROM min(created_at) + interval '1 day' - now()))::bigint\n                FROM messages WHERE user_id = $1 AND created_at > now() - interval '1 day') AS \"day_frees?\",\n             (SELECT ceil(extract(epoch FROM min(cm.created_at) + interval '1 day' - now()))::bigint\n                FROM conversation_members cm\n               WHERE cm.user_id = $1 AND cm.created_at > now() - interval '1 day') AS \"start_frees?\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "minute!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "day!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "started!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "minute_frees?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "day_frees?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "start_frees?",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "c32bc99b529db9a883b92b9f8c656fb7eebba95ef49b14f505f2984135c88a6c"
+}

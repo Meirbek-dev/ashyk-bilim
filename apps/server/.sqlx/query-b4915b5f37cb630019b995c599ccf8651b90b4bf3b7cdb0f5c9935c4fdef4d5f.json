@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE conversations SET last_message_id = $2\n         WHERE id = $1 AND (last_message_id IS NULL OR last_message_id < $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b4915b5f37cb630019b995c599ccf8651b90b4bf3b7cdb0f5c9935c4fdef4d5f"
+}

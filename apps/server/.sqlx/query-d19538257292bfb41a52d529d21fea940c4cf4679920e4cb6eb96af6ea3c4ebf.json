@@ -1,0 +1,133 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.id AS \"id!: MessageId\", m.conversation_id AS \"conversation_id!: ConversationId\",\n                  m.user_id AS \"user_id!: UserId\", m.body AS \"body!\", (m.status = 'deleted') AS \"deleted!\",\n                  m.course_id AS \"course_id?: CourseId\",\n                  (SELECT c.name FROM courses c WHERE c.id = m.course_id) AS \"course_name?\",\n                  m.activity_id AS \"activity_id?: ActivityId\",\n                  (SELECT a.name FROM activities a WHERE a.id = m.activity_id) AS \"activity_name?\",\n                  (SELECT a.activity_type FROM activities a WHERE a.id = m.activity_id) AS \"activity_type?\",\n                  EXISTS (SELECT 1 FROM message_reports r WHERE r.message_id = m.id AND r.reported_by = $2)\n                    AS \"reported!\",\n                  (extract(epoch FROM m.created_at))::bigint AS \"created_at!\"\n           FROM messages m\n           WHERE m.conversation_id = $1 AND ($3::uuid IS NULL OR m.id < $3)\n           ORDER BY m.id DESC\n           LIMIT $4",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!: MessageId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "messages",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "conversation_id!: ConversationId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "messages",
+            "name": "conversation_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id!: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "messages",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "body!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "messages",
+            "name": "body"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "deleted!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "course_id?: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "messages",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "course_name?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "activity_id?: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "messages",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "activity_name?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "activity_type?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "reported!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      true,
+      null,
+      true,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "d19538257292bfb41a52d529d21fea940c4cf4679920e4cb6eb96af6ea3c4ebf"
+}

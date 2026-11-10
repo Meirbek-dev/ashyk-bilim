@@ -65,6 +65,7 @@ impl JobHandler for RetentionSweep {
                 ai_messages = swept.ai_messages,
                 ai_threads = swept.ai_threads,
                 ai_analyses = swept.ai_analyses,
+                conversations = swept.conversations,
                 deleted_courses,
                 "retention swept"
             );

@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO conversations DEFAULT VALUES RETURNING id AS \"id!: ConversationId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!: ConversationId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "conversations",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2a78fbe6c39b872188020bca1a3e7f7ce9e8b424164f17c7f1b70d3424a6981b"
+}

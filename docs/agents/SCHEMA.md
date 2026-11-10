@@ -55,6 +55,8 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`learning.concept_tags`](#concept_tags): Links an activity or assessment item to a concept it practises, with a weight
 - [`ai.content_chunks`](#content_chunks): A searchable chunk of course material with its embedding (course material search, AI context)
 - [`ai.content_index_state`](#content_index_state): Indexing state of each content source: version, chunk count, last error
+- [`core.conversation_members`](#conversation_members): The two sides of a conversation, one row each: user_id reads it with peer_id; (user_id, peer_id) is unique, so a pair has one conversation
+- [`core.conversations`](#conversations): A personal conversation of two people (kind direct); created with its first message
 - [`learning.course_concepts`](#course_concepts): A concept (skill) of a course, proposed by AI or a teacher and decided by staff
 - [`core.course_discussions`](#course_discussions): A discussion post or reply in a course (replies point to their post by parent_id); counters are kept by triggers
 - [`learning.course_members`](#course_members): Learners of a course: enrolments without its staff, whose stale rows stay in enrolments
@@ -91,6 +93,9 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`analytics.learner_risk_snapshots`](#learner_risk_snapshots): Daily risk score of a learner in a course, with reasons and a recommended action
 - [`learning.learner_visible_activities`](#learner_visible_activities): Activities a learner may open: the one statement of what the three publication flags mean together
 - [`learning.mastery_evidence`](#mastery_evidence): One observation of a learner on a concept (a scored item or activity)
+- [`core.message_bans`](#message_bans): The user may not send personal messages (an administrator decided it on a report); reading stays open
+- [`core.message_reports`](#message_reports): A participant reported the other side's message to the administrators; body_snapshot is its text at report time, so a later delete keeps the evidence
+- [`core.messages`](#messages): One message of a conversation, by user_id
 - [`core.notification_kinds`](#notification_kinds): Lookup: the notification kinds the server sends
 - [`core.notification_opt_outs`](#notification_opt_outs): Notification kinds a user switched off (GET/PUT /me/notification-preferences); no row = on
 - [`core.notifications`](#notifications): An in-app notification of an account (typed payload; course_id/activity_id are generated from it)
@@ -1492,6 +1497,42 @@ Indexing state of each content source: version, chunk count, last error.
 - Index `content_index_state_activity_idx`: `CREATE INDEX content_index_state_activity_idx ON ai.content_index_state USING btree (activity_id)`
 - Index `content_index_state_course_idx`: `CREATE INDEX content_index_state_course_idx ON ai.content_index_state USING btree (course_id)`
 
+## conversation_members
+
+The two sides of a conversation, one row each: user_id reads it with peer_id; (user_id, peer_id) is unique, so a pair has one conversation. last_read_message_id only grows.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| conversation_id | uuid |  |  |
+| user_id | uuid |  |  |
+| peer_id | uuid |  |  |
+| last_read_message_id | uuid | null |  |
+| created_at | timestamp with time zone |  | `now()` |
+
+- Primary key `conversation_members_pkey`: `PRIMARY KEY (conversation_id, user_id)`
+- Unique `conversation_members_user_id_peer_id_key`: `UNIQUE (user_id, peer_id)`
+- Foreign key `conversation_members_conversation_id_fkey`: `FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE`
+- Foreign key `conversation_members_peer_id_fkey`: `FOREIGN KEY (peer_id) REFERENCES users(id)`
+- Foreign key `conversation_members_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id)`
+- Check `conversation_members_check`: `CHECK ((user_id <> peer_id))`
+- Index `conversation_members_peer_idx`: `CREATE INDEX conversation_members_peer_idx ON core.conversation_members USING btree (peer_id)`
+
+## conversations
+
+A personal conversation of two people (kind direct); created with its first message. last_message_id orders the lists.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |
+| kind | text |  | `'direct'::text` |
+| last_message_id | uuid | null |  |
+| created_at | timestamp with time zone |  | `now()` |
+
+- Primary key `conversations_pkey`: `PRIMARY KEY (id)`
+- Foreign key `conversations_last_message_id_fkey`: `FOREIGN KEY (last_message_id) REFERENCES messages(id) ON DELETE SET NULL`
+- Check `conversations_kind_check`: `CHECK ((kind = 'direct'::text))`
+- Index `conversations_last_message_idx`: `CREATE INDEX conversations_last_message_idx ON core.conversations USING btree (last_message_id)`
+
 ## course_concepts
 
 A concept (skill) of a course, proposed by AI or a teacher and decided by staff.
@@ -2415,6 +2456,85 @@ One observation of a learner on a concept (a scored item or activity).
 - Index `mastery_evidence_concept_idx`: `CREATE INDEX mastery_evidence_concept_idx ON learning.mastery_evidence USING btree (concept_id)`
 - Index `mastery_evidence_course_idx`: `CREATE INDEX mastery_evidence_course_idx ON learning.mastery_evidence USING btree (course_id, concept_id)`
 - Index `mastery_evidence_learner_idx`: `CREATE INDEX mastery_evidence_learner_idx ON learning.mastery_evidence USING btree (user_id, concept_id, observed_at)`
+
+## message_bans
+
+The user may not send personal messages (an administrator decided it on a report); reading stays open.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| user_id | uuid |  |  |
+| banned_by | uuid |  |  |
+| reason | text |  | `''::text` |
+| created_at | timestamp with time zone |  | `now()` |
+
+- Primary key `message_bans_pkey`: `PRIMARY KEY (user_id)`
+- Foreign key `message_bans_banned_by_fkey`: `FOREIGN KEY (banned_by) REFERENCES users(id)`
+- Foreign key `message_bans_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id)`
+- Check `message_bans_reason_check`: `CHECK ((char_length(reason) <= 2000))`
+- Index `message_bans_banned_by_idx`: `CREATE INDEX message_bans_banned_by_idx ON core.message_bans USING btree (banned_by)`
+
+## message_reports
+
+A participant reported the other side's message to the administrators; body_snapshot is its text at report time, so a later delete keeps the evidence.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |
+| message_id | uuid |  |  |
+| reported_by | uuid |  |  |
+| reason | text |  |  |
+| body_snapshot | text |  |  |
+| status | text |  | `'open'::text` |
+| resolved_by | uuid | null |  |
+| resolved_at | timestamp with time zone | null |  |
+| resolution | text | null |  |
+| created_at | timestamp with time zone |  | `now()` |
+
+- Primary key `message_reports_pkey`: `PRIMARY KEY (id)`
+- Unique `message_reports_message_id_reported_by_key`: `UNIQUE (message_id, reported_by)`
+- Foreign key `message_reports_message_id_fkey`: `FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE`
+- Foreign key `message_reports_reported_by_fkey`: `FOREIGN KEY (reported_by) REFERENCES users(id)`
+- Foreign key `message_reports_resolved_by_fkey`: `FOREIGN KEY (resolved_by) REFERENCES users(id)`
+- Check `message_reports_check`: `CHECK (((status = 'resolved'::text) = (resolved_at IS NOT NULL)))`
+- Check `message_reports_reason_check`: `CHECK (((char_length(reason) >= 1) AND (char_length(reason) <= 1000)))`
+- Check `message_reports_resolution_check`: `CHECK ((char_length(resolution) <= 2000))`
+- Check `message_reports_status_check`: `CHECK ((status = ANY (ARRAY['open'::text, 'resolved'::text])))`
+- Index `message_reports_reported_by_idx`: `CREATE INDEX message_reports_reported_by_idx ON core.message_reports USING btree (reported_by)`
+- Index `message_reports_resolved_by_idx`: `CREATE INDEX message_reports_resolved_by_idx ON core.message_reports USING btree (resolved_by)`
+- Index `message_reports_status_idx`: `CREATE INDEX message_reports_status_idx ON core.message_reports USING btree (status, id DESC)`
+
+## messages
+
+One message of a conversation, by user_id. A deleted one stays as a tombstone (status deleted, empty body). client_key makes a resend idempotent; course_id / activity_id say what it is about.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |
+| conversation_id | uuid |  |  |
+| user_id | uuid |  |  |
+| body | text |  |  |
+| status | text |  | `'active'::text` |
+| deleted_at | timestamp with time zone | null |  |
+| client_key | uuid |  |  |
+| course_id | uuid | null |  |
+| activity_id | uuid | null |  |
+| created_at | timestamp with time zone |  | `now()` |
+
+- Primary key `messages_pkey`: `PRIMARY KEY (id)`
+- Unique `messages_user_id_client_key_key`: `UNIQUE (user_id, client_key)`
+- Foreign key `messages_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL`
+- Foreign key `messages_conversation_id_fkey`: `FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE`
+- Foreign key `messages_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL`
+- Foreign key `messages_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id)`
+- Check `messages_body_check`: `CHECK ((char_length(body) <= 4000))`
+- Check `messages_check`: `CHECK (((status = 'deleted'::text) = (deleted_at IS NOT NULL)))`
+- Check `messages_check1`: `CHECK (((status = 'active'::text) OR (body = ''::text)))`
+- Check `messages_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'deleted'::text])))`
+- Index `messages_activity_idx`: `CREATE INDEX messages_activity_idx ON core.messages USING btree (activity_id)`
+- Index `messages_conversation_idx`: `CREATE INDEX messages_conversation_idx ON core.messages USING btree (conversation_id, id DESC)`
+- Index `messages_course_idx`: `CREATE INDEX messages_course_idx ON core.messages USING btree (course_id)`
+- Index `messages_user_idx`: `CREATE INDEX messages_user_idx ON core.messages USING btree (user_id, id DESC)`
 
 ## notification_kinds
 

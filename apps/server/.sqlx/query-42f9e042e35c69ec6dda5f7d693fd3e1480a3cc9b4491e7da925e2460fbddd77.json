@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM conversations WHERE id IN (\n             SELECT c.id FROM conversations c\n             WHERE c.created_at < now() - make_interval(days => $1)\n               AND NOT EXISTS (SELECT 1 FROM messages m\n                               WHERE m.conversation_id = c.id\n                                 AND m.created_at >= now() - make_interval(days => $1))\n             LIMIT 5000)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "42f9e042e35c69ec6dda5f7d693fd3e1480a3cc9b4491e7da925e2460fbddd77"
+}

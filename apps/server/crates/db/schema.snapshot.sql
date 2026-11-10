@@ -711,6 +711,22 @@ constraint content_index_state content_index_state_source_id_not_null NOT NULL s
 constraint content_index_state content_index_state_source_type_check CHECK ((source_type = ANY (ARRAY['lesson'::text, 'activity'::text, 'assignment'::text, 'item'::text, 'course'::text, 'document'::text, 'transcript'::text])))
 constraint content_index_state content_index_state_source_type_not_null NOT NULL source_type
 constraint content_index_state content_index_state_source_version_not_null NOT NULL source_version
+constraint conversation_members conversation_members_check CHECK ((user_id <> peer_id))
+constraint conversation_members conversation_members_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+constraint conversation_members conversation_members_conversation_id_not_null NOT NULL conversation_id
+constraint conversation_members conversation_members_created_at_not_null NOT NULL created_at
+constraint conversation_members conversation_members_peer_id_fkey FOREIGN KEY (peer_id) REFERENCES users(id)
+constraint conversation_members conversation_members_peer_id_not_null NOT NULL peer_id
+constraint conversation_members conversation_members_pkey PRIMARY KEY (conversation_id, user_id)
+constraint conversation_members conversation_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id)
+constraint conversation_members conversation_members_user_id_not_null NOT NULL user_id
+constraint conversation_members conversation_members_user_id_peer_id_key UNIQUE (user_id, peer_id)
+constraint conversations conversations_created_at_not_null NOT NULL created_at
+constraint conversations conversations_id_not_null NOT NULL id
+constraint conversations conversations_kind_check CHECK ((kind = 'direct'::text))
+constraint conversations conversations_kind_not_null NOT NULL kind
+constraint conversations conversations_last_message_id_fkey FOREIGN KEY (last_message_id) REFERENCES messages(id) ON DELETE SET NULL
+constraint conversations conversations_pkey PRIMARY KEY (id)
 constraint course_concepts course_concepts_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint course_concepts course_concepts_course_id_not_null NOT NULL course_id
 constraint course_concepts course_concepts_course_id_slug_key UNIQUE (course_id, slug)
@@ -1171,6 +1187,47 @@ constraint mastery_evidence mastery_evidence_user_id_fkey FOREIGN KEY (user_id) 
 constraint mastery_evidence mastery_evidence_user_id_not_null NOT NULL user_id
 constraint mastery_evidence mastery_evidence_weight_check CHECK (((weight > (0)::double precision) AND (weight <= (1)::double precision)))
 constraint mastery_evidence mastery_evidence_weight_not_null NOT NULL weight
+constraint message_bans message_bans_banned_by_fkey FOREIGN KEY (banned_by) REFERENCES users(id)
+constraint message_bans message_bans_banned_by_not_null NOT NULL banned_by
+constraint message_bans message_bans_created_at_not_null NOT NULL created_at
+constraint message_bans message_bans_pkey PRIMARY KEY (user_id)
+constraint message_bans message_bans_reason_check CHECK ((char_length(reason) <= 2000))
+constraint message_bans message_bans_reason_not_null NOT NULL reason
+constraint message_bans message_bans_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id)
+constraint message_bans message_bans_user_id_not_null NOT NULL user_id
+constraint message_reports message_reports_body_snapshot_not_null NOT NULL body_snapshot
+constraint message_reports message_reports_check CHECK (((status = 'resolved'::text) = (resolved_at IS NOT NULL)))
+constraint message_reports message_reports_created_at_not_null NOT NULL created_at
+constraint message_reports message_reports_id_not_null NOT NULL id
+constraint message_reports message_reports_message_id_fkey FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
+constraint message_reports message_reports_message_id_not_null NOT NULL message_id
+constraint message_reports message_reports_message_id_reported_by_key UNIQUE (message_id, reported_by)
+constraint message_reports message_reports_pkey PRIMARY KEY (id)
+constraint message_reports message_reports_reason_check CHECK (((char_length(reason) >= 1) AND (char_length(reason) <= 1000)))
+constraint message_reports message_reports_reason_not_null NOT NULL reason
+constraint message_reports message_reports_reported_by_fkey FOREIGN KEY (reported_by) REFERENCES users(id)
+constraint message_reports message_reports_reported_by_not_null NOT NULL reported_by
+constraint message_reports message_reports_resolution_check CHECK ((char_length(resolution) <= 2000))
+constraint message_reports message_reports_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES users(id)
+constraint message_reports message_reports_status_check CHECK ((status = ANY (ARRAY['open'::text, 'resolved'::text])))
+constraint message_reports message_reports_status_not_null NOT NULL status
+constraint messages messages_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL
+constraint messages messages_body_check CHECK ((char_length(body) <= 4000))
+constraint messages messages_body_not_null NOT NULL body
+constraint messages messages_check CHECK (((status = 'deleted'::text) = (deleted_at IS NOT NULL)))
+constraint messages messages_check1 CHECK (((status = 'active'::text) OR (body = ''::text)))
+constraint messages messages_client_key_not_null NOT NULL client_key
+constraint messages messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+constraint messages messages_conversation_id_not_null NOT NULL conversation_id
+constraint messages messages_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL
+constraint messages messages_created_at_not_null NOT NULL created_at
+constraint messages messages_id_not_null NOT NULL id
+constraint messages messages_pkey PRIMARY KEY (id)
+constraint messages messages_status_check CHECK ((status = ANY (ARRAY['active'::text, 'deleted'::text])))
+constraint messages messages_status_not_null NOT NULL status
+constraint messages messages_user_id_client_key_key UNIQUE (user_id, client_key)
+constraint messages messages_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id)
+constraint messages messages_user_id_not_null NOT NULL user_id
 constraint notification_kinds notification_kinds_kind_not_null NOT NULL kind
 constraint notification_kinds notification_kinds_pkey PRIMARY KEY (kind)
 constraint notification_opt_outs notification_opt_outs_created_at_not_null NOT NULL created_at
@@ -1640,7 +1697,11 @@ BEGIN
             ('ai_grade_corrections', ARRAY['excerpt', 'teacher_feedback']),
             ('ai_evidence', ARRAY['excerpt']),
             ('ai_artifacts', ARRAY['content']),
-            ('file_submission_files', ARRAY['display_name'])
+            ('file_submission_files', ARRAY['display_name']),
+            -- Personal messages (docs/DIALOGS.md 7): nobody but the two people reads the text.
+            ('messages', ARRAY['body']),
+            ('message_reports', ARRAY['reason', 'body_snapshot', 'resolution']),
+            ('message_bans', ARRAY['reason'])
         ) AS x(name, hidden)
         JOIN pg_class c ON c.relname = x.name
          AND c.relnamespace::regnamespace::name = ANY (ARRAY['public']::name[] || app_schemas())
@@ -2479,6 +2540,8 @@ index CREATE INDEX content_chunks_embedding_te3_small_idx ON ai.content_chunks U
 index CREATE INDEX content_chunks_lexeme_idx ON ai.content_chunks USING gin (lexeme)
 index CREATE INDEX content_index_state_activity_idx ON ai.content_index_state USING btree (activity_id)
 index CREATE INDEX content_index_state_course_idx ON ai.content_index_state USING btree (course_id)
+index CREATE INDEX conversation_members_peer_idx ON core.conversation_members USING btree (peer_id)
+index CREATE INDEX conversations_last_message_idx ON core.conversations USING btree (last_message_id)
 index CREATE INDEX course_concepts_decided_by_idx ON learning.course_concepts USING btree (decided_by)
 index CREATE INDEX course_concepts_run_idx ON learning.course_concepts USING btree (run_id)
 index CREATE INDEX course_discussions_course_idx ON core.course_discussions USING btree (course_id, created_at DESC)
@@ -2536,6 +2599,14 @@ index CREATE INDEX learner_risk_snapshots_user_idx ON analytics.learner_risk_sna
 index CREATE INDEX mastery_evidence_concept_idx ON learning.mastery_evidence USING btree (concept_id)
 index CREATE INDEX mastery_evidence_course_idx ON learning.mastery_evidence USING btree (course_id, concept_id)
 index CREATE INDEX mastery_evidence_learner_idx ON learning.mastery_evidence USING btree (user_id, concept_id, observed_at)
+index CREATE INDEX message_bans_banned_by_idx ON core.message_bans USING btree (banned_by)
+index CREATE INDEX message_reports_reported_by_idx ON core.message_reports USING btree (reported_by)
+index CREATE INDEX message_reports_resolved_by_idx ON core.message_reports USING btree (resolved_by)
+index CREATE INDEX message_reports_status_idx ON core.message_reports USING btree (status, id DESC)
+index CREATE INDEX messages_activity_idx ON core.messages USING btree (activity_id)
+index CREATE INDEX messages_conversation_idx ON core.messages USING btree (conversation_id, id DESC)
+index CREATE INDEX messages_course_idx ON core.messages USING btree (course_id)
+index CREATE INDEX messages_user_idx ON core.messages USING btree (user_id, id DESC)
 index CREATE INDEX notifications_activity_idx ON core.notifications USING btree (activity_id)
 index CREATE INDEX notifications_course_idx ON core.notifications USING btree (course_id)
 index CREATE INDEX notifications_created_idx ON core.notifications USING btree (created_at)
@@ -2642,6 +2713,9 @@ index CREATE UNIQUE INDEX concept_tags_pkey ON learning.concept_tags USING btree
 index CREATE UNIQUE INDEX content_chunks_pkey ON ai.content_chunks USING btree (id)
 index CREATE UNIQUE INDEX content_chunks_source_type_source_id_ordinal_key ON ai.content_chunks USING btree (source_type, source_id, ordinal)
 index CREATE UNIQUE INDEX content_index_state_pkey ON ai.content_index_state USING btree (source_type, source_id)
+index CREATE UNIQUE INDEX conversation_members_pkey ON core.conversation_members USING btree (conversation_id, user_id)
+index CREATE UNIQUE INDEX conversation_members_user_id_peer_id_key ON core.conversation_members USING btree (user_id, peer_id)
+index CREATE UNIQUE INDEX conversations_pkey ON core.conversations USING btree (id)
 index CREATE UNIQUE INDEX course_concepts_course_id_slug_key ON learning.course_concepts USING btree (course_id, slug)
 index CREATE UNIQUE INDEX course_concepts_id_course_id_key ON learning.course_concepts USING btree (id, course_id)
 index CREATE UNIQUE INDEX course_concepts_pkey ON learning.course_concepts USING btree (id)
@@ -2691,6 +2765,11 @@ index CREATE UNIQUE INDEX jobs_pkey ON ops.jobs USING btree (id)
 index CREATE UNIQUE INDEX learner_risk_snapshots_pkey ON analytics.learner_risk_snapshots USING btree (snapshot_date, user_id, course_id)
 index CREATE UNIQUE INDEX mastery_evidence_pkey ON learning.mastery_evidence USING btree (id)
 index CREATE UNIQUE INDEX mastery_evidence_source_type_source_id_concept_id_part_id_u_key ON learning.mastery_evidence USING btree (source_type, source_id, concept_id, part_id, user_id) NULLS NOT DISTINCT
+index CREATE UNIQUE INDEX message_bans_pkey ON core.message_bans USING btree (user_id)
+index CREATE UNIQUE INDEX message_reports_message_id_reported_by_key ON core.message_reports USING btree (message_id, reported_by)
+index CREATE UNIQUE INDEX message_reports_pkey ON core.message_reports USING btree (id)
+index CREATE UNIQUE INDEX messages_pkey ON core.messages USING btree (id)
+index CREATE UNIQUE INDEX messages_user_id_client_key_key ON core.messages USING btree (user_id, client_key)
 index CREATE UNIQUE INDEX notification_kinds_pkey ON core.notification_kinds USING btree (kind)
 index CREATE UNIQUE INDEX notification_opt_outs_pkey ON core.notification_opt_outs USING btree (user_id, kind)
 index CREATE UNIQUE INDEX notifications_pkey ON core.notifications USING btree (id)
@@ -3118,6 +3197,15 @@ table core.collections name text NOT NULL DEFAULT -
 table core.collections public boolean NOT NULL DEFAULT false
 table core.collections updated_at timestamp with time zone NOT NULL DEFAULT now()
 table core.collections version integer NOT NULL DEFAULT 1
+table core.conversation_members conversation_id uuid NOT NULL DEFAULT -
+table core.conversation_members created_at timestamp with time zone NOT NULL DEFAULT now()
+table core.conversation_members last_read_message_id uuid DEFAULT -
+table core.conversation_members peer_id uuid NOT NULL DEFAULT -
+table core.conversation_members user_id uuid NOT NULL DEFAULT -
+table core.conversations created_at timestamp with time zone NOT NULL DEFAULT now()
+table core.conversations id uuid NOT NULL DEFAULT uuidv7()
+table core.conversations kind text NOT NULL DEFAULT 'direct'::text
+table core.conversations last_message_id uuid DEFAULT -
 table core.course_discussions content text NOT NULL DEFAULT -
 table core.course_discussions course_id uuid NOT NULL DEFAULT -
 table core.course_discussions created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3182,6 +3270,30 @@ table core.google_accounts created_at timestamp with time zone NOT NULL DEFAULT 
 table core.google_accounts email text NOT NULL DEFAULT -
 table core.google_accounts google_sub text NOT NULL DEFAULT -
 table core.google_accounts user_id uuid NOT NULL DEFAULT -
+table core.message_bans banned_by uuid NOT NULL DEFAULT -
+table core.message_bans created_at timestamp with time zone NOT NULL DEFAULT now()
+table core.message_bans reason text NOT NULL DEFAULT ''::text
+table core.message_bans user_id uuid NOT NULL DEFAULT -
+table core.message_reports body_snapshot text NOT NULL DEFAULT -
+table core.message_reports created_at timestamp with time zone NOT NULL DEFAULT now()
+table core.message_reports id uuid NOT NULL DEFAULT uuidv7()
+table core.message_reports message_id uuid NOT NULL DEFAULT -
+table core.message_reports reason text NOT NULL DEFAULT -
+table core.message_reports reported_by uuid NOT NULL DEFAULT -
+table core.message_reports resolution text DEFAULT -
+table core.message_reports resolved_at timestamp with time zone DEFAULT -
+table core.message_reports resolved_by uuid DEFAULT -
+table core.message_reports status text NOT NULL DEFAULT 'open'::text
+table core.messages activity_id uuid DEFAULT -
+table core.messages body text NOT NULL DEFAULT -
+table core.messages client_key uuid NOT NULL DEFAULT -
+table core.messages conversation_id uuid NOT NULL DEFAULT -
+table core.messages course_id uuid DEFAULT -
+table core.messages created_at timestamp with time zone NOT NULL DEFAULT now()
+table core.messages deleted_at timestamp with time zone DEFAULT -
+table core.messages id uuid NOT NULL DEFAULT uuidv7()
+table core.messages status text NOT NULL DEFAULT 'active'::text
+table core.messages user_id uuid NOT NULL DEFAULT -
 table core.notification_kinds kind text NOT NULL DEFAULT -
 table core.notification_opt_outs created_at timestamp with time zone NOT NULL DEFAULT now()
 table core.notification_opt_outs kind text NOT NULL DEFAULT -

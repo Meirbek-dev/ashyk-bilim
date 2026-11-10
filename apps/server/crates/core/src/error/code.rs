@@ -98,6 +98,9 @@ error_codes! {
     RemediationRequired => ("remediation-required", 403, "A remediation session must be passed first"),
     EnrollmentRequired => ("enrollment-required", 403, "Enroll in the course to take its assessments"),
     DiscussionEnrollmentRequired => ("discussion-enrollment-required", 403, "Enroll in the course to post in its discussions"),
+    // Personal messages (`details.reason`: no_relation | banned | peer_unavailable)
+    MessageRecipientNotAllowed => ("message-recipient-not-allowed", 403, "You cannot write to this person"),
+    MessagesBanned => ("messages-banned", 403, "You may not send personal messages"),
     // Grading
     GradeNotReleased => ("grade-not-released", 403, "Grade is not released yet"),
     GradeOwnAttempt => ("grade-own-attempt", 403, "A grader may not act on their own attempt"),

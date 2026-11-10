@@ -3,8 +3,8 @@
 import { type DefaultError, type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { abortMultipartUpload, activityGradeDrafts, addActivity, addContributor, addCourse, addGroupCourses, addGroupMembers, addUsergroupCourses, addUsergroupMembers, adminAward, adminEvals, adminOverview, adminRunDetail, adminRuns, adminSettings, agenda, analyzeCourse, analyzeSubmission, applyContributor, approveGradeDrafts, assessmentDetail, assessmentList, assessmentReviewQueue, assignRole, atRiskLearners, attemptState, auditTrail, cancelRun, certificatePdf, certificationPreviewPdf, changeEmail, changePassword, classMastery, completeActivity, completeMultipartUpload, completeRemediation, conceptGraph, confirmEmailChange, confirmPasswordReset, courseArchivePreview, courseDeletionPreview, courseDetail, courseLifecycle, courseList, courseReadiness, createActivity, createAssessment, createBlock, createCertification, createChapter, createCollection, createConcept, createConceptTag, createCourse, createCourseUpdate, createDiscussion, createFileSubmission, createGroup, createIntervention, createItem, createOverride, createRole, createUpload, createUser, createUsergroup, critiqueLecture, currentDraft, currentSession, dashboard, deleteAccount, deleteActivity, deleteBlock, deleteCertification, deleteChapter, deleteCollection, deleteConcept, deleteConceptTag, deleteCourse, deleteCourseUpdate, deleteDiscussion, deleteGroup, deleteItem, deleteOverride, deleteQaThread, deleteRole, deleteUsergroup, deleteView, discardGradeDraft, dismissLectureSuggestion, downloadUpload, drillThrough, duplicateAssessment, duplicateCourse, editCourseUpdate, enroll, enrollCourseLearners, exportAssessmentOutcomes, exportAssessmentSubmissionsCsv, exportAtRisk, exportCourseProgress, exportFileSubmissionCsv, exportGradebookCsv, exportGradingBacklog, extendDeadline, extendFileDeadline, fileGradingHistory, fileSubmissionReviewQueue, fileSubmissionReviewStats, fileUrl, finalizeUpload, generateRemediation, getAccess, getActivity, getActivityAssessment, getActivityFileSubmission, getAdminUser, getAiRun, getAssessment, getAttempt, getBlock, getBulkAction, getCertification, getCodeRun, getCollection, getConfig, getCourse, getCurriculum, getDiscussion, getDraft, getFileSubmission, getGroup, getNotificationPreferences, getPlatform, getRole, getSubmission, getTrail, getUsergroup, googleCallback, googleStart, gradeAttempt, gradebook, gradingConsistency, gradingHistory, gradingMetrics, gradingSettings, groupsForCourse, indexStatus, itemAnalytics, languages, latestCourseAnalysis, latestRemediation, latestSubmissionAnalysis, leaderboard, learnerCourseState, learnerMastery, leaveCourse, lectureReviews, lifecycle, linkPreview, listBlocks, listCollections, listContributors, listContributorsPage, listCourseAssessments, listCourseCertifications, listCourseLearners, listCourses, listCourseUpdates, listCourseUpdatesPage, listDiscussions, listEnrollments, listGroupCourses, listGroupMembers, listGroupMembersPage, listGroups, listInterventions, listMyCodeRuns, listNotifications, listOverrides, listReplies, listRoles, listSavedViews, listSessions, listUsergroupCourses, listUsergroupMembers, listUsergroupMembersPage, listUsergroups, listUsers, live, login, logout, markAllNotificationsRead, markNotificationRead, moveActivity, moveChapter, myAttempts, myCertificates, myCertificatesPage, myCourseCertificates, myFeedback, myMastery, myProfile, mySubmissions, type Options, publicProfile, publicProfileById, publishCourseAnalysis, publishFileGrades, publishFileSubmission, publishGrades, putNotificationPreferences, qaThread, qaThreads, queueCourseAnalysis, queueGradeDrafts, queueLectureReview, queueRemediation, queueSubmissionAnalysis, rank, readiness, ready, recordStreak, referenceCheck, referenceCheckItem, register, reindexCourse, remediationSession, removeActivity, removeContributor, removeCourse, removeCourseLearner, removeGroupCourses, removeGroupMembers, removeUsergroupCourses, removeUsergroupMembers, reorderItems, reportViolation, requestPasswordReset, resendVerification, returnFileGrades, returnGrades, reviewConcepts, reviewCourseFinding, reviewSubmission, revokeSession, runArtifacts, runEvents, runItem, runner, saveFileSubmissionDraft, saveGrade, saveSubmissionDraft, saveView, scopeCapabilities, search, searchCourse, setAccess, setFeatureSwitch, setGradingSettings, setPolicy, setPrerequisites, setRolePermissions, setUserStatus, startDraft, startSubmission, stats, studentRemediation, studyAsk, studyAskQueue, subjectGradeDraft, submit, submitSubmission, suggestConcepts, teacherOverview, toggleDislike, toggleLike, totpEnroll, totpRemove, totpVerify, unassignRole, uncompleteActivity, unpublishFileSubmission, unreadCount, updateActivity, updateAssessment, updateCertification, updateChapter, updateCollection, updateConcept, updateConceptTag, updateConfig, updateContributor, updateCourse, updateDiscussion, updateFileSubmission, updateGroup, updateIntervention, updateItem, updateMyProfile, updateOverride, updatePlatform, updatePreferences, updateRole, updateUsergroup, usage, userCertificates, userCourses, usergroupsForCourse, verifyCertificate, verifyEmail, workQueue, xpHistory } from '../sdk.gen';
-import type { AbortMultipartUploadData, AbortMultipartUploadError, AbortMultipartUploadResponse, ActivityGradeDraftsData, ActivityGradeDraftsResponse, AddActivityData, AddActivityResponse, AddContributorData, AddContributorError, AddContributorResponse, AddCourseData, AddCourseError, AddCourseResponse, AddGroupCoursesData, AddGroupCoursesResponse, AddGroupMembersData, AddGroupMembersResponse, AddUsergroupCoursesData, AddUsergroupCoursesResponse, AddUsergroupMembersData, AddUsergroupMembersResponse, AdminAwardData, AdminAwardError, AdminAwardResponse, AdminEvalsData, AdminEvalsResponse, AdminOverviewData, AdminOverviewError, AdminOverviewResponse, AdminRunDetailData, AdminRunDetailError, AdminRunDetailResponse, AdminRunsData, AdminRunsError, AdminRunsResponse, AdminSettingsData, AdminSettingsError, AdminSettingsResponse, AgendaData, AgendaError, AgendaResponse, AiRunId, AnalyzeCourseData, AnalyzeCourseError, AnalyzeCourseResponse, AnalyzeSubmissionData, AnalyzeSubmissionError, AnalyzeSubmissionResponse, ApplyContributorData, ApplyContributorError, ApplyContributorResponse, ApproveGradeDraftsData, ApproveGradeDraftsResponse, AssessmentDetailData, AssessmentDetailError, AssessmentDetailResponse, AssessmentListData, AssessmentListResponse, AssessmentReviewQueueData, AssessmentReviewQueueError, AssessmentReviewQueueResponse, AssignRoleData, AssignRoleError, AssignRoleResponse, AtRiskLearnersData, AtRiskLearnersResponse2, AttemptStateData, AttemptStateError, AttemptStateResponse, AuditTrailData, AuditTrailResponse, CancelRunData, CancelRunResponse, CertificatePdfData, CertificatePdfError, CertificatePdfResponse, CertificationPreviewPdfData, CertificationPreviewPdfError, CertificationPreviewPdfResponse, ChangeEmailData, ChangeEmailError, ChangePasswordData, ChangePasswordError, ChangePasswordResponse, ClassMasteryData, ClassMasteryError, ClassMasteryResponse, CollectionId, CompleteActivityData, CompleteActivityResponse, CompleteMultipartUploadData, CompleteMultipartUploadError, CompleteMultipartUploadResponse, CompleteRemediationData, CompleteRemediationError, CompleteRemediationResponse, ConceptGraphData, ConceptGraphError, ConceptGraphResponse, ConfirmEmailChangeData, ConfirmEmailChangeError, ConfirmEmailChangeResponse, ConfirmPasswordResetData, ConfirmPasswordResetError, ConfirmPasswordResetResponse, CourseArchivePreviewData, CourseArchivePreviewError, CourseArchivePreviewResponse, CourseDeletionPreviewData, CourseDeletionPreviewError, CourseDeletionPreviewResponse, CourseDetailData, CourseDetailError, CourseDetailResponse, CourseId, CourseLifecycleData, CourseLifecycleError, CourseLifecycleResponse, CourseListData, CourseListResponse, CourseReadinessData, CourseReadinessError, CourseReadinessResponse, CreateActivityData, CreateActivityError, CreateActivityResponse, CreateAssessmentData, CreateAssessmentError, CreateAssessmentResponse, CreateBlockData, CreateBlockError, CreateBlockResponse, CreateCertificationData, CreateCertificationError, CreateCertificationResponse, CreateChapterData, CreateChapterError, CreateChapterResponse, CreateCollectionData, CreateCollectionError, CreateCollectionResponse, CreateConceptData, CreateConceptError, CreateConceptResponse, CreateConceptTagData, CreateConceptTagError, CreateConceptTagResponse, CreateCourseData, CreateCourseError, CreateCourseResponse, CreateCourseUpdateData, CreateCourseUpdateError, CreateCourseUpdateResponse, CreateDiscussionData, CreateDiscussionError, CreateDiscussionResponse, CreateFileSubmissionData, CreateFileSubmissionError, CreateFileSubmissionResponse, CreateGroupData, CreateGroupError, CreateGroupResponse, CreateInterventionData, CreateInterventionError, CreateInterventionResponse, CreateItemData, CreateItemError, CreateItemResponse, CreateOverrideData, CreateOverrideError, CreateOverrideResponse, CreateRoleData, CreateRoleError, CreateRoleResponse, CreateUploadData, CreateUploadError, CreateUploadResponse, CreateUserData, CreateUserError, CreateUsergroupData, CreateUsergroupError, CreateUsergroupResponse, CreateUserResponse, CritiqueLectureData, CritiqueLectureError, CritiqueLectureResponse, CurrentDraftData, CurrentDraftError, CurrentDraftResponse, CurrentSessionData, CurrentSessionError, CurrentSessionResponse, DashboardData, DashboardResponse, DeleteAccountData, DeleteAccountError, DeleteAccountResponse, DeleteActivityData, DeleteActivityError, DeleteActivityResponse, DeleteBlockData, DeleteBlockError, DeleteBlockResponse, DeleteCertificationData, DeleteCertificationError, DeleteCertificationResponse, DeleteChapterData, DeleteChapterError, DeleteChapterResponse, DeleteCollectionData, DeleteCollectionError, DeleteCollectionResponse, DeleteConceptData, DeleteConceptError, DeleteConceptResponse, DeleteConceptTagData, DeleteConceptTagError, DeleteConceptTagResponse, DeleteCourseData, DeleteCourseError, DeleteCourseResponse, DeleteCourseUpdateData, DeleteCourseUpdateError, DeleteCourseUpdateResponse, DeleteDiscussionData, DeleteDiscussionError, DeleteDiscussionResponse, DeleteGroupData, DeleteGroupError, DeleteGroupResponse, DeleteItemData, DeleteItemError, DeleteItemResponse, DeleteOverrideData, DeleteOverrideResponse, DeleteQaThreadData, DeleteQaThreadError, DeleteQaThreadResponse, DeleteRoleData, DeleteRoleError, DeleteRoleResponse, DeleteUsergroupData, DeleteUsergroupError, DeleteUsergroupResponse, DeleteViewData, DeleteViewError, DeleteViewResponse, DiscardGradeDraftData, DiscardGradeDraftError, DiscardGradeDraftResponse, DiscussionId, DismissLectureSuggestionData, DismissLectureSuggestionResponse, DownloadUploadData, DownloadUploadError, DrillThroughData, DrillThroughError, DrillThroughResponse2, DuplicateAssessmentData, DuplicateAssessmentError, DuplicateAssessmentResponse, DuplicateCourseData, DuplicateCourseError, DuplicateCourseResponse, EditCourseUpdateData, EditCourseUpdateError, EditCourseUpdateResponse, EnrollCourseLearnersData, EnrollCourseLearnersError, EnrollCourseLearnersResponse, EnrollData, EnrollError, EnrollResponse, ExportAssessmentOutcomesData, ExportAssessmentOutcomesResponse, ExportAssessmentSubmissionsCsvData, ExportAssessmentSubmissionsCsvResponse, ExportAtRiskData, ExportAtRiskResponse, ExportCourseProgressData, ExportCourseProgressResponse, ExportFileSubmissionCsvData, ExportFileSubmissionCsvResponse, ExportGradebookCsvData, ExportGradebookCsvError, ExportGradebookCsvResponse, ExportGradingBacklogData, ExportGradingBacklogResponse, ExtendDeadlineData, ExtendDeadlineError, ExtendDeadlineResponse, ExtendFileDeadlineData, ExtendFileDeadlineError, ExtendFileDeadlineResponse, FileAttemptId, FileGradingHistoryData, FileGradingHistoryError, FileGradingHistoryResponse, FileSubmissionReviewQueueData, FileSubmissionReviewQueueResponse, FileSubmissionReviewStatsData, FileSubmissionReviewStatsError, FileSubmissionReviewStatsResponse, FileUrlData, FileUrlResponse, FinalizeUploadData, FinalizeUploadError, FinalizeUploadResponse, GenerateRemediationData, GenerateRemediationError, GenerateRemediationResponse, GetAccessData, GetAccessResponse, GetActivityAssessmentData, GetActivityAssessmentError, GetActivityAssessmentResponse, GetActivityData, GetActivityError, GetActivityFileSubmissionData, GetActivityFileSubmissionResponse, GetActivityResponse, GetAdminUserData, GetAdminUserError, GetAdminUserResponse, GetAiRunData, GetAiRunError, GetAiRunResponse, GetAssessmentData, GetAssessmentError, GetAssessmentResponse, GetAttemptData, GetAttemptResponse, GetBlockData, GetBlockError, GetBlockResponse, GetBulkActionData, GetBulkActionResponse, GetCertificationData, GetCertificationResponse, GetCodeRunData, GetCodeRunError, GetCodeRunResponse, GetCollectionData, GetCollectionError, GetCollectionResponse, GetConfigData, GetConfigResponse, GetCourseData, GetCourseError, GetCourseResponse, GetCurriculumData, GetCurriculumError, GetCurriculumResponse, GetDiscussionData, GetDiscussionError, GetDiscussionResponse, GetDraftData, GetDraftError, GetDraftResponse, GetFileSubmissionData, GetFileSubmissionResponse, GetGroupData, GetGroupError, GetGroupResponse, GetNotificationPreferencesData, GetNotificationPreferencesError, GetNotificationPreferencesResponse, GetPlatformData, GetPlatformResponse, GetRoleData, GetRoleError, GetRoleResponse, GetSubmissionData, GetSubmissionError, GetSubmissionResponse, GetTrailData, GetTrailResponse, GetUsergroupData, GetUsergroupError, GetUsergroupResponse, GoogleCallbackData, GoogleStartData, GradeAttemptData, GradeAttemptError, GradeAttemptResponse, GradebookData, GradebookResponse, GradingConsistencyData, GradingConsistencyResponse, GradingHistoryData, GradingHistoryResponse, GradingMetricsData, GradingMetricsResponse, GradingSettingsData, GradingSettingsResponse, GroupsForCourseData, GroupsForCourseResponse, IndexStatusData, IndexStatusResponse, ItemAnalyticsData, ItemAnalyticsResponse, LanguagesData, LanguagesError, LanguagesResponse, LatestCourseAnalysisData, LatestCourseAnalysisResponse, LatestRemediationData, LatestRemediationError, LatestRemediationResponse, LatestSubmissionAnalysisData, LatestSubmissionAnalysisResponse, LeaderboardData, LeaderboardResponse, LearnerCourseStateData, LearnerCourseStateError, LearnerCourseStateResponse, LearnerMasteryData, LearnerMasteryError, LearnerMasteryResponse, LeaveCourseData, LeaveCourseError, LeaveCourseResponse, LectureReviewsData, LectureReviewsResponse, LifecycleData, LifecycleError, LifecycleResponse, LinkPreviewData, LinkPreviewError, LinkPreviewResponse, ListBlocksData, ListBlocksError, ListBlocksResponse, ListCollectionsData, ListCollectionsResponse, ListContributorsData, ListContributorsError, ListContributorsPageData, ListContributorsPageError, ListContributorsPageResponse, ListContributorsResponse, ListCourseAssessmentsData, ListCourseAssessmentsResponse, ListCourseCertificationsData, ListCourseCertificationsResponse, ListCourseLearnersData, ListCourseLearnersError, ListCourseLearnersResponse, ListCoursesData, ListCoursesError, ListCoursesResponse, ListCourseUpdatesData, ListCourseUpdatesError, ListCourseUpdatesPageData, ListCourseUpdatesPageError, ListCourseUpdatesPageResponse, ListCourseUpdatesResponse, ListDiscussionsData, ListDiscussionsError, ListDiscussionsResponse, ListEnrollmentsData, ListEnrollmentsResponse, ListGroupCoursesData, ListGroupCoursesResponse, ListGroupMembersData, ListGroupMembersPageData, ListGroupMembersPageResponse, ListGroupMembersResponse, ListGroupsData, ListGroupsResponse, ListInterventionsData, ListInterventionsResponse, ListMyCodeRunsData, ListMyCodeRunsResponse, ListNotificationsData, ListNotificationsError, ListNotificationsResponse, ListOverridesData, ListOverridesResponse, ListRepliesData, ListRepliesResponse, ListRolesData, ListRolesError, ListRolesResponse, ListSavedViewsData, ListSavedViewsResponse, ListSessionsData, ListSessionsError, ListSessionsResponse, ListUsergroupCoursesData, ListUsergroupCoursesResponse, ListUsergroupMembersData, ListUsergroupMembersPageData, ListUsergroupMembersPageResponse, ListUsergroupMembersResponse, ListUsergroupsData, ListUsergroupsResponse, ListUsersData, ListUsersError, ListUsersResponse, LiveData, LiveResponse, LoginData, LoginError, LoginResponse, LogoutData, LogoutError, LogoutResponse, MarkAllNotificationsReadData, MarkAllNotificationsReadError, MarkAllNotificationsReadResponse, MarkNotificationReadData, MarkNotificationReadError, MarkNotificationReadResponse, MoveActivityData, MoveActivityError, MoveActivityResponse, MoveChapterData, MoveChapterError, MoveChapterResponse, MyAttemptsData, MyAttemptsResponse, MyCertificatesData, MyCertificatesPageData, MyCertificatesPageResponse, MyCertificatesResponse, MyCourseCertificatesData, MyCourseCertificatesResponse, MyFeedbackData, MyFeedbackResponse, MyMasteryData, MyMasteryResponse, MyProfileData, MyProfileError, MyProfileResponse, MySubmissionsData, MySubmissionsResponse, PublicProfileByIdData, PublicProfileByIdError, PublicProfileByIdResponse, PublicProfileData, PublicProfileError, PublicProfileResponse, PublishCourseAnalysisData, PublishCourseAnalysisResponse, PublishFileGradesData, PublishFileGradesError, PublishFileGradesResponse, PublishFileSubmissionData, PublishFileSubmissionError, PublishFileSubmissionResponse, PublishGradesData, PublishGradesResponse, PutNotificationPreferencesData, PutNotificationPreferencesError, PutNotificationPreferencesResponse, QaThreadData, QaThreadError, QaThreadResponse, QaThreadsData, QaThreadsResponse, QueueCourseAnalysisData, QueueCourseAnalysisResponse, QueueGradeDraftsData, QueueGradeDraftsError, QueueGradeDraftsResponse, QueueLectureReviewData, QueueLectureReviewResponse, QueueRemediationData, QueueRemediationResponse, QueueSubmissionAnalysisData, QueueSubmissionAnalysisResponse, RankData, RankResponse, ReadinessData, ReadinessResponse, ReadyData, ReadyError, ReadyResponse, RecordStreakData, RecordStreakError, RecordStreakResponse, ReferenceCheckData, ReferenceCheckError, ReferenceCheckItemData, ReferenceCheckItemError, ReferenceCheckItemResponse, ReferenceCheckResponse2, RegisterData, RegisterError, RegisterResponse, ReindexCourseData, ReindexCourseResponse, RemediationSessionData, RemediationSessionError, RemediationSessionResponse, RemoveActivityData, RemoveActivityResponse, RemoveContributorData, RemoveContributorError, RemoveContributorResponse, RemoveCourseData, RemoveCourseError, RemoveCourseLearnerData, RemoveCourseLearnerError, RemoveCourseLearnerResponse, RemoveCourseResponse, RemoveGroupCoursesData, RemoveGroupCoursesResponse, RemoveGroupMembersData, RemoveGroupMembersResponse, RemoveUsergroupCoursesData, RemoveUsergroupCoursesResponse, RemoveUsergroupMembersData, RemoveUsergroupMembersResponse, ReorderItemsData, ReorderItemsError, ReorderItemsResponse, ReportViolationData, ReportViolationError, ReportViolationResponse, RequestPasswordResetData, RequestPasswordResetError, ResendVerificationData, ResendVerificationError, ReturnFileGradesData, ReturnFileGradesError, ReturnFileGradesResponse, ReturnGradesData, ReturnGradesError, ReturnGradesResponse, ReviewConceptsData, ReviewConceptsResponse, ReviewCourseFindingData, ReviewCourseFindingResponse, ReviewSubmissionData, ReviewSubmissionError, ReviewSubmissionResponse, RevokeSessionData, RevokeSessionError, RevokeSessionResponse, RunArtifactsData, RunArtifactsResponse, RunEventsData, RunEventsResponse, RunItemData, RunItemError, RunItemResponse, RunnerData, RunnerError, RunnerResponse, SaveFileSubmissionDraftData, SaveFileSubmissionDraftError, SaveFileSubmissionDraftResponse, SaveGradeData, SaveGradeError, SaveGradeResponse, SaveSubmissionDraftData, SaveSubmissionDraftError, SaveSubmissionDraftResponse, SaveViewData, SaveViewError, SaveViewResponse, ScopeCapabilitiesData, ScopeCapabilitiesResponse, SearchCourseData, SearchCourseError, SearchCourseResponse, SearchData, SearchError, SearchResponse, SetAccessData, SetAccessError, SetAccessResponse, SetFeatureSwitchData, SetFeatureSwitchError, SetFeatureSwitchResponse, SetGradingSettingsData, SetGradingSettingsResponse, SetPolicyData, SetPolicyError, SetPolicyResponse, SetPrerequisitesData, SetPrerequisitesError, SetPrerequisitesResponse, SetRolePermissionsData, SetRolePermissionsError, SetRolePermissionsResponse, SetUserStatusData, SetUserStatusError, SetUserStatusResponse, StartDraftData, StartDraftError, StartDraftResponse, StartSubmissionData, StartSubmissionError, StartSubmissionResponse, StatsData, StatsResponse, StudentRemediationData, StudentRemediationError, StudentRemediationResponse, StudyAskData, StudyAskError, StudyAskQueueData, StudyAskQueueResponse, StudyAskResponse, SubjectGradeDraftData, SubjectGradeDraftResponse, SubmitData, SubmitError, SubmitResponse, SubmitSubmissionData, SubmitSubmissionError, SubmitSubmissionResponse, SuggestConceptsData, SuggestConceptsError, SuggestConceptsResponse, TeacherOverviewData, TeacherOverviewError, TeacherOverviewResponse2, ToggleDislikeData, ToggleDislikeError, ToggleDislikeResponse, ToggleLikeData, ToggleLikeError, ToggleLikeResponse, TotpEnrollData, TotpEnrollError, TotpEnrollResponse, TotpRemoveData, TotpRemoveError, TotpRemoveResponse, TotpVerifyData, TotpVerifyError, TotpVerifyResponse, UnassignRoleData, UnassignRoleError, UnassignRoleResponse, UncompleteActivityData, UncompleteActivityResponse, UnpublishFileSubmissionData, UnpublishFileSubmissionError, UnpublishFileSubmissionResponse, UnreadCountData, UnreadCountError, UnreadCountResponse, UpdateActivityData, UpdateActivityError, UpdateActivityResponse, UpdateAssessmentData, UpdateAssessmentError, UpdateAssessmentResponse, UpdateCertificationData, UpdateCertificationError, UpdateCertificationResponse, UpdateChapterData, UpdateChapterError, UpdateChapterResponse, UpdateCollectionData, UpdateCollectionError, UpdateCollectionResponse, UpdateConceptData, UpdateConceptError, UpdateConceptResponse, UpdateConceptTagData, UpdateConceptTagError, UpdateConceptTagResponse, UpdateConfigData, UpdateConfigError, UpdateConfigResponse, UpdateContributorData, UpdateContributorError, UpdateContributorResponse, UpdateCourseData, UpdateCourseError, UpdateCourseResponse, UpdateDiscussionData, UpdateDiscussionError, UpdateDiscussionResponse, UpdateFileSubmissionData, UpdateFileSubmissionError, UpdateFileSubmissionResponse, UpdateGroupData, UpdateGroupError, UpdateGroupResponse, UpdateInterventionData, UpdateInterventionError, UpdateInterventionResponse, UpdateItemData, UpdateItemError, UpdateItemResponse, UpdateMyProfileData, UpdateMyProfileError, UpdateMyProfileResponse, UpdateOverrideData, UpdateOverrideError, UpdateOverrideResponse, UpdatePlatformData, UpdatePlatformError, UpdatePlatformResponse, UpdatePreferencesData, UpdatePreferencesError, UpdatePreferencesResponse, UpdateRoleData, UpdateRoleError, UpdateRoleResponse, UpdateUsergroupData, UpdateUsergroupError, UpdateUsergroupResponse, UsageData, UsageError, UsageResponse, UserCertificatesData, UserCertificatesError, UserCertificatesResponse, UserCoursesData, UserCoursesError, UserCoursesResponse, UsergroupId, UsergroupsForCourseData, UsergroupsForCourseResponse, UserId, VerifyCertificateData, VerifyCertificateError, VerifyCertificateResponse, VerifyEmailData, VerifyEmailError, VerifyEmailResponse, WorkQueueData, WorkQueueError, WorkQueueResponse, XpHistoryData, XpHistoryError, XpHistoryResponse, XpTransactionId } from '../types.gen';
+import { abortMultipartUpload, activityGradeDrafts, addActivity, addContributor, addCourse, addGroupCourses, addGroupMembers, addUsergroupCourses, addUsergroupMembers, adminAward, adminEvals, adminOverview, adminRunDetail, adminRuns, adminSettings, agenda, analyzeCourse, analyzeSubmission, applyContributor, approveGradeDrafts, assessmentDetail, assessmentList, assessmentReviewQueue, assignRole, atRiskLearners, attemptState, auditTrail, cancelRun, certificatePdf, certificationPreviewPdf, changeEmail, changePassword, classMastery, completeActivity, completeMultipartUpload, completeRemediation, conceptGraph, confirmEmailChange, confirmPasswordReset, conversationsUnreadCount, conversationWithPeer, courseArchivePreview, courseDeletionPreview, courseDetail, courseLifecycle, courseList, courseReadiness, createActivity, createAssessment, createBlock, createCertification, createChapter, createCollection, createConcept, createConceptTag, createCourse, createCourseUpdate, createDiscussion, createFileSubmission, createGroup, createIntervention, createItem, createOverride, createRole, createUpload, createUser, createUsergroup, critiqueLecture, currentDraft, currentSession, dashboard, deleteAccount, deleteActivity, deleteBlock, deleteCertification, deleteChapter, deleteCollection, deleteConcept, deleteConceptTag, deleteCourse, deleteCourseUpdate, deleteDiscussion, deleteGroup, deleteItem, deleteMessage, deleteMessageBan, deleteOverride, deleteQaThread, deleteRole, deleteUsergroup, deleteView, discardGradeDraft, dismissLectureSuggestion, downloadUpload, drillThrough, duplicateAssessment, duplicateCourse, editCourseUpdate, enroll, enrollCourseLearners, exportAssessmentOutcomes, exportAssessmentSubmissionsCsv, exportAtRisk, exportCourseProgress, exportFileSubmissionCsv, exportGradebookCsv, exportGradingBacklog, extendDeadline, extendFileDeadline, fileGradingHistory, fileSubmissionReviewQueue, fileSubmissionReviewStats, fileUrl, finalizeUpload, generateRemediation, getAccess, getActivity, getActivityAssessment, getActivityFileSubmission, getAdminUser, getAiRun, getAssessment, getAttempt, getBlock, getBulkAction, getCertification, getCodeRun, getCollection, getConfig, getCourse, getCurriculum, getDiscussion, getDraft, getFileSubmission, getGroup, getMessageReport, getNotificationPreferences, getPlatform, getRole, getSubmission, getTrail, getUsergroup, googleCallback, googleStart, gradeAttempt, gradebook, gradingConsistency, gradingHistory, gradingMetrics, gradingSettings, groupsForCourse, indexStatus, itemAnalytics, languages, latestCourseAnalysis, latestRemediation, latestSubmissionAnalysis, leaderboard, learnerCourseState, learnerMastery, leaveCourse, lectureReviews, lifecycle, linkPreview, listBlocks, listCollections, listContributors, listContributorsPage, listConversations, listCourseAssessments, listCourseCertifications, listCourseLearners, listCourses, listCourseUpdates, listCourseUpdatesPage, listDiscussions, listEnrollments, listGroupCourses, listGroupMembers, listGroupMembersPage, listGroups, listInterventions, listMessageReports, listMessages, listMyCodeRuns, listNotifications, listOverrides, listReplies, listRoles, listSavedViews, listSessions, listUsergroupCourses, listUsergroupMembers, listUsergroupMembersPage, listUsergroups, listUsers, live, login, logout, markAllNotificationsRead, markConversationRead, markNotificationRead, messageRecipients, moveActivity, moveChapter, myAttempts, myCertificates, myCertificatesPage, myCourseCertificates, myFeedback, myMastery, myProfile, mySubmissions, type Options, publicProfile, publicProfileById, publishCourseAnalysis, publishFileGrades, publishFileSubmission, publishGrades, putNotificationPreferences, qaThread, qaThreads, queueCourseAnalysis, queueGradeDrafts, queueLectureReview, queueRemediation, queueSubmissionAnalysis, rank, readiness, ready, recordStreak, referenceCheck, referenceCheckItem, register, reindexCourse, remediationSession, removeActivity, removeContributor, removeCourse, removeCourseLearner, removeGroupCourses, removeGroupMembers, removeUsergroupCourses, removeUsergroupMembers, reorderItems, reportMessage, reportViolation, requestPasswordReset, resendVerification, resolveMessageReport, returnFileGrades, returnGrades, reviewConcepts, reviewCourseFinding, reviewSubmission, revokeSession, runArtifacts, runEvents, runItem, runner, saveFileSubmissionDraft, saveGrade, saveSubmissionDraft, saveView, scopeCapabilities, search, searchCourse, sendMessage, setAccess, setFeatureSwitch, setGradingSettings, setPolicy, setPrerequisites, setRolePermissions, setUserStatus, startDraft, startSubmission, stats, studentRemediation, studyAsk, studyAskQueue, subjectGradeDraft, submit, submitSubmission, suggestConcepts, teacherOverview, toggleDislike, toggleLike, totpEnroll, totpRemove, totpVerify, unassignRole, uncompleteActivity, unpublishFileSubmission, unreadCount, updateActivity, updateAssessment, updateCertification, updateChapter, updateCollection, updateConcept, updateConceptTag, updateConfig, updateContributor, updateCourse, updateDiscussion, updateFileSubmission, updateGroup, updateIntervention, updateItem, updateMyProfile, updateOverride, updatePlatform, updatePreferences, updateRole, updateUsergroup, usage, userCertificates, userCourses, usergroupsForCourse, verifyCertificate, verifyEmail, workQueue, xpHistory } from '../sdk.gen';
+import type { AbortMultipartUploadData, AbortMultipartUploadError, AbortMultipartUploadResponse, ActivityGradeDraftsData, ActivityGradeDraftsResponse, AddActivityData, AddActivityResponse, AddContributorData, AddContributorError, AddContributorResponse, AddCourseData, AddCourseError, AddCourseResponse, AddGroupCoursesData, AddGroupCoursesResponse, AddGroupMembersData, AddGroupMembersResponse, AddUsergroupCoursesData, AddUsergroupCoursesResponse, AddUsergroupMembersData, AddUsergroupMembersResponse, AdminAwardData, AdminAwardError, AdminAwardResponse, AdminEvalsData, AdminEvalsResponse, AdminOverviewData, AdminOverviewError, AdminOverviewResponse, AdminRunDetailData, AdminRunDetailError, AdminRunDetailResponse, AdminRunsData, AdminRunsError, AdminRunsResponse, AdminSettingsData, AdminSettingsError, AdminSettingsResponse, AgendaData, AgendaError, AgendaResponse, AiRunId, AnalyzeCourseData, AnalyzeCourseError, AnalyzeCourseResponse, AnalyzeSubmissionData, AnalyzeSubmissionError, AnalyzeSubmissionResponse, ApplyContributorData, ApplyContributorError, ApplyContributorResponse, ApproveGradeDraftsData, ApproveGradeDraftsResponse, AssessmentDetailData, AssessmentDetailError, AssessmentDetailResponse, AssessmentListData, AssessmentListResponse, AssessmentReviewQueueData, AssessmentReviewQueueError, AssessmentReviewQueueResponse, AssignRoleData, AssignRoleError, AssignRoleResponse, AtRiskLearnersData, AtRiskLearnersResponse2, AttemptStateData, AttemptStateError, AttemptStateResponse, AuditTrailData, AuditTrailResponse, CancelRunData, CancelRunResponse, CertificatePdfData, CertificatePdfError, CertificatePdfResponse, CertificationPreviewPdfData, CertificationPreviewPdfError, CertificationPreviewPdfResponse, ChangeEmailData, ChangeEmailError, ChangePasswordData, ChangePasswordError, ChangePasswordResponse, ClassMasteryData, ClassMasteryError, ClassMasteryResponse, CollectionId, CompleteActivityData, CompleteActivityResponse, CompleteMultipartUploadData, CompleteMultipartUploadError, CompleteMultipartUploadResponse, CompleteRemediationData, CompleteRemediationError, CompleteRemediationResponse, ConceptGraphData, ConceptGraphError, ConceptGraphResponse, ConfirmEmailChangeData, ConfirmEmailChangeError, ConfirmEmailChangeResponse, ConfirmPasswordResetData, ConfirmPasswordResetError, ConfirmPasswordResetResponse, ConversationsUnreadCountData, ConversationsUnreadCountError, ConversationsUnreadCountResponse, ConversationWithPeerData, ConversationWithPeerError, ConversationWithPeerResponse, CourseArchivePreviewData, CourseArchivePreviewError, CourseArchivePreviewResponse, CourseDeletionPreviewData, CourseDeletionPreviewError, CourseDeletionPreviewResponse, CourseDetailData, CourseDetailError, CourseDetailResponse, CourseId, CourseLifecycleData, CourseLifecycleError, CourseLifecycleResponse, CourseListData, CourseListResponse, CourseReadinessData, CourseReadinessError, CourseReadinessResponse, CreateActivityData, CreateActivityError, CreateActivityResponse, CreateAssessmentData, CreateAssessmentError, CreateAssessmentResponse, CreateBlockData, CreateBlockError, CreateBlockResponse, CreateCertificationData, CreateCertificationError, CreateCertificationResponse, CreateChapterData, CreateChapterError, CreateChapterResponse, CreateCollectionData, CreateCollectionError, CreateCollectionResponse, CreateConceptData, CreateConceptError, CreateConceptResponse, CreateConceptTagData, CreateConceptTagError, CreateConceptTagResponse, CreateCourseData, CreateCourseError, CreateCourseResponse, CreateCourseUpdateData, CreateCourseUpdateError, CreateCourseUpdateResponse, CreateDiscussionData, CreateDiscussionError, CreateDiscussionResponse, CreateFileSubmissionData, CreateFileSubmissionError, CreateFileSubmissionResponse, CreateGroupData, CreateGroupError, CreateGroupResponse, CreateInterventionData, CreateInterventionError, CreateInterventionResponse, CreateItemData, CreateItemError, CreateItemResponse, CreateOverrideData, CreateOverrideError, CreateOverrideResponse, CreateRoleData, CreateRoleError, CreateRoleResponse, CreateUploadData, CreateUploadError, CreateUploadResponse, CreateUserData, CreateUserError, CreateUsergroupData, CreateUsergroupError, CreateUsergroupResponse, CreateUserResponse, CritiqueLectureData, CritiqueLectureError, CritiqueLectureResponse, CurrentDraftData, CurrentDraftError, CurrentDraftResponse, CurrentSessionData, CurrentSessionError, CurrentSessionResponse, DashboardData, DashboardResponse, DeleteAccountData, DeleteAccountError, DeleteAccountResponse, DeleteActivityData, DeleteActivityError, DeleteActivityResponse, DeleteBlockData, DeleteBlockError, DeleteBlockResponse, DeleteCertificationData, DeleteCertificationError, DeleteCertificationResponse, DeleteChapterData, DeleteChapterError, DeleteChapterResponse, DeleteCollectionData, DeleteCollectionError, DeleteCollectionResponse, DeleteConceptData, DeleteConceptError, DeleteConceptResponse, DeleteConceptTagData, DeleteConceptTagError, DeleteConceptTagResponse, DeleteCourseData, DeleteCourseError, DeleteCourseResponse, DeleteCourseUpdateData, DeleteCourseUpdateError, DeleteCourseUpdateResponse, DeleteDiscussionData, DeleteDiscussionError, DeleteDiscussionResponse, DeleteGroupData, DeleteGroupError, DeleteGroupResponse, DeleteItemData, DeleteItemError, DeleteItemResponse, DeleteMessageBanData, DeleteMessageBanError, DeleteMessageBanResponse, DeleteMessageData, DeleteMessageError, DeleteMessageResponse, DeleteOverrideData, DeleteOverrideResponse, DeleteQaThreadData, DeleteQaThreadError, DeleteQaThreadResponse, DeleteRoleData, DeleteRoleError, DeleteRoleResponse, DeleteUsergroupData, DeleteUsergroupError, DeleteUsergroupResponse, DeleteViewData, DeleteViewError, DeleteViewResponse, DiscardGradeDraftData, DiscardGradeDraftError, DiscardGradeDraftResponse, DiscussionId, DismissLectureSuggestionData, DismissLectureSuggestionResponse, DownloadUploadData, DownloadUploadError, DrillThroughData, DrillThroughError, DrillThroughResponse2, DuplicateAssessmentData, DuplicateAssessmentError, DuplicateAssessmentResponse, DuplicateCourseData, DuplicateCourseError, DuplicateCourseResponse, EditCourseUpdateData, EditCourseUpdateError, EditCourseUpdateResponse, EnrollCourseLearnersData, EnrollCourseLearnersError, EnrollCourseLearnersResponse, EnrollData, EnrollError, EnrollResponse, ExportAssessmentOutcomesData, ExportAssessmentOutcomesResponse, ExportAssessmentSubmissionsCsvData, ExportAssessmentSubmissionsCsvResponse, ExportAtRiskData, ExportAtRiskResponse, ExportCourseProgressData, ExportCourseProgressResponse, ExportFileSubmissionCsvData, ExportFileSubmissionCsvResponse, ExportGradebookCsvData, ExportGradebookCsvError, ExportGradebookCsvResponse, ExportGradingBacklogData, ExportGradingBacklogResponse, ExtendDeadlineData, ExtendDeadlineError, ExtendDeadlineResponse, ExtendFileDeadlineData, ExtendFileDeadlineError, ExtendFileDeadlineResponse, FileAttemptId, FileGradingHistoryData, FileGradingHistoryError, FileGradingHistoryResponse, FileSubmissionReviewQueueData, FileSubmissionReviewQueueResponse, FileSubmissionReviewStatsData, FileSubmissionReviewStatsError, FileSubmissionReviewStatsResponse, FileUrlData, FileUrlResponse, FinalizeUploadData, FinalizeUploadError, FinalizeUploadResponse, GenerateRemediationData, GenerateRemediationError, GenerateRemediationResponse, GetAccessData, GetAccessResponse, GetActivityAssessmentData, GetActivityAssessmentError, GetActivityAssessmentResponse, GetActivityData, GetActivityError, GetActivityFileSubmissionData, GetActivityFileSubmissionResponse, GetActivityResponse, GetAdminUserData, GetAdminUserError, GetAdminUserResponse, GetAiRunData, GetAiRunError, GetAiRunResponse, GetAssessmentData, GetAssessmentError, GetAssessmentResponse, GetAttemptData, GetAttemptResponse, GetBlockData, GetBlockError, GetBlockResponse, GetBulkActionData, GetBulkActionResponse, GetCertificationData, GetCertificationResponse, GetCodeRunData, GetCodeRunError, GetCodeRunResponse, GetCollectionData, GetCollectionError, GetCollectionResponse, GetConfigData, GetConfigResponse, GetCourseData, GetCourseError, GetCourseResponse, GetCurriculumData, GetCurriculumError, GetCurriculumResponse, GetDiscussionData, GetDiscussionError, GetDiscussionResponse, GetDraftData, GetDraftError, GetDraftResponse, GetFileSubmissionData, GetFileSubmissionResponse, GetGroupData, GetGroupError, GetGroupResponse, GetMessageReportData, GetMessageReportError, GetMessageReportResponse, GetNotificationPreferencesData, GetNotificationPreferencesError, GetNotificationPreferencesResponse, GetPlatformData, GetPlatformResponse, GetRoleData, GetRoleError, GetRoleResponse, GetSubmissionData, GetSubmissionError, GetSubmissionResponse, GetTrailData, GetTrailResponse, GetUsergroupData, GetUsergroupError, GetUsergroupResponse, GoogleCallbackData, GoogleStartData, GradeAttemptData, GradeAttemptError, GradeAttemptResponse, GradebookData, GradebookResponse, GradingConsistencyData, GradingConsistencyResponse, GradingHistoryData, GradingHistoryResponse, GradingMetricsData, GradingMetricsResponse, GradingSettingsData, GradingSettingsResponse, GroupsForCourseData, GroupsForCourseResponse, IndexStatusData, IndexStatusResponse, ItemAnalyticsData, ItemAnalyticsResponse, LanguagesData, LanguagesError, LanguagesResponse, LatestCourseAnalysisData, LatestCourseAnalysisResponse, LatestRemediationData, LatestRemediationError, LatestRemediationResponse, LatestSubmissionAnalysisData, LatestSubmissionAnalysisResponse, LeaderboardData, LeaderboardResponse, LearnerCourseStateData, LearnerCourseStateError, LearnerCourseStateResponse, LearnerMasteryData, LearnerMasteryError, LearnerMasteryResponse, LeaveCourseData, LeaveCourseError, LeaveCourseResponse, LectureReviewsData, LectureReviewsResponse, LifecycleData, LifecycleError, LifecycleResponse, LinkPreviewData, LinkPreviewError, LinkPreviewResponse, ListBlocksData, ListBlocksError, ListBlocksResponse, ListCollectionsData, ListCollectionsResponse, ListContributorsData, ListContributorsError, ListContributorsPageData, ListContributorsPageError, ListContributorsPageResponse, ListContributorsResponse, ListConversationsData, ListConversationsError, ListConversationsResponse, ListCourseAssessmentsData, ListCourseAssessmentsResponse, ListCourseCertificationsData, ListCourseCertificationsResponse, ListCourseLearnersData, ListCourseLearnersError, ListCourseLearnersResponse, ListCoursesData, ListCoursesError, ListCoursesResponse, ListCourseUpdatesData, ListCourseUpdatesError, ListCourseUpdatesPageData, ListCourseUpdatesPageError, ListCourseUpdatesPageResponse, ListCourseUpdatesResponse, ListDiscussionsData, ListDiscussionsError, ListDiscussionsResponse, ListEnrollmentsData, ListEnrollmentsResponse, ListGroupCoursesData, ListGroupCoursesResponse, ListGroupMembersData, ListGroupMembersPageData, ListGroupMembersPageResponse, ListGroupMembersResponse, ListGroupsData, ListGroupsResponse, ListInterventionsData, ListInterventionsResponse, ListMessageReportsData, ListMessageReportsError, ListMessageReportsResponse, ListMessagesData, ListMessagesError, ListMessagesResponse, ListMyCodeRunsData, ListMyCodeRunsResponse, ListNotificationsData, ListNotificationsError, ListNotificationsResponse, ListOverridesData, ListOverridesResponse, ListRepliesData, ListRepliesResponse, ListRolesData, ListRolesError, ListRolesResponse, ListSavedViewsData, ListSavedViewsResponse, ListSessionsData, ListSessionsError, ListSessionsResponse, ListUsergroupCoursesData, ListUsergroupCoursesResponse, ListUsergroupMembersData, ListUsergroupMembersPageData, ListUsergroupMembersPageResponse, ListUsergroupMembersResponse, ListUsergroupsData, ListUsergroupsResponse, ListUsersData, ListUsersError, ListUsersResponse, LiveData, LiveResponse, LoginData, LoginError, LoginResponse, LogoutData, LogoutError, LogoutResponse, MarkAllNotificationsReadData, MarkAllNotificationsReadError, MarkAllNotificationsReadResponse, MarkConversationReadData, MarkConversationReadError, MarkConversationReadResponse, MarkNotificationReadData, MarkNotificationReadError, MarkNotificationReadResponse, MessageId, MessageRecipientsData, MessageRecipientsError, MessageRecipientsResponse, MessageReportId, MoveActivityData, MoveActivityError, MoveActivityResponse, MoveChapterData, MoveChapterError, MoveChapterResponse, MyAttemptsData, MyAttemptsResponse, MyCertificatesData, MyCertificatesPageData, MyCertificatesPageResponse, MyCertificatesResponse, MyCourseCertificatesData, MyCourseCertificatesResponse, MyFeedbackData, MyFeedbackResponse, MyMasteryData, MyMasteryResponse, MyProfileData, MyProfileError, MyProfileResponse, MySubmissionsData, MySubmissionsResponse, PublicProfileByIdData, PublicProfileByIdError, PublicProfileByIdResponse, PublicProfileData, PublicProfileError, PublicProfileResponse, PublishCourseAnalysisData, PublishCourseAnalysisResponse, PublishFileGradesData, PublishFileGradesError, PublishFileGradesResponse, PublishFileSubmissionData, PublishFileSubmissionError, PublishFileSubmissionResponse, PublishGradesData, PublishGradesResponse, PutNotificationPreferencesData, PutNotificationPreferencesError, PutNotificationPreferencesResponse, QaThreadData, QaThreadError, QaThreadResponse, QaThreadsData, QaThreadsResponse, QueueCourseAnalysisData, QueueCourseAnalysisResponse, QueueGradeDraftsData, QueueGradeDraftsError, QueueGradeDraftsResponse, QueueLectureReviewData, QueueLectureReviewResponse, QueueRemediationData, QueueRemediationResponse, QueueSubmissionAnalysisData, QueueSubmissionAnalysisResponse, RankData, RankResponse, ReadinessData, ReadinessResponse, ReadyData, ReadyError, ReadyResponse, RecordStreakData, RecordStreakError, RecordStreakResponse, ReferenceCheckData, ReferenceCheckError, ReferenceCheckItemData, ReferenceCheckItemError, ReferenceCheckItemResponse, ReferenceCheckResponse2, RegisterData, RegisterError, RegisterResponse, ReindexCourseData, ReindexCourseResponse, RemediationSessionData, RemediationSessionError, RemediationSessionResponse, RemoveActivityData, RemoveActivityResponse, RemoveContributorData, RemoveContributorError, RemoveContributorResponse, RemoveCourseData, RemoveCourseError, RemoveCourseLearnerData, RemoveCourseLearnerError, RemoveCourseLearnerResponse, RemoveCourseResponse, RemoveGroupCoursesData, RemoveGroupCoursesResponse, RemoveGroupMembersData, RemoveGroupMembersResponse, RemoveUsergroupCoursesData, RemoveUsergroupCoursesResponse, RemoveUsergroupMembersData, RemoveUsergroupMembersResponse, ReorderItemsData, ReorderItemsError, ReorderItemsResponse, ReportMessageData, ReportMessageError, ReportMessageResponse, ReportViolationData, ReportViolationError, ReportViolationResponse, RequestPasswordResetData, RequestPasswordResetError, ResendVerificationData, ResendVerificationError, ResolveMessageReportData, ResolveMessageReportError, ResolveMessageReportResponse, ReturnFileGradesData, ReturnFileGradesError, ReturnFileGradesResponse, ReturnGradesData, ReturnGradesError, ReturnGradesResponse, ReviewConceptsData, ReviewConceptsResponse, ReviewCourseFindingData, ReviewCourseFindingResponse, ReviewSubmissionData, ReviewSubmissionError, ReviewSubmissionResponse, RevokeSessionData, RevokeSessionError, RevokeSessionResponse, RunArtifactsData, RunArtifactsResponse, RunEventsData, RunEventsResponse, RunItemData, RunItemError, RunItemResponse, RunnerData, RunnerError, RunnerResponse, SaveFileSubmissionDraftData, SaveFileSubmissionDraftError, SaveFileSubmissionDraftResponse, SaveGradeData, SaveGradeError, SaveGradeResponse, SaveSubmissionDraftData, SaveSubmissionDraftError, SaveSubmissionDraftResponse, SaveViewData, SaveViewError, SaveViewResponse, ScopeCapabilitiesData, ScopeCapabilitiesResponse, SearchCourseData, SearchCourseError, SearchCourseResponse, SearchData, SearchError, SearchResponse, SendMessageData, SendMessageError, SendMessageResponse, SetAccessData, SetAccessError, SetAccessResponse, SetFeatureSwitchData, SetFeatureSwitchError, SetFeatureSwitchResponse, SetGradingSettingsData, SetGradingSettingsResponse, SetPolicyData, SetPolicyError, SetPolicyResponse, SetPrerequisitesData, SetPrerequisitesError, SetPrerequisitesResponse, SetRolePermissionsData, SetRolePermissionsError, SetRolePermissionsResponse, SetUserStatusData, SetUserStatusError, SetUserStatusResponse, StartDraftData, StartDraftError, StartDraftResponse, StartSubmissionData, StartSubmissionError, StartSubmissionResponse, StatsData, StatsResponse, StudentRemediationData, StudentRemediationError, StudentRemediationResponse, StudyAskData, StudyAskError, StudyAskQueueData, StudyAskQueueResponse, StudyAskResponse, SubjectGradeDraftData, SubjectGradeDraftResponse, SubmitData, SubmitError, SubmitResponse, SubmitSubmissionData, SubmitSubmissionError, SubmitSubmissionResponse, SuggestConceptsData, SuggestConceptsError, SuggestConceptsResponse, TeacherOverviewData, TeacherOverviewError, TeacherOverviewResponse2, ToggleDislikeData, ToggleDislikeError, ToggleDislikeResponse, ToggleLikeData, ToggleLikeError, ToggleLikeResponse, TotpEnrollData, TotpEnrollError, TotpEnrollResponse, TotpRemoveData, TotpRemoveError, TotpRemoveResponse, TotpVerifyData, TotpVerifyError, TotpVerifyResponse, UnassignRoleData, UnassignRoleError, UnassignRoleResponse, UncompleteActivityData, UncompleteActivityResponse, UnpublishFileSubmissionData, UnpublishFileSubmissionError, UnpublishFileSubmissionResponse, UnreadCountData, UnreadCountError, UnreadCountResponse, UpdateActivityData, UpdateActivityError, UpdateActivityResponse, UpdateAssessmentData, UpdateAssessmentError, UpdateAssessmentResponse, UpdateCertificationData, UpdateCertificationError, UpdateCertificationResponse, UpdateChapterData, UpdateChapterError, UpdateChapterResponse, UpdateCollectionData, UpdateCollectionError, UpdateCollectionResponse, UpdateConceptData, UpdateConceptError, UpdateConceptResponse, UpdateConceptTagData, UpdateConceptTagError, UpdateConceptTagResponse, UpdateConfigData, UpdateConfigError, UpdateConfigResponse, UpdateContributorData, UpdateContributorError, UpdateContributorResponse, UpdateCourseData, UpdateCourseError, UpdateCourseResponse, UpdateDiscussionData, UpdateDiscussionError, UpdateDiscussionResponse, UpdateFileSubmissionData, UpdateFileSubmissionError, UpdateFileSubmissionResponse, UpdateGroupData, UpdateGroupError, UpdateGroupResponse, UpdateInterventionData, UpdateInterventionError, UpdateInterventionResponse, UpdateItemData, UpdateItemError, UpdateItemResponse, UpdateMyProfileData, UpdateMyProfileError, UpdateMyProfileResponse, UpdateOverrideData, UpdateOverrideError, UpdateOverrideResponse, UpdatePlatformData, UpdatePlatformError, UpdatePlatformResponse, UpdatePreferencesData, UpdatePreferencesError, UpdatePreferencesResponse, UpdateRoleData, UpdateRoleError, UpdateRoleResponse, UpdateUsergroupData, UpdateUsergroupError, UpdateUsergroupResponse, UsageData, UsageError, UsageResponse, UserCertificatesData, UserCertificatesError, UserCertificatesResponse, UserCoursesData, UserCoursesError, UserCoursesResponse, UsergroupId, UsergroupsForCourseData, UsergroupsForCourseResponse, UserId, VerifyCertificateData, VerifyCertificateError, VerifyCertificateResponse, VerifyEmailData, VerifyEmailError, VerifyEmailResponse, WorkQueueData, WorkQueueError, WorkQueueResponse, XpHistoryData, XpHistoryError, XpHistoryResponse, XpTransactionId } from '../types.gen';
 
 /**
  * Delete an activity; chapter siblings renumber to stay contiguous.
@@ -189,6 +189,137 @@ export const moveActivityMutation = (options?: Partial<Options<MoveActivityData>
     return mutationOptions;
 };
 
+/**
+ * Lift a person's send ban (`admin.users`).
+ */
+export const deleteMessageBanMutation = (options?: Partial<Options<DeleteMessageBanData>>): UseMutationOptions<DeleteMessageBanResponse, DeleteMessageBanError, Options<DeleteMessageBanData>> => {
+    const mutationOptions: UseMutationOptions<DeleteMessageBanResponse, DeleteMessageBanError, Options<DeleteMessageBanData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteMessageBan({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+export const listMessageReportsQueryKey = (options?: Options<ListMessageReportsData>) => createQueryKey('listMessageReports', options);
+
+/**
+ * Reports on personal messages, newest first (`admin.users`).
+ */
+export const listMessageReportsOptions = (options?: Options<ListMessageReportsData>) => queryOptions<ListMessageReportsResponse, ListMessageReportsError, ListMessageReportsResponse, ReturnType<typeof listMessageReportsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listMessageReports({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listMessageReportsQueryKey(options)
+});
+
+const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
+    const params = { ...queryKey[0] };
+    if (page.body) {
+        params.body = {
+            ...queryKey[0].body as any,
+            ...page.body as any
+        };
+    }
+    if (page.headers) {
+        params.headers = {
+            ...queryKey[0].headers,
+            ...page.headers
+        };
+    }
+    if (page.path) {
+        params.path = {
+            ...queryKey[0].path as any,
+            ...page.path as any
+        };
+    }
+    if (page.query) {
+        params.query = {
+            ...queryKey[0].query as any,
+            ...page.query as any
+        };
+    }
+    return params as unknown as typeof page;
+};
+
+export const listMessageReportsInfiniteQueryKey = (options?: Options<ListMessageReportsData>): QueryKey<Options<ListMessageReportsData>> => createQueryKey('listMessageReports', options, true);
+
+/**
+ * Reports on personal messages, newest first (`admin.users`).
+ */
+export const listMessageReportsInfiniteOptions = (options?: Options<ListMessageReportsData>) => {
+    const opts = infiniteQueryOptions<ListMessageReportsResponse, ListMessageReportsError, InfiniteData<ListMessageReportsResponse>, QueryKey<Options<ListMessageReportsData>>, MessageReportId | Pick<QueryKey<Options<ListMessageReportsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListMessageReportsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    cursor: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listMessageReports({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listMessageReportsInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const getMessageReportQueryKey = (options: Options<GetMessageReportData>) => createQueryKey('getMessageReport', options);
+
+/**
+ * One report with the text as reported and up to five messages on each
+ * side (`admin.users`; the read is audited).
+ */
+export const getMessageReportOptions = (options: Options<GetMessageReportData>) => queryOptions<GetMessageReportResponse, GetMessageReportError, GetMessageReportResponse, ReturnType<typeof getMessageReportQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await getMessageReport({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: getMessageReportQueryKey(options)
+});
+
+/**
+ * Decide an open report; `ban` also bans the author from sending. The
+ * reporter gets a notification.
+ */
+export const resolveMessageReportMutation = (options?: Partial<Options<ResolveMessageReportData>>): UseMutationOptions<ResolveMessageReportResponse, ResolveMessageReportError, Options<ResolveMessageReportData>> => {
+    const mutationOptions: UseMutationOptions<ResolveMessageReportResponse, ResolveMessageReportError, Options<ResolveMessageReportData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await resolveMessageReport({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 export const adminEvalsQueryKey = (options?: Options<AdminEvalsData>) => createQueryKey('adminEvals', options);
 
 export const adminEvalsOptions = (options?: Options<AdminEvalsData>) => queryOptions<AdminEvalsResponse, DefaultError, AdminEvalsResponse, ReturnType<typeof adminEvalsQueryKey>>({
@@ -221,35 +352,6 @@ export const adminRunsOptions = (options?: Options<AdminRunsData>) => queryOptio
     },
     queryKey: adminRunsQueryKey(options)
 });
-
-const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'headers' | 'path' | 'query'>>(queryKey: QueryKey<Options>, page: K) => {
-    const params = { ...queryKey[0] };
-    if (page.body) {
-        params.body = {
-            ...queryKey[0].body as any,
-            ...page.body as any
-        };
-    }
-    if (page.headers) {
-        params.headers = {
-            ...queryKey[0].headers,
-            ...page.headers
-        };
-    }
-    if (page.path) {
-        params.path = {
-            ...queryKey[0].path as any,
-            ...page.path as any
-        };
-    }
-    if (page.query) {
-        params.query = {
-            ...queryKey[0].query as any,
-            ...page.query as any
-        };
-    }
-    return params as unknown as typeof page;
-};
 
 export const adminRunsInfiniteQueryKey = (options?: Options<AdminRunsData>): QueryKey<Options<AdminRunsData>> => createQueryKey('adminRuns', options, true);
 
@@ -3143,6 +3245,74 @@ export const updateCollectionMutation = (options?: Partial<Options<UpdateCollect
     return mutationOptions;
 };
 
+export const listMessagesQueryKey = (options: Options<ListMessagesData>) => createQueryKey('listMessages', options);
+
+/**
+ * Messages of one of the caller's conversations, newest first, with the
+ * conversation's state.
+ */
+export const listMessagesOptions = (options: Options<ListMessagesData>) => queryOptions<ListMessagesResponse, ListMessagesError, ListMessagesResponse, ReturnType<typeof listMessagesQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listMessages({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listMessagesQueryKey(options)
+});
+
+export const listMessagesInfiniteQueryKey = (options: Options<ListMessagesData>): QueryKey<Options<ListMessagesData>> => createQueryKey('listMessages', options, true);
+
+/**
+ * Messages of one of the caller's conversations, newest first, with the
+ * conversation's state.
+ */
+export const listMessagesInfiniteOptions = (options: Options<ListMessagesData>) => {
+    const opts = infiniteQueryOptions<ListMessagesResponse, ListMessagesError, InfiniteData<ListMessagesResponse>, QueryKey<Options<ListMessagesData>>, MessageId | Pick<QueryKey<Options<ListMessagesData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListMessagesData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    cursor: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listMessages({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listMessagesInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+/**
+ * Move the caller's read pointer forward (never back). Emits
+ * `conversation.updated` when it moved.
+ */
+export const markConversationReadMutation = (options?: Partial<Options<MarkConversationReadData>>): UseMutationOptions<MarkConversationReadResponse, MarkConversationReadError, Options<MarkConversationReadData>> => {
+    const mutationOptions: UseMutationOptions<MarkConversationReadResponse, MarkConversationReadError, Options<MarkConversationReadData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await markConversationRead({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
 /**
  * Delete an announcement (course write access).
  */
@@ -5524,6 +5694,141 @@ export const myCertificatesPageInfiniteOptions = (options?: Options<MyCertificat
     return opts as Omit<typeof opts, 'initialData'>;
 };
 
+export const listConversationsQueryKey = (options?: Options<ListConversationsData>) => createQueryKey('listConversations', options);
+
+/**
+ * The caller's conversations, the latest message first (keyset).
+ */
+export const listConversationsOptions = (options?: Options<ListConversationsData>) => queryOptions<ListConversationsResponse, ListConversationsError, ListConversationsResponse, ReturnType<typeof listConversationsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await listConversations({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: listConversationsQueryKey(options)
+});
+
+export const listConversationsInfiniteQueryKey = (options?: Options<ListConversationsData>): QueryKey<Options<ListConversationsData>> => createQueryKey('listConversations', options, true);
+
+/**
+ * The caller's conversations, the latest message first (keyset).
+ */
+export const listConversationsInfiniteOptions = (options?: Options<ListConversationsData>) => {
+    const opts = infiniteQueryOptions<ListConversationsResponse, ListConversationsError, InfiniteData<ListConversationsResponse>, QueryKey<Options<ListConversationsData>>, MessageId | Pick<QueryKey<Options<ListConversationsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<ListConversationsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    cursor: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await listConversations({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: listConversationsInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
+export const conversationWithPeerQueryKey = (options: Options<ConversationWithPeerData>) => createQueryKey('conversationWithPeer', options);
+
+/**
+ * The caller and one person: their conversation (null before the first
+ * message) and whether the caller may write.
+ */
+export const conversationWithPeerOptions = (options: Options<ConversationWithPeerData>) => queryOptions<ConversationWithPeerResponse, ConversationWithPeerError, ConversationWithPeerResponse, ReturnType<typeof conversationWithPeerQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await conversationWithPeer({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: conversationWithPeerQueryKey(options)
+});
+
+export const conversationsUnreadCountQueryKey = (options?: Options<ConversationsUnreadCountData>) => createQueryKey('conversationsUnreadCount', options);
+
+/**
+ * How many of the caller's conversations hold an unread message.
+ */
+export const conversationsUnreadCountOptions = (options?: Options<ConversationsUnreadCountData>) => queryOptions<ConversationsUnreadCountResponse, ConversationsUnreadCountError, ConversationsUnreadCountResponse, ReturnType<typeof conversationsUnreadCountQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await conversationsUnreadCount({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: conversationsUnreadCountQueryKey(options)
+});
+
+export const messageRecipientsQueryKey = (options?: Options<MessageRecipientsData>) => createQueryKey('messageRecipients', options);
+
+/**
+ * People the caller may start a conversation with, through which course,
+ * by name.
+ */
+export const messageRecipientsOptions = (options?: Options<MessageRecipientsData>) => queryOptions<MessageRecipientsResponse, MessageRecipientsError, MessageRecipientsResponse, ReturnType<typeof messageRecipientsQueryKey>>({
+    queryFn: async ({ queryKey, signal }) => {
+        const { data } = await messageRecipients({
+            ...options,
+            ...queryKey[0],
+            signal,
+            throwOnError: true
+        });
+        return data;
+    },
+    queryKey: messageRecipientsQueryKey(options)
+});
+
+export const messageRecipientsInfiniteQueryKey = (options?: Options<MessageRecipientsData>): QueryKey<Options<MessageRecipientsData>> => createQueryKey('messageRecipients', options, true);
+
+/**
+ * People the caller may start a conversation with, through which course,
+ * by name.
+ */
+export const messageRecipientsInfiniteOptions = (options?: Options<MessageRecipientsData>) => {
+    const opts = infiniteQueryOptions<MessageRecipientsResponse, MessageRecipientsError, InfiniteData<MessageRecipientsResponse>, QueryKey<Options<MessageRecipientsData>>, string | Pick<QueryKey<Options<MessageRecipientsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
+    // @ts-ignore
+    {
+        queryFn: async ({ pageParam, queryKey, signal }) => {
+            // @ts-ignore
+            const page: Pick<QueryKey<Options<MessageRecipientsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
+                query: {
+                    cursor: pageParam
+                }
+            };
+            const params = createInfiniteParams(queryKey, page);
+            const { data } = await messageRecipients({
+                ...options,
+                ...params,
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: messageRecipientsInfiniteQueryKey(options)
+    });
+    return opts as Omit<typeof opts, 'initialData'>;
+};
+
 export const getNotificationPreferencesQueryKey = (options?: Options<GetNotificationPreferencesData>) => createQueryKey('getNotificationPreferences', options);
 
 /**
@@ -5651,6 +5956,59 @@ export const markNotificationReadMutation = (options?: Partial<Options<MarkNotif
     const mutationOptions: UseMutationOptions<MarkNotificationReadResponse, MarkNotificationReadError, Options<MarkNotificationReadData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await markNotificationRead({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Send a message; the pair's conversation is created with the first one.
+ * A resend with the same `client_key` returns the stored message and
+ * sends nothing. Emits `message.created` to both sides.
+ */
+export const sendMessageMutation = (options?: Partial<Options<SendMessageData>>): UseMutationOptions<SendMessageResponse, SendMessageError, Options<SendMessageData>> => {
+    const mutationOptions: UseMutationOptions<SendMessageResponse, SendMessageError, Options<SendMessageData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await sendMessage({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * The author deletes their message: it stays as a tombstone.
+ */
+export const deleteMessageMutation = (options?: Partial<Options<DeleteMessageData>>): UseMutationOptions<DeleteMessageResponse, DeleteMessageError, Options<DeleteMessageData>> => {
+    const mutationOptions: UseMutationOptions<DeleteMessageResponse, DeleteMessageError, Options<DeleteMessageData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await deleteMessage({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Report the other side's message to the administrators (once).
+ */
+export const reportMessageMutation = (options?: Partial<Options<ReportMessageData>>): UseMutationOptions<ReportMessageResponse, ReportMessageError, Options<ReportMessageData>> => {
+    const mutationOptions: UseMutationOptions<ReportMessageResponse, ReportMessageError, Options<ReportMessageData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await reportMessage({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

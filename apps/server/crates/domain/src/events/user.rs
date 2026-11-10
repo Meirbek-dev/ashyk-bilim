@@ -18,8 +18,8 @@ use std::sync::OnceLock;
 
 use ab_core::assessments::{SubmissionStatus, XpSource};
 use ab_core::id::{
-    ActivityId, AssessmentId, CollectionId, CourseId, DiscussionId, FileAttemptId,
-    FileSubmissionId, NotificationId, SubmissionId, UserId, XpTransactionId,
+    ActivityId, AssessmentId, CollectionId, ConversationId, CourseId, DiscussionId, FileAttemptId,
+    FileSubmissionId, MessageId, NotificationId, SubmissionId, UserId, XpTransactionId,
 };
 use redis::streams::StreamMaxlen;
 use serde::Serialize;
@@ -141,6 +141,23 @@ pub struct AdminListUpdated {
     pub list: AdminList,
 }
 
+/// LIVE: a personal message was sent in a conversation of the recipient
+/// (to both sides: the author's other tabs follow).
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct MessageCreated {
+    pub conversation_id: ConversationId,
+    pub message_id: MessageId,
+    /// The author.
+    pub user_id: UserId,
+}
+
+/// LIVE: a conversation of the recipient changed otherwise (a message
+/// deleted, a side's read pointer moved).
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct ConversationUpdated {
+    pub conversation_id: ConversationId,
+}
+
 /// The closed set of user-stream events: the SSE `event:` name and the
 /// typed `payload`.
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -166,6 +183,10 @@ pub enum UserEvent {
     ProgressUpdated(ProgressUpdated),
     #[serde(rename = "admin.updated")]
     AdminListUpdated(AdminListUpdated),
+    #[serde(rename = "message.created")]
+    MessageCreated(MessageCreated),
+    #[serde(rename = "conversation.updated")]
+    ConversationUpdated(ConversationUpdated),
 }
 
 impl UserEvent {
@@ -181,6 +202,8 @@ impl UserEvent {
         "discussion.updated",
         "progress.updated",
         "admin.updated",
+        "message.created",
+        "conversation.updated",
     ];
 }
 
@@ -336,4 +359,18 @@ pub async fn admin_list(pool: &PgPool, list: AdminList) {
         "admin list",
     );
     fan_out(to, UserEvent::AdminListUpdated(AdminListUpdated { list })).await;
+}
+
+/// LIVE `message.created` to both sides of a conversation.
+pub async fn message_created(members: [UserId; 2], payload: MessageCreated) {
+    fan_out(members.to_vec(), UserEvent::MessageCreated(payload)).await;
+}
+
+/// LIVE `conversation.updated` to both sides of a conversation.
+pub async fn conversation_updated(members: [UserId; 2], conversation_id: ConversationId) {
+    fan_out(
+        members.to_vec(),
+        UserEvent::ConversationUpdated(ConversationUpdated { conversation_id }),
+    )
+    .await;
 }

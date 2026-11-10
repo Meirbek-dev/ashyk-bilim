@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE message_reports SET status = 'resolved', resolved_by = $2, resolved_at = now(),\n                resolution = $3\n         WHERE id = $1 AND status = 'open'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0da514efd4bdd2dcdf43ca9c7031acd5a38c5237a850f618161039913d8e4026"
+}

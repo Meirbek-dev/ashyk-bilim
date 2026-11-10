@@ -45,10 +45,18 @@ const AUTH_ONLY: &[(&str, &str)] = &[
     ("POST", "/api/v2/me/notifications/{notification_id}/read"),
     ("POST", "/api/v2/me/notifications/read-all"),
     ("PUT", "/api/v2/me/notification-preferences"),
+    // Personal messages: the course link is the gate, not a grant (docs/DIALOGS.md 3); another pair's
+    // conversation or message is 404.
+    ("POST", "/api/v2/messages"),
+    ("PUT", "/api/v2/conversations/{conversation_id}/read"),
+    ("DELETE", "/api/v2/messages/{message_id}"),
+    ("POST", "/api/v2/messages/{message_id}/report"),
 ];
 
 /// Requires specific grants: a zero-grant session must NOT reach a 2xx.
 const PERMISSION_GATED: &[(&str, &str)] = &[
+    ("POST", "/api/v2/admin/message-reports/{report_id}/resolve"),
+    ("DELETE", "/api/v2/admin/message-bans/{user_id}"),
     // docs/AI-FIRST.md: pre-grading is the course's graders' (`Action::Grade`), its settings and
     // index the course's teachers', the concept graph its editors'; search is for members.
     (

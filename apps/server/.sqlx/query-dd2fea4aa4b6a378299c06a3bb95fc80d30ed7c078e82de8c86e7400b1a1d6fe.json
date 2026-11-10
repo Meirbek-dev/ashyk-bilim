@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH live AS (SELECT id FROM courses WHERE deleted_at IS NULL AND archived_at IS NULL),\n           team AS (\n               SELECT cs.course_id, cs.user_id, cs.authorship <> 'reporter' AS teaches\n               FROM course_staff cs JOIN live ON live.id = cs.course_id\n               WHERE cs.status = 'active'\n               UNION ALL\n               SELECT c.id, c.creator_id, true FROM courses c JOIN live ON live.id = c.id\n               WHERE c.creator_id IS NOT NULL\n           ),\n           mine AS (SELECT course_id, bool_or(teaches) AS teaches FROM team WHERE user_id = $1 GROUP BY course_id),\n           learning AS (\n               SELECT m.course_id FROM learning.course_members m JOIN live ON live.id = m.course_id\n               WHERE m.user_id = $1\n           )\n           SELECT p AS \"peer!\" FROM unnest($2::uuid[]) AS p\n           WHERE p <> $1 AND (\n               EXISTS (SELECT 1 FROM mine JOIN team t ON t.course_id = mine.course_id WHERE t.user_id = p)\n               OR EXISTS (SELECT 1 FROM mine JOIN learning.course_members m ON m.course_id = mine.course_id\n                          WHERE mine.teaches AND m.user_id = p)\n               OR EXISTS (SELECT 1 FROM learning l JOIN team t ON t.course_id = l.course_id\n                          WHERE t.teaches AND t.user_id = p)\n           )",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "peer!",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "dd2fea4aa4b6a378299c06a3bb95fc80d30ed7c078e82de8c86e7400b1a1d6fe"
+}

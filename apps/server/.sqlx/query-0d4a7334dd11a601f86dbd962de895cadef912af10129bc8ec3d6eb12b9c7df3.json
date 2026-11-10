@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT conversation_id AS \"id!: ConversationId\" FROM conversation_members\n           WHERE user_id = $1 AND peer_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!: ConversationId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "conversation_members",
+            "name": "conversation_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "0d4a7334dd11a601f86dbd962de895cadef912af10129bc8ec3d6eb12b9c7df3"
+}

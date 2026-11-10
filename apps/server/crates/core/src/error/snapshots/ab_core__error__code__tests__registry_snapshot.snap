@@ -151,6 +151,14 @@ expression: registry
     502,
     "Could not fetch a preview for the link"
   ],
+  "message-recipient-not-allowed": [
+    403,
+    "You cannot write to this person"
+  ],
+  "messages-banned": [
+    403,
+    "You may not send personal messages"
+  ],
   "method-not-allowed": [
     405,
     "Method not allowed"

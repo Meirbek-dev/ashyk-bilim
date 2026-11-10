@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO message_reports (message_id, reported_by, reason, body_snapshot)\n           SELECT m.id, $2, $3, m.body FROM messages m WHERE m.id = $1\n           ON CONFLICT (message_id, reported_by) DO NOTHING\n           RETURNING id AS \"id!: MessageReportId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!: MessageReportId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "message_reports",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "28403bf14c2864687eacb99c602695c6c668d1d74fe14807f6fe8371c23c800d"
+}

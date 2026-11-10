@@ -500,6 +500,7 @@ text_enum!(
         CourseTeamAdded => "course_team_added",
         WorkSubmitted => "work_submitted",
         RemediationAssigned => "remediation_assigned",
+        MessageReportResolved => "message_report_resolved",
     }
 );
 

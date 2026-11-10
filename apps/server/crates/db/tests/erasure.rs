@@ -30,7 +30,19 @@ const SETTING: &str = "membership or setting of a disabled account";
 const AUDIT: &str = "security log: kept, ages out after AB__RETENTION__AUTH_AUDIT_DAYS";
 
 /// `(table, first key column)` → what erasure does.
+/// A personal message stays as a tombstone: the other side keeps the
+/// conversation (docs/DIALOGS.md 7).
+const TOMBSTONE: &str =
+    "erase_personal_data blanks the text; the conversation stays for the other side";
+
 const CLASSIFIED: &[(&str, &str, &str)] = &[
+    ("conversation_members", "peer_id", RECORD),
+    ("conversation_members", "user_id", RECORD),
+    ("message_bans", "banned_by", ACTOR),
+    ("message_bans", "user_id", ERASED),
+    ("message_reports", "reported_by", ERASED),
+    ("message_reports", "resolved_by", ACTOR),
+    ("messages", "user_id", TOMBSTONE),
     ("activities", "creator_id", ACTOR),
     ("activity_progress", "user_id", RECORD),
     ("completions", "user_id", RECORD),

@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (SELECT 1 FROM course_staff cs JOIN courses c ON c.id = cs.course_id\n                          WHERE cs.user_id = $1 AND cs.status = 'active'\n                            AND c.deleted_at IS NULL AND c.archived_at IS NULL) AS \"f!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "f!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "05ff866f424c922d4279932db7730af357361269a86380139296e2351834b4c2"
+}

@@ -12,6 +12,7 @@ pub mod auth;
 pub mod certifications;
 pub mod code;
 pub mod collections;
+pub mod conversations;
 pub mod courses;
 pub mod curriculum;
 pub mod discussions;

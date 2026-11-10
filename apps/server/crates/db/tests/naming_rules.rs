@@ -4,7 +4,7 @@
 //! - a key onto `users` is `user_id` (the person the row belongs to or is
 //!   about: owner, learner, member, recipient), `<verb>_by` (who did
 //!   something to it: `created_by`, `graded_by`, `decided_by`) or a role
-//!   when the row is about two people and no verb fits (`teacher_id`); not
+//!   when the row is about two people and no verb fits (`teacher_id`, `peer_id`); not
 //!   `creator_id`, `author_id`, `actor_id`, `learner_id`, `student_id` or
 //!   `*_user_id`;
 //! - a row's variant is `kind` (`<thing>_kind` when the table has two), not
@@ -44,7 +44,7 @@ const TYPES: &[&str] = &[
 ];
 
 /// Actor names allowed besides `user_id` and `<verb>_by`.
-const ROLES: &[&str] = &["teacher_id"];
+const ROLES: &[&str] = &["teacher_id", "peer_id"];
 
 /// SQL with `--` comments removed and lowercased, as tokens: identifiers
 /// (dots kept, so `t.kind` is one token) and single punctuation characters.
