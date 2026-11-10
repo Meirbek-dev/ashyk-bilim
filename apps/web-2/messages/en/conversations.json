@@ -97,5 +97,6 @@
   "conversations_unban_consequence": "They can send personal messages again.",
   "conversations_unbanned_toast": "Bar lifted",
   "conversations_status_open": "Open",
-  "conversations_status_resolved": "Decided"
+  "conversations_status_resolved": "Decided",
+  "conversations_not_found": "Conversation not found"
 }

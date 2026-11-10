@@ -101,5 +101,6 @@
   "conversations_unban_consequence": "Пользователь снова сможет отправлять личные сообщения.",
   "conversations_unbanned_toast": "Запрет снят",
   "conversations_status_open": "Открыта",
-  "conversations_status_resolved": "Решена"
+  "conversations_status_resolved": "Решена",
+  "conversations_not_found": "Диалог не найден"
 }

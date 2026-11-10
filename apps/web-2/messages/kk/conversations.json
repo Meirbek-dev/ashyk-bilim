@@ -97,5 +97,6 @@
   "conversations_unban_consequence": "Пайдаланушы қайтадан жеке хабарлама жібере алады.",
   "conversations_unbanned_toast": "Тыйым алынды",
   "conversations_status_open": "Ашық",
-  "conversations_status_resolved": "Шешілді"
+  "conversations_status_resolved": "Шешілді",
+  "conversations_not_found": "Сұхбат табылмады"
 }

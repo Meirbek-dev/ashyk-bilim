@@ -46,7 +46,15 @@ export type Seed = {
   activities: Record<'quiz' | 'code_challenge' | 'file_submission', string>
   /** Values for the route params of spec 5.3. */
   params: Record<
-    'courseId' | 'activityId' | 'collectionId' | 'username' | 'certificateId' | 'submissionId' | 'roleSlug' | 'groupId',
+    | 'courseId'
+    | 'activityId'
+    | 'collectionId'
+    | 'username'
+    | 'certificateId'
+    | 'submissionId'
+    | 'roleSlug'
+    | 'groupId'
+    | 'conversationId',
     string
   >
 }
@@ -165,6 +173,8 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
       username: 'e2e-teacher',
       certificateId: 'NOPE-0000-0000-0000',
       submissionId: placeholder,
+      // No one's conversation: its page is the not-found one for every role (a foreign one reads the same).
+      conversationId: placeholder,
       // A seeded system role (migration 20260816000003) and the seed group.
       roleSlug: 'instructor',
       groupId: await seedGroup(client, teacher),

@@ -13,7 +13,7 @@ export function ReviewActions({ work, user }: { work: Work; user: UserSummary | 
   const { courseId, activityId } = useParams({ from: ROUTE })
   return (
     <>
-      {user ? <WriteLink userId={user.id} course={courseId} activity={activityId} learner /> : null}
+      {user ? <WriteLink userId={user.id} course={courseId} activity={activityId} learner compact /> : null}
       <ReviewNav work={work} />
     </>
   )

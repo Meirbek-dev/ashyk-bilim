@@ -73,7 +73,7 @@ function expected(leaf: Leaf, role: Role, seed: Seed): Outcome {
   }
   const held = seed.accounts[role].session.capabilities
   if (!requiredCapabilities(leaf.path).every(capability => held.includes(capability))) return 'forbidden'
-  return leaf.path.includes('$submissionId') ? 'missing-resource' : 'renders'
+  return leaf.path.includes('$submissionId') || leaf.path.includes('$conversationId') ? 'missing-resource' : 'renders'
 }
 
 const leaves = leafRoutes()
@@ -93,7 +93,7 @@ for (const role of ROLES) {
         expectFailure(page, new RegExp(`^${path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`), 403, 404)
       }
       if (outcome === 'missing-resource') {
-        expectFailure(page, /^\/api\/v2\/(certificates|file-submission-attempts)\//, 404)
+        expectFailure(page, /^\/api\/v2\/(certificates|file-submission-attempts|conversations)\//, 404)
       }
       const response = await page.goto(path)
       const forbidden = page.getByRole('heading', { name: m.platform_forbidden_title({}, ru) })
@@ -106,7 +106,9 @@ for (const role of ROLES) {
         expect(response?.status()).toBe(404)
         const title = leaf.path.includes('$certificateId')
           ? m.certificates_not_found({}, ru)
-          : m.grading_not_found({}, ru)
+          : leaf.path.includes('$conversationId')
+            ? m.conversations_not_found({}, ru)
+            : m.grading_not_found({}, ru)
         await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible()
       } else if (outcome === 'login') {
         await expect(page).toHaveURL(/\/login\?redirect=/)
@@ -161,7 +163,7 @@ for (const locale of ['kk', 'en'] as const) {
       const path = withParams(leaf.path, seed, locale)
       if (role && expected(leaf, role, seed) === 'missing-resource') {
         expectFailure(page, new RegExp(`^${path}$`), 404)
-        expectFailure(page, /^\/api\/v2\/(certificates|file-submission-attempts)\//, 404)
+        expectFailure(page, /^\/api\/v2\/(certificates|file-submission-attempts|conversations)\//, 404)
       }
       await page.goto(path)
       await expect(page.locator('html')).toHaveAttribute('lang', locale)

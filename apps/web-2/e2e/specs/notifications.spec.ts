@@ -160,8 +160,8 @@ test2('B-NOT-09 the per-type switches are saved and read back', async ({ page, a
   await page.goto('/settings/notifications')
   const section = page.getByRole('form', { name: m.notifications_prefs_title({}, ru) })
   const update = section.getByRole('switch', { name: m.notifications_type_course_update({}, ru) })
-  // A learner: the staff-only types are left out; «Назначен разбор ошибок» is the learner's own.
-  await expect(section.getByRole('switch')).toHaveCount(7)
+  // A learner: the staff-only types are left out; «Назначен разбор ошибок» and «Решение по жалобе» are theirs too.
+  await expect(section.getByRole('switch')).toHaveCount(8)
   await expect(update).toBeChecked()
   await update.click()
   await section.getByRole('button', { name: m.ui_save({}, ru) }).click()

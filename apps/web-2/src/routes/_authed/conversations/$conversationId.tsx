@@ -1,13 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { ConversationPage, messagesOptions } from '#/features/conversations'
+import { ConversationNotFound, ConversationPage, ensureFeed } from '#/features/conversations'
 import { conversationSearchSchema } from '#/features/conversations/route'
 import { m } from '#/paraglide/messages'
 
 export const Route = createFileRoute('/_authed/conversations/$conversationId')({
   validateSearch: conversationSearchSchema,
-  loader: ({ context, params }) =>
-    context.queryClient.infiniteQuery({ ...messagesOptions(params.conversationId), staleTime: 'static' }),
-  staticData: { title: m.conversations_title },
+  loader: ({ context, params }) => ensureFeed(context.queryClient, params.conversationId),
+  staticData: { title: m.conversations_title, notFoundTitle: m.conversations_not_found },
   component: ConversationPage,
+  notFoundComponent: ConversationNotFound,
 })

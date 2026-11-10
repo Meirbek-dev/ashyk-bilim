@@ -1,6 +1,7 @@
 import { infiniteQueryOptions, type InfiniteData, type QueryClient } from '@tanstack/react-query'
+import { notFound } from '@tanstack/react-router'
 
-import type { ApiError } from '#/shared/api/errors'
+import { ApiError } from '#/shared/api/errors'
 import {
   conversationsUnreadCountOptions,
   conversationsUnreadCountQueryKey,
@@ -75,6 +76,16 @@ export const messagesOptions = (conversationId: ConversationId) => {
     initialPageParam: undefined,
     getNextPageParam: page => page.next_cursor ?? undefined,
   })
+}
+
+/** The route's read of a feed: an unknown or foreign conversation (404) is the route's not-found page. */
+export async function ensureFeed(queryClient: QueryClient, conversationId: ConversationId) {
+  try {
+    return await queryClient.infiniteQuery({ ...messagesOptions(conversationId), staleTime: 'static' })
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) throw notFound()
+    throw error
+  }
 }
 
 /** Whether the viewer may write to a person, and their conversation if there is one (the "Write" entry points). */

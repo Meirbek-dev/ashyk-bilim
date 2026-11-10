@@ -24,6 +24,8 @@ type WriteLinkProps = {
    * and fifty rows would be fifty requests; a ban or a deleted account shows its reason on the next page.
    */
   unchecked?: boolean
+  /** Icon only below `sm` (a crowded top bar): the text stays its accessible name. */
+  compact?: boolean
 }
 
 /**
@@ -31,7 +33,16 @@ type WriteLinkProps = {
  * conversation or a first message). It reads after hydration: an SSR page carries no per-person request.
  */
 export function WriteLink(props: WriteLinkProps) {
-  const { userId, course, activity, learner = false, name, variant = 'outline', unchecked = false } = props
+  const {
+    userId,
+    course,
+    activity,
+    learner = false,
+    name,
+    variant = 'outline',
+    unchecked = false,
+    compact = false,
+  } = props
   const hydrated = useHydrated()
   const { data: session } = useQuery(sessionOptions())
   // Oneself is no one to write to (the server answers 404): a teacher on their own course page asks nothing.
@@ -46,7 +57,9 @@ export function WriteLink(props: WriteLinkProps) {
       className={buttonVariants({ variant, size: 'sm' })}
     >
       <MessageSquare aria-hidden />
-      {learner ? m.conversations_write_learner() : m.conversations_write()}
+      <span className={compact ? 'sr-only sm:not-sr-only' : undefined}>
+        {learner ? m.conversations_write_learner() : m.conversations_write()}
+      </span>
     </RouterLink>
   )
 }
