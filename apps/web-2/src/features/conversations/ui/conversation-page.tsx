@@ -59,15 +59,12 @@ export function ConversationPage() {
           </div>
         ) : null}
         {rows.length === 0 ? <p className="text-sm text-muted-foreground">{m.conversations_no_messages()}</p> : null}
-        <ol
-          ref={feed}
-          role="log"
-          aria-live={quiet ? 'off' : 'polite'}
-          aria-label={m.conversations_feed_label()}
-          className="flex flex-col"
-        >
-          <FeedRows rows={rows} peerName={name} peerAvatar={peer.avatar_key} />
-        </ol>
+        {/* The live region wraps the list: `role="log"` on the <ol> itself would take its list semantics away. */}
+        <div role="log" aria-live={quiet ? 'off' : 'polite'} aria-label={m.conversations_feed_label()}>
+          <ol ref={feed} className="flex flex-col">
+            <FeedRows rows={rows} peerName={name} peerAvatar={peer.avatar_key} />
+          </ol>
+        </div>
         <div className="sticky bottom-0 border-t bg-background py-3">
           {head.allowed_actions.includes('send') ? (
             <Composer to={peer.id} context={context} onSent={sent} />

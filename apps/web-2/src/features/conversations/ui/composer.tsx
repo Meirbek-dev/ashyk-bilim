@@ -10,7 +10,7 @@ import { Textarea } from '#/shared/ui/textarea'
 import { COUNTER_FROM, MAX_BODY } from '../model/feed'
 import { sendOptions } from '../queries'
 import { SendError } from './send-error'
-import { useDraftGuard } from './use-draft-guard'
+import { useDraft } from './use-draft'
 
 type ComposerProps = {
   to: string
@@ -30,14 +30,12 @@ const enterSends = () => window.matchMedia('(pointer: fine)').matches
  * request that did arrive is not sent twice. A typed draft asks before the page is left.
  */
 export function Composer({ to, context, onSent }: ComposerProps) {
-  const [text, setText] = useState('')
   const [clientKey, setClientKey] = useState(newKey)
   const send = useMutation(sendOptions(useQueryClient()))
+  const { text, edit } = useDraft(send.isPending)
   const hintId = useId()
   const errorId = useId()
   const empty = text.trim() === ''
-  const drafted = !empty && !send.isPending
-  useDraftGuard(drafted)
   const submit = () => {
     if (empty || send.isPending || text.length > MAX_BODY) return
     send.mutate(
@@ -52,7 +50,7 @@ export function Composer({ to, context, onSent }: ComposerProps) {
       },
       {
         onSuccess: message => {
-          setText('')
+          edit('')
           setClientKey(newKey())
           onSent?.(message)
         },
@@ -78,7 +76,7 @@ export function Composer({ to, context, onSent }: ComposerProps) {
         id={`${hintId}-box`}
         value={text}
         onChange={event => {
-          setText(event.target.value)
+          edit(event.target.value)
           // The key belongs to the text that failed: a changed text is a new message.
           if (send.isError) {
             send.reset()

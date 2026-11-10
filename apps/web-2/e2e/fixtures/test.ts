@@ -30,6 +30,10 @@ const LIVE_READS = [
   /^\/api\/v2\/(courses\/[^/]+\/discussions|discussions\/[^/]+\/replies)$/,
   // «Сдать» rereads the open draft: another tab or device may have saved since (B-ATT-16).
   /^\/api\/v2\/submissions\/[^/]+$/,
+  // Personal messages: every message.created / conversation.updated rereads the list, the badge, the open feed and
+  // the "may I write" answers, for the sender's own tab too (docs/DIALOGS.md 9).
+  /^\/api\/v2\/me\/conversations(\/unread-count|\/peers\/[^/]+)?$/,
+  /^\/api\/v2\/conversations\/[^/]+\/messages$/,
 ]
 
 const failures = new WeakMap<Page, ExpectedFailure[]>()

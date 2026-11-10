@@ -26,8 +26,8 @@ Read before touching `src/routes/`, `shared/auth/`, the shell, live data or hydr
   React replays mid-hydration breaks it (React error 418). The auth fieldset carries `data-hydrating`, which the e2e
   fixture awaits. `FormDialog`, `ConfirmDialog` and `SheetPanel` keep their trigger disabled (with `data-hydrating`)
   the same way.
-- Shell slots: `features/platform/ui/shell-slots.ts` (`search`: palette trigger, everyone; `notifications`: bell,
-  signed-in) assigns a component the slice's `route.ts` exports (it lazy-loads the UI); an unset slot renders nothing.
+- Shell slots: `features/platform/ui/shell-slots.ts` (`search`: palette trigger, everyone; `messages`: the link to
+  «Диалоги» with its unread badge, signed-in; `notifications`: bell, signed-in) assigns a component the slice's `route.ts` exports (it lazy-loads the UI); an unset slot renders nothing.
 - Entry chunk: only `loader` and the components are code-split; `validateSearch`, `search`, `beforeLoad`,
   `loaderDeps`, `head`, `staticData` and the root route (the shell) stay in the entry, which takes whole modules.
   Those options use a feature only via `#/features/<name>/route` (lint `ab/route-level-imports`); `route.ts` holds

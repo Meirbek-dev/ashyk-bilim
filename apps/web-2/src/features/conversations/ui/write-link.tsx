@@ -3,6 +3,7 @@ import { Link as RouterLink, useHydrated } from '@tanstack/react-router'
 import { MessageSquare } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
+import { sessionOptions } from '#/shared/auth/session'
 import { buttonVariants } from '#/shared/components/button-variants'
 
 import { peerOptions } from '../queries'
@@ -32,8 +33,11 @@ type WriteLinkProps = {
 export function WriteLink(props: WriteLinkProps) {
   const { userId, course, activity, learner = false, name, variant = 'outline', unchecked = false } = props
   const hydrated = useHydrated()
-  const { data } = useQuery({ ...peerOptions(userId), enabled: hydrated && !unchecked })
-  if (!unchecked && !data?.allowed_actions.includes('send')) return null
+  const { data: session } = useQuery(sessionOptions())
+  // Oneself is no one to write to (the server answers 404): a teacher on their own course page asks nothing.
+  const self = session?.user_id === userId
+  const { data } = useQuery({ ...peerOptions(userId), enabled: hydrated && !unchecked && !self })
+  if (self || (!unchecked && !data?.allowed_actions.includes('send'))) return null
   return (
     <RouterLink
       to="/conversations/new"
