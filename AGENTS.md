@@ -18,6 +18,7 @@
 - `docs/FINDINGS.md` - open production and infra issues.
 - `docs/COURSE_ARCHIVING.md` - archive/restore behavior and regression criteria.
 - `docs/AI-FIRST.md` - concept graph, mastery model, material search and AI pre-grading (rules, API, UI).
+- `docs/DIALOGS.md` - personal messages ("Диалоги"): specification, approved 2026-11-10; stage 1 in progress.
 - `docs/web/DESIGN.md` - replacement frontend design system; `docs/web/ROUTES.md` - its routes, access and shell.
 - `docs/agents/DATA.md` - where things live in the database, ready queries for finding review data;
   `docs/agents/SCHEMA.md` - every table and column, generated (`just schema-docs`), search it with `rg`.
