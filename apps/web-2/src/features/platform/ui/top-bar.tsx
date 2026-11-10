@@ -17,13 +17,14 @@ const ProfileMenu = lazy(() => import('./profile-menu').then(module => ({ defaul
 const GuestSwitches = lazy(() => import('./guest-switches').then(module => ({ default: module.GuestSwitches })))
 
 /**
- * The utility bar over the page. Signed in: search, notifications, profile (the brand and the workspace live on the
+ * The utility bar over the page. Signed in: search, conversations, notifications, profile (the brand and the workspace live on the
  * rail from lg; below it the mark stays here). Guests: the wordmark, the university's mark and the public links, then
  * sign-in actions.
  */
 export function TopBar({ session, workspace }: { session: SessionInfo | null; workspace: WorkspaceId }) {
   const Search = shellSlots.search
   const Notifications = shellSlots.notifications
+  const Messages = shellSlots.messages
   // «Войти» on a course, a collection or a search comes back there after sign-in (B-AUTH-17), not to /home. Path and
   // query only: the server never sees the hash (#main after the skip link), so with it the link would not hydrate.
   const back = returnTo(useLocation({ select: location => location.pathname + location.searchStr }))
@@ -54,6 +55,7 @@ export function TopBar({ session, workspace }: { session: SessionInfo | null; wo
         )}
         <div className="ml-auto flex items-center gap-1">
           {Search ? <Search /> : null}
+          {session && Messages ? <Messages /> : null}
           {session && Notifications ? <Notifications /> : null}
           {session ? (
             <Suspense fallback={null}>

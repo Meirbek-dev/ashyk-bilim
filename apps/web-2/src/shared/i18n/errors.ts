@@ -57,6 +57,8 @@ const messages: Record<ErrorCode, () => string> = {
   'reset-code-invalid': m.errors_reset_code_invalid,
   'account-has-roles': m.errors_account_has_roles,
   'account-deleted': m.errors_account_deleted,
+  'message-recipient-not-allowed': m.errors_message_recipient_not_allowed,
+  'messages-banned': m.errors_messages_banned,
 }
 
 /** The user-facing text of any thrown error: the code's text for an ApiError, "no connection" otherwise. */

@@ -1,5 +1,6 @@
 import { Link as RouterLink } from '@tanstack/react-router'
 
+import { WriteLink } from '#/features/conversations'
 import { m } from '#/paraglide/messages'
 import type { AtRiskLearnerRow } from '#/shared/api/gen/types.gen'
 import { Anchor } from '#/shared/components/anchor'
@@ -7,7 +8,8 @@ import { buttonVariants } from '#/shared/components/button-variants'
 import { formatNumber } from '#/shared/i18n/format'
 
 /**
- * Where to act on an at-risk learner: an email to them - «Связаться» is the usual recommendation (B-ANL-42), their works
+ * Where to act on an at-risk learner: a personal message or an email to them - «Связаться» is the usual
+ * recommendation (B-ANL-42, docs/DIALOGS.md 9), their works
  * waiting for a grade in the inbox (B-ANL-29), and the course's learner list found by username (B-ANL-38).
  */
 export function LearnerLinks({
@@ -15,11 +17,12 @@ export function LearnerLinks({
 }: {
   row: Pick<
     AtRiskLearnerRow,
-    'course_id' | 'user_display_name' | 'user_username' | 'user_email' | 'open_grading_blocks'
+    'course_id' | 'user_id' | 'user_display_name' | 'user_username' | 'user_email' | 'open_grading_blocks'
   >
 }) {
   return (
     <>
+      <WriteLink userId={row.user_id} course={row.course_id} learner />
       {row.user_email ? (
         <Anchor href={`mailto:${row.user_email}`} className={buttonVariants({ variant: 'outline' })}>
           {m.analytics_write_email()}

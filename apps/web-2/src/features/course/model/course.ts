@@ -153,11 +153,12 @@ export const syllabusSize = (chapters: SyllabusChapter[]) => {
   }
 }
 
-export const authorNames = (roster: Contributor[]): string[] =>
+export const authorRows = (roster: Contributor[]): Contributor[] =>
   roster
     .filter(row => row.status === 'active' && ROLE_ORDER.includes(row.role))
     .toSorted((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role))
-    .map(row => row.display_name)
+
+export const authorNames = (roster: Contributor[]): string[] => authorRows(roster).map(row => row.display_name)
 
 /** What the contributor block offers: the roster lists the caller's own row (BUG-331). */
 export type Application = 'apply' | 'pending' | null

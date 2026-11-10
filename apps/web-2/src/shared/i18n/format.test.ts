@@ -6,7 +6,9 @@ import {
   formatDayMonth,
   formatFileSize,
   formatPercent,
+  formatTime,
   fromDateTimeInput,
+  platformDay,
   toDateTimeInput,
 } from './format'
 
@@ -101,5 +103,13 @@ describe('independent of the runtime tzdata', () => {
     expect([formatDateTime(EVENING, 'ru'), formatDayMonth(EVENING, 'en'), formatDate(EVENING, 'kk')]).toEqual(fresh)
     expect(toDateTimeInput(EVENING)).toBe('2026-10-14T00:30')
     expect(fromDateTimeInput('2026-10-14T00:30')).toBe(EVENING)
+  })
+})
+
+describe('formatTime and platformDay', () => {
+  test('read the platform zone: 20:30 UTC is 01:30 on the next day', () => {
+    expect(formatTime(LATE_EVENING_UTC)).toBe('01:30')
+    expect(platformDay(LATE_EVENING_UTC)).toBe('2026-02-01')
+    expect(platformDay(LATE_EVENING_UTC - 2 * 3600)).toBe('2026-01-31')
   })
 })

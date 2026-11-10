@@ -52,9 +52,9 @@
   "ai_reconnecting": "Связь прервалась, переподключаюсь",
   "ai_run_failed": "Не удалось выполнить запрос к ИИ.",
   "ai_stream_lost": "Связь прервалась. Результат появится здесь, когда ИИ закончит.",
-  "ai_threads": "Диалоги",
-  "ai_new_thread": "Новый диалог",
-  "ai_threads_empty": "Диалогов пока нет.",
+  "ai_threads": "Беседы",
+  "ai_new_thread": "Новая беседа",
+  "ai_threads_empty": "Бесед пока нет.",
   "ai_thread_messages": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -68,10 +68,10 @@
     }
   ],
   "ai_thread_untitled": "Без названия",
-  "ai_delete_thread": "Удалить диалог",
-  "ai_delete_thread_title": "Удалить диалог «{title}»?",
+  "ai_delete_thread": "Удалить беседу",
+  "ai_delete_thread_title": "Удалить беседу «{title}»?",
   "ai_delete_thread_consequence": "Все вопросы и ответы в нём будут удалены.",
-  "ai_thread_deleted": "Диалог удалён",
+  "ai_thread_deleted": "Беседа удалена",
   "ai_incomplete": "Ответ не завершён",
   "ai_writing": "Пишу ответ",
   "ai_you": "Вы",

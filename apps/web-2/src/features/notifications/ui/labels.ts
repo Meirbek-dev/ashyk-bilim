@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   BookOpenCheck,
   Megaphone,
+  ShieldCheck,
   MessageSquarePlus,
   MessageSquareReply,
   Undo2,
@@ -30,6 +31,7 @@ export const notificationTypeLabels: Record<NotificationType, () => string> = {
   course_team_added: m.notifications_type_course_team_added,
   work_submitted: m.notifications_type_work_submitted,
   remediation_assigned: m.notifications_type_remediation_assigned,
+  message_report_resolved: m.notifications_type_message_report_resolved,
 }
 
 export const notificationIcons: Record<NotificationType, LucideIcon> = {
@@ -44,6 +46,7 @@ export const notificationIcons: Record<NotificationType, LucideIcon> = {
   course_team_added: Users,
   work_submitted: ClipboardCheck,
   remediation_assigned: BookOpenCheck,
+  message_report_resolved: ShieldCheck,
 }
 
 /** The empty list says what will arrive: a teacher also hears of hand-ins and new threads (B-NOT-02). */
@@ -109,6 +112,8 @@ export function notificationLines(payload: NotificationPayload, replies = 1): st
           ? m.notifications_text_works({ count: payload.count, learner: payload.learner_name })
           : m.notifications_text_work({ learner: payload.learner_name }),
       ]
+    case 'message_report_resolved':
+      return [m.notifications_text_message_report_resolved()]
   }
   return []
 }

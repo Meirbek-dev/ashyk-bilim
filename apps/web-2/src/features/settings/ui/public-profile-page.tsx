@@ -2,6 +2,7 @@ import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-quer
 import { Link as RouterLink, useParams } from '@tanstack/react-router'
 
 import { CourseGrid } from '#/features/catalog'
+import { WriteLink } from '#/features/conversations'
 import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
 import { buttonVariants } from '#/shared/components/button-variants'
@@ -45,6 +46,9 @@ export function PublicProfilePage() {
           <RouterLink to="/settings/profile" className={buttonVariants({ variant: 'outline' })}>
             {m.settings_user_edit()}
           </RouterLink>
+        ) : session ? (
+          // Shown when a course links the two (docs/DIALOGS.md 3); a guest sees no «Написать».
+          <WriteLink userId={user.id} />
         ) : undefined
       }
     >

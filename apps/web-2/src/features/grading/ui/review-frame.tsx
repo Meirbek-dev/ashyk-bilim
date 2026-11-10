@@ -13,8 +13,8 @@ import { activityOptions, type Work } from '../queries'
 import { scoreText, statusMeta } from './labels'
 import { FeedbackDraft } from './feedback-draft'
 import type { ReviewAside } from './review-aside'
+import { ReviewActions } from './review-actions'
 import { ReviewBack } from './review-back'
-import { ReviewNav } from './review-nav'
 import { ReviewPosition } from './review-position'
 import { StatusText } from './status-text'
 
@@ -64,7 +64,7 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
       <FocusPage
         back={back}
         title={activity.name}
-        actions={<ReviewNav work={work} />}
+        actions={<ReviewActions work={work} user={head.user} />}
         aside={
           aside
             ? {

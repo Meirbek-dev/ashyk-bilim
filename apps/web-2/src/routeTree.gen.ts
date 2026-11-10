@@ -32,8 +32,12 @@ import { Route as AuthedAdminIndexRouteImport } from './routes/_authed/admin/ind
 import { Route as AuthedAdminAiRouteImport } from './routes/_authed/admin/ai'
 import { Route as AuthedAdminAnalyticsRouteImport } from './routes/_authed/admin/analytics'
 import { Route as AuthedAdminGamificationRouteImport } from './routes/_authed/admin/gamification'
+import { Route as AuthedAdminMessageReportsRouteImport } from './routes/_authed/admin/message-reports'
 import { Route as AuthedAdminPlatformRouteImport } from './routes/_authed/admin/platform'
 import { Route as AuthedAdminUsersRouteImport } from './routes/_authed/admin/users'
+import { Route as AuthedConversationsIndexRouteImport } from './routes/_authed/conversations/index'
+import { Route as AuthedConversationsConversationIdRouteImport } from './routes/_authed/conversations/$conversationId'
+import { Route as AuthedConversationsNewRouteImport } from './routes/_authed/conversations/new'
 import { Route as AuthedSettingsIndexRouteImport } from './routes/_authed/settings/index'
 import { Route as AuthedSettingsAppearanceRouteImport } from './routes/_authed/settings/appearance'
 import { Route as AuthedSettingsNotificationsRouteImport } from './routes/_authed/settings/notifications'
@@ -200,6 +204,12 @@ const AuthedAdminGamificationRoute = AuthedAdminGamificationRouteImport.update({
   path: '/gamification',
   getParentRoute: () => AuthedAdminRoute,
 } as any)
+const AuthedAdminMessageReportsRoute =
+  AuthedAdminMessageReportsRouteImport.update({
+    id: '/message-reports',
+    path: '/message-reports',
+    getParentRoute: () => AuthedAdminRoute,
+  } as any)
 const AuthedAdminPlatformRoute = AuthedAdminPlatformRouteImport.update({
   id: '/platform',
   path: '/platform',
@@ -209,6 +219,23 @@ const AuthedAdminUsersRoute = AuthedAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => AuthedAdminRoute,
+} as any)
+const AuthedConversationsIndexRoute =
+  AuthedConversationsIndexRouteImport.update({
+    id: '/conversations/',
+    path: '/conversations/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedConversationsConversationIdRoute =
+  AuthedConversationsConversationIdRouteImport.update({
+    id: '/conversations/$conversationId',
+    path: '/conversations/$conversationId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedConversationsNewRoute = AuthedConversationsNewRouteImport.update({
+  id: '/conversations/new',
+  path: '/conversations/new',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedSettingsIndexRoute = AuthedSettingsIndexRouteImport.update({
   id: '/',
@@ -539,8 +566,11 @@ export interface FileRoutesByFullPath {
   '/admin/ai': typeof AuthedAdminAiRoute
   '/admin/analytics': typeof AuthedAdminAnalyticsRoute
   '/admin/gamification': typeof AuthedAdminGamificationRoute
+  '/admin/message-reports': typeof AuthedAdminMessageReportsRoute
   '/admin/platform': typeof AuthedAdminPlatformRoute
   '/admin/users': typeof AuthedAdminUsersRoute
+  '/conversations/$conversationId': typeof AuthedConversationsConversationIdRoute
+  '/conversations/new': typeof AuthedConversationsNewRoute
   '/settings/appearance': typeof AuthedSettingsAppearanceRoute
   '/settings/notifications': typeof AuthedSettingsNotificationsRoute
   '/settings/profile': typeof AuthedSettingsProfileRoute
@@ -550,6 +580,7 @@ export interface FileRoutesByFullPath {
   '/courses/$courseId': typeof PublicCoursesCourseIdRouteWithChildren
   '/users/$username': typeof PublicUsersUsernameRoute
   '/admin/': typeof AuthedAdminIndexRoute
+  '/conversations/': typeof AuthedConversationsIndexRoute
   '/settings/': typeof AuthedSettingsIndexRoute
   '/teach/': typeof AuthedTeachIndexRoute
   '/collections/': typeof PublicCollectionsIndexRoute
@@ -613,8 +644,11 @@ export interface FileRoutesByTo {
   '/admin/ai': typeof AuthedAdminAiRoute
   '/admin/analytics': typeof AuthedAdminAnalyticsRoute
   '/admin/gamification': typeof AuthedAdminGamificationRoute
+  '/admin/message-reports': typeof AuthedAdminMessageReportsRoute
   '/admin/platform': typeof AuthedAdminPlatformRoute
   '/admin/users': typeof AuthedAdminUsersRoute
+  '/conversations/$conversationId': typeof AuthedConversationsConversationIdRoute
+  '/conversations/new': typeof AuthedConversationsNewRoute
   '/settings/appearance': typeof AuthedSettingsAppearanceRoute
   '/settings/notifications': typeof AuthedSettingsNotificationsRoute
   '/settings/profile': typeof AuthedSettingsProfileRoute
@@ -622,6 +656,7 @@ export interface FileRoutesByTo {
   '/collections/$collectionId': typeof PublicCollectionsCollectionIdRoute
   '/users/$username': typeof PublicUsersUsernameRoute
   '/admin': typeof AuthedAdminIndexRoute
+  '/conversations': typeof AuthedConversationsIndexRoute
   '/settings': typeof AuthedSettingsIndexRoute
   '/teach': typeof AuthedTeachIndexRoute
   '/collections': typeof PublicCollectionsIndexRoute
@@ -690,8 +725,11 @@ export interface FileRoutesById {
   '/_authed/admin/ai': typeof AuthedAdminAiRoute
   '/_authed/admin/analytics': typeof AuthedAdminAnalyticsRoute
   '/_authed/admin/gamification': typeof AuthedAdminGamificationRoute
+  '/_authed/admin/message-reports': typeof AuthedAdminMessageReportsRoute
   '/_authed/admin/platform': typeof AuthedAdminPlatformRoute
   '/_authed/admin/users': typeof AuthedAdminUsersRoute
+  '/_authed/conversations/$conversationId': typeof AuthedConversationsConversationIdRoute
+  '/_authed/conversations/new': typeof AuthedConversationsNewRoute
   '/_authed/settings/appearance': typeof AuthedSettingsAppearanceRoute
   '/_authed/settings/notifications': typeof AuthedSettingsNotificationsRoute
   '/_authed/settings/profile': typeof AuthedSettingsProfileRoute
@@ -701,6 +739,7 @@ export interface FileRoutesById {
   '/_public/courses/$courseId': typeof PublicCoursesCourseIdRouteWithChildren
   '/_public/users/$username': typeof PublicUsersUsernameRoute
   '/_authed/admin/': typeof AuthedAdminIndexRoute
+  '/_authed/conversations/': typeof AuthedConversationsIndexRoute
   '/_authed/settings/': typeof AuthedSettingsIndexRoute
   '/_authed/teach/': typeof AuthedTeachIndexRoute
   '/_public/collections/': typeof PublicCollectionsIndexRoute
@@ -769,8 +808,11 @@ export interface FileRouteTypes {
     | '/admin/ai'
     | '/admin/analytics'
     | '/admin/gamification'
+    | '/admin/message-reports'
     | '/admin/platform'
     | '/admin/users'
+    | '/conversations/$conversationId'
+    | '/conversations/new'
     | '/settings/appearance'
     | '/settings/notifications'
     | '/settings/profile'
@@ -780,6 +822,7 @@ export interface FileRouteTypes {
     | '/courses/$courseId'
     | '/users/$username'
     | '/admin/'
+    | '/conversations/'
     | '/settings/'
     | '/teach/'
     | '/collections/'
@@ -843,8 +886,11 @@ export interface FileRouteTypes {
     | '/admin/ai'
     | '/admin/analytics'
     | '/admin/gamification'
+    | '/admin/message-reports'
     | '/admin/platform'
     | '/admin/users'
+    | '/conversations/$conversationId'
+    | '/conversations/new'
     | '/settings/appearance'
     | '/settings/notifications'
     | '/settings/profile'
@@ -852,6 +898,7 @@ export interface FileRouteTypes {
     | '/collections/$collectionId'
     | '/users/$username'
     | '/admin'
+    | '/conversations'
     | '/settings'
     | '/teach'
     | '/collections'
@@ -919,8 +966,11 @@ export interface FileRouteTypes {
     | '/_authed/admin/ai'
     | '/_authed/admin/analytics'
     | '/_authed/admin/gamification'
+    | '/_authed/admin/message-reports'
     | '/_authed/admin/platform'
     | '/_authed/admin/users'
+    | '/_authed/conversations/$conversationId'
+    | '/_authed/conversations/new'
     | '/_authed/settings/appearance'
     | '/_authed/settings/notifications'
     | '/_authed/settings/profile'
@@ -930,6 +980,7 @@ export interface FileRouteTypes {
     | '/_public/courses/$courseId'
     | '/_public/users/$username'
     | '/_authed/admin/'
+    | '/_authed/conversations/'
     | '/_authed/settings/'
     | '/_authed/teach/'
     | '/_public/collections/'
@@ -1149,6 +1200,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminGamificationRouteImport
       parentRoute: typeof AuthedAdminRoute
     }
+    '/_authed/admin/message-reports': {
+      id: '/_authed/admin/message-reports'
+      path: '/message-reports'
+      fullPath: '/admin/message-reports'
+      preLoaderRoute: typeof AuthedAdminMessageReportsRouteImport
+      parentRoute: typeof AuthedAdminRoute
+    }
     '/_authed/admin/platform': {
       id: '/_authed/admin/platform'
       path: '/platform'
@@ -1162,6 +1220,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/users'
       preLoaderRoute: typeof AuthedAdminUsersRouteImport
       parentRoute: typeof AuthedAdminRoute
+    }
+    '/_authed/conversations/': {
+      id: '/_authed/conversations/'
+      path: '/conversations'
+      fullPath: '/conversations/'
+      preLoaderRoute: typeof AuthedConversationsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/conversations/$conversationId': {
+      id: '/_authed/conversations/$conversationId'
+      path: '/conversations/$conversationId'
+      fullPath: '/conversations/$conversationId'
+      preLoaderRoute: typeof AuthedConversationsConversationIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/conversations/new': {
+      id: '/_authed/conversations/new'
+      path: '/conversations/new'
+      fullPath: '/conversations/new'
+      preLoaderRoute: typeof AuthedConversationsNewRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/settings/': {
       id: '/_authed/settings/'
@@ -1541,6 +1620,7 @@ interface AuthedAdminRouteChildren {
   AuthedAdminAiRoute: typeof AuthedAdminAiRoute
   AuthedAdminAnalyticsRoute: typeof AuthedAdminAnalyticsRoute
   AuthedAdminGamificationRoute: typeof AuthedAdminGamificationRoute
+  AuthedAdminMessageReportsRoute: typeof AuthedAdminMessageReportsRoute
   AuthedAdminPlatformRoute: typeof AuthedAdminPlatformRoute
   AuthedAdminUsersRoute: typeof AuthedAdminUsersRoute
   AuthedAdminIndexRoute: typeof AuthedAdminIndexRoute
@@ -1552,6 +1632,7 @@ const AuthedAdminRouteChildren: AuthedAdminRouteChildren = {
   AuthedAdminAiRoute: AuthedAdminAiRoute,
   AuthedAdminAnalyticsRoute: AuthedAdminAnalyticsRoute,
   AuthedAdminGamificationRoute: AuthedAdminGamificationRoute,
+  AuthedAdminMessageReportsRoute: AuthedAdminMessageReportsRoute,
   AuthedAdminPlatformRoute: AuthedAdminPlatformRoute,
   AuthedAdminUsersRoute: AuthedAdminUsersRoute,
   AuthedAdminIndexRoute: AuthedAdminIndexRoute,
@@ -1708,6 +1789,9 @@ interface AuthedRouteChildren {
   AuthedNotificationsRoute: typeof AuthedNotificationsRoute
   AuthedSettingsRoute: typeof AuthedSettingsRouteWithChildren
   AuthedTeachRoute: typeof AuthedTeachRouteWithChildren
+  AuthedConversationsConversationIdRoute: typeof AuthedConversationsConversationIdRoute
+  AuthedConversationsNewRoute: typeof AuthedConversationsNewRoute
+  AuthedConversationsIndexRoute: typeof AuthedConversationsIndexRoute
   AuthedCollectionsCollectionIdEditRoute: typeof AuthedCollectionsCollectionIdEditRoute
   AuthedLearnCourseIdActivityIdRoute: typeof AuthedLearnCourseIdActivityIdRoute
   AuthedLearnCourseIdCompleteRoute: typeof AuthedLearnCourseIdCompleteRoute
@@ -1724,6 +1808,10 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedNotificationsRoute: AuthedNotificationsRoute,
   AuthedSettingsRoute: AuthedSettingsRouteWithChildren,
   AuthedTeachRoute: AuthedTeachRouteWithChildren,
+  AuthedConversationsConversationIdRoute:
+    AuthedConversationsConversationIdRoute,
+  AuthedConversationsNewRoute: AuthedConversationsNewRoute,
+  AuthedConversationsIndexRoute: AuthedConversationsIndexRoute,
   AuthedCollectionsCollectionIdEditRoute:
     AuthedCollectionsCollectionIdEditRoute,
   AuthedLearnCourseIdActivityIdRoute: AuthedLearnCourseIdActivityIdRoute,

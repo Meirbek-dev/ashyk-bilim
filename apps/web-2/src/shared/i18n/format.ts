@@ -89,6 +89,18 @@ function platformParts(epochMs: number) {
   return { year: part('year'), month: part('month'), day: part('day'), hour: part('hour'), minute: part('minute') }
 }
 
+/** The time of day alone, 24 h in the platform zone, e.g. "09:05" (a message in a day's group). */
+export function formatTime(unixSeconds: number): string {
+  const { hour, minute } = platformParts(unixSeconds * 1000)
+  return `${hour}:${minute}`
+}
+
+/** The platform-zone calendar day of an instant as "YYYY-MM-DD": equal strings are the same day. */
+export function platformDay(unixSeconds: number): string {
+  const { year, month, day } = platformParts(unixSeconds * 1000)
+  return `${year}-${month}-${day}`
+}
+
 /** A date with its time of day (deadlines, hand-ins), e.g. "1 февраля 2026 г., 01:30" / "2026 ж. 1 ақпан, 01:30". */
 export function formatDateTime(unixSeconds: number, locale: string = getLocale()): string {
   const { hour, minute } = platformParts(unixSeconds * 1000)

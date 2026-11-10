@@ -55,6 +55,7 @@ export const NOTIFICATION_TYPES = [
   'discussion_post',
   'course_team_added',
   'work_submitted',
+  'message_report_resolved',
 ] as const satisfies readonly NotificationType[]
 
 /** Types only course staff receive (applications, new threads, team changes): a learner's settings leave them out. */
@@ -78,6 +79,9 @@ export const badgeCount = (count: number, format: (value: number) => string) =>
  * page), the course updates, the discussion with its thread open, the course team.
  */
 export function notificationTarget(payload: NotificationPayload) {
+  // The decision on a report leads back to the conversation it came from.
+  if (payload.type === 'message_report_resolved')
+    return linkOptions({ to: '/conversations/$conversationId', params: { conversationId: payload.conversation_id } })
   const course = { courseId: payload.course_id }
   switch (payload.type) {
     case 'grade_published':

@@ -66,5 +66,6 @@
   "course_application_decided": "Заявку уже рассмотрели. Список авторов обновлён.",
   "course_updates_empty": "Объявлений пока нет. Здесь появятся новости курса от преподавателя.",
   "course_certificate_offered": "За прохождение курса выдаётся сертификат.",
-  "course_certificate_yours": "Ваш сертификат за этот курс"
+  "course_certificate_yours": "Ваш сертификат за этот курс",
+  "course_team_title": "Команда курса"
 }

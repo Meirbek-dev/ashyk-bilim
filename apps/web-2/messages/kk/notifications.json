@@ -70,5 +70,7 @@
   "notifications_prefs_title": "Нені жіберу керек",
   "notifications_prefs_hint": "Хабарландырулар тек қолданбаға келеді: қоңырау белгішесіне және «Хабарландырулар» бетіне.",
   "notifications_prefs_saved": "Хабарландыру баптаулары сақталды",
-  "notifications_level_up": "Жаңа деңгей: {level}"
+  "notifications_level_up": "Жаңа деңгей: {level}",
+  "notifications_type_message_report_resolved": "Шағым бойынша шешім",
+  "notifications_text_message_report_resolved": "Әкімші хабарламаға берген шағымыңызды қарады"
 }

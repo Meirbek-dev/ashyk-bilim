@@ -10,10 +10,11 @@ import { Skeleton } from '#/shared/ui/skeleton'
 
 import { courseOptions } from '../queries'
 import { ContributorApplication } from './contributor-application'
+import { CourseTeam } from './course-team'
 import { GuestOutline } from './guest-outline'
 import { LearnerOutline } from './learner-outline'
 
-/** The `about` tab: description (markdown), what you will learn, progress and syllabus, co-authorship. */
+/** The `about` tab: description (markdown), what you will learn, progress and syllabus, the team, co-authorship. */
 export function AboutPage() {
   const { courseId } = useParams({ from: '/_public/courses/$courseId/about' })
   const { data: course } = useSuspenseQuery(courseOptions(courseId))
@@ -63,6 +64,7 @@ export function AboutPage() {
           <GuestOutline courseId={courseId} />
         </>
       )}
+      {session ? <CourseTeam courseId={courseId} /> : null}
       {session ? <ContributorApplication course={course} userId={session.user_id} /> : null}
     </div>
   )

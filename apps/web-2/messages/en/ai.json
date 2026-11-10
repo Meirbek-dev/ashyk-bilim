@@ -50,9 +50,9 @@
   "ai_reconnecting": "Connection lost, reconnecting",
   "ai_run_failed": "The AI run failed.",
   "ai_stream_lost": "Lost the connection to the run. The result will appear here when the run ends.",
-  "ai_threads": "Conversations",
-  "ai_new_thread": "New conversation",
-  "ai_threads_empty": "No conversations yet.",
+  "ai_threads": "Chats",
+  "ai_new_thread": "New chat",
+  "ai_threads_empty": "No chats yet.",
   "ai_thread_messages": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -64,10 +64,10 @@
     }
   ],
   "ai_thread_untitled": "Untitled",
-  "ai_delete_thread": "Delete conversation",
-  "ai_delete_thread_title": "Delete the conversation “{title}”?",
+  "ai_delete_thread": "Delete chat",
+  "ai_delete_thread_title": "Delete the chat “{title}”?",
   "ai_delete_thread_consequence": "The questions and answers of this conversation will be gone.",
-  "ai_thread_deleted": "Conversation deleted",
+  "ai_thread_deleted": "Chat deleted",
   "ai_incomplete": "Answer not finished",
   "ai_writing": "Writing the answer",
   "ai_you": "You",

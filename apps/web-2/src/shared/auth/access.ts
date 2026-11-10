@@ -5,6 +5,7 @@ import {
   BookOpen,
   Bot,
   CalendarCheck,
+  Flag,
   GraduationCap,
   Inbox,
   Library,
@@ -92,6 +93,8 @@ export const workspaces: readonly Workspace[] = [
     sections: [
       { to: '/admin/users', label: m.platform_nav_users, icon: Users, capability: 'admin.users' },
       { to: '/admin/roles', label: m.platform_nav_roles, icon: ShieldCheck, capability: 'admin.roles' },
+      // Reports of personal messages: the same gate as the user list (docs/DIALOGS.md 6).
+      { to: '/admin/message-reports', label: m.conversations_nav_reports, icon: Flag, capability: 'admin.users' },
       { to: '/admin/platform', label: m.platform_nav_platform, icon: Settings2, capability: 'admin.platform' },
       { to: '/admin/ai', label: m.platform_nav_ai, icon: Bot, capability: 'admin.ai' },
       { to: '/admin/gamification', label: m.platform_nav_gamification, icon: Award, capability: 'admin.gamification' },

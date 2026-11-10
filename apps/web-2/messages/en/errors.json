@@ -53,5 +53,7 @@
   "errors_activity_has_learner_work": "Learners have submitted work here, so it can’t be deleted. Unpublish (hide) it instead; their submissions are kept.",
   "errors_course_has_learner_work": "Learners have submissions in this course: confirm that they are deleted with the course.",
   "errors_account_has_roles": "Teacher and admin accounts are deleted by a platform admin. Please contact them.",
-  "errors_account_deleted": "Its owner deleted this account, so it cannot be enabled again."
+  "errors_account_deleted": "Its owner deleted this account, so it cannot be enabled again.",
+  "errors_message_recipient_not_allowed": "You cannot write to this person: no course links you.",
+  "errors_messages_banned": "An administrator has barred you from sending personal messages."
 }

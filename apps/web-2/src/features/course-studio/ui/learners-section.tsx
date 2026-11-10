@@ -2,6 +2,7 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
+import { WriteLink } from '#/features/conversations'
 import { m } from '#/paraglide/messages'
 import type { CourseLearner } from '#/shared/api/gen/types.gen'
 import { ScoreBar } from '#/shared/components/charts/score-bar'
@@ -23,7 +24,7 @@ const ROUTE_PATH = '/teach/courses/$courseId/learners'
 
 const date = (unix: number | null) => <span className="tabular-nums">{unix === null ? '—' : formatDate(unix)}</span>
 
-// `removable`: some row allows «remove» - without it (a co-author) the action column would be a header over empty cells.
+// `removable`: some row allows «remove»; the action column is there for «Написать» on every row anyway.
 const columns = (courseId: string, removable: boolean): DataColumn<CourseLearner>[] => [
   {
     id: 'learner',
@@ -76,18 +77,27 @@ const columns = (courseId: string, removable: boolean): DataColumn<CourseLearner
     priority: 3,
     cell: learner => date(learner.enrolled_at_unix),
   },
-  ...(removable
-    ? [
-        {
-          id: 'action',
-          header: m.studio_learners_col_action(),
-          priority: 2 as const,
-          action: true,
-          cell: (learner: CourseLearner) =>
-            learner.allowed_actions.includes('remove') ? <RemoveLearner courseId={courseId} learner={learner} /> : null,
-        },
-      ]
-    : []),
+  {
+    id: 'action',
+    header: m.studio_learners_col_action(),
+    priority: 2 as const,
+    action: true,
+    // «Написать» on every row (docs/DIALOGS.md 9); "Remove from course" where the row allows it.
+    cell: (learner: CourseLearner) => (
+      <div className="flex items-center justify-end gap-1">
+        <WriteLink
+          userId={learner.user_id}
+          course={courseId}
+          name={learner.display_name || learner.username}
+          variant="ghost"
+          unchecked
+        />
+        {removable && learner.allowed_actions.includes('remove') ? (
+          <RemoveLearner courseId={courseId} learner={learner} />
+        ) : null}
+      </div>
+    ),
+  },
 ]
 
 /**

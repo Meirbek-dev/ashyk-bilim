@@ -70,5 +70,7 @@
   "notifications_prefs_title": "What to send",
   "notifications_prefs_hint": "Notifications arrive only in the app: the bell and the Notifications page.",
   "notifications_prefs_saved": "Notification settings saved",
-  "notifications_level_up": "New level: {level}"
+  "notifications_level_up": "New level: {level}",
+  "notifications_type_message_report_resolved": "Report decided",
+  "notifications_text_message_report_resolved": "An administrator reviewed your report of a message"
 }

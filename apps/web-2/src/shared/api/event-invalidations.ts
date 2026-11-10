@@ -4,6 +4,8 @@ import {
   agendaQueryKey,
   assessmentReviewQueueQueryKey,
   attemptStateQueryKey,
+  conversationsUnreadCountQueryKey,
+  conversationWithPeerQueryKey,
   currentSessionQueryKey,
   dashboardQueryKey,
   fileSubmissionReviewQueueQueryKey,
@@ -20,9 +22,11 @@ import {
   leaderboardInfiniteQueryKey,
   learnerCourseStateQueryKey,
   listCollectionsQueryKey,
+  listConversationsQueryKey,
   listCourseUpdatesPageInfiniteQueryKey,
   listDiscussionsQueryKey,
   listGroupsQueryKey,
+  listMessagesQueryKey,
   listRepliesQueryKey,
   listRolesQueryKey,
   listUsergroupsQueryKey,
@@ -50,6 +54,20 @@ type EventInvalidations = { [T in EventType]: (payload: Payloads[T]) => QueryKey
  */
 const anyOf = ([{ _id }]: readonly [{ _id: string }]): QueryKey => [{ _id }]
 const UNKNOWN = ''
+
+/** Every cached variant of one conversation's messages (any page or limit). */
+const messagesOf = (conversation_id: string): QueryKey => {
+  const [{ _id, path }] = listMessagesQueryKey({ path: { conversation_id } })
+  return [{ _id, path }]
+}
+
+/** A conversation changed for both people: the list, the badge, the feed and the "write to" lookups. */
+const conversationKeys = (conversation_id: string): QueryKey[] => [
+  anyOf(listConversationsQueryKey()),
+  conversationsUnreadCountQueryKey(),
+  messagesOf(conversation_id),
+  anyOf(conversationWithPeerQueryKey({ path: { user_id: UNKNOWN } })),
+]
 
 /**
  * Spec 7.7: which cached reads an event makes stale. A new event in the contract without a row here does not
@@ -142,6 +160,10 @@ const eventInvalidations = {
       : list === 'roles'
         ? [listRolesQueryKey()]
         : [listGroupsQueryKey(), listUsergroupsQueryKey()],
+  // A personal message arrived or was sent from another tab (docs/DIALOGS.md 8).
+  'message.created': ({ conversation_id }) => conversationKeys(conversation_id),
+  // A message was deleted or the conversation was read in another tab.
+  'conversation.updated': ({ conversation_id }) => conversationKeys(conversation_id),
 } satisfies EventInvalidations
 
 /** The keys one event makes stale; an event this build does not know (a newer server) touches nothing. */

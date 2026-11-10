@@ -50,9 +50,9 @@
   "ai_reconnecting": "Байланыс үзілді, қайта қосылып жатырмын",
   "ai_run_failed": "ЖИ іске қосылуы сәтсіз аяқталды.",
   "ai_stream_lost": "Орындалу барысымен байланыс үзілді. Нәтиже аяқталған соң осы жерде көрінеді.",
-  "ai_threads": "Сұхбаттар",
-  "ai_new_thread": "Жаңа сұхбат",
-  "ai_threads_empty": "Әзірге сұхбаттар жоқ.",
+  "ai_threads": "Әңгімелер",
+  "ai_new_thread": "Жаңа әңгіме",
+  "ai_threads_empty": "Әзірге әңгімелер жоқ.",
   "ai_thread_messages": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -64,10 +64,10 @@
     }
   ],
   "ai_thread_untitled": "Атаусыз",
-  "ai_delete_thread": "Сұхбатты жою",
-  "ai_delete_thread_title": "«{title}» сұхбатын жою керек пе?",
+  "ai_delete_thread": "Әңгімені жою",
+  "ai_delete_thread_title": "«{title}» әңгімесін жою керек пе?",
   "ai_delete_thread_consequence": "Бұл сұхбаттағы сұрақтар мен жауаптар жойылады.",
-  "ai_thread_deleted": "Сұхбат жойылды",
+  "ai_thread_deleted": "Әңгіме жойылды",
   "ai_incomplete": "Жауап аяқталмады",
   "ai_writing": "Жауап жазып жатырмын",
   "ai_you": "Сіз",
