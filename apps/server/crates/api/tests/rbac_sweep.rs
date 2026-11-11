@@ -48,6 +48,8 @@ const AUTH_ONLY: &[(&str, &str)] = &[
     // Personal messages: the course link is the gate, not a grant (docs/DIALOGS.md 3); another pair's
     // conversation or message is 404.
     ("POST", "/api/v2/messages"),
+    // A bulk send's gate is teaching the course its body names (or `admin.users`), checked first.
+    ("POST", "/api/v2/messages/bulk"),
     ("PUT", "/api/v2/conversations/{conversation_id}/read"),
     ("DELETE", "/api/v2/messages/{message_id}"),
     ("POST", "/api/v2/messages/{message_id}/report"),

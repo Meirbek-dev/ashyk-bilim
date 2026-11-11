@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.user_id AS \"user_id!\" FROM learning.course_members m\n           WHERE m.course_id = $1 AND m.user_id = ANY($2)\n             AND NOT EXISTS (SELECT 1 FROM course_staff cs\n                             WHERE cs.course_id = m.course_id AND cs.user_id = m.user_id\n                               AND cs.status = 'active')\n             AND NOT EXISTS (SELECT 1 FROM courses c WHERE c.id = m.course_id AND c.creator_id = m.user_id)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "course_members",
+            "name": "user_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "a23d6b914be7884e327266fe5661e0a8430a1065f4f2e1974e6f188a08b9b2dc"
+}

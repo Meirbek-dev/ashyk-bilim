@@ -7,17 +7,18 @@
 use ab_core::id::{ConversationId, MessageId, MessageReportId, UserId};
 use ab_domain::community::MessagesService;
 use ab_domain::community::messages::{
-    DEFAULT_CONVERSATIONS_PAGE, DEFAULT_MESSAGES_PAGE, SendInput,
+    BulkInput, DEFAULT_CONVERSATIONS_PAGE, DEFAULT_MESSAGES_PAGE, SendInput,
 };
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 
 use crate::dto::conversations::{
-    ConversationListQuery, ConversationPage, ConversationUnreadCount, MarkReadRequest, Message,
-    MessageListQuery, MessagePage, MessageReport, MessageReportDetail, MessageReportPage,
-    PeerConversation, RecipientPage, RecipientQuery, ReportListQuery, ReportMessageRequest,
-    ResolveReportRequest, SendMessageRequest,
+    AttachmentDownload, AttachmentUrlQuery, BulkMessageRequest, BulkResult, ConversationListQuery,
+    ConversationPage, ConversationUnreadCount, MarkReadRequest, Message, MessageListQuery,
+    MessagePage, MessageReport, MessageReportDetail, MessageReportPage, PeerConversation,
+    RecipientPage, RecipientQuery, ReportListQuery, ReportMessageRequest, ResolveReportRequest,
+    SendMessageRequest,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{CurrentActor, Path, Query, ValidJson};
@@ -191,10 +192,81 @@ pub async fn send_message(
                 client_key: request.client_key,
                 course_id: request.course_id,
                 activity_id: request.activity_id,
+                attachments: request.attachments.into_iter().map(Into::into).collect(),
+                intervention: request.intervention,
             },
         )
         .await?;
     Ok((StatusCode::CREATED, Json(message)))
+}
+
+/// One message to several learners of a course (its teachers and
+/// administrators): a separate message in each conversation, in one
+/// transaction. Who cannot be written to is listed in `skipped`.
+#[utoipa::path(
+    post, path = "/messages/bulk", tag = "conversations",
+    request_body = BulkMessageRequest,
+    responses(
+        (status = 201, description = "Sent (and skipped) recipients", body = BulkResult),
+        (status = 401, description = "No live session", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 403, description = "Not a teacher of the course, or `messages-banned`",
+         body = Problem, content_type = "application/problem+json"),
+        (status = 422, description = "Empty or too long text, 0 or over 50 recipients, bad files",
+         body = Problem, content_type = "application/problem+json"),
+        (status = 429, description = "`rate-limited` (minute, day, conversations)",
+         body = Problem, content_type = "application/problem+json"),
+    )
+)]
+pub async fn send_bulk(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    ValidJson(request): ValidJson<BulkMessageRequest>,
+) -> ApiResult<(StatusCode, Json<BulkResult>)> {
+    let result = state
+        .messages
+        .send_bulk(
+            &actor,
+            BulkInput {
+                course_id: request.course_id,
+                to: request.to_user_ids,
+                body: &request.body,
+                client_key: request.client_key,
+                attachments: request.attachments.into_iter().map(Into::into).collect(),
+                intervention: request.intervention,
+            },
+        )
+        .await?;
+    Ok((StatusCode::CREATED, Json(result)))
+}
+
+/// A short-lived signed URL of a message's file (the two participants).
+#[utoipa::path(
+    get, path = "/messages/{message_id}/attachments/{attachment_id}/url", tag = "conversations",
+    params(
+        ("message_id" = MessageId, Path, description = "Message id"),
+        ("attachment_id" = uuid::Uuid, Path, description = "The attachment's `upload_id`"),
+        AttachmentUrlQuery,
+    ),
+    responses(
+        (status = 200, description = "Signed URL (15 min)", body = AttachmentDownload),
+        (status = 401, description = "No live session", body = Problem,
+         content_type = "application/problem+json"),
+        (status = 404, description = "Not a file of a message of the caller's", body = Problem,
+         content_type = "application/problem+json"),
+    )
+)]
+pub async fn attachment_url(
+    State(state): State<AppState>,
+    CurrentActor(actor): CurrentActor,
+    Path((message_id, upload_id)): Path<(MessageId, uuid::Uuid)>,
+    Query(query): Query<AttachmentUrlQuery>,
+) -> ApiResult<Json<AttachmentDownload>> {
+    let download = state
+        .messages
+        .attachment(&actor, message_id, upload_id, query.inline.unwrap_or(false))
+        .await?;
+    Ok(Json(download))
 }
 
 /// Move the caller's read pointer forward (never back). Emits

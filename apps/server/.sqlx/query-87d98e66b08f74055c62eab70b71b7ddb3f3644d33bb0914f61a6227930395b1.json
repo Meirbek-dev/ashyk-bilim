@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT c.id FROM conversations c\n         WHERE c.created_at < now() - make_interval(days => $1)\n           AND NOT EXISTS (SELECT 1 FROM messages m\n                           WHERE m.conversation_id = c.id\n                             AND m.created_at >= now() - make_interval(days => $1))\n         LIMIT 5000\n         FOR UPDATE",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "conversations",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "87d98e66b08f74055c62eab70b71b7ddb3f3644d33bb0914f61a6227930395b1"
+}

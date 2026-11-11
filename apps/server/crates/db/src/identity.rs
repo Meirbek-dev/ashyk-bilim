@@ -1021,8 +1021,8 @@ pub async fn erase_personal_data(tx: &mut sqlx::PgConnection, user_id: UserId) -
 }
 
 /// Personal messages (docs/DIALOGS.md 7): the person's messages become
-/// tombstones (the other side keeps the conversation, with a deleted user),
-/// the copies of their text in reports are blanked, their own reports and
+/// tombstones without their files (the other side keeps the conversation,
+/// with a deleted user), the copies of their text in reports are blanked, their own reports and
 /// send ban go.
 async fn erase_messages(tx: &mut sqlx::PgConnection, uid: uuid::Uuid) -> Result<u64> {
     let mut removed = sqlx::query!(
@@ -1033,6 +1033,18 @@ async fn erase_messages(tx: &mut sqlx::PgConnection, uid: uuid::Uuid) -> Result<
     .execute(&mut *tx)
     .await?
     .rows_affected();
+    // Their files go with the text (a bulk send's copies in other messages too: all theirs).
+    let uploads = sqlx::query_scalar!(
+        "DELETE FROM message_uploads
+         WHERE message_id IN (SELECT id FROM messages WHERE user_id = $1)
+         RETURNING upload_id",
+        uid
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+    removed += u64::try_from(uploads.len()).unwrap_or(u64::MAX);
+    crate::uploads::release_references(&mut *tx, &uploads, crate::messages::ATTACHMENT_GRACE_SECS)
+        .await?;
     sqlx::query!(
         "UPDATE message_reports SET body_snapshot = ''
          WHERE message_id IN (SELECT id FROM messages WHERE user_id = $1)",

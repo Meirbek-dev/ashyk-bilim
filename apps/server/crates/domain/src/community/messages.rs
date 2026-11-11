@@ -8,6 +8,10 @@
 //! AI; administrators read it only through a report (section 6).
 
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+use std::time::Duration;
+
+use ab_clients::storage::{Bucket, StorageClient};
 
 use ab_core::id::{ActivityId, ConversationId, CourseId, MessageId, MessageReportId, UserId};
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
@@ -16,10 +20,16 @@ use ab_db::messages::{self as db, MessageRow, PersonRow, ReportRow};
 use serde::Serialize;
 use sqlx::PgPool;
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 use crate::catalog::courses::CoursesService;
 use crate::events::user;
 use crate::identity::{Actor, RbacAdminService};
+
+mod bulk;
+mod delivery;
+
+pub use bulk::{BulkInput, BulkResult, BulkSent, BulkSkipped};
 
 pub const MAX_BODY_CHARS: usize = 4000;
 pub const MAX_REASON_CHARS: usize = 1000;
@@ -31,6 +41,13 @@ pub const DEFAULT_CONVERSATIONS_PAGE: i64 = 20;
 const EXCERPT_CHARS: usize = 140;
 /// Messages shown on each side of a reported one.
 const REPORT_CONTEXT: i64 = 5;
+/// Files one message carries (stage 2, docs/DIALOGS.md 12).
+pub const MAX_ATTACHMENTS: usize = 5;
+/// The upload purpose of a message's file (`files::uploads` holds its cap).
+pub const ATTACHMENT_PURPOSE: &str = "message-attachment";
+const MAX_FILE_NAME_CHARS: usize = 255;
+/// How long a file's signed download URL lives.
+const DOWNLOAD_TTL: Duration = Duration::from_mins(15);
 
 /// Sending limits per sender (section 5), counted in Postgres.
 const PER_MINUTE: i64 = 20;
@@ -134,6 +151,8 @@ pub struct LastMessage {
     pub excerpt: String,
     pub created_at_unix: i64,
     pub deleted: bool,
+    /// How many files it carries (0 when deleted).
+    pub files: i64,
 }
 
 /// One row of the caller's conversation list.
@@ -177,6 +196,36 @@ pub struct MessageContext {
     pub activity_type: Option<String>,
 }
 
+/// A file attached to a message; only the two participants download it.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct Attachment {
+    pub upload_id: Uuid,
+    /// The name the writer gave it.
+    pub name: String,
+    pub mime: String,
+    pub size_bytes: i64,
+}
+
+impl From<db::AttachmentRow> for Attachment {
+    fn from(r: db::AttachmentRow) -> Self {
+        Self {
+            upload_id: r.upload_id,
+            name: r.name,
+            mime: r.mime,
+            size_bytes: r.size_bytes,
+        }
+    }
+}
+
+/// A short-lived download of an attached file.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct AttachmentDownload {
+    pub url: String,
+    pub expires_at_unix: i64,
+    pub name: String,
+    pub mime: String,
+}
+
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct Message {
     pub id: MessageId,
@@ -187,12 +236,14 @@ pub struct Message {
     pub body: String,
     pub deleted: bool,
     pub context: Option<MessageContext>,
+    /// In order; empty when deleted.
+    pub attachments: Vec<Attachment>,
     pub allowed_actions: Vec<MessageAction>,
     pub created_at_unix: i64,
 }
 
 impl Message {
-    fn of(row: MessageRow, viewer: UserId) -> Self {
+    fn of(row: MessageRow, viewer: UserId, attachments: Vec<Attachment>) -> Self {
         let own = row.user_id == viewer;
         let mut allowed_actions = Vec::new();
         if !row.deleted {
@@ -216,6 +267,7 @@ impl Message {
             body: row.body,
             deleted: row.deleted,
             context,
+            attachments,
             allowed_actions,
             created_at_unix: row.created_at,
         }
@@ -270,12 +322,23 @@ pub struct RecipientPage {
     pub next_cursor: Option<String>,
 }
 
+/// A file to attach: a finalized `message-attachment` upload of the sender's.
+#[derive(Debug, Clone)]
+pub struct NewAttachment {
+    pub upload_id: Uuid,
+    pub name: String,
+}
+
 pub struct SendInput<'a> {
     pub to: UserId,
     pub body: &'a str,
     pub client_key: uuid::Uuid,
     pub course_id: Option<CourseId>,
     pub activity_id: Option<ActivityId>,
+    pub attachments: Vec<NewAttachment>,
+    /// Also record a `message_sent` intervention (from analytics), in the
+    /// same transaction; needs the course context and a learner of it.
+    pub intervention: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, serde::Deserialize, ToSchema)]
@@ -338,14 +401,51 @@ fn too_long(field: &str, max: usize) -> Error {
 }
 
 /// Message text: control characters dropped (line breaks and tabs kept),
-/// trimmed, 1..=4000 characters.
-fn clean_body(body: &str) -> Result<String> {
+/// trimmed, 1..=4000 characters (0 allowed when files come with it).
+fn clean_body(body: &str, has_files: bool) -> Result<String> {
     let cleaned = ab_core::strip_controls_multiline(body);
+    if has_files && cleaned.trim().is_empty() {
+        return Ok(String::new());
+    }
     let trimmed = ab_core::required_str("body", &cleaned)?;
     if trimmed.chars().count() > MAX_BODY_CHARS {
         return Err(too_long("body", MAX_BODY_CHARS));
     }
     Ok(trimmed.to_owned())
+}
+
+/// Up to five files, each named 1..=255 characters without controls or path
+/// separators, none twice.
+fn clean_files(files: &[NewAttachment]) -> Result<Vec<(Uuid, String)>> {
+    let invalid = |message: String| {
+        Error::validation(vec![FieldError {
+            field: "attachments".into(),
+            code: "invalid".into(),
+            message,
+        }])
+    };
+    if files.len() > MAX_ATTACHMENTS {
+        return Err(invalid(format!("at most {MAX_ATTACHMENTS} files")));
+    }
+    let mut seen = HashSet::new();
+    let mut out = Vec::with_capacity(files.len());
+    for file in files {
+        if !seen.insert(file.upload_id) {
+            return Err(invalid("a file is attached twice".into()));
+        }
+        let name: String = ab_core::strip_controls_multiline(&file.name)
+            .chars()
+            .filter(|c| !matches!(c, '/' | '\\' | '\n' | '\t'))
+            .collect();
+        let name = name.trim();
+        if name.is_empty() || name.chars().count() > MAX_FILE_NAME_CHARS {
+            return Err(invalid(format!(
+                "a file name is 1 to {MAX_FILE_NAME_CHARS} characters"
+            )));
+        }
+        out.push((file.upload_id, name.to_owned()));
+    }
+    Ok(out)
 }
 
 fn clean_text(field: &str, value: &str, max: usize) -> Result<String> {
@@ -413,12 +513,35 @@ impl Standing {
 pub struct MessagesService {
     pool: PgPool,
     courses: CoursesService,
+    storage: Arc<StorageClient>,
 }
 
 impl MessagesService {
     #[must_use]
-    pub const fn new(pool: PgPool, courses: CoursesService) -> Self {
-        Self { pool, courses }
+    pub const fn new(pool: PgPool, courses: CoursesService, storage: Arc<StorageClient>) -> Self {
+        Self {
+            pool,
+            courses,
+            storage,
+        }
+    }
+
+    /// Rows as messages for `viewer`, with their files (one query).
+    async fn with_files(&self, rows: Vec<MessageRow>, viewer: UserId) -> Result<Vec<Message>> {
+        let ids: Vec<MessageId> = rows.iter().filter(|r| !r.deleted).map(|r| r.id).collect();
+        let mut files: HashMap<MessageId, Vec<Attachment>> = HashMap::new();
+        if !ids.is_empty() {
+            for row in db::attachments(&self.pool, &ids).await? {
+                files.entry(row.message_id).or_default().push(row.into());
+            }
+        }
+        Ok(rows
+            .into_iter()
+            .map(|r| {
+                let own = files.remove(&r.id).unwrap_or_default();
+                Message::of(r, viewer, own)
+            })
+            .collect())
     }
 
     async fn people(&self, ids: &[UserId]) -> Result<HashMap<UserId, Person>> {
@@ -511,6 +634,7 @@ impl MessagesService {
                             },
                             created_at_unix,
                             deleted,
+                            files: r.last_files,
                         })
                     }
                     _ => None,
@@ -670,10 +794,7 @@ impl MessagesService {
             })
             .collect();
         Ok(MessagePage {
-            items: rows
-                .into_iter()
-                .map(|r| Message::of(r, actor.user_id))
-                .collect(),
+            items: self.with_files(rows, actor.user_id).await?,
             next_cursor,
             peer,
             shared_courses,
@@ -720,11 +841,12 @@ impl MessagesService {
         Ok((course_id, activity_id))
     }
 
-    /// Send `input.body` to `input.to`, creating their conversation on the
-    /// first message. A resend with the same `client_key` returns the stored
-    /// message and sends nothing.
+    /// Send `input.body` (and files) to `input.to`, creating their
+    /// conversation on the first message. A resend with the same
+    /// `client_key` returns the stored message and sends nothing.
     pub async fn send(&self, actor: &Actor, input: SendInput<'_>) -> Result<Message> {
-        let body = clean_body(input.body)?;
+        let files = clean_files(&input.attachments)?;
+        let body = clean_body(input.body, !files.is_empty())?;
         if input.to == actor.user_id {
             return Err(Error::validation(vec![FieldError {
                 field: "to_user_id".into(),
@@ -750,68 +872,39 @@ impl MessagesService {
         let (course_id, activity_id) = self
             .context(actor, input.course_id, input.activity_id)
             .await?;
+        if input.intervention {
+            self.require_intervention(actor, course_id, &[input.to])
+                .await?;
+        }
+        let outgoing = delivery::Outgoing {
+            to: input.to,
+            body: &body,
+            client_key: input.client_key,
+            course: course_id,
+            activity: activity_id,
+            files: &files,
+            intervention: input.intervention,
+        };
         // The pair's conversation may appear between our read and our insert
         // (both sides writing first at once): the loser retries and finds it.
         for _ in 0..2 {
             let mut tx = self.pool.begin().await?;
             // Under the sender's row lock: concurrent sends of one person count each other.
             db::lock_sender(&mut tx, actor.user_id).await?;
-            db::lock_pair(&mut tx, actor.user_id, input.to).await?;
             if let Some(id) = db::by_client_key(&mut tx, actor.user_id, input.client_key).await? {
                 tx.rollback().await?;
                 return self.stored(actor, id).await;
             }
-            let counts = db::send_counts(&mut tx, actor.user_id).await?;
-            if counts.last_minute >= PER_MINUTE {
-                return Err(rate_limited("minute", counts.minute_frees_in));
-            }
-            if counts.last_day >= PER_DAY {
-                return Err(rate_limited("day", counts.day_frees_in));
-            }
-            let existing = db::conversation_with(&mut *tx, actor.user_id, input.to).await?;
-            let conversation = if let Some(id) = existing {
-                id
-            } else {
-                let cap = if actor.has(READ_PLATFORM)
-                    || db::on_some_team(&mut *tx, actor.user_id).await?
-                {
-                    NEW_PER_DAY_STAFF
-                } else {
-                    NEW_PER_DAY
-                };
-                if counts.started_today >= cap {
-                    return Err(rate_limited("conversations", counts.start_frees_in));
-                }
-                let Some(id) = db::create_conversation(&mut tx, actor.user_id, input.to).await?
-                else {
-                    tx.rollback().await?;
-                    continue;
-                };
-                id
+            let mut budget = delivery::Budget::read(&mut tx, actor, 1).await?;
+            self.claim_files(&mut tx, actor, &files).await?;
+            let Some(delivered) = self.deliver(&mut tx, actor, &outgoing, &mut budget).await?
+            else {
+                tx.rollback().await?;
+                continue;
             };
-            let id = db::insert_message(
-                &mut tx,
-                db::NewMessage {
-                    conversation,
-                    user: actor.user_id,
-                    body: &body,
-                    client_key: input.client_key,
-                    course: course_id,
-                    activity: activity_id,
-                },
-            )
-            .await?;
             tx.commit().await?;
-            user::message_created(
-                [actor.user_id, input.to],
-                user::MessageCreated {
-                    conversation_id: conversation,
-                    message_id: id,
-                    user_id: actor.user_id,
-                },
-            )
-            .await;
-            return self.stored(actor, id).await;
+            delivered.announce(actor.user_id, input.to).await;
+            return self.stored(actor, delivered.message).await;
         }
         Err(Error::conflict(
             "the conversation changed while sending; try again",
@@ -822,7 +915,49 @@ impl MessagesService {
         let row = db::get_message(&self.pool, id, actor.user_id)
             .await?
             .ok_or_else(|| Error::not_found("message"))?;
-        Ok(Message::of(row, actor.user_id))
+        self.with_files(vec![row], actor.user_id)
+            .await?
+            .pop()
+            .ok_or_else(|| Error::not_found("message"))
+    }
+
+    /// A signed download of a file of an active message in one of the
+    /// caller's conversations (404 otherwise: nobody else learns it exists).
+    pub async fn attachment(
+        &self,
+        actor: &Actor,
+        message: MessageId,
+        upload: Uuid,
+        inline: bool,
+    ) -> Result<AttachmentDownload> {
+        let file = db::attachment(&self.pool, message, upload)
+            .await?
+            .ok_or_else(|| Error::not_found("file"))?;
+        db::member(&self.pool, file.conversation_id, actor.user_id)
+            .await?
+            .ok_or_else(|| Error::not_found("file"))?;
+        let bucket = if file.bucket == "public" {
+            Bucket::Public
+        } else {
+            Bucket::Private
+        };
+        // Inline only for the types a browser may render from our origin;
+        // the rest always download (`presign_get` decides).
+        let url = self.storage.presign_get(
+            bucket,
+            &file.key,
+            Some(&file.name),
+            Some(&file.mime),
+            inline,
+            DOWNLOAD_TTL,
+        )?;
+        Ok(AttachmentDownload {
+            url,
+            expires_at_unix: jiff::Timestamp::now().as_second()
+                + i64::try_from(DOWNLOAD_TTL.as_secs()).unwrap_or(900),
+            name: file.name,
+            mime: file.mime,
+        })
     }
 
     /// Move the caller's read pointer forward to `message` (never back).
@@ -967,11 +1102,13 @@ impl MessagesService {
             .into_iter()
             .map(|mut m| {
                 m.reported = true;
-                let mut message = Message::of(m, actor.user_id);
-                message.allowed_actions.clear();
-                message
+                m
             })
             .collect();
+        let mut context = self.with_files(context, actor.user_id).await?;
+        for message in &mut context {
+            message.allowed_actions.clear();
+        }
         self.audit(
             actor,
             "message_report.read",
@@ -1127,9 +1264,37 @@ mod tests {
 
     #[test]
     fn the_body_is_trimmed_and_bounded() {
-        assert_eq!(clean_body("  hi\u{0007}\n there \n").unwrap(), "hi\n there");
-        assert!(clean_body(" \n\t ").is_err());
-        assert!(clean_body(&"a".repeat(MAX_BODY_CHARS)).is_ok());
-        assert!(clean_body(&"a".repeat(MAX_BODY_CHARS + 1)).is_err());
+        assert_eq!(
+            clean_body("  hi\u{0007}\n there \n", false).unwrap(),
+            "hi\n there"
+        );
+        assert!(clean_body(" \n\t ", false).is_err());
+        assert!(clean_body(&"a".repeat(MAX_BODY_CHARS), false).is_ok());
+        assert!(clean_body(&"a".repeat(MAX_BODY_CHARS + 1), false).is_err());
+    }
+
+    #[test]
+    fn files_may_come_without_text() {
+        assert_eq!(clean_body(" \n ", true).unwrap(), "");
+        assert!(clean_body(&"a".repeat(MAX_BODY_CHARS + 1), true).is_err());
+    }
+
+    fn file(name: &str) -> NewAttachment {
+        NewAttachment {
+            upload_id: Uuid::now_v7(),
+            name: name.into(),
+        }
+    }
+
+    #[test]
+    fn file_names_are_cleaned_and_bounded() {
+        let files = clean_files(&[file(" ../a\\b.pdf\u{0007} ")]).unwrap();
+        assert_eq!(files[0].1, "..ab.pdf");
+        assert!(clean_files(&[file(" / ")]).is_err());
+        assert!(clean_files(&[file(&"a".repeat(MAX_FILE_NAME_CHARS + 1))]).is_err());
+        let six: Vec<_> = (0..=MAX_ATTACHMENTS).map(|_| file("a")).collect();
+        assert!(clean_files(&six).is_err());
+        let twice = file("a");
+        assert!(clean_files(&[twice.clone(), twice]).is_err());
     }
 }

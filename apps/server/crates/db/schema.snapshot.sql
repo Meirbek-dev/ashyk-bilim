@@ -1211,6 +1211,16 @@ constraint message_reports message_reports_resolution_check CHECK ((char_length(
 constraint message_reports message_reports_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES users(id)
 constraint message_reports message_reports_status_check CHECK ((status = ANY (ARRAY['open'::text, 'resolved'::text])))
 constraint message_reports message_reports_status_not_null NOT NULL status
+constraint message_uploads message_uploads_message_id_fkey FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
+constraint message_uploads message_uploads_message_id_not_null NOT NULL message_id
+constraint message_uploads message_uploads_message_id_position_key UNIQUE (message_id, "position")
+constraint message_uploads message_uploads_name_check CHECK (((char_length(name) >= 1) AND (char_length(name) <= 255)))
+constraint message_uploads message_uploads_name_not_null NOT NULL name
+constraint message_uploads message_uploads_pkey PRIMARY KEY (message_id, upload_id)
+constraint message_uploads message_uploads_position_check CHECK ((("position" >= 0) AND ("position" <= 4)))
+constraint message_uploads message_uploads_position_not_null NOT NULL "position"
+constraint message_uploads message_uploads_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE RESTRICT
+constraint message_uploads message_uploads_upload_id_not_null NOT NULL upload_id
 constraint messages messages_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL
 constraint messages messages_body_check CHECK ((char_length(body) <= 4000))
 constraint messages messages_body_not_null NOT NULL body
@@ -1701,7 +1711,8 @@ BEGIN
             -- Personal messages (docs/DIALOGS.md 7): nobody but the two people reads the text.
             ('messages', ARRAY['body']),
             ('message_reports', ARRAY['reason', 'body_snapshot', 'resolution']),
-            ('message_bans', ARRAY['reason'])
+            ('message_bans', ARRAY['reason']),
+            ('message_uploads', ARRAY['name'])
         ) AS x(name, hidden)
         JOIN pg_class c ON c.relname = x.name
          AND c.relnamespace::regnamespace::name = ANY (ARRAY['public']::name[] || app_schemas())
@@ -2392,6 +2403,7 @@ AS $function$
     SELECT EXISTS (SELECT 1 FROM file_submission_files WHERE upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM block_uploads WHERE upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM post_uploads WHERE upload_id = p_upload)
+        OR EXISTS (SELECT 1 FROM core.message_uploads WHERE upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM users WHERE avatar_upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM courses WHERE thumbnail_image_upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM courses WHERE thumbnail_video_upload_id = p_upload)
@@ -2603,6 +2615,7 @@ index CREATE INDEX message_bans_banned_by_idx ON core.message_bans USING btree (
 index CREATE INDEX message_reports_reported_by_idx ON core.message_reports USING btree (reported_by)
 index CREATE INDEX message_reports_resolved_by_idx ON core.message_reports USING btree (resolved_by)
 index CREATE INDEX message_reports_status_idx ON core.message_reports USING btree (status, id DESC)
+index CREATE INDEX message_uploads_upload_idx ON core.message_uploads USING btree (upload_id)
 index CREATE INDEX messages_activity_idx ON core.messages USING btree (activity_id)
 index CREATE INDEX messages_conversation_idx ON core.messages USING btree (conversation_id, id DESC)
 index CREATE INDEX messages_course_idx ON core.messages USING btree (course_id)
@@ -2768,6 +2781,8 @@ index CREATE UNIQUE INDEX mastery_evidence_source_type_source_id_concept_id_part
 index CREATE UNIQUE INDEX message_bans_pkey ON core.message_bans USING btree (user_id)
 index CREATE UNIQUE INDEX message_reports_message_id_reported_by_key ON core.message_reports USING btree (message_id, reported_by)
 index CREATE UNIQUE INDEX message_reports_pkey ON core.message_reports USING btree (id)
+index CREATE UNIQUE INDEX message_uploads_message_id_position_key ON core.message_uploads USING btree (message_id, "position")
+index CREATE UNIQUE INDEX message_uploads_pkey ON core.message_uploads USING btree (message_id, upload_id)
 index CREATE UNIQUE INDEX messages_pkey ON core.messages USING btree (id)
 index CREATE UNIQUE INDEX messages_user_id_client_key_key ON core.messages USING btree (user_id, client_key)
 index CREATE UNIQUE INDEX notification_kinds_pkey ON core.notification_kinds USING btree (kind)
@@ -3284,6 +3299,10 @@ table core.message_reports resolution text DEFAULT -
 table core.message_reports resolved_at timestamp with time zone DEFAULT -
 table core.message_reports resolved_by uuid DEFAULT -
 table core.message_reports status text NOT NULL DEFAULT 'open'::text
+table core.message_uploads message_id uuid NOT NULL DEFAULT -
+table core.message_uploads name text NOT NULL DEFAULT -
+table core.message_uploads position smallint NOT NULL DEFAULT -
+table core.message_uploads upload_id uuid NOT NULL DEFAULT -
 table core.messages activity_id uuid DEFAULT -
 table core.messages body text NOT NULL DEFAULT -
 table core.messages client_key uuid NOT NULL DEFAULT -

@@ -53,6 +53,9 @@ pub enum UploadPurpose {
     /// An image in a discussion post (any course participant; the post's
     /// `upload_ids` claims it).
     DiscussionImage,
+    /// A file attached to a personal message (anyone signed in; the message's
+    /// `attachments` claims it; the two participants download it).
+    MessageAttachment,
 }
 
 /// `GET /users` order.

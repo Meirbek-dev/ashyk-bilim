@@ -393,6 +393,24 @@ export const vAssignRoleRequest = v.strictObject({
 export const vAtRiskAction = v.picklist(['record_intervention']);
 
 /**
+ * A file attached to a message; only the two participants download it.
+ */
+export const vAttachment = v.object({
+    mime: v.string(),
+    name: v.string(),
+    size_bytes: v.pipe(v.number(), v.integer()),
+    upload_id: v.pipe(v.string(), v.uuid())
+});
+
+/**
+ * A file to attach: the sender's finalized `message-attachment` upload.
+ */
+export const vAttachmentRequest = v.strictObject({
+    name: v.pipe(v.string(), v.minLength(1), v.maxLength(255)),
+    upload_id: v.pipe(v.string(), v.uuid())
+});
+
+/**
  * `assessment_audit_events.event`: what an audit row records (the writers
  * take this type, so the wire set is closed).
  */
@@ -4178,6 +4196,16 @@ export const vAttachedFile = v.object({
     upload_id: v.pipe(v.string(), v.uuid())
 });
 
+/**
+ * A short-lived download of an attached file.
+ */
+export const vAttachmentDownload = v.object({
+    expires_at_unix: vUnixTime,
+    mime: v.string(),
+    name: v.string(),
+    url: v.string()
+});
+
 export const vBlock = v.object({
     activity_id: vActivityId,
     block_type: v.string(),
@@ -4919,7 +4947,8 @@ export const vUploadPurpose = v.picklist([
     'platform-thumbnail',
     'file-submission',
     'collection-cover',
-    'discussion-image'
+    'discussion-image',
+    'message-attachment'
 ]);
 
 export const vCreateUploadRequest = v.strictObject({
@@ -5056,6 +5085,38 @@ export const vBulkAction = v.object({
     performed_by: v.nullable(vUserId),
     status: vBulkActionStatus,
     target_user_ids: v.array(vUserId)
+});
+
+/**
+ * One message to several learners of a course: a separate message in each
+ * conversation.
+ */
+export const vBulkMessageRequest = v.strictObject({
+    attachments: v.optional(v.pipe(v.array(vAttachmentRequest), v.maxLength(5))),
+    body: v.pipe(v.string(), v.maxLength(4000)),
+    client_key: v.pipe(v.string(), v.uuid()),
+    course_id: vCourseId,
+    intervention: v.optional(v.boolean()),
+    to_user_ids: v.pipe(v.array(vUserId), v.minLength(1), v.maxLength(50))
+});
+
+export const vBulkSent = v.object({
+    conversation_id: vConversationId,
+    message_id: vMessageId,
+    user_id: vUserId
+});
+
+/**
+ * A recipient who got nothing, and why.
+ */
+export const vBulkSkipped = v.object({
+    reason: vDenyReason,
+    user_id: vUserId
+});
+
+export const vBulkResult = v.object({
+    sent: v.array(vBulkSent),
+    skipped: v.array(vBulkSkipped)
 });
 
 export const vCertificate = v.object({
@@ -5541,6 +5602,7 @@ export const vLastMessage = v.object({
     created_at_unix: vUnixTime,
     deleted: v.boolean(),
     excerpt: v.string(),
+    files: v.pipe(v.number(), v.integer()),
     id: vMessageId,
     user_id: vUserId
 });
@@ -5612,6 +5674,7 @@ export const vLectureReview = v.object({
 
 export const vMessage = v.object({
     allowed_actions: v.array(vMessageAction),
+    attachments: v.array(vAttachment),
     body: v.string(),
     context: v.nullable(vMessageContext),
     conversation_id: vConversationId,
@@ -5971,9 +6034,11 @@ export const vSavedViewList = v.object({
 
 export const vSendMessageRequest = v.strictObject({
     activity_id: v.optional(vActivityId),
-    body: v.pipe(v.string(), v.minLength(1), v.maxLength(4000)),
+    attachments: v.optional(v.pipe(v.array(vAttachmentRequest), v.maxLength(5))),
+    body: v.pipe(v.string(), v.maxLength(4000)),
     client_key: v.pipe(v.string(), v.uuid()),
     course_id: v.optional(vCourseId),
+    intervention: v.optional(v.boolean()),
     to_user_id: vUserId
 });
 
@@ -10098,6 +10163,13 @@ export const vSendMessageBody = vSendMessageRequest;
  */
 export const vSendMessageResponse = vMessage;
 
+export const vSendBulkBody = vBulkMessageRequest;
+
+/**
+ * Sent (and skipped) recipients
+ */
+export const vSendBulkResponse = vBulkResult;
+
 export const vDeleteMessagePath = v.object({
     message_id: vMessageId
 });
@@ -10106,6 +10178,20 @@ export const vDeleteMessagePath = v.object({
  * Deleted
  */
 export const vDeleteMessageResponse = v.void();
+
+export const vAttachmentUrlPath = v.object({
+    message_id: vMessageId,
+    attachment_id: v.pipe(v.string(), v.uuid())
+});
+
+export const vAttachmentUrlQuery = v.object({
+    inline: v.optional(v.boolean())
+});
+
+/**
+ * Signed URL (15 min)
+ */
+export const vAttachmentUrlResponse = vAttachmentDownload;
 
 export const vReportMessageBody = vReportMessageRequest;
 

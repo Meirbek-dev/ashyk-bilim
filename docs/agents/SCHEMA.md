@@ -95,6 +95,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`learning.mastery_evidence`](#mastery_evidence): One observation of a learner on a concept (a scored item or activity)
 - [`core.message_bans`](#message_bans): The user may not send personal messages (an administrator decided it on a report); reading stays open
 - [`core.message_reports`](#message_reports): A participant reported the other side's message to the administrators; body_snapshot is its text at report time, so a later delete keeps the evidence
+- [`core.message_uploads`](#message_uploads): A file attached to a personal message (a message-attachment upload, up to five in order); the reaper keeps it while a message names it
 - [`core.messages`](#messages): One message of a conversation, by user_id
 - [`core.notification_kinds`](#notification_kinds): Lookup: the notification kinds the server sends
 - [`core.notification_opt_outs`](#notification_opt_outs): Notification kinds a user switched off (GET/PUT /me/notification-preferences); no row = on
@@ -2503,6 +2504,25 @@ A participant reported the other side's message to the administrators; body_snap
 - Index `message_reports_reported_by_idx`: `CREATE INDEX message_reports_reported_by_idx ON core.message_reports USING btree (reported_by)`
 - Index `message_reports_resolved_by_idx`: `CREATE INDEX message_reports_resolved_by_idx ON core.message_reports USING btree (resolved_by)`
 - Index `message_reports_status_idx`: `CREATE INDEX message_reports_status_idx ON core.message_reports USING btree (status, id DESC)`
+
+## message_uploads
+
+A file attached to a personal message (a message-attachment upload, up to five in order); the reaper keeps it while a message names it.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| message_id | uuid |  |  |
+| upload_id | uuid |  |  |
+| name | text |  |  |
+| position | smallint |  |  |
+
+- Primary key `message_uploads_pkey`: `PRIMARY KEY (message_id, upload_id)`
+- Unique `message_uploads_message_id_position_key`: `UNIQUE (message_id, "position")`
+- Foreign key `message_uploads_message_id_fkey`: `FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE`
+- Foreign key `message_uploads_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE RESTRICT`
+- Check `message_uploads_name_check`: `CHECK (((char_length(name) >= 1) AND (char_length(name) <= 255)))`
+- Check `message_uploads_position_check`: `CHECK ((("position" >= 0) AND ("position" <= 4)))`
+- Index `message_uploads_upload_idx`: `CREATE INDEX message_uploads_upload_idx ON core.message_uploads USING btree (upload_id)`
 
 ## messages
 

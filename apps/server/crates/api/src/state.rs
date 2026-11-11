@@ -140,7 +140,11 @@ impl AppState {
             ),
             progress: ProgressProjector::new(pool.clone()),
             discussions: DiscussionsService::new(pool.clone(), courses.clone()),
-            messages: ab_domain::community::MessagesService::new(pool.clone(), courses.clone()),
+            messages: ab_domain::community::MessagesService::new(
+                pool.clone(),
+                courses.clone(),
+                Arc::clone(&storage),
+            ),
             gamification: GamificationService::new(pool.clone()),
             work_queue: WorkQueueService::new(pool.clone()),
             analytics: AnalyticsService::new(pool.clone()),

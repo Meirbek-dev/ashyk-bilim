@@ -33,7 +33,7 @@ Every table, column, key and foreign key with the table's purpose: `docs/agents/
 | role, permission                  | `user_roles` -> `roles` (`slug`); permissions in `role_permissions`                 |
 | group                             | `usergroups`, `usergroup_members`, `usergroup_courses`                               |
 | course progress                   | `course_progress` (`progress_pct`, `completed_at`)                                   |
-| personal message ("Диалоги")      | `conversations` (`last_message_id`), `conversation_members` (`user_id`, `peer_id`, `last_read_message_id`), `messages` (`status`, context `course_id` / `activity_id`); reports `message_reports`, bans `message_bans`. The text (`messages.body`, report and ban free text) is not readable as `ashyq_ro` |
+| personal message ("Диалоги")      | `conversations` (`last_message_id`), `conversation_members` (`user_id`, `peer_id`, `last_read_message_id`), `messages` (`status`, context `course_id` / `activity_id`); files `message_uploads` (`upload_id` -> `uploads`, purpose `message-attachment`; a bulk send names one upload from each copy); a `message_sent` intervention from analytics has `payload.message_id`; reports `message_reports`, bans `message_bans`. The text (`messages.body`, file names, report and ban free text) is not readable as `ashyq_ro` |
 
 A learner sees an activity when it is `published` and, for a file task, its `file_submissions.lifecycle` is
 `published`; an assessment needs `assessments.lifecycle = 'published'`.

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM message_uploads\n         WHERE message_id IN (SELECT id FROM messages WHERE user_id = $1)\n         RETURNING upload_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "upload_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "message_uploads",
+            "name": "upload_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "69cd0446a3fc6e5a0a0ae710961cc964868a97eee97dfd9e3691cd15a3f72f73"
+}

@@ -279,6 +279,8 @@ fn conversation_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::conversations::message_recipients))
         .routes(routes!(routes::conversations::list_messages))
         .routes(routes!(routes::conversations::send_message))
+        .routes(routes!(routes::conversations::send_bulk))
+        .routes(routes!(routes::conversations::attachment_url))
         .routes(routes!(routes::conversations::mark_conversation_read))
         .routes(routes!(routes::conversations::delete_message))
         .routes(routes!(routes::conversations::report_message))

@@ -3095,6 +3095,77 @@
         ],
         "type": "object"
       },
+      "Attachment": {
+        "description": "A file attached to a message; only the two participants download it.",
+        "properties": {
+          "mime": {
+            "type": "string"
+          },
+          "name": {
+            "description": "The name the writer gave it.",
+            "type": "string"
+          },
+          "size_bytes": {
+            "type": "integer"
+          },
+          "upload_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id",
+          "name",
+          "mime",
+          "size_bytes"
+        ],
+        "type": "object"
+      },
+      "AttachmentDownload": {
+        "description": "A short-lived download of an attached file.",
+        "properties": {
+          "expires_at_unix": {
+            "$ref": "#/components/schemas/UnixTime"
+          },
+          "mime": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_at_unix",
+          "name",
+          "mime"
+        ],
+        "type": "object"
+      },
+      "AttachmentRequest": {
+        "additionalProperties": false,
+        "description": "A file to attach: the sender's finalized `message-attachment` upload.",
+        "properties": {
+          "name": {
+            "description": "The file's name as the recipient sees it.",
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "upload_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id",
+          "name"
+        ],
+        "type": "object"
+      },
       "Attempt": {
         "description": "One attempt. For its owner, `final_score`, `feedback` and\n`rubric_scores` are `null` until the grade is published or the work\nreturned.",
         "properties": {
@@ -3751,6 +3822,107 @@
         "required": [
           "done_count",
           "skipped_count"
+        ],
+        "type": "object"
+      },
+      "BulkMessageRequest": {
+        "additionalProperties": false,
+        "description": "One message to several learners of a course: a separate message in each\nconversation.",
+        "properties": {
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/AttachmentRequest"
+            },
+            "maxItems": 5,
+            "type": "array"
+          },
+          "body": {
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "client_key": {
+            "description": "A key per bulk send: a resend with it sends nothing twice.",
+            "format": "uuid",
+            "type": "string"
+          },
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "intervention": {
+            "description": "Also record a `message_sent` intervention for each learner.",
+            "type": "boolean"
+          },
+          "to_user_ids": {
+            "description": "1..=50 learners of the course.",
+            "items": {
+              "$ref": "#/components/schemas/UserId"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "course_id",
+          "to_user_ids",
+          "body",
+          "client_key"
+        ],
+        "type": "object"
+      },
+      "BulkResult": {
+        "properties": {
+          "sent": {
+            "items": {
+              "$ref": "#/components/schemas/BulkSent"
+            },
+            "type": "array"
+          },
+          "skipped": {
+            "items": {
+              "$ref": "#/components/schemas/BulkSkipped"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "sent",
+          "skipped"
+        ],
+        "type": "object"
+      },
+      "BulkSent": {
+        "properties": {
+          "conversation_id": {
+            "$ref": "#/components/schemas/ConversationId"
+          },
+          "message_id": {
+            "$ref": "#/components/schemas/MessageId"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        },
+        "required": [
+          "user_id",
+          "conversation_id",
+          "message_id"
+        ],
+        "type": "object"
+      },
+      "BulkSkipped": {
+        "description": "A recipient who got nothing, and why.",
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/DenyReason"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/UserId"
+          }
+        },
+        "required": [
+          "user_id",
+          "reason"
         ],
         "type": "object"
       },
@@ -12086,6 +12258,10 @@
             "description": "Plain text, at most 140 characters; empty when deleted.",
             "type": "string"
           },
+          "files": {
+            "description": "How many files it carries (0 when deleted).",
+            "type": "integer"
+          },
           "id": {
             "$ref": "#/components/schemas/MessageId"
           },
@@ -12098,7 +12274,8 @@
           "user_id",
           "excerpt",
           "created_at_unix",
-          "deleted"
+          "deleted",
+          "files"
         ],
         "type": "object"
       },
@@ -12910,6 +13087,13 @@
             },
             "type": "array"
           },
+          "attachments": {
+            "description": "In order; empty when deleted.",
+            "items": {
+              "$ref": "#/components/schemas/Attachment"
+            },
+            "type": "array"
+          },
           "body": {
             "description": "Markdown; empty when deleted.",
             "type": "string"
@@ -12947,6 +13131,7 @@
           "user_id",
           "body",
           "deleted",
+          "attachments",
           "allowed_actions",
           "created_at_unix",
           "context"
@@ -18570,10 +18755,17 @@
             "$ref": "#/components/schemas/ActivityId",
             "description": "An activity of `course_id` (or of its own course when `course_id`\nis left out)."
           },
+          "attachments": {
+            "description": "Up to five files, in order.",
+            "items": {
+              "$ref": "#/components/schemas/AttachmentRequest"
+            },
+            "maxItems": 5,
+            "type": "array"
+          },
           "body": {
-            "description": "Markdown, 1..=4000 characters after trimming.",
+            "description": "Markdown, 1..=4000 characters after trimming; may be empty when\nfiles come with it.",
             "maxLength": 4000,
-            "minLength": 1,
             "type": "string"
           },
           "client_key": {
@@ -18584,6 +18776,10 @@
           "course_id": {
             "$ref": "#/components/schemas/CourseId",
             "description": "What the message is about (where the writer started from)."
+          },
+          "intervention": {
+            "description": "Also record a `message_sent` intervention for the learner of\n`course_id` (sending from analytics; the course's teachers).",
+            "type": "boolean"
           },
           "to_user_id": {
             "$ref": "#/components/schemas/UserId"
@@ -21518,7 +21714,8 @@
           "platform-thumbnail",
           "file-submission",
           "collection-cover",
-          "discussion-image"
+          "discussion-image",
+          "message-attachment"
         ],
         "type": "string",
         "x-upload-policy": {
@@ -21593,6 +21790,10 @@
             },
             "file-submission": {
               "max_bytes": 104857600,
+              "mime_types": []
+            },
+            "message-attachment": {
+              "max_bytes": 20971520,
               "mime_types": []
             },
             "platform-logo": {
@@ -39196,6 +39397,77 @@
         ]
       }
     },
+    "/api/v2/messages/bulk": {
+      "post": {
+        "operationId": "send_bulk",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkMessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkResult"
+                }
+              }
+            },
+            "description": "Sent (and skipped) recipients"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not a teacher of the course, or `messages-banned`"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Empty or too long text, 0 or over 50 recipients, bad files"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`rate-limited` (minute, day, conversations)"
+          }
+        },
+        "summary": "One message to several learners of a course (its teachers and\nadministrators): a separate message in each conversation, in one\ntransaction. Who cannot be written to is listed in `skipped`.",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
     "/api/v2/messages/{message_id}": {
       "delete": {
         "operationId": "delete_message",
@@ -39246,6 +39518,77 @@
           }
         },
         "summary": "The author deletes their message: it stays as a tombstone.",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/api/v2/messages/{message_id}/attachments/{attachment_id}/url": {
+      "get": {
+        "operationId": "attachment_url",
+        "parameters": [
+          {
+            "description": "Message id",
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MessageId"
+            }
+          },
+          {
+            "description": "The attachment's `upload_id`",
+            "in": "path",
+            "name": "attachment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Open in the browser (only types it may render from our origin);\ndefault: download.",
+            "in": "query",
+            "name": "inline",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentDownload"
+                }
+              }
+            },
+            "description": "Signed URL (15 min)"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not a file of a message of the caller's"
+          }
+        },
+        "summary": "A short-lived signed URL of a message's file (the two participants).",
         "tags": [
           "conversations"
         ]

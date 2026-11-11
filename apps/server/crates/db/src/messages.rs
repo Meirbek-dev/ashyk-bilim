@@ -11,6 +11,10 @@ use ab_core::id::{ActivityId, ConversationId, CourseId, MessageId, MessageReport
 use sqlx::{PgConnection, PgPool};
 use uuid::Uuid;
 
+/// How long a file a message no longer shows waits for the reaper: the
+/// domain's `UNREFERENCED_GRACE` (24 h), which this crate cannot name.
+pub const ATTACHMENT_GRACE_SECS: f64 = 86_400.0;
+
 /// A person as a conversation shows them.
 #[derive(Debug, Clone)]
 pub struct PersonRow {
@@ -206,6 +210,8 @@ pub struct ConversationRow {
     pub last_body: Option<String>,
     pub last_deleted: Option<bool>,
     pub last_created_at: Option<i64>,
+    /// How many files the last message carries.
+    pub last_files: i64,
     pub unread_count: i64,
 }
 
@@ -225,6 +231,7 @@ pub async fn list_conversations(
                   lm.user_id AS "last_user_id?: UserId", lm.body AS "last_body?",
                   (lm.status = 'deleted') AS "last_deleted?",
                   (extract(epoch FROM lm.created_at))::bigint AS "last_created_at?",
+                  (SELECT count(*) FROM message_uploads mu WHERE mu.message_id = lm.id) AS "last_files!",
                   unread.n AS "unread_count!"
            FROM conversation_members cm
            JOIN conversations c ON c.id = cm.conversation_id
@@ -503,16 +510,29 @@ pub async fn message_in(
 }
 
 /// Make `user`'s active message a tombstone; `false` when it was not one.
+/// Its files go with the text: their uploads start the reaper's clock unless
+/// another message (of the same bulk send) still shows them.
 pub async fn tombstone(pool: &PgPool, message: MessageId, user: UserId) -> Result<bool> {
+    let mut tx = pool.begin().await?;
     let n = sqlx::query!(
         "UPDATE messages SET status = 'deleted', body = '', deleted_at = now()
          WHERE id = $1 AND user_id = $2 AND status = 'active'",
         message.0,
         user.0
     )
-    .execute(pool)
+    .execute(&mut *tx)
     .await?
     .rows_affected();
+    if n > 0 {
+        let uploads = sqlx::query_scalar!(
+            "DELETE FROM message_uploads WHERE message_id = $1 RETURNING upload_id",
+            message.0
+        )
+        .fetch_all(&mut *tx)
+        .await?;
+        crate::uploads::release_references(&mut tx, &uploads, ATTACHMENT_GRACE_SECS).await?;
+    }
+    tx.commit().await?;
     Ok(n > 0)
 }
 
@@ -696,19 +716,36 @@ pub async fn unban<'e>(db: impl sqlx::PgExecutor<'e>, user: UserId) -> Result<bo
 /// Retention: delete conversations whose latest message is older than
 /// `days` (members, messages and reports cascade), 5 000 at a time.
 pub async fn prune_quiet(pool: &PgPool, days: i32) -> Result<u64> {
-    let n = sqlx::query!(
-        "DELETE FROM conversations WHERE id IN (
-             SELECT c.id FROM conversations c
-             WHERE c.created_at < now() - make_interval(days => $1)
-               AND NOT EXISTS (SELECT 1 FROM messages m
-                               WHERE m.conversation_id = c.id
-                                 AND m.created_at >= now() - make_interval(days => $1))
-             LIMIT 5000)",
+    let mut tx = pool.begin().await?;
+    let doomed = sqlx::query_scalar!(
+        "SELECT c.id FROM conversations c
+         WHERE c.created_at < now() - make_interval(days => $1)
+           AND NOT EXISTS (SELECT 1 FROM messages m
+                           WHERE m.conversation_id = c.id
+                             AND m.created_at >= now() - make_interval(days => $1))
+         LIMIT 5000
+         FOR UPDATE",
         days
     )
-    .execute(pool)
-    .await?
-    .rows_affected();
+    .fetch_all(&mut *tx)
+    .await?;
+    if doomed.is_empty() {
+        return Ok(0);
+    }
+    let uploads = sqlx::query_scalar!(
+        "SELECT DISTINCT mu.upload_id FROM message_uploads mu
+         JOIN messages m ON m.id = mu.message_id
+         WHERE m.conversation_id = ANY($1)",
+        &doomed
+    )
+    .fetch_all(&mut *tx)
+    .await?;
+    let n = sqlx::query!("DELETE FROM conversations WHERE id = ANY($1)", &doomed)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
+    crate::uploads::release_references(&mut tx, &uploads, ATTACHMENT_GRACE_SECS).await?;
+    tx.commit().await?;
     Ok(n)
 }
 
@@ -828,4 +865,128 @@ pub async fn lock_pair(db: &mut PgConnection, a: UserId, b: UserId) -> Result<()
     .fetch_one(db)
     .await?;
     Ok(())
+}
+
+/// A file attached to a message, in its order.
+#[derive(Debug, Clone)]
+pub struct AttachmentRow {
+    pub message_id: MessageId,
+    pub upload_id: Uuid,
+    pub name: String,
+    pub mime: String,
+    pub size_bytes: i64,
+}
+
+/// The files of `messages`, in message then attachment order.
+pub async fn attachments<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    messages: &[MessageId],
+) -> Result<Vec<AttachmentRow>> {
+    let ids: Vec<Uuid> = messages.iter().map(|m| m.0).collect();
+    let rows = sqlx::query_as!(
+        AttachmentRow,
+        r#"SELECT mu.message_id AS "message_id!: MessageId", mu.upload_id, mu.name, u.mime, u.size_bytes
+           FROM message_uploads mu JOIN uploads u ON u.id = mu.upload_id
+           WHERE mu.message_id = ANY($1)
+           ORDER BY mu.message_id, mu.position"#,
+        &ids
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(rows)
+}
+
+/// Attach claimed uploads to a new message, in the given order.
+pub async fn attach(
+    db: &mut PgConnection,
+    message: MessageId,
+    files: &[(Uuid, String)],
+) -> Result<()> {
+    for (position, (upload, name)) in files.iter().enumerate() {
+        sqlx::query!(
+            "INSERT INTO message_uploads (message_id, upload_id, name, position) VALUES ($1, $2, $3, $4)",
+            message.0,
+            upload,
+            name,
+            i16::try_from(position).unwrap_or(i16::MAX)
+        )
+        .execute(&mut *db)
+        .await?;
+    }
+    Ok(())
+}
+
+/// A file of an active message, with what a download needs.
+#[derive(Debug, Clone)]
+pub struct StoredAttachment {
+    pub conversation_id: ConversationId,
+    pub name: String,
+    pub mime: String,
+    pub bucket: String,
+    pub key: String,
+}
+
+pub async fn attachment(
+    pool: &PgPool,
+    message: MessageId,
+    upload: Uuid,
+) -> Result<Option<StoredAttachment>> {
+    let row = sqlx::query_as!(
+        StoredAttachment,
+        r#"SELECT m.conversation_id AS "conversation_id!: ConversationId", mu.name, u.mime, u.bucket, u.key
+           FROM message_uploads mu
+           JOIN messages m ON m.id = mu.message_id
+           JOIN uploads u ON u.id = mu.upload_id
+           WHERE mu.message_id = $1 AND mu.upload_id = $2 AND m.status = 'active'"#,
+        message.0,
+        upload
+    )
+    .fetch_optional(pool)
+    .await?;
+    Ok(row)
+}
+
+/// `user` teaches the live `course`: its creator or an active team member who
+/// is not an observer (the relation rule of docs/DIALOGS.md 3).
+pub async fn teaches<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    user: UserId,
+    course: CourseId,
+) -> Result<bool> {
+    Ok(sqlx::query_scalar!(
+        r#"SELECT EXISTS (
+               SELECT 1 FROM courses c
+               WHERE c.id = $2 AND c.deleted_at IS NULL AND c.archived_at IS NULL
+                 AND (c.creator_id = $1
+                      OR EXISTS (SELECT 1 FROM course_staff cs
+                                 WHERE cs.course_id = c.id AND cs.user_id = $1
+                                   AND cs.status = 'active' AND cs.authorship <> 'reporter'))
+           ) AS "teaches!""#,
+        user.0,
+        course.0
+    )
+    .fetch_one(db)
+    .await?)
+}
+
+/// Those of `users` enrolled in `course` who are not on its team.
+pub async fn learners_of<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    course: CourseId,
+    users: &[UserId],
+) -> Result<Vec<UserId>> {
+    let ids: Vec<Uuid> = users.iter().map(|u| u.0).collect();
+    let rows = sqlx::query_scalar!(
+        r#"SELECT m.user_id AS "user_id!" FROM learning.course_members m
+           WHERE m.course_id = $1 AND m.user_id = ANY($2)
+             AND NOT EXISTS (SELECT 1 FROM course_staff cs
+                             WHERE cs.course_id = m.course_id AND cs.user_id = m.user_id
+                               AND cs.status = 'active')
+             AND NOT EXISTS (SELECT 1 FROM courses c WHERE c.id = m.course_id AND c.creator_id = m.user_id)"#,
+        course.0,
+        &ids
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(rows.into_iter().map(UserId).collect())
 }

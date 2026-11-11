@@ -64,6 +64,12 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         "a message is deleted only with its conversation (retention); reports live with it",
     ),
     (
+        "message_uploads",
+        "message_id",
+        "messages",
+        "a message is deleted only with its conversation (retention), which releases its files",
+    ),
+    (
         "activity_progress",
         "course_id,activity_id",
         "activities",

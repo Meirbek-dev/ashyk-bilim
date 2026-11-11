@@ -706,6 +706,14 @@ const MATRIX: &[(&str, &str, u8)] = &[
         LRN | ADM,
     ),
     ("POST", "/api/v2/messages", SIGNED),
+    // The course's teachers (its owner here) and administrators write to its learners at once.
+    ("POST", "/api/v2/messages/bulk", STAFF),
+    // The reply carries a file: the two participants download it.
+    (
+        "GET",
+        "/api/v2/messages/{message_id}/attachments/{attachment_id}/url",
+        LRN | ADM,
+    ),
     ("DELETE", "/api/v2/messages/{message_id}", LRN),
     ("POST", "/api/v2/messages/{message_id}/report", ADM),
     ("GET", "/api/v2/admin/message-reports", ADM),
@@ -831,6 +839,11 @@ const BODIES: &[(&str, &str, &str)] = &[
         "POST",
         "/api/v2/file-submissions",
         r#"{"chapter_id":"$chapter","title":"Probe"}"#,
+    ),
+    (
+        "POST",
+        "/api/v2/messages/bulk",
+        r#"{"course_id":"$course","to_user_ids":["$learner"],"body":"Probe","client_key":"00000000-0000-7000-8000-0000000000b1"}"#,
     ),
     ("POST", "/api/v2/courses", r#"{"name":"Probe"}"#),
     ("POST", "/api/v2/collections", r#"{"name":"Probe"}"#),
@@ -1351,15 +1364,25 @@ async fn world(app: &TestApp) -> World {
         .await,
         "admin message",
     );
+    let attachment = finalized_upload(
+        &app,
+        &learner,
+        "message-attachment",
+        "application/pdf",
+        b"%PDF-1.4\n%%EOF\n".to_vec(),
+    )
+    .await;
     let reply = ok(
         &app.post_as(
             &learner,
             "/api/v2/messages",
-            &json!({ "to_user_id": admin.user_id, "body": "A reply", "client_key": uuid::Uuid::now_v7() }),
+            &json!({ "to_user_id": admin.user_id, "body": "A reply", "client_key": uuid::Uuid::now_v7(),
+                     "attachments": [{ "upload_id": attachment, "name": "reply.pdf" }] }),
         )
         .await,
         "reply",
     );
+    ids.insert("attachment_id", attachment);
     let message_id = reply["id"].as_str().unwrap().to_owned();
     ids.insert(
         "conversation_id",

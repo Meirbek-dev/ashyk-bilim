@@ -993,6 +993,40 @@ export type AttachedFile = {
 };
 
 /**
+ * A file attached to a message; only the two participants download it.
+ */
+export type Attachment = {
+    mime: string;
+    /**
+     * The name the writer gave it.
+     */
+    name: string;
+    size_bytes: number;
+    upload_id: string;
+};
+
+/**
+ * A short-lived download of an attached file.
+ */
+export type AttachmentDownload = {
+    expires_at_unix: UnixTime;
+    mime: string;
+    name: string;
+    url: string;
+};
+
+/**
+ * A file to attach: the sender's finalized `message-attachment` upload.
+ */
+export type AttachmentRequest = {
+    /**
+     * The file's name as the recipient sees it.
+     */
+    name: string;
+    upload_id: string;
+};
+
+/**
  * One attempt. For its owner, `final_score`, `feedback` and
  * `rubric_scores` are `null` until the grade is published or the work
  * returned.
@@ -1229,6 +1263,47 @@ export type BulkActionType = 'extend_deadline' | 'release_grades' | 'return_all'
 export type BulkGradeSummary = {
     done_count: number;
     skipped_count: number;
+};
+
+/**
+ * One message to several learners of a course: a separate message in each
+ * conversation.
+ */
+export type BulkMessageRequest = {
+    attachments?: Array<AttachmentRequest>;
+    body: string;
+    /**
+     * A key per bulk send: a resend with it sends nothing twice.
+     */
+    client_key: string;
+    course_id: CourseId;
+    /**
+     * Also record a `message_sent` intervention for each learner.
+     */
+    intervention?: boolean;
+    /**
+     * 1..=50 learners of the course.
+     */
+    to_user_ids: Array<UserId>;
+};
+
+export type BulkResult = {
+    sent: Array<BulkSent>;
+    skipped: Array<BulkSkipped>;
+};
+
+export type BulkSent = {
+    conversation_id: ConversationId;
+    message_id: MessageId;
+    user_id: UserId;
+};
+
+/**
+ * A recipient who got nothing, and why.
+ */
+export type BulkSkipped = {
+    reason: DenyReason;
+    user_id: UserId;
 };
 
 /**
@@ -4241,6 +4316,10 @@ export type LastMessage = {
      * Plain text, at most 140 characters; empty when deleted.
      */
     excerpt: string;
+    /**
+     * How many files it carries (0 when deleted).
+     */
+    files: number;
     id: MessageId;
     user_id: UserId;
 };
@@ -4527,6 +4606,10 @@ export type MediaContent = {
 
 export type Message = {
     allowed_actions: Array<MessageAction>;
+    /**
+     * In order; empty when deleted.
+     */
+    attachments: Array<Attachment>;
     /**
      * Markdown; empty when deleted.
      */
@@ -6500,7 +6583,12 @@ export type SendMessageRequest = {
      */
     activity_id?: ActivityId;
     /**
-     * Markdown, 1..=4000 characters after trimming.
+     * Up to five files, in order.
+     */
+    attachments?: Array<AttachmentRequest>;
+    /**
+     * Markdown, 1..=4000 characters after trimming; may be empty when
+     * files come with it.
      */
     body: string;
     /**
@@ -6512,6 +6600,11 @@ export type SendMessageRequest = {
      * What the message is about (where the writer started from).
      */
     course_id?: CourseId;
+    /**
+     * Also record a `message_sent` intervention for the learner of
+     * `course_id` (sending from analytics; the course's teachers).
+     */
+    intervention?: boolean;
     to_user_id: UserId;
 };
 
@@ -7467,7 +7560,7 @@ export type UpdateUsergroupRequest = {
 /**
  * What an upload is for: decides bucket, size cap and allowed MIME types.
  */
-export type UploadPurpose = 'avatar' | 'course-thumbnail' | 'block-image' | 'block-pdf' | 'block-video' | 'platform-logo' | 'platform-thumbnail' | 'file-submission' | 'collection-cover' | 'discussion-image';
+export type UploadPurpose = 'avatar' | 'course-thumbnail' | 'block-image' | 'block-pdf' | 'block-video' | 'platform-logo' | 'platform-thumbnail' | 'file-submission' | 'collection-cover' | 'discussion-image' | 'message-attachment';
 
 /**
  * Platform usage against the monthly budget (legacy `AIUsageSummary`)
@@ -17213,6 +17306,43 @@ export type SendMessageResponses = {
 
 export type SendMessageResponse = SendMessageResponses[keyof SendMessageResponses];
 
+export type SendBulkData = {
+    body: BulkMessageRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v2/messages/bulk';
+};
+
+export type SendBulkErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Not a teacher of the course, or `messages-banned`
+     */
+    403: Problem;
+    /**
+     * Empty or too long text, 0 or over 50 recipients, bad files
+     */
+    422: Problem;
+    /**
+     * `rate-limited` (minute, day, conversations)
+     */
+    429: Problem;
+};
+
+export type SendBulkError = SendBulkErrors[keyof SendBulkErrors];
+
+export type SendBulkResponses = {
+    /**
+     * Sent (and skipped) recipients
+     */
+    201: BulkResult;
+};
+
+export type SendBulkResponse = SendBulkResponses[keyof SendBulkResponses];
+
 export type DeleteMessageData = {
     body?: never;
     path: {
@@ -17250,6 +17380,50 @@ export type DeleteMessageResponses = {
 };
 
 export type DeleteMessageResponse = DeleteMessageResponses[keyof DeleteMessageResponses];
+
+export type AttachmentUrlData = {
+    body?: never;
+    path: {
+        /**
+         * Message id
+         */
+        message_id: MessageId;
+        /**
+         * The attachment's `upload_id`
+         */
+        attachment_id: string;
+    };
+    query?: {
+        /**
+         * Open in the browser (only types it may render from our origin);
+         * default: download.
+         */
+        inline?: boolean;
+    };
+    url: '/api/v2/messages/{message_id}/attachments/{attachment_id}/url';
+};
+
+export type AttachmentUrlErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Not a file of a message of the caller's
+     */
+    404: Problem;
+};
+
+export type AttachmentUrlError = AttachmentUrlErrors[keyof AttachmentUrlErrors];
+
+export type AttachmentUrlResponses = {
+    /**
+     * Signed URL (15 min)
+     */
+    200: AttachmentDownload;
+};
+
+export type AttachmentUrlResponse = AttachmentUrlResponses[keyof AttachmentUrlResponses];
 
 export type ReportMessageData = {
     body: ReportMessageRequest;

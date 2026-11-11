@@ -88,6 +88,8 @@ probe() {
   check ashyq_ro denied "SELECT body_snapshot FROM message_reports"
   check ashyq_ro denied "SELECT reason FROM message_reports"
   check ashyq_ro denied "SELECT reason FROM message_bans"
+  check ashyq_ro ok "SELECT message_id, upload_id, position FROM message_uploads"
+  check ashyq_ro denied "SELECT name FROM message_uploads"
   # Opt-in for whole tables: ashyq_ro reads every column only of the tables reviewed here as holding no one's free
   # text or contact data. A new table (default privileges grant it) fails until it is added here or its columns
   # are hidden in apply_role_grants.

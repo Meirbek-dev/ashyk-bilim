@@ -73,6 +73,8 @@ fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
         "block-pdf" => Some((Bucket::Public, 50 * MB, &["application/pdf"])),
         "block-video" => Some((Bucket::Public, 2048 * MB, VIDEOS)),
         "file-submission" => Some((Bucket::Private, i64::from(FILE_SUBMISSION_MAX_MB) * MB, &[])),
+        // docs/DIALOGS.md 12: any type, always downloaded unless inline-safe.
+        "message-attachment" => Some((Bucket::Private, 20 * MB, &[])),
         _ => None,
     }
 }
@@ -113,7 +115,8 @@ fn require_purpose_grant(actor: &Actor, purpose: &str) -> Result<()> {
             })
         }),
         // Learner-facing: `avatar`, `file-submission`, `discussion-image`
-        // (claimed by the post that shows it).
+        // (claimed by the post that shows it), `message-attachment` (by the
+        // message that carries it).
         _ => true,
     };
     if granted {
@@ -558,6 +561,7 @@ mod tests {
             "block-pdf",
             "block-video",
             "file-submission",
+            "message-attachment",
         ] {
             let (bucket, _, types) = policy(purpose).expect(purpose);
             if bucket == Bucket::Public {

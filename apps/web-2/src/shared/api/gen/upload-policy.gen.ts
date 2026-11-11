@@ -15,6 +15,7 @@ export const uploadPolicy: Record<UploadPurpose, { maxBytes: number; mimes: read
   'course-thumbnail': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
   'discussion-image': { maxBytes: 5242880, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
   'file-submission': { maxBytes: 104857600, mimes: [] },
+  'message-attachment': { maxBytes: 20971520, mimes: [] },
   'platform-logo': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
   'platform-thumbnail': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
 };
