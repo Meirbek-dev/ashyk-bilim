@@ -221,6 +221,8 @@ impl From<db::AttachmentRow> for Attachment {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct AttachmentDownload {
     pub url: String,
+    /// `url` without `scheme://host`: what the browser opens on our origin.
+    pub path: String,
     pub expires_at_unix: i64,
     pub name: String,
     pub mime: String,
@@ -951,7 +953,12 @@ impl MessagesService {
             inline,
             DOWNLOAD_TTL,
         )?;
+        let path = url
+            .split_once("://")
+            .and_then(|(_, rest)| rest.find('/').map(|i| rest[i..].to_owned()))
+            .unwrap_or_else(|| url.clone());
         Ok(AttachmentDownload {
+            path,
             url,
             expires_at_unix: jiff::Timestamp::now().as_second()
                 + i64::try_from(DOWNLOAD_TTL.as_secs()).unwrap_or(900),

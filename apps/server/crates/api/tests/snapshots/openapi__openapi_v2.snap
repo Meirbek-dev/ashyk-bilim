@@ -3137,12 +3137,17 @@ expression: json
           "name": {
             "type": "string"
           },
+          "path": {
+            "description": "`url` without `scheme://host`: what the browser opens on our origin.",
+            "type": "string"
+          },
           "url": {
             "type": "string"
           }
         },
         "required": [
           "url",
+          "path",
           "expires_at_unix",
           "name",
           "mime"

@@ -168,6 +168,7 @@ async fn a_message_carries_files_only_its_two_sides_download(pool: PgPool) {
         let got = w.app.get_as(side, &url).await;
         assert_eq!(got.status, StatusCode::OK, "{}", got.text());
         assert_eq!(got.json()["name"], "report.pdf");
+        assert!(got.json()["path"].as_str().unwrap().starts_with('/'));
         let bytes = reqwest::get(got.json()["url"].as_str().unwrap())
             .await
             .unwrap()

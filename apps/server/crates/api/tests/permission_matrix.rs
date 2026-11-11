@@ -1365,7 +1365,7 @@ async fn world(app: &TestApp) -> World {
         "admin message",
     );
     let attachment = finalized_upload(
-        &app,
+        app,
         &learner,
         "message-attachment",
         "application/pdf",
