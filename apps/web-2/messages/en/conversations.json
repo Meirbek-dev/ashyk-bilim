@@ -98,5 +98,19 @@
   "conversations_unbanned_toast": "Bar lifted",
   "conversations_status_open": "Open",
   "conversations_status_resolved": "Decided",
-  "conversations_not_found": "Conversation not found"
+  "conversations_not_found": "Conversation not found",
+  "conversations_attach": "Attach files",
+  "conversations_files_full": "No more than 5 files in a message",
+  "conversations_files_label": "Attached files",
+  "conversations_remove_file": "Remove {name}",
+  "conversations_files_uploading": "Files are uploading…",
+  "conversations_files_count": "Files: {count}",
+  "conversations_intervention_hint": "Sending it records a «Message» intervention in analytics.",
+  "conversations_bulk_learners": "Write to learners",
+  "conversations_bulk_text": "Message",
+  "conversations_bulk_hint": "Each gets it in their own conversation with you.",
+  "conversations_bulk_to": "Recipients: {count} (at most {max})",
+  "conversations_bulk_send": "Send ({count})",
+  "conversations_bulk_sent": "Sent: {count}",
+  "conversations_bulk_skipped": "Not sent: {count}, they cannot be written to"
 }

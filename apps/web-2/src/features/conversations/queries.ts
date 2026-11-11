@@ -3,6 +3,7 @@ import { notFound } from '@tanstack/react-router'
 
 import { ApiError } from '#/shared/api/errors'
 import {
+  attachmentUrlOptions,
   conversationsUnreadCountOptions,
   conversationsUnreadCountQueryKey,
   conversationWithPeerOptions,
@@ -18,6 +19,7 @@ import {
   messageRecipientsInfiniteQueryKey,
   reportMessageMutation,
   resolveMessageReportMutation,
+  sendBulkMutation,
   sendMessageMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import { listConversations, listMessageReports, listMessages, messageRecipients } from '#/shared/api/gen/sdk.gen'
@@ -25,6 +27,7 @@ import type {
   ConversationId,
   ConversationPage,
   Message,
+  MessageId,
   MessagePage,
   MessageReportPage,
   RecipientPage,
@@ -165,6 +168,16 @@ export const sendOptions = (queryClient: QueryClient) => ({
     invalidates: [conversationLists(), conversationsUnreadCountQueryKey(), anyPeer()],
   },
 })
+
+/** One message to many learners: every list and feed may have a new message (the ids are in the answer only). */
+export const bulkOptions = () => ({
+  ...sendBulkMutation(),
+  meta: { invalidates: [conversationLists(), conversationsUnreadCountQueryKey(), anyPeer()] },
+})
+
+/** A short-lived signed URL of a message's file (15 min): asked for on click, never cached. */
+export const attachmentOptions = (messageId: MessageId, uploadId: string, inline: boolean) =>
+  attachmentUrlOptions({ path: { message_id: messageId, attachment_id: uploadId }, query: { inline } })
 
 export const markReadOptions = () => ({
   ...markConversationReadMutation(),

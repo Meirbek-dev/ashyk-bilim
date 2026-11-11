@@ -7,6 +7,7 @@ import { formatDateTime, formatTime } from '#/shared/i18n/format'
 
 import { contextTarget, contextText, type FeedRow } from '../model/feed'
 import { DeleteMessage } from './delete-message'
+import { MessageFiles } from './message-files'
 import { ReportMessage } from './report-message'
 
 type FeedRowsProps = { rows: readonly FeedRow[]; peerName: string; peerAvatar: string | null }
@@ -80,9 +81,14 @@ function MessageRow({ message, header, own, name, avatar }: MessageRowProps) {
         {message.deleted ? (
           <p className="text-sm text-muted-foreground italic">{m.conversations_deleted()}</p>
         ) : (
-          <div className="min-w-0 wrap-anywhere">
-            <MarkdownView content={message.body} />
-          </div>
+          <>
+            {message.body ? (
+              <div className="min-w-0 wrap-anywhere">
+                <MarkdownView content={message.body} />
+              </div>
+            ) : null}
+            <MessageFiles messageId={message.id} files={message.attachments} />
+          </>
         )}
       </div>
       {canDelete || canReport ? (

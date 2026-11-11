@@ -102,5 +102,19 @@
   "conversations_unbanned_toast": "Запрет снят",
   "conversations_status_open": "Открыта",
   "conversations_status_resolved": "Решена",
-  "conversations_not_found": "Диалог не найден"
+  "conversations_not_found": "Диалог не найден",
+  "conversations_attach": "Прикрепить файлы",
+  "conversations_files_full": "Не больше 5 файлов в сообщении",
+  "conversations_files_label": "Прикреплённые файлы",
+  "conversations_remove_file": "Убрать {name}",
+  "conversations_files_uploading": "Файлы загружаются…",
+  "conversations_files_count": "Файлы: {count}",
+  "conversations_intervention_hint": "Отправка запишется в аналитику как вмешательство «Сообщение».",
+  "conversations_bulk_learners": "Написать учащимся",
+  "conversations_bulk_text": "Сообщение",
+  "conversations_bulk_hint": "Каждый получит его в своём диалоге с вами.",
+  "conversations_bulk_to": "Получатели: {count} (не больше {max})",
+  "conversations_bulk_send": "Отправить ({count})",
+  "conversations_bulk_sent": "Отправлено: {count}",
+  "conversations_bulk_skipped": "Не отправлено: {count}, им нельзя написать"
 }

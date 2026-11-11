@@ -14,6 +14,8 @@ type WriteLinkProps = {
   /** What the message is about: the course (and activity) the writer starts from. */
   course?: string | undefined
   activity?: string | undefined
+  /** The first message records a `message_sent` intervention (analytics' «Связаться», docs/DIALOGS.md 12). */
+  intervention?: boolean
   /** «Написать учащемуся» (a grading page) instead of «Написать». */
   learner?: boolean
   /** Their name, for the accessible name of a bare «Написать» in a list of people. */
@@ -37,6 +39,7 @@ export function WriteLink(props: WriteLinkProps) {
     userId,
     course,
     activity,
+    intervention = false,
     learner = false,
     name,
     variant = 'outline',
@@ -52,7 +55,7 @@ export function WriteLink(props: WriteLinkProps) {
   return (
     <RouterLink
       to="/conversations/new"
-      search={{ to: userId, course, activity }}
+      search={{ to: userId, course, activity, intervention: intervention || undefined }}
       aria-label={name && !learner ? m.conversations_write_to({ name }) : undefined}
       className={buttonVariants({ variant, size: 'sm' })}
     >

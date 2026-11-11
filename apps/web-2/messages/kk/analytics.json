@@ -272,6 +272,7 @@
   "analytics_learner_components": "Тәуекел неден құралады",
   "analytics_learner_in_course": "Курстың білім алушыларында ашу",
   "analytics_write_email": "Поштаға жазу",
+  "analytics_write_all_at_risk": "Тәуекел аймағындағылардың бәріне жазу",
   "analytics_component_inactivity": "белсенділіктің болмауы",
   "analytics_component_progress": "артта қалу",
   "analytics_component_failures": "өтпеген тапсырмалар",

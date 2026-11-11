@@ -19,10 +19,10 @@ const back = (
  * the conversation.
  */
 export function NewConversationPage() {
-  const { to, course, activity } = useSearch({ from: '/_authed/conversations/new' })
+  const { to, course, activity, intervention } = useSearch({ from: '/_authed/conversations/new' })
   return (
     <DetailPage back={back} title={m.conversations_new_title()}>
-      {to ? <ToPerson to={to} course={course} activity={activity} /> : <RecipientPicker />}
+      {to ? <ToPerson to={to} context={{ course, activity, intervention }} /> : <RecipientPicker />}
     </DetailPage>
   )
 }

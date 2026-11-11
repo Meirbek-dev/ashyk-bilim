@@ -4,6 +4,7 @@ import { expect, test } from 'vite-plus/test'
 import { m } from '#/paraglide/messages'
 import type { Message } from '#/shared/api/gen/types.gen'
 import { renderInRouter } from '#/shared/components/testing'
+import { formatFileSize } from '#/shared/i18n/format'
 
 import { buildFeed } from '../model/feed'
 import { FeedRows } from './feed-rows'
@@ -21,6 +22,7 @@ const message = (n: number, user: string, extra: Partial<Message> = {}): Message
   created_at_unix: AT + n,
   deleted: false,
   context: null,
+  attachments: [],
   allowed_actions: [],
   ...extra,
 })
@@ -63,4 +65,15 @@ test("one's own message offers «Удалить»; a deleted one shows the mark,
   await expect.element(screen.getByRole('button', { name: m.conversations_delete() })).toBeVisible()
   await expect.element(screen.getByText(m.conversations_deleted())).toBeVisible()
   await expect.element(screen.getByRole('button', { name: m.conversations_report() })).not.toBeInTheDocument()
+})
+
+test('a message of files alone lists them with their sizes', async () => {
+  const attachments = [
+    { upload_id: '0190a5d2-0000-7000-8000-0000000000e1', name: 'plan.pdf', mime: 'application/pdf', size_bytes: 2048 },
+    { upload_id: '0190a5d2-0000-7000-8000-0000000000e2', name: 'data.zip', mime: 'application/zip', size_bytes: 10 },
+  ]
+  const screen = await render([message(1, PEER, { body: '', attachments })])
+  await expect.element(screen.getByRole('button', { name: 'plan.pdf' })).toBeVisible()
+  await expect.element(screen.getByRole('button', { name: 'data.zip' })).toBeVisible()
+  await expect.element(screen.getByText(formatFileSize(2048))).toBeVisible()
 })

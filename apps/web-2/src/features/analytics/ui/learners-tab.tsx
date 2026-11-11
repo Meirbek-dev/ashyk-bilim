@@ -1,6 +1,8 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useSearch } from '@tanstack/react-router'
 
+import { BulkWrite } from '#/features/conversations'
+
 import { m } from '#/paraglide/messages'
 import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { KpiTile } from '#/shared/components/charts/kpi-tile'
@@ -34,6 +36,9 @@ export function LearnersTab() {
     { label: m.analytics_interventions_recovered(), value: summary.recovered_learners },
   ]
   const open = atRisk.items.find(row => row.user_id === learnerId && row.course_id === courseId)
+  // One course in the list (the course filter): its at-risk learners can get one message, each an intervention.
+  const course = atRisk.items[0]?.course_id
+  const oneCourse = course && atRisk.items.every(row => row.course_id === course) ? course : null
   return (
     <div className="flex flex-col gap-10">
       <KpiStrip label={m.analytics_kpis()} columns={3}>
@@ -41,6 +46,16 @@ export function LearnersTab() {
           <KpiTile key={tile.label} label={tile.label} value={formatNumber(tile.value)} />
         ))}
       </KpiStrip>
+      {oneCourse && atRisk.items.length > 1 ? (
+        <div>
+          <BulkWrite
+            courseId={oneCourse}
+            people={atRisk.items.map(row => ({ id: row.user_id, name: row.user_display_name || row.user_username }))}
+            intervention
+            label={m.analytics_write_all_at_risk()}
+          />
+        </div>
+      ) : null}
       <AtRiskTable search={search} filters={filters} />
       <ExportLinks links={[{ href: exportHrefs(filters).atRisk, label: m.analytics_export_at_risk() }]} />
       {learnerId && courseId ? (

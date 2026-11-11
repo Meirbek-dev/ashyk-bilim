@@ -2,7 +2,7 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 
-import { WriteLink } from '#/features/conversations'
+import { BulkWrite, WriteLink } from '#/features/conversations'
 import { m } from '#/paraglide/messages'
 import type { CourseLearner } from '#/shared/api/gen/types.gen'
 import { ScoreBar } from '#/shared/components/charts/score-bar'
@@ -131,6 +131,18 @@ export function LearnersSection({
         <div className="flex flex-wrap items-end gap-2">
           <LearnersSearchBox key={q ?? ''} q={q} />
           {query.data.length > 0 && !q ? <ExportLearners courseId={courseId} courseName={courseName} /> : null}
+          {/* One message to the learners shown (the search narrows them), a separate one in each conversation. */}
+          {query.data.length > 1 ? (
+            <BulkWrite
+              key={q ?? ''}
+              courseId={courseId}
+              people={query.data.map(learner => ({
+                id: learner.user_id,
+                name: learner.display_name || learner.username,
+              }))}
+              label={m.conversations_bulk_learners()}
+            />
+          ) : null}
         </div>
       )}
       <ListState

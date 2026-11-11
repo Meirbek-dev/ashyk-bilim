@@ -6,16 +6,9 @@ import { UserAvatar } from '#/shared/components/user-avatar'
 import { denyText, personName } from '../model/feed'
 import { peerOptions } from '../queries'
 import { Composer } from './composer'
+import type { ComposerContext } from './use-composer'
 
-export function ToPerson({
-  to,
-  course,
-  activity,
-}: {
-  to: string
-  course?: string | undefined
-  activity?: string | undefined
-}) {
+export function ToPerson({ to, context }: { to: string; context: ComposerContext }) {
   const { data } = useSuspenseQuery(peerOptions(to))
   const navigate = useNavigate()
   const name = personName(data.peer)
@@ -31,7 +24,7 @@ export function ToPerson({
       {data.allowed_actions.includes('send') ? (
         <Composer
           to={to}
-          context={{ course, activity }}
+          context={context}
           onSent={message =>
             void navigate({
               to: '/conversations/$conversationId',

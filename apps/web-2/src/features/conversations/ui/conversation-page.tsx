@@ -46,7 +46,8 @@ export function ConversationPage() {
     </RouterLink>
   )
   const sent = () => {
-    if (context.course || context.activity) void navigate({ to: '.', search: {}, replace: true })
+    if (context.course || context.activity || context.intervention)
+      void navigate({ to: '.', search: {}, replace: true })
   }
   return (
     <DetailPage back={back} title={name} meta={<ConversationMeta peer={peer} shared={head.shared_courses[0]} />}>

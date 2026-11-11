@@ -1012,6 +1012,10 @@ export type AttachmentDownload = {
     expires_at_unix: UnixTime;
     mime: string;
     name: string;
+    /**
+     * `url` without `scheme://host`: what the browser opens on our origin.
+     */
+    path: string;
     url: string;
 };
 

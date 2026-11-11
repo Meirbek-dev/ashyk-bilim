@@ -6,6 +6,7 @@ export {
   reportsOptions,
   unreadOptions,
 } from './queries'
+export { BulkWrite } from './ui/bulk-write'
 export { ConversationNotFound } from './ui/conversation-not-found'
 export { ConversationPage } from './ui/conversation-page'
 export { ConversationsPage } from './ui/conversations-page'

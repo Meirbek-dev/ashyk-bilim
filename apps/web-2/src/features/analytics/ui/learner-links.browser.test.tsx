@@ -62,10 +62,10 @@ describe('LearnerLinks', () => {
       .toHaveAttribute('href', expect.stringContaining('q=aizhan.b'))
   })
 
-  test('a personal message to the learner, about the course (docs/DIALOGS.md 9)', async () => {
+  test('a personal message to the learner, about the course, recorded as an intervention (docs/DIALOGS.md 12)', async () => {
     const screen = await render()
     await expect
       .element(screen.getByRole('link', { name: m.conversations_write_learner() }))
-      .toHaveAttribute('href', `/conversations/new?to=${row.user_id}&course=${row.course_id}`)
+      .toHaveAttribute('href', `/conversations/new?to=${row.user_id}&course=${row.course_id}&intervention=true`)
   })
 })

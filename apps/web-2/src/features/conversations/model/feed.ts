@@ -48,7 +48,9 @@ export const roleLabels: Record<RecipientRole, () => string> = {
 export function lastMessageText(last: LastMessage | null, viewer: string): string {
   if (!last) return m.conversations_no_messages()
   if (last.deleted) return m.conversations_deleted()
-  return last.user_id === viewer ? m.conversations_you_said({ text: last.excerpt }) : last.excerpt
+  // Files alone: «Файлы: 2» stands for the text.
+  const text = last.excerpt || (last.files > 0 ? m.conversations_files_count({ count: last.files }) : '')
+  return last.user_id === viewer ? m.conversations_you_said({ text }) : text
 }
 
 /** Where a message's context line leads: the activity in the player, else the course page. */

@@ -18,6 +18,7 @@ const sent = (body: { body: string }) => ({
   created_at_unix: 1_772_427_600,
   deleted: false,
   context: null,
+  attachments: [],
   allowed_actions: ['delete'],
 })
 

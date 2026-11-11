@@ -4203,6 +4203,7 @@ export const vAttachmentDownload = v.object({
     expires_at_unix: vUnixTime,
     mime: v.string(),
     name: v.string(),
+    path: v.string(),
     url: v.string()
 });
 

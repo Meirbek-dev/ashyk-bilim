@@ -98,5 +98,19 @@
   "conversations_unbanned_toast": "Тыйым алынды",
   "conversations_status_open": "Ашық",
   "conversations_status_resolved": "Шешілді",
-  "conversations_not_found": "Сұхбат табылмады"
+  "conversations_not_found": "Сұхбат табылмады",
+  "conversations_attach": "Файлдарды тіркеу",
+  "conversations_files_full": "Бір хабарламада 5 файлдан артық емес",
+  "conversations_files_label": "Тіркелген файлдар",
+  "conversations_remove_file": "{name} алып тастау",
+  "conversations_files_uploading": "Файлдар жүктелуде…",
+  "conversations_files_count": "Файлдар: {count}",
+  "conversations_intervention_hint": "Жіберу аналитикада «Хабарлама» араласуы ретінде жазылады.",
+  "conversations_bulk_learners": "Білім алушыларға жазу",
+  "conversations_bulk_text": "Хабарлама",
+  "conversations_bulk_hint": "Әрқайсысы оны сізбен өз сұхбатында алады.",
+  "conversations_bulk_to": "Алушылар: {count} ({max} артық емес)",
+  "conversations_bulk_send": "Жіберу ({count})",
+  "conversations_bulk_sent": "Жіберілді: {count}",
+  "conversations_bulk_skipped": "Жіберілмеді: {count}, оларға жазуға болмайды"
 }

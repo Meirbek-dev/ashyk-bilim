@@ -21,6 +21,7 @@ const message = (user: string, at: number, extra: Partial<Message> = {}): Messag
     created_at_unix: at,
     deleted: false,
     context: null,
+    attachments: [],
     allowed_actions: [],
     ...extra,
   }
@@ -104,11 +105,15 @@ describe('labels', () => {
   })
 
   test("the list preview marks one's own and deleted messages", () => {
-    const last = { id: PEER, user_id: ME, excerpt: 'Hello', created_at_unix: MORNING, deleted: false }
+    const last = { id: PEER, user_id: ME, excerpt: 'Hello', created_at_unix: MORNING, deleted: false, files: 0 }
     expect(lastMessageText(last, ME)).toBe(m.conversations_you_said({ text: 'Hello' }))
     expect(lastMessageText({ ...last, user_id: PEER }, ME)).toBe('Hello')
     expect(lastMessageText({ ...last, deleted: true }, ME)).toBe(m.conversations_deleted())
     expect(lastMessageText(null, ME)).toBe(m.conversations_no_messages())
+    // Files alone stand for the text.
+    expect(lastMessageText({ ...last, user_id: PEER, excerpt: '', files: 2 }, ME)).toBe(
+      m.conversations_files_count({ count: 2 }),
+    )
   })
 
   test('every deny reason has its line', () => {

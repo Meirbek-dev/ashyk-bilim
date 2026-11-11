@@ -18,15 +18,19 @@ const optionalId = v.fallback(v.optional(v.pipe(v.string(), v.uuid())), undefine
 /** /conversations?unread=true: only conversations with something unread. */
 export const conversationsSearchSchema = v.object({ unread: onlyTrue })
 
-/** /conversations/new?to=&course=&activity=: the recipient (else the picker) and what the message is about. */
+/**
+ * /conversations/new?to=&course=&activity=&intervention=true: the recipient (else the picker), what the message is
+ * about, and (from analytics) that sending it records a `message_sent` intervention.
+ */
 export const newConversationSearchSchema = v.object({
   to: optionalId,
   course: optionalId,
   activity: optionalId,
+  intervention: onlyTrue,
 })
 
-/** /conversations/$conversationId?course=&activity=: an entry point's context for the next message sent. */
-export const conversationSearchSchema = v.object({ course: optionalId, activity: optionalId })
+/** /conversations/$conversationId?course=&activity=&intervention=: an entry point's context for the next message. */
+export const conversationSearchSchema = v.object({ course: optionalId, activity: optionalId, intervention: onlyTrue })
 
 /** /admin/message-reports?status=resolved&report=<id>: the decided ones; one report opened. */
 export const reportsSearchSchema = v.object({

@@ -15,7 +15,7 @@ export const Route = createFileRoute('/_authed/conversations/new')({
       throw redirect({
         to: '/conversations/$conversationId',
         params: { conversationId: peer.conversation_id },
-        search: { course: deps.course, activity: deps.activity },
+        search: { course: deps.course, activity: deps.activity, intervention: deps.intervention },
         replace: true,
       })
   },

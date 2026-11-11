@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { Browser, Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
-import { currentSession, reportMessage, sendMessage } from '#/shared/api/gen/sdk.gen'
+import { currentSession, enroll, reportMessage, sendMessage } from '#/shared/api/gen/sdk.gen'
 
 import { gotoLive } from '../fixtures/test'
 import { expect, test } from '../fixtures/learning'
@@ -173,4 +173,79 @@ test('a report reaches the admin with the text; a ban stops sending at once and 
   await page.reload()
   await expect(composer(page)).toBeVisible()
   await admin.context.close()
+})
+
+test('a message of files alone: the other side sees the file and downloads it', async ({
+  page,
+  browser,
+  baseURL,
+  seed,
+  learner,
+  makeCourse,
+}) => {
+  const course = await makeCourse({ activities: 1 })
+  await learner.enroll(course)
+  await learner.signIn()
+  const teacherTab = await signedInPage(browser, String(baseURL), seed.accounts.teacher.cookie)
+
+  await gotoLive(page, `/conversations/new?to=${seed.accounts.teacher.session.user.id}&course=${course.id}`)
+  const name = `notes-${randomUUID().slice(0, 8)}.txt`
+  await page.locator('input[type=file]').setInputFiles({ name, mimeType: 'text/plain', buffer: Buffer.from('сдача') })
+  const files = page.getByRole('list', { name: m.conversations_files_label({}, ru) })
+  await expect(files.getByText(name)).toBeVisible()
+  const send = page.getByRole('button', { name: m.conversations_send({}, ru) })
+  await expect(send).toBeEnabled()
+  await send.click()
+  await expect(page).toHaveURL(/\/conversations\/[0-9a-f-]{36}$/)
+  await expect(feed(page).getByRole('button', { name })).toBeVisible()
+
+  // Fresh accounts share one display name: the teacher opens this conversation by its address.
+  await gotoLive(teacherTab.page, new URL(page.url()).pathname)
+  const file = feed(teacherTab.page).getByRole('button', { name })
+  await expect(file).toBeVisible()
+  const download = teacherTab.page.waitForEvent('download')
+  await file.click()
+  const saved = await download
+  expect(saved.suggestedFilename()).toBe(name)
+  const { readFile } = await import('node:fs/promises')
+  expect(await readFile(await saved.path(), 'utf8')).toBe('сдача')
+  await teacherTab.context.close()
+})
+
+test('the teacher writes to several learners of the course at once, with a file', async ({
+  page,
+  browser,
+  baseURL,
+  api,
+  seed,
+  learner,
+  makeCourse,
+}) => {
+  const course = await makeCourse({ activities: 1 })
+  await learner.enroll(course)
+  const { name: cookieName, value } = seed.accounts.student.cookie
+  await enroll({ client: api, path: { course_id: course.id }, headers: { cookie: `${cookieName}=${value}` } })
+  const teacherTab = await signedInPage(browser, String(baseURL), seed.accounts.teacher.cookie)
+  await gotoLive(teacherTab.page, `/teach/courses/${course.id}/learners`)
+  await teacherTab.page.getByRole('button', { name: m.conversations_bulk_learners({}, ru) }).click()
+  const dialog = teacherTab.page.getByRole('dialog')
+  const text = `Объявление ${randomUUID().slice(0, 8)}`
+  await dialog.getByRole('textbox', { name: m.conversations_bulk_text({}, ru) }).fill(text)
+  await dialog.locator('input[type=file]').setInputFiles({
+    name: 'plan.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.4\n%%EOF\n'),
+  })
+  const sendAll = dialog.getByRole('button', { name: m.conversations_bulk_send({ count: 2 }, ru) })
+  await expect(sendAll).toBeEnabled()
+  await sendAll.click()
+  await expect(teacherTab.page.getByText(m.conversations_bulk_sent({ count: 2 }, ru))).toBeVisible()
+
+  // The learner has it in their own conversation with the teacher, with the file.
+  await learner.signIn()
+  await gotoLive(page, '/conversations')
+  await page.getByRole('link', { name: seed.accounts.teacher.session.user.display_name, exact: true }).click()
+  await expect(feed(page).getByText(text)).toBeVisible()
+  await expect(feed(page).getByRole('button', { name: 'plan.pdf' })).toBeVisible()
+  await teacherTab.context.close()
 })

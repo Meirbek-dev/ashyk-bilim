@@ -22,7 +22,7 @@ export function LearnerLinks({
 }) {
   return (
     <>
-      <WriteLink userId={row.user_id} course={row.course_id} learner />
+      <WriteLink userId={row.user_id} course={row.course_id} learner intervention />
       {row.user_email ? (
         <Anchor href={`mailto:${row.user_email}`} className={buttonVariants({ variant: 'outline' })}>
           {m.analytics_write_email()}
