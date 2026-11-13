@@ -493,6 +493,16 @@ fn assessment_routes() -> OpenApiRouter<AppState> {
         .routes(routes!(routes::assessments::update_override))
         .routes(routes!(routes::assessments::delete_override))
         .routes(routes!(routes::assessments::attempt_state))
+        .routes(routes!(routes::assessment_imports::create_import))
+        .routes(routes!(
+            routes::assessment_imports::get_import,
+            routes::assessment_imports::reparse_import,
+            routes::assessment_imports::discard_import
+        ))
+        .routes(routes!(routes::assessment_imports::commit_import))
+        .routes(routes!(routes::assessment_imports::import_media))
+        .routes(routes!(routes::assessment_imports::assessment_media))
+        .routes(routes!(routes::assessment_imports::export_assessment))
 }
 
 fn submission_routes() -> OpenApiRouter<AppState> {

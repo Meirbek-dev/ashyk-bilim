@@ -5,17 +5,21 @@ import type { MatchingBody, MatchingPair } from '#/shared/api/gen/types.gen'
 import { IconButton } from '#/shared/components/icon-button'
 import { Button } from '#/shared/ui/button'
 import { FieldDescription, FieldLegend, FieldSet } from '#/shared/ui/field'
+import { Checkbox } from '#/shared/ui/checkbox'
 import { Input } from '#/shared/ui/input'
+import { Label } from '#/shared/ui/label'
 
 import type { EditMode } from '../model/route'
 import { MarkdownField } from './markdown-field'
+import { TextList } from './text-list'
 
 type Matching = MatchingBody & { kind: 'matching' }
 type MatchingFieldsProps = { body: Matching; onChange: (body: Matching) => void; mode: EditMode }
 
 /**
- * A matching question: left - right pairs (the learner sees the right column shuffled) and the explanation. The pairs
- * are the answer key: `wording` mode keeps them read-only.
+ * A matching question: left - right pairs (the learner sees the right column shuffled; a left one may have no pair,
+ * which the learner must leave unplaced), the distractors (right values nothing matches) and the explanation. The
+ * pairs and the distractors are the answer key: `wording` mode keeps them read-only.
  */
 export function MatchingFields({ body, onChange, mode }: MatchingFieldsProps) {
   const editable = mode === 'all'
@@ -41,10 +45,19 @@ export function MatchingFields({ body, onChange, mode }: MatchingFieldsProps) {
               <Input
                 aria-label={m.assessments_pair_right({ number: at + 1 })}
                 placeholder={m.assessments_pair_right({ number: at + 1 })}
-                value={pair.right}
-                disabled={!editable}
+                value={pair.right ?? ''}
+                disabled={!editable || pair.right === null}
                 onChange={event => patch(at, { right: event.target.value })}
               />
+              <Label className="shrink-0 font-normal">
+                <Checkbox
+                  aria-label={m.assessments_pair_unpaired({ number: at + 1 })}
+                  checked={pair.right === null}
+                  disabled={!editable}
+                  onCheckedChange={checked => patch(at, { right: checked ? null : '' })}
+                />
+                {m.assessments_pair_none()}
+              </Label>
               <IconButton
                 label={m.assessments_pair_remove({ number: at + 1 })}
                 icon={<X aria-hidden />}
@@ -68,6 +81,16 @@ export function MatchingFields({ body, onChange, mode }: MatchingFieldsProps) {
           </div>
         ) : null}
       </FieldSet>
+      <TextList
+        legend={m.assessments_distractors_legend()}
+        hint={m.assessments_distractors_hint()}
+        values={body.distractors ?? []}
+        onChange={distractors => onChange({ ...body, distractors })}
+        rowLabel={number => m.assessments_distractor_row({ number })}
+        removeLabel={number => m.assessments_distractor_remove({ number })}
+        addLabel={m.assessments_distractor_add()}
+        editable={editable}
+      />
       <MarkdownField
         label={m.assessments_field_explanation()}
         value={body.explanation ?? ''}

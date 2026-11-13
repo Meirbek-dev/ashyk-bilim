@@ -10,6 +10,7 @@ import type {
   Lifecycle,
   ReadinessIssueCode,
   ReviewVisibility,
+  TextFormat,
 } from '#/shared/api/gen/types.gen'
 
 import { can } from '../model/route'
@@ -41,6 +42,11 @@ export const formTypeLabels: Record<FormFieldType, () => string> = {
   textarea: m.assessments_form_type_textarea,
   number: m.assessments_form_type_number,
   date: m.assessments_form_type_date,
+}
+
+export const formatLabels: Record<TextFormat, () => string> = {
+  markdown: m.assessments_format_markdown,
+  plain: m.assessments_format_plain,
 }
 
 export const gradingLabels: Record<GradingType, () => string> = {
@@ -88,6 +94,7 @@ export const eventLabels: Record<AuditEventKind, () => string> = {
   'grade-saved': m.assessments_event_grade_saved,
   'grades-published': m.assessments_event_grades_published,
   'wording-edited': m.assessments_event_wording_edited,
+  'imported-from-xlsx': m.assessments_event_imported_from_xlsx,
 }
 
 export const issueLabels: Record<ReadinessIssueCode, () => string> = {
@@ -97,6 +104,8 @@ export const issueLabels: Record<ReadinessIssueCode, () => string> = {
   'policy.due_at_past': m.assessments_issue_policy_due_at_past,
   'policy.cutoff_before_due': m.assessments_issue_policy_cutoff_before_due,
   'policy.penalty_without_late': m.assessments_issue_policy_penalty_without_late,
+  'policy.draw_exceeds_items': m.assessments_issue_policy_draw_exceeds_items,
+  'policy.draw_group_short': m.assessments_issue_policy_draw_group_short,
   'item.kind_forbidden': m.assessments_issue_item_kind_forbidden,
   'item.title_missing': m.assessments_issue_item_title_missing,
   'item.max_score_invalid': m.assessments_issue_item_max_score_invalid,
@@ -109,6 +118,7 @@ export const issueLabels: Record<ReadinessIssueCode, () => string> = {
   'choice.too_many_correct': m.assessments_issue_choice_too_many_correct,
   'open_text.prompt_missing': m.assessments_issue_open_text_prompt_missing,
   'open_text.min_words_invalid': m.assessments_issue_open_text_min_words_invalid,
+  'open_text.accepted_missing': m.assessments_issue_open_text_accepted_missing,
   'form.prompt_missing': m.assessments_issue_form_prompt_missing,
   'form.fields_missing': m.assessments_issue_form_fields_missing,
   'form.field_label_missing': m.assessments_issue_form_field_label_missing,

@@ -161,6 +161,11 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("PUT", "/api/v2/assessments/{assessment_id}/policy"),
     ("POST", "/api/v2/assessments/{assessment_id}/lifecycle"),
     ("POST", "/api/v2/assessments/{assessment_id}/duplicate"),
+    // docs/XLSX-TEST-IMPORT.md: course authors (`require_course` / `require_import` before the body).
+    ("POST", "/api/v2/courses/{course_id}/assessment-imports"),
+    ("PATCH", "/api/v2/assessment-imports/{import_id}"),
+    ("DELETE", "/api/v2/assessment-imports/{import_id}"),
+    ("POST", "/api/v2/assessment-imports/{import_id}/commit"),
     ("POST", "/api/v2/assessments/{assessment_id}/items"),
     ("POST", "/api/v2/assessments/{assessment_id}/items/reorder"),
     ("PATCH", "/api/v2/assessment-items/{item_id}"),

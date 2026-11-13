@@ -7,7 +7,7 @@ import type { AssessmentDetail, ReleaseState, StudentSubmission } from '#/shared
 import { Link } from '#/shared/components/link'
 import { formatPercent } from '#/shared/i18n/format'
 
-import { autoPart, resultVerdict } from '../model/attempt'
+import { attemptItems, autoPart, resultVerdict } from '../model/attempt'
 import { stateOptions } from '../queries'
 import { ATTEMPT_PATH, AttemptFrame } from './attempt-frame'
 import { statuses } from './attempts-list'
@@ -38,6 +38,7 @@ export function AttemptResult({ assessment, attempt }: { assessment: AssessmentD
   const verdict = resultVerdict(attempt, state)
   const grading = attempt.grading
   const auto = autoPart(attempt, assessment.policy.review_visibility)
+  const items = attemptItems(assessment.items, attempt)
   return (
     <AttemptFrame>
       <article className="flex flex-col gap-gutter @3xl:gap-8">
@@ -72,11 +73,18 @@ export function AttemptResult({ assessment, attempt }: { assessment: AssessmentD
             </Suspense>
           </section>
         ) : null}
-        {grading?.items?.length ? <ResultBreakdown items={assessment.items} graded={grading.items} /> : null}
+        {grading?.items?.length ? (
+          <ResultBreakdown
+            assessmentId={assessment.id}
+            items={assessment.items}
+            graded={grading.items}
+            order={attempt.item_ids}
+          />
+        ) : null}
         {released ? (
           <ItemComments
             submissionId={attempt.id}
-            items={assessment.items}
+            items={items}
             // A comment the breakdown already shows under its question is not repeated.
             shown={(grading?.items ?? []).filter(entry => entry.feedback && !entry.feedback_code).map(e => e.item_id)}
           />

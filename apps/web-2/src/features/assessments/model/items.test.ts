@@ -18,7 +18,7 @@ import {
 } from './items'
 import { isAssessmentType } from './route'
 
-const metadata = { difficulty: null, estimated_minutes: null, section_label: null }
+const metadata = { difficulty: null, draw_group: null, estimated_minutes: null, section_label: null }
 const item = (id: string, body: ItemBody, extra: Partial<AssessmentItem> = {}): AssessmentItem => ({
   id,
   body,

@@ -68,6 +68,8 @@ pub struct AssessmentRow {
     pub fullscreen_required: bool,
     pub violation_threshold: i32,
     pub attempt_penalty_percent: f64,
+    pub draw_count: Option<i32>,
+    pub draw_strata: Option<serde_json::Value>,
     pub access_mode: AccessMode,
     pub creator_id: Option<UserId>,
     pub created_at: i64,
@@ -105,12 +107,16 @@ pub struct PolicyValues {
     pub fullscreen_required: bool,
     pub violation_threshold: i32,
     pub attempt_penalty_percent: f64,
+    /// Questions drawn per attempt (`None`: all).
+    pub draw_count: Option<i32>,
+    /// `[{group, count}]` quotas within the draw (`None`: none).
+    pub draw_strata: Option<serde_json::Value>,
 }
 
 impl AssessmentRow {
     /// The current policy block (patch base).
     #[must_use]
-    pub const fn policy(&self) -> PolicyValues {
+    pub fn policy(&self) -> PolicyValues {
         PolicyValues {
             grading_mode: self.grading_mode,
             grade_release_mode: self.grade_release_mode,
@@ -138,6 +144,8 @@ impl AssessmentRow {
             fullscreen_required: self.fullscreen_required,
             violation_threshold: self.violation_threshold,
             attempt_penalty_percent: self.attempt_penalty_percent,
+            draw_count: self.draw_count,
+            draw_strata: self.draw_strata.clone(),
         }
     }
 }
@@ -170,12 +178,12 @@ pub async fn insert_assessment<'e>(
                partial_credit, negative_marking_percent, grace_period_minutes,
                copy_paste_protection, tab_switch_detection, devtools_detection,
                right_click_disabled, fullscreen_required, violation_threshold,
-               attempt_penalty_percent)
+               attempt_penalty_percent, draw_count, draw_strata)
            VALUES ($1, $2, $3, $4::float8, $5, $6,
                    $7, $8, $9, $10::float8, $11, $12, to_timestamp($13), $14,
                    $15, $16::float8, $17, to_timestamp($18),
                    $19, $20, $21, $22, $23, $24::float8, $25,
-                   $26, $27, $28, $29, $30, $31, $32::float8)
+                   $26, $27, $28, $29, $30, $31, $32::float8, $33, $34)
            RETURNING id"#,
         new.activity_id.0,
         new.course_id.0,
@@ -208,7 +216,9 @@ pub async fn insert_assessment<'e>(
         p.right_click_disabled,
         p.fullscreen_required,
         p.violation_threshold,
-        p.attempt_penalty_percent
+        p.attempt_penalty_percent,
+        p.draw_count,
+        p.draw_strata
     )
     .fetch_one(db)
     .await?;
@@ -247,6 +257,7 @@ pub async fn get_assessment<'e>(
                   copy_paste_protection, tab_switch_detection, devtools_detection,
                   right_click_disabled, fullscreen_required, violation_threshold,
                   attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
+                  draw_count, draw_strata,
                   access_mode AS "access_mode: AccessMode",
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
@@ -318,6 +329,7 @@ pub async fn get_assessment_by_activity<'e>(
                   copy_paste_protection, tab_switch_detection, devtools_detection,
                   right_click_disabled, fullscreen_required, violation_threshold,
                   attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
+                  draw_count, draw_strata,
                   access_mode AS "access_mode: AccessMode",
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
@@ -362,6 +374,7 @@ pub async fn list_assessments_for_course(
                   copy_paste_protection, tab_switch_detection, devtools_detection,
                   right_click_disabled, fullscreen_required, violation_threshold,
                   attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
+                  draw_count, draw_strata,
                   access_mode AS "access_mode: AccessMode",
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
@@ -461,6 +474,7 @@ pub async fn update_policy<'e>(
                devtools_detection = $23, right_click_disabled = $24,
                fullscreen_required = $25, violation_threshold = $26,
                attempt_penalty_percent = $27::float8,
+               draw_count = $28, draw_strata = $29,
                policy_version = policy_version + 1
            WHERE id = $1"#,
         id.0,
@@ -489,7 +503,9 @@ pub async fn update_policy<'e>(
         p.right_click_disabled,
         p.fullscreen_required,
         p.violation_threshold,
-        p.attempt_penalty_percent
+        p.attempt_penalty_percent,
+        p.draw_count,
+        p.draw_strata
     )
     .execute(db)
     .await?;
@@ -642,6 +658,10 @@ pub struct ItemRow {
     pub tags: Vec<String>,
     pub outcome_ids: Vec<String>,
     pub estimated_minutes: Option<i32>,
+    pub draw_group: Option<String>,
+    /// Imported items: the spreadsheet and row they came from.
+    pub source_file: Option<String>,
+    pub source_row: Option<i32>,
 }
 
 pub struct ItemMetadata<'a> {
@@ -650,6 +670,7 @@ pub struct ItemMetadata<'a> {
     pub tags: &'a [String],
     pub outcome_ids: &'a [String],
     pub estimated_minutes: Option<i32>,
+    pub draw_group: Option<&'a str>,
 }
 
 pub async fn insert_item<'e>(
@@ -664,11 +685,11 @@ pub async fn insert_item<'e>(
     let id = sqlx::query_scalar!(
         r#"INSERT INTO assessment_items
                (assessment_id, position, kind, title, body, max_score,
-                section_label, difficulty, tags, outcome_ids, estimated_minutes)
+                section_label, difficulty, tags, outcome_ids, estimated_minutes, draw_group)
            VALUES ($1,
                    (SELECT COALESCE(MAX(position), 0) + 1
                     FROM assessment_items WHERE assessment_id = $1),
-                   $2, $3, $4, $5::float8, $6, $7, $8, $9, $10)
+                   $2, $3, $4, $5::float8, $6, $7, $8, $9, $10, $11)
            RETURNING id"#,
         assessment_id.0,
         kind.as_str(),
@@ -679,11 +700,62 @@ pub async fn insert_item<'e>(
         meta.difficulty.map(Difficulty::as_str),
         meta.tags,
         meta.outcome_ids,
-        meta.estimated_minutes
+        meta.estimated_minutes,
+        meta.draw_group
     )
     .fetch_one(db)
     .await?;
     Ok(AssessmentItemId(id))
+}
+
+/// One imported item (`insert_imported_items`).
+pub struct ImportedItem<'a> {
+    pub kind: ItemKind,
+    pub title: &'a str,
+    pub body: serde_json::Value,
+    pub max_score: f64,
+    pub draw_group: Option<&'a str>,
+    pub source_row: i32,
+}
+
+/// An import's items in one statement, positions 1..n after any existing.
+pub async fn insert_imported_items(
+    conn: &mut sqlx::PgConnection,
+    assessment_id: AssessmentId,
+    source_file: &str,
+    items: &[ImportedItem<'_>],
+) -> Result<u64> {
+    let kinds: Vec<String> = items.iter().map(|i| i.kind.as_str().to_owned()).collect();
+    let titles: Vec<String> = items.iter().map(|i| i.title.to_owned()).collect();
+    let bodies: Vec<serde_json::Value> = items.iter().map(|i| i.body.clone()).collect();
+    let scores: Vec<f64> = items.iter().map(|i| i.max_score).collect();
+    let groups: Vec<Option<String>> = items
+        .iter()
+        .map(|i| i.draw_group.map(str::to_owned))
+        .collect();
+    let rows: Vec<i32> = items.iter().map(|i| i.source_row).collect();
+    let inserted = sqlx::query!(
+        r#"INSERT INTO assessment_items
+               (assessment_id, position, kind, title, body, max_score, draw_group,
+                source_file, source_row)
+           SELECT $1,
+                  (SELECT COALESCE(MAX(position), 0) FROM assessment_items
+                   WHERE assessment_id = $1) + t.ord::int,
+                  t.kind, t.title, t.body, t.score, t.grp, $2, t.row
+           FROM unnest($3::text[], $4::text[], $5::jsonb[], $6::float8[], $7::text[], $8::int[])
+                WITH ORDINALITY AS t(kind, title, body, score, grp, row, ord)"#,
+        assessment_id.0,
+        source_file,
+        &kinds,
+        &titles,
+        &bodies,
+        &scores,
+        &groups as &[Option<String>],
+        &rows
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(inserted.rows_affected())
 }
 
 pub async fn get_item(pool: &PgPool, id: AssessmentItemId) -> Result<Option<ItemRow>> {
@@ -693,7 +765,7 @@ pub async fn get_item(pool: &PgPool, id: AssessmentItemId) -> Result<Option<Item
                   assessment_id AS "assessment_id: AssessmentId",
                   position, kind AS "kind: ItemKind", title, body, max_score::float8 AS "max_score!",
                   section_label, difficulty AS "difficulty: Difficulty",
-                  tags, outcome_ids, estimated_minutes
+                  tags, outcome_ids, estimated_minutes, draw_group, source_file, source_row
            FROM assessment_items WHERE id = $1"#,
         id.0
     )
@@ -712,7 +784,7 @@ pub async fn list_items<'e>(
                   assessment_id AS "assessment_id: AssessmentId",
                   position, kind AS "kind: ItemKind", title, body, max_score::float8 AS "max_score!",
                   section_label, difficulty AS "difficulty: Difficulty",
-                  tags, outcome_ids, estimated_minutes
+                  tags, outcome_ids, estimated_minutes, draw_group, source_file, source_row
            FROM assessment_items WHERE assessment_id = $1 ORDER BY position, id"#,
         assessment_id.0
     )
@@ -759,7 +831,8 @@ pub async fn update_item<'e>(
                difficulty = CASE WHEN $6 THEN $8 ELSE difficulty END,
                tags = CASE WHEN $6 THEN $9 ELSE tags END,
                outcome_ids = CASE WHEN $6 THEN $10 ELSE outcome_ids END,
-               estimated_minutes = CASE WHEN $6 THEN $11 ELSE estimated_minutes END
+               estimated_minutes = CASE WHEN $6 THEN $11 ELSE estimated_minutes END,
+               draw_group = CASE WHEN $6 THEN $12 ELSE draw_group END
            WHERE id = $1"#,
         id.0,
         title,
@@ -773,7 +846,8 @@ pub async fn update_item<'e>(
             .map(Difficulty::as_str),
         meta.as_ref().map_or(empty, |m| m.tags),
         meta.as_ref().map_or(empty, |m| m.outcome_ids),
-        meta.as_ref().and_then(|m| m.estimated_minutes)
+        meta.as_ref().and_then(|m| m.estimated_minutes),
+        meta.as_ref().and_then(|m| m.draw_group)
     )
     .execute(db)
     .await?;

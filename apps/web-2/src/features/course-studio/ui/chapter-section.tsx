@@ -12,7 +12,7 @@ import { toast } from '#/shared/ui/toast'
 import { chapterVersion, updateChapterOptions } from '../curriculum-queries'
 import { isStale } from '../model/course'
 import { ActivityRow } from './activity-row'
-import { CreateActivityDialog } from './create-activity-dialog'
+import { AddToChapter } from './add-to-chapter'
 import { DeleteChapter } from './delete-chapter'
 import { RenameForm } from './rename-form'
 import { HANDLE, QUIET, ROW_TOOLS } from './row-tools'
@@ -115,11 +115,7 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
           ))}
         </ol>
       )}
-      {allowed('add_activity') ? (
-        <div className="pt-3">
-          <CreateActivityDialog courseId={courseId} chapter={chapter} />
-        </div>
-      ) : null}
+      {allowed('add_activity') ? <AddToChapter courseId={courseId} chapter={chapter} /> : null}
     </li>
   )
 }

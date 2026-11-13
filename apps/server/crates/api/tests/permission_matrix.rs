@@ -285,6 +285,26 @@ const MATRIX: &[(&str, &str, u8)] = &[
     ),
     ("GET", "/api/v2/assessment-items/{item_id}/runs", MEMBER),
     ("POST", "/api/v2/assessment-items/{item_id}/runs", MEMBER),
+    // Spreadsheet imports: no import exists in this world (the flow test
+    // covers them). Writes are checked for the refused callers only.
+    ("DELETE", "/api/v2/assessment-imports/{import_id}", NONE),
+    ("GET", "/api/v2/assessment-imports/{import_id}", NONE),
+    ("PATCH", "/api/v2/assessment-imports/{import_id}", NONE),
+    (
+        "POST",
+        "/api/v2/assessment-imports/{import_id}/commit",
+        NONE,
+    ),
+    (
+        "GET",
+        "/api/v2/assessment-imports/{import_id}/media/{upload_id}",
+        NONE,
+    ),
+    (
+        "POST",
+        "/api/v2/courses/{course_id}/assessment-imports",
+        STAFF,
+    ),
     ("POST", "/api/v2/assessments", STAFF),
     ("GET", "/api/v2/assessments/{assessment_id}", MEMBER),
     ("PATCH", "/api/v2/assessments/{assessment_id}", STAFF),
@@ -296,6 +316,13 @@ const MATRIX: &[(&str, &str, u8)] = &[
         MEMBER,
     ),
     ("GET", "/api/v2/assessments/{assessment_id}/audit", STAFF),
+    ("GET", "/api/v2/assessments/{assessment_id}/export", STAFF),
+    // The world's upload is no picture of a question.
+    (
+        "GET",
+        "/api/v2/assessments/{assessment_id}/media/{upload_id}",
+        NONE,
+    ),
     (
         "POST",
         "/api/v2/assessments/{assessment_id}/deadline-extensions",

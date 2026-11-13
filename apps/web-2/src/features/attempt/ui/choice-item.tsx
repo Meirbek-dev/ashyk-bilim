@@ -1,14 +1,18 @@
 import { useId } from 'react'
 
 import { m } from '#/paraglide/messages'
-import type { ChoiceBody, ItemAnswer } from '#/shared/api/gen/types.gen'
+import type { AssessmentId, ChoiceBody, ItemAnswer } from '#/shared/api/gen/types.gen'
+import { assessmentMediaUrl } from '#/shared/components/item-media'
 import { Checkbox } from '#/shared/ui/checkbox'
 import { FieldLegend, FieldSet } from '#/shared/ui/field'
 import { Label } from '#/shared/ui/label'
 import { RadioGroup, RadioGroupItem } from '#/shared/ui/radio-group'
 
+import { ChoiceOptionContent } from './choice-option-content'
+
 type ChoiceProps = {
   body: ChoiceBody
+  assessmentId: AssessmentId
   answer: ItemAnswer | undefined
   onChange: (answer: ItemAnswer) => void
   disabled: boolean
@@ -21,12 +25,13 @@ const OPTION =
 const LEGEND = 'font-normal text-muted-foreground'
 
 /** Single choice and true / false: radios; multiple choice: checkboxes (B-ATT-07). Options in the server's order. */
-export function ChoiceItem({ body, answer, onChange, disabled }: ChoiceProps) {
+export function ChoiceItem({ body, assessmentId, answer, onChange, disabled }: ChoiceProps) {
   const id = useId()
   const selected = answer?.kind === 'choice' ? (answer.selected ?? []) : []
   const options = body.options ?? []
   const multiple = body.multiple === true || body.variant === 'multiple_choice'
   const pick = (next: string[]) => onChange({ kind: 'choice', selected: next })
+  const src = (uploadId: string) => assessmentMediaUrl(assessmentId, uploadId)
   const legend = (
     <FieldLegend id={`${id}-legend`} variant="label" className={LEGEND}>
       {multiple ? m.attempt_choose_many() : m.attempt_choose_one()}
@@ -43,10 +48,10 @@ export function ChoiceItem({ body, answer, onChange, disabled }: ChoiceProps) {
           disabled={disabled}
           className="gap-0 divide-y border-y"
         >
-          {options.map(option => (
+          {options.map((option, index) => (
             <Label key={option.id} htmlFor={`${id}-${option.id}`} className={OPTION}>
               <RadioGroupItem id={`${id}-${option.id}`} value={option.id} />
-              <span className="min-w-0 wrap-anywhere">{option.text}</span>
+              <ChoiceOptionContent option={option} number={index + 1} src={src} />
             </Label>
           ))}
         </RadioGroup>
@@ -56,7 +61,7 @@ export function ChoiceItem({ body, answer, onChange, disabled }: ChoiceProps) {
     <FieldSet className="gap-0">
       {legend}
       <div className="flex flex-col divide-y border-y">
-        {options.map(option => (
+        {options.map((option, index) => (
           <Label key={option.id} htmlFor={`${id}-${option.id}`} className={OPTION}>
             <Checkbox
               id={`${id}-${option.id}`}
@@ -66,7 +71,7 @@ export function ChoiceItem({ body, answer, onChange, disabled }: ChoiceProps) {
                 pick(checked ? [...selected, option.id] : selected.filter(value => value !== option.id))
               }
             />
-            <span className="min-w-0 wrap-anywhere">{option.text}</span>
+            <ChoiceOptionContent option={option} number={index + 1} src={src} />
           </Label>
         ))}
       </div>

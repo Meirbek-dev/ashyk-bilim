@@ -129,6 +129,18 @@ pub struct Policy {
     #[garde(skip)]
     #[schema(minimum = 0.0, maximum = 100.0)]
     pub attempt_penalty_percent: f64,
+    /// Question bank: each attempt draws this many questions at random;
+    /// `null`: every question.
+    #[garde(skip)]
+    #[serde(default)]
+    #[schema(minimum = 1, maximum = 200)]
+    pub draw_count: Option<i32>,
+    /// Quotas inside the draw: `count` questions from items whose
+    /// `metadata.draw_group` is `group` (e.g. DOT levels).
+    #[garde(length(max = 20))]
+    #[serde(default)]
+    #[schema(max_items = 20)]
+    pub draw_strata: Vec<service::DrawStratum>,
 }
 
 impl From<PolicyInput> for Policy {
@@ -157,6 +169,8 @@ impl From<PolicyInput> for Policy {
             fullscreen_required: p.fullscreen_required,
             violation_threshold: p.violation_threshold,
             attempt_penalty_percent: p.attempt_penalty_percent,
+            draw_count: p.draw_count,
+            draw_strata: p.draw_strata,
         }
     }
 }
@@ -187,6 +201,8 @@ impl From<Policy> for PolicyInput {
             fullscreen_required: p.fullscreen_required,
             violation_threshold: p.violation_threshold,
             attempt_penalty_percent: p.attempt_penalty_percent,
+            draw_count: p.draw_count,
+            draw_strata: p.draw_strata,
         }
     }
 }
@@ -293,6 +309,10 @@ pub struct ItemMetadata {
     pub outcome_ids: Vec<String>,
     #[garde(inner(range(min = 0)))]
     pub estimated_minutes: Option<i32>,
+    /// Question-bank quota group (`policy.draw_strata`); `null`: none.
+    #[garde(inner(length(max = 32)))]
+    #[serde(default)]
+    pub draw_group: Option<String>,
 }
 
 impl From<ItemMetadata> for service::ItemMetadataInput {
@@ -303,6 +323,7 @@ impl From<ItemMetadata> for service::ItemMetadataInput {
             tags: m.tags,
             outcome_ids: m.outcome_ids,
             estimated_minutes: m.estimated_minutes,
+            draw_group: m.draw_group,
         }
     }
 }
@@ -320,6 +341,17 @@ pub struct AssessmentItem {
     pub body: ItemBody,
     pub max_score: f64,
     pub metadata: ItemMetadata,
+    /// Imported items: the spreadsheet and row they came from.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub source: Option<ItemSource>,
+}
+
+/// Where an imported item came from.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ItemSource {
+    pub file: String,
+    pub row: i32,
 }
 
 impl AssessmentItem {
@@ -338,7 +370,12 @@ impl AssessmentItem {
                 tags: i.tags,
                 outcome_ids: i.outcome_ids,
                 estimated_minutes: i.estimated_minutes,
+                draw_group: i.draw_group,
             },
+            source: i
+                .source_file
+                .zip(i.source_row)
+                .map(|(file, row)| ItemSource { file, row }),
         }
     }
 }

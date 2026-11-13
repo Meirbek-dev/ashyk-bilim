@@ -6,6 +6,7 @@
   "attempt_refresh": "Refresh",
   "attempt_entry_heading": "Before you start",
   "attempt_questions": "Questions: {count}",
+  "attempt_questions_bank": "Questions: {count} from a bank of {bank}",
   "attempt_time_limit": "Time limit: {minutes} min",
   "attempt_no_time_limit": "No time limit",
   "attempt_clock_starts": "The clock starts as soon as you press “Start” and keeps running even if you close the page.",
@@ -92,7 +93,7 @@
   "attempt_your_answer": "Your answer",
   "attempt_min_words": "At least {count} words",
   "attempt_word_count": "Words: {count}",
-  "attempt_match_pick": "Pick a match",
+  "attempt_match_none": "— no match —",
   "attempt_code_open": "Open the code editor",
   "attempt_submit_title": "Submit the attempt?",
   "attempt_submit_text": "After submitting, the answers cannot be changed.",
@@ -120,5 +121,7 @@
   "attempt_no_answer": "No answer",
   "attempt_verdict_unanswered": "Not answered",
   "attempt_feedback_heading": "Teacher feedback",
-  "attempt_all_attempts": "All attempts"
+  "attempt_all_attempts": "All attempts",
+  "attempt_question_image": "Picture for question {number}",
+  "attempt_option_image": "Option {number}, picture"
 }

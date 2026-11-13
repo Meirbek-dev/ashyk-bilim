@@ -45,6 +45,8 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("messages", "user_id", TOMBSTONE),
     ("activities", "creator_id", ACTOR),
     ("activity_progress", "user_id", RECORD),
+    // A teacher's spreadsheet import: expires within 30 days.
+    ("assessment_imports", "created_by", ACTOR),
     ("completions", "user_id", RECORD),
     ("ai_approvals", "requested_by", ACTOR),
     ("ai_approvals", "resolved_by", ACTOR),

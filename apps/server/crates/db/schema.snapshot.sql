@@ -367,12 +367,37 @@ constraint assessment_audit_events assessment_audit_events_id_not_null NOT NULL 
 constraint assessment_audit_events assessment_audit_events_payload_check CHECK ((jsonb_typeof(payload) = 'object'::text))
 constraint assessment_audit_events assessment_audit_events_payload_not_null NOT NULL payload
 constraint assessment_audit_events assessment_audit_events_pkey PRIMARY KEY (id)
+constraint assessment_imports assessment_imports_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+constraint assessment_imports assessment_imports_course_id_not_null NOT NULL course_id
+constraint assessment_imports assessment_imports_created_at_not_null NOT NULL created_at
+constraint assessment_imports assessment_imports_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+constraint assessment_imports assessment_imports_expires_at_not_null NOT NULL expires_at
+constraint assessment_imports assessment_imports_file_name_check CHECK (((length(file_name) >= 1) AND (length(file_name) <= 255)))
+constraint assessment_imports assessment_imports_file_name_not_null NOT NULL file_name
+constraint assessment_imports assessment_imports_id_not_null NOT NULL id
+constraint assessment_imports assessment_imports_image_upload_ids_not_null NOT NULL image_upload_ids
+constraint assessment_imports assessment_imports_issues_check CHECK ((jsonb_typeof(issues) = 'array'::text))
+constraint assessment_imports assessment_imports_issues_not_null NOT NULL issues
+constraint assessment_imports assessment_imports_issues_truncated_check CHECK ((issues_truncated >= 0))
+constraint assessment_imports assessment_imports_issues_truncated_not_null NOT NULL issues_truncated
+constraint assessment_imports assessment_imports_pkey PRIMARY KEY (id)
+constraint assessment_imports assessment_imports_result_assessment_id_fkey FOREIGN KEY (result_assessment_id) REFERENCES assessments(id) ON DELETE SET NULL
+constraint assessment_imports assessment_imports_status_check CHECK ((status = ANY (ARRAY['parsing'::text, 'ready'::text, 'invalid'::text, 'committed'::text, 'discarded'::text, 'failed'::text])))
+constraint assessment_imports assessment_imports_status_not_null NOT NULL status
+constraint assessment_imports assessment_imports_unescape_newlines_not_null NOT NULL unescape_newlines
+constraint assessment_imports assessment_imports_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE SET NULL
+constraint assessment_item_uploads assessment_item_uploads_item_id_fkey FOREIGN KEY (item_id) REFERENCES assessment_items(id) ON DELETE CASCADE
+constraint assessment_item_uploads assessment_item_uploads_item_id_not_null NOT NULL item_id
+constraint assessment_item_uploads assessment_item_uploads_pkey PRIMARY KEY (item_id, upload_id)
+constraint assessment_item_uploads assessment_item_uploads_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE
+constraint assessment_item_uploads assessment_item_uploads_upload_id_not_null NOT NULL upload_id
 constraint assessment_items assessment_items_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE
 constraint assessment_items assessment_items_assessment_id_not_null NOT NULL assessment_id
 constraint assessment_items assessment_items_body_kind_check CHECK (((jsonb_typeof(body) = 'object'::text) AND ((body ->> 'kind'::text) = kind)))
 constraint assessment_items assessment_items_body_not_null NOT NULL body
 constraint assessment_items assessment_items_created_at_not_null NOT NULL created_at
 constraint assessment_items assessment_items_difficulty_check CHECK (((difficulty IS NULL) OR (difficulty = ANY (ARRAY['easy'::text, 'medium'::text, 'hard'::text]))))
+constraint assessment_items assessment_items_draw_group_check CHECK (((draw_group IS NULL) OR ((length(draw_group) >= 1) AND (length(draw_group) <= 32))))
 constraint assessment_items assessment_items_estimated_minutes_check CHECK (((estimated_minutes IS NULL) OR (estimated_minutes >= 0)))
 constraint assessment_items assessment_items_id_assessment_key UNIQUE (id, assessment_id)
 constraint assessment_items assessment_items_id_not_null NOT NULL id
@@ -385,6 +410,8 @@ constraint assessment_items assessment_items_pkey PRIMARY KEY (id)
 constraint assessment_items assessment_items_position_check CHECK (("position" >= 1))
 constraint assessment_items assessment_items_position_key UNIQUE (assessment_id, "position") DEFERRABLE INITIALLY DEFERRED
 constraint assessment_items assessment_items_position_not_null NOT NULL "position"
+constraint assessment_items assessment_items_source_file_check CHECK (((source_file IS NULL) OR ((length(source_file) >= 1) AND (length(source_file) <= 255))))
+constraint assessment_items assessment_items_source_row_check CHECK (((source_row IS NULL) OR (source_row >= 1)))
 constraint assessment_items assessment_items_tags_check CHECK (text_list_ok(tags, 50, 64))
 constraint assessment_items assessment_items_tags_not_null NOT NULL tags
 constraint assessment_items assessment_items_title_not_null NOT NULL title
@@ -439,6 +466,8 @@ constraint assessments assessments_created_at_not_null NOT NULL created_at
 constraint assessments assessments_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL
 constraint assessments assessments_description_not_null NOT NULL description
 constraint assessments assessments_devtools_detection_not_null NOT NULL devtools_detection
+constraint assessments assessments_draw_count_check CHECK (((draw_count IS NULL) OR ((draw_count >= 1) AND (draw_count <= 200))))
+constraint assessments assessments_draw_strata_check CHECK (((draw_strata IS NULL) OR (jsonb_typeof(draw_strata) = 'array'::text)))
 constraint assessments assessments_fullscreen_required_not_null NOT NULL fullscreen_required
 constraint assessments assessments_grace_period_minutes_check CHECK ((grace_period_minutes >= 0))
 constraint assessments assessments_grace_period_minutes_not_null NOT NULL grace_period_minutes
@@ -1745,6 +1774,26 @@ function CREATE OR REPLACE FUNCTION public.assessment_content_hash(items jsonb, 
  LANGUAGE sql
  IMMUTABLE
 AS $function$ SELECT md5(items::text || '|' || policy::text) $function$
+function CREATE OR REPLACE FUNCTION public.assessment_item_uploads_sync()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        IF NEW.body IS NOT DISTINCT FROM OLD.body THEN
+            RETURN NULL;
+        END IF;
+        DELETE FROM assessment_item_uploads WHERE item_id = NEW.id;
+    END IF;
+    INSERT INTO assessment_item_uploads (item_id, upload_id)
+    SELECT DISTINCT NEW.id, u.id
+    FROM jsonb_path_query(NEW.body, 'lax $.**.upload_id') AS ref (value)
+    JOIN uploads u ON u.id::text = ref.value #>> '{}'
+    WHERE jsonb_typeof(ref.value) = 'string'
+    ON CONFLICT DO NOTHING;
+    RETURN NULL;
+END $function$
 function CREATE OR REPLACE FUNCTION public.assessment_versions_frozen()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2403,7 +2452,6 @@ AS $function$
     SELECT EXISTS (SELECT 1 FROM file_submission_files WHERE upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM block_uploads WHERE upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM post_uploads WHERE upload_id = p_upload)
-        OR EXISTS (SELECT 1 FROM core.message_uploads WHERE upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM users WHERE avatar_upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM courses WHERE thumbnail_image_upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM courses WHERE thumbnail_video_upload_id = p_upload)
@@ -2412,6 +2460,9 @@ AS $function$
         OR EXISTS (SELECT 1 FROM platforms WHERE logo_upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM platforms WHERE thumbnail_upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM item_feedback WHERE annotation_upload_id = p_upload)
+        OR EXISTS (SELECT 1 FROM assessment_item_uploads WHERE upload_id = p_upload)
+        OR EXISTS (SELECT 1 FROM assessment_imports WHERE upload_id = p_upload)
+        OR EXISTS (SELECT 1 FROM assessment_imports WHERE image_upload_ids @> ARRAY[p_upload])
 $function$
 function CREATE OR REPLACE FUNCTION public.users_reissue_certificates()
  RETURNS trigger
@@ -2514,6 +2565,13 @@ index CREATE INDEX analytics_events_user_time_idx ON ONLY analytics.analytics_ev
 index CREATE INDEX assessment_access_usergroups_group_idx ON learning.assessment_access_usergroups USING btree (usergroup_id)
 index CREATE INDEX assessment_access_users_user_idx ON learning.assessment_access_users USING btree (user_id)
 index CREATE INDEX assessment_audit_events_idx ON learning.assessment_audit_events USING btree (assessment_id, created_at DESC)
+index CREATE INDEX assessment_imports_course_idx ON learning.assessment_imports USING btree (course_id)
+index CREATE INDEX assessment_imports_created_by_idx ON learning.assessment_imports USING btree (created_by)
+index CREATE INDEX assessment_imports_expires_idx ON learning.assessment_imports USING btree (expires_at)
+index CREATE INDEX assessment_imports_images_idx ON learning.assessment_imports USING gin (image_upload_ids)
+index CREATE INDEX assessment_imports_result_idx ON learning.assessment_imports USING btree (result_assessment_id)
+index CREATE INDEX assessment_imports_upload_idx ON learning.assessment_imports USING btree (upload_id)
+index CREATE INDEX assessment_item_uploads_upload_idx ON learning.assessment_item_uploads USING btree (upload_id)
 index CREATE INDEX assessment_overrides_user_idx ON learning.assessment_overrides USING btree (user_id)
 index CREATE INDEX assessments_course_idx ON learning.assessments USING btree (course_id)
 index CREATE INDEX assessments_due_publish_idx ON learning.assessments USING btree (scheduled_at) WHERE (lifecycle = 'scheduled'::text)
@@ -2686,6 +2744,8 @@ index CREATE UNIQUE INDEX analytics_saved_views_teacher_user_id_view_type_name_k
 index CREATE UNIQUE INDEX assessment_access_usergroups_pkey ON learning.assessment_access_usergroups USING btree (assessment_id, usergroup_id)
 index CREATE UNIQUE INDEX assessment_access_users_pkey ON learning.assessment_access_users USING btree (assessment_id, user_id)
 index CREATE UNIQUE INDEX assessment_audit_events_pkey ON learning.assessment_audit_events USING btree (id)
+index CREATE UNIQUE INDEX assessment_imports_pkey ON learning.assessment_imports USING btree (id)
+index CREATE UNIQUE INDEX assessment_item_uploads_pkey ON learning.assessment_item_uploads USING btree (item_id, upload_id)
 index CREATE UNIQUE INDEX assessment_items_id_assessment_key ON learning.assessment_items USING btree (id, assessment_id)
 index CREATE UNIQUE INDEX assessment_items_pkey ON learning.assessment_items USING btree (id)
 index CREATE UNIQUE INDEX assessment_items_position_key ON learning.assessment_items USING btree (assessment_id, "position")
@@ -3449,10 +3509,32 @@ table learning.assessment_audit_events created_at timestamp with time zone NOT N
 table learning.assessment_audit_events event text NOT NULL DEFAULT -
 table learning.assessment_audit_events id uuid NOT NULL DEFAULT uuidv7()
 table learning.assessment_audit_events payload jsonb NOT NULL DEFAULT '{}'::jsonb
+table learning.assessment_imports committed_at timestamp with time zone DEFAULT -
+table learning.assessment_imports course_id uuid NOT NULL DEFAULT -
+table learning.assessment_imports created_at timestamp with time zone NOT NULL DEFAULT now()
+table learning.assessment_imports created_by uuid DEFAULT -
+table learning.assessment_imports error text DEFAULT -
+table learning.assessment_imports expires_at timestamp with time zone NOT NULL DEFAULT -
+table learning.assessment_imports file_name text NOT NULL DEFAULT -
+table learning.assessment_imports file_sha256 bytea DEFAULT -
+table learning.assessment_imports id uuid NOT NULL DEFAULT -
+table learning.assessment_imports image_upload_ids uuid[] NOT NULL DEFAULT '{}'::uuid[]
+table learning.assessment_imports issues jsonb NOT NULL DEFAULT '[]'::jsonb
+table learning.assessment_imports issues_truncated integer NOT NULL DEFAULT 0
+table learning.assessment_imports parsed jsonb DEFAULT -
+table learning.assessment_imports parsed_at timestamp with time zone DEFAULT -
+table learning.assessment_imports result_assessment_id uuid DEFAULT -
+table learning.assessment_imports sheet_name text DEFAULT -
+table learning.assessment_imports status text NOT NULL DEFAULT 'parsing'::text
+table learning.assessment_imports unescape_newlines boolean NOT NULL DEFAULT true
+table learning.assessment_imports upload_id uuid DEFAULT -
+table learning.assessment_item_uploads item_id uuid NOT NULL DEFAULT -
+table learning.assessment_item_uploads upload_id uuid NOT NULL DEFAULT -
 table learning.assessment_items assessment_id uuid NOT NULL DEFAULT -
 table learning.assessment_items body jsonb NOT NULL DEFAULT '{}'::jsonb
 table learning.assessment_items created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.assessment_items difficulty text DEFAULT -
+table learning.assessment_items draw_group text DEFAULT -
 table learning.assessment_items estimated_minutes integer DEFAULT -
 table learning.assessment_items id uuid NOT NULL DEFAULT uuidv7()
 table learning.assessment_items kind text NOT NULL DEFAULT -
@@ -3460,6 +3542,8 @@ table learning.assessment_items max_score score_points NOT NULL DEFAULT 0
 table learning.assessment_items outcome_ids text[] NOT NULL DEFAULT '{}'::text[]
 table learning.assessment_items position integer NOT NULL DEFAULT 1
 table learning.assessment_items section_label text DEFAULT -
+table learning.assessment_items source_file text DEFAULT -
+table learning.assessment_items source_row integer DEFAULT -
 table learning.assessment_items tags text[] NOT NULL DEFAULT '{}'::text[]
 table learning.assessment_items title text NOT NULL DEFAULT ''::text
 table learning.assessment_items updated_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3497,6 +3581,8 @@ table learning.assessments created_at timestamp with time zone NOT NULL DEFAULT 
 table learning.assessments creator_id uuid DEFAULT -
 table learning.assessments description text NOT NULL DEFAULT ''::text
 table learning.assessments devtools_detection boolean NOT NULL DEFAULT false
+table learning.assessments draw_count integer DEFAULT -
+table learning.assessments draw_strata jsonb DEFAULT -
 table learning.assessments due_at timestamp with time zone DEFAULT -
 table learning.assessments fullscreen_required boolean NOT NULL DEFAULT false
 table learning.assessments grace_period_minutes integer NOT NULL DEFAULT 0
@@ -3831,6 +3917,7 @@ table learning.submissions late_penalty_pct percent NOT NULL DEFAULT 0
 table learning.submissions policy_snapshot jsonb DEFAULT -
 table learning.submissions preview boolean NOT NULL DEFAULT false
 table learning.submissions rules_accepted_at timestamp with time zone DEFAULT -
+table learning.submissions selected_item_ids uuid[] DEFAULT -
 table learning.submissions started_at timestamp with time zone DEFAULT -
 table learning.submissions status text NOT NULL DEFAULT 'draft'::text
 table learning.submissions submitted_at timestamp with time zone DEFAULT -
@@ -3923,6 +4010,7 @@ trigger CREATE TRIGGER ai_student_memory_touch BEFORE UPDATE ON ai.ai_student_me
 trigger CREATE TRIGGER ai_threads_touch BEFORE UPDATE ON ai.ai_threads FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER analytics_saved_views_touch BEFORE UPDATE ON analytics.analytics_saved_views FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER assessment_items_touch BEFORE UPDATE ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION touch_row()
+trigger CREATE TRIGGER assessment_items_upload_ids AFTER INSERT OR UPDATE OF body ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_item_uploads_sync()
 trigger CREATE TRIGGER assessment_overrides_touch BEFORE UPDATE ON learning.assessment_overrides FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()
 trigger CREATE TRIGGER assessment_versions_points BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_points()

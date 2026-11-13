@@ -16,6 +16,11 @@ Read before touching `src/routes/`, `shared/auth/`, the shell, live data or hydr
   tab's title is followed by its parent's. Tabs live in the layout route file; its `index.tsx` redirects to the first
   tab. A 403 thrown in `beforeLoad` renders in place (`ErrorView` -> `ForbiddenView`) and SSR answers with the
   ApiError's status (`shared/lib/ssr-status.ts`).
+- Course pages outside the workspace tabs sit under `teach/courses/$courseId_/` (focus layout, `StudioError`): the
+  activity studio (`activities/$activityId`) and the test import `import?chapter=&test=&import=` (feature
+  `assessment-import`: a DOT .xlsx into a new test of `chapter`, or replaced/appended into the draft test of activity
+  `test`; `import` is the previewed upload, kept 24 h). Its loader is the workspace guard (`ensureWorkspace`: authors
+  only); entry points are the chapter's «Тест из Excel (DOT)» and the builder's «Excel» menu (also the export link).
 - No stub routes (gate `under-construction`). `bun gates/gates.ts api-coverage` reports API usage without
   blocking changes: operations may serve integrations or clients outside web-2.
 - Live data: `GET /me/events` (`shared/api/events.ts`) -> `shared/api/event-invalidations.ts` (event -> keys); the

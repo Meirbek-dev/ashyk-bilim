@@ -7,6 +7,7 @@
 pub mod ai;
 pub mod ai_first;
 pub mod analytics;
+pub mod assessment_imports;
 pub mod assessments;
 pub mod auth;
 pub mod certifications;

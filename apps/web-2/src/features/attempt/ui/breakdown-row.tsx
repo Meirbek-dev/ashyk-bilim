@@ -2,11 +2,12 @@ import { Suspense } from 'react'
 
 import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
-import type { AssessmentItem, GradedItem } from '#/shared/api/gen/types.gen'
+import type { AssessmentId, AssessmentItem, GradedItem } from '#/shared/api/gen/types.gen'
 import { formatNumber } from '#/shared/i18n/format'
 
 import { correctText, ownTitle } from '../model/answer-text'
 import { extraPrompt, type Verdict } from '../model/attempt'
+import { ItemPrompt } from './item-prompt'
 import { TitleText } from './title-text'
 import { ToneWord } from './tone-word'
 import { verdicts } from './verdict-labels'
@@ -15,25 +16,30 @@ import { verdicts } from './verdict-labels'
 const round2 = (value: number) => Math.round(value * 100) / 100
 
 type BreakdownRowProps = {
+  assessmentId: AssessmentId
   entry: GradedItem
-  index: number
+  /** The question's number in the attempt (a bank's draw numbers its own). */
+  number: number
   item: AssessmentItem | undefined
   given: string
   verdict: Verdict | null
 }
 
-/** One reviewed question: number, verdict, points, the learner's answer, the key and the explanation. */
-export function BreakdownRow({ entry, index, item, given, verdict: shown }: BreakdownRowProps) {
+/**
+ * One reviewed question: number, verdict, points, the prompt and its pictures, the learner's answer, the key and the
+ * explanation. A question of an earlier draw the learner cannot read now keeps the title the grading saved.
+ */
+export function BreakdownRow({ assessmentId, entry, number, item, given, verdict: shown }: BreakdownRowProps) {
   // The breakdown keeps points as a share of 100; the learner saw the item's own points («1 балл»).
   const scale = item && entry.max_score > 0 ? item.max_score / entry.max_score : 1
   const prompt = item ? extraPrompt(item) : null
   // A title cut from its own prompt says the same words twice: the prompt stands alone.
-  const title = item ? ownTitle(item.title) : null
+  const title = ownTitle(item?.title ?? entry.item_text ?? '') || null
   const titled = title && !prompt?.startsWith(title.replace(/…$/u, '')) ? title : null
   return (
     <li className="flex flex-col gap-2.5 py-5 text-sm">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <p className="text-muted-foreground">{m.attempt_question_number({ number: index + 1 })}</p>
+        <p className="text-muted-foreground">{m.attempt_question_number({ number })}</p>
         <p className="flex flex-wrap items-baseline gap-x-3">
           {shown ? <ToneWord tone={verdicts[shown].tone}>{verdicts[shown].label()}</ToneWord> : null}
           <span className="text-muted-foreground tabular-nums">
@@ -49,11 +55,7 @@ export function BreakdownRow({ entry, index, item, given, verdict: shown }: Brea
           <TitleText text={titled} />
         </p>
       ) : null}
-      {prompt ? (
-        <Suspense fallback={null}>
-          <MarkdownView content={prompt} />
-        </Suspense>
-      ) : null}
+      {item ? <ItemPrompt item={item} assessmentId={assessmentId} number={number} /> : null}
       {/* «Без ответа» in the badge already says it; without a verdict the line does. */}
       {given || !shown ? (
         <p className="wrap-anywhere">

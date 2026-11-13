@@ -102,6 +102,60 @@ pub async fn insert_draft<'e>(
     Ok(id)
 }
 
+/// The questions an attempt drew from the bank, in the order shown;
+/// `None`: every item of the assessment (no bank, or an older attempt).
+pub async fn get_selection<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: SubmissionId,
+) -> Result<Option<Vec<AssessmentItemId>>> {
+    let ids = sqlx::query_scalar!(
+        "SELECT selected_item_ids FROM submissions WHERE id = $1",
+        id.0
+    )
+    .fetch_optional(db)
+    .await?
+    .flatten();
+    Ok(ids.map(|ids| ids.into_iter().map(AssessmentItemId).collect()))
+}
+
+/// Record the draw of a new draft.
+pub async fn set_selection<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    id: SubmissionId,
+    items: &[AssessmentItemId],
+) -> Result<()> {
+    let ids: Vec<uuid::Uuid> = items.iter().map(|i| i.0).collect();
+    sqlx::query!(
+        "UPDATE submissions SET selected_item_ids = $2 WHERE id = $1",
+        id.0,
+        &ids
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+/// The draw a learner reads the assessment through: their open draft's,
+/// else their newest attempt's. Outer `None`: no attempt yet; inner `None`:
+/// that attempt drew nothing (every item).
+pub async fn reading_selection<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    assessment_id: AssessmentId,
+    user_id: UserId,
+) -> Result<Option<Option<Vec<AssessmentItemId>>>> {
+    let row = sqlx::query_scalar!(
+        r#"SELECT selected_item_ids FROM submissions
+           WHERE assessment_id = $1 AND user_id = $2
+           ORDER BY (status = 'draft') DESC, created_at DESC, id DESC
+           LIMIT 1"#,
+        assessment_id.0,
+        user_id.0
+    )
+    .fetch_optional(db)
+    .await?;
+    Ok(row.map(|ids| ids.map(|ids| ids.into_iter().map(AssessmentItemId).collect())))
+}
+
 /// A fresh draft starts from these answers (a revision of returned work).
 pub async fn seed_draft_answers(
     conn: &mut sqlx::PgConnection,

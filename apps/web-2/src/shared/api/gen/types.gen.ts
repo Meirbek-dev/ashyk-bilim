@@ -799,6 +799,38 @@ export type AssessmentDiagnosticsSnapshot = {
 
 export type AssessmentId = string;
 
+/**
+ * An uploaded spreadsheet on its way to a test.
+ */
+export type AssessmentImport = {
+    course_id: CourseId;
+    created_at_unix: UnixTime;
+    expires_at_unix: UnixTime;
+    file_name: string;
+    id: string;
+    /**
+     * Errors first, then warnings, then notes; at most 100.
+     */
+    issues: Array<ImportIssue>;
+    /**
+     * Issues left out past the 100.
+     */
+    issues_truncated: number;
+    items: Array<PlannedItem>;
+    result: ImportResult | null;
+    settings: ImportSettings | null;
+    /**
+     * The sheet that was read (the active one).
+     */
+    sheet: string;
+    status: ImportStatus;
+    summary: ImportSummary;
+    /**
+     * DOT mode: the two characters `\n` were read as a line break.
+     */
+    unescape_newlines: boolean;
+};
+
 export type AssessmentItem = {
     /**
      * The assessment's `version` after this read or write - the next
@@ -814,6 +846,10 @@ export type AssessmentItem = {
      * 1-based, contiguous.
      */
     position: number;
+    /**
+     * Imported items: the spreadsheet and row they came from.
+     */
+    source?: ItemSource;
     title: string;
 };
 
@@ -1112,7 +1148,7 @@ export type AuditEvent = {
  * `assessment_audit_events.event`: what an audit row records (the writers
  * take this type, so the wire set is closed).
  */
-export type AuditEventKind = 'lifecycle-transition' | 'auto-publish-skipped' | 'duplicated-from' | 'access-changed' | 'override-created' | 'override-updated' | 'override-deleted' | 'deadline-extended' | 'deadline-extension-requested' | 'grade-saved' | 'grades-published' | 'submission-submitted' | 'wording-edited';
+export type AuditEventKind = 'lifecycle-transition' | 'auto-publish-skipped' | 'duplicated-from' | 'access-changed' | 'override-created' | 'override-updated' | 'override-deleted' | 'deadline-extended' | 'deadline-extension-requested' | 'grade-saved' | 'grades-published' | 'submission-submitted' | 'wording-edited' | 'imported-from-xlsx';
 
 /**
  * `assessment_audit_events.payload`.
@@ -1503,15 +1539,24 @@ export type ChapterState = {
 
 export type ChoiceBody = {
     explanation: string | null;
+    /**
+     * Pictures under the prompt, in order.
+     */
+    media?: Array<MediaRef>;
     multiple?: boolean;
     options?: Array<ChoiceOption>;
     prompt?: string;
+    prompt_format?: TextFormat;
     variant: ChoiceVariant | null;
 };
 
 export type ChoiceOption = {
     id: string;
     is_correct?: boolean;
+    /**
+     * A picture shown with (or instead of) the text; absent: none.
+     */
+    media?: MediaRef;
     text?: string;
 };
 
@@ -1715,6 +1760,44 @@ export type CollectionPage = {
 export type CollectionUpdated = {
     collection_id: CollectionId;
     deleted: boolean;
+};
+
+/**
+ * Create the test. Every setting is optional: the file's row 1 otherwise.
+ */
+export type CommitImportRequest = {
+    /**
+     * Replace/append: also apply the file's settings (a new test always
+     * takes them).
+     */
+    apply_settings?: boolean;
+    /**
+     * `null`: every question in each attempt.
+     */
+    draw_count?: number | null;
+    draw_strata?: Array<DrawStratum>;
+    /**
+     * `null`: unlimited.
+     */
+    max_attempts?: number | null;
+    /**
+     * Multiple choice and matching: score the right share (default off,
+     * as in DOT).
+     */
+    partial_credit?: boolean;
+    /**
+     * Percent (default 50).
+     */
+    passing_score?: number;
+    target: ImportTarget;
+    /**
+     * `null`: no time limit.
+     */
+    time_limit_seconds?: number | null;
+    /**
+     * The test's title (a new test; default A1).
+     */
+    title?: string;
 };
 
 export type CommonFailureRow = {
@@ -2610,6 +2693,24 @@ export type CreateFileSubmissionRequest = {
 };
 
 /**
+ * Take an uploaded spreadsheet and read it.
+ */
+export type CreateImportRequest = {
+    /**
+     * The name the teacher's file had (shown back and kept on the items).
+     */
+    file_name: string;
+    /**
+     * DOT mode: read the two characters `\n` as a line break (default on).
+     */
+    unescape_newlines?: boolean;
+    /**
+     * A finalized `assessment-import` upload of the caller.
+     */
+    upload_id: string;
+};
+
+/**
  * Log a teacher action for an at-risk learner. `status` defaults to
  * `completed` (legacy).
  */
@@ -2973,6 +3074,14 @@ export type DraftRequest = {
     files?: Array<FileRefRequest>;
 };
 
+/**
+ * `count` of an attempt's questions come from items of `group`.
+ */
+export type DrawStratum = {
+    count: number;
+    group: string;
+};
+
 export type DriftView = {
     corrections: number;
     criterion_key: string;
@@ -3214,7 +3323,7 @@ export type Enrollments = {
 /**
  * Stable, closed set of machine-readable error codes.
  */
-export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'activity-media-missing' | 'activity-has-learner-work' | 'course-has-learner-work' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'account-has-roles' | 'account-deleted' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'enrollment-required' | 'discussion-enrollment-required' | 'message-recipient-not-allowed' | 'messages-banned' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable' | 'concept-cycle';
+export type ErrorCode = 'internal' | 'not-found' | 'method-not-allowed' | 'forbidden' | 'unauthenticated' | 'conflict' | 'idempotency-in-progress' | 'validation-failed' | 'precondition-failed' | 'rate-limited' | 'payload-too-large' | 'activity-not-ready' | 'activity-media-missing' | 'activity-has-learner-work' | 'course-has-learner-work' | 'course-not-ready' | 'course-archived' | 'unsupported-media-type' | 'service-unavailable' | 'invalid-credentials' | 'mfa-required' | 'session-expired' | 'csrf-rejected' | 'account-disabled' | 'google-oauth-expired' | 'account-exists' | 'invalid-totp-code' | 'username-taken' | 'email-taken' | 'reset-code-invalid' | 'account-has-roles' | 'account-deleted' | 'role-slug-taken' | 'last-admin' | 'self-disable' | 'link-preview-failed' | 'code-runner-degraded' | 'compile-error' | 'language-not-allowed' | 'assessment-read-only' | 'assessment-import-invalid' | 'assessment-import-expired' | 'assessment-export-empty' | 'attempt-time-expired' | 'attempt-past-due' | 'remediation-required' | 'enrollment-required' | 'discussion-enrollment-required' | 'message-recipient-not-allowed' | 'messages-banned' | 'grade-not-released' | 'grade-own-attempt' | 'ai-disabled' | 'ai-budget-exhausted' | 'ai-rate-limited' | 'ai-run-cancelled' | 'ai-provider-unavailable' | 'concept-cycle';
 
 export type EvalDashboard = {
     evals: EvalSummary;
@@ -4055,6 +4164,94 @@ export type ImageGallerySection = {
     title: string;
 };
 
+/**
+ * A problem found in the file, located by cell. The client words it from
+ * `code` and `params` (codes: docs/XLSX-TEST-IMPORT.md section 10).
+ */
+export type ImportIssue = {
+    /**
+     * `F12`; absent for the whole file.
+     */
+    cell?: string;
+    code: string;
+    params?: {
+        [key: string]: unknown;
+    };
+    row?: number;
+    severity: IssueSeverity;
+};
+
+export type ImportResult = {
+    activity_id: ActivityId;
+    assessment_id: AssessmentId;
+};
+
+/**
+ * The settings row of the file, as Ashyq will apply them.
+ */
+export type ImportSettings = {
+    /**
+     * E1 (`null`: every question).
+     */
+    draw_count: number | null;
+    /**
+     * The DOT level quotas for `draw_count` (F1 = 1).
+     */
+    draw_strata: Array<DrawStratum>;
+    /**
+     * F1.
+     */
+    leveling: boolean;
+    /**
+     * C1 (`null`: unlimited; above 10 capped to 10).
+     */
+    max_attempts: number | null;
+    /**
+     * D1 in seconds (`null`: no limit).
+     */
+    time_limit_seconds: number | null;
+    /**
+     * A1.
+     */
+    title: string;
+};
+
+export type ImportStatus = 'ready' | 'invalid' | 'committed';
+
+/**
+ * Counts for the preview header.
+ */
+export type ImportSummary = {
+    errors: number;
+    essay: number;
+    images: number;
+    infos: number;
+    matching: number;
+    multiple: number;
+    questions: number;
+    short: number;
+    single: number;
+    warnings: number;
+};
+
+/**
+ * Where the questions go.
+ */
+export type ImportTarget = {
+    chapter_id: ChapterId;
+    /**
+     * `quiz` or `exam` (default `exam`).
+     */
+    kind?: AssessmentKind;
+    mode: 'new';
+} | {
+    assessment_id: AssessmentId;
+    mode: 'replace';
+} | {
+    assessment_id: AssessmentId;
+    mode: 'append';
+};
+
 export type IndexStatus = {
     chunks: number;
     embedded_chunks: number;
@@ -4160,6 +4357,8 @@ export type InterventionSummary = {
  * validated string).
  */
 export type InterventionType = 'message_sent' | 'submission_graded' | 'extension_granted' | 'meeting_scheduled' | 'learner_recovered';
+
+export type IssueSeverity = 'error' | 'warning' | 'info';
 
 /**
  * A certificate with its template and course.
@@ -4267,6 +4466,10 @@ export type ItemKind = 'choice' | 'open_text' | 'form' | 'code' | 'matching';
 
 export type ItemMetadata = {
     difficulty: Difficulty | null;
+    /**
+     * Question-bank quota group (`policy.draw_strata`); `null`: none.
+     */
+    draw_group: string | null;
     estimated_minutes: number | null;
     outcome_ids?: Array<string>;
     section_label: string | null;
@@ -4274,6 +4477,14 @@ export type ItemMetadata = {
 };
 
 export type ItemSignal = 'healthy' | 'watch' | 'critical';
+
+/**
+ * Where an imported item came from.
+ */
+export type ItemSource = {
+    file: string;
+    row: number;
+};
 
 export type ItemType = 'workflow' | 'question' | 'test';
 
@@ -4554,13 +4765,19 @@ export type MatchingAnswer = {
 };
 
 export type MatchingBody = {
+    /**
+     * Right-hand values no left one goes with (shown among the others).
+     */
+    distractors?: Array<string>;
     explanation: string | null;
+    media?: Array<MediaRef>;
     /**
      * Required on the wire so a client's untagged union can tell this
      * author shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).
      */
     pairs: Array<MatchingPair>;
     prompt?: string;
+    prompt_format?: TextFormat;
 };
 
 /**
@@ -4570,7 +4787,9 @@ export type MatchingBody = {
  */
 export type MatchingLearnerBody = {
     left: Array<MatchingOption>;
+    media?: Array<MediaRef>;
     prompt?: string;
+    prompt_format?: TextFormat;
     right: Array<MatchingOption>;
 };
 
@@ -4585,7 +4804,12 @@ export type MatchingOption = {
 
 export type MatchingPair = {
     left: string;
-    right: string;
+    /**
+     * The right-hand value this left one goes with; `null`: it goes with
+     * none (the learner must leave it unplaced, DOT `k-0`). Several left
+     * values may share one right value.
+     */
+    right: string | null;
 };
 
 /**
@@ -4606,6 +4830,17 @@ export type MediaContent = {
      * YouTube URL (`video_youtube`).
      */
     uri?: string;
+};
+
+/**
+ * A picture in an item body: an `assessment-image` upload, served to
+ * whoever may read the item by `GET /assessment-media/{upload_id}`.
+ */
+export type MediaRef = {
+    alt?: string;
+    height: number;
+    upload_id: string;
+    width: number;
 };
 
 export type Message = {
@@ -5019,9 +5254,25 @@ export type NotificationSettings = {
 export type NotificationType = 'grade_published' | 'submission_returned' | 'deadline_extended' | 'deadline_approaching' | 'course_update' | 'discussion_reply' | 'contributor_application' | 'discussion_post' | 'course_team_added' | 'work_submitted' | 'remediation_assigned' | 'message_report_resolved';
 
 export type OpenTextBody = {
+    /**
+     * Short answer: any of these (trimmed, inner whitespace collapsed,
+     * numbers compared as numbers) scores full points. Never sent to learners.
+     */
+    accepted_answers?: Array<string>;
+    /**
+     * Short answer: letter case matters (DOT compares case-sensitively).
+     */
+    case_sensitive?: boolean;
+    media?: Array<MediaRef>;
     min_words: number | null;
     prompt?: string;
+    prompt_format?: TextFormat;
     rubric: string | null;
+    /**
+     * A short answer graded automatically against `accepted_answers`
+     * (DOT type 3) instead of by a teacher; the learner gets one line.
+     */
+    short_answer?: boolean;
 };
 
 /**
@@ -5094,6 +5345,24 @@ export type Person = {
     username: string;
 };
 
+/**
+ * One question as it will be created.
+ */
+export type PlannedItem = {
+    body: ItemBody;
+    /**
+     * DOT level, the bank quota group.
+     */
+    draw_group: string | null;
+    kind: ItemKind;
+    max_score: number;
+    /**
+     * Sheet row it came from.
+     */
+    row: number;
+    title: string;
+};
+
 export type Platform = {
     about: string;
     about_en?: string;
@@ -5142,6 +5411,16 @@ export type Policy = {
     completion_rule: CompletionRule;
     copy_paste_protection: boolean;
     devtools_detection: boolean;
+    /**
+     * Question bank: each attempt draws this many questions at random;
+     * `null`: every question.
+     */
+    draw_count: number | null;
+    /**
+     * Quotas inside the draw: `count` questions from items whose
+     * `metadata.draw_group` is `group` (e.g. DOT levels).
+     */
+    draw_strata?: Array<DrawStratum>;
     due_at_unix: UnixTime | null;
     fullscreen_required: boolean;
     grace_period_minutes: number;
@@ -5805,7 +6084,7 @@ export type ReadinessIssue = {
  * [`ReadinessIssue::code`] values (schema only; `readiness_codes_pinned`
  * keeps the list in step with the rules).
  */
-export type ReadinessIssueCode = 'assessment.title_missing' | 'assessment.empty' | 'schedule.after_due_at' | 'policy.due_at_past' | 'policy.cutoff_before_due' | 'policy.penalty_without_late' | 'item.kind_forbidden' | 'item.title_missing' | 'item.max_score_invalid' | 'choice.correct_missing' | 'choice.option_duplicate' | 'choice.option_id_duplicate' | 'choice.option_text_missing' | 'choice.options_missing' | 'choice.prompt_missing' | 'choice.too_many_correct' | 'code.languages_missing' | 'code.prompt_missing' | 'code.test_io_missing' | 'code.test_weight_invalid' | 'code.tests_missing' | 'form.field_id_duplicate' | 'form.field_label_missing' | 'form.fields_missing' | 'form.prompt_missing' | 'matching.left_duplicate' | 'matching.pair_value_missing' | 'matching.pairs_missing' | 'matching.prompt_missing' | 'matching.right_duplicate' | 'open_text.min_words_invalid' | 'open_text.prompt_missing';
+export type ReadinessIssueCode = 'assessment.title_missing' | 'assessment.empty' | 'schedule.after_due_at' | 'policy.due_at_past' | 'policy.cutoff_before_due' | 'policy.penalty_without_late' | 'policy.draw_exceeds_items' | 'policy.draw_group_short' | 'item.kind_forbidden' | 'item.title_missing' | 'item.max_score_invalid' | 'choice.correct_missing' | 'choice.option_duplicate' | 'choice.option_id_duplicate' | 'choice.option_text_missing' | 'choice.options_missing' | 'choice.prompt_missing' | 'choice.too_many_correct' | 'code.languages_missing' | 'code.prompt_missing' | 'code.test_io_missing' | 'code.test_weight_invalid' | 'code.tests_missing' | 'form.field_id_duplicate' | 'form.field_label_missing' | 'form.fields_missing' | 'form.prompt_missing' | 'matching.left_duplicate' | 'matching.pair_value_missing' | 'matching.pairs_missing' | 'matching.prompt_missing' | 'matching.right_duplicate' | 'open_text.accepted_missing' | 'open_text.min_words_invalid' | 'open_text.prompt_missing';
 
 /**
  * One readiness blocker.
@@ -6015,6 +6294,13 @@ export type ReorderItemsRequest = {
      * current order.
      */
     items: Array<AssessmentItemId>;
+};
+
+/**
+ * Read the same file again with the other `\n` mode.
+ */
+export type ReparseImportRequest = {
+    unescape_newlines: boolean;
 };
 
 export type ReportMessageRequest = {
@@ -6851,6 +7137,11 @@ export type StudentSubmission = {
     grading: GradingBreakdown | null;
     id: SubmissionId;
     is_late: boolean;
+    /**
+     * The questions this attempt drew from the bank, in the order to show
+     * them; absent: every item of the assessment, in its own order.
+     */
+    item_ids?: Array<AssessmentItemId>;
     late_penalty_pct: number | null;
     release_state: ReleaseState;
     /**
@@ -7203,6 +7494,13 @@ export type TeacherWorkloadSummary = {
     median_feedback_latency_hours: number | null;
     sla_breaches: number;
 };
+
+/**
+ * How a prompt is written. Imported spreadsheet text is `plain`: shown as
+ * typed (line breaks kept, nothing interpreted), because `List<String>`,
+ * `*` or four-space indents would change meaning as Markdown.
+ */
+export type TextFormat = 'markdown' | 'plain';
 
 export type TextSection = {
     content: string;
@@ -7564,7 +7862,7 @@ export type UpdateUsergroupRequest = {
 /**
  * What an upload is for: decides bucket, size cap and allowed MIME types.
  */
-export type UploadPurpose = 'avatar' | 'course-thumbnail' | 'block-image' | 'block-pdf' | 'block-video' | 'platform-logo' | 'platform-thumbnail' | 'file-submission' | 'collection-cover' | 'discussion-image' | 'message-attachment';
+export type UploadPurpose = 'avatar' | 'course-thumbnail' | 'block-image' | 'block-pdf' | 'block-video' | 'platform-logo' | 'platform-thumbnail' | 'file-submission' | 'collection-cover' | 'discussion-image' | 'message-attachment' | 'assessment-import' | 'assessment-image';
 
 /**
  * Platform usage against the monthly budget (legacy `AIUsageSummary`)
@@ -11072,6 +11370,161 @@ export type DeleteViewResponses = {
 
 export type DeleteViewResponse = DeleteViewResponses[keyof DeleteViewResponses];
 
+export type DiscardImportData = {
+    body?: never;
+    path: {
+        /**
+         * Import id
+         */
+        import_id: string;
+    };
+    query?: never;
+    url: '/api/v2/assessment-imports/{import_id}';
+};
+
+export type DiscardImportErrors = {
+    /**
+     * Unknown or inaccessible
+     */
+    404: Problem;
+};
+
+export type DiscardImportError = DiscardImportErrors[keyof DiscardImportErrors];
+
+export type DiscardImportResponses = {
+    /**
+     * Discarded
+     */
+    204: void;
+};
+
+export type DiscardImportResponse = DiscardImportResponses[keyof DiscardImportResponses];
+
+export type GetImportData = {
+    body?: never;
+    path: {
+        /**
+         * Import id
+         */
+        import_id: string;
+    };
+    query?: never;
+    url: '/api/v2/assessment-imports/{import_id}';
+};
+
+export type GetImportErrors = {
+    /**
+     * Unknown, expired or inaccessible
+     */
+    404: Problem;
+};
+
+export type GetImportError = GetImportErrors[keyof GetImportErrors];
+
+export type GetImportResponses = {
+    /**
+     * Import
+     */
+    200: AssessmentImport;
+};
+
+export type GetImportResponse = GetImportResponses[keyof GetImportResponses];
+
+export type ReparseImportData = {
+    body: ReparseImportRequest;
+    path: {
+        /**
+         * Import id
+         */
+        import_id: string;
+    };
+    query?: never;
+    url: '/api/v2/assessment-imports/{import_id}';
+};
+
+export type ReparseImportErrors = {
+    /**
+     * Already committed
+     */
+    409: Problem;
+};
+
+export type ReparseImportError = ReparseImportErrors[keyof ReparseImportErrors];
+
+export type ReparseImportResponses = {
+    /**
+     * Read again
+     */
+    200: AssessmentImport;
+};
+
+export type ReparseImportResponse = ReparseImportResponses[keyof ReparseImportResponses];
+
+export type CommitImportData = {
+    body: CommitImportRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+    };
+    path: {
+        /**
+         * Import id
+         */
+        import_id: string;
+    };
+    query?: never;
+    url: '/api/v2/assessment-imports/{import_id}/commit';
+};
+
+export type CommitImportErrors = {
+    /**
+     * The file has errors, or the test is not an editable draft
+     */
+    409: Problem;
+    /**
+     * The import expired
+     */
+    410: Problem;
+};
+
+export type CommitImportError = CommitImportErrors[keyof CommitImportErrors];
+
+export type CommitImportResponses = {
+    /**
+     * Committed (`result` names the test)
+     */
+    200: AssessmentImport;
+};
+
+export type CommitImportResponse = CommitImportResponses[keyof CommitImportResponses];
+
+export type ImportMediaData = {
+    body?: never;
+    path: {
+        /**
+         * Import id
+         */
+        import_id: string;
+        /**
+         * Picture upload id
+         */
+        upload_id: string;
+    };
+    query?: never;
+    url: '/api/v2/assessment-imports/{import_id}/media/{upload_id}';
+};
+
+export type ImportMediaErrors = {
+    /**
+     * Not a picture of this import
+     */
+    404: Problem;
+};
+
+export type ImportMediaError = ImportMediaErrors[keyof ImportMediaErrors];
+
 export type DeleteItemData = {
     body?: never;
     headers?: {
@@ -11570,6 +12023,40 @@ export type DuplicateAssessmentResponses = {
 
 export type DuplicateAssessmentResponse = DuplicateAssessmentResponses[keyof DuplicateAssessmentResponses];
 
+export type ExportAssessmentData = {
+    body?: never;
+    path: {
+        /**
+         * Assessment id
+         */
+        assessment_id: AssessmentId;
+    };
+    query?: never;
+    url: '/api/v2/assessments/{assessment_id}/export';
+};
+
+export type ExportAssessmentErrors = {
+    /**
+     * Unknown or not yours to author
+     */
+    404: Problem;
+    /**
+     * No question fits the format
+     */
+    422: Problem;
+};
+
+export type ExportAssessmentError = ExportAssessmentErrors[keyof ExportAssessmentErrors];
+
+export type ExportAssessmentResponses = {
+    /**
+     * The workbook
+     */
+    200: Blob | File;
+};
+
+export type ExportAssessmentResponse = ExportAssessmentResponses[keyof ExportAssessmentResponses];
+
 export type ItemAnalyticsData = {
     body?: never;
     path: {
@@ -11714,6 +12201,31 @@ export type LifecycleResponses = {
 };
 
 export type LifecycleResponse = LifecycleResponses[keyof LifecycleResponses];
+
+export type AssessmentMediaData = {
+    body?: never;
+    path: {
+        /**
+         * Assessment id
+         */
+        assessment_id: AssessmentId;
+        /**
+         * Picture upload id
+         */
+        upload_id: string;
+    };
+    query?: never;
+    url: '/api/v2/assessments/{assessment_id}/media/{upload_id}';
+};
+
+export type AssessmentMediaErrors = {
+    /**
+     * Not a picture of a question you can read
+     */
+    404: Problem;
+};
+
+export type AssessmentMediaError = AssessmentMediaErrors[keyof AssessmentMediaErrors];
 
 export type ListOverridesData = {
     body?: never;
@@ -13847,6 +14359,40 @@ export type CourseArchivePreviewResponses = {
 };
 
 export type CourseArchivePreviewResponse = CourseArchivePreviewResponses[keyof CourseArchivePreviewResponses];
+
+export type CreateImportData = {
+    body: CreateImportRequest;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/assessment-imports';
+};
+
+export type CreateImportErrors = {
+    /**
+     * No authoring access
+     */
+    403: Problem;
+    /**
+     * Upload not finalized or already used
+     */
+    409: Problem;
+};
+
+export type CreateImportError = CreateImportErrors[keyof CreateImportErrors];
+
+export type CreateImportResponses = {
+    /**
+     * Read: preview and issues
+     */
+    201: AssessmentImport;
+};
+
+export type CreateImportResponse = CreateImportResponses[keyof CreateImportResponses];
 
 export type ListCourseAssessmentsData = {
     body?: never;

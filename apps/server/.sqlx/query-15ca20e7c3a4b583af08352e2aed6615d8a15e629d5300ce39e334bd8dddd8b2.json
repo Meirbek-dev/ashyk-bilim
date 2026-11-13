@@ -1,0 +1,186 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, course_id AS \"course_id: CourseId\", created_by AS \"created_by: UserId\",\n                  upload_id, file_name, status, unescape_newlines, sheet_name, parsed, issues,\n                  issues_truncated, image_upload_ids,\n                  result_assessment_id AS \"result_assessment_id: AssessmentId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM expires_at))::bigint AS \"expires_at!\"\n           FROM assessment_imports WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_imports",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "course_id: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_imports",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "created_by: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_imports",
+            "name": "created_by"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "upload_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_imports",
+            "name": "upload_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "file_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessment_imports",
+            "name": "file_name"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessment_imports",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "unescape_newlines",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "assessment_imports",
+            "name": "unescape_newlines"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "sheet_name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "assessment_imports",
+            "name": "sheet_name"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "parsed",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "assessment_imports",
+            "name": "parsed"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "issues",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "assessment_imports",
+            "name": "issues"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "issues_truncated",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessment_imports",
+            "name": "issues_truncated"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "image_upload_ids",
+        "type_info": "UuidArray",
+        "origin": {
+          "Table": {
+            "table": "assessment_imports",
+            "name": "image_upload_ids"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "result_assessment_id: AssessmentId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_imports",
+            "name": "result_assessment_id"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 14,
+        "name": "expires_at!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "15ca20e7c3a4b583af08352e2aed6615d8a15e629d5300ce39e334bd8dddd8b2"
+}

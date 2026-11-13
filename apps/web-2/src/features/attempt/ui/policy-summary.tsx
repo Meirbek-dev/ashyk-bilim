@@ -1,7 +1,13 @@
 import { CalendarClock, CalendarX, Eye, ListOrdered, RotateCcw, Target, Timer } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
-import type { AssessmentDetail, AttemptState, EffectivePolicy, ReviewVisibility } from '#/shared/api/gen/types.gen'
+import type {
+  AssessmentDetail,
+  AttemptState,
+  EffectivePolicy,
+  Policy,
+  ReviewVisibility,
+} from '#/shared/api/gen/types.gen'
 import { formatDateTime, formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { protections, type Protection } from '../model/attempt'
@@ -35,6 +41,18 @@ export const attemptsText = (state: AttemptState) => {
     return state.attempts_used === 0 ? m.attempt_attempts_unlimited_fresh() : m.attempt_attempts_unlimited({ used })
   const total = formatNumber(state.attempts_used + state.attempts_remaining)
   return m.attempt_attempts_left({ left: formatNumber(state.attempts_remaining), total })
+}
+
+/**
+ * How many questions an attempt has. A question bank draws `draw_count` per attempt: a learner reads no questions
+ * before their first attempt (the count comes from the policy), an author reads the whole bank («30 из банка 64»).
+ */
+export const questionsText = ({ items, policy }: { items: readonly unknown[]; policy: Pick<Policy, 'draw_count'> }) => {
+  const drawn = policy.draw_count
+  if (drawn === null) return m.attempt_questions({ count: formatNumber(items.length) })
+  if (items.length > drawn)
+    return m.attempt_questions_bank({ count: formatNumber(drawn), bank: formatNumber(items.length) })
+  return m.attempt_questions({ count: formatNumber(drawn) })
 }
 
 /**
@@ -74,7 +92,7 @@ export function PolicySummary({ assessment, state }: { assessment: AssessmentDet
         <ul className="flex flex-col divide-y border-y text-sm [&_li]:flex [&_li]:items-start [&_li]:gap-3 [&_li]:py-2.5 [&_svg]:mt-0.5 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground">
           <li>
             <ListOrdered aria-hidden />
-            {m.attempt_questions({ count: formatNumber(assessment.items.length) })}
+            {questionsText(assessment)}
           </li>
           <li>
             <Timer aria-hidden />

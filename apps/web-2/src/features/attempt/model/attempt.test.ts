@@ -8,6 +8,7 @@ import { attemptSearchSchema } from '../route'
 import { answerText, correctText, ownTitle } from './answer-text'
 import {
   attemptGone,
+  attemptItems,
   clock,
   clockEndsAt,
   DAY_SECONDS,
@@ -71,7 +72,7 @@ const item = (id: string, body: ItemBody = choice): AssessmentItem => ({
   body,
   kind: body.kind,
   max_score: 1,
-  metadata: { difficulty: null, estimated_minutes: null, section_label: null },
+  metadata: { difficulty: null, draw_group: null, estimated_minutes: null, section_label: null },
   position: 1,
   title: id,
   assessment_version: 1,
@@ -267,6 +268,14 @@ describe('attempt question view', () => {
     expect(extraPrompt(withPrompt('Какой метод?', ' Какой метод? '))).toBeNull()
     expect(extraPrompt(withPrompt('сұрақ:', 'Иммерсивті технологияға жатады'))).toBe('Иммерсивті технологияға жатады')
     expect(extraPrompt(item('q'))).toBeNull()
+  })
+
+  test('a bank attempt shows the questions it drew, in its order; without a draw every question', () => {
+    const items = [item('a'), item('b'), item('c')]
+    expect(attemptItems(items, { item_ids: ['c', 'a'] }).map(entry => entry.id)).toEqual(['c', 'a'])
+    // A question gone from the test (or not read yet) is left out, not shown blank.
+    expect(attemptItems(items, { item_ids: ['x', 'b'] }).map(entry => entry.id)).toEqual(['b'])
+    expect(attemptItems(items, {})).toBe(items)
   })
 })
 

@@ -2378,6 +2378,97 @@
         "format": "uuid",
         "type": "string"
       },
+      "AssessmentImport": {
+        "description": "An uploaded spreadsheet on its way to a test.",
+        "properties": {
+          "course_id": {
+            "$ref": "#/components/schemas/CourseId"
+          },
+          "created_at_unix": {
+            "$ref": "#/components/schemas/UnixTime"
+          },
+          "expires_at_unix": {
+            "$ref": "#/components/schemas/UnixTime"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "issues": {
+            "description": "Errors first, then warnings, then notes; at most 100.",
+            "items": {
+              "$ref": "#/components/schemas/ImportIssue"
+            },
+            "type": "array"
+          },
+          "issues_truncated": {
+            "description": "Issues left out past the 100.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PlannedItem"
+            },
+            "type": "array"
+          },
+          "result": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImportResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "settings": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImportSettings",
+                "description": "`null` when the file could not be read at all."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sheet": {
+            "description": "The sheet that was read (the active one).",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ImportStatus"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/ImportSummary"
+          },
+          "unescape_newlines": {
+            "description": "DOT mode: the two characters `\\n` were read as a line break.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "course_id",
+          "status",
+          "file_name",
+          "sheet",
+          "unescape_newlines",
+          "summary",
+          "items",
+          "issues",
+          "issues_truncated",
+          "created_at_unix",
+          "expires_at_unix",
+          "result",
+          "settings"
+        ],
+        "type": "object"
+      },
       "AssessmentItem": {
         "properties": {
           "assessment_version": {
@@ -2405,6 +2496,10 @@
             "description": "1-based, contiguous.",
             "format": "int32",
             "type": "integer"
+          },
+          "source": {
+            "$ref": "#/components/schemas/ItemSource",
+            "description": "Imported items: the spreadsheet and row they came from."
           },
           "title": {
             "type": "string"
@@ -3443,7 +3538,8 @@
           "grade-saved",
           "grades-published",
           "submission-submitted",
-          "wording-edited"
+          "wording-edited",
+          "imported-from-xlsx"
         ],
         "type": "string"
       },
@@ -4420,6 +4516,14 @@
               "null"
             ]
           },
+          "media": {
+            "description": "Pictures under the prompt, in order.",
+            "items": {
+              "$ref": "#/components/schemas/MediaRef"
+            },
+            "maxItems": 5,
+            "type": "array"
+          },
           "multiple": {
             "type": "boolean"
           },
@@ -4433,6 +4537,9 @@
           "prompt": {
             "maxLength": 20000,
             "type": "string"
+          },
+          "prompt_format": {
+            "$ref": "#/components/schemas/TextFormat"
           },
           "variant": {
             "oneOf": [
@@ -4458,6 +4565,10 @@
           },
           "is_correct": {
             "type": "boolean"
+          },
+          "media": {
+            "$ref": "#/components/schemas/MediaRef",
+            "description": "A picture shown with (or instead of) the text; absent: none."
           },
           "text": {
             "maxLength": 20000,
@@ -5038,6 +5149,75 @@
         "required": [
           "collection_id",
           "deleted"
+        ],
+        "type": "object"
+      },
+      "CommitImportRequest": {
+        "description": "Create the test. Every setting is optional: the file's row 1 otherwise.",
+        "properties": {
+          "apply_settings": {
+            "description": "Replace/append: also apply the file's settings (a new test always\ntakes them).",
+            "type": "boolean"
+          },
+          "draw_count": {
+            "description": "`null`: every question in each attempt.",
+            "format": "int32",
+            "maximum": 200,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ],
+            "x-null-clears": true
+          },
+          "draw_strata": {
+            "items": {
+              "$ref": "#/components/schemas/DrawStratum"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "max_attempts": {
+            "description": "`null`: unlimited.",
+            "format": "int32",
+            "maximum": 10,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ],
+            "x-null-clears": true
+          },
+          "partial_credit": {
+            "description": "Multiple choice and matching: score the right share (default off,\nas in DOT).",
+            "type": "boolean"
+          },
+          "passing_score": {
+            "description": "Percent (default 50).",
+            "format": "double",
+            "type": "number"
+          },
+          "target": {
+            "$ref": "#/components/schemas/ImportTarget"
+          },
+          "time_limit_seconds": {
+            "description": "`null`: no time limit.",
+            "format": "int32",
+            "maximum": 86400,
+            "minimum": 60,
+            "type": [
+              "integer",
+              "null"
+            ],
+            "x-null-clears": true
+          },
+          "title": {
+            "description": "The test's title (a new test; default A1).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
         ],
         "type": "object"
       },
@@ -7387,6 +7567,29 @@
         ],
         "type": "object"
       },
+      "CreateImportRequest": {
+        "description": "Take an uploaded spreadsheet and read it.",
+        "properties": {
+          "file_name": {
+            "description": "The name the teacher's file had (shown back and kept on the items).",
+            "type": "string"
+          },
+          "unescape_newlines": {
+            "description": "DOT mode: read the two characters `\\n` as a line break (default on).",
+            "type": "boolean"
+          },
+          "upload_id": {
+            "description": "A finalized `assessment-import` upload of the caller.",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id",
+          "file_name"
+        ],
+        "type": "object"
+      },
       "CreateInterventionRequest": {
         "additionalProperties": false,
         "description": "Log a teacher action for an at-risk learner. `status` defaults to\n`completed` (legacy).",
@@ -8259,6 +8462,27 @@
         },
         "type": "object"
       },
+      "DrawStratum": {
+        "description": "`count` of an attempt's questions come from items of `group`.",
+        "properties": {
+          "count": {
+            "format": "int32",
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "group": {
+            "maxLength": 32,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "group",
+          "count"
+        ],
+        "type": "object"
+      },
       "DriftView": {
         "properties": {
           "corrections": {
@@ -8960,6 +9184,9 @@
           "compile-error",
           "language-not-allowed",
           "assessment-read-only",
+          "assessment-import-invalid",
+          "assessment-import-expired",
+          "assessment-export-empty",
           "attempt-time-expired",
           "attempt-past-due",
           "remediation-required",
@@ -11350,6 +11577,238 @@
         ],
         "type": "object"
       },
+      "ImportIssue": {
+        "description": "A problem found in the file, located by cell. The client words it from\n`code` and `params` (codes: docs/XLSX-TEST-IMPORT.md section 10).",
+        "properties": {
+          "cell": {
+            "description": "`F12`; absent for the whole file.",
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "params": {
+            "additionalProperties": {},
+            "propertyNames": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "row": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/IssueSeverity"
+          }
+        },
+        "required": [
+          "severity",
+          "code"
+        ],
+        "type": "object"
+      },
+      "ImportResult": {
+        "properties": {
+          "activity_id": {
+            "$ref": "#/components/schemas/ActivityId"
+          },
+          "assessment_id": {
+            "$ref": "#/components/schemas/AssessmentId"
+          }
+        },
+        "required": [
+          "assessment_id",
+          "activity_id"
+        ],
+        "type": "object"
+      },
+      "ImportSettings": {
+        "description": "The settings row of the file, as Ashyq will apply them.",
+        "properties": {
+          "draw_count": {
+            "description": "E1 (`null`: every question).",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "draw_strata": {
+            "description": "The DOT level quotas for `draw_count` (F1 = 1).",
+            "items": {
+              "$ref": "#/components/schemas/DrawStratum"
+            },
+            "type": "array"
+          },
+          "leveling": {
+            "description": "F1.",
+            "type": "boolean"
+          },
+          "max_attempts": {
+            "description": "C1 (`null`: unlimited; above 10 capped to 10).",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "time_limit_seconds": {
+            "description": "D1 in seconds (`null`: no limit).",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "title": {
+            "description": "A1.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "leveling",
+          "draw_strata",
+          "draw_count",
+          "max_attempts",
+          "time_limit_seconds"
+        ],
+        "type": "object"
+      },
+      "ImportStatus": {
+        "enum": [
+          "ready",
+          "invalid",
+          "committed"
+        ],
+        "type": "string"
+      },
+      "ImportSummary": {
+        "description": "Counts for the preview header.",
+        "properties": {
+          "errors": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "essay": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "images": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "infos": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "matching": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "multiple": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "questions": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "short": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "single": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "warnings": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "questions",
+          "single",
+          "multiple",
+          "short",
+          "matching",
+          "essay",
+          "images",
+          "errors",
+          "warnings",
+          "infos"
+        ],
+        "type": "object"
+      },
+      "ImportTarget": {
+        "description": "Where the questions go.",
+        "oneOf": [
+          {
+            "description": "A new draft test appended to this chapter.",
+            "properties": {
+              "chapter_id": {
+                "$ref": "#/components/schemas/ChapterId"
+              },
+              "kind": {
+                "$ref": "#/components/schemas/AssessmentKind",
+                "description": "`quiz` or `exam` (default `exam`)."
+              },
+              "mode": {
+                "enum": [
+                  "new"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "chapter_id",
+              "mode"
+            ],
+            "type": "object"
+          },
+          {
+            "description": "Every question of this draft test replaced.",
+            "properties": {
+              "assessment_id": {
+                "$ref": "#/components/schemas/AssessmentId"
+              },
+              "mode": {
+                "enum": [
+                  "replace"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "assessment_id",
+              "mode"
+            ],
+            "type": "object"
+          },
+          {
+            "description": "Added after this draft test's questions.",
+            "properties": {
+              "assessment_id": {
+                "$ref": "#/components/schemas/AssessmentId"
+              },
+              "mode": {
+                "enum": [
+                  "append"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "assessment_id",
+              "mode"
+            ],
+            "type": "object"
+          }
+        ]
+      },
       "IndexStatus": {
         "properties": {
           "chunks": {
@@ -11714,6 +12173,14 @@
           "extension_granted",
           "meeting_scheduled",
           "learner_recovered"
+        ],
+        "type": "string"
+      },
+      "IssueSeverity": {
+        "enum": [
+          "error",
+          "warning",
+          "info"
         ],
         "type": "string"
       },
@@ -12146,6 +12613,13 @@
               }
             ]
           },
+          "draw_group": {
+            "description": "Question-bank quota group (`policy.draw_strata`); `null`: none.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "estimated_minutes": {
             "format": "int32",
             "type": [
@@ -12174,6 +12648,7 @@
         },
         "required": [
           "difficulty",
+          "draw_group",
           "estimated_minutes",
           "section_label"
         ],
@@ -12186,6 +12661,23 @@
           "critical"
         ],
         "type": "string"
+      },
+      "ItemSource": {
+        "description": "Where an imported item came from.",
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "row": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "file",
+          "row"
+        ],
+        "type": "object"
       },
       "ItemType": {
         "enum": [
@@ -12978,12 +13470,27 @@
       },
       "MatchingBody": {
         "properties": {
+          "distractors": {
+            "description": "Right-hand values no left one goes with (shown among the others).",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 200,
+            "type": "array"
+          },
           "explanation": {
             "maxLength": 20000,
             "type": [
               "string",
               "null"
             ]
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/MediaRef"
+            },
+            "maxItems": 5,
+            "type": "array"
           },
           "pairs": {
             "description": "Required on the wire so a client's untagged union can tell this\nauthor shape from [`MatchingLearnerBody`] (`left`/`right`, no pairs).",
@@ -12996,6 +13503,9 @@
           "prompt": {
             "maxLength": 20000,
             "type": "string"
+          },
+          "prompt_format": {
+            "$ref": "#/components/schemas/TextFormat"
           }
         },
         "required": [
@@ -13013,8 +13523,17 @@
             },
             "type": "array"
           },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/MediaRef"
+            },
+            "type": "array"
+          },
           "prompt": {
             "type": "string"
+          },
+          "prompt_format": {
+            "$ref": "#/components/schemas/TextFormat"
           },
           "right": {
             "items": {
@@ -13052,8 +13571,12 @@
             "type": "string"
           },
           "right": {
+            "description": "The right-hand value this left one goes with; `null`: it goes with\nnone (the learner must leave it unplaced, DOT `k-0`). Several left\nvalues may share one right value.",
             "maxLength": 20000,
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -13082,6 +13605,35 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "MediaRef": {
+        "description": "A picture in an item body: an `assessment-image` upload, served to\nwhoever may read the item by `GET /assessment-media/{upload_id}`.",
+        "properties": {
+          "alt": {
+            "maxLength": 500,
+            "type": "string"
+          },
+          "height": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "upload_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "width": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "upload_id",
+          "width",
+          "height"
+        ],
         "type": "object"
       },
       "Message": {
@@ -14338,6 +14890,25 @@
       },
       "OpenTextBody": {
         "properties": {
+          "accepted_answers": {
+            "description": "Short answer: any of these (trimmed, inner whitespace collapsed,\nnumbers compared as numbers) scores full points. Never sent to learners.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 200,
+            "type": "array"
+          },
+          "case_sensitive": {
+            "description": "Short answer: letter case matters (DOT compares case-sensitively).",
+            "type": "boolean"
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/MediaRef"
+            },
+            "maxItems": 5,
+            "type": "array"
+          },
           "min_words": {
             "format": "int32",
             "type": [
@@ -14349,12 +14920,19 @@
             "maxLength": 20000,
             "type": "string"
           },
+          "prompt_format": {
+            "$ref": "#/components/schemas/TextFormat"
+          },
           "rubric": {
             "maxLength": 20000,
             "type": [
               "string",
               "null"
             ]
+          },
+          "short_answer": {
+            "description": "A short answer graded automatically against `accepted_answers`\n(DOT type 3) instead of by a teacher; the learner gets one line.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -14528,6 +15106,45 @@
         ],
         "type": "object"
       },
+      "PlannedItem": {
+        "description": "One question as it will be created.",
+        "properties": {
+          "body": {
+            "$ref": "#/components/schemas/ItemBody"
+          },
+          "draw_group": {
+            "description": "DOT level, the bank quota group.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ItemKind"
+          },
+          "max_score": {
+            "format": "double",
+            "type": "number"
+          },
+          "row": {
+            "description": "Sheet row it came from.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "row",
+          "kind",
+          "title",
+          "body",
+          "max_score",
+          "draw_group"
+        ],
+        "type": "object"
+      },
       "Platform": {
         "properties": {
           "about": {
@@ -14629,6 +15246,24 @@
           },
           "devtools_detection": {
             "type": "boolean"
+          },
+          "draw_count": {
+            "description": "Question bank: each attempt draws this many questions at random;\n`null`: every question.",
+            "format": "int32",
+            "maximum": 200,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "draw_strata": {
+            "description": "Quotas inside the draw: `count` questions from items whose\n`metadata.draw_group` is `group` (e.g. DOT levels).",
+            "items": {
+              "$ref": "#/components/schemas/DrawStratum"
+            },
+            "maxItems": 20,
+            "type": "array"
           },
           "due_at_unix": {
             "maximum": 253402300799,
@@ -14738,6 +15373,7 @@
           "fullscreen_required",
           "violation_threshold",
           "attempt_penalty_percent",
+          "draw_count",
           "due_at_unix",
           "max_attempts",
           "time_limit_seconds"
@@ -16580,6 +17216,8 @@
           "policy.due_at_past",
           "policy.cutoff_before_due",
           "policy.penalty_without_late",
+          "policy.draw_exceeds_items",
+          "policy.draw_group_short",
           "item.kind_forbidden",
           "item.title_missing",
           "item.max_score_invalid",
@@ -16604,6 +17242,7 @@
           "matching.pairs_missing",
           "matching.prompt_missing",
           "matching.right_duplicate",
+          "open_text.accepted_missing",
           "open_text.min_words_invalid",
           "open_text.prompt_missing"
         ],
@@ -17194,6 +17833,18 @@
         },
         "required": [
           "items"
+        ],
+        "type": "object"
+      },
+      "ReparseImportRequest": {
+        "description": "Read the same file again with the other `\\n` mode.",
+        "properties": {
+          "unescape_newlines": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "unescape_newlines"
         ],
         "type": "object"
       },
@@ -19403,6 +20054,13 @@
           "is_late": {
             "type": "boolean"
           },
+          "item_ids": {
+            "description": "The questions this attempt drew from the bank, in the order to show\nthem; absent: every item of the assessment, in its own order.",
+            "items": {
+              "$ref": "#/components/schemas/AssessmentItemId"
+            },
+            "type": "array"
+          },
           "late_penalty_pct": {
             "format": "double",
             "type": [
@@ -20874,6 +21532,14 @@
         ],
         "type": "object"
       },
+      "TextFormat": {
+        "description": "How a prompt is written. Imported spreadsheet text is `plain`: shown as\ntyped (line breaks kept, nothing interpreted), because `List<String>`,\n`*` or four-space indents would change meaning as Markdown.",
+        "enum": [
+          "markdown",
+          "plain"
+        ],
+        "type": "string"
+      },
       "TextSection": {
         "additionalProperties": false,
         "properties": {
@@ -21720,12 +22386,30 @@
           "file-submission",
           "collection-cover",
           "discussion-image",
-          "message-attachment"
+          "message-attachment",
+          "assessment-import",
+          "assessment-image"
         ],
         "type": "string",
         "x-upload-policy": {
           "multipart_part_bytes": 33554432,
           "purposes": {
+            "assessment-image": {
+              "max_bytes": 5242880,
+              "mime_types": [
+                "image/jpeg",
+                "image/png",
+                "image/gif",
+                "image/webp",
+                "image/avif"
+              ]
+            },
+            "assessment-import": {
+              "max_bytes": 20971520,
+              "mime_types": [
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              ]
+            },
             "avatar": {
               "max_bytes": 5242880,
               "mime_types": [
@@ -28770,6 +29454,255 @@
         ]
       }
     },
+    "/api/v2/assessment-imports/{import_id}": {
+      "delete": {
+        "operationId": "discard_import",
+        "parameters": [
+          {
+            "description": "Import id",
+            "in": "path",
+            "name": "import_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Discarded"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible"
+          }
+        },
+        "summary": "Drop an uncommitted import with its file and pictures.",
+        "tags": [
+          "assessments"
+        ]
+      },
+      "get": {
+        "operationId": "get_import",
+        "parameters": [
+          {
+            "description": "Import id",
+            "in": "path",
+            "name": "import_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentImport"
+                }
+              }
+            },
+            "description": "Import"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown, expired or inaccessible"
+          }
+        },
+        "summary": "The preview of an import (its creator or the course's authors).",
+        "tags": [
+          "assessments"
+        ]
+      },
+      "patch": {
+        "operationId": "reparse_import",
+        "parameters": [
+          {
+            "description": "Import id",
+            "in": "path",
+            "name": "import_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReparseImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentImport"
+                }
+              }
+            },
+            "description": "Read again"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Already committed"
+          }
+        },
+        "summary": "Read the file again with the other `\\n` mode.",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/api/v2/assessment-imports/{import_id}/commit": {
+      "post": {
+        "operationId": "commit_import",
+        "parameters": [
+          {
+            "description": "Import id",
+            "in": "path",
+            "name": "import_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Retry-safe replay key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommitImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentImport"
+                }
+              }
+            },
+            "description": "Committed (`result` names the test)"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The file has errors, or the test is not an editable draft"
+          },
+          "410": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The import expired"
+          }
+        },
+        "summary": "Create the questions: a new draft test, or replace / extend a draft\none. Repeating it answers with the test already made.",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/api/v2/assessment-imports/{import_id}/media/{upload_id}": {
+      "get": {
+        "operationId": "import_media",
+        "parameters": [
+          {
+            "description": "Import id",
+            "in": "path",
+            "name": "import_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Picture upload id",
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "Redirect to the picture"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not a picture of this import"
+          }
+        },
+        "summary": "A picture of an import's preview: a redirect to a short-lived URL.",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
     "/api/v2/assessment-items/{item_id}": {
       "delete": {
         "operationId": "delete_item",
@@ -29707,6 +30640,59 @@
         ]
       }
     },
+    "/api/v2/assessments/{assessment_id}/export": {
+      "get": {
+        "operationId": "export_assessment",
+        "parameters": [
+          {
+            "description": "Assessment id",
+            "in": "path",
+            "name": "assessment_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "The workbook"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or not yours to author"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No question fits the format"
+          }
+        },
+        "summary": "The test as a DOT spreadsheet: questions, pictures, row-1 settings and\na «Пропущено» sheet listing what the format cannot hold. Authors only.",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
     "/api/v2/assessments/{assessment_id}/item-analytics": {
       "get": {
         "operationId": "item_analytics",
@@ -29984,6 +30970,51 @@
           }
         },
         "summary": "Lifecycle transition.",
+        "tags": [
+          "assessments"
+        ]
+      }
+    },
+    "/api/v2/assessments/{assessment_id}/media/{upload_id}": {
+      "get": {
+        "operationId": "assessment_media",
+        "parameters": [
+          {
+            "description": "Assessment id",
+            "in": "path",
+            "name": "assessment_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AssessmentId"
+            }
+          },
+          {
+            "description": "Picture upload id",
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "303": {
+            "description": "Redirect to the picture"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not a picture of a question you can read"
+          }
+        },
+        "summary": "A picture of a test's question, for anyone who may read the question\n(a learner: only the questions of their attempt).",
         "tags": [
           "assessments"
         ]
@@ -33560,6 +34591,69 @@
         "summary": "What archiving the course would freeze - the numbers for the\nconfirmation dialog (creator, active maintainer or\n`course:manage:platform`; warnings, never blockers).",
         "tags": [
           "courses"
+        ]
+      }
+    },
+    "/api/v2/courses/{course_id}/assessment-imports": {
+      "post": {
+        "description": "Requires authoring on the course. A file the reader rejects as a whole\nstill answers 201 with status `invalid` and the issues.",
+        "operationId": "create_import",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssessmentImport"
+                }
+              }
+            },
+            "description": "Read: preview and issues"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No authoring access"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Upload not finalized or already used"
+          }
+        },
+        "summary": "Read an uploaded spreadsheet (an `assessment-import` upload) and show\nwhat it would become. Nothing is created until `commit`.",
+        "tags": [
+          "assessments"
         ]
       }
     },

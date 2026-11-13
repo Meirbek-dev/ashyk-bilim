@@ -427,7 +427,8 @@ export const vAuditEventKind = v.picklist([
     'grade-saved',
     'grades-published',
     'submission-submitted',
-    'wording-edited'
+    'wording-edited',
+    'imported-from-xlsx'
 ]);
 
 /**
@@ -702,25 +703,11 @@ export const vActivityDropoffRow = v.object({
     previous_step_completions: v.pipe(v.number(), v.integer())
 });
 
-export const vChoiceOption = v.object({
-    id: v.string(),
-    is_correct: v.optional(v.boolean()),
-    text: v.optional(v.pipe(v.string(), v.maxLength(20000)))
-});
-
 export const vChoiceVariant = v.picklist([
     'single_choice',
     'multiple_choice',
     'true_false'
 ]);
-
-export const vChoiceBody = v.object({
-    explanation: v.nullable(v.pipe(v.string(), v.maxLength(20000))),
-    multiple: v.optional(v.boolean()),
-    options: v.optional(v.pipe(v.array(vChoiceOption), v.maxLength(200))),
-    prompt: v.optional(v.pipe(v.string(), v.maxLength(20000))),
-    variant: v.nullable(vChoiceVariant)
-});
 
 export const vCitation = v.object({
     citation_id: v.string(),
@@ -1181,6 +1168,15 @@ export const vCreateCourseUpdateRequest = v.strictObject({
     title: v.pipe(v.string(), v.minLength(1), v.maxLength(500))
 });
 
+/**
+ * Take an uploaded spreadsheet and read it.
+ */
+export const vCreateImportRequest = v.object({
+    file_name: v.string(),
+    unescape_newlines: v.optional(v.boolean()),
+    upload_id: v.pipe(v.string(), v.uuid())
+});
+
 export const vCreateRoleRequest = v.strictObject({
     description: v.optional(v.pipe(v.string(), v.maxLength(1000))),
     display_name: v.pipe(v.string(), v.minLength(1), v.maxLength(200)),
@@ -1362,6 +1358,14 @@ export const vDisplaySettings = v.object({
 
 export const vDisposition = v.picklist(['attachment', 'inline']);
 
+/**
+ * `count` of an attempt's questions come from items of `group`.
+ */
+export const vDrawStratum = v.object({
+    count: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(200)),
+    group: v.pipe(v.string(), v.minLength(1), v.maxLength(32))
+});
+
 export const vDriftView = v.object({
     corrections: v.pipe(v.number(), v.integer()),
     criterion_key: v.string(),
@@ -1483,6 +1487,9 @@ export const vErrorCode = v.picklist([
     'compile-error',
     'language-not-allowed',
     'assessment-read-only',
+    'assessment-import-invalid',
+    'assessment-import-expired',
+    'assessment-export-empty',
     'attempt-time-expired',
     'attempt-past-due',
     'remediation-required',
@@ -1831,6 +1838,79 @@ export const vHistogramBucket = v.object({
     label: v.string()
 });
 
+export const vImportResult = v.object({
+    activity_id: vActivityId,
+    assessment_id: vAssessmentId
+});
+
+/**
+ * The settings row of the file, as Ashyq will apply them.
+ */
+export const vImportSettings = v.object({
+    draw_count: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    draw_strata: v.array(vDrawStratum),
+    leveling: v.boolean(),
+    max_attempts: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    time_limit_seconds: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    title: v.string()
+});
+
+export const vImportStatus = v.picklist([
+    'ready',
+    'invalid',
+    'committed'
+]);
+
+/**
+ * Counts for the preview header.
+ */
+export const vImportSummary = v.object({
+    errors: v.pipe(v.number(), v.integer(), v.minValue(0)),
+    essay: v.pipe(v.number(), v.integer(), v.minValue(0)),
+    images: v.pipe(v.number(), v.integer(), v.minValue(0)),
+    infos: v.pipe(v.number(), v.integer(), v.minValue(0)),
+    matching: v.pipe(v.number(), v.integer(), v.minValue(0)),
+    multiple: v.pipe(v.number(), v.integer(), v.minValue(0)),
+    questions: v.pipe(v.number(), v.integer(), v.minValue(0)),
+    short: v.pipe(v.number(), v.integer(), v.minValue(0)),
+    single: v.pipe(v.number(), v.integer(), v.minValue(0)),
+    warnings: v.pipe(v.number(), v.integer(), v.minValue(0))
+});
+
+/**
+ * Where the questions go.
+ */
+export const vImportTarget = v.union([
+    v.object({
+        chapter_id: vChapterId,
+        kind: v.optional(vAssessmentKind),
+        mode: v.picklist(['new'])
+    }),
+    v.object({
+        assessment_id: vAssessmentId,
+        mode: v.picklist(['replace'])
+    }),
+    v.object({
+        assessment_id: vAssessmentId,
+        mode: v.picklist(['append'])
+    })
+]);
+
+/**
+ * Create the test. Every setting is optional: the file's row 1 otherwise.
+ */
+export const vCommitImportRequest = v.object({
+    apply_settings: v.optional(v.boolean()),
+    draw_count: v.nullish(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(200))),
+    draw_strata: v.optional(v.pipe(v.array(vDrawStratum), v.maxLength(20))),
+    max_attempts: v.nullish(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(10))),
+    partial_credit: v.optional(v.boolean()),
+    passing_score: v.optional(v.number()),
+    target: vImportTarget,
+    time_limit_seconds: v.nullish(v.pipe(v.number(), v.integer(), v.minValue(60), v.maxValue(86400))),
+    title: v.optional(v.string())
+});
+
 export const vIndexStatus = v.object({
     chunks: v.pipe(v.number(), v.integer()),
     embedded_chunks: v.pipe(v.number(), v.integer()),
@@ -1906,6 +1986,24 @@ export const vInterventionType = v.picklist([
     'learner_recovered'
 ]);
 
+export const vIssueSeverity = v.picklist([
+    'error',
+    'warning',
+    'info'
+]);
+
+/**
+ * A problem found in the file, located by cell. The client words it from
+ * `code` and `params` (codes: docs/XLSX-TEST-IMPORT.md section 10).
+ */
+export const vImportIssue = v.object({
+    cell: v.optional(v.string()),
+    code: v.string(),
+    params: v.optional(v.record(v.string(), v.unknown())),
+    row: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    severity: vIssueSeverity
+});
+
 export const vItemGradeRequest = v.strictObject({
     feedback: v.optional(v.pipe(v.string(), v.maxLength(5000))),
     item_id: vAssessmentItemId,
@@ -1941,6 +2039,7 @@ export const vItemAnalytics = v.object({
 
 export const vItemMetadata = v.strictObject({
     difficulty: v.nullable(vDifficulty),
+    draw_group: v.nullable(v.string()),
     estimated_minutes: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     outcome_ids: v.optional(v.array(v.string())),
     section_label: v.nullable(v.string()),
@@ -1952,6 +2051,14 @@ export const vItemSignal = v.picklist([
     'watch',
     'critical'
 ]);
+
+/**
+ * Where an imported item came from.
+ */
+export const vItemSource = v.object({
+    file: v.string(),
+    row: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
+});
 
 export const vItemType = v.picklist([
     'workflow',
@@ -2259,20 +2366,9 @@ export const vMatchingOption = v.object({
     text: v.string()
 });
 
-/**
- * The learner read of a matching item: the two columns with the right
- * one shuffled (stable per viewer and item), never the pairing. Authors
- * keep [`MatchingBody::pairs`].
- */
-export const vMatchingLearnerBody = v.object({
-    left: v.array(vMatchingOption),
-    prompt: v.optional(v.string()),
-    right: v.array(vMatchingOption)
-});
-
 export const vMatchingPair = v.object({
     left: v.pipe(v.string(), v.maxLength(20000)),
-    right: v.pipe(v.string(), v.maxLength(20000))
+    right: v.nullable(v.pipe(v.string(), v.maxLength(20000)))
 });
 
 /**
@@ -2304,12 +2400,6 @@ export const vGradingBreakdown = v.object({
     score_override: v.optional(v.number())
 });
 
-export const vMatchingBody = v.object({
-    explanation: v.nullable(v.pipe(v.string(), v.maxLength(20000))),
-    pairs: v.pipe(v.array(vMatchingPair), v.maxLength(200)),
-    prompt: v.optional(v.pipe(v.string(), v.maxLength(20000)))
-});
-
 /**
  * File-backed media activity content (video / document); every key is
  * optional because the stored object grew over time.
@@ -2336,6 +2426,24 @@ export const vActivityDetail = v.intersect([vActivity, v.object({
         details: vActivityDetails,
         settings: vActivitySettings
     })]);
+
+/**
+ * A picture in an item body: an `assessment-image` upload, served to
+ * whoever may read the item by `GET /assessment-media/{upload_id}`.
+ */
+export const vMediaRef = v.object({
+    alt: v.optional(v.pipe(v.string(), v.maxLength(500))),
+    height: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    upload_id: v.pipe(v.string(), v.uuid()),
+    width: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
+});
+
+export const vChoiceOption = v.object({
+    id: v.string(),
+    is_correct: v.optional(v.boolean()),
+    media: v.optional(vMediaRef),
+    text: v.optional(v.pipe(v.string(), v.maxLength(20000)))
+});
 
 /**
  * What the caller may do to a message.
@@ -2492,12 +2600,6 @@ export const vNotificationType = v.picklist([
     'remediation_assigned',
     'message_report_resolved'
 ]);
-
-export const vOpenTextBody = v.object({
-    min_words: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
-    prompt: v.optional(v.pipe(v.string(), v.maxLength(20000))),
-    rubric: v.nullable(v.pipe(v.string(), v.maxLength(20000)))
-});
 
 /**
  * `AssessmentOutlierRow.outlier_reason_codes`
@@ -2906,6 +3008,8 @@ export const vReadinessIssueCode = v.picklist([
     'policy.due_at_past',
     'policy.cutoff_before_due',
     'policy.penalty_without_late',
+    'policy.draw_exceeds_items',
+    'policy.draw_group_short',
     'item.kind_forbidden',
     'item.title_missing',
     'item.max_score_invalid',
@@ -2930,6 +3034,7 @@ export const vReadinessIssueCode = v.picklist([
     'matching.pairs_missing',
     'matching.prompt_missing',
     'matching.right_duplicate',
+    'open_text.accepted_missing',
     'open_text.min_words_invalid',
     'open_text.prompt_missing'
 ]);
@@ -3155,6 +3260,13 @@ export const vRemediationTest = v.object({
 
 export const vReorderItemsRequest = v.strictObject({
     items: v.pipe(v.array(vAssessmentItemId), v.minLength(1), v.maxLength(200))
+});
+
+/**
+ * Read the same file again with the other `\n` mode.
+ */
+export const vReparseImportRequest = v.object({
+    unescape_newlines: v.boolean()
 });
 
 export const vReportMessageRequest = v.strictObject({
@@ -3502,52 +3614,6 @@ export const vCodeBody = v.object({
     starter_code: v.optional(v.record(v.string(), v.string())),
     tests: v.optional(v.pipe(v.array(vCodeTestCase), v.maxLength(200))),
     time_limit_seconds: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
-});
-
-/**
- * Internally tagged on `kind` - the wire and storage shape.
- *
- * `MatchingLearner` shares the `matching` tag but is only ever written
- * (the learner read); an incoming `matching` body always parses as the
- * author [`MatchingBody`].
- */
-export const vItemBody = v.union([
-    v.intersect([vChoiceBody, v.object({
-            kind: v.picklist(['choice'])
-        })]),
-    v.intersect([vOpenTextBody, v.object({
-            kind: v.picklist(['open_text'])
-        })]),
-    v.intersect([vFormBody, v.object({
-            kind: v.picklist(['form'])
-        })]),
-    v.intersect([vCodeBody, v.object({
-            kind: v.picklist(['code'])
-        })]),
-    v.intersect([vMatchingBody, v.object({
-            kind: v.picklist(['matching'])
-        })]),
-    v.intersect([vMatchingLearnerBody, v.object({
-            kind: v.picklist(['matching'])
-        })])
-]);
-
-export const vAssessmentItem = v.object({
-    assessment_version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    body: vItemBody,
-    id: vAssessmentItemId,
-    kind: vItemKind,
-    max_score: v.number(),
-    metadata: vItemMetadata,
-    position: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    title: v.string()
-});
-
-export const vCreateItemRequest = v.strictObject({
-    body: vItemBody,
-    max_score: v.optional(v.pipe(v.number(), v.minValue(0), v.maxValue(10000))),
-    metadata: v.optional(vItemMetadata),
-    title: v.optional(v.pipe(v.string(), v.maxLength(500)))
 });
 
 /**
@@ -4068,6 +4134,115 @@ export const vTeacherOverviewSummary = v.object({
     ungraded_submissions: vMetricCard
 });
 
+/**
+ * How a prompt is written. Imported spreadsheet text is `plain`: shown as
+ * typed (line breaks kept, nothing interpreted), because `List<String>`,
+ * `*` or four-space indents would change meaning as Markdown.
+ */
+export const vTextFormat = v.picklist(['markdown', 'plain']);
+
+export const vChoiceBody = v.object({
+    explanation: v.nullable(v.pipe(v.string(), v.maxLength(20000))),
+    media: v.optional(v.pipe(v.array(vMediaRef), v.maxLength(5))),
+    multiple: v.optional(v.boolean()),
+    options: v.optional(v.pipe(v.array(vChoiceOption), v.maxLength(200))),
+    prompt: v.optional(v.pipe(v.string(), v.maxLength(20000))),
+    prompt_format: v.optional(vTextFormat),
+    variant: v.nullable(vChoiceVariant)
+});
+
+export const vMatchingBody = v.object({
+    distractors: v.optional(v.pipe(v.array(v.string()), v.maxLength(200))),
+    explanation: v.nullable(v.pipe(v.string(), v.maxLength(20000))),
+    media: v.optional(v.pipe(v.array(vMediaRef), v.maxLength(5))),
+    pairs: v.pipe(v.array(vMatchingPair), v.maxLength(200)),
+    prompt: v.optional(v.pipe(v.string(), v.maxLength(20000))),
+    prompt_format: v.optional(vTextFormat)
+});
+
+/**
+ * The learner read of a matching item: the two columns with the right
+ * one shuffled (stable per viewer and item), never the pairing. Authors
+ * keep [`MatchingBody::pairs`].
+ */
+export const vMatchingLearnerBody = v.object({
+    left: v.array(vMatchingOption),
+    media: v.optional(v.array(vMediaRef)),
+    prompt: v.optional(v.string()),
+    prompt_format: v.optional(vTextFormat),
+    right: v.array(vMatchingOption)
+});
+
+export const vOpenTextBody = v.object({
+    accepted_answers: v.optional(v.pipe(v.array(v.string()), v.maxLength(200))),
+    case_sensitive: v.optional(v.boolean()),
+    media: v.optional(v.pipe(v.array(vMediaRef), v.maxLength(5))),
+    min_words: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
+    prompt: v.optional(v.pipe(v.string(), v.maxLength(20000))),
+    prompt_format: v.optional(vTextFormat),
+    rubric: v.nullable(v.pipe(v.string(), v.maxLength(20000))),
+    short_answer: v.optional(v.boolean())
+});
+
+/**
+ * Internally tagged on `kind` - the wire and storage shape.
+ *
+ * `MatchingLearner` shares the `matching` tag but is only ever written
+ * (the learner read); an incoming `matching` body always parses as the
+ * author [`MatchingBody`].
+ */
+export const vItemBody = v.union([
+    v.intersect([vChoiceBody, v.object({
+            kind: v.picklist(['choice'])
+        })]),
+    v.intersect([vOpenTextBody, v.object({
+            kind: v.picklist(['open_text'])
+        })]),
+    v.intersect([vFormBody, v.object({
+            kind: v.picklist(['form'])
+        })]),
+    v.intersect([vCodeBody, v.object({
+            kind: v.picklist(['code'])
+        })]),
+    v.intersect([vMatchingBody, v.object({
+            kind: v.picklist(['matching'])
+        })]),
+    v.intersect([vMatchingLearnerBody, v.object({
+            kind: v.picklist(['matching'])
+        })])
+]);
+
+export const vAssessmentItem = v.object({
+    assessment_version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    body: vItemBody,
+    id: vAssessmentItemId,
+    kind: vItemKind,
+    max_score: v.number(),
+    metadata: vItemMetadata,
+    position: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    source: v.optional(vItemSource),
+    title: v.string()
+});
+
+export const vCreateItemRequest = v.strictObject({
+    body: vItemBody,
+    max_score: v.optional(v.pipe(v.number(), v.minValue(0), v.maxValue(10000))),
+    metadata: v.optional(vItemMetadata),
+    title: v.optional(v.pipe(v.string(), v.maxLength(500)))
+});
+
+/**
+ * One question as it will be created.
+ */
+export const vPlannedItem = v.object({
+    body: vItemBody,
+    draw_group: v.nullable(v.string()),
+    kind: vItemKind,
+    max_score: v.number(),
+    row: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    title: v.string()
+});
+
 export const vTextSection = v.strictObject({
     content: v.string(),
     id: v.string(),
@@ -4183,6 +4358,26 @@ export const vAnalyticsDataQuality = v.object({
     last_rollup_time_unix: v.nullable(vUnixTime),
     missing_event_sources: v.array(v.string()),
     mode: vDataMode
+});
+
+/**
+ * An uploaded spreadsheet on its way to a test.
+ */
+export const vAssessmentImport = v.object({
+    course_id: vCourseId,
+    created_at_unix: vUnixTime,
+    expires_at_unix: vUnixTime,
+    file_name: v.string(),
+    id: v.pipe(v.string(), v.uuid()),
+    issues: v.array(vImportIssue),
+    issues_truncated: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    items: v.array(vPlannedItem),
+    result: v.nullable(vImportResult),
+    settings: v.nullable(vImportSettings),
+    sheet: v.string(),
+    status: vImportStatus,
+    summary: vImportSummary,
+    unescape_newlines: v.boolean()
 });
 
 export const vAttachedFile = v.object({
@@ -4555,6 +4750,8 @@ export const vPolicy = v.strictObject({
     completion_rule: vCompletionRule,
     copy_paste_protection: v.boolean(),
     devtools_detection: v.boolean(),
+    draw_count: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(200))),
+    draw_strata: v.optional(v.pipe(v.array(vDrawStratum), v.maxLength(20))),
     due_at_unix: v.nullable(vUnixTime),
     fullscreen_required: v.boolean(),
     grace_period_minutes: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
@@ -4727,6 +4924,7 @@ export const vStudentSubmission = v.object({
     grading: v.nullable(vGradingBreakdown),
     id: vSubmissionId,
     is_late: v.boolean(),
+    item_ids: v.optional(v.array(vAssessmentItemId)),
     late_penalty_pct: v.nullable(v.number()),
     release_state: vReleaseState,
     rules_accepted_at_unix: v.optional(vUnixTime),
@@ -4949,7 +5147,9 @@ export const vUploadPurpose = v.picklist([
     'file-submission',
     'collection-cover',
     'discussion-image',
-    'message-attachment'
+    'message-attachment',
+    'assessment-import',
+    'assessment-image'
 ]);
 
 export const vCreateUploadRequest = v.strictObject({
@@ -8103,6 +8303,55 @@ export const vDeleteViewQuery = v.object({
  */
 export const vDeleteViewResponse = v.void();
 
+export const vDiscardImportPath = v.object({
+    import_id: v.pipe(v.string(), v.uuid())
+});
+
+/**
+ * Discarded
+ */
+export const vDiscardImportResponse = v.void();
+
+export const vGetImportPath = v.object({
+    import_id: v.pipe(v.string(), v.uuid())
+});
+
+/**
+ * Import
+ */
+export const vGetImportResponse = vAssessmentImport;
+
+export const vReparseImportBody = vReparseImportRequest;
+
+export const vReparseImportPath = v.object({
+    import_id: v.pipe(v.string(), v.uuid())
+});
+
+/**
+ * Read again
+ */
+export const vReparseImportResponse = vAssessmentImport;
+
+export const vCommitImportBody = vCommitImportRequest;
+
+export const vCommitImportHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
+
+export const vCommitImportPath = v.object({
+    import_id: v.pipe(v.string(), v.uuid())
+});
+
+/**
+ * Committed (`result` names the test)
+ */
+export const vCommitImportResponse = vAssessmentImport;
+
+export const vImportMediaPath = v.object({
+    import_id: v.pipe(v.string(), v.uuid()),
+    upload_id: v.pipe(v.string(), v.uuid())
+});
+
 export const vDeleteItemHeaders = v.object({
     'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     Prefer: v.nullish(v.string())
@@ -8275,6 +8524,15 @@ export const vDuplicateAssessmentPath = v.object({
  */
 export const vDuplicateAssessmentResponse = vAssessmentDetail;
 
+export const vExportAssessmentPath = v.object({
+    assessment_id: vAssessmentId
+});
+
+/**
+ * The workbook
+ */
+export const vExportAssessmentResponse = v.string();
+
 export const vItemAnalyticsPath = v.object({
     assessment_id: vAssessmentId
 });
@@ -8328,6 +8586,11 @@ export const vLifecyclePath = v.object({
  * Transitioned
  */
 export const vLifecycleResponse = vAssessmentDetail;
+
+export const vAssessmentMediaPath = v.object({
+    assessment_id: vAssessmentId,
+    upload_id: v.pipe(v.string(), v.uuid())
+});
 
 export const vListOverridesPath = v.object({
     assessment_id: vAssessmentId
@@ -9003,6 +9266,17 @@ export const vCourseArchivePreviewPath = v.object({
  * Archive preview
  */
 export const vCourseArchivePreviewResponse = vCourseArchivePreview;
+
+export const vCreateImportBody = vCreateImportRequest;
+
+export const vCreateImportPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * Read: preview and issues
+ */
+export const vCreateImportResponse = vAssessmentImport;
 
 export const vListCourseAssessmentsPath = v.object({
     course_id: vCourseId

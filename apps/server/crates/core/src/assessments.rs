@@ -531,6 +531,8 @@ pub enum AuditEventKind {
     SubmissionSubmitted,
     /// OPEN-B-2: wording fixed on an assessment learners already answered.
     WordingEdited,
+    /// Questions created from a DOT spreadsheet (docs/XLSX-TEST-IMPORT.md).
+    ImportedFromXlsx,
 }
 
 impl AuditEventKind {
@@ -550,6 +552,7 @@ impl AuditEventKind {
             Self::GradesPublished => "grades-published",
             Self::SubmissionSubmitted => "submission-submitted",
             Self::WordingEdited => "wording-edited",
+            Self::ImportedFromXlsx => "imported-from-xlsx",
         }
     }
 }

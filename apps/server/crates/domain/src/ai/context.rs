@@ -1218,6 +1218,9 @@ mod tests {
             tags: vec![],
             outcome_ids: vec![],
             estimated_minutes: None,
+            draw_group: None,
+            source_file: None,
+            source_row: None,
         };
         let items = [item("Discriminant", 2.0), item("Explain", 1.0)];
         let grading = GradingBreakdown::from_value(&serde_json::json!({ "items": [

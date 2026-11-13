@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent, useState } from 'react'
 import type { AssessmentDetail, StudentSubmission } from '#/shared/api/gen/types.gen'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 
-import { runsToDueDate, unanswered, WARN_SECONDS } from '../model/attempt'
+import { attemptItems, runsToDueDate, unanswered, WARN_SECONDS } from '../model/attempt'
 import { AttemptFrame, ATTEMPT_ROUTE } from './attempt-frame'
 import { ItemNavigator } from './item-navigator'
 import { ItemPager } from './item-pager'
@@ -37,7 +37,8 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
   const left = useCountdown(attempt.time_remaining_seconds, receivedAt)
   const [contentsOpen, setContentsOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
-  const items = assessment.items
+  // A question bank's attempt shows the questions it drew, in its order.
+  const items = attemptItems(assessment.items, attempt)
   const current = Math.min(Math.max(item, 1), items.length)
   const shown = items[current - 1]
   const expired = left === 0
@@ -79,6 +80,7 @@ export function AttemptRunner({ assessment, attempt, receivedAt }: RunnerProps) 
           <ItemView
             key={shown.id}
             item={shown}
+            assessmentId={assessment.id}
             number={current}
             total={items.length}
             answer={draft.answers[shown.id]}

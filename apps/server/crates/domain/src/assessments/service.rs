@@ -26,6 +26,8 @@ use crate::progress::ProgressProjector;
 
 /// Legacy `ITEM_LIMIT_EXCEEDED` ceiling.
 pub const MAX_ITEMS: i64 = 200;
+/// A question bank (`draw_count` set) holds more: each attempt still gets at most 200.
+pub const MAX_BANK_ITEMS: i64 = 1000;
 /// BUG-208: per-item score ceiling (the DTO enforces it too); readiness
 /// catches legacy rows. `!(x > 0 && x <= MAX)` also rejects NaN.
 pub const MAX_ITEM_SCORE: f64 = 10_000.0;
@@ -146,6 +148,11 @@ pub struct Item {
     pub tags: Vec<String>,
     pub outcome_ids: Vec<String>,
     pub estimated_minutes: Option<i32>,
+    /// Bank quota group (a DOT level); `None`: none.
+    pub draw_group: Option<String>,
+    /// Imported items: the spreadsheet and its row.
+    pub source_file: Option<String>,
+    pub source_row: Option<i32>,
 }
 
 impl TryFrom<ab_db::assessments::ItemRow> for Item {
@@ -166,6 +173,9 @@ impl TryFrom<ab_db::assessments::ItemRow> for Item {
             tags: row.tags,
             outcome_ids: row.outcome_ids,
             estimated_minutes: row.estimated_minutes,
+            draw_group: row.draw_group,
+            source_file: row.source_file,
+            source_row: row.source_row,
         })
     }
 }
@@ -249,12 +259,28 @@ pub struct PolicyInput {
     pub violation_threshold: i32,
     /// Cap on the max score for attempt n: 100 - pct * (n - 1). 0 = off.
     pub attempt_penalty_percent: f64,
+    /// Question bank: this many items drawn at random per attempt; `None`: all.
+    pub draw_count: Option<i32>,
+    /// Quotas inside the draw, taken from items of that `draw_group` first.
+    pub draw_strata: Vec<DrawStratum>,
 }
+
+/// `count` of an attempt's questions come from items of `group`.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+pub struct DrawStratum {
+    #[schema(min_length = 1, max_length = 32)]
+    pub group: String,
+    #[schema(minimum = 1, maximum = 200)]
+    pub count: i32,
+}
+
+/// Most questions one attempt draws (the item cap).
+pub const MAX_DRAW: i32 = 200;
 
 impl PolicyInput {
     /// Legacy `policy_defaults.py` presets.
     #[must_use]
-    pub const fn preset(kind: AssessmentKind) -> Self {
+    pub fn preset(kind: AssessmentKind) -> Self {
         let base = Self {
             grading_mode: GradingMode::Auto,
             grade_release_mode: GradeReleaseMode::Immediate,
@@ -279,6 +305,8 @@ impl PolicyInput {
             fullscreen_required: false,
             violation_threshold: 3,
             attempt_penalty_percent: 0.0,
+            draw_count: None,
+            draw_strata: Vec::new(),
         };
         match kind {
             AssessmentKind::Exam => Self {
@@ -303,7 +331,7 @@ impl PolicyInput {
     }
 
     #[must_use]
-    pub const fn from_row(row: &Assessment) -> Self {
+    pub fn from_row(row: &Assessment) -> Self {
         Self {
             grading_mode: row.grading_mode,
             grade_release_mode: row.grade_release_mode,
@@ -333,12 +361,18 @@ impl PolicyInput {
             fullscreen_required: row.fullscreen_required,
             violation_threshold: row.violation_threshold,
             attempt_penalty_percent: row.attempt_penalty_percent,
+            draw_count: row.draw_count,
+            draw_strata: row
+                .draw_strata
+                .as_ref()
+                .and_then(|v| serde_json::from_value(v.clone()).ok())
+                .unwrap_or_default(),
         }
     }
 
     /// Range rules (the DB CHECKs back every one of these; this turns them
     /// into 422s with field names instead of 500s).
-    fn validate(&self) -> Result<()> {
+    pub(crate) fn validate(&self) -> Result<()> {
         let mut errors = Vec::new();
         let mut check = |ok: bool, field: &str, message: &str| {
             if !ok {
@@ -397,6 +431,27 @@ impl PolicyInput {
             );
             check(max_days >= 1, "late_policy.max_days", "must be at least 1");
         }
+        check(
+            self.draw_count.is_none_or(|n| (1..=MAX_DRAW).contains(&n)),
+            "draw_count",
+            "must be between 1 and 200 (or null for every question)",
+        );
+        let quota: i32 = self.draw_strata.iter().map(|s| s.count).sum();
+        check(
+            self.draw_strata.is_empty() || self.draw_count.is_some_and(|n| quota <= n),
+            "draw_strata",
+            "quotas need a draw count at least their sum",
+        );
+        let mut groups = std::collections::HashSet::new();
+        check(
+            self.draw_strata.iter().all(|s| {
+                (1..=MAX_DRAW).contains(&s.count)
+                    && (1..=32).contains(&s.group.trim().chars().count())
+                    && groups.insert(s.group.trim())
+            }),
+            "draw_strata",
+            "each quota names a distinct group (1 to 32 characters) and 1 to 200 questions",
+        );
         if errors.is_empty() {
             Ok(())
         } else {
@@ -404,7 +459,7 @@ impl PolicyInput {
         }
     }
 
-    const fn to_values(&self) -> PolicyValues {
+    pub(crate) fn to_values(&self) -> PolicyValues {
         let (late_policy_kind, late_penalty_percent_per_day, late_penalty_max_days, late_cutoff_at) =
             self.late_policy.columns();
         PolicyValues {
@@ -434,6 +489,15 @@ impl PolicyInput {
             fullscreen_required: self.fullscreen_required,
             violation_threshold: self.violation_threshold,
             attempt_penalty_percent: self.attempt_penalty_percent,
+            draw_count: self.draw_count,
+            draw_strata: (!self.draw_strata.is_empty()).then(|| {
+                serde_json::Value::Array(
+                    self.draw_strata
+                        .iter()
+                        .map(|s| serde_json::json!({ "group": s.group.trim(), "count": s.count }))
+                        .collect(),
+                )
+            }),
         }
     }
 }
@@ -465,6 +529,8 @@ pub struct ItemMetadataInput {
     pub tags: Vec<String>,
     pub outcome_ids: Vec<String>,
     pub estimated_minutes: Option<i32>,
+    /// Bank quota group; blank is none.
+    pub draw_group: Option<String>,
 }
 
 impl ItemMetadataInput {
@@ -480,6 +546,10 @@ impl ItemMetadataInput {
             tags: normalize_tags(&self.tags),
             outcome_ids: normalize_tags(&self.outcome_ids),
             estimated_minutes: self.estimated_minutes,
+            draw_group: self
+                .draw_group
+                .map(|s| s.trim().chars().take(32).collect::<String>())
+                .filter(|s| !s.is_empty()),
         }
     }
 
@@ -490,6 +560,7 @@ impl ItemMetadataInput {
             tags: &self.tags,
             outcome_ids: &self.outcome_ids,
             estimated_minutes: self.estimated_minutes,
+            draw_group: self.draw_group.as_deref(),
         }
     }
 }
@@ -646,7 +717,11 @@ impl AssessmentsService {
     }
 
     /// Course-visible (404 otherwise) + authoring grant.
-    async fn authorable_course(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
+    pub(crate) async fn authorable_course(
+        &self,
+        actor: &Actor,
+        course_id: CourseId,
+    ) -> Result<Course> {
         let course = self.courses.get(actor, course_id).await?;
         Self::require_scoped(actor, &course, Action::Author, "authoring")?;
         Ok(course)
@@ -717,7 +792,7 @@ impl AssessmentsService {
     /// Legacy `ASSESSMENT_LOCKED`: content (body/kind/max score) freezes once
     /// a published assessment has a non-draft submission. BUG-377: on the
     /// caller's transaction when it holds the row lock.
-    async fn ensure_content_unlocked<'e>(
+    pub(crate) async fn ensure_content_unlocked<'e>(
         db: impl sqlx::PgExecutor<'e>,
         assessment: &Assessment,
     ) -> Result<()> {
@@ -801,6 +876,23 @@ impl AssessmentsService {
         actor: &Actor,
         input: CreateAssessment<'_>,
     ) -> Result<AssessmentDetail> {
+        // BUG-233: activity + assessment (+ default item) land together - a
+        // dropped socket or a concurrent chapter DELETE (FK → 404) leaves no
+        // orphan activity behind.
+        let mut tx = self.pool.begin().await?;
+        let id = self.create_in(&mut tx, actor, input).await?;
+        tx.commit().await?;
+        self.detail(id).await
+    }
+
+    /// [`Self::create`] on the caller's transaction (the spreadsheet import
+    /// adds its questions in the same one).
+    pub(crate) async fn create_in(
+        &self,
+        tx: &mut sqlx::PgConnection,
+        actor: &Actor,
+        input: CreateAssessment<'_>,
+    ) -> Result<AssessmentId> {
         let chapter = self.authorable_chapter(actor, input.chapter_id).await?;
         // BUG-177: titles are trimmed and never blank (shared rule, BUG-168).
         let title = ab_core::required_str("title", input.title)?;
@@ -809,10 +901,6 @@ impl AssessmentsService {
         policy.validate()?;
 
         let (activity_type, sub_type) = kind.activity_type();
-        // BUG-233: activity + assessment (+ default item) land together - a
-        // dropped socket or a concurrent chapter DELETE (FK → 404) leaves no
-        // orphan activity behind.
-        let mut tx = self.pool.begin().await?;
         let activity_id = ab_db::catalog::insert_activity(
             &mut *tx,
             input.chapter_id,
@@ -849,11 +937,10 @@ impl AssessmentsService {
             )
             .await?;
         }
-        tx.commit().await?;
-        self.detail(id).await
+        Ok(id)
     }
 
-    async fn detail(&self, id: AssessmentId) -> Result<AssessmentDetail> {
+    pub(crate) async fn detail(&self, id: AssessmentId) -> Result<AssessmentDetail> {
         let assessment = self.load(id).await?;
         let items = ab_db::assessments::list_items(&self.pool, id)
             .await?
@@ -866,7 +953,7 @@ impl AssessmentsService {
     /// BUG-218: the row lock plus a fresh read inside `tx`. Publish and the
     /// item/policy writes serialize on it, so each gate sees the other's
     /// committed result instead of the state it loaded before the lock.
-    async fn lock_detail(
+    pub(crate) async fn lock_detail(
         tx: &mut sqlx::PgConnection,
         id: AssessmentId,
     ) -> Result<AssessmentDetail> {
@@ -897,6 +984,19 @@ impl AssessmentsService {
             }
         }
         let mut detail = self.detail(id).await?;
+        // The bank never reaches a learner: they read the questions their
+        // attempt drew (the open draft's, else the newest), none before one.
+        let drew = !author && detail.assessment.draw_count.is_some();
+        if drew {
+            let selection =
+                ab_db::submissions::reading_selection(&self.pool, id, actor.user_id).await?;
+            detail.items = match selection {
+                None => Vec::new(),
+                Some(selection) => {
+                    super::draw::drawn(std::mem::take(&mut detail.items), selection.as_deref())
+                }
+            };
+        }
         if !author {
             let shuffle_options = detail.assessment.randomize_options;
             for item in &mut detail.items {
@@ -904,7 +1004,8 @@ impl AssessmentsService {
                 item.body
                     .redact_for_learner(shuffle_seed(actor.user_id, item.id.0), shuffle_options);
             }
-            if detail.assessment.randomize_questions {
+            // A draw already holds its order.
+            if detail.assessment.randomize_questions && !drew {
                 items::shuffle(&mut detail.items, shuffle_seed(actor.user_id, id.0));
             }
         }
@@ -1069,6 +1170,10 @@ impl AssessmentsService {
     // ── Readiness + lifecycle ───────────────────────────────────────────
 
     /// Legacy `build_readiness`, minus the rules the schema now enforces.
+    #[allow(
+        clippy::too_many_lines,
+        reason = "the readiness rules, one after another"
+    )]
     fn build_readiness(
         assessment: &Assessment,
         items: &[Item],
@@ -1133,6 +1238,31 @@ impl AssessmentsService {
             issues.push(warning(
                 "policy.penalty_without_late",
                 "a late penalty has no effect while late submissions are not allowed",
+            ));
+        }
+        // The bank: an attempt cannot draw more than there is.
+        let policy = PolicyInput::from_row(assessment);
+        if policy
+            .draw_count
+            .is_some_and(|n| usize::try_from(n).unwrap_or(0) > items.len())
+        {
+            issues.push(blocker(
+                "policy.draw_exceeds_items",
+                "an attempt draws more questions than the test has",
+                "policy",
+            ));
+        }
+        if policy.draw_strata.iter().any(|s| {
+            let have = items
+                .iter()
+                .filter(|i| i.draw_group.as_deref() == Some(s.group.as_str()))
+                .count();
+            have < usize::try_from(s.count).unwrap_or(0)
+        }) {
+            issues.push(blocker(
+                "policy.draw_group_short",
+                "a quota asks for more questions than its group has",
+                "policy",
             ));
         }
         for item in items {
@@ -1463,6 +1593,7 @@ impl AssessmentsService {
                     tags: &item.tags,
                     outcome_ids: &item.outcome_ids,
                     estimated_minutes: item.estimated_minutes,
+                    draw_group: item.draw_group.as_deref(),
                 },
             )
             .await?;
@@ -1530,11 +1661,16 @@ impl AssessmentsService {
         Self::ensure_content_unlocked(&mut *tx, &assessment).await?;
         // BUG-264: the cap counts the items read under the row lock, so
         // parallel adds at 199 cannot each see room for one more.
-        if i64::try_from(items.len()).unwrap_or(i64::MAX) >= MAX_ITEMS {
+        let cap = if assessment.draw_count.is_some() {
+            MAX_BANK_ITEMS
+        } else {
+            MAX_ITEMS
+        };
+        if i64::try_from(items.len()).unwrap_or(i64::MAX) >= cap {
             return Err(Error::validation(vec![FieldError {
                 field: "items".into(),
                 code: "limit-exceeded".into(),
-                message: format!("an assessment holds at most {MAX_ITEMS} items"),
+                message: format!("an assessment holds at most {cap} items"),
             }]));
         }
         if assessment.lifecycle == Lifecycle::Published {
@@ -1550,6 +1686,9 @@ impl AssessmentsService {
                 tags: Vec::new(),
                 outcome_ids: Vec::new(),
                 estimated_minutes: None,
+                draw_group: None,
+                source_file: None,
+                source_row: None,
             });
             let (before, _) = items.split_at(items.len() - 1);
             Self::ensure_stays_ready((&assessment, before), (&assessment, &items))?;
@@ -1562,6 +1701,14 @@ impl AssessmentsService {
             &body.to_stored(),
             max_score,
             metadata.as_db(),
+        )
+        .await?;
+        super::imports::sync_media(
+            &mut tx,
+            actor,
+            assessment.course_id,
+            &[],
+            &body.upload_ids(),
         )
         .await?;
         ab_db::assessments::bump_content_version(&mut *tx, id).await?;
@@ -1589,6 +1736,10 @@ impl AssessmentsService {
         Ok((assessment, row))
     }
 
+    #[allow(
+        clippy::too_many_lines,
+        reason = "lock, validate, write, pictures, audit"
+    )]
     pub async fn update_item(
         &self,
         actor: &Actor,
@@ -1606,6 +1757,7 @@ impl AssessmentsService {
         // The editor re-sends the whole item, so compare, don't test presence;
         // a title/metadata edit neither locks nor stales open drafts.
         let current = items.iter().find(|i| i.id == item_id);
+        let pictures_before = current.map(|i| i.body.upload_ids()).unwrap_or_default();
         let content_changed = current.is_none_or(|item| {
             changes
                 .body
@@ -1678,6 +1830,16 @@ impl AssessmentsService {
             metadata.as_ref().map(ItemMetadataInput::as_db),
         )
         .await?;
+        if let Some(body) = &changes.body {
+            super::imports::sync_media(
+                &mut tx,
+                actor,
+                assessment.course_id,
+                &pictures_before,
+                &body.upload_ids(),
+            )
+            .await?;
+        }
         if wording_edit && (content_changed || renamed) {
             let content_version = if content_changed {
                 ab_db::assessments::bump_wording_version(&mut *tx, row.assessment_id).await?
@@ -1718,6 +1880,12 @@ impl AssessmentsService {
             ));
         }
         ab_db::assessments::delete_item(&mut *tx, item_id).await?;
+        let pictures = items
+            .iter()
+            .find(|i| i.id == item_id)
+            .map(|i| i.body.upload_ids())
+            .unwrap_or_default();
+        super::imports::sync_media(&mut tx, actor, assessment.course_id, &pictures, &[]).await?;
         let remaining: Vec<AssessmentItemId> = items
             .iter()
             .map(|i| i.id)

@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT selected_item_ids FROM submissions\n           WHERE assessment_id = $1 AND user_id = $2\n           ORDER BY (status = 'draft') DESC, created_at DESC, id DESC\n           LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "selected_item_ids",
+        "type_info": "UuidArray",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "selected_item_ids"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "8461d00b68e9df1482d0644bf8e6bf5d94d6707b5c66fb219d24a3020f5b99d7"
+}

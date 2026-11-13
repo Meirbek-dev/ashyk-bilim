@@ -1,12 +1,14 @@
 import * as v from 'valibot'
 
-import type { AssessmentItem, ItemBody, UpdateItemRequest } from '#/shared/api/gen/types.gen'
-import { vItemBody, vUpdateItemRequest } from '#/shared/api/gen/valibot.gen'
+import type { AssessmentItem, ItemBody, ItemMetadata, UpdateItemRequest } from '#/shared/api/gen/types.gen'
+import { vItemBody, vItemMetadata, vUpdateItemRequest } from '#/shared/api/gen/valibot.gen'
 
-// A question's editor form: the request's own fields, with points as typed text. Every rule comes from the
-// generated body schema (title length, points range, body shape); the publish rules are the server's readiness.
+// A question's editor form: the request's own fields, with points and the draw group as typed text. Every rule comes
+// from the generated body schema (title length, points range, body shape); the publish rules are the server's
+// readiness. The body and the metadata go back whole: what the editor does not show (an imported question's pictures,
+// its plain format, short-answer keys, distractors) survives an edit of what it does.
 
-export type ItemForm = { title: string; points: string; body: ItemBody }
+export type ItemForm = { title: string; points: string; draw_group: string; body: ItemBody; metadata: ItemMetadata }
 
 const { title, max_score: maxScore } = vUpdateItemRequest.entries
 
@@ -16,18 +18,30 @@ const points = v.pipe(
   v.check(text => text.trim() !== '' && v.is(maxScore, Number(text.replace(',', '.')))),
 )
 
-export const itemFormSchema = v.object({ title: title.wrapped, points, body: vItemBody })
+/** The server's cap on a draw group (`ItemMetadata.draw_group`, 32 characters). */
+const drawGroup = v.pipe(v.string(), v.trim(), v.maxLength(32))
+
+export const itemFormSchema = v.object({
+  title: title.wrapped,
+  points,
+  draw_group: drawGroup,
+  body: vItemBody,
+  metadata: vItemMetadata,
+})
 
 export const itemForm = (item: AssessmentItem): ItemForm => ({
   title: item.title,
   points: String(item.max_score),
+  draw_group: item.metadata.draw_group ?? '',
   body: item.body,
+  metadata: item.metadata,
 })
 
 export const itemPatch = (form: ItemForm): UpdateItemRequest => ({
   title: form.title,
   max_score: Number(form.points.replace(',', '.')),
   body: form.body,
+  metadata: { ...form.metadata, draw_group: form.draw_group.trim() || null },
 })
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)

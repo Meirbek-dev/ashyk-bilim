@@ -36,7 +36,8 @@
       "./messages/{locale}/notifications.json",
       "./messages/{locale}/conversations.json",
       "./messages/{locale}/concepts.json",
-      "./messages/{locale}/ai_grading.json"
+      "./messages/{locale}/ai_grading.json",
+      "./messages/{locale}/assessment_import.json"
     ]
   }
 }

@@ -51,6 +51,18 @@ expression: registry
     409,
     "AI run was cancelled"
   ],
+  "assessment-export-empty": [
+    422,
+    "No question of this test fits the spreadsheet format"
+  ],
+  "assessment-import-expired": [
+    410,
+    "The uploaded spreadsheet has expired; upload it again"
+  ],
+  "assessment-import-invalid": [
+    409,
+    "The spreadsheet has errors to fix first"
+  ],
   "assessment-read-only": [
     409,
     "Assessment can no longer be edited"

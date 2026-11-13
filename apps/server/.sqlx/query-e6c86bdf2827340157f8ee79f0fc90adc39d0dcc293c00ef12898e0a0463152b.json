@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE assessment_imports SET\n               status = $2, unescape_newlines = $3, sheet_name = $4, parsed = $5,\n               issues = $6, issues_truncated = $7, image_upload_ids = $8, parsed_at = now()\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bool",
+        "Text",
+        "Jsonb",
+        "Jsonb",
+        "Int4",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e6c86bdf2827340157f8ee79f0fc90adc39d0dcc293c00ef12898e0a0463152b"
+}

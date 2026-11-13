@@ -12,6 +12,8 @@ import { itemForm, itemFormSchema, itemPatch } from '../model/item-form'
 import { editMode } from '../model/route'
 import { BodyFields } from './body-fields'
 import { ItemActions } from './item-actions'
+import { ItemSource } from './item-source'
+import { AssessmentIdContext } from './media-picture'
 import { useItemAutosave } from './use-item-autosave'
 
 type ItemEditorProps = { activityId: string; assessment: AssessmentDetail; item: AssessmentItem }
@@ -53,6 +55,7 @@ export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
           />
         ) : null}
       </div>
+      <ItemSource source={item.source} className="text-sm text-muted-foreground" />
       {autosave.error ? <ErrorAlert>{presentError(autosave.error)}</ErrorAlert> : null}
       <form
         noValidate
@@ -72,15 +75,28 @@ export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
                 {field => <field.TextField label={m.assessments_field_points()} inputMode="decimal" />}
               </form.AppField>
             </fieldset>
+            {/* Which quota of the draw takes it (policy «Quotas by group»): part of what an attempt gets. */}
+            <fieldset disabled={mode !== 'all'} className="w-56">
+              <form.AppField name="draw_group">
+                {field => (
+                  <field.TextField
+                    label={m.assessments_field_draw_group()}
+                    description={m.assessments_field_draw_group_hint()}
+                  />
+                )}
+              </form.AppField>
+            </fieldset>
           </div>
-          <form.Field name="body">
-            {field => (
-              <>
-                <BodyFields body={field.state.value} onChange={field.handleChange} mode={mode} />
-                {field.state.meta.errors.length > 0 ? <FieldError>{m.validation_invalid()}</FieldError> : null}
-              </>
-            )}
-          </form.Field>
+          <AssessmentIdContext value={assessment.id}>
+            <form.Field name="body">
+              {field => (
+                <>
+                  <BodyFields body={field.state.value} onChange={field.handleChange} mode={mode} />
+                  {field.state.meta.errors.length > 0 ? <FieldError>{m.validation_invalid()}</FieldError> : null}
+                </>
+              )}
+            </form.Field>
+          </AssessmentIdContext>
         </fieldset>
       </form>
       <ConflictDialog {...autosave.conflict} />

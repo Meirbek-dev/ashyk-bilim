@@ -31,8 +31,43 @@ pub const MAX_BODY_ENTRIES: usize = 200;
 /// runner host sizes its memory for 2 GB programs.
 pub const MAX_CODE_TIME_SECONDS: i32 = 15;
 pub const MAX_CODE_MEMORY_MB: i32 = 2048;
+/// Pictures on one prompt (DOT allows several in the question cell).
+pub const MAX_PROMPT_MEDIA: usize = 5;
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+/// How a prompt is written. Imported spreadsheet text is `plain`: shown as
+/// typed (line breaks kept, nothing interpreted), because `List<String>`,
+/// `*` or four-space indents would change meaning as Markdown.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum TextFormat {
+    #[default]
+    Markdown,
+    Plain,
+}
+
+impl TextFormat {
+    #[allow(
+        clippy::trivially_copy_pass_by_ref,
+        reason = "serde skip_serializing_if"
+    )]
+    fn is_markdown(&self) -> bool {
+        *self == Self::Markdown
+    }
+}
+
+/// A picture in an item body: an `assessment-image` upload, served to
+/// whoever may read the item by `GET /assessment-media/{upload_id}`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct MediaRef {
+    pub upload_id: uuid::Uuid,
+    pub width: u32,
+    pub height: u32,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    #[schema(max_length = 500)]
+    pub alt: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, ToSchema)]
 pub struct ChoiceOption {
     pub id: String,
     #[serde(default)]
@@ -40,6 +75,10 @@ pub struct ChoiceOption {
     pub text: String,
     #[serde(default)]
     pub is_correct: bool,
+    /// A picture shown with (or instead of) the text; absent: none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub media: Option<MediaRef>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -50,7 +89,7 @@ pub enum ChoiceVariant {
     TrueFalse,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, ToSchema)]
 pub struct ChoiceBody {
     #[serde(default)]
     #[schema(max_length = 20_000)]
@@ -65,9 +104,15 @@ pub struct ChoiceBody {
     #[serde(default)]
     #[schema(max_length = 20_000)]
     pub explanation: Option<String>,
+    #[serde(default, skip_serializing_if = "TextFormat::is_markdown")]
+    pub prompt_format: TextFormat,
+    /// Pictures under the prompt, in order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[schema(max_items = 5)]
+    pub media: Vec<MediaRef>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, ToSchema)]
 pub struct OpenTextBody {
     #[serde(default)]
     #[schema(max_length = 20_000)]
@@ -77,6 +122,23 @@ pub struct OpenTextBody {
     #[serde(default)]
     #[schema(max_length = 20_000)]
     pub rubric: Option<String>,
+    #[serde(default, skip_serializing_if = "TextFormat::is_markdown")]
+    pub prompt_format: TextFormat,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[schema(max_items = 5)]
+    pub media: Vec<MediaRef>,
+    /// A short answer graded automatically against `accepted_answers`
+    /// (DOT type 3) instead of by a teacher; the learner gets one line.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub short_answer: bool,
+    /// Short answer: any of these (trimmed, inner whitespace collapsed,
+    /// numbers compared as numbers) scores full points. Never sent to learners.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[schema(max_items = 200)]
+    pub accepted_answers: Vec<String>,
+    /// Short answer: letter case matters (DOT compares case-sensitively).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub case_sensitive: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -211,11 +273,14 @@ impl CodeBody {
 pub struct MatchingPair {
     #[schema(max_length = 20_000)]
     pub left: String,
+    /// The right-hand value this left one goes with; `null`: it goes with
+    /// none (the learner must leave it unplaced, DOT `k-0`). Several left
+    /// values may share one right value.
     #[schema(max_length = 20_000)]
-    pub right: String,
+    pub right: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, ToSchema)]
 pub struct MatchingBody {
     #[serde(default)]
     #[schema(max_length = 20_000)]
@@ -229,6 +294,35 @@ pub struct MatchingBody {
     #[serde(default)]
     #[schema(max_length = 20_000)]
     pub explanation: Option<String>,
+    /// Right-hand values no left one goes with (shown among the others).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[schema(max_items = 200)]
+    pub distractors: Vec<String>,
+    #[serde(default, skip_serializing_if = "TextFormat::is_markdown")]
+    pub prompt_format: TextFormat,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[schema(max_items = 5)]
+    pub media: Vec<MediaRef>,
+}
+
+impl MatchingBody {
+    /// The right column: each paired value once (first-use order), then
+    /// the distractors.
+    #[must_use]
+    pub fn right_values(&self) -> Vec<&str> {
+        let mut out: Vec<&str> = Vec::new();
+        for value in self
+            .pairs
+            .iter()
+            .filter_map(|p| p.right.as_deref())
+            .chain(self.distractors.iter().map(String::as_str))
+        {
+            if !out.contains(&value) {
+                out.push(value);
+            }
+        }
+        out
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -248,6 +342,10 @@ pub struct MatchingLearnerBody {
     pub prompt: String,
     pub left: Vec<MatchingOption>,
     pub right: Vec<MatchingOption>,
+    #[serde(default, skip_serializing_if = "TextFormat::is_markdown")]
+    pub prompt_format: TextFormat,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub media: Vec<MediaRef>,
 }
 
 /// Internally tagged on `kind` - the wire and storage shape.
@@ -303,7 +401,11 @@ impl ItemBody {
                     shuffle(&mut body.options, seed);
                 }
             }
-            Self::OpenText(body) => body.rubric = None,
+            Self::OpenText(body) => {
+                body.rubric = None;
+                body.accepted_answers.clear();
+                body.case_sensitive = false;
+            }
             Self::Code(body) => {
                 body.reference_solutions.clear();
                 body.tests.retain(|test| test.is_visible);
@@ -313,23 +415,20 @@ impl ItemBody {
                     id: text.to_owned(),
                     text: text.to_owned(),
                 };
-                let mut right: Vec<MatchingOption> =
-                    body.pairs.iter().map(|p| option(&p.right)).collect();
+                let paired: Vec<&str> = body.right_values();
+                let mut right: Vec<MatchingOption> = paired.iter().map(|t| option(t)).collect();
                 shuffle(&mut right, seed);
                 // The pairing order would hand over the answer (half the seeds of a two-pair
                 // item land on it): shift it by one, still the same order for the same seed.
-                if right.len() > 1
-                    && right
-                        .iter()
-                        .zip(&body.pairs)
-                        .all(|(o, p)| o.text == p.right)
-                {
+                if right.len() > 1 && right.iter().zip(&paired).all(|(o, p)| o.text == *p) {
                     right.rotate_left(1);
                 }
                 *self = Self::MatchingLearner(MatchingLearnerBody {
                     prompt: std::mem::take(&mut body.prompt),
                     left: body.pairs.iter().map(|p| option(&p.left)).collect(),
                     right,
+                    prompt_format: body.prompt_format,
+                    media: std::mem::take(&mut body.media),
                 });
             }
             Self::Form(_) | Self::MatchingLearner(_) => {}
@@ -379,11 +478,16 @@ impl ItemBody {
             Self::Choice(b) => {
                 b.prompt.clear();
                 b.explanation = None;
-                b.options.iter_mut().for_each(|o| o.text.clear());
+                b.media.clear();
+                b.options.iter_mut().for_each(|o| {
+                    o.text.clear();
+                    o.media = None;
+                });
             }
             Self::OpenText(b) => {
                 b.prompt.clear();
                 b.rubric = None;
+                b.media.clear();
             }
             Self::Form(b) => {
                 b.prompt.clear();
@@ -399,8 +503,12 @@ impl ItemBody {
             Self::Matching(b) => {
                 b.prompt.clear();
                 b.explanation = None;
+                b.media.clear();
             }
-            Self::MatchingLearner(b) => b.prompt.clear(),
+            Self::MatchingLearner(b) => {
+                b.prompt.clear();
+                b.media.clear();
+            }
         }
         key.to_stored()
     }
@@ -461,6 +569,10 @@ pub enum ReadinessIssueCode {
     PolicyCutoffBeforeDue,
     #[serde(rename = "policy.penalty_without_late")]
     PolicyPenaltyWithoutLate,
+    #[serde(rename = "policy.draw_exceeds_items")]
+    PolicyDrawExceedsItems,
+    #[serde(rename = "policy.draw_group_short")]
+    PolicyDrawGroupShort,
     #[serde(rename = "item.kind_forbidden")]
     ItemKindForbidden,
     #[serde(rename = "item.title_missing")]
@@ -509,6 +621,8 @@ pub enum ReadinessIssueCode {
     MatchingPromptMissing,
     #[serde(rename = "matching.right_duplicate")]
     MatchingRightDuplicate,
+    #[serde(rename = "open_text.accepted_missing")]
+    OpenTextAcceptedMissing,
     #[serde(rename = "open_text.min_words_invalid")]
     OpenTextMinWordsInvalid,
     #[serde(rename = "open_text.prompt_missing")]
@@ -546,7 +660,7 @@ fn blank(s: &str) -> bool {
     s.trim().is_empty()
 }
 
-/// Case-insensitive duplicate detector.
+/// Case-insensitive duplicate detector (ids).
 fn has_duplicates<'a>(values: impl Iterator<Item = &'a str>) -> bool {
     let mut seen = HashSet::new();
     for value in values {
@@ -555,6 +669,17 @@ fn has_duplicates<'a>(values: impl Iterator<Item = &'a str>) -> bool {
         }
     }
     false
+}
+
+/// Duplicate texts: exact after trimming. Case matters - `person.age` and
+/// `Person.age` are different answers in a Java question. Blank values
+/// (picture-only options) are left to the blank rules.
+fn has_text_duplicates<'a>(values: impl Iterator<Item = &'a str>) -> bool {
+    let mut seen = HashSet::new();
+    values
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+        .any(|v| !seen.insert(v))
 }
 
 /// Collects `(condition, code, message)` rules into blocker issues.
@@ -571,7 +696,7 @@ impl ChoiceBody {
         let correct = self.options.iter().filter(|o| o.is_correct).count();
         rules(&[
             (
-                blank(&self.prompt),
+                blank(&self.prompt) && self.media.is_empty(),
                 "choice.prompt_missing",
                 "prompt is empty",
             ),
@@ -581,12 +706,14 @@ impl ChoiceBody {
                 "at least two options are required",
             ),
             (
-                self.options.iter().any(|o| blank(&o.text)),
+                self.options
+                    .iter()
+                    .any(|o| blank(&o.text) && o.media.is_none()),
                 "choice.option_text_missing",
-                "every option needs text",
+                "every option needs text or a picture",
             ),
             (
-                has_duplicates(self.options.iter().map(|o| o.text.as_str())),
+                has_text_duplicates(self.options.iter().map(|o| o.text.as_str())),
                 "choice.option_duplicate",
                 "options must be distinct",
             ),
@@ -613,7 +740,7 @@ impl OpenTextBody {
     fn readiness(&self) -> Vec<ReadinessIssue> {
         rules(&[
             (
-                blank(&self.prompt),
+                blank(&self.prompt) && self.media.is_empty(),
                 "open_text.prompt_missing",
                 "prompt is empty",
             ),
@@ -621,6 +748,11 @@ impl OpenTextBody {
                 self.min_words.is_some_and(|n| n < 0),
                 "open_text.min_words_invalid",
                 "minimum words cannot be negative",
+            ),
+            (
+                self.short_answer && self.accepted_answers.iter().all(|a| blank(a)),
+                "open_text.accepted_missing",
+                "a short answer needs at least one accepted answer",
             ),
         ])
     }
@@ -690,29 +822,47 @@ impl MatchingBody {
     fn readiness(&self) -> Vec<ReadinessIssue> {
         rules(&[
             (
-                blank(&self.prompt),
+                blank(&self.prompt) && self.media.is_empty(),
                 "matching.prompt_missing",
                 "prompt is empty",
             ),
             (
-                self.pairs.is_empty(),
+                !self.pairs.iter().any(|p| p.right.is_some()),
                 "matching.pairs_missing",
                 "add at least one pair",
             ),
             (
-                self.pairs.iter().any(|p| blank(&p.left) || blank(&p.right)),
+                self.pairs
+                    .iter()
+                    .any(|p| blank(&p.left) || p.right.as_deref().is_some_and(blank))
+                    || self.distractors.iter().any(|d| blank(d)),
                 "matching.pair_value_missing",
                 "every pair needs both sides",
             ),
             (
-                has_duplicates(self.pairs.iter().map(|p| p.left.as_str())),
+                has_text_duplicates(self.pairs.iter().map(|p| p.left.as_str())),
                 "matching.left_duplicate",
                 "left-hand values must be distinct",
             ),
             (
-                has_duplicates(self.pairs.iter().map(|p| p.right.as_str())),
+                {
+                    // Several left values may share a right one; a wrong answer may
+                    // repeat neither a paired value nor another wrong answer.
+                    let mut paired: Vec<&str> = self
+                        .pairs
+                        .iter()
+                        .filter_map(|p| p.right.as_deref())
+                        .collect();
+                    paired.sort_unstable();
+                    paired.dedup();
+                    has_text_duplicates(
+                        paired
+                            .into_iter()
+                            .chain(self.distractors.iter().map(String::as_str)),
+                    )
+                },
                 "matching.right_duplicate",
-                "right-hand values must be distinct",
+                "a wrong answer repeats a right-hand value",
             ),
         ])
     }
@@ -754,6 +904,25 @@ impl ItemBody {
                 "a text field holds at most 20000 characters",
             );
         }
+        let (media, option_media) = self.media();
+        if media.len() > MAX_PROMPT_MEDIA {
+            return fail(
+                "body.media",
+                "limit-exceeded",
+                "a prompt holds at most 5 pictures",
+            );
+        }
+        if media
+            .iter()
+            .chain(option_media.iter().copied())
+            .any(|m| m.alt.chars().count() > 500 || m.width == 0 || m.height == 0)
+        {
+            return fail(
+                "body.media",
+                "invalid",
+                "a picture needs its size and at most 500 characters of description",
+            );
+        }
         if entries > MAX_BODY_ENTRIES {
             return fail(
                 "body",
@@ -786,8 +955,37 @@ impl ItemBody {
         Ok(())
     }
 
+    /// The prompt pictures and the option pictures of a body.
+    fn media(&self) -> (&[MediaRef], Vec<&MediaRef>) {
+        match self {
+            Self::Choice(b) => (
+                &b.media,
+                b.options.iter().filter_map(|o| o.media.as_ref()).collect(),
+            ),
+            Self::OpenText(b) => (&b.media, Vec::new()),
+            Self::Matching(b) => (&b.media, Vec::new()),
+            Self::MatchingLearner(b) => (&b.media, Vec::new()),
+            Self::Form(_) | Self::Code(_) => (&[], Vec::new()),
+        }
+    }
+
+    /// Every upload an item body names (prompt and option pictures).
+    #[must_use]
+    pub fn upload_ids(&self) -> Vec<uuid::Uuid> {
+        let (media, option_media) = self.media();
+        let mut ids: Vec<uuid::Uuid> = media
+            .iter()
+            .chain(option_media)
+            .map(|m| m.upload_id)
+            .collect();
+        ids.sort_unstable();
+        ids.dedup();
+        ids
+    }
+
     /// Every free-text field with its wire path, and the size of the
     /// bounded list (options / fields / pairs / tests).
+    #[allow(clippy::too_many_lines, reason = "one match over the item kinds")]
     fn sized_fields(&self) -> (Vec<(String, &str)>, usize) {
         let mut texts: Vec<(String, &str)> = Vec::new();
         let entries = match self {
@@ -809,7 +1007,13 @@ impl ItemBody {
             Self::OpenText(b) => {
                 texts.push(("body.prompt".into(), &b.prompt));
                 texts.extend(b.rubric.as_deref().map(|r| ("body.rubric".into(), r)));
-                0
+                texts.extend(
+                    b.accepted_answers
+                        .iter()
+                        .enumerate()
+                        .map(|(i, a)| (format!("body.accepted_answers[{i}]"), a.as_str())),
+                );
+                b.accepted_answers.len()
             }
             Self::Form(b) => {
                 texts.push(("body.prompt".into(), &b.prompt));
@@ -859,14 +1063,24 @@ impl ItemBody {
                 texts.push(("body.prompt".into(), &b.prompt));
                 for (i, p) in b.pairs.iter().enumerate() {
                     texts.push((format!("body.pairs[{i}].left"), &p.left));
-                    texts.push((format!("body.pairs[{i}].right"), &p.right));
+                    texts.extend(
+                        p.right
+                            .as_deref()
+                            .map(|r| (format!("body.pairs[{i}].right"), r)),
+                    );
                 }
+                texts.extend(
+                    b.distractors
+                        .iter()
+                        .enumerate()
+                        .map(|(i, d)| (format!("body.distractors[{i}]"), d.as_str())),
+                );
                 texts.extend(
                     b.explanation
                         .as_deref()
                         .map(|e| ("body.explanation".into(), e)),
                 );
-                b.pairs.len()
+                b.pairs.len() + b.distractors.len()
             }
             Self::MatchingLearner(b) => {
                 texts.push(("body.prompt".into(), &b.prompt));
@@ -952,16 +1166,19 @@ mod tests {
                     id: "a".into(),
                     text: "4".into(),
                     is_correct: true,
+                    ..Default::default()
                 },
                 ChoiceOption {
                     id: "b".into(),
                     text: "5".into(),
                     is_correct: false,
+                    ..Default::default()
                 },
             ],
             multiple: false,
             variant: Some(ChoiceVariant::SingleChoice),
             explanation: None,
+            ..Default::default()
         });
         let stored = body.to_stored();
         assert_eq!(stored["schema_version"], 1);
@@ -997,16 +1214,19 @@ mod tests {
                     id: "a".into(),
                     text: "X".into(),
                     is_correct: true,
+                    ..Default::default()
                 },
                 ChoiceOption {
                     id: "b".into(),
-                    text: " x ".into(),
+                    text: " X ".into(),
                     is_correct: true,
+                    ..Default::default()
                 },
             ],
             multiple: false,
             variant: None,
             explanation: None,
+            ..Default::default()
         });
         let codes: Vec<_> = bad
             .readiness_issues("")
@@ -1094,7 +1314,7 @@ mod tests {
                 .iter()
                 .map(|n| MatchingPair {
                     left: (*n).to_owned(),
-                    right: format!("r{n}"),
+                    right: Some(format!("r{n}")),
                 })
                 .collect::<Vec<_>>()
         };
@@ -1103,6 +1323,7 @@ mod tests {
                 prompt: String::new(),
                 pairs: pairs(),
                 explanation: None,
+                ..Default::default()
             });
             body.redact_for_learner(seed, false);
             let ItemBody::MatchingLearner(learner) = body else {
@@ -1119,13 +1340,14 @@ mod tests {
             .iter()
             .map(|n| MatchingPair {
                 left: (*n).to_owned(),
-                right: format!("r{n}"),
+                right: Some(format!("r{n}")),
             })
             .collect();
         let body = ItemBody::Matching(MatchingBody {
             prompt: "match".into(),
             pairs,
             explanation: Some("key".into()),
+            ..Default::default()
         });
         let mut first = body.clone();
         first.redact_for_learner(7, false);
@@ -1175,10 +1397,12 @@ mod tests {
                     id: "a".into(),
                     text: text.into(),
                     is_correct: correct,
+                    ..Default::default()
                 }],
                 multiple: false,
                 variant: None,
                 explanation: None,
+                ..Default::default()
             })
         };
         let base = choice("Captial?", "Pariss", true).answer_key();
@@ -1189,9 +1413,10 @@ mod tests {
                 prompt: "p".into(),
                 pairs: vec![MatchingPair {
                     left: "l".into(),
-                    right: right.into(),
+                    right: Some(right.into()),
                 }],
                 explanation: None,
+                ..Default::default()
             })
             .answer_key()
         };

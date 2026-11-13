@@ -6,6 +6,7 @@
   "attempt_refresh": "Обновить",
   "attempt_entry_heading": "Условия",
   "attempt_questions": "Вопросов: {count}",
+  "attempt_questions_bank": "Вопросов: {count} из банка {bank}",
   "attempt_time_limit": "Лимит времени: {minutes} мин",
   "attempt_no_time_limit": "Без ограничения времени",
   "attempt_clock_starts": "Время пойдёт, как только вы нажмёте «Начать», и не остановится, даже если закрыть страницу.",
@@ -92,7 +93,7 @@
   "attempt_your_answer": "Ваш ответ",
   "attempt_min_words": "Не меньше {count} слов",
   "attempt_word_count": "Слов: {count}",
-  "attempt_match_pick": "Выберите пару",
+  "attempt_match_none": "— без пары —",
   "attempt_code_open": "Открыть редактор кода",
   "attempt_submit_title": "Сдать попытку?",
   "attempt_submit_text": "После сдачи ответы изменить нельзя.",
@@ -120,5 +121,7 @@
   "attempt_no_answer": "Нет ответа",
   "attempt_verdict_unanswered": "Без ответа",
   "attempt_feedback_heading": "Отзыв преподавателя",
-  "attempt_all_attempts": "Все попытки"
+  "attempt_all_attempts": "Все попытки",
+  "attempt_question_image": "Изображение к вопросу {number}",
+  "attempt_option_image": "Вариант {number}, изображение"
 }

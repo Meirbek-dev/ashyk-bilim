@@ -42,6 +42,11 @@ pub struct StudentSubmission {
     pub violation_count: i32,
     pub answered_count: usize,
     pub total_items: usize,
+    /// The questions this attempt drew from the bank, in the order to show
+    /// them; absent: every item of the assessment, in its own order.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schema(nullable = false)]
+    pub item_ids: Option<Vec<AssessmentItemId>>,
     /// Seconds left on an open draft until the server hands it in: the time
     /// limit or a strict due date / late cutoff, whichever comes first;
     /// `null` when neither applies or the attempt is closed.
@@ -77,6 +82,7 @@ impl From<DomainSubmission> for StudentSubmission {
             violation_count: s.violation_count,
             answered_count: s.answered_count,
             total_items: s.total_items,
+            item_ids: s.item_ids,
             time_remaining_seconds: s.time_remaining_seconds,
             time_remaining_reason: s.time_remaining_reason,
         }

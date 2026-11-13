@@ -425,5 +425,7 @@
   "studio_pulse_learners": "Білім алушылар тізімі",
   "studio_pulse_inbox": "Кіріс жәшігіне",
   "studio_draft_hidden": "Нобай: білім алушылар көрмейді",
-  "studio_bulk_start": "Бірнешеуін таңдау"
+  "studio_bulk_start": "Бірнешеуін таңдау",
+  "studio_activity_from_excel": "Excel-ден тест (DOT)",
+  "studio_activity_from_excel_in": "Excel-ден тест (DOT): «{name}»"
 }

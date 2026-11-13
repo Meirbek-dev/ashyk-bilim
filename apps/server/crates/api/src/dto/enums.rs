@@ -56,6 +56,11 @@ pub enum UploadPurpose {
     /// A file attached to a personal message (anyone signed in; the message's
     /// `attachments` claims it; the two participants download it).
     MessageAttachment,
+    /// A DOT `.xlsx` test for `POST /courses/{id}/assessment-imports`
+    /// (private, course authors).
+    AssessmentImport,
+    /// A question or option picture of a test (private, course authors).
+    AssessmentImage,
 }
 
 /// `GET /users` order.

@@ -60,7 +60,7 @@ const item = (languages: number[]): AssessmentItem => ({
   assessment_version: 1,
   position: 1,
   max_score: 100,
-  metadata: { difficulty: null, estimated_minutes: null, section_label: null },
+  metadata: { difficulty: null, estimated_minutes: null, section_label: null, draw_group: null },
   body: { ...body, languages, kind: 'code' },
 })
 

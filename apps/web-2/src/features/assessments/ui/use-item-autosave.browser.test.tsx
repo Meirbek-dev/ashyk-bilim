@@ -17,7 +17,7 @@ const item: AssessmentItem = {
   title: 'Question',
   kind: 'open_text',
   body: { kind: 'open_text', prompt: '', min_words: null, rubric: null },
-  metadata: { difficulty: null, estimated_minutes: null, section_label: null },
+  metadata: { difficulty: null, draw_group: null, estimated_minutes: null, section_label: null },
   max_score: 1,
   position: 1,
   assessment_version: 1,

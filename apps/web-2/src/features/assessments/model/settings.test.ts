@@ -19,6 +19,8 @@ const policy: Policy = {
   completion_rule: 'passed',
   copy_paste_protection: true,
   devtools_detection: false,
+  draw_count: null,
+  draw_strata: [],
   due_at_unix: FEB_1_1430,
   fullscreen_required: false,
   grace_period_minutes: 0,
@@ -82,6 +84,72 @@ describe('rules', () => {
     const form = { ...policyForm(policy), copy_paste_protection: false, violation_threshold: '5' }
     expect(policyBody(form, policy, 'exam')).toMatchObject({ copy_paste_protection: false, violation_threshold: 5 })
     expect(policyBody(form, policy, 'quiz')).toMatchObject({ copy_paste_protection: true, violation_threshold: 3 })
+  })
+})
+
+describe('rules: the question draw', () => {
+  test('the question draw and its quotas survive a save of the rules (the PUT replaces the whole policy)', () => {
+    const bank: Policy = {
+      ...policy,
+      draw_count: 30,
+      draw_strata: [
+        { group: '1', count: 9 },
+        { group: '2', count: 12 },
+      ],
+    }
+    const form = policyForm(bank)
+    expect(form).toMatchObject({
+      draw_count: '30',
+      draw_strata: [
+        { group: '1', count: '9' },
+        { group: '2', count: '12' },
+      ],
+    })
+    expect(v.is(policyFormSchema, form)).toBe(true)
+    // A save of another field sends the draw back as it was.
+    expect(policyBody({ ...form, passing_score: '50' }, bank, 'exam')).toMatchObject({
+      passing_score: 50,
+      draw_count: 30,
+      draw_strata: bank.draw_strata,
+    })
+    // Blank: every question; quotas typed with spaces go trimmed.
+    const edited = { ...form, draw_count: '', draw_strata: [] }
+    expect(policyBody(edited, bank, 'quiz')).toMatchObject({ draw_count: null, draw_strata: [] })
+    expect(policyBody({ ...form, draw_strata: [{ group: ' 101 ', count: ' 5 ' }] }, bank, 'quiz').draw_strata).toEqual([
+      { group: '101', count: 5 },
+    ])
+    // A policy stored before the bank existed reads as no draw.
+    const legacy: Policy = { ...policy }
+    delete legacy.draw_strata
+    expect(policyForm(legacy)).toMatchObject({ draw_count: '', draw_strata: [] })
+  })
+
+  test('the draw follows the server rules: 1..200, quotas within it, distinct groups of 1..32 characters', () => {
+    const form = { ...policyForm(policy), draw_count: '10' }
+    const message = (patch: Partial<typeof form>) =>
+      v.safeParse(policyFormSchema, { ...form, ...patch }).issues?.[0]?.message
+    const path = (patch: Partial<typeof form>) =>
+      v.safeParse(policyFormSchema, { ...form, ...patch }).issues?.[0]?.path?.map(step => step.key)
+    expect(message({ draw_count: '0' })).toBe(m.validation_min_value({ min: '1' }))
+    expect(message({ draw_count: '201' })).toBe(m.validation_max_value({ max: '200' }))
+    expect(message({ draw_count: '' })).toBeUndefined()
+    const quotas = [
+      { group: '1', count: '6' },
+      { group: '2', count: '5' },
+    ]
+    expect(message({ draw_strata: quotas })).toBe(m.assessments_draw_quota_over())
+    expect(path({ draw_strata: quotas })).toEqual(['draw_count'])
+    expect(message({ draw_count: '', draw_strata: [{ group: '1', count: '1' }] })).toBe(m.assessments_draw_quota_over())
+    expect(message({ draw_count: '11', draw_strata: quotas })).toBeUndefined()
+    const repeated = [
+      { group: '1', count: '2' },
+      { group: ' 1', count: '2' },
+    ]
+    expect(message({ draw_strata: repeated })).toBe(m.assessments_draw_group_repeated())
+    expect(path({ draw_strata: repeated })).toEqual(['draw_strata'])
+    expect(path({ draw_strata: [{ group: '', count: '2' }] })).toEqual(['draw_strata', 0, 'group'])
+    expect(path({ draw_strata: [{ group: 'x'.repeat(33), count: '2' }] })).toEqual(['draw_strata', 0, 'group'])
+    expect(path({ draw_strata: [{ group: '1', count: '0' }] })).toEqual(['draw_strata', 0, 'count'])
   })
 
   test('B-ASM-16 basics: weight within 0..100 (comma too), description up to the contract limit', () => {

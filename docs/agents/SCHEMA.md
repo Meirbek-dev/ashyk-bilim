@@ -33,6 +33,8 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`learning.assessment_access_usergroups`](#assessment_access_usergroups): User groups an assessment is restricted to
 - [`learning.assessment_access_users`](#assessment_access_users): Learners an assessment is restricted to (with assessment_access_usergroups)
 - [`learning.assessment_audit_events`](#assessment_audit_events): History of staff actions on an assessment
+- [`learning.assessment_imports`](#assessment_imports): An uploaded DOT test spreadsheet: parse result (plan, issues) until committed into an assessment or expired
+- [`learning.assessment_item_uploads`](#assessment_item_uploads): Uploads an assessment item body names (any `upload_id` in it); synced by trigger from the body
 - [`learning.assessment_items`](#assessment_items): A question or task of an assessment (typed body by kind), ordered by position, max_score in points
 - [`learning.assessment_overrides`](#assessment_overrides): Per-learner exceptions of an assessment: extra attempts, a later due date, a waived late penalty
 - [`learning.assessment_versions`](#assessment_versions): Frozen policy + items of an assessment as handed in (content-addressed, numbered per assessment); a hand-in names its version once
@@ -871,26 +873,85 @@ History of staff actions on an assessment.
 - Check `assessment_audit_events_payload_check`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
 - Index `assessment_audit_events_idx`: `CREATE INDEX assessment_audit_events_idx ON learning.assessment_audit_events USING btree (assessment_id, created_at DESC)`
 
+## assessment_imports
+
+An uploaded DOT test spreadsheet: parse result (plan, issues) until committed into an assessment or expired.
+
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  |  |  |
+| course_id | uuid |  |  |  |
+| created_by | uuid | null |  |  |
+| upload_id | uuid | null |  |  |
+| file_name | text |  |  |  |
+| file_sha256 | bytea | null |  |  |
+| status | text |  | `'parsing'::text` |  |
+| unescape_newlines | boolean |  | `true` |  |
+| sheet_name | text | null |  |  |
+| parsed | jsonb | null |  | The parsed test: settings and questions as item bodies (pictures as staged uploads); NULL until parsed. |
+| issues | jsonb |  | `'[]'::jsonb` |  |
+| issues_truncated | integer |  | `0` |  |
+| image_upload_ids | uuid[] |  | `'{}'::uuid[]` | Pictures extracted from the file, staged as `assessment-image` uploads until the commit puts them in items. |
+| result_assessment_id | uuid | null |  |  |
+| error | text | null |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| parsed_at | timestamp with time zone | null |  |  |
+| committed_at | timestamp with time zone | null |  |  |
+| expires_at | timestamp with time zone |  |  | Uncommitted: when the row and its staged files go. Committed: when the record is purged. |
+
+- Primary key `assessment_imports_pkey`: `PRIMARY KEY (id)`
+- Foreign key `assessment_imports_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
+- Foreign key `assessment_imports_created_by_fkey`: `FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL`
+- Foreign key `assessment_imports_result_assessment_id_fkey`: `FOREIGN KEY (result_assessment_id) REFERENCES assessments(id) ON DELETE SET NULL`
+- Foreign key `assessment_imports_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
+- Check `assessment_imports_file_name_check`: `CHECK (((length(file_name) >= 1) AND (length(file_name) <= 255)))`
+- Check `assessment_imports_issues_check`: `CHECK ((jsonb_typeof(issues) = 'array'::text))`
+- Check `assessment_imports_issues_truncated_check`: `CHECK ((issues_truncated >= 0))`
+- Check `assessment_imports_status_check`: `CHECK ((status = ANY (ARRAY['parsing'::text, 'ready'::text, 'invalid'::text, 'committed'::text, 'discarded'::text, 'failed'::text])))`
+- Index `assessment_imports_course_idx`: `CREATE INDEX assessment_imports_course_idx ON learning.assessment_imports USING btree (course_id)`
+- Index `assessment_imports_created_by_idx`: `CREATE INDEX assessment_imports_created_by_idx ON learning.assessment_imports USING btree (created_by)`
+- Index `assessment_imports_expires_idx`: `CREATE INDEX assessment_imports_expires_idx ON learning.assessment_imports USING btree (expires_at)`
+- Index `assessment_imports_images_idx`: `CREATE INDEX assessment_imports_images_idx ON learning.assessment_imports USING gin (image_upload_ids)`
+- Index `assessment_imports_result_idx`: `CREATE INDEX assessment_imports_result_idx ON learning.assessment_imports USING btree (result_assessment_id)`
+- Index `assessment_imports_upload_idx`: `CREATE INDEX assessment_imports_upload_idx ON learning.assessment_imports USING btree (upload_id)`
+
+## assessment_item_uploads
+
+Uploads an assessment item body names (any `upload_id` in it); synced by trigger from the body.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| item_id | uuid |  |  |
+| upload_id | uuid |  |  |
+
+- Primary key `assessment_item_uploads_pkey`: `PRIMARY KEY (item_id, upload_id)`
+- Foreign key `assessment_item_uploads_item_id_fkey`: `FOREIGN KEY (item_id) REFERENCES assessment_items(id) ON DELETE CASCADE`
+- Foreign key `assessment_item_uploads_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE`
+- Index `assessment_item_uploads_upload_idx`: `CREATE INDEX assessment_item_uploads_upload_idx ON learning.assessment_item_uploads USING btree (upload_id)`
+
 ## assessment_items
 
 A question or task of an assessment (typed body by kind), ordered by position, max_score in points.
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| assessment_id | uuid |  |  |
-| position | integer |  | `1` |
-| kind | text |  |  |
-| title | text |  | `''::text` |
-| body | jsonb |  | `'{}'::jsonb` |
-| max_score | score_points |  | `0` |
-| section_label | text | null |  |
-| difficulty | text | null |  |
-| tags | text[] |  | `'{}'::text[]` |
-| outcome_ids | text[] |  | `'{}'::text[]` |
-| estimated_minutes | integer | null |  |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| assessment_id | uuid |  |  |  |
+| position | integer |  | `1` |  |
+| kind | text |  |  |  |
+| title | text |  | `''::text` |  |
+| body | jsonb |  | `'{}'::jsonb` |  |
+| max_score | score_points |  | `0` |  |
+| section_label | text | null |  |  |
+| difficulty | text | null |  |  |
+| tags | text[] |  | `'{}'::text[]` |  |
+| outcome_ids | text[] |  | `'{}'::text[]` |  |
+| estimated_minutes | integer | null |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| updated_at | timestamp with time zone |  | `now()` |  |
+| draw_group | text | null |  | Draw quota group (a DOT level such as 1 or 101); NULL: none. |
+| source_file | text | null |  | Spreadsheet the item was imported from. |
+| source_row | integer | null |  | Row of `source_file` the item came from. |
 
 - Primary key `assessment_items_pkey`: `PRIMARY KEY (id)`
 - Unique `assessment_items_id_assessment_key`: `UNIQUE (id, assessment_id)`
@@ -898,11 +959,15 @@ A question or task of an assessment (typed body by kind), ordered by position, m
 - Foreign key `assessment_items_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
 - Check `assessment_items_body_kind_check`: `CHECK (((jsonb_typeof(body) = 'object'::text) AND ((body ->> 'kind'::text) = kind)))`
 - Check `assessment_items_difficulty_check`: `CHECK (((difficulty IS NULL) OR (difficulty = ANY (ARRAY['easy'::text, 'medium'::text, 'hard'::text]))))`
+- Check `assessment_items_draw_group_check`: `CHECK (((draw_group IS NULL) OR ((length(draw_group) >= 1) AND (length(draw_group) <= 32))))`
 - Check `assessment_items_estimated_minutes_check`: `CHECK (((estimated_minutes IS NULL) OR (estimated_minutes >= 0)))`
 - Check `assessment_items_kind_check`: `CHECK ((kind = ANY (ARRAY['choice'::text, 'open_text'::text, 'form'::text, 'code'::text, 'matching'::text])))`
 - Check `assessment_items_outcome_ids_check`: `CHECK (text_list_ok(outcome_ids, 50, 64))`
 - Check `assessment_items_position_check`: `CHECK (("position" >= 1))`
+- Check `assessment_items_source_file_check`: `CHECK (((source_file IS NULL) OR ((length(source_file) >= 1) AND (length(source_file) <= 255))))`
+- Check `assessment_items_source_row_check`: `CHECK (((source_row IS NULL) OR (source_row >= 1)))`
 - Check `assessment_items_tags_check`: `CHECK (text_list_ok(tags, 50, 64))`
+- Trigger `assessment_items_upload_ids`: `CREATE TRIGGER assessment_items_upload_ids AFTER INSERT OR UPDATE OF body ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_item_uploads_sync()`
 
 ## assessment_overrides
 
@@ -963,51 +1028,53 @@ Frozen policy + items of an assessment as handed in (content-addressed, numbered
 
 The graded part of a quiz, exam or code challenge activity: lifecycle, attempt and grading policy.
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| activity_id | uuid |  |  |
-| course_id | uuid |  |  |
-| description | text |  | `''::text` |
-| lifecycle | text |  | `'draft'::text` |
-| scheduled_at | timestamp with time zone | null |  |
-| published_at | timestamp with time zone | null |  |
-| archived_at | timestamp with time zone | null |  |
-| weight | score_weight |  | `1.0` |
-| grading_type | text |  | `'percentage'::text` |
-| content_version | integer |  | `1` |
-| policy_version | integer |  | `1` |
-| grading_mode | text |  |  |
-| grade_release_mode | text |  |  |
-| completion_rule | text |  |  |
-| passing_score | percent |  | `60` |
-| max_attempts | integer | null |  |
-| time_limit_seconds | integer | null |  |
-| due_at | timestamp with time zone | null |  |
-| allow_late | boolean |  | `true` |
-| late_policy_kind | text |  | `'none'::text` |
-| late_penalty_percent_per_day | percent | null |  |
-| late_penalty_max_days | integer | null |  |
-| late_cutoff_at | timestamp with time zone | null |  |
-| required | boolean |  | `false` |
-| review_visibility | text |  | `'score_only'::text` |
-| randomize_questions | boolean |  | `false` |
-| randomize_options | boolean |  | `false` |
-| partial_credit | boolean |  | `true` |
-| negative_marking_percent | percent |  | `0` |
-| grace_period_minutes | integer |  | `0` |
-| copy_paste_protection | boolean |  | `false` |
-| tab_switch_detection | boolean |  | `false` |
-| devtools_detection | boolean |  | `false` |
-| right_click_disabled | boolean |  | `false` |
-| fullscreen_required | boolean |  | `false` |
-| violation_threshold | integer |  | `3` |
-| access_mode | text |  | `'all_course_learners'::text` |
-| creator_id | uuid | null |  |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-| attempt_penalty_percent | percent |  | `0` |
-| version | integer |  | `1` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| activity_id | uuid |  |  |  |
+| course_id | uuid |  |  |  |
+| description | text |  | `''::text` |  |
+| lifecycle | text |  | `'draft'::text` |  |
+| scheduled_at | timestamp with time zone | null |  |  |
+| published_at | timestamp with time zone | null |  |  |
+| archived_at | timestamp with time zone | null |  |  |
+| weight | score_weight |  | `1.0` |  |
+| grading_type | text |  | `'percentage'::text` |  |
+| content_version | integer |  | `1` |  |
+| policy_version | integer |  | `1` |  |
+| grading_mode | text |  |  |  |
+| grade_release_mode | text |  |  |  |
+| completion_rule | text |  |  |  |
+| passing_score | percent |  | `60` |  |
+| max_attempts | integer | null |  |  |
+| time_limit_seconds | integer | null |  |  |
+| due_at | timestamp with time zone | null |  |  |
+| allow_late | boolean |  | `true` |  |
+| late_policy_kind | text |  | `'none'::text` |  |
+| late_penalty_percent_per_day | percent | null |  |  |
+| late_penalty_max_days | integer | null |  |  |
+| late_cutoff_at | timestamp with time zone | null |  |  |
+| required | boolean |  | `false` |  |
+| review_visibility | text |  | `'score_only'::text` |  |
+| randomize_questions | boolean |  | `false` |  |
+| randomize_options | boolean |  | `false` |  |
+| partial_credit | boolean |  | `true` |  |
+| negative_marking_percent | percent |  | `0` |  |
+| grace_period_minutes | integer |  | `0` |  |
+| copy_paste_protection | boolean |  | `false` |  |
+| tab_switch_detection | boolean |  | `false` |  |
+| devtools_detection | boolean |  | `false` |  |
+| right_click_disabled | boolean |  | `false` |  |
+| fullscreen_required | boolean |  | `false` |  |
+| violation_threshold | integer |  | `3` |  |
+| access_mode | text |  | `'all_course_learners'::text` |  |
+| creator_id | uuid | null |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| updated_at | timestamp with time zone |  | `now()` |  |
+| attempt_penalty_percent | percent |  | `0` |  |
+| version | integer |  | `1` |  |
+| draw_count | integer | null |  | Questions drawn at random for each attempt; NULL: every question. |
+| draw_strata | jsonb | null |  | Draw quotas `[{group, count}]` taken first from items with that `draw_group`; NULL: none. |
 
 - Primary key `assessments_pkey`: `PRIMARY KEY (id)`
 - Unique `assessments_activity_id_key`: `UNIQUE (activity_id)`
@@ -1018,6 +1085,8 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Check `assessments_access_mode_check`: `CHECK ((access_mode = ANY (ARRAY['all_course_learners'::text, 'restricted'::text])))`
 - Check `assessments_archived_at_check`: `CHECK (((lifecycle <> 'archived'::text) OR (archived_at IS NOT NULL)))`
 - Check `assessments_completion_rule_check`: `CHECK ((completion_rule = ANY (ARRAY['viewed'::text, 'submitted'::text, 'graded'::text, 'passed'::text, 'teacher_verified'::text])))`
+- Check `assessments_draw_count_check`: `CHECK (((draw_count IS NULL) OR ((draw_count >= 1) AND (draw_count <= 200))))`
+- Check `assessments_draw_strata_check`: `CHECK (((draw_strata IS NULL) OR (jsonb_typeof(draw_strata) = 'array'::text)))`
 - Check `assessments_grace_period_minutes_check`: `CHECK ((grace_period_minutes >= 0))`
 - Check `assessments_grade_release_mode_check`: `CHECK ((grade_release_mode = ANY (ARRAY['immediate'::text, 'batch'::text])))`
 - Check `assessments_grading_mode_check`: `CHECK ((grading_mode = ANY (ARRAY['auto'::text, 'manual'::text, 'auto_then_manual'::text])))`
@@ -2759,6 +2828,7 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 | rules_accepted_at | timestamp with time zone | null |  |  |
 | assessment_version_id | uuid | null |  |  |
 | auto_breakdown | jsonb | null |  | The auto-grader's breakdown written at hand-in (NULL for a draft); the current breakdown is the latest grading entry's, this one only while there is none. |
+| selected_item_ids | uuid[] | null |  | The questions this attempt drew, in the order shown; NULL: every item of the assessment. |
 
 - Primary key `submissions_pkey`: `PRIMARY KEY (id)`
 - Unique `submissions_id_user_key`: `UNIQUE (id, user_id)`

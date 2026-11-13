@@ -273,3 +273,81 @@ pub async fn clock_unclocked_unreferenced(pool: &PgPool, grace_secs: f64) -> Res
     .await?
     .rows_affected())
 }
+
+/// An object the server stored itself (pictures extracted from an import):
+/// finalized at once, on the unreferenced-grace clock until a row names it.
+#[allow(clippy::too_many_arguments, reason = "one column per argument")]
+pub async fn insert_stored<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    created_by: UserId,
+    purpose: &str,
+    bucket: &str,
+    key: &str,
+    mime: &str,
+    size_bytes: i64,
+    grace_secs: f64,
+) -> Result<Uuid> {
+    let id = sqlx::query_scalar!(
+        r#"INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes, status, expires_at)
+           VALUES ($1, $2, $3, $4, $5, $6, 'finalized', now() + make_interval(secs => $7))
+           RETURNING id"#,
+        created_by.0,
+        purpose,
+        bucket,
+        key,
+        mime,
+        size_bytes,
+        grace_secs
+    )
+    .fetch_one(db)
+    .await?;
+    Ok(id)
+}
+
+/// The finalized `purpose` uploads among `ids` with their owner and key.
+pub async fn owned_of_purpose<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    ids: &[Uuid],
+    purpose: &str,
+) -> Result<Vec<(Uuid, UserId)>> {
+    let rows = sqlx::query!(
+        r#"SELECT id, created_by AS "created_by: UserId" FROM uploads
+           WHERE id = ANY($1) AND purpose = $2 AND status = 'finalized'"#,
+        ids,
+        purpose
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(rows.into_iter().map(|r| (r.id, r.created_by)).collect())
+}
+
+/// Uploads among `ids` some item of a course's assessments already shows
+/// (a picture copied from one question to another, or a duplicate).
+pub async fn shown_in_course<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    ids: &[Uuid],
+    course_id: ab_core::id::CourseId,
+) -> Result<Vec<Uuid>> {
+    let rows = sqlx::query_scalar!(
+        r#"SELECT DISTINCT l.upload_id FROM assessment_item_uploads l
+           JOIN assessment_items i ON i.id = l.item_id
+           JOIN assessments a ON a.id = i.assessment_id
+           WHERE l.upload_id = ANY($1) AND a.course_id = $2"#,
+        ids,
+        course_id.0
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(rows)
+}
+
+/// Clear the grace clock of uploads a row now names.
+pub async fn hold<'e>(db: impl sqlx::PgExecutor<'e>, ids: &[Uuid]) -> Result<()> {
+    sqlx::query!(
+        "UPDATE uploads SET expires_at = NULL WHERE id = ANY($1) AND status = 'finalized'",
+        ids
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}

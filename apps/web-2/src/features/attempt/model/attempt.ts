@@ -8,6 +8,7 @@ import type {
   GradedItem,
   ItemAnswer,
   ItemBody,
+  MediaRef,
   Policy,
   StudentSubmission,
 } from '#/shared/api/gen/types.gen'
@@ -111,6 +112,24 @@ export const verdict = (entry: Pick<GradedItem, 'correct' | 'score'>, answered: 
 export const extraPrompt = (item: AssessmentItem): string | null => {
   const prompt = item.body.prompt ?? ''
   return prompt.trim() && prompt.trim() !== item.title.trim() ? prompt : null
+}
+
+/** Markdown unless the author (or a spreadsheet import) said plain: plain text shows `*`, `_`, `<` as typed. */
+export const isPlainPrompt = (body: ItemBody) => 'prompt_format' in body && body.prompt_format === 'plain'
+
+/** The pictures under a question's prompt (choice, open text, matching), in order. */
+export const promptMedia = (body: ItemBody): MediaRef[] => ('media' in body ? (body.media ?? []) : [])
+
+/**
+ * The questions of an attempt in the order to show them. A question bank's attempt names the ones it drew
+ * (`item_ids`): a learner reads only those, an author previewing reads the whole bank. Without the list: every
+ * question, in the test's order.
+ */
+export function attemptItems(items: AssessmentItem[], attempt: Pick<StudentSubmission, 'item_ids'>): AssessmentItem[] {
+  const ids = attempt.item_ids
+  if (!ids?.length) return items
+  const byId = new Map(items.map(item => [item.id, item]))
+  return ids.flatMap(id => byId.get(id) ?? [])
 }
 
 export const unanswered = (items: AssessmentItem[], answers: Record<string, ItemAnswer>) =>

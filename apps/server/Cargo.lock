@@ -12,6 +12,7 @@ dependencies = [
  "ab-domain",
  "ab-testdb",
  "ab-testkit",
+ "ab-xlsx",
  "async-stream",
  "axum",
  "axum-extra",
@@ -105,6 +106,7 @@ dependencies = [
  "ab-clients",
  "ab-core",
  "ab-db",
+ "ab-xlsx",
  "async-stream",
  "base64 0.23.1",
  "futures",
@@ -186,6 +188,19 @@ dependencies = [
  "tower",
  "uuid",
  "wiremock",
+]
+
+[[package]]
+name = "ab-xlsx"
+version = "0.1.0"
+dependencies = [
+ "imagesize",
+ "quick-xml 0.42.0",
+ "rust_xlsxwriter",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "zip",
 ]
 
 [[package]]
@@ -1832,6 +1847,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "imagesize"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65b27460c2c92b037f3f94c538ed9a3342f3fdf923606781629ccb35f82d042a"
+
+[[package]]
 name = "indexmap"
 version = "2.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2997,6 +3018,15 @@ dependencies = [
  "libc",
  "untrusted",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "rust_xlsxwriter"
+version = "0.102.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ca3d0e879a578c1313c2800ab0c6c029d38eed18098675e50341a30d32372ed"
+dependencies = [
+ "zip",
 ]
 
 [[package]]

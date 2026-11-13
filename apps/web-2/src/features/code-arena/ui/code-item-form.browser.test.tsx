@@ -31,7 +31,7 @@ const item: AssessmentItem = {
   id: '0190a5d2-0000-7000-8000-0000000000c2',
   kind: 'code',
   max_score: 10,
-  metadata: { difficulty: null, estimated_minutes: null, section_label: null },
+  metadata: { difficulty: null, estimated_minutes: null, section_label: null, draw_group: null },
   position: 1,
   title: 'Sum',
 }
@@ -84,6 +84,7 @@ const challenge: AssessmentDetail = {
     tab_switch_detection: false,
     time_limit_seconds: null,
     violation_threshold: 3,
+    draw_count: null,
   },
 }
 

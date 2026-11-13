@@ -36,7 +36,13 @@ export type PolicyForm = {
   right_click_disabled: boolean
   fullscreen_required: boolean
   violation_threshold: string
+  /** Questions per attempt; blank: every question. */
+  draw_count: string
+  /** Quotas inside the draw by `metadata.draw_group`. */
+  draw_strata: StratumForm[]
 }
+
+type StratumForm = { group: string; count: string }
 
 /** Anti-cheat belongs to exams (spec 11); a quiz or a challenge keeps the stored values untouched. */
 export const hasAntiCheat = (kind: AssessmentKind): boolean => kind === 'exam'
@@ -70,6 +76,8 @@ export function policyForm(policy: Policy): PolicyForm {
     right_click_disabled: policy.right_click_disabled,
     fullscreen_required: policy.fullscreen_required,
     violation_threshold: String(policy.violation_threshold),
+    draw_count: text(policy.draw_count),
+    draw_strata: (policy.draw_strata ?? []).map(stratum => ({ group: stratum.group, count: String(stratum.count) })),
   }
 }
 
@@ -112,6 +120,8 @@ export function policyBody(form: PolicyForm, stored: Policy, kind: AssessmentKin
     grade_release_mode: form.grade_release_mode,
     review_visibility: form.review_visibility,
     required: form.required,
+    draw_count: optionalNumber(form.draw_count),
+    draw_strata: form.draw_strata.map(stratum => ({ group: stratum.group.trim(), count: decimal(stratum.count) })),
     ...antiCheat,
   }
 }
@@ -138,7 +148,24 @@ const moment = v.pipe(
   v.check(value => value === '' || momentOf(value) !== null),
 )
 
-/** The form's schema; a late policy needs its own fields filled. */
+/** The server's caps on a draw (MAX_DRAW) and on its quotas. */
+const MAX_DRAW = 200
+export const MAX_STRATA = 20
+
+const stratum = v.object({
+  group: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(32)),
+  count: v.pipe(whole, within(1, MAX_DRAW)),
+})
+
+/** The quotas' total: a row whose count is not a number yet adds nothing. */
+const strataTotal = (strata: readonly StratumForm[]): number =>
+  strata.reduce((sum, row) => sum + (/^\s*\d+\s*$/u.test(row.count) ? Number(row.count) : 0), 0)
+
+/** The first row whose group repeats an earlier one (trimmed, as the server compares), or -1. */
+const repeatedGroup = (strata: readonly StratumForm[]): number =>
+  strata.findIndex((row, at) => strata.slice(0, at).some(earlier => earlier.group.trim() === row.group.trim()))
+
+/** The form's schema; a late policy needs its own fields filled, quotas a draw that holds them. */
 export const policyFormSchema = v.pipe(
   v.object({
     max_attempts: attemptsText,
@@ -164,6 +191,8 @@ export const policyFormSchema = v.pipe(
     right_click_disabled: v.boolean(),
     fullscreen_required: v.boolean(),
     violation_threshold: v.pipe(whole, within(1)),
+    draw_count: v.pipe(optionalWhole, within(1, MAX_DRAW)),
+    draw_strata: v.pipe(v.array(stratum), v.maxLength(MAX_STRATA)),
   }),
   v.forward(
     v.partialCheck(
@@ -179,5 +208,25 @@ export const policyFormSchema = v.pipe(
   v.forward(
     v.partialCheck([['late_kind'], ['cutoff_at']], form => form.late_kind !== 'cutoff' || form.cutoff_at !== ''),
     ['cutoff_at'],
+  ),
+  // Server rule (AssessmentPolicy::validate): quotas need a draw count of at least their sum.
+  v.forward(
+    v.partialCheck(
+      [['draw_count'], ['draw_strata']],
+      form =>
+        form.draw_strata.length === 0 ||
+        (form.draw_count.trim() !== '' && strataTotal(form.draw_strata) <= Number(form.draw_count)),
+      () => m.assessments_draw_quota_over(),
+    ),
+    ['draw_count'],
+  ),
+  // Each quota names a distinct group: said under the quota list.
+  v.forward(
+    v.partialCheck(
+      [['draw_strata']],
+      form => repeatedGroup(form.draw_strata) < 0,
+      () => m.assessments_draw_group_repeated(),
+    ),
+    ['draw_strata'],
   ),
 )

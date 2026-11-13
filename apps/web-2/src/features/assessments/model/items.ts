@@ -3,6 +3,7 @@ import type {
   AssessmentItem,
   AssessmentKind,
   ChoiceBody,
+  ChoiceOption,
   ChoiceVariant,
   CreateItemRequest,
   ItemBody,
@@ -111,7 +112,7 @@ const blankOptions = () => [
   { id: newId(), text: '', is_correct: false },
 ]
 
-export const newOption = () => ({ id: newId(), text: '', is_correct: false })
+export const newOption = (): ChoiceOption => ({ id: newId(), text: '', is_correct: false })
 export const newFormField = () => ({ id: newId(), label: '', field_type: 'text' as const, required: true })
 
 /** The header line of the builder: question count and the sum of points. */

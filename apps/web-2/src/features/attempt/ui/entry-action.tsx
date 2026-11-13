@@ -43,7 +43,8 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
   const params = useParams({ from: ATTEMPT_ROUTE })
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const start = useMutation(startOptions(params.courseId, assessment.id))
+  const bank = assessment.policy.draw_count === null ? undefined : assessment.activity_id
+  const start = useMutation(startOptions(params.courseId, assessment.id, bank))
   const [agreed, setAgreed] = useState(false)
   const consentId = useId()
   const rules = protections(assessment.policy)

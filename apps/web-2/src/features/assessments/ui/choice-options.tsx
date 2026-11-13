@@ -13,6 +13,7 @@ import { RadioGroup, RadioGroupItem } from '#/shared/ui/radio-group'
 
 import { newOption } from '../model/items'
 import type { EditMode } from '../model/route'
+import { OptionMedia } from './option-media'
 
 // Each mark is disabled on its own: a disabled RadioGroup would also disable the option texts inside it (`wording`).
 const radio = (option: ChoiceOption, at: number, disabled: boolean) => (
@@ -49,21 +50,24 @@ export function ChoiceOptions({ variant, options, onChange, mode }: ChoiceOption
   const correct = options.find(option => option.is_correct)?.id ?? ''
 
   const row = (option: ChoiceOption, at: number, mark: ReactNode) => (
-    <div key={option.id} ref={focusNew.ref(option)} className="flex items-center gap-2">
-      {mark}
-      <Input
-        aria-label={m.assessments_option_text({ number: at + 1 })}
-        placeholder={m.assessments_option_text({ number: at + 1 })}
-        value={option.text ?? ''}
-        disabled={mode === 'none'}
-        onChange={event => patch(at, { text: event.target.value })}
-      />
-      <IconButton
-        label={m.assessments_option_remove({ number: at + 1 })}
-        icon={<X aria-hidden />}
-        disabled={!editable || options.length <= 1}
-        onClick={() => onChange(options.filter((_, index) => index !== at))}
-      />
+    <div key={option.id} ref={focusNew.ref(option)} className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        {mark}
+        <Input
+          aria-label={m.assessments_option_text({ number: at + 1 })}
+          placeholder={m.assessments_option_text({ number: at + 1 })}
+          value={option.text ?? ''}
+          disabled={mode === 'none'}
+          onChange={event => patch(at, { text: event.target.value })}
+        />
+        <IconButton
+          label={m.assessments_option_remove({ number: at + 1 })}
+          icon={<X aria-hidden />}
+          disabled={!editable || options.length <= 1}
+          onClick={() => onChange(options.filter((_, index) => index !== at))}
+        />
+      </div>
+      <OptionMedia media={option.media} number={at + 1} mode={mode} onChange={media => patch(at, { media })} />
     </div>
   )
   const checkbox = (option: ChoiceOption, at: number) => (

@@ -1,16 +1,16 @@
-import { Suspense, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
-import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
-import type { AssessmentItem, ItemAnswer } from '#/shared/api/gen/types.gen'
+import type { AssessmentId, AssessmentItem, ItemAnswer } from '#/shared/api/gen/types.gen'
 import { formatNumber } from '#/shared/i18n/format'
 
-import { extraPrompt } from '../model/attempt'
 import { ItemAnswerControl } from './item-answer-control'
+import { ItemPrompt } from './item-prompt'
 import { TitleText } from './title-text'
 
 type ItemViewProps = {
   item: AssessmentItem
+  assessmentId: AssessmentId
   number: number
   total: number
   answer: ItemAnswer | undefined
@@ -20,11 +20,10 @@ type ItemViewProps = {
 
 /**
  * One question, as on an exam paper: its number hanging in the margin (where there is one), points, title, the author's
- * prompt (markdown) and the answer control of its kind.
+ * prompt and pictures, and the answer control of its kind.
  */
 export function ItemView(props: ItemViewProps) {
   const { item, number, total } = props
-  const prompt = extraPrompt(item)
   const heading = useRef<HTMLHeadingElement>(null)
   // «Далее», «Назад» or a number in the list keep the focus on that link while the question changes under it, and a
   // screen reader said nothing: the new question (one mount per question) takes the focus. A page load keeps its own.
@@ -49,11 +48,7 @@ export function ItemView(props: ItemViewProps) {
           </h1>
         </div>
       </header>
-      {prompt ? (
-        <Suspense fallback={null}>
-          <MarkdownView content={prompt} />
-        </Suspense>
-      ) : null}
+      <ItemPrompt item={item} assessmentId={props.assessmentId} number={number} />
       <ItemAnswerControl {...props} />
     </section>
   )

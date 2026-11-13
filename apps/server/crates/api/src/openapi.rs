@@ -36,6 +36,9 @@ const NULL_CLEARS: &[(&str, &str)] = &[
     ("UpdateInterventionRequest", "notes"),
     ("UpdateProfileRequest", "avatar_upload_id"),
     ("UpdateProfileRequest", "theme"),
+    ("CommitImportRequest", "max_attempts"),
+    ("CommitImportRequest", "time_limit_seconds"),
+    ("CommitImportRequest", "draw_count"),
 ];
 
 /// Schemas of stored JSON documents (`ab_domain::wire`) whose keys

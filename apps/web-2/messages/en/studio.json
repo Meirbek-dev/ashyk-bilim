@@ -425,5 +425,7 @@
   "studio_pulse_learners": "Learner list",
   "studio_pulse_inbox": "Open inbox",
   "studio_draft_hidden": "Draft: learners can’t see it",
-  "studio_bulk_start": "Select several"
+  "studio_bulk_start": "Select several",
+  "studio_activity_from_excel": "Quiz from Excel (DOT)",
+  "studio_activity_from_excel_in": "Quiz from Excel (DOT) in “{name}”"
 }

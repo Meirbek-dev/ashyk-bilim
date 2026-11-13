@@ -41,6 +41,7 @@ const IMAGES: &[&str] = &[
     "image/webp",
     "image/avif",
 ];
+const XLSX: &str = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const VIDEOS: &[&str] = &[
     "video/mp4",
     "video/webm",
@@ -75,6 +76,10 @@ fn policy(purpose: &str) -> Option<(Bucket, i64, &'static [&'static str])> {
         "file-submission" => Some((Bucket::Private, i64::from(FILE_SUBMISSION_MAX_MB) * MB, &[])),
         // docs/DIALOGS.md 12: any type, always downloaded unless inline-safe.
         "message-attachment" => Some((Bucket::Private, 20 * MB, &[])),
+        // docs/XLSX-TEST-IMPORT.md: a DOT test spreadsheet, and the pictures of
+        // questions (private: an exam's pictures are served to its readers only).
+        "assessment-import" => Some((Bucket::Private, 20 * MB, &[XLSX])),
+        "assessment-image" => Some((Bucket::Private, 5 * MB, IMAGES)),
         _ => None,
     }
 }
@@ -97,7 +102,8 @@ fn require_purpose_grant(actor: &Actor, purpose: &str) -> Result<()> {
             action: Action::Update,
             scope: Some(Scope::Platform),
         }),
-        "course-thumbnail" | "block-image" | "block-pdf" | "block-video" => {
+        "course-thumbnail" | "block-image" | "block-pdf" | "block-video" | "assessment-import"
+        | "assessment-image" => {
             actor.has(course_update(Scope::Own)) || actor.has(course_update(Scope::Platform))
         }
         // Whoever may make or edit a collection may give it a cover.
@@ -562,6 +568,8 @@ mod tests {
             "block-video",
             "file-submission",
             "message-attachment",
+            "assessment-import",
+            "assessment-image",
         ] {
             let (bucket, _, types) = policy(purpose).expect(purpose);
             if bucket == Bucket::Public {

@@ -74,6 +74,10 @@ migrate:
 migration NAME:
     sqlx migrate add --source migrations "$@"
 
+# Write the teachers' DOT template (apps/web-2/public/templates/test-template.xlsx).
+xlsx-template:
+    cargo run --locked -q -p ab-xlsx --example template -- ../web-2/public/templates/test-template.xlsx
+
 # Export the OpenAPI contract artifact.
 [script]
 openapi:

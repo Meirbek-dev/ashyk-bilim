@@ -445,5 +445,7 @@
   "studio_pulse_learners": "Список учащихся",
   "studio_pulse_inbox": "Во входящие",
   "studio_draft_hidden": "Черновик: учащиеся не видят",
-  "studio_bulk_start": "Выбрать несколько"
+  "studio_bulk_start": "Выбрать несколько",
+  "studio_activity_from_excel": "Тест из Excel (DOT)",
+  "studio_activity_from_excel_in": "Тест из Excel (DOT) в «{name}»"
 }

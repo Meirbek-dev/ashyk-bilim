@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 import { expect, test } from 'vite-plus/test'
 import { userEvent } from 'vite-plus/test/browser'
@@ -37,7 +38,11 @@ function Harness({ mode = 'wording' }: { mode?: 'all' | 'wording' }) {
 }
 
 test('B-ASM-31 an answered live test takes option wording, never the correct mark, the variant or the option list', async () => {
-  const screen = await renderInRouter(<Harness />)
+  const screen = await renderInRouter(
+    <QueryClientProvider client={new QueryClient()}>
+      <Harness />
+    </QueryClientProvider>,
+  )
   const first = screen.getByRole('textbox', { name: m.assessments_option_text({ number: 1 }) })
   await expect.element(first).toBeEnabled()
   await userEvent.fill(first, 'Paris')
@@ -53,7 +58,11 @@ test('B-ASM-31 an answered live test takes option wording, never the correct mar
 })
 
 test('B-ASM-15 «Добавить вариант» puts the cursor in the new option, not on the button', async () => {
-  const screen = await renderInRouter(<Harness mode="all" />)
+  const screen = await renderInRouter(
+    <QueryClientProvider client={new QueryClient()}>
+      <Harness mode="all" />
+    </QueryClientProvider>,
+  )
   await userEvent.click(screen.getByRole('button', { name: m.assessments_option_add() }))
   const added = screen.getByRole('textbox', { name: m.assessments_option_text({ number: 3 }) })
   await expect.element(added).toHaveFocus()

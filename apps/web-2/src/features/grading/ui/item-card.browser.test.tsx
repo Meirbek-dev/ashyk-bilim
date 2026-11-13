@@ -18,7 +18,7 @@ const item: AssessmentItem = {
   },
   kind: 'choice',
   max_score: 1,
-  metadata: { difficulty: null, estimated_minutes: null, section_label: null },
+  metadata: { difficulty: null, estimated_minutes: null, section_label: null, draw_group: null },
   position: 3,
   title: 'Вопрос.',
   assessment_version: 1,

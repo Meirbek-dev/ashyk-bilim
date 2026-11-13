@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE uploads SET expires_at = NULL WHERE id = ANY($1) AND status = 'finalized'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "931739a0b1d869334851dcf5a0b700f79259630494306ed95a9415bc4e5c48d1"
+}

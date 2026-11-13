@@ -59,6 +59,9 @@ const messages: Record<ErrorCode, () => string> = {
   'account-deleted': m.errors_account_deleted,
   'message-recipient-not-allowed': m.errors_message_recipient_not_allowed,
   'messages-banned': m.errors_messages_banned,
+  'assessment-import-invalid': m.errors_assessment_import_invalid,
+  'assessment-import-expired': m.errors_assessment_import_expired,
+  'assessment-export-empty': m.errors_assessment_export_empty,
 }
 
 /** The user-facing text of any thrown error: the code's text for an ApiError, "no connection" otherwise. */

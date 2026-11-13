@@ -9,6 +9,7 @@ import { Link } from '#/shared/components/link'
 import { formatNumber } from '#/shared/i18n/format'
 
 import { itemKindOf } from '../model/items'
+import { ItemSource } from './item-source'
 import { kindLabels } from './labels'
 
 type ItemRowProps = {
@@ -58,7 +59,9 @@ export function ItemRow({ courseId, activityId, item, index, open, movable }: It
         </Link>
         <span className="text-xs text-muted-foreground">
           {kindLabels[itemKindOf(item)]()} · {m.assessments_item_points({ points: formatNumber(item.max_score) })}
+          {item.metadata.draw_group ? ` · ${m.assessments_item_draw_group({ group: item.metadata.draw_group })}` : null}
         </span>
+        <ItemSource source={item.source} className="text-xs text-muted-foreground" />
       </div>
       {movable ? (
         <div className="transition-opacity duration-100 pointer-fine:opacity-0 pointer-fine:group-hover/row:opacity-100 pointer-fine:focus-within:opacity-100 [&_button]:size-7">

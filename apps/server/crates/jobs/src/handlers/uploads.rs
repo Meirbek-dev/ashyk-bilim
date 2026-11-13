@@ -34,6 +34,12 @@ impl JobHandler for UploadsReaper {
         let pool = self.pool.clone();
         let storage = Arc::clone(&self.storage);
         async move {
+            // Expired spreadsheet imports first: their files become reapable.
+            let imports =
+                ab_domain::assessments::imports::ImportsService::purge_expired(&pool).await?;
+            if imports > 0 {
+                tracing::info!(imports, "purged expired assessment imports");
+            }
             let deleted = ab_domain::files::uploads::reap_expired(&pool, &storage).await?;
             if deleted > 0 {
                 tracing::info!(deleted, "reaped expired uploads");

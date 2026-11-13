@@ -164,10 +164,17 @@ fn grade_matching(
         .iter()
         .map(|m| (m.left.as_str(), m.right.as_str()))
         .collect();
+    // A left value that goes with none is right when left unplaced (DOT `k-0`).
     let correct = body
         .pairs
         .iter()
-        .filter(|p| submitted.get(p.left.trim()) == Some(&p.right.trim()))
+        .filter(|p| {
+            let given = submitted
+                .get(p.left.trim())
+                .map(|r| r.trim())
+                .filter(|r| !r.is_empty());
+            given == p.right.as_deref().map(str::trim)
+        })
         .count();
     let all = correct == body.pairs.len();
     let score = round2(count(correct) / count(expected) * points);
@@ -184,6 +191,57 @@ fn grade_matching(
     }
 }
 
+/// A short answer as compared: trimmed, inner whitespace collapsed, letter
+/// case folded unless it matters.
+fn normalize_short(text: &str, case_sensitive: bool) -> String {
+    let joined = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if case_sensitive {
+        joined
+    } else {
+        joined.to_lowercase()
+    }
+}
+
+/// A number written either way (`3.5`, `3,5`).
+fn as_number(text: &str) -> Option<f64> {
+    let n: f64 = text.replace(',', ".").parse().ok()?;
+    n.is_finite().then_some(n)
+}
+
+fn short_answer_matches(given: &str, accepted: &str, case_sensitive: bool) -> bool {
+    let (given, accepted) = (
+        normalize_short(given, case_sensitive),
+        normalize_short(accepted, case_sensitive),
+    );
+    if given == accepted {
+        return true;
+    }
+    match (as_number(&given), as_number(&accepted)) {
+        (Some(a), Some(b)) => (a - b).abs() <= 1e-9 * a.abs().max(b.abs()).max(1.0),
+        _ => false,
+    }
+}
+
+/// DOT type 3: full points when the answer is one of the accepted ones.
+fn grade_short_answer(
+    body: &crate::assessments::items::OpenTextBody,
+    text: &str,
+    points: f64,
+) -> Verdict {
+    if text.trim().is_empty() {
+        return Verdict::new(0.0, false, FeedbackCode::NoAnswer, "No answer provided");
+    }
+    if body
+        .accepted_answers
+        .iter()
+        .any(|a| short_answer_matches(text, a, body.case_sensitive))
+    {
+        Verdict::new(round2(points), true, FeedbackCode::Correct, "Correct")
+    } else {
+        Verdict::new(0.0, false, FeedbackCode::Incorrect, "Incorrect")
+    }
+}
+
 fn correct_answer(body: &ItemBody) -> serde_json::Value {
     match body {
         ItemBody::Choice(b) => serde_json::json!(
@@ -194,6 +252,7 @@ fn correct_answer(body: &ItemBody) -> serde_json::Value {
                 .collect::<Vec<_>>()
         ),
         ItemBody::Matching(b) => serde_json::to_value(&b.pairs).unwrap_or_default(),
+        ItemBody::OpenText(b) if b.short_answer => serde_json::json!(b.accepted_answers),
         ItemBody::OpenText(_)
         | ItemBody::Form(_)
         | ItemBody::Code(_)
@@ -237,6 +296,13 @@ pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> Au
                 Some(grade_matching(body, matches, pts))
             }
             (ItemBody::Matching(body), _) => Some(grade_matching(body, &[], pts)),
+            (ItemBody::OpenText(body), answer) if body.short_answer => {
+                let text = match answer {
+                    Some(ItemAnswer::OpenText { text }) => text.as_str(),
+                    _ => "",
+                };
+                Some(grade_short_answer(body, text, pts))
+            }
             // Open text, forms (and a stray code item) need a human.
             _ => None,
         };
@@ -376,6 +442,9 @@ mod tests {
             tags: Vec::new(),
             outcome_ids: Vec::new(),
             estimated_minutes: None,
+            draw_group: None,
+            source_file: None,
+            source_row: None,
         }
     }
 
@@ -386,12 +455,14 @@ mod tests {
                 id: (*id).into(),
                 text: (*id).into(),
                 is_correct: true,
+                ..Default::default()
             })
             .collect();
         options.extend(wrong.iter().map(|id| ChoiceOption {
             id: (*id).into(),
             text: (*id).into(),
             is_correct: false,
+            ..Default::default()
         }));
         ItemBody::Choice(ChoiceBody {
             prompt: "?".into(),
@@ -399,6 +470,7 @@ mod tests {
             multiple,
             variant: None,
             explanation: None,
+            ..Default::default()
         })
     }
 
@@ -416,14 +488,15 @@ mod tests {
                 pairs: vec![
                     MatchingPair {
                         left: "1".into(),
-                        right: "one".into(),
+                        right: Some("one".into()),
                     },
                     MatchingPair {
                         left: "2".into(),
-                        right: "two".into(),
+                        right: Some("two".into()),
                     },
                 ],
                 explanation: None,
+                ..Default::default()
             }),
             1.0,
         );
@@ -548,10 +621,11 @@ mod tests {
                 pairs: (1..=3)
                     .map(|n| MatchingPair {
                         left: n.to_string(),
-                        right: format!("r{n}"),
+                        right: Some(format!("r{n}")),
                     })
                     .collect(),
                 explanation: None,
+                ..Default::default()
             }),
             10.0,
         );
@@ -642,6 +716,7 @@ mod tests {
                 prompt: "essay".into(),
                 min_words: None,
                 rubric: None,
+                ..Default::default()
             }),
             10.0,
         );
@@ -935,5 +1010,105 @@ mod tests {
                 }
             }
         }
+    }
+
+    fn short(accepted: &[&str], case_sensitive: bool) -> ItemBody {
+        ItemBody::OpenText(crate::assessments::items::OpenTextBody {
+            prompt: "q".into(),
+            short_answer: true,
+            accepted_answers: accepted.iter().map(|a| (*a).into()).collect(),
+            case_sensitive,
+            ..Default::default()
+        })
+    }
+
+    fn text_answer(q: &Item, text: &str) -> Answers {
+        Answers::from([(q.id, ItemAnswer::OpenText { text: text.into() })])
+    }
+
+    /// DOT type 3: trimmed, whitespace collapsed, `3,5` = `3.5`, case per flag.
+    #[test]
+    fn short_answers_grade_automatically() {
+        let q = item(short(&["System.out", "3.5"], true), 1.0);
+        for (given, score) in [
+            ("  System.out ", 100.0),
+            ("system.out", 0.0),
+            ("3,5", 100.0),
+            ("3.50", 100.0),
+            ("", 0.0),
+        ] {
+            let grade = grade_quiz(std::slice::from_ref(&q), &text_answer(&q, given), POLICY);
+            assert_eq!(grade.auto_score, score, "{given:?}");
+            assert!(!grade.breakdown.needs_manual_review);
+        }
+        let q = item(short(&["Hello  World"], false), 1.0);
+        let grade = grade_quiz(
+            std::slice::from_ref(&q),
+            &text_answer(&q, "hello world"),
+            POLICY,
+        );
+        assert_eq!(grade.auto_score, 100.0);
+        assert_eq!(
+            grade.breakdown.items[0].correct_answer,
+            serde_json::json!(["Hello  World"])
+        );
+    }
+
+    /// An essay (no `short_answer`) still waits for a teacher.
+    #[test]
+    fn open_text_without_short_answer_needs_a_teacher() {
+        let q = item(
+            ItemBody::OpenText(crate::assessments::items::OpenTextBody {
+                prompt: "q".into(),
+                ..Default::default()
+            }),
+            1.0,
+        );
+        let grade = grade_quiz(std::slice::from_ref(&q), &text_answer(&q, "x"), POLICY);
+        assert!(grade.breakdown.needs_manual_review);
+    }
+
+    /// DOT `k-0`: a left value that goes with none is right when unplaced.
+    #[test]
+    fn matching_left_without_a_pair_is_right_unplaced() {
+        let q = item(
+            ItemBody::Matching(MatchingBody {
+                prompt: "m".into(),
+                pairs: vec![
+                    MatchingPair {
+                        left: "a".into(),
+                        right: Some("1".into()),
+                    },
+                    MatchingPair {
+                        left: "b".into(),
+                        right: None,
+                    },
+                ],
+                distractors: vec!["2".into()],
+                ..Default::default()
+            }),
+            1.0,
+        );
+        let answer = |pairs: &[(&str, &str)]| {
+            Answers::from([(
+                q.id,
+                ItemAnswer::Matching {
+                    matches: pairs
+                        .iter()
+                        .map(|(l, r)| crate::grading::answers::MatchingAnswer {
+                            left: (*l).into(),
+                            right: (*r).into(),
+                        })
+                        .collect(),
+                },
+            )])
+        };
+        let score = |pairs: &[(&str, &str)]| {
+            grade_quiz(std::slice::from_ref(&q), &answer(pairs), POLICY).auto_score
+        };
+        assert_eq!(score(&[("a", "1")]), 100.0);
+        assert_eq!(score(&[("a", "1"), ("b", "")]), 100.0);
+        assert_eq!(score(&[("a", "1"), ("b", "2")]), 50.0);
+        assert_eq!(score(&[("a", "2")]), 50.0);
     }
 }

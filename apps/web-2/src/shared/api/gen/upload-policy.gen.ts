@@ -7,6 +7,8 @@ export const multipartPartBytes = 33554432;
 
 /** The server's cap and accepted types (exact match; empty = any) per purpose. */
 export const uploadPolicy: Record<UploadPurpose, { maxBytes: number; mimes: readonly string[] }> = {
+  'assessment-image': { maxBytes: 5242880, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
+  'assessment-import': { maxBytes: 20971520, mimes: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'] },
   'avatar': { maxBytes: 5242880, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
   'block-image': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
   'block-pdf': { maxBytes: 52428800, mimes: ['application/pdf'] },

@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO assessment_items\n               (assessment_id, position, kind, title, body, max_score, draw_group,\n                source_file, source_row)\n           SELECT $1,\n                  (SELECT COALESCE(MAX(position), 0) FROM assessment_items\n                   WHERE assessment_id = $1) + t.ord::int,\n                  t.kind, t.title, t.body, t.score, t.grp, $2, t.row\n           FROM unnest($3::text[], $4::text[], $5::jsonb[], $6::float8[], $7::text[], $8::int[])\n                WITH ORDINALITY AS t(kind, title, body, score, grp, row, ord)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "TextArray",
+        "TextArray",
+        "JsonbArray",
+        "Float8Array",
+        "TextArray",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3dd15d1095fc299cfb581e81af06865b395274c1c48e8dbe54aade788fe6acf0"
+}

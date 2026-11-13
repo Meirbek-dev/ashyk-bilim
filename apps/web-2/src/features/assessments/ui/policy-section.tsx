@@ -5,6 +5,7 @@ import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 
 import { hasAntiCheat } from '../model/policy'
 import { AntiCheatFields } from './anti-cheat-fields'
+import { DrawFields } from './draw-fields'
 import { GradingFields } from './grading-fields'
 import { lockReason } from './labels'
 import { TimingFields } from './timing-fields'
@@ -27,6 +28,7 @@ export function PolicySection({ activityId, assessment }: PolicySectionProps) {
         error={isStale(save.error) ? null : save.error}
       >
         <TimingFields form={form} />
+        {assessment.kind === 'code_challenge' ? null : <DrawFields form={form} items={assessment.items} />}
         <GradingFields form={form} />
         {hasAntiCheat(assessment.kind) ? <AntiCheatFields form={form} /> : null}
       </LockableSection>

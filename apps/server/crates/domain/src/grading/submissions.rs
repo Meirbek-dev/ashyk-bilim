@@ -68,6 +68,13 @@ fn now_unix() -> i64 {
 }
 
 /// 409 with the versions, so a client can reload and retry.
+/// A fresh random seed per attempt: the draft id is a random UUID.
+#[allow(clippy::cast_possible_truncation, reason = "a seed, not a value")]
+const fn draw_seed(id: SubmissionId) -> u64 {
+    let raw = id.0.as_u128();
+    (raw ^ (raw >> 64)) as u64
+}
+
 fn stale_draft(expected: i64, actual: i64) -> Error {
     Error::app_with_details(
         ErrorCode::Conflict,
@@ -328,6 +335,9 @@ pub struct StudentSubmission {
     pub violation_count: i32,
     pub answered_count: usize,
     pub total_items: usize,
+    /// The questions this attempt drew, in the order to show them; `None`:
+    /// every item of the assessment.
+    pub item_ids: Option<Vec<ab_core::id::AssessmentItemId>>,
     /// Seconds left on an open draft until it is handed in: the time limit
     /// or a strict due date / late cutoff, whichever comes first.
     pub time_remaining_seconds: Option<i64>,
@@ -433,6 +443,8 @@ impl SubmissionsService {
         // timer sweep (BUG-279) - a role change mid-attempt changes neither
         // its policy, its gates nor whether it counts.
         let preview = submission.preview;
+        let selection = ab_db::submissions::get_selection(&self.pool, submission.id).await?;
+        let items = crate::assessments::draw::drawn(detail.items, selection.as_deref());
         let effective = if preview == state.is_teacher_preview {
             state.effective
         } else {
@@ -447,7 +459,7 @@ impl SubmissionsService {
         Ok(Context {
             submission,
             assessment: detail.assessment,
-            items: detail.items,
+            items,
             effective,
             preview,
         })
@@ -475,6 +487,8 @@ impl SubmissionsService {
             _ => None,
         };
         let time_remaining_seconds = closes.map(|(at, _)| (at - now_unix()).max(0));
+        let item_ids = ab_db::submissions::get_selection(&self.pool, submission.id).await?;
+        let total_items = item_ids.as_ref().map_or(total_items, Vec::len);
         Ok(StudentSubmission {
             id: submission.id,
             assessment_id: submission.assessment_id,
@@ -498,6 +512,7 @@ impl SubmissionsService {
             violation_count: submission.violation_count,
             answered_count,
             total_items,
+            item_ids,
             time_remaining_seconds,
             time_remaining_reason: closes.map(|(_, reason)| reason),
         })
@@ -671,6 +686,24 @@ impl SubmissionsService {
             .await?
             // Unreachable under `lock_attempts`; never a second draft.
             .ok_or_else(|| Error::conflict("an attempt is already open"))?;
+            // The bank: this attempt's questions, fixed for its lifetime.
+            let policy = crate::assessments::service::PolicyInput::from_row(&assessment);
+            if policy.draw_count.is_some() {
+                let items = ab_db::assessments::list_items(&mut *tx, assessment_id)
+                    .await?
+                    .into_iter()
+                    .map(Item::try_from)
+                    .collect::<Result<Vec<_>>>()?;
+                if let Some(ids) = crate::assessments::draw::draw(
+                    &items,
+                    policy.draw_count,
+                    &policy.draw_strata,
+                    assessment.randomize_questions,
+                    draw_seed(id),
+                ) {
+                    ab_db::submissions::set_selection(&mut *tx, id, &ids).await?;
+                }
+            }
             // A revision starts from the returned work (newest attempt first),
             // not a blank page: the learner fixes what the teacher asked for.
             if let Some(returned) = prior
@@ -1437,6 +1470,8 @@ impl SubmissionsService {
             .into_iter()
             .map(Item::try_from)
             .collect::<Result<Vec<_>>>()?;
+        let selection = ab_db::submissions::get_selection(pool, submission.id).await?;
+        let items = crate::assessments::draw::drawn(items, selection.as_deref());
         // BUG-315: the hand-in is the moment the clock ran out, not when the
         // sweep got to it - lateness, the override in force (BUG-307) and
         // `submitted_at` (what settling re-judges) all use it.

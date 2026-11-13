@@ -7,6 +7,7 @@ import {
   attemptStateOptions,
   attemptStateQueryKey,
   getActivityAssessmentOptions,
+  getActivityAssessmentQueryKey,
   getSubmissionOptions,
   getSubmissionQueryKey,
   learnerCourseStateQueryKey,
@@ -35,10 +36,20 @@ const attemptChanged = (courseId: CourseId, assessmentId: AssessmentId) => ({
     learnerCourseStateQueryKey({ path: { course_id: courseId } }),
   ],
 })
-export const startOptions = (courseId: CourseId, assessmentId: AssessmentId) => ({
-  ...startSubmissionMutation(),
-  meta: attemptChanged(courseId, assessmentId),
-})
+/**
+ * A question bank (`bank`: the test's activity) also changes the test itself: a learner reads only the questions their
+ * attempt drew, none before the first one. The start draws them, so the test is read again before the start settles
+ * (the runner would show zero questions, or the previous attempt's).
+ */
+export const startOptions = (courseId: CourseId, assessmentId: AssessmentId, bank?: ActivityId) => {
+  const changed = attemptChanged(courseId, assessmentId)
+  return {
+    ...startSubmissionMutation(),
+    meta: bank
+      ? { invalidates: [...changed.invalidates, getActivityAssessmentQueryKey({ path: { activity_id: bank } })] }
+      : changed,
+  }
+}
 export const submitOptions = (courseId: CourseId, assessmentId: AssessmentId) => ({
   ...submitSubmissionMutation(),
   meta: attemptChanged(courseId, assessmentId),

@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT l.upload_id FROM assessment_item_uploads l\n           JOIN assessment_items i ON i.id = l.item_id\n           JOIN assessments a ON a.id = i.assessment_id\n           WHERE l.upload_id = ANY($1) AND a.course_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "upload_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessment_item_uploads",
+            "name": "upload_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "24de882d28b5883086e3c14388e66d4e249f1beb5f91301ccc1260f7771effed"
+}

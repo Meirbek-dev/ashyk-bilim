@@ -92,6 +92,9 @@ error_codes! {
     LanguageNotAllowed => ("language-not-allowed", 422, "Programming language not allowed"),
     // Assessments
     AssessmentReadOnly => ("assessment-read-only", 409, "Assessment can no longer be edited"),
+    AssessmentImportInvalid => ("assessment-import-invalid", 409, "The spreadsheet has errors to fix first"),
+    AssessmentImportExpired => ("assessment-import-expired", 410, "The uploaded spreadsheet has expired; upload it again"),
+    AssessmentExportEmpty => ("assessment-export-empty", 422, "No question of this test fits the spreadsheet format"),
     // Attempt refusals (403 like `forbidden`; `details.reasons` lists every gate)
     AttemptTimeExpired => ("attempt-time-expired", 403, "The attempt's time limit has expired"),
     AttemptPastDue => ("attempt-past-due", 403, "The due date or late cutoff has passed"),

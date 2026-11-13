@@ -51,7 +51,7 @@ export const SUM: CodeBody = {
   max_output_kb: null,
 }
 
-const EASY: ItemMetadata = { difficulty: 'easy', estimated_minutes: null, section_label: null }
+const EASY: ItemMetadata = { difficulty: 'easy', estimated_minutes: null, section_label: null, draw_group: null }
 
 export type Made = { assessment: AssessmentDetail; activityId: string; itemId: string }
 

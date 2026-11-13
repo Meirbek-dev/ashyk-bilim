@@ -12,7 +12,10 @@ type MatchingProps = {
   disabled: boolean
 }
 
-/** Matching: each left element gets a pick from the right column (shuffled by the server, never the pairing). */
+/**
+ * Matching: each left element gets a pick from the right column (shuffled by the server, never the pairing). The right
+ * column may hold extra values, and a left element may have no pair: «без пары» is a valid pick, not just a placeholder.
+ */
 export function MatchingItem({ body, answer, onChange, disabled }: MatchingProps) {
   const id = useId()
   const matches = answer?.kind === 'matching' ? (answer.matches ?? []) : []
@@ -24,7 +27,10 @@ export function MatchingItem({ body, answer, onChange, disabled }: MatchingProps
     <FieldGroup>
       {body.left.map(left => (
         <Field key={left.id}>
-          <FieldLabel htmlFor={`${id}-${left.id}`} className="font-reading text-base font-normal wrap-anywhere">
+          <FieldLabel
+            htmlFor={`${id}-${left.id}`}
+            className="font-reading text-base font-normal wrap-anywhere whitespace-pre-wrap"
+          >
             {left.text}
           </FieldLabel>
           <NativeSelect
@@ -34,7 +40,7 @@ export function MatchingItem({ body, answer, onChange, disabled }: MatchingProps
             disabled={disabled}
             onChange={event => pick(left.id, event.target.value)}
           >
-            <NativeSelectOption value="">{m.attempt_match_pick()}</NativeSelectOption>
+            <NativeSelectOption value="">{m.attempt_match_none()}</NativeSelectOption>
             {body.right.map(right => (
               <NativeSelectOption key={right.id} value={right.id}>
                 {right.text}

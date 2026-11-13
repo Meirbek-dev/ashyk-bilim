@@ -9,6 +9,7 @@ use ab_core::config::Config;
 use ab_domain::ai::AiService;
 use ab_domain::analytics::AnalyticsService;
 use ab_domain::assessments::AssessmentsService;
+use ab_domain::assessments::imports::ImportsService;
 use ab_domain::catalog::{
     CollectionsService, CoursesService, CurriculumService, PlatformService, SearchService,
 };
@@ -47,6 +48,7 @@ pub struct AppState {
     pub search: SearchService,
     pub usergroups: UsergroupsService,
     pub assessments: AssessmentsService,
+    pub imports: ImportsService,
     pub submissions: SubmissionsService,
     pub code_runs: CodeRunsService,
     pub grading: GradingService,
@@ -168,6 +170,7 @@ impl AppState {
             platform: PlatformService::new(pool.clone()),
             search: SearchService::new(pool.clone()),
             usergroups: UsergroupsService::new(pool.clone()),
+            imports: ImportsService::new(pool.clone(), Arc::clone(&storage), assessments.clone()),
             assessments,
             courses,
             pool,

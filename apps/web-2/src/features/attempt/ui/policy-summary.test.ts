@@ -5,7 +5,7 @@ import type { AttemptState } from '#/shared/api/gen/types.gen'
 
 import { formatDateTime, formatNumber, formatPercent } from '#/shared/i18n/format'
 
-import { attemptsText, lateText } from './policy-summary'
+import { attemptsText, lateText, questionsText } from './policy-summary'
 
 const state = (patch: Partial<AttemptState>): AttemptState => ({
   attempts_remaining: 3,
@@ -69,5 +69,23 @@ describe('lateText', () => {
     // An own due date past the cutoff: no late window left.
     expect(lateText({ ...effective, late_policy: cutoff, due_at_unix: 1_800_000_000 })).toBe(m.attempt_late_closed())
     expect(lateText(effective)).toBe(m.attempt_late_free())
+  })
+})
+
+const numbers = (count: number) => Array.from({ length: count }, (_, i) => i)
+
+describe('questionsText', () => {
+  const policy = { draw_count: 30 }
+
+  test('a learner reads the draw count before the first attempt, when the test sends no questions', () => {
+    expect(questionsText({ items: [], policy })).toBe(m.attempt_questions({ count: '30' }))
+  })
+
+  test('an author reads the whole bank: «30 из банка 64»', () => {
+    expect(questionsText({ items: numbers(64), policy })).toBe(m.attempt_questions_bank({ count: '30', bank: '64' }))
+  })
+
+  test('without a draw: every question', () => {
+    expect(questionsText({ items: numbers(5), policy: { draw_count: null } })).toBe(m.attempt_questions({ count: '5' }))
   })
 })

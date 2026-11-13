@@ -8,23 +8,28 @@ import { FormFields } from './form-fields'
 import { MarkdownField } from './markdown-field'
 import { MatchingFields } from './matching-fields'
 import { OpenTextFields } from './open-text-fields'
+import { PromptFields } from './prompt-fields'
 
 type BodyFieldsProps = { body: ItemBody; onChange: (body: ItemBody) => void; mode: EditMode }
 
-/** The kind-specific part of a question: the prompt (markdown) and the editor of its kind. */
+/**
+ * The kind-specific part of a question: the prompt and the editor of its kind. Choice, open and matching questions
+ * take a plain or markdown prompt with pictures; a form's prompt is markdown; a code task shows its summary.
+ */
 export function BodyFields({ body, onChange, mode }: BodyFieldsProps) {
-  const prompt =
-    body.kind === 'code' ? null : (
-      <MarkdownField
-        label={m.assessments_field_prompt()}
-        value={body.prompt ?? ''}
-        onChange={text => onChange({ ...body, prompt: text })}
-        editable={mode !== 'none'}
-      />
-    )
   return (
     <div className="flex flex-col gap-4">
-      {prompt}
+      {body.kind === 'form' ? (
+        <MarkdownField
+          label={m.assessments_field_prompt()}
+          value={body.prompt ?? ''}
+          onChange={text => onChange({ ...body, prompt: text })}
+          editable={mode !== 'none'}
+        />
+      ) : null}
+      {body.kind === 'choice' || body.kind === 'open_text' || body.kind === 'matching' ? (
+        <PromptFields body={body} onChange={onChange} mode={mode} />
+      ) : null}
       {body.kind === 'choice' ? <ChoiceFields body={body} onChange={onChange} mode={mode} /> : null}
       {body.kind === 'matching' && 'pairs' in body ? (
         <MatchingFields body={body} onChange={onChange} mode={mode} />

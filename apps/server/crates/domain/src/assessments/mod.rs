@@ -3,6 +3,8 @@
 //! live in `grading` (P4).
 
 pub mod access;
+pub mod draw;
+pub mod imports;
 pub mod items;
 pub mod service;
 
