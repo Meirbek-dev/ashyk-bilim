@@ -24,7 +24,7 @@ export function AutoDrafts({ courseId, settings }: { courseId: CourseId; setting
           <h2 id={labelId} className="text-xl font-semibold">
             {m.ai_grading_auto_title()}
           </h2>
-          <p id={hintId} className="max-w-prose text-sm text-muted-foreground">
+          <p id={hintId} className="max-w-prose text-sm text-pretty text-muted-foreground">
             {m.ai_grading_auto_hint()}
           </p>
         </div>

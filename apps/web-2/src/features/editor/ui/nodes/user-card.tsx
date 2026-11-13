@@ -7,12 +7,12 @@ import { UserAvatar } from '#/shared/components/user-avatar'
 export function UserCard({ userId }: { userId: string }) {
   const { data } = useSuspenseQuery(publicProfileByIdOptions({ path: { user_id: userId } }))
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-card-foreground">
+    <div className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 text-card-foreground [&_p]:m-0">
       <UserAvatar name={data.display_name || data.username} avatarKey={data.avatar_key} />
       <div className="flex min-w-0 flex-col gap-1">
         <p className="font-medium">{data.display_name || data.username}</p>
         <p className="text-sm text-muted-foreground">@{data.username}</p>
-        {data.bio ? <p className="text-sm">{data.bio}</p> : null}
+        {data.bio ? <p className="text-sm text-pretty">{data.bio}</p> : null}
       </div>
     </div>
   )

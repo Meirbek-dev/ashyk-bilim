@@ -6,6 +6,7 @@ import { useState, type ReactNode } from 'react'
 import { shortcuts } from '#/features/catalog'
 import { CommandPalette } from '#/features/catalog/route'
 import { m } from '#/paraglide/messages'
+import { EmptyState } from '#/shared/components/empty-state'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { formatDateTime } from '#/shared/i18n/format'
 import { toast } from '#/shared/ui/toast'
@@ -73,16 +74,17 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
       wide={(entry.activity_type === 'document' || entry.activity_type === 'video') && !entry.blocked_reason}
     >
       <article className="flex flex-col gap-gutter @3xl:gap-10">
-        <ActivityHeader key={`${entry.id}:header`} type={entry.activity_type} title={entry.title} />
-        {/* Staff see the lesson as learners do, without a mark (B-PLY-01); the work pages say it the same way. */}
+        {/* Staff see the lesson as learners do, without a mark (B-PLY-01); the work pages say it the same way. Both
+            notes speak of the screen, so they stand over the activity's heading, not between it and its text. */}
         {lesson && staffPreview(state) ? <PreviewNote lesson /> : null}
         {courseArchived(state) ? <ArchivedNote /> : null}
+        <ActivityHeader key={`${entry.id}:header`} type={entry.activity_type} title={entry.title} />
         {entry.blocked_reason ? (
-          <p className="text-muted-foreground">
+          <EmptyState>
             {entry.opens_at_unix
               ? m.player_opens_at({ date: formatDateTime(entry.opens_at_unix) })
               : m.player_locked_text()}
-          </p>
+          </EmptyState>
         ) : lesson ? (
           <LessonContent key={entry.id} activityId={entry.id} onVideoEnded={videoEnded} />
         ) : (
@@ -94,7 +96,8 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
             archived={courseArchived(state)}
           />
         )}
-        <footer className="mt-4 flex flex-col gap-gutter border-t pt-gutter">
+        {/* A lesson's text ends at a hairline; a work entry is a card, its own edge is enough. */}
+        <footer className={`flex flex-col gap-gutter ${lesson ? 'border-t pt-gutter' : ''}`}>
           {lesson ? action : null}
           <NeighbourLinks courseId={courseId} prev={prev} next={next} nextShown={lesson && continuesTo === next?.id} />
         </footer>

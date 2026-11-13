@@ -1,4 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
+import { ArrowUpDown } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import { ChoiceItems } from '#/shared/components/choice-items'
@@ -16,7 +17,15 @@ export function CoursesSortMenu({ search }: { search: CoursesSearch }) {
   const label = m.studio_sort_label({ sort: labels[current]() })
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline">{label}</Button>} />
+      <DropdownMenuTrigger
+        render={
+          // The icon says «order», the text which one: the full «Сортировка: …» stays the button's name.
+          <Button variant="outline" aria-label={label}>
+            <ArrowUpDown aria-hidden data-icon="inline-start" className="text-muted-foreground" />
+            {labels[current]()}
+          </Button>
+        }
+      />
       <DropdownMenuContent align="end">
         <ChoiceItems
           choice={{

@@ -67,14 +67,15 @@ export function EmbedView({ node, editor, selected, updateAttributes }: ViewProp
           )}
         />
       ) : url && (editor.isEditable || !external) ? (
-        <p className="text-sm text-destructive">{m.editor_embed_unsafe()}</p>
+        <p className="m-0 text-sm text-destructive">{m.editor_embed_unsafe()}</p>
       ) : null}
       {external ? (
         <Link to={external} target="_blank" rel="noopener noreferrer">
           {m.editor_embed_open()}
         </Link>
       ) : null}
-      {form || null}
+      {/* The form takes the block's width, as every other block's form: centred, it shrank to its labels. */}
+      {form ? <div className="w-full">{form}</div> : null}
     </Wrapper>
   )
 }

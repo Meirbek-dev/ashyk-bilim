@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react'
 
 import { ActivityHeader, PreviewNote } from '#/features/player'
 import { m } from '#/paraglide/messages'
+import { EmptyState } from '#/shared/components/empty-state'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { buttonVariants } from '#/shared/components/button-variants'
 
@@ -24,7 +25,7 @@ export function ArenaPage() {
       className={buttonVariants({ variant: 'ghost' })}
     >
       <ArrowLeft aria-hidden />
-      {m.player_preview_studio()}
+      <span className="sr-only @3xl:not-sr-only">{m.player_preview_studio()}</span>
     </RouterLink>
   ) : (
     <RouterLink
@@ -33,16 +34,16 @@ export function ArenaPage() {
       className={buttonVariants({ variant: 'ghost' })}
     >
       <ArrowLeft aria-hidden />
-      {m.code_back()}
+      <span className="sr-only @3xl:not-sr-only">{m.code_back()}</span>
     </RouterLink>
   )
   return (
     <FocusPage back={back} title={courseTitle} wide>
       <article className="mx-auto flex w-full max-w-(--breakpoint-2xl) min-w-0 flex-col gap-gutter">
-        <ActivityHeader type="code_challenge" title={title} tool />
         {preview ? <PreviewNote /> : null}
+        <ActivityHeader type="code_challenge" title={title} tool />
         {locked ? (
-          <p className="text-muted-foreground">{m.code_locked()}</p>
+          <EmptyState>{m.code_locked()}</EmptyState>
         ) : (
           <Challenge courseId={courseId} activityId={activityId} />
         )}

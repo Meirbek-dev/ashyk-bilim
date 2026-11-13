@@ -31,10 +31,14 @@ export function MatchingFields({ body, onChange, mode }: MatchingFieldsProps) {
       <FieldSet>
         <FieldLegend variant="label">{m.assessments_pairs_legend()}</FieldLegend>
         {editable ? <FieldDescription>{m.assessments_pairs_hint()}</FieldDescription> : null}
-        <ol className="flex flex-col gap-2">
+        <ol className="flex flex-col gap-4 @xl:gap-2">
           {body.pairs.map((pair, at) => (
-            // The pairs carry no ids: the position is their identity while editing.
-            <li key={at} className="flex flex-wrap items-center gap-2 @xl:flex-nowrap">
+            // The pairs carry no ids: the position is their identity while editing. Narrow: the two sides stack with
+            // «remove» beside the first, so the button never drops to a line of its own.
+            <li
+              key={at}
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 @xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto]"
+            >
               <Input
                 aria-label={m.assessments_pair_left({ number: at + 1 })}
                 placeholder={m.assessments_pair_left({ number: at + 1 })}
@@ -45,11 +49,12 @@ export function MatchingFields({ body, onChange, mode }: MatchingFieldsProps) {
               <Input
                 aria-label={m.assessments_pair_right({ number: at + 1 })}
                 placeholder={m.assessments_pair_right({ number: at + 1 })}
+                className="col-start-1 row-start-2 @xl:col-start-2 @xl:row-start-1"
                 value={pair.right ?? ''}
                 disabled={!editable || pair.right === null}
                 onChange={event => patch(at, { right: event.target.value })}
               />
-              <Label className="shrink-0 font-normal">
+              <Label className="col-start-2 row-start-2 shrink-0 font-normal @xl:col-start-3 @xl:row-start-1">
                 <Checkbox
                   aria-label={m.assessments_pair_unpaired({ number: at + 1 })}
                   checked={pair.right === null}
@@ -58,12 +63,14 @@ export function MatchingFields({ body, onChange, mode }: MatchingFieldsProps) {
                 />
                 {m.assessments_pair_none()}
               </Label>
-              <IconButton
-                label={m.assessments_pair_remove({ number: at + 1 })}
-                icon={<X aria-hidden />}
-                disabled={!editable || body.pairs.length <= 1}
-                onClick={() => setPairs(body.pairs.filter((_, index) => index !== at))}
-              />
+              <div className="col-start-2 row-start-1 justify-self-end @xl:col-start-4">
+                <IconButton
+                  label={m.assessments_pair_remove({ number: at + 1 })}
+                  icon={<X aria-hidden />}
+                  disabled={!editable || body.pairs.length <= 1}
+                  onClick={() => setPairs(body.pairs.filter((_, index) => index !== at))}
+                />
+              </div>
             </li>
           ))}
         </ol>

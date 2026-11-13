@@ -35,42 +35,51 @@ export function FormFields({ body, onChange, mode }: FormFieldsProps) {
       {editable ? <FieldDescription>{m.assessments_form_hint()}</FieldDescription> : null}
       <ol className="flex flex-col gap-3">
         {fields.map((field, at) => (
-          <li key={field.id} ref={focusNew.ref(field)} className="flex flex-wrap items-center gap-2">
+          // Narrow: the label with «remove» beside it, the type and «required» on the line under them.
+          <li
+            key={field.id}
+            ref={focusNew.ref(field)}
+            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 @xl:flex"
+          >
             <Input
               aria-label={m.assessments_form_field_label({ number: at + 1 })}
               placeholder={m.assessments_form_field_label({ number: at + 1 })}
-              className="min-w-48 flex-1"
+              className="@xl:min-w-48 @xl:flex-1"
               value={field.label ?? ''}
               disabled={mode === 'none'}
               onChange={event => patch(at, { label: event.target.value })}
             />
-            <NativeSelect
-              aria-label={m.assessments_form_field_type({ number: at + 1 })}
-              value={field.field_type ?? 'text'}
-              disabled={!editable}
-              onChange={event => patch(at, { field_type: formType(event.target.value) })}
-            >
-              {FORM_TYPES.map(type => (
-                <NativeSelectOption key={type} value={type}>
-                  {formTypeLabels[type]()}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-            <Label className="font-normal">
-              <Checkbox
-                aria-label={m.assessments_form_field_required({ number: at + 1 })}
-                checked={field.required === true}
+            <div className="col-start-1 row-start-2 flex flex-wrap items-center gap-x-4 gap-y-2 @xl:contents">
+              <NativeSelect
+                aria-label={m.assessments_form_field_type({ number: at + 1 })}
+                value={field.field_type ?? 'text'}
                 disabled={!editable}
-                onCheckedChange={checked => patch(at, { required: checked })}
+                onChange={event => patch(at, { field_type: formType(event.target.value) })}
+              >
+                {FORM_TYPES.map(type => (
+                  <NativeSelectOption key={type} value={type}>
+                    {formTypeLabels[type]()}
+                  </NativeSelectOption>
+                ))}
+              </NativeSelect>
+              <Label className="font-normal">
+                <Checkbox
+                  aria-label={m.assessments_form_field_required({ number: at + 1 })}
+                  checked={field.required === true}
+                  disabled={!editable}
+                  onCheckedChange={checked => patch(at, { required: checked })}
+                />
+                {m.assessments_form_required()}
+              </Label>
+            </div>
+            <div className="col-start-2 row-start-1">
+              <IconButton
+                label={m.assessments_form_field_remove({ number: at + 1 })}
+                icon={<X aria-hidden />}
+                disabled={!editable || fields.length <= 1}
+                onClick={() => setFields(fields.filter((_, index) => index !== at))}
               />
-              {m.assessments_form_required()}
-            </Label>
-            <IconButton
-              label={m.assessments_form_field_remove({ number: at + 1 })}
-              icon={<X aria-hidden />}
-              disabled={!editable || fields.length <= 1}
-              onClick={() => setFields(fields.filter((_, index) => index !== at))}
-            />
+            </div>
           </li>
         ))}
       </ol>

@@ -19,7 +19,8 @@ export function CoursesPage() {
   return (
     <ListPage
       title={m.catalog_courses_title()}
-      // The order is the only control: beside the search box at every width, not one menu inside a «Фильтры» sheet.
+      // The order is the only control: beside the search box at every width, not one menu inside a «Фильтры» sheet;
+      // from @2xl it stands at the row's far end, where a list's order is looked for.
       search={
         <>
           <SearchBox
@@ -28,7 +29,9 @@ export function CoursesPage() {
             label={m.catalog_courses_search_label()}
             onSearch={q => navigate({ search: prev => ({ ...prev, q }) })}
           />
-          <SortMenu sort={filter.sort} signedIn={session !== null} />
+          <div className="@2xl:ml-auto">
+            <SortMenu sort={filter.sort} signedIn={session !== null} />
+          </div>
         </>
       }
     >

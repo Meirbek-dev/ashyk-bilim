@@ -13,10 +13,11 @@ import { percentOf } from './continue-hero'
 export function ContinueRow({ item }: { item: ContinueLearning }) {
   const percent = percentOf(item)
   return (
-    <article className="relative flex items-center gap-4 rounded-lg py-3 pr-2 transition-colors duration-150 hover:bg-accent hover:text-accent-foreground">
+    // The hover field reaches past the row on both sides, so the picture and the chevron sit inside it, not on its edge.
+    <article className="relative -mx-3 flex items-center gap-4 rounded-lg px-3 py-3 transition-colors duration-150 hover:bg-accent/60">
       <CourseCover imageKey={item.thumbnail_key} className="aspect-video w-20 shrink-0 rounded-sm @md:w-24" />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h3 className="font-medium wrap-anywhere">
+        <h3 className="line-clamp-2 text-base font-medium wrap-anywhere">
           <Link
             variant="stretched"
             to="/learn/$courseId/$activityId"
@@ -37,7 +38,7 @@ export function ContinueRow({ item }: { item: ContinueLearning }) {
           </div>
         )}
       </div>
-      <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+      <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
     </article>
   )
 }

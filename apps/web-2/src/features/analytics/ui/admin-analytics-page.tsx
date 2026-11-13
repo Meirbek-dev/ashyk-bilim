@@ -6,13 +6,12 @@ import type { AdminCohortRow, AdminCourseRow, AdminProgramRow, AdminTeacherRow }
 import type { DataColumn } from '#/shared/components/data-columns'
 import { Link } from '#/shared/components/link'
 import { ListPage } from '#/shared/components/templates/list-page'
-import { formatNumber, formatPercent } from '#/shared/i18n/format'
+import { formatDateTime, formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { programAuthor } from '../model/analytics'
 import { adminAnalyticsOptions } from '../queries'
 import { AdminTable } from './admin-table'
 import { AdminFilters } from './admin-filters'
-import { AsOf } from './as-of'
 import { hours, percent, score } from './kpi'
 import { Meter } from './meter'
 
@@ -155,11 +154,12 @@ export function AdminAnalyticsPage() {
   return (
     <ListPage
       title={m.analytics_admin_title()}
+      // The snapshot's time beside the title, where a list says its count: under the filters it was a line of its own.
+      count={m.analytics_as_of({ time: formatDateTime(data.generated_at_unix) })}
       filters={<AdminFilters search={search} />}
       activeFilters={(search.course ? 1 : 0) + (search.cohort ? 1 : 0)}
     >
       <div className="flex flex-col gap-10">
-        <AsOf at={data.generated_at_unix} />
         <AdminTable
           title={m.analytics_admin_courses()}
           description={m.analytics_admin_courses_hint()}

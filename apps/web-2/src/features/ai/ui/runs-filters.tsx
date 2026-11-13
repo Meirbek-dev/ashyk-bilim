@@ -70,7 +70,8 @@ export function RunsFilters({ search }: { search: AdminAiSearch }) {
         aria-label={m.ai_filter_provider()}
         placeholder={m.ai_filter_provider()}
         defaultValue={search.provider ?? ''}
-        className="col-span-2 w-full sm:w-auto sm:min-w-48 sm:flex-1"
+        // As wide as a name to type, not as the row: stretched to the page's edge it outweighed the three selects.
+        className="col-span-2 w-full sm:w-64"
         onKeyDown={event => {
           if (event.key === 'Enter') set({ provider: event.currentTarget.value.trim() || undefined })
         }}

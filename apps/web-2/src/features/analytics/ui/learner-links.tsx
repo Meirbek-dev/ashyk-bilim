@@ -20,16 +20,21 @@ export function LearnerLinks({
     'course_id' | 'user_id' | 'user_display_name' | 'user_username' | 'user_email' | 'open_grading_blocks'
   >
 }) {
+  // One size for the row of ways on (the write link is a small button): four buttons of two heights read as a pile.
   return (
     <>
       <WriteLink userId={row.user_id} course={row.course_id} learner intervention />
       {row.user_email ? (
-        <Anchor href={`mailto:${row.user_email}`} className={buttonVariants({ variant: 'outline' })}>
+        <Anchor href={`mailto:${row.user_email}`} className={buttonVariants({ variant: 'outline', size: 'sm' })}>
           {m.analytics_write_email()}
         </Anchor>
       ) : null}
       {row.open_grading_blocks > 0 ? (
-        <RouterLink to="/teach" search={{ course: row.course_id }} className={buttonVariants({ variant: 'outline' })}>
+        <RouterLink
+          to="/teach"
+          search={{ course: row.course_id }}
+          className={buttonVariants({ variant: 'outline', size: 'sm' })}
+        >
           {m.analytics_grade_blocks({ count: formatNumber(row.open_grading_blocks) })}
         </RouterLink>
       ) : null}
@@ -37,7 +42,7 @@ export function LearnerLinks({
         to="/teach/courses/$courseId/learners"
         params={{ courseId: row.course_id }}
         search={{ q: row.user_username || row.user_display_name }}
-        className={buttonVariants({ variant: 'ghost' })}
+        className={buttonVariants({ variant: 'ghost', size: 'sm' })}
       >
         {m.analytics_learner_in_course()}
       </RouterLink>

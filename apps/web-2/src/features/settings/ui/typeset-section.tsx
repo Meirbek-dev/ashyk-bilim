@@ -24,7 +24,7 @@ type TypesetSectionProps = {
   children: ReactNode
 }
 
-/** One independent form of a settings page: heading in the margin, fields, and its own Save at the end. */
+/** One independent form of a settings page: heading, fields, and its own Save at the end. */
 export function TypesetSection(props: TypesetSectionProps) {
   const { title, description, onSubmit, pending, error, submitLabel, id, children } = props
   // As FormDialog: the region message is about what was sent; an edit takes it away until the next failed save.
@@ -44,7 +44,7 @@ export function TypesetSection(props: TypesetSectionProps) {
       className={page}
     >
       <SectionMargin title={title} description={description} />
-      <div className="flex min-w-0 flex-col gap-5">
+      <div className="flex min-w-0 flex-col gap-4">
         {children}
         {error && error !== edited ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
         <div>

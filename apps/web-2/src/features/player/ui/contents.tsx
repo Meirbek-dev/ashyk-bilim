@@ -17,27 +17,30 @@ export function Contents({
 }) {
   const { completed_required_count: done, total_required_count: total, progress_pct: percent } = state.progress
   return (
-    <div className="flex flex-col gap-gutter">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <p className="font-heading text-lg font-semibold wrap-anywhere">{state.title}</p>
-        <Progress value={percent} aria-label={m.player_progress_label()} />
+        {/* Beside the page the top bar already names the course: the title stays for the sheet of narrow screens, which
+            is drawn outside the page's container and so never matches the query. */}
+        <p className="font-heading text-lg font-semibold wrap-anywhere @5xl:hidden">{state.title}</p>
         <p className="flex items-baseline justify-between gap-2 text-sm text-muted-foreground tabular-nums">
           <span>{m.player_progress({ done, total })}</span>
-          <span aria-hidden className="font-heading text-base text-foreground">
+          <span aria-hidden className="font-medium text-foreground">
             {formatPercent(Math.round(percent))}
           </span>
         </p>
+        <Progress value={percent} aria-label={m.player_progress_label()} />
       </div>
       {state.outline.map((chapter, index) => (
         <section key={chapter.id} aria-labelledby={`chapter-${chapter.id}`} className="flex flex-col gap-1">
-          <div className="flex items-baseline gap-2.5 border-b pb-1.5">
-            <span aria-hidden className="font-heading text-base text-muted-foreground tabular-nums">
+          {/* The number stands in the rows' icon column, the title on their text edge. */}
+          <div className="flex items-baseline gap-3 px-3 py-1">
+            <span aria-hidden className="w-5 shrink-0 text-center text-sm text-muted-foreground tabular-nums">
               {index + 1}
             </span>
             <h2
               id={`chapter-${chapter.id}`}
               title={chapter.title}
-              className="line-clamp-3 font-heading text-base font-semibold wrap-anywhere"
+              className="line-clamp-2 min-w-0 font-sans text-sm font-semibold wrap-anywhere"
             >
               {chapter.title}
             </h2>

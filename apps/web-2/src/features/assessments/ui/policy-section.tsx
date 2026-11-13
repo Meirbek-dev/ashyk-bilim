@@ -27,10 +27,13 @@ export function PolicySection({ activityId, assessment }: PolicySectionProps) {
         pending={save.isPending}
         error={isStale(save.error) ? null : save.error}
       >
-        <TimingFields form={form} />
-        {assessment.kind === 'code_challenge' ? null : <DrawFields form={form} items={assessment.items} />}
-        <GradingFields form={form} />
-        {hasAntiCheat(assessment.kind) ? <AntiCheatFields form={form} /> : null}
+        {/* The fields read as short groups, not one column of controls. */}
+        <div className="flex flex-col gap-8">
+          <TimingFields form={form} />
+          {assessment.kind === 'code_challenge' ? null : <DrawFields form={form} items={assessment.items} />}
+          <GradingFields form={form} />
+          {hasAntiCheat(assessment.kind) ? <AntiCheatFields form={form} /> : null}
+        </div>
       </LockableSection>
       <ConflictDialog
         open={version.conflict}

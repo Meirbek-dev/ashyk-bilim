@@ -6,6 +6,7 @@ import { WriteLink } from '#/features/conversations'
 import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
 import { buttonVariants } from '#/shared/components/button-variants'
+import { EmptyState } from '#/shared/components/empty-state'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
 import { DetailPage } from '#/shared/components/templates/detail-page'
@@ -34,8 +35,9 @@ export function PublicProfilePage() {
   return (
     <DetailPage
       cover={
-        // The person, large, in the column the sections below hang from.
-        <div className="[&_[data-slot=avatar]]:size-40 @3xl:[&_[data-slot=avatar]]:size-48">
+        // The person in the column the sections below hang from: a portrait's size beside the name, a row's above it
+        // on a phone (a 12rem disc of initials outweighed the name it stands for).
+        <div className="@3xl:[&_[data-slot=avatar]]:size-36">
           <UserAvatar name={user.display_name} avatarKey={user.avatar_key} size="profile" />
         </div>
       }
@@ -58,9 +60,7 @@ export function PublicProfilePage() {
           <p className="max-w-prose wrap-anywhere whitespace-pre-line">{user.bio}</p>
         </section>
       ) : null}
-      {empty ? (
-        <p className="max-w-prose py-6 font-heading text-lg text-muted-foreground">{m.settings_user_empty()}</p>
-      ) : null}
+      {empty ? <EmptyState>{m.settings_user_empty()}</EmptyState> : null}
       {/* A learner makes no courses: the section is there only when there is something in it (or it failed). */}
       {items.length > 0 || courses.error ? (
         <section aria-label={m.settings_user_courses()} className={hangingSection}>

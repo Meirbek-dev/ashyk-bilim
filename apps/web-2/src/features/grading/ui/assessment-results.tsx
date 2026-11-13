@@ -7,11 +7,13 @@ import { KpiStrip } from '#/shared/components/charts/kpi-strip'
 import { KpiTile } from '#/shared/components/charts/kpi-tile'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
+import { EmptyState } from '#/shared/components/empty-state'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { assessmentOptions, itemStatsOptions, statsOptionsOf } from '../queries'
 import { type CountFilter, CountTile } from './count-tile'
 import { itemKindText } from './labels'
+import { OUTCOMES } from './table-look'
 
 const counts: readonly {
   key: keyof Stats & ('total' | 'needs_grading' | 'graded' | 'published' | 'returned' | 'late')
@@ -89,42 +91,53 @@ export function AssessmentResults({ activityId }: { activityId: string }) {
   const { data: stats } = useSuspenseQuery(statsOptionsOf(assessment.id))
   const { data: items } = useSuspenseQuery(itemStatsOptions(assessment.id))
   return (
-    <div className="flex flex-col gap-8">
-      <KpiStrip label={m.platform_tab_results()} columns={4}>
+    <div className="@container flex max-w-6xl flex-col gap-10">
+      {/* How many works and where they stand: six counts, three to a row. */}
+      <KpiStrip label={m.platform_tab_results()} columns={3}>
         {counts.map(({ key, label, filter }) => (
           <CountTile key={key} label={label()} value={stats[key]} filter={filter} />
         ))}
-        {/* Before the first graded work: a quiet dash, as the gradebook, not a headline «Нет оценки». */}
-        <KpiTile
-          label={m.grading_kpi_average()}
-          value={stats.avg_score === null ? null : formatPercent(stats.avg_score)}
-          missing={m.grading_no_score()}
-        />
-        <KpiTile
-          label={m.grading_kpi_pass_rate()}
-          value={stats.pass_rate === null ? null : formatPercent(stats.pass_rate)}
-          missing={m.grading_no_score()}
-        />
       </KpiStrip>
-      <Bars
-        title={m.grading_distribution()}
-        data={stats.distribution.map(bucket => ({ label: bucket.range, value: bucket.count }))}
-        formatValue={value => formatNumber(value)}
-        empty={m.grading_distribution_empty()}
-      />
+      {/* How well they did: the two outcomes beside the distribution they sum up. */}
+      <div className={OUTCOMES}>
+        <div className="grid grid-cols-2 content-start gap-x-gutter gap-y-6 @3xl:grid-cols-1">
+          {/* Before the first graded work: a quiet dash, as the gradebook, not a headline «Нет оценки». */}
+          <KpiTile
+            label={m.grading_kpi_average()}
+            value={stats.avg_score === null ? null : formatPercent(stats.avg_score)}
+            missing={m.grading_no_score()}
+          />
+          <KpiTile
+            label={m.grading_kpi_pass_rate()}
+            value={stats.pass_rate === null ? null : formatPercent(stats.pass_rate)}
+            missing={m.grading_no_score()}
+          />
+        </div>
+        <div className="border-t pt-3">
+          <Bars
+            title={m.grading_distribution()}
+            data={stats.distribution.map(bucket => ({ label: bucket.range, value: bucket.count }))}
+            formatValue={value => formatNumber(value)}
+            empty={m.grading_distribution_empty()}
+          />
+        </div>
+      </div>
       <section aria-labelledby="grading-items-stats" className="flex flex-col gap-4">
         <h2 id="grading-items-stats" className="text-xl font-semibold">
           {m.grading_items_stats()}
         </h2>
         {items.length === 0 ? (
-          <p className="text-muted-foreground">{m.grading_items_stats_empty()}</p>
+          <EmptyState>{m.grading_items_stats_empty()}</EmptyState>
         ) : (
-          <DataTable
-            label={m.grading_items_stats()}
-            rows={items}
-            columns={itemColumns(new Map(assessment.items.map(item => [item.id, item.body])))}
-            getKey={row => row.item_id}
-          />
+          // The figures (from the third column on) end on one line, under their heads.
+          <div className="[&_td:nth-child(n+3)]:text-right [&_th:nth-child(n+3)]:text-right">
+            <DataTable
+              label={m.grading_items_stats()}
+              rows={items}
+              columns={itemColumns(new Map(assessment.items.map(item => [item.id, item.body])))}
+              getKey={row => row.item_id}
+            />
+          </div>
         )}
       </section>
     </div>

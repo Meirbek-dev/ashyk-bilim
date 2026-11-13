@@ -31,11 +31,13 @@ export function ReviewBar({ courseId, selected, onDone }: ReviewBarProps) {
     // Sticky under the top bar (h-14): a long list scrolls while picking, the decision stays in reach.
     <div className="sticky top-14 z-10 flex flex-col gap-2 border-b bg-background py-2">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm tabular-nums">{m.concepts_selected({ count: formatNumber(selected.size) })}</p>
-        <SubmitButton variant="outline" pending={deciding === 'approved'} onClick={() => decide('approved')}>
+        <p className="mr-2 text-sm font-medium tabular-nums">
+          {m.concepts_selected({ count: formatNumber(selected.size) })}
+        </p>
+        <SubmitButton size="sm" variant="outline" pending={deciding === 'approved'} onClick={() => decide('approved')}>
           {m.concepts_approve()}
         </SubmitButton>
-        <SubmitButton variant="outline" pending={deciding === 'rejected'} onClick={() => decide('rejected')}>
+        <SubmitButton size="sm" variant="outline" pending={deciding === 'rejected'} onClick={() => decide('rejected')}>
           {m.concepts_reject()}
         </SubmitButton>
       </div>

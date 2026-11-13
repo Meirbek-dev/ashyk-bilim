@@ -30,15 +30,16 @@ export function HomePage() {
   // Results and announcements make a side column from @4xl; without either the page stays one column.
   const side = recent_results.length > 0 || course_updates.length > 0
   return (
-    <section className="@container flex flex-col gap-10">
-      <header className="flex flex-col gap-4 pt-2 @2xl:flex-row @2xl:items-end @2xl:justify-between">
-        <div className="flex flex-col gap-1">
-          <p className="text-sm text-muted-foreground">{formatDate(Math.floor(agenda.dataUpdatedAt / 1000))}</p>
+    <section className="@container flex flex-col gap-8">
+      {/* The date is a line of its own, so the level and streak centre on the title itself, not on the pair. */}
+      <header className="flex flex-col gap-1 pt-2">
+        <p className="text-sm text-muted-foreground">{formatDate(Math.floor(agenda.dataUpdatedAt / 1000))}</p>
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           <h1 className="text-3xl font-semibold">{m.home_title()}</h1>
+          <StreakBadge />
         </div>
-        <StreakBadge />
       </header>
-      <div className="flex flex-col gap-14">
+      <div className="flex flex-col gap-12">
         <ListState
           pending={false}
           error={agenda.error}
@@ -55,7 +56,7 @@ export function HomePage() {
               {/* Nothing to continue beside results or deadlines (the last course just finished): the next step is
                   a new course, not a page of old news (B-HOME-10). */}
               {continue_learning.length > 0 ? <ContinueSection items={continue_learning} /> : <HomeWelcome />}
-              <div className={side ? 'grid gap-14 @4xl:grid-cols-5 @4xl:gap-12' : 'flex flex-col gap-12'}>
+              <div className={side ? 'grid gap-12 @4xl:grid-cols-5' : 'flex flex-col gap-12'}>
                 <div className="flex flex-col gap-12 @4xl:col-span-3">
                   <AttentionSection items={attention} />
                   <DeadlinesSection deadlines={deadlines} nowUnix={Math.floor(agenda.dataUpdatedAt / 1000)} />

@@ -5,21 +5,25 @@ import { Anchor } from '#/shared/components/anchor'
 const indent: Record<number, string> = { 0: '', 1: 'ps-6', 2: 'ps-12' }
 
 /**
- * "On this page": the lesson's headings (B-PLY-17) as a book's table of contents between two hairlines: top-level ones
- * numbered in the margin, deeper levels set in under them.
+ * "On this page": the lesson's headings (B-PLY-17) as a short table of contents set in behind one hairline, so it
+ * reads as a way into the text and not as a second heading over it: top-level ones numbered in the margin, deeper
+ * levels set in under them.
  */
 export function PageOutline({ outline }: { outline: readonly (OutlineEntry & { depth: number })[] }) {
   return (
-    <nav aria-label={m.player_outline()} className="flex flex-col gap-2 border-y py-4">
-      <h2 className="text-sm font-normal text-muted-foreground">{m.player_outline()}</h2>
-      <ol className="flex flex-col gap-1 text-sm">
+    <nav aria-label={m.player_outline()} className="flex flex-col gap-2 border-s ps-4">
+      {/* Not a heading: the landmark carries the name, and a heading here outranked the lesson's own. */}
+      <p aria-hidden className="text-sm text-muted-foreground">
+        {m.player_outline()}
+      </p>
+      <ol className="flex flex-col gap-1.5 text-sm">
         {outline.map((entry, at) => {
           // The top-level headings up to and including this one: the number in the margin.
           const chapter = outline.slice(0, at + 1).filter(heading => heading.depth === 0).length
           return (
             <li key={entry.id} className={`flex items-baseline gap-2 ${indent[entry.depth] ?? 'ps-16'}`}>
               {entry.depth === 0 ? (
-                <span aria-hidden className="w-4 shrink-0 font-heading text-muted-foreground tabular-nums">
+                <span aria-hidden className="w-4 shrink-0 text-muted-foreground tabular-nums">
                   {chapter}
                 </span>
               ) : null}

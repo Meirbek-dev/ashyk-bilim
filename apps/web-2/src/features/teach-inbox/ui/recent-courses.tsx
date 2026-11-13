@@ -30,19 +30,17 @@ export function RecentCourses() {
           <ArrowRight aria-hidden className="size-4" />
         </RouterLink>
       </div>
-      <ul className="grid gap-x-6 gap-y-4 @xl:grid-cols-2 @xl:gap-y-8 @4xl:grid-cols-3">
+      <ul className="grid gap-x-6 gap-y-5 @xl:grid-cols-2 @xl:gap-y-8 @4xl:grid-cols-3">
         {data.items.map(course => (
           // Narrow, a row (a small picture beside the name): six full-width pictures were six screens of scrolling.
-          <li
-            key={course.id}
-            className="group relative grid grid-cols-[6rem_minmax(0,1fr)] items-center gap-4 @xl:flex @xl:flex-col @xl:items-stretch @xl:gap-3"
-          >
+          // The anatomy of every course card (catalog, «Моё обучение»): the picture, the name under it, one meta line.
+          <li key={course.id} className="group relative flex gap-4 @xl:flex-col @xl:gap-3">
             <CourseCover
               imageKey={course.thumbnail_key}
-              className="aspect-video w-full rounded-lg border transition-opacity duration-150 group-hover:opacity-90"
+              className="w-28 shrink-0 self-start rounded-md border transition-opacity duration-150 group-hover:opacity-90 @xl:w-full @xl:rounded-lg"
             />
-            <div className="flex flex-col gap-1">
-              <h3 className="line-clamp-2 font-sans text-base font-semibold wrap-anywhere">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <h3 title={course.name} className="line-clamp-2 text-lg/snug font-semibold wrap-anywhere">
                 <Link variant="stretched" to="/teach/courses/$courseId/content" params={{ courseId: course.id }}>
                   {course.name}
                 </Link>

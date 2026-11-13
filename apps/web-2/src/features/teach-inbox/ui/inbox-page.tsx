@@ -26,22 +26,28 @@ export function InboxPage() {
   const items = query.data.pages.flatMap(page => page.items)
   const total = query.data.pages[0]?.total ?? 0
   const active = [search.kind, search.course].filter(Boolean).length
+  // A short queue needs no course filter or order: two buttons over one row only made the page busier.
+  const filters = total > FILTERS_FROM || active > 0
   return (
     <ListPage
       title={m.platform_nav_inbox()}
       count={total > 0 || active > 0 ? m.inbox_count({ count: total }) : undefined}
-      // A short queue needs no course filter or order: two buttons over one row only made the page busier.
-      filters={
-        total > FILTERS_FROM || active > 0 ? (
-          <>
-            <CourseFilter items={items} course={search.course} />
-            <SortMenu sort={search.sort} />
-          </>
-        ) : null
+      // The kinds are the queue's sections: tabs on one rule with the course filter and the order (as the course
+      // list's presets), not a row of buttons over a row of tabs; narrow, the buttons follow under the tabs.
+      search={
+        items.length > 0 || active > 0 ? (
+          <div className="flex w-full flex-col gap-3 @4xl:flex-row @4xl:items-end @4xl:justify-between @4xl:gap-6 @4xl:border-b">
+            <KindFilter search={search} counts={query.data.pages[0]?.kind_counts} />
+            {filters ? (
+              <div className="flex flex-wrap items-center gap-2 @4xl:mb-2 @4xl:flex-nowrap">
+                <CourseFilter items={items} course={search.course} />
+                <SortMenu sort={search.sort} />
+              </div>
+            ) : null}
+          </div>
+        ) : undefined
       }
-      activeFilters={active}
     >
-      {items.length > 0 || active > 0 ? <KindFilter search={search} counts={query.data.pages[0]?.kind_counts} /> : null}
       {items.length === 0 && active === 0 && !query.error ? (
         <EmptyInbox />
       ) : (

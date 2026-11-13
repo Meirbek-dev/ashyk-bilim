@@ -23,24 +23,24 @@ export function AttemptEntry({ assessment }: { assessment: AssessmentDetail }) {
   const title = useActivityTitle()
   // After a hand-in the learner may as well move on: the next activity beside another attempt (B-PLY-18).
   const handedIn = attempts.some(attempt => attempt.status !== 'draft')
+  const next = handedIn ? (
+    <Suspense fallback={null}>
+      <NextStepLink courseId={params.courseId} activityId={params.activityId} variant="outline" />
+    </Suspense>
+  ) : null
+  // Teachers often paste the name into the description: said once, in the heading.
+  const description = assessment.description?.trim()
   return (
     <AttemptFrame>
       <article className="flex flex-col gap-gutter @3xl:gap-8">
         <ActivityHeader type={assessment.kind} title={title} />
-        {assessment.description ? (
+        {description && description.toLowerCase() !== title.trim().toLowerCase() ? (
           <Suspense fallback={null}>
-            <MarkdownView content={assessment.description} />
+            <MarkdownView content={description} />
           </Suspense>
         ) : null}
         <PolicySummary assessment={assessment} state={state} />
-        <EntryAction assessment={assessment} state={state} />
-        {handedIn ? (
-          <div>
-            <Suspense fallback={null}>
-              <NextStepLink courseId={params.courseId} activityId={params.activityId} variant="outline" />
-            </Suspense>
-          </div>
-        ) : null}
+        <EntryAction assessment={assessment} state={state} next={next} />
         {needsRemediation(state) ? (
           <section className="flex flex-col gap-2">
             <h2 className="text-xl font-semibold">{m.attempt_remediation_heading()}</h2>

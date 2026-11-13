@@ -10,19 +10,26 @@ type ConsistencyBlockProps = {
   count: number
   /** One sentence when the table is empty. */
   empty: string
+  /** The first column of figures: it and the ones after it are set to the right, as in every table of numbers. */
+  figuresFrom: keyof typeof figures
   /** The table. */
   children: ReactNode
 }
 
+const figures = {
+  3: '[&_td:nth-child(n+3)]:text-right [&_th:nth-child(n+3)]:text-right',
+  4: '[&_td:nth-child(n+4)]:text-right [&_th:nth-child(n+4)]:text-right',
+}
+
 /** One section of the consistency page: a heading, its rule in a sentence, the table or its empty state. */
-export function ConsistencyBlock({ id, title, hint, count, empty, children }: ConsistencyBlockProps) {
+export function ConsistencyBlock({ id, title, hint, count, empty, figuresFrom, children }: ConsistencyBlockProps) {
   return (
     <section aria-labelledby={id} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 id={id} className="text-xl font-semibold">
           {title}
         </h2>
-        <p className="max-w-prose text-sm text-muted-foreground">{hint}</p>
+        <p className="max-w-prose text-sm text-pretty text-muted-foreground">{hint}</p>
       </div>
       <ListState
         pending={false}
@@ -32,7 +39,9 @@ export function ConsistencyBlock({ id, title, hint, count, empty, children }: Co
         emptyText={empty}
         onRetry={() => undefined}
       >
-        <div className="[&_td:first-child]:ps-0 [&_td:last-child]:pe-0 [&_th:first-child]:ps-0 [&_th:last-child]:pe-0">
+        <div
+          className={`[&_td:first-child]:ps-0 [&_td:last-child]:pe-0 [&_th:first-child]:ps-0 [&_th:last-child]:pe-0 ${figures[figuresFrom]}`}
+        >
           {children}
         </div>
       </ListState>

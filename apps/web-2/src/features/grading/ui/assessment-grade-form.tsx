@@ -72,7 +72,7 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
         <ErrorAlert>{m.grading_manual_unscored({ numbers: unscored.join(', ') })}</ErrorAlert>
       ) : null}
       {/* The next step stays in sight down a long work; on a phone it closes the page (three rows would fill the screen). */}
-      <div className="-mx-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t bg-background px-4 py-3 @3xl/review:sticky @3xl/review:bottom-0 @3xl/review:z-10 @3xl:-mx-8 @3xl:px-8">
+      <div className="-mx-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t bg-background px-4 py-3 @3xl/review:sticky @3xl/review:bottom-0 @3xl/review:z-10 @3xl/review:mx-0 @3xl/review:px-0">
         <form.Subscribe selector={state => state.values.items}>
           {rows => (
             <p className="font-heading text-lg tabular-nums">

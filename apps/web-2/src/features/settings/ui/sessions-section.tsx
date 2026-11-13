@@ -23,11 +23,6 @@ export function SessionsSection() {
   const others = data.filter(session => !session.current).map(session => session.handle)
   return (
     <PlainSection title={m.settings_sessions_title()} description={m.settings_sessions_hint()}>
-      {others.length > 1 ? (
-        <div>
-          <RevokeOtherSessions handles={others} />
-        </div>
-      ) : null}
       <DataList items={all ? ordered : ordered.slice(0, FIRST)} getKey={session => session.handle} variant="rows">
         {session => {
           const device = deviceLabel(session.user_agent) ?? m.settings_session_unknown_device()
@@ -51,6 +46,12 @@ export function SessionsSection() {
         }}
       </DataList>
       <ShowMore hasMore={!all && ordered.length > FIRST} pending={false} onMore={() => setAll(true)} />
+      {/* The rare, sweeping action closes the section it belongs to instead of standing over the list. */}
+      {others.length > 1 ? (
+        <div>
+          <RevokeOtherSessions handles={others} />
+        </div>
+      ) : null}
     </PlainSection>
   )
 }

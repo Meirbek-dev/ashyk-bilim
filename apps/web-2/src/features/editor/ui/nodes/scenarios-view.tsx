@@ -31,7 +31,7 @@ export function ScenariosView({ node }: ViewProps) {
   const [current, setCurrent] = useState(first)
   const step = steps.find(candidate => candidate.id === current)
   return (
-    <Wrapper className="my-4 flex flex-col gap-4 rounded-lg border border-border bg-card p-gutter text-card-foreground">
+    <Wrapper className="my-4 flex flex-col gap-4 rounded-lg border border-border bg-card p-gutter text-card-foreground [&_p]:m-0">
       {node.attrs['title'] ? <p className="text-lg font-semibold">{stringAttr(node.attrs['title'])}</p> : null}
       <div aria-live="polite" className="flex flex-col gap-4">
         {step?.imageUrl ? <img src={step.imageUrl} alt="" className="h-auto max-w-full rounded-lg" /> : null}

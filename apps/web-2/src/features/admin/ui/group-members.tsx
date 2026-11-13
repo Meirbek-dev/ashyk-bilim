@@ -35,16 +35,19 @@ export function GroupMembers({ group }: { group: Usergroup }) {
           emptyText={m.admin_group_members_empty()}
           onRetry={() => void query.refetch()}
         >
-          <ul className="flex flex-col divide-y border-y">
-            {members.map(member => (
-              <GroupMemberRow key={member.id} group={group} member={member} manage={manage} />
-            ))}
-          </ul>
-          <ShowMore
-            hasMore={query.hasNextPage}
-            pending={query.isFetchingNextPage}
-            onMore={() => void query.fetchNextPage()}
-          />
+          {/* A column of names, not a table: across the page «×» stood a hand away from the person it removes. */}
+          <div className="flex max-w-3xl flex-col gap-4">
+            <ul className="flex flex-col divide-y border-y">
+              {members.map(member => (
+                <GroupMemberRow key={member.id} group={group} member={member} manage={manage} />
+              ))}
+            </ul>
+            <ShowMore
+              hasMore={query.hasNextPage}
+              pending={query.isFetchingNextPage}
+              onMore={() => void query.fetchNextPage()}
+            />
+          </div>
         </ListState>
       )}
     </section>

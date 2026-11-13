@@ -45,7 +45,8 @@ export function WebPreviewView({ node, editor, selected, updateAttributes }: Vie
     <Wrapper className="my-4 flex flex-col gap-2">
       {href ? (
         <div className={`flex ${justify(node.attrs['alignment'])}`}>
-          <div className="flex max-w-xl flex-col gap-1 rounded-lg border border-border bg-card p-4 text-card-foreground">
+          {/* Interface text inside lesson prose: its paragraphs take no prose gap. */}
+          <div className="flex max-w-xl flex-col gap-1 rounded-lg border border-border bg-card p-4 text-card-foreground [&_p]:m-0">
             <p className="text-xs text-muted-foreground">
               {textAttr(node.attrs['site_name']) ?? new URL(href).hostname}
             </p>
@@ -53,7 +54,9 @@ export function WebPreviewView({ node, editor, selected, updateAttributes }: Vie
               {textAttr(node.attrs['title']) ?? href}
             </Link>
             {node.attrs['description'] ? (
-              <p className="text-sm text-muted-foreground">{textAttr(node.attrs['description'])}</p>
+              <p className="line-clamp-3 text-sm text-pretty text-muted-foreground">
+                {textAttr(node.attrs['description'])}
+              </p>
             ) : null}
             {node.attrs['showButton'] ? (
               <div className="pt-2">

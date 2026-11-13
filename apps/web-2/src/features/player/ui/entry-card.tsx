@@ -5,6 +5,7 @@ import type { ActivityState, CourseId, WorkState } from '#/shared/api/gen/types.
 
 import { activityKind, type ActivityKind } from '../model/player'
 import { AskTeacherNote } from './ask-teacher-note'
+import { EntryDue } from './entry-due'
 import { EntryFigures } from './entry-figures'
 
 // What the work is like, for a learner who has not handed anything in yet.
@@ -18,8 +19,8 @@ const fresh = new Set<WorkState>(['not_started', 'in_progress'])
 const open = new Set<WorkState>(['not_started', 'in_progress', 'returned'])
 
 /**
- * Graded work's entry (B-PLY-11): the work state, the released grade large, the deadline, a line on how the work goes
- * before anything is handed in; the action sits below it.
+ * Graded work's entry (B-PLY-11), one object on the page: the work state, the released grade large, the deadline, a
+ * line on how the work goes before anything is handed in, and the action at its foot.
  */
 export function EntryCard({
   courseId,
@@ -57,7 +58,7 @@ export function EntryCard({
     !entry.allowed_actions.some(allowed => allowed === 'start' || allowed === 'continue' || allowed === 'revise')
   const late = entry.is_late || (!archived && open.has(entry.state) && pastDue)
   return (
-    <div className="flex flex-col items-start gap-5">
+    <div className="flex flex-col items-start gap-4 rounded-lg border bg-card p-gutter text-card-foreground">
       <EntryFigures
         entry={entry}
         late={late}
@@ -71,7 +72,7 @@ export function EntryCard({
       kind !== 'lesson' &&
       (kind === 'attempt' ? entry.state === 'not_started' : fresh.has(entry.state)) &&
       entry.score === null ? (
-        <p className="max-w-prose font-reading text-muted-foreground">{hints[kind]()}</p>
+        <p className="max-w-prose text-pretty text-muted-foreground">{hints[kind]()}</p>
       ) : null}
       {remediate ? <p className="max-w-prose text-sm text-muted-foreground">{m.player_remediation_hint()}</p> : null}
       {closed ? <AskTeacherNote courseId={courseId}>{m.player_past_due_closed()}</AskTeacherNote> : null}
@@ -80,7 +81,9 @@ export function EntryCard({
           {pastDue ? m.player_past_due_retake() : m.player_out_of_attempts()}
         </AskTeacherNote>
       ) : null}
-      {action}
+      {/* The action closes the card, a step apart from the facts above it. */}
+      <div className="max-w-full pt-1 empty:hidden">{action}</div>
+      {entry.due_at_unix ? <EntryDue dueAtUnix={entry.due_at_unix} /> : null}
     </div>
   )
 }

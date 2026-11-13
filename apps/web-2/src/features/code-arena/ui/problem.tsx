@@ -28,7 +28,7 @@ export function Problem({ code: { item, body } }: { code: CodeItem }) {
           {m.code_problem()}
         </h2>
         {difficulty || limits.length > 0 ? (
-          <p className="flex flex-wrap gap-x-2 text-sm text-muted-foreground tabular-nums">
+          <p className="flex flex-wrap gap-x-4 text-sm text-muted-foreground tabular-nums">
             {difficulty ? <span className="font-medium text-foreground">{difficultyLabels[difficulty]()}</span> : null}
             {limits.map(limit => (
               <span key={limit}>{limit}</span>

@@ -4,6 +4,7 @@ import { useParams, useSearch, Link as RouterLink } from '@tanstack/react-router
 import { m } from '#/paraglide/messages'
 import { sessionOptions } from '#/shared/auth/session'
 import { buttonVariants } from '#/shared/components/button-variants'
+import { EmptyState } from '#/shared/components/empty-state'
 
 import { Composer } from './composer'
 import { PostList } from './post-list'
@@ -15,20 +16,24 @@ export function DiscussionsPage() {
   const { data: session } = useSuspenseQuery(sessionOptions())
   if (!session)
     return (
-      <div className="flex max-w-prose flex-col items-start gap-4">
-        <p className="text-muted-foreground">{m.discussions_guest()}</p>
-        <RouterLink
-          to="/login"
-          search={{ redirect: `/courses/${courseId}/discussions` }}
-          className={buttonVariants({ variant: 'outline' })}
-        >
-          {m.platform_nav_login()}
-        </RouterLink>
-      </div>
+      // The tab's whole content for a guest: the quiet field of an empty region, with the way in.
+      <EmptyState
+        action={
+          <RouterLink
+            to="/login"
+            search={{ redirect: `/courses/${courseId}/discussions` }}
+            className={buttonVariants({ variant: 'outline' })}
+          >
+            {m.platform_nav_login()}
+          </RouterLink>
+        }
+      >
+        {m.discussions_guest()}
+      </EmptyState>
     )
   return (
     <div className="flex max-w-[46rem] flex-col gap-gutter">
-      <section aria-labelledby="discussions-new" className="flex flex-col gap-3">
+      <section aria-labelledby="discussions-new" className="flex flex-col gap-4">
         <h2 id="discussions-new" className="text-xl font-semibold">
           {m.discussions_new()}
         </h2>

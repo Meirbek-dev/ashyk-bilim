@@ -37,7 +37,7 @@ export function MathView({ node, editor, selected, updateAttributes }: ViewProps
     <Wrapper className="my-4 flex flex-col gap-2">
       {/* KaTeX writes MathML next to the visual formula: screen readers read the MathML. */}
       <div ref={target} className="overflow-x-auto" />
-      {invalid ? <p className="text-sm text-destructive">{m.editor_math_invalid()}</p> : null}
+      {invalid ? <p className="m-0 text-sm text-destructive">{m.editor_math_invalid()}</p> : null}
       {authoring ? <authoring.MathTemplates onPick={next => updateAttributes({ math_equation: next })} /> : null}
       {authoring ? (
         <authoring.AttrForm

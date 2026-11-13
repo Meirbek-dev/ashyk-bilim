@@ -23,7 +23,7 @@ export function CertificateItem({ issued }: { issued: IssuedCertificate }) {
       <CertificateMini className="hidden w-28 shrink-0 self-start @xl:flex" />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <h3 className="text-lg font-semibold wrap-anywhere">
-          <Link to="/courses/$courseId" params={{ courseId: course.id }}>
+          <Link variant="title" to="/courses/$courseId" params={{ courseId: course.id }}>
             {certificate.course_name}
           </Link>
         </h3>
@@ -40,7 +40,7 @@ export function CertificateItem({ issued }: { issued: IssuedCertificate }) {
         {instructor ? (
           <p className="text-sm text-muted-foreground">{m.learning_certificate_instructor({ name: instructor })}</p>
         ) : null}
-        <div className="mt-3 -ml-2.5 flex flex-wrap gap-1 @xl:ml-0 @xl:gap-2">
+        <div className="mt-3 flex flex-wrap gap-1 @xl:gap-2">
           <CertificatePdfLink code={certificate.verify_code} />
           <RouterLink
             to="/certificates/$certificateId/verify"

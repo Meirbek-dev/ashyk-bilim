@@ -35,7 +35,9 @@ export function AddItemMenu({ activityId, assessment }: AddItemMenuProps) {
     <div className="flex flex-col gap-2">
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button variant="outline" size="sm" disabled={create.isPending} focusableWhenDisabled />}
+          render={
+            <Button variant="outline" size="sm" className="w-full" disabled={create.isPending} focusableWhenDisabled />
+          }
         >
           {create.isPending ? <Spinner data-icon="inline-start" /> : <Plus data-icon="inline-start" aria-hidden />}
           {m.assessments_item_add()}

@@ -1,6 +1,7 @@
 import { m } from '#/paraglide/messages'
 import type { AgendaDeadline } from '#/shared/api/gen/types.gen'
 import { DataList } from '#/shared/components/data-list'
+import { EmptyState } from '#/shared/components/empty-state'
 import { formatDate } from '#/shared/i18n/format'
 
 import { groupDeadlines, type DeadlineDay } from '../model/agenda'
@@ -13,12 +14,12 @@ const dayTitle = (day: DeadlineDay) => {
   return formatDate(day.dueUnix)
 }
 
-/** Deadlines of the next 14 days by platform day; always shown, with one sentence when there are none. */
+/** Deadlines of the next 14 days by platform day; always shown, with one sentence in a quiet field when there are none. */
 export function DeadlinesSection({ deadlines, nowUnix }: { deadlines: readonly AgendaDeadline[]; nowUnix: number }) {
   const days = groupDeadlines(deadlines, nowUnix)
   return (
     <HomeSection title={m.home_deadlines_title()}>
-      {days.length === 0 ? <p className="text-muted-foreground">{m.home_deadlines_empty()}</p> : null}
+      {days.length === 0 ? <EmptyState>{m.home_deadlines_empty()}</EmptyState> : null}
       {days.map(day => (
         <div key={day.day} className="flex flex-col gap-1">
           <p className="font-heading text-lg">{dayTitle(day)}</p>

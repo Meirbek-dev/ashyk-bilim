@@ -18,7 +18,7 @@ export function Io({ label, text, mark = null }: IoProps) {
     return (
       <div className="flex min-w-0 flex-col gap-1 text-sm">
         <span className="text-xs text-muted-foreground">{label}</span>
-        <p className="py-1.5 text-muted-foreground">{m.code_io_empty()}</p>
+        <p className="py-2 text-muted-foreground">{m.code_io_empty()}</p>
       </div>
     )
   return (
@@ -34,7 +34,7 @@ export function Io({ label, text, mark = null }: IoProps) {
         // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrolling region must be reachable by keyboard
         tabIndex={0}
         aria-label={label}
-        className="max-h-80 overflow-auto rounded-sm bg-muted px-2.5 py-1.5 font-mono leading-relaxed whitespace-pre"
+        className="max-h-80 overflow-auto rounded-md bg-muted/60 px-3 py-2 font-mono leading-relaxed whitespace-pre"
       >
         {mark === null
           ? text

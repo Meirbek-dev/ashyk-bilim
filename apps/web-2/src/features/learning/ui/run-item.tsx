@@ -50,17 +50,27 @@ export function RunItem({ run }: { run: Enrollment }) {
         className="w-28 shrink-0 self-start rounded-md @xl:w-full @xl:rounded-lg"
       />
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <h2 className="font-heading text-lg/snug font-medium wrap-anywhere">
+        {/* Two lines at most: a third pushed one card's foot below its neighbours'; the full name is the tooltip. */}
+        <h2
+          title={run.course.name}
+          className="line-clamp-2 font-heading text-base/snug font-semibold wrap-anywhere hyphens-auto @xl:text-lg/snug @xl:hyphens-manual"
+        >
           <Link variant="stretched" to="/courses/$courseId" params={{ courseId: run.course_id }}>
             {run.course.name}
           </Link>
         </h2>
-        {/* The foot of the card: side by side, a finished course (no bar) and an open one keep their lines level. */}
-        <div className="mt-auto flex flex-col gap-2 pt-1">
+        {/* The foot of the card, the same two lines in every card of a row: the bar with its percent, then the state
+            with the way back in at the line's end. */}
+        <div className="mt-auto flex flex-col gap-1.5 pt-1">
           {run.course_total_steps === 0 ? (
             <p className="text-sm text-muted-foreground">{m.learning_no_activities()}</p>
-          ) : runState(run) === 'completed' ? null : (
-            <Progress aria-hidden value={percent} />
+          ) : (
+            <div className="flex items-center gap-3">
+              <Progress aria-hidden value={percent} className="flex-1" />
+              <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                {m.learning_progress({ percent: formatPercent(percent) })}
+              </span>
+            </div>
           )}
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm">
             <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -68,11 +78,6 @@ export function RunItem({ run }: { run: Enrollment }) {
                 <state.icon aria-hidden className="size-4" />
                 {state.label()}
               </span>
-              {run.course_total_steps === 0 ? null : (
-                <span className="text-muted-foreground tabular-nums">
-                  {m.learning_progress({ percent: formatPercent(percent) })}
-                </span>
-              )}
               {run.course.archived_at_unix ? <StatusBadge tone="neutral">{m.learning_archived()}</StatusBadge> : null}
             </span>
             {next ? (

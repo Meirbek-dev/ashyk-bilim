@@ -1,6 +1,7 @@
 import { m } from '#/paraglide/messages'
 import type { WorkKindCount } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
+import { revealCurrentTab } from '#/shared/components/templates/settings-page'
 import { formatNumber } from '#/shared/i18n/format'
 
 import { INBOX_KINDS, type InboxSearch } from '../model/inbox'
@@ -20,7 +21,12 @@ export function KindFilter({ search, counts }: { search: InboxSearch; counts: re
     ...INBOX_KINDS.map(kind => ({ kind, label: kindMeta[kind].label() })),
   ]
   return (
-    <nav aria-label={m.inbox_state()} className="flex gap-6 overflow-x-auto border-b">
+    // Narrow, the row has its own rule and scrolls inside itself; wide, it stands on the rule of the whole filter row.
+    <nav
+      ref={revealCurrentTab}
+      aria-label={m.inbox_state()}
+      className="relative flex gap-6 overflow-x-auto border-b @4xl:border-b-0"
+    >
       {options.map(option => {
         const count = countOf(option.kind)
         return (

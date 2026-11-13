@@ -9,7 +9,7 @@
 // dev-only /auth/dev-login; none: `--as`, else a guest). `--page name=/path` adds one more.
 // `--theme modern-minimal` shows the default palette on an account with a saved theme (`users.theme`).
 // `--base` shoots another dev server (a worktree's `vp dev` against this slot's API) instead of the slot's own.
-// Each shot: load, `html[data-mode]`, wait until no `[data-slot=skeleton]` remains (never `networkidle`: the
+// Each shot: load, `html[data-mode]`, wait until no `[data-slot=skeleton]` or `[data-hydrating]` remains (never `networkidle`: the
 // /me/events stream keeps the network busy), then the page in slices of two viewport heights, so a tall page stays
 // legible when an image is shrunk for reading: tmp/shots/<label>/<name>-<width>-<mode>[-<n>].png.
 // One line per shot; flags: HSCROLL (wider than the viewport), ERR (page errors), SKELETON (still loading at 30 s).
@@ -191,6 +191,10 @@ async function shot(
     await tab
       .waitForFunction(() => !document.querySelector('[data-slot=skeleton]'), null, { timeout: 30_000 })
       .catch(() => flags.push('SKELETON'))
+    // An SSR page keeps its actions disabled until hydration (`data-hydrating`): shot before it, forms look greyed out.
+    await tab
+      .waitForFunction(() => !document.querySelector('[data-hydrating]'), null, { timeout: 10_000 })
+      .catch(() => {})
     await tab.waitForTimeout(500)
     const size = await tab.evaluate(() => ({
       scroll: document.documentElement.scrollWidth,

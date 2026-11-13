@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { FileSubmission } from '#/shared/api/gen/types.gen'
+import { EmptyState } from '#/shared/components/empty-state'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { IconButton } from '#/shared/components/icon-button'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
@@ -23,6 +24,12 @@ export function RubricSection({ task }: { task: FileSubmission }) {
     leaveGuard: true,
     onSubmit: values => write.save(rubricPatch(values)),
   })
+  const add = (list: { pushValue: (criterion: CriterionForm) => void }) => (
+    <Button type="button" variant="outline" onClick={() => list.pushValue(focusNew.added(newCriterion()))}>
+      <Plus data-icon="inline-start" aria-hidden />
+      {m.submission_criterion_add()}
+    </Button>
+  )
   return (
     <>
       <SettingsSection
@@ -35,8 +42,9 @@ export function RubricSection({ task }: { task: FileSubmission }) {
         <form.AppField name="criteria" mode="array">
           {list => (
             <div className="flex flex-col gap-4">
+              {/* No criteria yet: the sentence and «Добавить критерий» in the place the list will take. */}
               {list.state.value.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{m.submission_rubric_empty()}</p>
+                <EmptyState action={add(list)}>{m.submission_rubric_empty()}</EmptyState>
               ) : null}
               {list.state.value.map((criterion, index) => (
                 // Top-aligned: a refusal under one field (two lines in the narrow one) must not shift the other.
@@ -69,12 +77,7 @@ export function RubricSection({ task }: { task: FileSubmission }) {
                   </div>
                 </div>
               ))}
-              <div>
-                <Button type="button" variant="outline" onClick={() => list.pushValue(focusNew.added(newCriterion()))}>
-                  <Plus data-icon="inline-start" aria-hidden />
-                  {m.submission_criterion_add()}
-                </Button>
-              </div>
+              {list.state.value.length === 0 ? null : <div>{add(list)}</div>}
             </div>
           )}
         </form.AppField>

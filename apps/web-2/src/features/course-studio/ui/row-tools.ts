@@ -6,7 +6,22 @@
 export const QUIET =
   'transition-opacity duration-100 @3xl:pointer-fine:opacity-45 @3xl:pointer-fine:group-hover/row:opacity-100 @3xl:pointer-fine:focus-within:opacity-100'
 
-/** The drag handle: in the row while narrow, hanging in the page's margin once there is one. */
-export const HANDLE = '[&_button]:size-7 @3xl:absolute @3xl:-start-8 @3xl:top-1/2 @3xl:-translate-y-1/2'
+/**
+ * The drag handle: the row's first column at every width, so it stays inside the page's left edge (it hung in the
+ * margin, outside the row's own hover ground) and the icons and names after it keep one line down the page. Narrow,
+ * its dots stand on the page's edge (the button's own inset is taken back) and the columns are tighter: a phone's
+ * name column is all the room a long chapter name has.
+ */
+export const HANDLE = 'shrink-0 -ms-1.5 @3xl:ms-0 [&_button]:size-7'
+
+/** The column after the handle: a chapter's numeral, an activity's type icon. */
+export const LEAD = 'w-6 @3xl:w-7'
+
+/** What stands under the rows' names (an empty chapter's sentence): past the handle and the lead column, or the lead alone. */
+export const UNDER_NAMES = 'ps-13.5 @3xl:ps-18'
+export const UNDER_NAMES_FIXED = 'ps-7 @3xl:ps-9'
+
+/** A ghost button whose icon stands under the rows' icons: past the handle, less the button's own inset. */
+export const UNDER_ICONS = 'ps-5 @3xl:ps-7.5'
 
 export const ROW_TOOLS = '[&_button]:size-9'

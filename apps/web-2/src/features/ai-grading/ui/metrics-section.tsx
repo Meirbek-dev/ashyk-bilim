@@ -43,8 +43,10 @@ export function MetricsSection({ courseId, search, metrics }: MetricsSectionProp
           ))}
         </nav>
       </div>
-      {/* Five figures on one line where they fit: four and an orphan broke the strip. */}
-      <div className="@5xl:[&>section]:grid-cols-5">
+      {/* Five figures on one line where they fit: four and an orphan broke the strip. Each tile lays its label, figure
+          and note on the strip's own rows (subgrid), so a label of two lines no longer drops its figure below the
+          others. */}
+      <div className="@5xl:[&>section]:grid-cols-5 [&>section>section]:row-span-3 [&>section>section]:grid [&>section>section]:grid-rows-subgrid [&>section>section]:content-start [&>section>section]:gap-y-1">
         <KpiStrip label={m.ai_grading_metrics_title()} columns={4}>
           <KpiTile
             label={m.ai_grading_kpi_feedback()}

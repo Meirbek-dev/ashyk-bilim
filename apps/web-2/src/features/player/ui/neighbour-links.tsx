@@ -24,7 +24,7 @@ export function NeighbourLinks({ courseId, prev, next, nextShown = false }: Neig
   useHotkey(shortcuts.prev.hotkey, () => go(prev))
   useHotkey(shortcuts.next.hotkey, () => go(next))
   return (
-    <nav aria-label={m.player_neighbours()} className="grid grid-cols-2 gap-x-6 empty:hidden">
+    <nav aria-label={m.player_neighbours()} className="grid gap-3 empty:hidden @lg:grid-cols-2">
       {prev ? <NeighbourTurn courseId={courseId} target={prev} label={m.player_prev()} /> : null}
       {next && !nextShown ? <NeighbourTurn courseId={courseId} target={next} label={m.player_next()} forward /> : null}
     </nav>

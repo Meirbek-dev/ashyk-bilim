@@ -62,7 +62,12 @@ export function ActivitySettingsPage({ lock = null }: { lock?: string | null }) 
         pending={update.isPending && !conflict}
         error={isStale(update.error) ? null : update.error}
       >
-        <form.AppField name="name">{field => <field.TextField label={m.studio_field_name()} required />}</form.AppField>
+        {/* The section's heading already says «Название»: the field keeps its label for screen readers only. */}
+        <div className="[&_label]:sr-only">
+          <form.AppField name="name">
+            {field => <field.TextField label={m.studio_field_name()} required />}
+          </form.AppField>
+        </div>
       </LockableSection>
       <ConflictDialog
         open={conflict}

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { Timer } from 'lucide-react'
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
@@ -33,13 +33,18 @@ const reasons = {
   NOT_ENROLLED: m.attempt_reason_not_enrolled,
 } satisfies Record<DisabledReason, () => string>
 
-type EntryActionProps = { assessment: AssessmentDetail; state: AttemptState }
+type EntryActionProps = {
+  assessment: AssessmentDetail
+  state: AttemptState
+  /** The way on once something was handed in (B-PLY-18): it stands beside the entry's own action, not under it. */
+  next?: ReactNode
+}
 
 /**
  * The entry's one action from `attempt-state` (B-ATT-03, B-ATT-04): continue the open draft, start (after the rules
  * are accepted when the exam has protections), or the reasons it is closed. A refused start rereads the state.
  */
-export function EntryAction({ assessment, state }: EntryActionProps) {
+export function EntryAction({ assessment, state, next = null }: EntryActionProps) {
   const params = useParams({ from: ATTEMPT_ROUTE })
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -52,7 +57,7 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
   const reread = async () => {
     await queryClient.query({ ...stateOptions(assessment.id), staleTime: 0 }).catch(() => null)
   }
-  if (action.kind === 'continue') return <ContinueDraft draftId={action.draftId} items={assessment.items} />
+  if (action.kind === 'continue') return <ContinueDraft draftId={action.draftId} items={assessment.items} next={next} />
   if (action.kind === 'blocked')
     return (
       <section className="flex flex-col gap-2">
@@ -71,6 +76,7 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
             </Link>
           </p>
         ) : null}
+        <div className="pt-2 empty:hidden">{next}</div>
       </section>
     )
   const begin = () => {
@@ -106,9 +112,12 @@ export function EntryAction({ assessment, state }: EntryActionProps) {
           <FieldLabel htmlFor={consentId}>{m.attempt_consent()}</FieldLabel>
         </Field>
       ) : null}
-      <SubmitButton onClick={begin} pending={start.isPending} disabled={rules.length > 0 && !agreed}>
-        {action.revision ? m.attempt_revise() : m.attempt_start()}
-      </SubmitButton>
+      <div className="flex max-w-full flex-wrap items-center gap-2">
+        <SubmitButton onClick={begin} pending={start.isPending} disabled={rules.length > 0 && !agreed}>
+          {action.revision ? m.attempt_revise() : m.attempt_start()}
+        </SubmitButton>
+        {next}
+      </div>
       {start.error && !refused ? <ErrorAlert>{presentError(start.error)}</ErrorAlert> : null}
     </div>
   )

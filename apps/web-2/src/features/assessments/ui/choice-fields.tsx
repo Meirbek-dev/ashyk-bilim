@@ -18,7 +18,8 @@ export function ChoiceFields({ body, onChange, mode }: ChoiceFieldsProps) {
   const variant = body.variant ?? (body.multiple ? 'multiple_choice' : 'single_choice')
   return (
     <div className="flex flex-col gap-4">
-      <Field>
+      {/* Three short choices: a control as wide as its words, not as the form. */}
+      <Field className="max-w-xs">
         <FieldLabel htmlFor={id}>{m.assessments_field_variant()}</FieldLabel>
         <NativeSelect
           id={id}

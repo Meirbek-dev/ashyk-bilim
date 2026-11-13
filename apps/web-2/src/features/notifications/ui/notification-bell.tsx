@@ -42,7 +42,7 @@ export function NotificationBell() {
           />
         }
       />
-      <PopoverContent align="end" className="w-80 max-w-dvw">
+      <PopoverContent align="end" className="w-96 max-w-dvw">
         {open ? (
           <Suspense fallback={<ListSkeleton />}>
             <LatestPanel unread={count} onNavigate={() => setOpen(false)} />

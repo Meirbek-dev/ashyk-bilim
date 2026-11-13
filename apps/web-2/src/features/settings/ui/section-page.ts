@@ -1,7 +1,6 @@
 /**
- * A settings section set like a page with a margin: the heading and its one line hang in the left column, the fields
- * run in the right one, and a hairline separates it from the section above. The parent's `@container` decides when the
- * margin opens; the parent stacks sections so that `first:` drops the rule at the top.
+ * A settings section: the heading and its one line, then the fields under them in one column of a form's width (the
+ * section nav already stands on the left; a second margin beside it made three columns with wide gaps). A hairline
+ * separates it from the section above; the parent stacks sections, so `first:` drops the rule at the top.
  */
-export const page =
-  'grid scroll-mt-20 gap-x-12 gap-y-5 border-t pt-8 first:border-t-0 first:pt-0 @4xl:grid-cols-[13rem_minmax(0,1fr)]'
+export const page = 'flex max-w-2xl scroll-mt-20 flex-col gap-5 border-t pt-10 first:border-t-0 first:pt-0'

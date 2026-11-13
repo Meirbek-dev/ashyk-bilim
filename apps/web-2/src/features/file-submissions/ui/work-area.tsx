@@ -33,59 +33,62 @@ export function WorkArea({ task, ids }: { task: FileSubmission; ids: WorkIds }) 
   const retry = next && reasons.length === 0 && state.kind === 'done'
   const returned = state.kind === 'edit' && state.attempt?.status === 'returned' ? state.attempt : null
   return (
-    <section aria-labelledby="submission-work" className="flex flex-col gap-gutter">
+    // The heading stands close to its own content (as the sections above), the blocks under it a gutter apart.
+    <section aria-labelledby="submission-work" className="flex flex-col gap-3">
       <h2 id="submission-work" className="text-xl font-semibold">
         {state.kind === 'done' ? m.submission_result_title() : m.submission_your_work()}
       </h2>
-      {state.kind === 'waiting' ? <Receipt attempt={state.attempt} /> : null}
-      {state.kind === 'done' ? (
-        <>
-          <GradeDetails attempt={state.attempt} />
-          <AttemptFiles files={state.attempt.files} />
-        </>
-      ) : null}
-      {returned ? <ReturnedNotice attempt={returned} revisable={reasons.length === 0} /> : null}
-      {next && reasons.length > 0 ? (
-        <ul className="flex flex-col gap-1 text-muted-foreground">
-          {reasons.map(reason => (
-            <li key={reason}>{reason}</li>
-          ))}
-        </ul>
-      ) : null}
-      {/* The review is there to work on while the hand-in waits too (the learner was told of it, B-NOT-19). */}
-      {task.disabled_reasons.includes('REMEDIATION_REQUIRED') ? (
-        <Suspense fallback={null}>
-          <RemediationGate activityId={task.activity_id} invalidates={[taskOptions(task.activity_id).queryKey]} />
-        </Suspense>
-      ) : null}
-      {next && reasons.length === 0 && state.kind === 'edit' ? (
-        <DraftEditor task={task} run={work.run} pending={work.pending} submitting={work.submitting} />
-      ) : null}
-      {retry ? (
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-gutter">
+        {state.kind === 'waiting' ? <Receipt attempt={state.attempt} /> : null}
+        {state.kind === 'done' ? (
+          <>
+            <GradeDetails attempt={state.attempt} />
+            <AttemptFiles files={state.attempt.files} />
+          </>
+        ) : null}
+        {returned ? <ReturnedNotice attempt={returned} revisable={reasons.length === 0} /> : null}
+        {next && reasons.length > 0 ? (
+          <ul className="flex flex-col gap-1 text-muted-foreground">
+            {reasons.map(reason => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+        ) : null}
+        {/* The review is there to work on while the hand-in waits too (the learner was told of it, B-NOT-19). */}
+        {task.disabled_reasons.includes('REMEDIATION_REQUIRED') ? (
           <Suspense fallback={null}>
-            <NextStepLink courseId={ids.courseId} activityId={ids.activityId} />
+            <RemediationGate activityId={task.activity_id} invalidates={[taskOptions(task.activity_id).queryKey]} />
           </Suspense>
-          <SubmitButton variant="secondary" pending={work.pending} onClick={() => work.run({ kind: 'start' })}>
-            {m.submission_new_attempt()}
-          </SubmitButton>
-        </div>
-      ) : null}
-      {/* Handed in, or a draft nothing can be done with (a closed deadline): the way on to the next activity (B-PLY-18),
+        ) : null}
+        {next && reasons.length === 0 && state.kind === 'edit' ? (
+          <DraftEditor task={task} run={work.run} pending={work.pending} submitting={work.submitting} />
+        ) : null}
+        {retry ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Suspense fallback={null}>
+              <NextStepLink courseId={ids.courseId} activityId={ids.activityId} />
+            </Suspense>
+            <SubmitButton variant="secondary" pending={work.pending} onClick={() => work.run({ kind: 'start' })}>
+              {m.submission_new_attempt()}
+            </SubmitButton>
+          </div>
+        ) : null}
+        {/* Handed in, or a draft nothing can be done with (a closed deadline): the way on to the next activity (B-PLY-18),
           beside a new attempt when one is open. */}
-      {(state.kind !== 'edit' || reasons.length > 0) && !retry ? (
-        <div>
+        {(state.kind !== 'edit' || reasons.length > 0) && !retry ? (
+          <div>
+            <Suspense fallback={null}>
+              <NextStepLink courseId={ids.courseId} activityId={ids.activityId} />
+            </Suspense>
+          </div>
+        ) : null}
+        {state.attempt ? (
           <Suspense fallback={null}>
-            <NextStepLink courseId={ids.courseId} activityId={ids.activityId} />
+            <ReviewNotes attempt={state.attempt} />
           </Suspense>
-        </div>
-      ) : null}
-      {state.attempt ? (
-        <Suspense fallback={null}>
-          <ReviewNotes attempt={state.attempt} />
-        </Suspense>
-      ) : null}
-      {work.error ? <ErrorAlert>{presentError(work.error)}</ErrorAlert> : null}
+        ) : null}
+        {work.error ? <ErrorAlert>{presentError(work.error)}</ErrorAlert> : null}
+      </div>
       <ConflictDialog
         open={work.conflict}
         onOpenChange={open => (open ? undefined : work.closeConflict())}

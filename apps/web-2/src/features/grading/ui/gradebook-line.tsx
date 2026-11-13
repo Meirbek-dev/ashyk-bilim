@@ -2,7 +2,7 @@ import { m } from '#/paraglide/messages'
 
 import type { GradebookColumn, GradebookRow } from '../model/gradebook'
 import { GradebookCell } from './gradebook-cell'
-import { ACTIVITY, learnerName, LEARNER, ROW_CELL, TOTAL } from './gradebook-layout'
+import { ACTIVITY, learnerName, LEARNER, REST, ROW_CELL, TOTAL } from './gradebook-layout'
 import { ScoreFigure } from './score-figure'
 
 type GradebookLineProps = {
@@ -44,6 +44,7 @@ export function GradebookLine({ courseId, row, activities, totalSlot, slots }: G
           />
         </td>
       ))}
+      <td aria-hidden className={`${REST} ${ROW_CELL}`} />
     </tr>
   )
 }

@@ -26,29 +26,42 @@ export function RunList({ itemId, selected }: { itemId: string; selected: string
   const whole = all || runs.findIndex(run => run.id === selected) >= FIRST
   const shown = whole ? runs : runs.slice(0, FIRST)
   return (
-    <section aria-labelledby="code-runs" className="flex min-w-0 flex-col gap-3">
+    <section aria-labelledby="code-runs" className="@container flex min-w-0 flex-col gap-3">
       <h2 id="code-runs" className="text-xl font-semibold">
         {m.code_runs()}
       </h2>
-      <ul className="flex flex-col divide-y border-y text-sm">
+      {/* A typeset log: when, verdict, tests and the way in stand in the same columns down the list; narrow, a row is
+          two lines, the date with its link over the verdict. */}
+      <ul className="grid divide-y border-y text-sm @md:grid-cols-[max-content_max-content_minmax(0,1fr)_max-content]">
         {shown.map(run => {
           const status = runStatus[run.status]
           const open = run.id === selected
           const when = formatDateTime(run.created_at_unix)
           return (
-            <li key={run.id} className="flex min-h-row flex-wrap items-center gap-x-3 gap-y-1 py-1.5">
+            <li
+              key={run.id}
+              className="col-span-full grid min-h-12 grid-cols-[minmax(0,1fr)_max-content] items-center gap-x-4 py-1 @md:grid-cols-subgrid"
+            >
               <span className="text-muted-foreground tabular-nums">{when}</span>
-              <Verdict status={status} />
-              {run.total > 0 ? (
-                <span className="tabular-nums">{m.code_run_passed({ passed: run.passed, total: run.total })}</span>
-              ) : null}
+              <span className="col-span-2 row-start-2 flex flex-wrap items-center gap-x-4 pb-1.5 @md:contents">
+                <Verdict status={status} />
+                {run.total > 0 ? (
+                  <span className="text-muted-foreground tabular-nums">
+                    {m.code_run_passed({ passed: run.passed, total: run.total })}
+                  </span>
+                ) : null}
+              </span>
               <RouterLink
                 from={ARENA_PATH}
                 to="."
                 search={previous => ({ ...previous, run: open ? undefined : run.id })}
                 aria-current={open ? 'true' : undefined}
                 aria-label={m.code_run_open({ when })}
-                className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'ms-auto' })}
+                className={buttonVariants({
+                  variant: 'ghost',
+                  size: 'sm',
+                  className: 'col-start-2 row-start-1 justify-self-end @md:col-start-4',
+                })}
               >
                 {m.code_run_results()}
               </RouterLink>

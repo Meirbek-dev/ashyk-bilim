@@ -1,10 +1,10 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { CircleCheck } from 'lucide-react'
 
 import { CreateCourseDialog } from '#/features/course-studio'
 import { m } from '#/paraglide/messages'
 import { hasCapability } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
+import { EmptyState } from '#/shared/components/empty-state'
 import { ListState } from '#/shared/components/list-state'
 
 import { emptyInbox } from '../model/inbox'
@@ -23,13 +23,8 @@ export function EmptyInbox() {
   // Read by the loader in exactly this case.
   const { data: own } = useSuspenseQuery(ownCoursesOptions())
   const empty = emptyInbox(own.summary?.total, hasCapability(session, 'course.create'))
-  if (empty === 'done')
-    return (
-      <p className="flex items-start gap-3 text-base">
-        <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-success" />
-        {emptyTexts.done()}
-      </p>
-    )
+  // The same quiet field as every empty list: one sentence alone under the title read as a page that failed to load.
+  if (empty === 'done') return <EmptyState>{emptyTexts.done()}</EmptyState>
   return (
     <ListState
       pending={false}

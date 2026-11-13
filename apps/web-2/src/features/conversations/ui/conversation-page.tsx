@@ -51,7 +51,8 @@ export function ConversationPage() {
   }
   return (
     <DetailPage back={back} title={name} meta={<ConversationMeta peer={peer} shared={head.shared_courses[0]} />}>
-      <div className="flex flex-col gap-gutter">
+      {/* A column of reading width: on a wide page a message's actions stood a screen away from its text. */}
+      <div className="flex max-w-3xl flex-col gap-gutter">
         {query.hasNextPage ? (
           <div className="flex justify-center">
             <SubmitButton variant="ghost" pending={query.isFetchingNextPage} onClick={() => void earlier()}>
@@ -66,7 +67,9 @@ export function ConversationPage() {
             <FeedRows rows={rows} peerName={name} peerAvatar={peer.avatar_key} />
           </ol>
         </div>
-        <div className="sticky bottom-0 border-t bg-background py-3">
+        {/* Sticks above the phone's bottom bar (h-14 + its padding, rule and the safe area), not under it: at
+            `bottom-0` the bar covered «Отправить» whenever the feed was scrolled up. */}
+        <div className="sticky bottom-0 border-t bg-background py-3 max-lg:bottom-[calc(3.875rem+env(safe-area-inset-bottom))]">
           {head.allowed_actions.includes('send') ? (
             <Composer to={peer.id} context={context} onSent={sent} />
           ) : (

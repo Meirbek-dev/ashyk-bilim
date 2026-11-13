@@ -14,7 +14,8 @@ type FeedRowsProps = { rows: readonly FeedRow[]; peerName: string; peerAvatar: s
 
 /**
  * The feed's items (docs/DIALOGS.md 9): lines on the page, not bubbles. One's own message carries the start border
- * (as a user's turn in the AI feed); the header (avatar, name, time) only where the author or the moment changes.
+ * (as a user's turn in the AI feed), the other person's a transparent one, so both texts share one left edge; the
+ * header (avatar, name, time) only where the author or the moment changes.
  */
 export function FeedRows({ rows, peerName, peerAvatar }: FeedRowsProps) {
   return rows.map(row => {
@@ -55,9 +56,12 @@ function MessageRow({ message, header, own, name, avatar }: MessageRowProps) {
     <li
       data-message
       id={`message-${message.id}`}
-      className={`flex gap-3 ${header ? 'pt-3' : 'pt-1'} ${own ? 'border-s-2 ps-3' : ''}`}
+      className={`flex gap-3 border-s-2 ${header ? 'pt-3' : 'pt-1'} ${own ? 'ps-3' : 'border-transparent'}`}
     >
-      <div className="w-8 shrink-0">{header && !own ? <UserAvatar name={name} avatarKey={avatar} /> : null}</div>
+      {/* The avatar's column; one's own rule and inset take 0.75rem of it, so the text starts where the other's does. */}
+      <div className={`shrink-0 ${own ? 'w-5' : 'w-8'}`}>
+        {header && !own ? <UserAvatar name={name} avatarKey={avatar} /> : null}
+      </div>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         {header ? (
           <p className="flex items-baseline gap-2 text-sm">

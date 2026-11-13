@@ -43,9 +43,16 @@ export function LatestPanel({ unread, onNavigate }: LatestPanelProps) {
           ))}
         </ul>
       </ListState>
+      {/* One line: the quiet action at the start (flush with the text above), the way on at the end. */}
       <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-2">
         {unread > 0 ? (
-          <SubmitButton variant="ghost" size="sm" pending={markAll.isPending} onClick={() => markAll.mutate({})}>
+          <SubmitButton
+            variant="ghost"
+            size="sm"
+            className="mr-auto -ml-2.5"
+            pending={markAll.isPending}
+            onClick={() => markAll.mutate({})}
+          >
             {m.notifications_mark_all()}
           </SubmitButton>
         ) : null}

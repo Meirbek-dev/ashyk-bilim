@@ -8,14 +8,13 @@ import type { CourseLearner } from '#/shared/api/gen/types.gen'
 import { ScoreBar } from '#/shared/components/charts/score-bar'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
-import { Link } from '#/shared/components/link'
 import { ListState } from '#/shared/components/list-state'
 import { ShowMore } from '#/shared/components/show-more'
-import { UserAvatar } from '#/shared/components/user-avatar'
 import { formatDate, formatPercent } from '#/shared/i18n/format'
 
 import { learnersOptions } from '../people-queries'
 import { ExportLearners } from './export-learners'
+import { LearnerName } from './learner-name'
 import { LearnersSearchBox } from './learners-search'
 import { RemoveLearner } from './remove-learner'
 
@@ -30,25 +29,7 @@ const columns = (courseId: string, removable: boolean): DataColumn<CourseLearner
     id: 'learner',
     header: m.studio_learners_col_learner(),
     priority: 1,
-    cell: learner => (
-      <span className="flex items-center gap-3">
-        <UserAvatar name={learner.display_name || learner.username} avatarKey={learner.avatar_key} />
-        <span className="flex min-w-48 flex-col wrap-anywhere">
-          {/* Their grades in this course (the gradebook found by username), not the public profile. */}
-          <Link
-            variant="title"
-            to="/teach/courses/$courseId/gradebook"
-            params={{ courseId }}
-            search={{ q: learner.username }}
-          >
-            {learner.display_name || learner.username}
-          </Link>
-          <span className="text-sm font-normal text-muted-foreground">
-            @{learner.username} · {learner.email}
-          </span>
-        </span>
-      </span>
-    ),
+    cell: learner => <LearnerName courseId={courseId} learner={learner} />,
   },
   {
     id: 'progress',
@@ -91,6 +72,8 @@ const columns = (courseId: string, removable: boolean): DataColumn<CourseLearner
           name={learner.display_name || learner.username}
           variant="ghost"
           unchecked
+          // A phone's card: the icon alone, so the name beside it keeps its line (the words took half the card).
+          compact
         />
         {removable && learner.allowed_actions.includes('remove') ? (
           <RemoveLearner courseId={courseId} learner={learner} />
@@ -155,7 +138,7 @@ export function LearnersSection({
         onRetry={() => void query.refetch()}
       >
         {/* The names start on the page's left edge, the removal ends on its right. */}
-        <div className="[&_td:first-child]:ps-0 [&_td:last-child]:pe-0 [&_th:first-child]:ps-0 [&_th:last-child]:pe-0">
+        <div className="[&_td:first-child]:ps-0 [&_td:last-child]:pe-0 [&_th:first-child]:ps-0 [&_th:last-child]:pe-0 [&_th:last-child]:text-end">
           <DataTable
             label={m.studio_learners_title()}
             rows={query.data}

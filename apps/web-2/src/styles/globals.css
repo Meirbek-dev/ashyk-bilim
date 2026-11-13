@@ -78,9 +78,10 @@ html {
   scrollbar-width: thin;
 }
 
-/* A paragraph never ends on a lone word where the browser can help it. */
+/* A paragraph never ends on a lone word where the browser can help it. The style longhand only: the `text-wrap`
+   shorthand resets the wrap mode too, and unlayered it would beat `truncate` on a paragraph. */
 :where(p) {
-  text-wrap: pretty;
+  text-wrap-style: pretty;
 }
 
 .brand-mark-night {
@@ -105,10 +106,13 @@ html {
   }
 }
 
-/* Headings: the house serif is drawn at 500; a sans set keeps its 600. Unlayered, so `font-semibold` on a heading
-   anywhere follows the set. Big numbers (`font-heading` elsewhere) line up. */
-:where(h1, h2, h3) {
-  font-weight: var(--heading-weight);
+/* Headings are drawn at the set's own weight (600; 500 in `press`). The default sits in the base layer, so a
+   heading that asks for less (`font-medium` on a row's name) gets it; the `font-semibold` rules stay unlayered, so
+   that class on a heading anywhere follows the set. Big numbers (`font-heading` elsewhere) line up. */
+@layer base {
+  :where(h1, h2, h3) {
+    font-weight: var(--heading-weight);
+  }
 }
 h1.font-semibold,
 h2.font-semibold,

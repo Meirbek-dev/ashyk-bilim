@@ -34,7 +34,7 @@ export function ConceptRow({ courseId, row, selection }: ConceptRowProps) {
     <article className="flex items-start gap-3">
       {selection ? (
         <Checkbox
-          className="mt-0.5"
+          className="mt-1"
           aria-label={m.concepts_select({ name: concept.name })}
           checked={selection.checked}
           onCheckedChange={selection.onToggle}
@@ -44,7 +44,10 @@ export function ConceptRow({ courseId, row, selection }: ConceptRowProps) {
       <div className="grid min-w-0 flex-1 gap-x-10 gap-y-1.5 @3xl/concepts:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex flex-wrap items-baseline gap-x-3">
-            <h2 className="min-w-0 text-base font-medium wrap-anywhere">
+            {/* A rejected concept stays on the list for the record: its name steps back. */}
+            <h2
+              className={`min-w-0 text-base font-medium wrap-anywhere ${status === 'rejected' ? 'text-muted-foreground' : ''}`}
+            >
               {selection ? (
                 <Link
                   variant="title"
@@ -61,7 +64,7 @@ export function ConceptRow({ courseId, row, selection }: ConceptRowProps) {
             <span className={`text-xs ${statusInk[meta.tone]}`}>{meta.label()}</span>
           </div>
           {concept.description ? (
-            <p className="max-w-prose text-sm wrap-anywhere text-muted-foreground">{concept.description}</p>
+            <p className="max-w-prose text-sm text-pretty wrap-anywhere text-muted-foreground">{concept.description}</p>
           ) : null}
           {requires.length > 0 ? (
             <p className="text-sm wrap-anywhere">

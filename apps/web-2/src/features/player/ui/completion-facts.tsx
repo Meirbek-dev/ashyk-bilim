@@ -22,11 +22,14 @@ export function CompletionFacts({ progress, certificateConfigured, code }: Compl
         )
       : null
   return (
-    <div className="flex w-full flex-col gap-2 text-sm empty:hidden">
+    <div className="flex w-full flex-col gap-3 text-sm empty:hidden">
+      {/* The figure under its words, on the page's left edge: across a wide column the two drifted apart. */}
       {average ? (
-        <p className="flex items-baseline justify-between gap-4">
+        <p className="flex flex-col gap-0.5">
           <span className="text-muted-foreground">{average.label}</span>
-          {average.value ? <span className="font-heading text-lg tabular-nums">{average.value}</span> : null}
+          {average.value ? (
+            <span className="font-heading text-xl font-semibold tabular-nums">{average.value}</span>
+          ) : null}
         </p>
       ) : null}
       {progress.needs_grading_count > 0 ? (

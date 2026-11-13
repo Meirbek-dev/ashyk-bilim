@@ -41,13 +41,14 @@ export function MessageFiles({ messageId, files }: { messageId: MessageId; files
     }
   }
   return (
-    <div className="flex flex-col gap-1">
-      <ul className="flex flex-col">
+    <div className="flex min-w-0 flex-col gap-1">
+      <ul className="flex min-w-0 flex-col">
         {files.map(file => (
           <li key={file.upload_id} className="flex min-w-0 items-center gap-2">
             <Button
               variant="link"
-              className="h-auto min-w-0 justify-start px-0! py-0.5"
+              title={file.name}
+              className="h-auto min-w-0 shrink justify-start px-0! py-0.5"
               onClick={() => void open(file)}
             >
               <Paperclip data-icon="inline-start" aria-hidden />

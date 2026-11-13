@@ -17,10 +17,11 @@ export function UpdatesSection({ course }: { course: Course }) {
   const editable = can(course, 'update')
   return (
     <section aria-label={m.studio_updates_title()} className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
+      {/* The button stands beside the heading while the hint has room for its line, else under it. */}
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+        <div className="flex min-w-0 flex-1 basis-64 flex-col gap-1">
           <h2 className="text-xl font-semibold">{m.studio_updates_title()}</h2>
-          <p className="text-sm text-muted-foreground">{m.studio_updates_hint()}</p>
+          <p className="text-sm text-pretty text-muted-foreground">{m.studio_updates_hint()}</p>
         </div>
         {editable ? <CreateUpdateDialog courseId={course.id} /> : null}
       </div>

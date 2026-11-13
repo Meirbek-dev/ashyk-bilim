@@ -10,7 +10,8 @@ export function BackToCourse({ courseId }: { courseId: CourseId }) {
   return (
     <RouterLink to="/courses/$courseId/about" params={{ courseId }} className={buttonVariants({ variant: 'ghost' })}>
       <ArrowLeft aria-hidden />
-      {m.player_back_to_course()}
+      {/* A phone's bar holds the contents, the search and the panel buttons too: the arrow alone leaves the title room. */}
+      <span className="sr-only @3xl:not-sr-only">{m.player_back_to_course()}</span>
     </RouterLink>
   )
 }

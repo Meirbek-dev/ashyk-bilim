@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { BlockViewer, VideoEndedContext } from '#/features/editor'
 import { m } from '#/paraglide/messages'
 import type { ActivityId } from '#/shared/api/gen/types.gen'
+import { EmptyState } from '#/shared/components/empty-state'
 import { Skeleton } from '#/shared/ui/skeleton'
 
 import { lessonDocument, pageWithOutline } from '../model/lesson'
@@ -27,7 +28,7 @@ const lines = (
 export function LessonContent({ activityId, onVideoEnded }: { activityId: ActivityId; onVideoEnded?: () => void }) {
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
   const content = lessonDocument(activity.activity_type, activity.activity_sub_type, activity.content)
-  if (!content) return <p className="text-muted-foreground">{m.player_empty()}</p>
+  if (!content) return <EmptyState>{m.player_empty()}</EmptyState>
   const page = pageWithOutline(content)
   return (
     <>

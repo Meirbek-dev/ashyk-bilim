@@ -25,8 +25,9 @@ export function ActivityHeader({ type, title, tool = false }: { type: ActivityTy
       <h1
         ref={heading}
         tabIndex={-1}
-        // A long real title at the largest size fills the first screen: it steps down a size.
-        className={`${tool || title.length > 32 ? 'text-2xl' : 'text-3xl'} font-semibold text-balance wrap-anywhere outline-none`}
+        // A long real title at the largest size fills the first screen: it steps down to the page-title size. That size
+        // is fixed, so on a phone it stood larger than a short title's fluid one: there both take the fluid size.
+        className={`${tool || title.length > 28 ? 'text-3xl @3xl:text-2xl' : 'text-3xl'} font-semibold text-balance wrap-anywhere outline-none`}
       >
         {title}
       </h1>

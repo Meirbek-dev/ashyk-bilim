@@ -26,7 +26,7 @@ export function TeamPage() {
       <section className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <h2 className="text-xl font-semibold">{m.studio_team_title()}</h2>
-          <p className="text-sm text-muted-foreground">{m.studio_team_hint()}</p>
+          <p className="text-sm text-pretty text-muted-foreground">{m.studio_team_hint()}</p>
         </div>
         <DataList items={team} getKey={row => row.user_id} variant="rows">
           {row => <ContributorRow courseId={courseId} row={row} manage={manage} />}

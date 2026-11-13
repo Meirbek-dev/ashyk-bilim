@@ -55,7 +55,9 @@ export function NotificationItem({ notification, compact = false, onNavigate, fo
             {notificationTypeLabels[type]()}
             {unread ? <span className="font-medium text-info">{m.notifications_new()}</span> : null}
           </p>
-          <Heading className={`wrap-anywhere ${unread ? 'font-semibold' : 'font-normal'}`}>
+          {/* A sentence, not a title: the UI face. The weight tells read from unread and sits on the span, because a
+              heading's own weight comes from an unlayered rule (globals.css) that no utility on it overrides. */}
+          <Heading className={`font-sans wrap-anywhere ${compact ? 'text-sm' : 'text-base'}`}>
             <Link
               variant="stretched"
               {...notificationTarget(payload)}
@@ -64,7 +66,7 @@ export function NotificationItem({ notification, compact = false, onNavigate, fo
                 onNavigate?.()
               }}
             >
-              {what}
+              <span className={unread ? 'font-medium' : 'font-normal'}>{what}</span>
             </Link>
           </Heading>
           {details.map(line => (

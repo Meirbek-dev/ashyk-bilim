@@ -25,13 +25,14 @@ export function MetricTile({ label, card, drill, tab }: MetricTileProps) {
       change={change?.text}
       tone={change?.tone}
       action={
+        // A link that looks like one, as «Показать работы» under a results count: grey text read as a caption.
         drill ? (
-          <Link variant="title" to="." search={prev => ({ ...prev, metric: drill, page: 1 })}>
-            <span className="text-muted-foreground">{m.analytics_show_rows()}</span>
+          <Link to="." search={prev => ({ ...prev, metric: drill, page: 1 })}>
+            {m.analytics_show_rows()}
           </Link>
         ) : tab ? (
-          <Link variant="title" to={tab.to} search={tab.filters}>
-            <span className="text-muted-foreground">{m.analytics_show_rows()}</span>
+          <Link to={tab.to} search={tab.filters}>
+            {m.analytics_show_rows()}
           </Link>
         ) : null
       }

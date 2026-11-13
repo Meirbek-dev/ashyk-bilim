@@ -49,6 +49,7 @@ export function SearchResults({ q, kind }: { q: string; kind: SearchKind | undef
               key={each}
               kind={each}
               results={results}
+              solo={kind !== undefined}
               footer={
                 !more.includes(each) ? null : kind ? (
                   <ShowMore hasMore pending={query.isFetchingNextPage} onMore={() => void query.fetchNextPage()} />

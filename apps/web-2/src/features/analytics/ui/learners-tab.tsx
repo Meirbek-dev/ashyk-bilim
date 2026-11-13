@@ -56,8 +56,11 @@ export function LearnersTab() {
           />
         </div>
       ) : null}
-      <AtRiskTable search={search} filters={filters} />
-      <ExportLinks links={[{ href: exportHrefs(filters).atRisk, label: m.analytics_export_at_risk() }]} />
+      {/* The list and its download are one block. */}
+      <div className="flex flex-col gap-4">
+        <AtRiskTable search={search} filters={filters} />
+        <ExportLinks links={[{ href: exportHrefs(filters).atRisk, label: m.analytics_export_at_risk() }]} />
+      </div>
       {learnerId && courseId ? (
         open ? (
           <LearnerSheet key={`${learnerId}:${courseId}`} learnerId={learnerId} courseId={courseId} row={open} />

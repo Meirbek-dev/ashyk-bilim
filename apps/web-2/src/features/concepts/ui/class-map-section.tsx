@@ -16,7 +16,7 @@ export function ClassMapSection({ courseId }: { courseId: CourseId }) {
         <h2 id="class-map" className="text-xl font-semibold">
           {m.concepts_class_title()}
         </h2>
-        <p className="max-w-prose text-sm text-muted-foreground">{m.concepts_class_intro()}</p>
+        <p className="max-w-prose text-sm text-pretty text-muted-foreground">{m.concepts_class_intro()}</p>
       </div>
       <CatchBoundary getResetKey={() => courseId} errorComponent={ClassMapError}>
         <Suspense fallback={<ListSkeleton />}>

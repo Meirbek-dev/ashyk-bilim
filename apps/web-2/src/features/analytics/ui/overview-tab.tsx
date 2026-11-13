@@ -39,18 +39,21 @@ export function OverviewTab() {
   const { data } = useSuspenseQuery(overviewOptions(filters))
   return (
     <div className="flex flex-col gap-10">
-      <AsOf at={data.generated_at_unix} />
-      <KpiStrip label={m.analytics_kpis()} columns={3}>
-        {tiles.map(({ name, drill, tab }) => (
-          <MetricTile
-            key={name}
-            label={kpiLabels[name]()}
-            card={data.summary[name]}
-            drill={drill}
-            tab={tab ? { to: tabPaths[tab], filters } : undefined}
-          />
-        ))}
-      </KpiStrip>
+      {/* The snapshot's time is the numbers' caption: it stands on them, not as a line of its own between two gaps. */}
+      <div className="flex flex-col gap-3">
+        <AsOf at={data.generated_at_unix} />
+        <KpiStrip label={m.analytics_kpis()} columns={3}>
+          {tiles.map(({ name, drill, tab }) => (
+            <MetricTile
+              key={name}
+              label={kpiLabels[name]()}
+              card={data.summary[name]}
+              drill={drill}
+              tab={tab ? { to: tabPaths[tab], filters } : undefined}
+            />
+          ))}
+        </KpiStrip>
+      </div>
       {search.metric ? (
         <DrillSection
           title={drillTitles[search.metric]()}

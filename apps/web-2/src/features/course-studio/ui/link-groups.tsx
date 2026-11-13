@@ -58,13 +58,13 @@ export function LinkGroups({
     <>
       <form
         noValidate
-        className="flex flex-col items-start gap-2"
+        className="flex flex-col gap-2 @xl:flex-row @xl:flex-wrap @xl:items-end"
         onSubmit={event => {
           event.preventDefault()
           submit()
         }}
       >
-        <div className="w-full">
+        <div className="min-w-0 @xl:flex-1">
           <MultiCombobox
             label={m.studio_group_link()}
             options={choices.map(option)}
@@ -72,10 +72,16 @@ export function LinkGroups({
             onValueChange={setPicked}
           />
         </div>
-        <SubmitButton type="submit" variant="outline" pending={link.isPending} disabled={picked.length === 0}>
-          {m.studio_group_link_submit()}
-        </SubmitButton>
-        {link.error ? <ErrorAlert>{presentError(link.error)}</ErrorAlert> : null}
+        <div>
+          <SubmitButton type="submit" variant="outline" pending={link.isPending} disabled={picked.length === 0}>
+            {m.studio_group_link_submit()}
+          </SubmitButton>
+        </div>
+        {link.error ? (
+          <div className="w-full">
+            <ErrorAlert>{presentError(link.error)}</ErrorAlert>
+          </div>
+        ) : null}
       </form>
       {list}
     </>

@@ -2,6 +2,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { EmptyState } from '#/shared/components/empty-state'
 
 import { workKind } from '../model/queue'
 import { activityOptions } from '../queries'
@@ -15,5 +16,9 @@ export function ResultsPage() {
   const kind = workKind(activity.activity_type)
   if (kind === 'assessment') return <AssessmentResults activityId={activityId} />
   if (kind === 'file') return <FileResults activityId={activityId} />
-  return <p className="text-muted-foreground">{m.grading_no_work()}</p>
+  return (
+    <div className="max-w-6xl">
+      <EmptyState>{m.grading_no_work()}</EmptyState>
+    </div>
+  )
 }

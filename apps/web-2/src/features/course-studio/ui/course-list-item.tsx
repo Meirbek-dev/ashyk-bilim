@@ -18,8 +18,9 @@ type CourseListItemProps = {
 
 /**
  * One course of the teacher's list: its bulk checkbox (B-CST-45), cover thumbnail, name into the workspace, status,
- * last change, learners and activities, and the work waiting for a grade as a link into the inbox (B-CST-01). Wide, the
- * counts stand in columns, so the rows read as a table; narrow, they are a line under the name.
+ * last change and the work waiting for a grade as a link into the inbox (B-CST-01), then learners and activities. Wide,
+ * the two counts are columns that end on the page's right edge, so the rows read as a table; narrow, they are a line
+ * under the name.
  */
 export function CourseListItem({ course, selecting, checked, onToggle }: CourseListItemProps) {
   const { teaching } = course
@@ -29,8 +30,8 @@ export function CourseListItem({ course, selecting, checked, onToggle }: CourseL
     <div
       className={`grid items-start gap-x-3 @4xl:items-center @4xl:gap-x-4 ${
         selecting
-          ? 'grid-cols-[auto_auto_minmax(0,1fr)] @4xl:grid-cols-[auto_auto_minmax(0,1fr)_6.5rem_7.5rem_11rem]'
-          : 'grid-cols-[auto_minmax(0,1fr)] @4xl:grid-cols-[auto_minmax(0,1fr)_6.5rem_7.5rem_11rem]'
+          ? 'grid-cols-[auto_auto_minmax(0,1fr)] @4xl:grid-cols-[auto_auto_minmax(0,1fr)_7.5rem_6.5rem]'
+          : 'grid-cols-[auto_minmax(0,1fr)] @4xl:grid-cols-[auto_minmax(0,1fr)_7.5rem_6.5rem]'
       }`}
     >
       {selecting ? (
@@ -43,7 +44,7 @@ export function CourseListItem({ course, selecting, checked, onToggle }: CourseL
       ) : null}
       <CourseCover
         imageKey={course.thumbnail_key}
-        className="row-span-3 aspect-video w-20 shrink-0 rounded-md border @4xl:row-span-1 @4xl:w-24"
+        className="row-span-2 aspect-video w-20 shrink-0 rounded-md border @4xl:row-span-1 @4xl:w-24"
       />
       <div className="flex min-w-0 flex-col gap-0.5">
         <h2 className="min-w-0 text-base font-semibold wrap-anywhere">
@@ -59,6 +60,17 @@ export function CourseListItem({ course, selecting, checked, onToggle }: CourseL
           <CourseStatusText status={courseStatus(course)} />
           {' · '}
           <span>{m.studio_updated({ date: formatDate(course.updated_at_unix) })}</span>
+          {teaching && teaching.ungraded > 0 ? (
+            <>
+              {' · '}
+              {/* Above the row's stretched link: this one opens the inbox, not the course. */}
+              <span className="relative z-1 font-medium whitespace-nowrap text-foreground">
+                <Link to="/teach" search={{ course: course.id }}>
+                  {m.studio_list_ungraded({ count: teaching.ungraded })}
+                </Link>
+              </span>
+            </>
+          ) : null}
         </p>
       </div>
       {teaching ? (
@@ -69,16 +81,6 @@ export function CourseListItem({ course, selecting, checked, onToggle }: CourseL
           <span className="whitespace-nowrap @4xl:text-end">
             {m.studio_list_activities({ count: teaching.activities })}
           </span>
-        </p>
-      ) : (
-        <span aria-hidden className="hidden @4xl:col-span-2 @4xl:block" />
-      )}
-      {teaching && teaching.ungraded > 0 ? (
-        // Above the row's stretched link: this one opens the inbox, not the course.
-        <p className={`${under} relative z-1 text-sm tabular-nums @4xl:col-start-auto @4xl:text-end`}>
-          <Link to="/teach" search={{ course: course.id }}>
-            {m.studio_list_ungraded({ count: teaching.ungraded })}
-          </Link>
         </p>
       ) : null}
     </div>

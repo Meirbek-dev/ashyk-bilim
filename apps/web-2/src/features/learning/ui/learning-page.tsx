@@ -45,8 +45,8 @@ export function LearningPage() {
           </RouterLink>
         ) : undefined
       }
-      filters={runs.length > 0 ? <StateFilter runs={runs} /> : undefined}
-      activeFilters={state ? 1 : 0}
+      // Four links, not a form of filters: the row stays on the page at every width instead of a sheet on a phone.
+      search={runs.length > 0 ? <StateFilter runs={runs} /> : undefined}
     >
       <ListState
         pending={false}
@@ -62,7 +62,7 @@ export function LearningPage() {
         onResetFilters={() => void navigate({ to: '/learning', search: {} })}
         onRetry={() => void query.refetch()}
       >
-        <ul className="grid gap-x-6 gap-y-8 @xl:grid-cols-2 @xl:gap-y-10 @4xl:grid-cols-3">
+        <ul className="grid gap-x-6 gap-y-6 @xl:grid-cols-2 @xl:gap-y-10 @4xl:grid-cols-3">
           {shown.map(run => (
             <li key={run.id}>
               <RunItem run={run} />

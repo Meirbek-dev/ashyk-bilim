@@ -26,6 +26,10 @@ const flight: Partial<Record<WorkState, { icon: LucideIcon; className: string; l
   failed: { icon: CircleX, className: 'text-destructive', label: m.player_state_failed },
 }
 
+// A name of two lines keeps its type icon and its mark on the first one, not floating at mid-height.
+const ROW = 'flex items-start gap-3'
+const MARK = 'mt-0.5'
+
 /** One activity of the contents: type tile, title, the server's mark; a restricted one is not a link. */
 export function ContentsRow({ courseId, activity, onPick, nowUnix }: RowProps) {
   // Untouched work past the learner's due date (B-PLY-20): the one the course page's «Далее» may jump to.
@@ -38,14 +42,19 @@ export function ContentsRow({ courseId, activity, onPick, nowUnix }: RowProps) {
     <>
       <ActivityIcon type={activity.activity_type} size="sm" />
       <span className="sr-only">{activityTypeMeta[activity.activity_type].label()}: </span>
-      <span className="min-w-0 flex-1 wrap-anywhere">{activity.title}</span>
+      {/* Two lines at most (real names run to four): the full name is the tooltip. */}
+      <span title={activity.title} className="line-clamp-2 min-w-0 flex-1 wrap-anywhere">
+        {activity.title}
+      </span>
     </>
   )
   if (activity.blocked_reason)
     return (
-      <span className="flex min-h-control items-center gap-3 px-3 py-1.5 text-sm text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0">
+      <span
+        className={`${ROW} min-h-control px-3 py-1.5 text-sm text-muted-foreground [&_svg]:size-4 [&_svg]:shrink-0`}
+      >
         {label}
-        <Lock aria-hidden />
+        <Lock aria-hidden className={MARK} />
         <span className="sr-only">
           {activity.opens_at_unix
             ? m.player_opens_at({ date: formatDateTime(activity.opens_at_unix) })
@@ -60,18 +69,20 @@ export function ContentsRow({ courseId, activity, onPick, nowUnix }: RowProps) {
       variant="contents"
       onClick={onPick}
     >
-      {label}
-      {activity.complete ? (
-        <>
-          <Check aria-hidden className="text-success" />
-          <span className="sr-only">{m.player_done()}</span>
-        </>
-      ) : work ? (
-        <>
-          <work.icon aria-hidden className={work.className} />
-          <span className="sr-only">{work.label()}</span>
-        </>
-      ) : null}
+      <span className={`${ROW} min-w-0 flex-1`}>
+        {label}
+        {activity.complete ? (
+          <>
+            <Check aria-hidden className={`${MARK} text-success`} />
+            <span className="sr-only">{m.player_done()}</span>
+          </>
+        ) : work ? (
+          <>
+            <work.icon aria-hidden className={`${MARK} ${work.className}`} />
+            <span className="sr-only">{work.label()}</span>
+          </>
+        ) : null}
+      </span>
     </Link>
   )
 }

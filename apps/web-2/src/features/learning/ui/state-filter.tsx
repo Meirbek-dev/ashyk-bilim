@@ -13,7 +13,8 @@ export function StateFilter({ runs }: { runs: readonly Enrollment[] }) {
     ...RUN_STATES.map(state => ({ state, label: runStateMeta[state].label(), count: counts[state] })),
   ]
   return (
-    <nav aria-label={m.learning_filter_label()} className="flex flex-wrap gap-x-6">
+    // A tab row under the header, as on the notifications and conversations lists: its rule is the list's top.
+    <nav aria-label={m.learning_filter_label()} className="flex w-full gap-6 overflow-x-auto border-b">
       {options.map(option => (
         <Link
           key={option.state ?? 'all'}

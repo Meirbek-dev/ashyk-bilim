@@ -11,13 +11,14 @@ export function RecipientRow({ recipient }: { recipient: Recipient }) {
     <div className="relative flex items-center gap-3">
       <UserAvatar name={name} avatarKey={recipient.person.avatar_key} />
       <div className="flex min-w-0 flex-col gap-0.5">
-        <h2 className="font-normal wrap-anywhere">
+        {/* As a conversation's row: the UI face, the weight on the span (a heading's own is not overridable). */}
+        <h2 className="font-sans text-base wrap-anywhere">
           <Link
             variant="stretched"
             to="/conversations/new"
             search={{ to: recipient.person.id, course: recipient.course_id }}
           >
-            {name}
+            <span className="font-medium">{name}</span>
           </Link>
         </h2>
         <p className="text-sm wrap-anywhere text-muted-foreground">

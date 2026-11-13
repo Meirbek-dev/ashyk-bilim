@@ -34,12 +34,9 @@ export function GradebookPage(): ReactElement {
   const summary = gradebookSummary(query.data.pages)
   return (
     <section aria-labelledby="grading-gradebook" className="@container flex flex-col gap-gutter">
-      <div className="flex flex-col gap-1">
-        <h2 id="grading-gradebook" className="text-xl font-semibold">
-          {m.grading_gradebook_table()}
-        </h2>
-        {rows.length > 0 ? <GradebookLegend average={summary?.course_average} /> : null}
-      </div>
+      <h2 id="grading-gradebook" className="text-xl font-semibold">
+        {m.grading_gradebook_table()}
+      </h2>
       {/* No learner at all (and no filter): nothing to search, filter or export - only the empty state. */}
       {rows.length === 0 && active === 0 ? null : (
         <div className="flex flex-wrap items-center gap-2">
@@ -83,6 +80,7 @@ export function GradebookPage(): ReactElement {
           pending={query.isFetchingNextPage}
           onMore={() => void query.fetchNextPage()}
         />
+        <GradebookLegend />
       </ListState>
     </section>
   )

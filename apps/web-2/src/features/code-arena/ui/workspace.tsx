@@ -40,6 +40,8 @@ export function Workspace({ courseId, challenge, code, draft, receivedAt }: Work
     <section
       aria-labelledby="code-workspace"
       data-expanded={expanded || undefined}
+      // A tool, not a reading page: its bars and buttons are a step tighter than the page around it.
+      data-density="compact"
       // Viewport-tall under the page bar, so the editor, the console and «Сдать» are all in sight; never cramped.
       style={{ '--ide-height': 'max(30rem, min(calc(100svh - 6rem), 60rem))' } as Height}
       className="flex h-(--ide-height) min-w-0 flex-col overflow-hidden rounded-lg border bg-background data-expanded:fixed data-expanded:inset-0 data-expanded:z-50 data-expanded:h-auto data-expanded:rounded-none data-expanded:border-0 @5xl:sticky @5xl:top-18"

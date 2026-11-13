@@ -17,12 +17,16 @@ export function ConversationRow({ conversation, viewer }: { conversation: Conver
     <div className="relative flex items-center gap-3">
       <UserAvatar name={name} avatarKey={peer.avatar_key} />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <h2 className={`truncate ${unreadCount > 0 ? 'font-semibold' : 'font-normal'}`}>
+        {/* A person's name in the UI face. The weight tells unread from read and sits on the span: a heading's own
+            weight comes from an unlayered rule (globals.css) that no utility on it overrides. */}
+        <h2 className="truncate font-sans text-base">
           <Link variant="stretched" to="/conversations/$conversationId" params={{ conversationId: conversation.id }}>
-            {name}
+            <span className={unreadCount > 0 ? 'font-medium' : 'font-normal'}>{name}</span>
           </Link>
         </h2>
-        <p className={`truncate text-sm ${last?.deleted ? 'text-muted-foreground italic' : 'text-muted-foreground'}`}>
+        <p
+          className={`truncate text-sm ${last?.deleted ? 'text-muted-foreground italic' : unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`}
+        >
           {lastMessageText(last, viewer)}
         </p>
       </div>

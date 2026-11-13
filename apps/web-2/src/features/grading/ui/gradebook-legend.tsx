@@ -1,21 +1,19 @@
+import { ChevronRight } from 'lucide-react'
+
 import { m } from '#/paraglide/messages'
 
-import { scoreText } from './labels'
-
 /**
- * Over the gradebook: the course average in plain sight, how the total is counted one click away (three lines of rules
- * above every visit pushed the table down for a teacher who knows them).
+ * The gradebook's footnote: how the total is counted, one click away under the table (three lines of rules above every
+ * visit pushed the table down for a teacher who knows them). The course average stands in the table's last row.
  */
-export function GradebookLegend({ average }: { average: number | null | undefined }) {
+export function GradebookLegend() {
   return (
-    <div className="flex flex-col gap-1 text-sm">
-      {average != null ? <p>{m.grading_course_average({ value: scoreText(average) })}</p> : null}
-      <details className="max-w-prose text-muted-foreground">
-        <summary className="w-fit cursor-pointer rounded-sm transition-colors duration-150 hover:text-foreground">
-          {m.grading_total_how()}
-        </summary>
-        <p className="pt-1">{m.grading_total_legend()}</p>
-      </details>
-    </div>
+    <details className="group max-w-prose text-sm text-muted-foreground">
+      <summary className="flex w-fit cursor-pointer list-none items-center gap-1 rounded-sm transition-colors duration-150 hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <ChevronRight aria-hidden className="size-4 transition-transform duration-150 group-open:rotate-90" />
+        {m.grading_total_how()}
+      </summary>
+      <p className="ps-5 pt-1 text-pretty">{m.grading_total_legend()}</p>
+    </details>
   )
 }

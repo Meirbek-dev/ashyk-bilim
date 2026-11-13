@@ -24,6 +24,9 @@ const columns = (namedRoles: boolean): DataColumn<AdminUser>[] => [
     id: 'user',
     header: m.admin_users_col_user(),
     priority: 1,
+    // The row is the target: its one link (the name) stretches over it.
+    action: true,
+    stretch: true,
     // The panel opens from the URL (R-07): this link is the shareable address of the user.
     cell: user => (
       <span className="flex items-center gap-3">

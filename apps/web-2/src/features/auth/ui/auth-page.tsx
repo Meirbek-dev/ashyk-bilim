@@ -9,9 +9,10 @@ import { SkipLink } from '#/shared/components/skip-link'
 import { UniversityMark } from '#/shared/components/university-mark'
 
 /**
- * The guest pages (sign in, sign up, verify): one narrow column on the paper, and from lg a solid navy field with the
+ * The guest pages (sign in, sign up, verify): one narrow column on the paper, and from lg a solid ink field with the
  * university's mark and motto filling the other half of the window. The way back goes to the landing, or to the public
- * page the guest came from (`back`).
+ * page the guest came from (`back`). The page's title is its largest type: the motto on the field is set a step
+ * quieter than it reads on the landing, so the form, not the panel, is what the eye lands on.
  */
 export function AuthPage({
   title,
@@ -36,24 +37,27 @@ export function AuthPage({
         <main
           id="main"
           tabIndex={-1}
-          className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-7 py-10"
+          className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-8 py-10"
         >
-          <div>
-            <BrandMark full className="h-12 w-auto" />
-            <span className="sr-only">{m.platform_brand()}</span>
+          <div className="flex flex-col gap-6">
+            <div>
+              <BrandMark full className="h-11 w-auto" />
+              <span className="sr-only">{m.platform_brand()}</span>
+            </div>
+            <h1 className="text-3xl font-semibold text-balance">{title}</h1>
           </div>
-          <h1 className="text-3xl font-semibold">{title}</h1>
-          {children}
+          {/* One step between the parts of the form (notes, Google, the fields, the way to the other form). */}
+          <div className="flex flex-col gap-6">{children}</div>
         </main>
       </div>
       <div
         data-dye="ink"
         className="ab-dye sticky top-0 hidden h-dvh w-full flex-col justify-between border-l p-12 lg:flex"
       >
-        <UniversityMark ink="white" className="h-12 self-start" />
-        <div className="flex max-w-lg flex-col gap-4">
-          <p className="font-heading text-display font-semibold">{m.platform_brand_motto()}</p>
-          <p className="text-lg opacity-80">{m.platform_brand_tagline()}</p>
+        <UniversityMark ink="white" className="h-11 self-start" />
+        <div className="flex max-w-md flex-col gap-3">
+          <p className="font-heading text-3xl font-semibold text-balance">{m.platform_brand_motto()}</p>
+          <p className="text-base text-pretty opacity-70">{m.platform_brand_tagline()}</p>
         </div>
       </div>
     </div>

@@ -37,7 +37,8 @@ export function SplitPane({ top, bottom, share, onShare, label }: SplitPaneProps
       style={{ '--top': `calc(${percent(shown)}% - 0.375rem)` } as Shares}
     >
       <div className="flex min-h-0 shrink-0 basis-(--top) flex-col">{top}</div>
-      <div aria-hidden className="h-3 shrink-0 border-y bg-muted" />
+      {/* One hairline with the grip under it: the editor's status line and the console's tabs keep their own rules. */}
+      <div aria-hidden className="h-3 shrink-0 border-t" />
       <div className="flex min-h-0 flex-1 flex-col">{bottom}</div>
       <Slider.Root
         aria-labelledby={name}

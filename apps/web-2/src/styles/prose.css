@@ -153,6 +153,13 @@
     padding: 1rem;
     @apply rounded-lg border;
   }
+  /* The box's padding is its edge: the first and last block inside add no gap of their own. */
+  .ab-prose [data-callout] > :where(p, ul, ol):first-child {
+    margin-top: 0;
+  }
+  .ab-prose [data-callout] > :where(p, ul, ol):last-child {
+    margin-bottom: 0;
+  }
   .ab-prose [data-callout='info'] {
     @apply border-info/30 bg-info/10;
   }

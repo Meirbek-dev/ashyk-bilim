@@ -15,7 +15,7 @@ import { ActivityRow } from './activity-row'
 import { AddToChapter } from './add-to-chapter'
 import { DeleteChapter } from './delete-chapter'
 import { RenameForm } from './rename-form'
-import { HANDLE, QUIET, ROW_TOOLS } from './row-tools'
+import { HANDLE, LEAD, QUIET, ROW_TOOLS, UNDER_ICONS, UNDER_NAMES, UNDER_NAMES_FIXED } from './row-tools'
 import { useIfMatch } from './use-if-match'
 
 type ChapterSectionProps = { courseId: string; chapter: CurriculumChapter; index: number }
@@ -65,7 +65,7 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
   return (
     // Without `move` the row is not a sortable at all: dnd-kit would make the row itself a button.
     <li ref={allowed('move') ? ref : undefined} className={`flex flex-col ${isDragging ? 'opacity-60' : ''}`}>
-      <div className="group/row relative flex flex-wrap items-center gap-x-2 border-b pb-1.5">
+      <div className="group/row relative flex flex-wrap items-center gap-x-1 border-b pb-1.5 @3xl:gap-x-2">
         {allowed('move') ? (
           <div className={`${HANDLE} ${QUIET}`}>
             <IconButton
@@ -76,8 +76,8 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
             />
           </div>
         ) : null}
-        {/* The hanging numeral: activities' icons stand under it, their names under the chapter's. */}
-        <span aria-hidden className="w-7 shrink-0 font-heading text-lg text-muted-foreground tabular-nums @3xl:text-xl">
+        {/* The numeral's column: activities' icons stand under it, their names under the chapter's. */}
+        <span aria-hidden className={`shrink-0 font-heading text-lg text-muted-foreground tabular-nums ${LEAD}`}>
           {index + 1}
         </span>
         {renaming ? (
@@ -89,7 +89,8 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
             error={isStale(rename.error) ? null : rename.error}
           />
         ) : (
-          <h2 className="min-w-0 flex-1 basis-40 text-lg font-semibold wrap-anywhere @3xl:text-xl">{chapter.name}</h2>
+          // A step under the workspace's own title (`text-xl`): a chapter is a part of the course, not its peer.
+          <h2 className="min-w-0 flex-1 basis-40 text-lg font-semibold wrap-anywhere">{chapter.name}</h2>
         )}
         <div className={`ms-auto flex items-center ${ROW_TOOLS} ${QUIET}`}>
           {/* Stays mounted while renaming: focus comes back to it after Save or Escape (UX-214). */}
@@ -107,7 +108,11 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
         <ConflictDialog {...dialog} />
       </div>
       {chapter.activities.length === 0 ? (
-        <p className="border-b py-3 ps-9 text-sm text-muted-foreground">{m.studio_chapter_empty()}</p>
+        <p
+          className={`border-b py-3 text-sm text-muted-foreground ${allowed('move') ? UNDER_NAMES : UNDER_NAMES_FIXED}`}
+        >
+          {m.studio_chapter_empty()}
+        </p>
       ) : (
         <ol className="flex flex-col divide-y border-b">
           {chapter.activities.map((activity, at) => (
@@ -115,7 +120,12 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
           ))}
         </ol>
       )}
-      {allowed('add_activity') ? <AddToChapter courseId={courseId} chapter={chapter} /> : null}
+      {allowed('add_activity') ? (
+        // Under the rows' icons: the row a new activity will take (the button's own inset is taken back).
+        <div className={`pt-2 ${allowed('move') ? UNDER_ICONS : '-ms-1.5'}`}>
+          <AddToChapter courseId={courseId} chapter={chapter} />
+        </div>
+      ) : null}
     </li>
   )
 }

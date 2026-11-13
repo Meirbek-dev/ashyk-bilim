@@ -1,3 +1,5 @@
+import { ChevronRight } from 'lucide-react'
+
 import { m } from '#/paraglide/messages'
 import type { AttemptState, StudentSubmission, SubmissionStatus } from '#/shared/api/gen/types.gen'
 import { Link } from '#/shared/components/link'
@@ -22,7 +24,10 @@ const verdicts = {
   not_passed: { label: m.attempt_not_passed, tone: 'destructive' },
 } satisfies Record<'passed' | 'not_passed', { label: () => string; tone: StatusTone }>
 
-/** The learner's attempts, newest first (B-ATT-05): number, verdict or status, released score, a link to each. */
+/**
+ * The learner's attempts, newest first (B-ATT-05): number, verdict or status, released score. A row opens its attempt
+ * as a whole: the number is the link, stretched over the line.
+ */
 export function AttemptsList({
   attempts,
   state,
@@ -40,14 +45,25 @@ export function AttemptsList({
           const verdict = resultVerdict(attempt, state)
           const status = verdict ? verdicts[verdict] : statuses[attempt.status]
           return (
-            <li key={attempt.id} className="flex min-h-row flex-wrap items-baseline gap-x-3 gap-y-1 py-3 text-sm">
-              <Link from={ATTEMPT_PATH} to="." search={{ attempt: attempt.id }}>
-                {m.attempt_number({ number: attempt.attempt_number })}
-              </Link>
+            <li
+              key={attempt.id}
+              className="group relative flex min-h-row flex-wrap items-center gap-x-4 gap-y-1 py-3 text-sm"
+            >
+              <span className="font-medium">
+                <Link from={ATTEMPT_PATH} to="." search={{ attempt: attempt.id }} variant="stretched">
+                  {m.attempt_number({ number: attempt.attempt_number })}
+                </Link>
+              </span>
               <ToneWord tone={status.tone}>{status.label()}</ToneWord>
-              {attempt.final_score === null ? null : (
-                <span className="ms-auto font-heading text-lg tabular-nums">{formatPercent(attempt.final_score)}</span>
-              )}
+              <span className="ms-auto flex items-center gap-2">
+                {attempt.final_score === null ? null : (
+                  <span className="text-base font-medium tabular-nums">{formatPercent(attempt.final_score)}</span>
+                )}
+                <ChevronRight
+                  aria-hidden
+                  className="size-4 text-muted-foreground transition-colors duration-150 group-hover:text-foreground"
+                />
+              </span>
             </li>
           )
         })}

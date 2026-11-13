@@ -1,4 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
+import { ChevronDown } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { WorkItem } from '#/shared/api/gen/types.gen'
@@ -24,7 +25,15 @@ export function CourseFilter({ items, course }: { items: readonly WorkItem[]; co
   const label = options.find(option => option.value === value)?.label ?? m.inbox_course_all()
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline">{label}</Button>} />
+      <DropdownMenuTrigger
+        render={
+          // A long course name is cut inside the button (its full text is in the menu), never widening the row.
+          <Button variant="outline" className="max-w-full">
+            <span className="max-w-56 truncate">{label}</span>
+            <ChevronDown aria-hidden data-icon="inline-end" className="text-muted-foreground" />
+          </Button>
+        }
+      />
       <DropdownMenuContent align="start">
         <ChoiceItems
           choice={{

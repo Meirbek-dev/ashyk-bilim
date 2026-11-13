@@ -16,7 +16,7 @@ import { LearnerSearch } from './learner-search'
 import { PrepareDrafts } from './prepare-drafts'
 import { QueueFilterRow } from './queue-filter-row'
 import { PublishAll } from './publish-all'
-import { queueColumns } from './queue-columns'
+import { fractional, queueColumns } from './queue-columns'
 import { StatusTabs } from './queue-filters'
 import { SelectionBar } from './selection-bar'
 import { TABLE_LOOK } from './table-look'
@@ -102,7 +102,7 @@ export function QueueView({ work, courseId, stats, canGrade }: QueueViewProps) {
           <DataTable
             label={m.grading_queue_table()}
             rows={rows}
-            columns={queueColumns(ids, search, selecting ? selection : null, drafts)}
+            columns={queueColumns(ids, search, selecting ? selection : null, drafts, fractional(rows))}
             getKey={row => row.id}
             sort={tableSort(search)}
             onSortChange={sort => void navigate({ search: prev => ({ ...prev, ...sortSearch(sort) }) })}

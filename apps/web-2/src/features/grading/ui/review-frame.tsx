@@ -84,7 +84,8 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
         }
         wide
       >
-        <div className="@container/review flex flex-col gap-8">
+        {/* A column of its own width in the middle of the window: across 1900 px a mark stood a hand away from its answer. */}
+        <div className="@container/review mx-auto flex w-full max-w-6xl flex-col gap-8">
           <header className="flex flex-col gap-1.5">
             <h1 className="text-2xl font-semibold wrap-anywhere">{name}</h1>
             {/* One line of facts, a dot between them as elsewhere: spaces alone ran «Сдана …» into «Нет оценки». */}

@@ -10,21 +10,30 @@ import { CourseGrid } from './course-grid'
 import { LessonHits } from './lesson-hits'
 import { searchKindLabels } from './kind-labels'
 
-type SearchSectionProps = { kind: SearchKind; results: SearchResults; footer?: ReactNode }
+type SearchSectionProps = {
+  kind: SearchKind
+  results: SearchResults
+  /** The only section on the page (`?kind=`): the current link of the row above already names it. */
+  solo?: boolean
+  footer?: ReactNode
+}
 
-/** One section of the search answer: its heading, its hits (each a link to the object's page), then `footer`. */
-export function SearchSection({ kind, results, footer }: SearchSectionProps) {
+/**
+ * One section of the search answer: its heading, its hits, then `footer`. A hit that is a row opens its object as a
+ * whole (the name's link covers the row and underlines under the pointer).
+ */
+export function SearchSection({ kind, results, solo = false, footer }: SearchSectionProps) {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold">{searchKindLabels[kind]()}</h2>
+      <h2 className={solo ? 'sr-only' : 'text-xl font-semibold'}>{searchKindLabels[kind]()}</h2>
       {kind === 'courses' ? <CourseGrid courses={results.courses} level={3} /> : null}
       {kind === 'lessons' ? <LessonHits lessons={results.lessons ?? []} /> : null}
       {kind === 'collections' ? (
         <DataList variant="rows" items={results.collections} getKey={collection => collection.id}>
           {collection => (
             <>
-              <h3 className="text-lg font-medium wrap-anywhere">
-                <Link to="/collections/$collectionId" params={{ collectionId: collection.id }}>
+              <h3 className="text-base font-medium wrap-anywhere">
+                <Link variant="stretched" to="/collections/$collectionId" params={{ collectionId: collection.id }}>
                   {collection.name}
                 </Link>
               </h3>
@@ -43,8 +52,8 @@ export function SearchSection({ kind, results, footer }: SearchSectionProps) {
             <div className="flex items-center gap-3">
               <UserAvatar name={user.display_name} avatarKey={user.avatar_key} />
               <div className="flex min-w-0 flex-col">
-                <h3 className="font-medium wrap-anywhere">
-                  <Link to="/users/$username" params={{ username: user.username }}>
+                <h3 className="text-base font-medium wrap-anywhere">
+                  <Link variant="stretched" to="/users/$username" params={{ username: user.username }}>
                     {user.display_name}
                   </Link>
                 </h3>

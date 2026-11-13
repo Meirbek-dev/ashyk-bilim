@@ -38,25 +38,30 @@ export function PublishPage() {
         </div>
         {/* A live course says where learners find it, not that it is "ready to publish" (B-CST-05). */}
         {status === 'published' ? (
-          <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
-            <span>{m.studio_publish_live()}</span>
-            <Link to="/courses/$courseId" params={{ courseId }}>
-              {m.studio_publish_open_page()}
-            </Link>
-            {/* The step after publishing: a first course has nobody on it yet (UX-admin first-run). */}
-            <Link to="/teach/courses/$courseId/learners" params={{ courseId }}>
-              {m.studio_roster_title()}
-            </Link>
-          </p>
+          // The sentence, then the ways on under it: two links trailing a sentence wrapped as one ragged run.
+          <div className="flex flex-col gap-1.5 text-sm">
+            <p>{m.studio_publish_live()}</p>
+            <p className="flex flex-wrap gap-x-4 gap-y-1">
+              <Link to="/courses/$courseId" params={{ courseId }}>
+                {m.studio_publish_open_page()}
+              </Link>
+              {/* The step after publishing: a first course has nobody on it yet (UX-admin first-run). */}
+              <Link to="/teach/courses/$courseId/learners" params={{ courseId }}>
+                {m.studio_roster_title()}
+              </Link>
+            </p>
+          </div>
         ) : null}
         {/* An archived course is read-only: what blocks publishing is moot until it is restored. */}
         {status === 'archived' ? (
-          <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
-            <span>{m.studio_publish_archived()}</span>
-            <Link to="/teach/courses/$courseId/settings" params={{ courseId }} hash="archive">
-              {m.studio_go_settings()}
-            </Link>
-          </p>
+          <div className="flex flex-col gap-1.5 text-sm">
+            <p className="text-pretty">{m.studio_publish_archived()}</p>
+            <p>
+              <Link to="/teach/courses/$courseId/settings" params={{ courseId }} hash="archive">
+                {m.studio_go_settings()}
+              </Link>
+            </p>
+          </div>
         ) : (
           <ReadinessList courseId={courseId} live={status !== 'draft'} />
         )}

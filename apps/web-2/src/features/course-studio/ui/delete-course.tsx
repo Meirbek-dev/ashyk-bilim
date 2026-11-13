@@ -75,7 +75,9 @@ export function DeleteCourse({ course }: { course: Course }) {
       }}
     >
       <AlertDialogTrigger render={<Button variant="destructive" />}>{m.studio_course_delete()}</AlertDialogTrigger>
-      <AlertDialogContent initialFocus={cancel}>
+      {/* With the learner-work warning the dialog is taller than a phone: it scrolls inside itself, so its title and
+          «Отмена» stay in reach (the stock popup grew past both edges of the screen). */}
+      <AlertDialogContent initialFocus={cancel} className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>{m.studio_course_delete_confirm_title({ name: course.name })}</AlertDialogTitle>
           <AlertDialogDescription>{m.studio_course_delete_hint()}</AlertDialogDescription>

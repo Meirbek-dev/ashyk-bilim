@@ -18,11 +18,11 @@ const row = (attempt: Attempt) => {
     <>
       <span className="font-medium">{m.submission_attempt({ number: attempt.attempt_number })}</span>
       {attempt.submitted_at_unix === null ? null : (
-        <span className="text-muted-foreground">{formatDateTime(attempt.submitted_at_unix)}</span>
+        <span className="text-muted-foreground tabular-nums">{formatDateTime(attempt.submitted_at_unix)}</span>
       )}
       <span className={`font-medium ${toneInk[status.tone]}`}>{status.label()}</span>
       {attempt.final_score === null ? null : (
-        <span className="ms-auto font-heading text-base tabular-nums">{formatPercent(attempt.final_score)}</span>
+        <span className="ms-auto font-medium tabular-nums">{formatPercent(attempt.final_score)}</span>
       )}
     </>
   )

@@ -59,7 +59,11 @@ export function InterventionDialog({ learnerId, courseId }: { learnerId: UserId;
     <FormDialog
       open={open}
       onOpenChange={changeOpen}
-      trigger={<Button variant="outline">{m.analytics_intervention_new()}</Button>}
+      trigger={
+        <Button variant="outline" size="sm">
+          {m.analytics_intervention_new()}
+        </Button>
+      }
       title={m.analytics_intervention_new()}
       submitLabel={m.analytics_intervention_submit()}
       onSubmit={() => form.handleSubmit()}

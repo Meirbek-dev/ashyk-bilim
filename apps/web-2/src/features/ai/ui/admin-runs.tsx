@@ -6,6 +6,7 @@ import { m } from '#/paraglide/messages'
 import type { AdminRun } from '#/shared/api/gen/types.gen'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
+import { EmptyState } from '#/shared/components/empty-state'
 import { Link } from '#/shared/components/link'
 import { ListSkeleton } from '#/shared/components/list-skeleton'
 import { SheetPanel } from '#/shared/components/sheet-panel'
@@ -103,7 +104,7 @@ export function AdminRuns({ search }: { search: AdminAiSearch }) {
       <h2 className="text-xl font-semibold">{m.ai_admin_runs()}</h2>
       <RunsFilters search={search} />
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{m.ai_runs_empty()}</p>
+        <EmptyState>{m.ai_runs_empty()}</EmptyState>
       ) : (
         <div className={tableOnPage}>
           <DataTable label={m.ai_admin_runs()} rows={rows} columns={columns()} getKey={run => run.id} />

@@ -67,10 +67,11 @@ export function CertificateVerifyPage({ code }: { code: string }) {
           </div>
         </div>
         <div className="flex flex-col gap-4 border-t border-current/25 pt-6">
-          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-8 gap-y-2 text-sm">
+          {/* On a phone each fact stands under its label: beside it, the code broke in the middle. */}
+          <dl className="grid gap-x-8 gap-y-0.5 text-sm @md:grid-cols-[auto_minmax(0,1fr)] @md:gap-y-2">
             {fields.map(field => (
               <Fragment key={field.label}>
-                <dt className="opacity-75">{field.label}</dt>
+                <dt className="opacity-75 not-first:pt-2 @md:not-first:pt-0">{field.label}</dt>
                 <dd className="wrap-anywhere">{field.value}</dd>
               </Fragment>
             ))}

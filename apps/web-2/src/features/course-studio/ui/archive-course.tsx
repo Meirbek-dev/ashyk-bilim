@@ -32,7 +32,8 @@ export function ArchiveCourse({ course }: { course: Course }) {
         setOpen(next)
         if (!next) lifecycle.reset()
       }}
-      trigger={<Button variant="destructive">{m.studio_archive()}</Button>}
+      // Archiving is undone by «Восстановить»: a plain button; the red one is the deletion's, a section below.
+      trigger={<Button variant="outline">{m.studio_archive()}</Button>}
       title={m.studio_archive_confirm_title({ name: course.name })}
       consequence={m.studio_archive_consequence({
         enrolled: formatNumber(preview.learners_enrolled),

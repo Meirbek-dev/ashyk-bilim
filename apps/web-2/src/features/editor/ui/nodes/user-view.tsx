@@ -15,7 +15,7 @@ import { NodeParts, type ViewProps } from './parts'
 const PeoplePicker = lazy(() => import('#/features/admin').then(module => ({ default: module.PeoplePicker })))
 
 const UUID = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i
-const missing = <p className="text-sm text-muted-foreground">{m.editor_user_missing()}</p>
+const missing = <p className="m-0 text-sm text-muted-foreground">{m.editor_user_missing()}</p>
 
 /** blockUser: a person's public card (a teacher, a guest lecturer). Authoring picks the person by name (B-EDT-27). */
 export function UserView({ node, editor, selected, updateAttributes }: ViewProps) {

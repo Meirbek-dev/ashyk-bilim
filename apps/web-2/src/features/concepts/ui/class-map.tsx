@@ -4,6 +4,7 @@ import { m } from '#/paraglide/messages'
 import type { ClassConcept, CourseId } from '#/shared/api/gen/types.gen'
 import type { DataColumn } from '#/shared/components/data-columns'
 import { DataTable } from '#/shared/components/data-table'
+import { EmptyState } from '#/shared/components/empty-state'
 import { Link } from '#/shared/components/link'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
@@ -14,14 +15,24 @@ import { Meter } from './meter'
 
 // A function: the headers are read in the current locale at render.
 const columns = (courseId: CourseId): DataColumn<ClassConcept>[] => [
-  { id: 'concept', header: m.concepts_col_concept(), priority: 1, cell: concept => concept.name },
+  {
+    id: 'concept',
+    header: m.concepts_col_concept(),
+    priority: 1,
+    // The name keeps a line's worth of width: beside the wrapping «behind» column it was squeezed to two words a line.
+    cell: concept => <span className="block min-w-56 wrap-anywhere">{concept.name}</span>,
+  },
   {
     id: 'mean',
     header: m.concepts_col_mean(),
     priority: 2,
     cell: concept => {
       const percent = percentOf(concept.mean_p)
-      return percent === null ? m.concepts_no_evidence() : <Meter value={percent} text={formatPercent(percent)} />
+      return percent === null ? (
+        <span className="text-muted-foreground">{m.concepts_no_evidence()}</span>
+      ) : (
+        <Meter value={percent} text={formatPercent(percent)} />
+      )
     },
   },
   ...LEVELS.map((level): DataColumn<ClassConcept> => ({
@@ -59,7 +70,7 @@ const columns = (courseId: CourseId): DataColumn<ClassConcept>[] => [
  */
 export function ClassMap({ courseId }: { courseId: CourseId }) {
   const { data } = useSuspenseQuery(classOptions(courseId))
-  if (data.concepts.length === 0) return <p className="text-sm text-muted-foreground">{m.concepts_class_empty()}</p>
+  if (data.concepts.length === 0) return <EmptyState>{m.concepts_class_empty()}</EmptyState>
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm text-muted-foreground tabular-nums">

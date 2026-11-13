@@ -26,7 +26,12 @@ type KpiTileProps = {
 export function KpiTile({ label, value, missing, change, tone = 'neutral', action }: KpiTileProps) {
   const labelId = useId()
   return (
-    <section aria-labelledby={labelId} className="flex min-w-0 flex-col gap-1 border-t pt-3">
+    // Label, figure, change and action stand on the strip's own rows (subgrid): a label of two lines no longer drops
+    // its figure below its neighbours', and an action under one tile keeps the others' feet level.
+    <section
+      aria-labelledby={labelId}
+      className="row-span-4 grid min-w-0 grid-rows-subgrid content-start gap-y-1 border-t pt-3"
+    >
       <p id={labelId} className="text-sm text-muted-foreground">
         {label}
       </p>
@@ -38,8 +43,8 @@ export function KpiTile({ label, value, missing, change, tone = 'neutral', actio
       ) : (
         <p className="font-heading text-2xl font-semibold tabular-nums">{value}</p>
       )}
-      {change ? <p className={`text-xs tabular-nums ${tones[tone]}`}>{change}</p> : null}
-      {action ? <div className="mt-auto pt-1 text-sm">{action}</div> : null}
+      {change ? <p className={`row-start-3 text-xs tabular-nums ${tones[tone]}`}>{change}</p> : null}
+      {action ? <div className="row-start-4 pt-1 text-sm">{action}</div> : null}
     </section>
   )
 }

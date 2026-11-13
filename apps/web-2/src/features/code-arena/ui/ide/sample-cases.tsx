@@ -18,7 +18,8 @@ export function SampleCases({ samples }: { samples: CodeTestCase[] }) {
         {samples.map((test, index) => (
           <Button
             key={test.id}
-            size="sm"
+            // A step smaller than the console's own tabs right above: the picker reads as their content.
+            size="xs"
             variant={test === sample ? 'secondary' : 'ghost'}
             aria-pressed={test === sample}
             onClick={() => setPicked(index)}

@@ -28,7 +28,7 @@ const label = (raw: string, count: number) => {
   return code ? readinessLabels[code]() : m.studio_readiness_unknown({ code: raw })
 }
 
-/** One readiness item: what is wrong, and a link to where it is fixed. */
+/** Where a readiness item is fixed: its activity's editor (named by the activity), else a tab of the course. */
 function where(courseId: string, item: ReadinessItem) {
   const target = readinessTarget(item)
   if ('activityId' in target) {
@@ -80,27 +80,37 @@ export function ReadinessList({ courseId, live = false }: { courseId: string; li
           <h3 className={live ? 'sr-only' : 'text-base font-semibold'}>{group.title}</h3>
           <ul className="flex flex-col divide-y border-y">
             {/* Seven drafts are one line with seven links, not seven identical lines (B-CST-48). */}
-            {groupReadiness(group.items).map(({ code, items }) => (
-              <li key={code} className="flex items-start gap-2 py-2.5 text-sm">
-                {group.icon}
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="wrap-anywhere">{label(code, items.length)}</span>
-                  {/* Real activity names run to two lines: one under another, never a wrapped run of commas. */}
-                  {items.slice(0, SHOWN).map((item, index) => (
-                    <span key={item.activity_id ?? index} className="wrap-anywhere">
-                      {where(courseId, item)}
-                    </span>
-                  ))}
-                  {items.length > SHOWN ? (
-                    <span>
-                      <Link to="/teach/courses/$courseId/content" params={{ courseId }}>
-                        {m.studio_readiness_more({ count: items.length - SHOWN })}
-                      </Link>
-                    </span>
-                  ) : null}
-                </div>
-              </li>
-            ))}
+            {groupReadiness(group.items).map(({ code, items }) => {
+              // A remark fixed on a tab of the course: its one link ends the line, as a row's action.
+              const tab = items.length === 1 && items[0] && !('activityId' in readinessTarget(items[0]))
+              return (
+                <li key={code} className="flex items-start gap-2.5 py-3 text-sm">
+                  {group.icon}
+                  <div
+                    className={`flex min-w-0 flex-1 gap-x-6 gap-y-1 ${tab ? 'flex-wrap items-baseline justify-between' : 'flex-col'}`}
+                  >
+                    <span className="text-pretty wrap-anywhere">{label(code, items.length)}</span>
+                    {/* Real activity names run to two lines: one under another, never a wrapped run of commas; a step
+                        quieter than the remark they belong to. */}
+                    {items.slice(0, SHOWN).map((item, index) => (
+                      <span
+                        key={item.activity_id ?? index}
+                        className={tab ? 'shrink-0' : 'wrap-anywhere text-muted-foreground'}
+                      >
+                        {where(courseId, item)}
+                      </span>
+                    ))}
+                    {items.length > SHOWN ? (
+                      <span className="text-muted-foreground">
+                        <Link to="/teach/courses/$courseId/content" params={{ courseId }}>
+                          {m.studio_readiness_more({ count: items.length - SHOWN })}
+                        </Link>
+                      </span>
+                    ) : null}
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         </section>
       ))}

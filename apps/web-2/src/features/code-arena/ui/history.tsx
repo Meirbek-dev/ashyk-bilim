@@ -20,46 +20,61 @@ type HistoryProps = { attempts: StudentSubmission[]; code: CodeItem; selected: s
 export function History({ attempts, code, selected }: HistoryProps) {
   if (attempts.length === 0) return null
   return (
-    <section aria-labelledby="code-history" className="flex min-w-0 flex-col gap-3">
+    <section aria-labelledby="code-history" className="@container flex min-w-0 flex-col gap-3">
       <h2 id="code-history" className="text-xl font-semibold">
         {m.code_history()}
       </h2>
-      <ul className="flex flex-col divide-y border-y text-sm">
+      {/* The same typeset log as the runs: number, date, state, score and «Код» each keep their column. */}
+      <ul className="grid divide-y border-y text-sm @md:grid-cols-[max-content_max-content_minmax(0,1fr)_max-content_max-content]">
         {attempts.map(attempt => {
           const status = attemptStatus[attempt.status]
           const open = attempt.id === selected
           return (
-            <li key={attempt.id} className="flex min-w-0 flex-col gap-4 py-1.5">
-              <div className="flex min-h-row flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="font-medium">{m.code_attempt({ number: attempt.attempt_number })}</span>
+            <li
+              key={attempt.id}
+              className="col-span-full grid min-h-12 min-w-0 grid-cols-[minmax(0,1fr)_max-content_max-content] items-center gap-x-4 py-1 @md:grid-cols-subgrid"
+            >
+              <span className="font-medium">{m.code_attempt({ number: attempt.attempt_number })}</span>
+              {/* Narrow: the state and the date share the row's second line; wide: each in its own column. */}
+              <span className="col-span-3 row-start-2 flex flex-wrap items-center gap-x-4 pb-1.5 @md:contents">
                 {/* A draft says so in its state; «not handed in» beside «Draft» only repeats it. */}
                 {attempt.submitted_at_unix === null && attempt.status === 'draft' ? null : (
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground tabular-nums @md:col-start-2 @md:row-start-1">
                     {attempt.submitted_at_unix === null
                       ? m.code_not_submitted()
                       : formatDateTime(attempt.submitted_at_unix)}
                   </span>
                 )}
-                <Verdict status={status} />
-                {attempt.final_score === null ? null : (
-                  <span className="ms-auto font-heading text-lg tabular-nums">
-                    {formatPercent(attempt.final_score)}
-                  </span>
-                )}
-                {attempt.status === 'draft' ? null : (
-                  <RouterLink
-                    from={ARENA_PATH}
-                    to="."
-                    search={previous => ({ ...previous, submission: open ? undefined : attempt.id })}
-                    aria-current={open ? 'true' : undefined}
-                    aria-label={m.code_attempt_code({ number: attempt.attempt_number })}
-                    className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-                  >
-                    {m.code_show_code()}
-                  </RouterLink>
-                )}
-              </div>
-              {open ? <AttemptDetail attempt={attempt} code={code} /> : null}
+                <span className="order-first @md:order-none @md:col-start-3 @md:row-start-1">
+                  <Verdict status={status} />
+                </span>
+              </span>
+              {attempt.final_score === null ? null : (
+                <span className="col-start-2 row-start-1 justify-self-end font-medium tabular-nums @md:col-start-4">
+                  {formatPercent(attempt.final_score)}
+                </span>
+              )}
+              {attempt.status === 'draft' ? null : (
+                <RouterLink
+                  from={ARENA_PATH}
+                  to="."
+                  search={previous => ({ ...previous, submission: open ? undefined : attempt.id })}
+                  aria-current={open ? 'true' : undefined}
+                  aria-label={m.code_attempt_code({ number: attempt.attempt_number })}
+                  className={buttonVariants({
+                    variant: 'ghost',
+                    size: 'sm',
+                    className: 'col-start-3 row-start-1 justify-self-end @md:col-start-5',
+                  })}
+                >
+                  {m.code_show_code()}
+                </RouterLink>
+              )}
+              {open ? (
+                <div className="col-span-full row-start-3 min-w-0 pt-3 @md:row-start-2">
+                  <AttemptDetail attempt={attempt} code={code} />
+                </div>
+              ) : null}
             </li>
           )
         })}

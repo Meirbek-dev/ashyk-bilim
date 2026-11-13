@@ -43,7 +43,8 @@ export function RunView({ run, title, level = 2 }: RunViewProps) {
         ) : null}
       </div>
       {run.compile_output ? <Io label={m.code_compile_output()} text={run.compile_output} /> : null}
-      <ol className="flex flex-col divide-y border-y">
+      {/* A run that never reached the tests (the sandbox was down) has no table: no pair of rules around nothing. */}
+      <ol className="flex flex-col divide-y border-y empty:hidden">
         {run.cases.map((result, index) => {
           const kind = caseVerdict(result)
           const verdict = caseStatus[kind]

@@ -30,6 +30,9 @@ const columns: DataColumn<Role>[] = [
     id: 'name',
     header: m.admin_field_name(),
     priority: 1,
+    // The row is the target: its one link (the name) stretches over it.
+    action: true,
+    stretch: true,
     cell: role => (
       <span className="flex flex-col">
         <span className="flex flex-wrap items-baseline gap-x-2">

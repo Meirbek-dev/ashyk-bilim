@@ -160,3 +160,6 @@ export function lockReason(assessment: Pick<AssessmentDetail, 'allowed_actions' 
 
 /** Short fields side by side once a section has the width: a number does not need a field as wide as a sentence. */
 export const TWO = 'grid gap-4 @xl:grid-cols-2 @xl:items-start'
+
+/** Fields that answer one question («when is it due», «how is it scored»): "Rules" sets its groups twice as far apart. */
+export const GROUP = 'flex flex-col gap-4'

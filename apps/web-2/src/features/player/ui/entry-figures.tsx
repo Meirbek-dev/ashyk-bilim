@@ -1,6 +1,6 @@
 import { m } from '#/paraglide/messages'
 import type { ActivityState, WorkState } from '#/shared/api/gen/types.gen'
-import { formatDateTime, formatPercent } from '#/shared/i18n/format'
+import { formatPercent } from '#/shared/i18n/format'
 
 import { valueLine } from '../model/value-line'
 
@@ -38,7 +38,7 @@ type EntryFiguresProps = {
   retake: boolean
 }
 
-/** The state word with its warnings, the released grade large, and the deadline: the facts of an entry card. */
+/** The state word with its warnings and the released grade large: what leads an entry card. */
 export function EntryFigures({ entry, late, soon, retake }: EntryFiguresProps) {
   const status = workStates[entry.state]
   const score =
@@ -51,9 +51,6 @@ export function EntryFigures({ entry, late, soon, retake }: EntryFiguresProps) {
           formatPercent(entry.score),
         )
       : null
-  const due = entry.due_at_unix
-    ? valueLine(m.player_due({ date: formatDateTime(entry.due_at_unix) }), formatDateTime(entry.due_at_unix))
-    : null
   return (
     <>
       {/* Handed in late, or still to do past the learner's due date: the contents and the course page say so too. */}
@@ -65,13 +62,7 @@ export function EntryFigures({ entry, late, soon, retake }: EntryFiguresProps) {
       {score ? (
         <p className="flex flex-row-reverse flex-wrap items-baseline justify-end gap-x-3 tabular-nums">
           <span className="text-sm text-muted-foreground">{score.label}</span>
-          {score.value ? <span className="font-heading text-display font-semibold">{score.value}</span> : null}
-        </p>
-      ) : null}
-      {due ? (
-        <p className="flex w-full items-baseline justify-between gap-4 border-y py-3 text-sm">
-          <span className="text-muted-foreground">{due.label}</span>
-          {due.value ? <span className="tabular-nums">{due.value}</span> : null}
+          {score.value ? <span className="font-heading text-3xl font-semibold">{score.value}</span> : null}
         </p>
       ) : null}
     </>

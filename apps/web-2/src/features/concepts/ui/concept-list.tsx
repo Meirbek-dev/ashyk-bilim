@@ -12,9 +12,10 @@ type ConceptListProps = { courseId: CourseId; rows: readonly Row[]; editing: boo
 export function ConceptList({ courseId, rows, editing }: ConceptListProps) {
   const [selected, setSelected] = useState<ReadonlySet<ConceptId>>(new Set())
   return (
-    <div className="@container/concepts flex flex-col gap-2">
+    <div className="@container/concepts flex flex-col">
       {editing ? <ReviewBar courseId={courseId} selected={selected} onDone={() => setSelected(new Set())} /> : null}
-      <ul className="flex flex-col divide-y border-t">
+      {/* The review bar closes with its own hairline: the list does not draw a second one under it. */}
+      <ul className={`flex flex-col divide-y ${editing && selected.size > 0 ? '' : 'border-t'}`}>
         {rows.map(row => (
           <li key={row.concept.id} className="py-3.5">
             <ConceptRow

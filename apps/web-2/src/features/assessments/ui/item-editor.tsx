@@ -42,7 +42,7 @@ export function ItemEditor({ activityId, assessment, item }: ItemEditorProps) {
   return (
     <section aria-labelledby={`item-${item.id}`} className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 id={`item-${item.id}`} className="min-w-0 flex-1 text-lg font-semibold wrap-anywhere">
+        <h2 id={`item-${item.id}`} className="min-w-0 flex-1 text-lg font-semibold text-balance wrap-anywhere">
           {item.position}. {item.title || m.assessments_item_untitled()}
         </h2>
         {mode === 'all' ? (

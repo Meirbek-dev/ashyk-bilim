@@ -17,7 +17,7 @@ export function CourseTeam({ courseId }: { courseId: string }) {
   const team = authorRows(roster)
   if (team.length === 0) return null
   return (
-    <section aria-labelledby="course-team" className="flex flex-col gap-3">
+    <section aria-labelledby="course-team" className="flex flex-col gap-4">
       <h2 id="course-team" className="text-xl font-semibold">
         {m.course_team_title()}
       </h2>

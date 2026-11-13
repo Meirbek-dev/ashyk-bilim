@@ -41,7 +41,12 @@ export function SaveViewDialog({ tab, filters }: { tab: Tab; filters: Filters })
     <FormDialog
       open={open}
       onOpenChange={changeOpen}
-      trigger={<Button variant="ghost">{m.analytics_view_save()}</Button>}
+      // At its own width on a phone too: stretched under the title, a rare action outweighed the tabs.
+      trigger={
+        <Button variant="outline" className="self-start">
+          {m.analytics_view_save()}
+        </Button>
+      }
       title={m.analytics_view_save()}
       submitLabel={m.ui_save()}
       onSubmit={() => form.handleSubmit()}

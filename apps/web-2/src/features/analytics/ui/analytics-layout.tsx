@@ -1,7 +1,9 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Outlet, useLocation, useSearch } from '@tanstack/react-router'
+import { Link as RouterLink, Outlet, useLocation, useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { buttonVariants } from '#/shared/components/button-variants'
+import { EmptyState } from '#/shared/components/empty-state'
 import { Link } from '#/shared/components/link'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 
@@ -25,9 +27,15 @@ export function AnalyticsLayout() {
   if (overview.course_options.length === 0)
     return (
       <DetailPage title={m.platform_nav_analytics()}>
-        <p className="max-w-prose text-muted-foreground">
-          {m.analytics_no_courses()} <Link to="/teach/courses">{m.analytics_no_courses_link()}</Link>
-        </p>
+        <EmptyState
+          action={
+            <RouterLink to="/teach/courses" className={buttonVariants({ variant: 'outline' })}>
+              {m.analytics_no_courses_link()}
+            </RouterLink>
+          }
+        >
+          {m.analytics_no_courses()}
+        </EmptyState>
       </DetailPage>
     )
   return (

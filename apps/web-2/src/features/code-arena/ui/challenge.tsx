@@ -20,15 +20,18 @@ export function Challenge({ courseId, activityId }: { courseId: string; activity
       </section>
     )
   // Wide: the statement and the log on the left, the workspace on the right and in sight while the left scrolls, like
-  // a desktop IDE; narrow: one column, the statement first (B-COD-12).
+  // a desktop IDE; narrow: one column, the statement first (B-COD-12), then the workspace, and the log of runs and
+  // attempts last: on a phone the editor is not two long lists away from the task it answers.
   return (
-    <div className="grid min-w-0 gap-10 border-t pt-gutter @5xl:grid-cols-12 @5xl:gap-gutter">
-      <div className="flex min-w-0 flex-col gap-10 @5xl:col-span-5">
+    <div className="grid min-w-0 gap-10 border-t pt-gutter @5xl:grid-cols-12 @5xl:grid-rows-[auto_1fr] @5xl:gap-x-gutter">
+      <div className="min-w-0 @5xl:col-span-5">
         <Problem code={code} />
-        <AttemptLog challenge={challenge} code={code} />
       </div>
-      <div className="flex min-w-0 flex-col gap-10 @5xl:col-span-7">
+      <div className="flex min-w-0 flex-col gap-10 @5xl:col-span-7 @5xl:col-start-6 @5xl:row-span-2 @5xl:row-start-1">
         <AttemptArea courseId={courseId} challenge={challenge} code={code} />
+      </div>
+      <div className="flex min-w-0 flex-col gap-10 @5xl:col-span-5 @5xl:col-start-1">
+        <AttemptLog challenge={challenge} code={code} />
       </div>
     </div>
   )

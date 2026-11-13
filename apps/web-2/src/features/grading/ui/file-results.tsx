@@ -9,6 +9,7 @@ import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { fileStatsOptions, taskOptions } from '../queries'
 import { type CountFilter, CountTile } from './count-tile'
+import { OUTCOMES } from './table-look'
 
 const counts: readonly {
   key: keyof FileReviewStats & ('total' | 'submitted' | 'graded' | 'published' | 'returned' | 'late')
@@ -31,23 +32,27 @@ export function FileResults({ activityId }: { activityId: string }) {
   const { data: task } = useSuspenseQuery(taskOptions(activityId))
   const { data: stats } = useSuspenseQuery(fileStatsOptions(task.id, undefined))
   return (
-    <div className="flex flex-col gap-8">
-      <KpiStrip label={m.platform_tab_results()} columns={4}>
+    <div className="@container flex max-w-6xl flex-col gap-10">
+      <KpiStrip label={m.platform_tab_results()} columns={3}>
         {counts.map(({ key, label, filter }) => (
           <CountTile key={key} label={label()} value={stats[key]} filter={filter} />
         ))}
+      </KpiStrip>
+      <div className={OUTCOMES}>
         <KpiTile
           label={m.grading_kpi_average()}
           value={stats.avg_score === null ? null : formatPercent(stats.avg_score)}
           missing={m.grading_no_score()}
         />
-      </KpiStrip>
-      <Bars
-        title={m.grading_distribution()}
-        data={stats.distribution.map(bucket => ({ label: bucket.range, value: bucket.count }))}
-        formatValue={value => formatNumber(value)}
-        empty={m.grading_distribution_empty()}
-      />
+        <div className="border-t pt-3">
+          <Bars
+            title={m.grading_distribution()}
+            data={stats.distribution.map(bucket => ({ label: bucket.range, value: bucket.count }))}
+            formatValue={value => formatNumber(value)}
+            empty={m.grading_distribution_empty()}
+          />
+        </div>
+      </div>
     </div>
   )
 }

@@ -1,9 +1,10 @@
-import { useParams } from '@tanstack/react-router'
+import { Link as RouterLink, useParams } from '@tanstack/react-router'
+import { ArrowLeft } from 'lucide-react'
 import { Suspense } from 'react'
 
 import { SwitchRows, TypesetSection } from '#/features/settings'
 import { m } from '#/paraglide/messages'
-import { Link } from '#/shared/components/link'
+import { buttonVariants } from '#/shared/components/button-variants'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { DetailPage } from '#/shared/components/templates/detail-page'
 import { Skeleton } from '#/shared/ui/skeleton'
@@ -17,13 +18,19 @@ import { useCollectionEdit } from './use-collection-edit'
 export function CollectionEditPage() {
   const { collectionId } = useParams({ from: '/_authed/collections/$collectionId/edit' })
   const { query, update, form, base, conflict, setConflict, reloadAndRetry } = useCollectionEdit(collectionId)
+  // The template's way back, over the title: as a meta line under it the link read as the page's subtitle.
   const back = (
-    <Link to="/collections/$collectionId" params={{ collectionId }} activeOptions={{ exact: true }}>
+    <RouterLink
+      to="/collections/$collectionId"
+      params={{ collectionId }}
+      className={buttonVariants({ variant: 'ghost' })}
+    >
+      <ArrowLeft aria-hidden />
       {m.collections_back()}
-    </Link>
+    </RouterLink>
   )
   return (
-    <DetailPage title={m.collections_edit_title()} meta={back}>
+    <DetailPage title={m.collections_edit_title()} back={back}>
       <div className="flex flex-col gap-12 pt-2">
         <TypesetSection
           title={m.collections_edit_section()}

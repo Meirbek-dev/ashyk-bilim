@@ -33,6 +33,19 @@ const typeOptions = () =>
     icon: <ActivityIcon type={type} size="sm" />,
   }))
 
+/** The plus under the rows' icons, the words under their names (the gap is the rest of the icon column). */
+const addButton = (chapter: string) => (
+  <Button
+    variant="ghost"
+    size="sm"
+    className="gap-3 @3xl:gap-5"
+    aria-label={m.studio_activity_new_in({ name: chapter })}
+  >
+    <Plus aria-hidden data-icon="inline-start" className="size-4" />
+    {m.studio_activity_new()}
+  </Button>
+)
+
 /**
  * "Add activity" (a labelled button under the chapter's activities): one dialog for every type, each a card with its
  * icon and what it is for. Quiz, exam and code go through the assessment door, file submission
@@ -78,12 +91,7 @@ export function CreateActivityDialog({ courseId, chapter }: { courseId: string; 
     <FormDialog
       open={open}
       onOpenChange={changeOpen}
-      trigger={
-        <Button variant="outline" size="sm" aria-label={m.studio_activity_new_in({ name: chapter.name })}>
-          <Plus aria-hidden data-icon="inline-start" />
-          {m.studio_activity_new()}
-        </Button>
-      }
+      trigger={addButton(chapter.name)}
       title={m.studio_activity_new()}
       submitLabel={m.studio_create_submit()}
       onSubmit={() => form.handleSubmit()}

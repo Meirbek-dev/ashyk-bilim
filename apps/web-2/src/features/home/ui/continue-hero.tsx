@@ -21,10 +21,17 @@ export const notStarted = (item: ContinueLearning) => !item.started
 export function ContinueHero({ item }: { item: ContinueLearning }) {
   const percent = percentOf(item)
   return (
-    <article className="flex flex-col gap-5 @xl:flex-row @xl:items-center @xl:gap-8 @3xl:gap-10">
-      <CourseCover imageKey={item.thumbnail_key} className="shrink-0 @xl:w-56 @3xl:w-80" />
-      <div className="flex min-w-0 flex-1 flex-col gap-4 @xl:gap-5">
-        <h3 className="text-xl font-semibold wrap-anywhere @xl:text-2xl">{item.course_name}</h3>
+    <article className="flex flex-col gap-5 @xl:flex-row @xl:items-center @xl:gap-8">
+      {/* Without an upload the field is a thumbnail's worth of grey: on a phone it would be the screen's first 200 px. */}
+      <CourseCover
+        imageKey={item.thumbnail_key}
+        className={`shrink-0 @xl:w-64 @3xl:w-72 ${item.thumbnail_key ? '' : 'hidden @xl:block'}`}
+      />
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
+        {/* A section title's size: the page's «Сегодня» stays the largest type on the screen. */}
+        <h3 className="line-clamp-2 text-xl font-semibold text-balance wrap-anywhere" title={item.course_name}>
+          {item.course_name}
+        </h3>
         <div className="flex items-start gap-3">
           <ActivityIcon type={item.activity_type} />
           <p className="flex min-w-0 flex-col">

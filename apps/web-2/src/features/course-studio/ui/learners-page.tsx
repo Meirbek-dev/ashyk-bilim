@@ -41,63 +41,69 @@ export function LearnersPage() {
         <EnrollLearners courseId={courseId} />
       </SheetPanel>
     ) : null
-  const linkedList = (
-    <ListState
-      pending={false}
-      error={groups.error}
-      count={groups.data.length}
-      filtered={false}
-      emptyText={m.studio_groups_empty()}
-      onRetry={() => void groups.refetch()}
-    >
-      <DataList items={groups.data} getKey={group => group.id} variant="rows">
-        {group => (
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex min-w-0 grow basis-48 flex-col gap-1">
-              <h3 className="text-base font-medium wrap-anywhere">
-                {groupPages ? (
-                  <Link variant="title" to="/teach/groups/$groupId" params={{ groupId: group.id }}>
-                    {group.name}
-                  </Link>
-                ) : (
-                  group.name
-                )}
-              </h3>
-              <p className="text-sm text-muted-foreground">{m.studio_group_members({ count: group.member_count })}</p>
+  const linkedList =
+    groups.data.length === 0 && !groups.error ? (
+      // A fact inside the section (the form to link one stands right above), not an empty page: a quiet sentence.
+      <p className="text-sm text-muted-foreground">{m.studio_groups_empty()}</p>
+    ) : (
+      <ListState
+        pending={false}
+        error={groups.error}
+        count={groups.data.length}
+        filtered={false}
+        emptyText={m.studio_groups_empty()}
+        onRetry={() => void groups.refetch()}
+      >
+        <DataList items={groups.data} getKey={group => group.id} variant="rows">
+          {group => (
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex min-w-0 grow basis-48 flex-col gap-1">
+                <h3 className="text-base font-medium wrap-anywhere">
+                  {groupPages ? (
+                    <Link variant="title" to="/teach/groups/$groupId" params={{ groupId: group.id }}>
+                      {group.name}
+                    </Link>
+                  ) : (
+                    group.name
+                  )}
+                </h3>
+                <p className="text-sm text-muted-foreground">{m.studio_group_members({ count: group.member_count })}</p>
+              </div>
+              {editable && group.allowed_actions.includes('manage_courses') ? (
+                <UnlinkGroup courseId={courseId} group={group} />
+              ) : null}
             </div>
-            {editable && group.allowed_actions.includes('manage_courses') ? (
-              <UnlinkGroup courseId={courseId} group={group} />
-            ) : null}
-          </div>
-        )}
-      </DataList>
-    </ListState>
-  )
+          )}
+        </DataList>
+      </ListState>
+    )
   return (
     <div className="flex flex-col gap-10">
       <LearnersSection courseId={courseId} courseName={course.name} add={add} />
-      <div className="grid gap-10 @3xl:grid-cols-2">
-        <section className="flex flex-col gap-2">
+      {/* One section: who gets into the course is its status and the groups linked to it (they stood as two loose
+          columns under the table). */}
+      <section className="flex max-w-prose flex-col gap-gutter">
+        <div className="flex flex-col gap-2">
           <h2 className="text-xl font-semibold">{m.studio_access_title()}</h2>
-          <p className="text-sm">{accessText[courseStatus(course)]()}</p>
+          <p className="text-sm text-pretty">{accessText[courseStatus(course)]()}</p>
           <div className="text-sm">
             <Link to="/teach/courses/$courseId/publish" params={{ courseId }}>
               {m.studio_go_publish()}
             </Link>
           </div>
-        </section>
-        <section className="flex flex-col gap-4">
+        </div>
+        <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <h2 className="text-xl font-semibold">{m.studio_groups_title()}</h2>
-            <p className="text-sm text-muted-foreground">{m.studio_groups_hint()}</p>
+            <h3 className="text-lg font-semibold">{m.studio_groups_title()}</h3>
+            <p className="text-sm text-pretty text-muted-foreground">{m.studio_groups_hint()}</p>
           </div>
           {editable ? (
             <LinkGroups courseId={courseId} linked={groups.data} groupPages={groupPages} list={linkedList} />
           ) : (
             linkedList
           )}
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   )
 }

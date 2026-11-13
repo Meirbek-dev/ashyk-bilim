@@ -49,7 +49,7 @@ export function ConceptsBoard({ courseId, search, onClose }: ConceptsBoardProps)
           ) : null
         }
       >
-        <p className="max-w-prose text-sm text-muted-foreground">{m.concepts_intro()}</p>
+        <p className="max-w-prose text-sm text-pretty text-muted-foreground">{m.concepts_intro()}</p>
         <RunProgress state={run.state} onCancel={run.cancel} cancelling={run.cancelling} onRetry={suggest} />
         <ListState
           pending={false}

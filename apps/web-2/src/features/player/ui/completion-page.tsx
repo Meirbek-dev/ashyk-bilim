@@ -35,7 +35,7 @@ export function CompletionPage() {
   const actions = <CompletionActions courseId={courseId} completed={completed} nextId={nextId} code={code} />
   // The moment a learner wants to show it (B-CRT-09): the link to copy and LinkedIn's form.
   const share = issued ? (
-    <div className="flex flex-wrap gap-2">
+    <div className="-ms-3 flex flex-wrap gap-x-2 gap-y-1">
       <CertificateShare
         code={issued.certificate.verify_code}
         name={issued.certificate.certificate_name}
@@ -69,21 +69,29 @@ export function CompletionPage() {
           <div className="px-4 py-gutter @3xl:px-8 @3xl:py-10">
             <div className="mx-auto flex w-full max-w-[44rem] flex-col gap-gutter">
               {facts}
-              {actions}
-              {share}
+              {/* The certificate's actions are one cluster: view and download, then the ways to show it. */}
+              <div className="flex flex-col gap-3 empty:hidden">
+                {actions}
+                {share}
+              </div>
               <div className="border-t pt-5">{ways}</div>
             </div>
           </div>
         </section>
       ) : (
         <section className="@container flex flex-col gap-gutter">
+          {/* The picture stands alone on the left; the summary, its figures and the way on share one left edge. */}
           <div className="grid gap-6 @lg:grid-cols-[13rem_minmax(0,1fr)] @lg:items-start @lg:gap-8">
             <CourseCover imageKey={course?.thumbnail_key ?? null} className="rounded-md" />
-            <CompletionHeader progress={progress} completed={false} />
+            <div className="flex min-w-0 flex-col gap-6">
+              <CompletionHeader progress={progress} completed={false} />
+              {facts}
+              <div className="flex flex-col gap-3 empty:hidden">
+                {actions}
+                {share}
+              </div>
+            </div>
           </div>
-          {facts}
-          {actions}
-          {share}
           <div className="border-t pt-5">{ways}</div>
         </section>
       )}

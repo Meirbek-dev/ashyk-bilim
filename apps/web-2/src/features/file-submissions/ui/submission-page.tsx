@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react'
 
 import { ActivityHeader, PreviewNote } from '#/features/player'
 import { m } from '#/paraglide/messages'
+import { EmptyState } from '#/shared/components/empty-state'
 import { FocusPage } from '#/shared/components/templates/focus-page'
 import { buttonVariants } from '#/shared/components/button-variants'
 
@@ -25,7 +26,7 @@ export function SubmissionPage() {
       className={buttonVariants({ variant: 'ghost' })}
     >
       <ArrowLeft aria-hidden />
-      {m.player_preview_studio()}
+      <span className="sr-only @3xl:not-sr-only">{m.player_preview_studio()}</span>
     </RouterLink>
   ) : (
     <RouterLink
@@ -34,16 +35,16 @@ export function SubmissionPage() {
       className={buttonVariants({ variant: 'ghost' })}
     >
       <ArrowLeft aria-hidden />
-      {m.submission_back()}
+      <span className="sr-only @3xl:not-sr-only">{m.submission_back()}</span>
     </RouterLink>
   )
   return (
     <FocusPage back={back} title={courseTitle}>
       <article className="flex flex-col gap-gutter @3xl:gap-8">
-        <ActivityHeader type="file_submission" title={title} />
         {preview ? <PreviewNote /> : null}
+        <ActivityHeader type="file_submission" title={title} />
         {locked ? (
-          <p className="text-muted-foreground">{m.submission_locked()}</p>
+          <EmptyState>{m.submission_locked()}</EmptyState>
         ) : (
           <TaskView courseId={courseId} activityId={activityId} />
         )}

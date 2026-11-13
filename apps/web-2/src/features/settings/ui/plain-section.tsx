@@ -14,7 +14,7 @@ export function PlainSection({ title, description, children }: PlainSectionProps
   return (
     <section aria-label={title} className={page}>
       <SectionMargin title={title} description={description} />
-      <div className="flex min-w-0 flex-col gap-5">{children}</div>
+      <div className="flex min-w-0 flex-col gap-4">{children}</div>
     </section>
   )
 }

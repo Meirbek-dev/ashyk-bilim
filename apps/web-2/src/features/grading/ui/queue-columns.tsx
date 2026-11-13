@@ -11,7 +11,7 @@ import type { QueueRow } from '../model/queue'
 import type { QueueSearch } from '../route'
 import { AiCell } from './ai-cell'
 import { statusMeta } from './labels'
-import { ScoreFigure } from './score-figure'
+import { hasFraction, ScoreFigure } from './score-figure'
 import { StatusText } from './status-text'
 
 type Ids = { courseId: string; activityId: string }
@@ -71,7 +71,8 @@ const actionColumn = (ids: Ids, search: QueueSearch): DataColumn<QueueRow> => ({
         className={
           toGrade
             ? buttonVariants({ variant: 'outline', size: 'sm' })
-            : `-mx-3 ${buttonVariants({ variant: 'ghost', size: 'sm' })}`
+            : // The whole row opens the work, so the word is a quiet cue that wakes with the row under the pointer.
+              `-mx-3 ${buttonVariants({ variant: 'ghost', size: 'sm' })} font-normal text-muted-foreground [li:hover_&]:text-foreground [tr:hover_&]:text-foreground`
         }
         to="/teach/courses/$courseId/activities/$activityId/submissions/$submissionId"
         params={{ ...ids, submissionId: row.id }}
@@ -83,6 +84,9 @@ const actionColumn = (ids: Ids, search: QueueSearch): DataColumn<QueueRow> => ({
   },
 })
 
+/** Some loaded grade has a fraction, so the score column lines up on the decimal point. */
+export const fractional = (rows: readonly QueueRow[]) => hasFraction(rows.map(row => row.final_score))
+
 /**
  * The queue's columns (B-GRD-01): the action leads into the review, keeping the queue's filters (B-GRD-10). With AI
  * drafts on the activity, an «ИИ» column beside the grade (B-GRD-40).
@@ -92,6 +96,8 @@ export function queueColumns(
   search: QueueSearch,
   selection: Selection | null,
   drafts: ReadonlyMap<string, GradeDraftView> | null = null,
+  /** Some loaded grade has a fraction: the figures then line up on the decimal point, else they end flush. */
+  scoreSlot = true,
 ): DataColumn<QueueRow>[] {
   return [
     ...(selection ? [selectColumn(selection)] : []),
@@ -142,7 +148,7 @@ export function queueColumns(
       header: m.grading_col_score(),
       priority: 2,
       sortable: true,
-      cell: row => <ScoreFigure score={row.final_score} column="wide" />,
+      cell: row => <ScoreFigure score={row.final_score} column="wide" slot={scoreSlot} />,
     },
     actionColumn(ids, search),
   ]

@@ -19,20 +19,33 @@ const inFlightLabels = {
   failed: { label: m.player_state_failed, className: 'text-destructive' },
 } satisfies Record<InFlight, { label: () => string; className: string }>
 
-/** One activity of a chapter: type icon, title (the row is the link), type, done mark. */
-export function SyllabusRow({ courseId, activity }: { courseId: CourseId; activity: SyllabusActivity }) {
+/**
+ * One activity of a chapter: type icon (in the chapter number's column, so titles share the chapter title's edge),
+ * title (the row is the link) with its dates and the learner's work under it, then the type and the done mark at the
+ * row's end. Icon, type and mark stand on the title's first line however long the title runs.
+ */
+export function SyllabusRow({
+  courseId,
+  activity,
+  marks,
+}: {
+  courseId: CourseId
+  activity: SyllabusActivity
+  /** The programme tracks completion (a learner's): every row keeps room for the done mark, so types line up. */
+  marks: boolean
+}) {
   const type = activityType(activity.type)
   const work = inFlight(activity)
   return (
-    <li className={`relative border-l-2 ${activity.complete ? 'border-primary' : 'border-input'}`}>
-      {/* py-1.5: a one-line row keeps its height; wrapped titles on a phone no longer run into the next one. */}
+    <li className="relative">
       <div
-        className={`-ml-3 flex min-h-11 items-center gap-3 rounded-md py-1.5 pr-3 ${activity.available ? 'transition-colors duration-150 hover:bg-accent hover:text-accent-foreground' : ''}`}
+        className={`-mx-3 flex min-h-11 items-start gap-3 rounded-md px-3 py-2 ${activity.available ? 'transition-colors duration-150 hover:bg-accent/60' : ''}`}
       >
-        <span className="bg-background py-0.5">
+        <span className="flex h-lh w-7 shrink-0 items-center">
           <ActivityIcon type={type} size="sm" />
         </span>
-        <span className="flex min-w-0 flex-col wrap-anywhere @2xl:max-w-[70%]">
+        {/* Below @2xl there is no leader: the title takes the row, so the done mark stays at its end. */}
+        <span className="flex min-w-0 flex-1 flex-col wrap-anywhere @2xl:max-w-[70%] @2xl:flex-none">
           {activity.available ? (
             <Link variant="stretched" to="/learn/$courseId/$activityId" params={{ courseId, activityId: activity.id }}>
               {activity.title}
@@ -48,23 +61,27 @@ export function SyllabusRow({ courseId, activity }: { courseId: CourseId; activi
               })}
             </span>
           ) : null}
+          {activity.opensAt ? (
+            <span className="text-sm text-muted-foreground">
+              {m.course_activity_opens({ date: formatDateTime(activity.opensAt) })}
+            </span>
+          ) : null}
+          {work ? (
+            <span className={`text-sm ${inFlightLabels[work].className}`}>{inFlightLabels[work].label()}</span>
+          ) : null}
         </span>
-        {activity.opensAt ? (
-          <span className="text-sm text-muted-foreground">
-            {m.course_activity_opens({ date: formatDateTime(activity.opensAt) })}
-          </span>
-        ) : null}
-        {work ? (
-          <span className={`text-sm ${inFlightLabels[work].className}`}>{inFlightLabels[work].label()}</span>
-        ) : null}
-        <span aria-hidden className="hidden h-px flex-1 border-b border-dotted border-input @2xl:block" />
-        <span className="hidden text-sm text-muted-foreground @lg:inline">{activityTypeMeta[type].label()}</span>
-        <span className="grid size-5 shrink-0 place-items-center">
-          {activity.complete ? (
-            <>
-              <Check aria-hidden className="size-5 text-success" />
-              <span className="sr-only">{m.course_activity_done()}</span>
-            </>
+        <span className="flex h-lh shrink-0 items-center gap-3 @2xl:flex-1">
+          <span aria-hidden className="hidden h-px flex-1 border-b border-dotted border-input @2xl:block" />
+          <span className="hidden text-sm text-muted-foreground @lg:inline">{activityTypeMeta[type].label()}</span>
+          {marks || activity.complete ? (
+            <span className="grid size-5 shrink-0 place-items-center">
+              {activity.complete ? (
+                <>
+                  <Check aria-hidden className="size-5 text-success" />
+                  <span className="sr-only">{m.course_activity_done()}</span>
+                </>
+              ) : null}
+            </span>
           ) : null}
         </span>
       </div>

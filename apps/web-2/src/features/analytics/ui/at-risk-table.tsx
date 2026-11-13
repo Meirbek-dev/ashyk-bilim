@@ -28,7 +28,14 @@ const learnerCell = (row: AtRiskLearnerRow) => (
     {row.user_username ? (
       <span className="font-sans text-xs font-normal wrap-anywhere text-muted-foreground">@{row.user_username}</span>
     ) : null}
-    <span className="font-sans text-xs font-normal wrap-anywhere text-muted-foreground">{row.course_name}</span>
+    {/* One line: a course name of ninety characters made its row three lines taller than the next (the whole name
+        is the tooltip, and the learner's panel says it again). */}
+    <span
+      title={row.course_name}
+      className="line-clamp-1 font-sans text-xs font-normal break-all text-muted-foreground"
+    >
+      {row.course_name}
+    </span>
   </span>
 )
 
@@ -51,7 +58,7 @@ const columns = (): DataColumn<AtRiskLearnerRow>[] => [
       // The level in its color and words; the score beside it, quiet: a column of red pills read as one alarm.
       const level = riskLevelBadges[row.risk_level]
       return (
-        <span className="flex flex-wrap items-baseline gap-x-2 whitespace-nowrap">
+        <span className="flex items-baseline gap-x-2 whitespace-nowrap">
           <span className={`font-medium ${riskInk[level.tone]}`}>{level.label()}</span>
           <span className="text-muted-foreground tabular-nums">
             {formatNumber(row.risk_score)}

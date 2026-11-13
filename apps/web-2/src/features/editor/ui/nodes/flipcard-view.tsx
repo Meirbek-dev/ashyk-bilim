@@ -28,7 +28,7 @@ export function FlipcardView({ node, editor, updateAttributes }: ViewProps) {
     )
   return (
     <Wrapper className={`my-4 flex ${justify(node.attrs['alignment'])}`}>
-      <div className="flex w-full max-w-md flex-col gap-4 rounded-lg border border-border bg-card p-gutter text-card-foreground">
+      <div className="flex w-full max-w-md flex-col gap-4 rounded-lg border border-border bg-card p-gutter text-card-foreground [&_p]:m-0">
         <p aria-live="polite" className="text-base whitespace-pre-line">
           {flipped ? answer : question}
         </p>

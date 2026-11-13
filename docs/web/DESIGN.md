@@ -196,7 +196,7 @@ Every data region renders exactly one of the kit's four states:
 ## 9. Component rules
 
 - One primary button per view: one in a template header and one in each dialog footer. Everything else is
-  secondary, outline or ghost.
+  secondary, outline or ghost; a settings section's own Save is outline, since a page stacks several of them.
 - Every destructive action goes through `ConfirmDialog` with the object's name. The `destructive` button variant
   appears only in that dialog and in a settings "danger zone" that opens it.
 - Create = `FormDialog`, then navigate to the entity's workspace. Edit = a page. Each object has one edit place

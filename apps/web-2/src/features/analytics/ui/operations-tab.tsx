@@ -31,8 +31,8 @@ export function OperationsTab() {
           label={m.analytics_kpi_ungraded_submissions()}
           value={formatNumber(workload.backlog_total)}
           action={
-            <Link variant="title" to="." search={prev => ({ ...prev, metric: 'backlog', page: 1 })}>
-              <span className="text-muted-foreground">{m.analytics_show_rows()}</span>
+            <Link to="." search={prev => ({ ...prev, metric: 'backlog', page: 1 })}>
+              {m.analytics_show_rows()}
             </Link>
           }
         />
@@ -49,18 +49,23 @@ export function OperationsTab() {
           closable
         />
       ) : null}
-      {/* An empty queue has no age: one line instead of an empty chart and an empty table. */}
-      {workload.backlog_total === 0 ? (
-        <p className="flex items-center gap-2 text-success">
-          <CircleCheck aria-hidden className="size-5" />
-          {m.analytics_backlog_empty()}
-        </p>
-      ) : (
-        <QueueDetail workload={workload} onRetry={() => void refetch()} />
-      )}
-      <ExportLinks
-        links={[{ href: exportHrefs(filters).gradingBacklog, label: m.analytics_export_grading_backlog() }]}
-      />
+      {/* The queue and its download are one block: alone between two sections the CSV link belonged to neither. */}
+      <div className="flex flex-col gap-4">
+        {/* An empty queue has no age: one line instead of an empty chart and an empty table. */}
+        {workload.backlog_total === 0 ? (
+          <p className="flex items-center gap-2 text-sm text-success">
+            <CircleCheck aria-hidden className="size-4" />
+            {m.analytics_backlog_empty()}
+          </p>
+        ) : (
+          <div className="flex flex-col gap-10">
+            <QueueDetail workload={workload} onRetry={() => void refetch()} />
+          </div>
+        )}
+        <ExportLinks
+          links={[{ href: exportHrefs(filters).gradingBacklog, label: m.analytics_export_grading_backlog() }]}
+        />
+      </div>
       <DataQuality quality={data.data_quality} />
     </div>
   )

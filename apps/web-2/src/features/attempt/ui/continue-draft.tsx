@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Link as RouterLink, useParams } from '@tanstack/react-router'
 import { Timer } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import type { AssessmentItem, SubmissionId } from '#/shared/api/gen/types.gen'
@@ -14,7 +15,16 @@ import { ATTEMPT_PATH, ATTEMPT_ROUTE } from './attempt-frame'
  * «Продолжить» an open draft; on a clock, how long is left, read when the entry opens (B-ATT-27). It reopens at the
  * first question still without an answer (the last one when all are answered), not at the first question again.
  */
-export function ContinueDraft({ draftId, items: all }: { draftId: SubmissionId; items: AssessmentItem[] }) {
+export function ContinueDraft({
+  draftId,
+  items: all,
+  next = null,
+}: {
+  draftId: SubmissionId
+  items: AssessmentItem[]
+  /** The way on to the next activity, beside «Продолжить». */
+  next?: ReactNode
+}) {
   const params = useParams({ from: ATTEMPT_ROUTE })
   const { data: draft } = useSuspenseQuery({ ...submissionOptions(draftId), staleTime: 0 })
   const items = attemptItems(all, draft)
@@ -30,14 +40,17 @@ export function ContinueDraft({ draftId, items: all }: { draftId: SubmissionId; 
           {m.attempt_continue_left({ time: clock(left) })}
         </p>
       )}
-      <RouterLink
-        to={ATTEMPT_PATH}
-        params={params}
-        search={{ attempt: draftId, ...(item > 1 ? { item } : {}) }}
-        className={buttonVariants()}
-      >
-        {m.attempt_continue()}
-      </RouterLink>
+      <div className="flex max-w-full flex-wrap items-center gap-2">
+        <RouterLink
+          to={ATTEMPT_PATH}
+          params={params}
+          search={{ attempt: draftId, ...(item > 1 ? { item } : {}) }}
+          className={buttonVariants()}
+        >
+          {m.attempt_continue()}
+        </RouterLink>
+        {next}
+      </div>
     </div>
   )
 }

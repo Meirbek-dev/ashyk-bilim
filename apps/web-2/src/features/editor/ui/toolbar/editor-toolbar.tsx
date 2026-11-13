@@ -22,9 +22,14 @@ type EditorToolbarProps = {
 
 const gap = <Separator orientation="vertical" className="mx-1 h-5 data-vertical:self-center" />
 
+// The tools scroll sideways; the scroller clips what leaves it, so its own padding keeps their focus rings whole.
+const TOOLS =
+  '-mx-1 flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto overscroll-x-contain p-1 *:shrink-0 *:aria-pressed:bg-accent *:aria-pressed:text-accent-foreground'
+
 /**
- * The editor's toolbar in one row (scrolls sideways on a phone rather than wrapping) in groups: history, text style (in words), inline formats and link, block formats, then the
- * code block's language or the table's rows and columns while the cursor is in one, and Insert block at the end.
+ * The editor's toolbar in one row in groups: history, text style (in words), inline formats and link, block formats,
+ * then the code block's language or the table's rows and columns while the cursor is in one, and Insert block at the
+ * end. On a phone the tools scroll sideways rather than wrap, and Insert block stays in sight beside them.
  * Pressed = applied under the cursor; every tooltip names the action and prints its shortcut.
  */
 export function EditorToolbar({ editor, onLink, onInsert }: EditorToolbarProps) {
@@ -58,43 +63,45 @@ export function EditorToolbar({ editor, onLink, onInsert }: EditorToolbarProps) 
       role="toolbar"
       aria-label={m.editor_toolbar()}
       data-density="compact"
-      className="sticky top-14 z-20 flex items-center gap-0.5 overflow-x-auto overscroll-x-contain border-b border-border bg-background py-1 *:shrink-0 *:aria-pressed:bg-accent *:aria-pressed:text-accent-foreground"
+      className="sticky top-14 z-20 flex items-center gap-2 border-b border-border bg-background"
     >
-      <ToolButton
-        label={m.editor_undo()}
-        icon={<Undo2 aria-hidden />}
-        keys="Mod-z"
-        disabled={!state.undo}
-        onClick={() => editor.chain().focus().undo().run()}
-      />
-      <ToolButton
-        label={m.editor_redo()}
-        icon={<Redo2 aria-hidden />}
-        keys="Mod-Shift-z"
-        disabled={!state.redo}
-        onClick={() => editor.chain().focus().redo().run()}
-      />
-      {gap}
-      <TextStyleMenu editor={editor} level={state.level} />
-      {gap}
-      {toggles(MARK_ITEMS, state.marks)}
-      <ToolButton
-        label={m.editor_link()}
-        icon={<Link2 aria-hidden />}
-        keys="Mod-k"
-        aria-pressed={state.link}
-        onClick={onLink}
-      />
-      {gap}
-      {toggles(BLOCK_ITEMS, state.blocks)}
-      {state.code || state.table ? gap : null}
-      {state.code ? <CodeLanguageMenu editor={editor} language={state.language} /> : null}
-      {state.table ? <TableMenu editor={editor} /> : null}
+      <div className={TOOLS}>
+        <ToolButton
+          label={m.editor_undo()}
+          icon={<Undo2 aria-hidden />}
+          keys="Mod-z"
+          disabled={!state.undo}
+          onClick={() => editor.chain().focus().undo().run()}
+        />
+        <ToolButton
+          label={m.editor_redo()}
+          icon={<Redo2 aria-hidden />}
+          keys="Mod-Shift-z"
+          disabled={!state.redo}
+          onClick={() => editor.chain().focus().redo().run()}
+        />
+        {gap}
+        <TextStyleMenu editor={editor} level={state.level} />
+        {gap}
+        {toggles(MARK_ITEMS, state.marks)}
+        <ToolButton
+          label={m.editor_link()}
+          icon={<Link2 aria-hidden />}
+          keys="Mod-k"
+          aria-pressed={state.link}
+          onClick={onLink}
+        />
+        {gap}
+        {toggles(BLOCK_ITEMS, state.blocks)}
+        {state.code || state.table ? gap : null}
+        {state.code ? <CodeLanguageMenu editor={editor} language={state.language} /> : null}
+        {state.table ? <TableMenu editor={editor} /> : null}
+      </div>
       {onInsert ? (
         <Button
           variant="outline"
           aria-label={m.editor_insert()}
-          className="ml-auto max-sm:w-8 max-sm:px-0"
+          className="shrink-0 max-sm:w-8 max-sm:px-0"
           onClick={event => onInsert(event.currentTarget)}
         >
           <Plus aria-hidden />

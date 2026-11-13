@@ -1,7 +1,7 @@
 import { m } from '#/paraglide/messages'
 import { Link } from '#/shared/components/link'
 
-/** How to start: three steps joined by a hairline. */
+/** How to start: three numbered steps side by side from @2xl, one under another on a phone. The page ends on them. */
 export function LandingSteps() {
   const steps = [
     {
@@ -26,23 +26,21 @@ export function LandingSteps() {
   return (
     <section
       aria-labelledby="landing-start"
-      className="grid gap-8 @3xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] @3xl:gap-16"
+      className="grid gap-x-16 gap-y-6 border-t pt-10 @3xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"
     >
-      <h2 id="landing-start" className="text-2xl font-semibold">
+      <h2 id="landing-start" className="text-xl font-semibold">
         {m.catalog_landing_start_title()}
       </h2>
-      <ol className="grid gap-6 @2xl:grid-cols-3 @2xl:gap-0">
+      <ol className="grid gap-5 @2xl:grid-cols-3 @2xl:gap-6">
         {steps.map((step, index) => (
-          <li key={step.id} className="flex gap-4 @2xl:flex-col @2xl:gap-3 @2xl:pr-6">
-            <div className="flex items-center gap-3">
-              <span aria-hidden className="w-9 shrink-0 font-heading text-3xl text-muted-foreground tabular-nums">
-                {index + 1}
-              </span>
-              {index < steps.length - 1 ? (
-                <span aria-hidden className="hidden h-0 flex-1 border-t border-input @2xl:block" />
-              ) : null}
-            </div>
-            <span className="max-w-xs self-center @2xl:self-start">{step.body}</span>
+          <li key={step.id} className="flex items-baseline gap-4 @2xl:flex-col @2xl:gap-2">
+            <span
+              aria-hidden
+              className="w-6 shrink-0 font-heading text-xl font-semibold text-muted-foreground tabular-nums"
+            >
+              {index + 1}
+            </span>
+            <span className="text-pretty">{step.body}</span>
           </li>
         ))}
       </ol>

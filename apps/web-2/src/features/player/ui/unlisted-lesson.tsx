@@ -35,8 +35,8 @@ export function UnlistedLesson({ courseId, activityId, title, aside }: UnlistedL
       wide={activity.activity_type === 'document' || activity.activity_type === 'video'}
     >
       <article className="flex flex-col gap-gutter @3xl:gap-10">
-        <ActivityHeader type={activity.activity_type} title={activity.name} />
         <PreviewNote lesson />
+        <ActivityHeader type={activity.activity_type} title={activity.name} />
         <LessonContent activityId={activity.id} onVideoEnded={() => undefined} />
       </article>
     </FocusPage>

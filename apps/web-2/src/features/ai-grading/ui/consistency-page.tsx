@@ -23,7 +23,8 @@ export function ConsistencyPage(): ReactElement {
   const { data: drafts } = useSuspenseQuery(draftsOptions(ids.activityId))
   const labels = labelsFromDrafts(drafts ?? [])
   return (
-    <div className="@container flex flex-col gap-10">
+    // A report of short columns: at the full width of the focus layout a row's name and its figure stood a screen apart.
+    <div className="@container flex max-w-5xl flex-col gap-10">
       <h1 className="text-2xl font-semibold">{m.ai_grading_consistency_title()}</h1>
       <ConsistencyBlock
         id="ai-grading-pairs"
@@ -31,6 +32,7 @@ export function ConsistencyPage(): ReactElement {
         hint={m.ai_grading_pairs_hint()}
         count={report.pairs.length}
         empty={m.ai_grading_pairs_empty()}
+        figuresFrom={4}
       >
         <DataTable
           label={m.ai_grading_pairs_title()}
@@ -45,6 +47,7 @@ export function ConsistencyPage(): ReactElement {
         hint={m.ai_grading_disagreements_hint()}
         count={report.disagreements.length}
         empty={m.ai_grading_disagreements_empty()}
+        figuresFrom={3}
       >
         <DataTable
           label={m.ai_grading_disagreements_title()}
@@ -59,6 +62,7 @@ export function ConsistencyPage(): ReactElement {
         hint={m.ai_grading_drift_hint()}
         count={report.drift.length}
         empty={m.ai_grading_drift_empty()}
+        figuresFrom={4}
       >
         <DataTable
           label={m.ai_grading_drift_title()}

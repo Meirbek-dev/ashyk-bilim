@@ -1,6 +1,7 @@
 import { useNavigate, useSearch } from '@tanstack/react-router'
 
 import { m } from '#/paraglide/messages'
+import { EmptyState } from '#/shared/components/empty-state'
 import { ListPage } from '#/shared/components/templates/list-page'
 
 import { SearchBox } from './search-box'
@@ -22,11 +23,7 @@ export function SearchPage() {
         />
       }
     >
-      {q ? (
-        <SearchResults q={q} kind={kind} />
-      ) : (
-        <p className="max-w-prose py-6 font-heading text-lg text-muted-foreground">{m.catalog_search_prompt()}</p>
-      )}
+      {q ? <SearchResults q={q} kind={kind} /> : <EmptyState>{m.catalog_search_prompt()}</EmptyState>}
     </ListPage>
   )
 }

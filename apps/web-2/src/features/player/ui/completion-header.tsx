@@ -24,13 +24,14 @@ export function CompletionHeader({ progress, completed }: { progress: ProgressSt
   if (progress.total_required_count === 0)
     return (
       <header className="flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold wrap-anywhere">{m.player_finish()}</h1>
-        <p className="max-w-prose text-base text-muted-foreground">{m.player_nothing_yet()}</p>
+        <h1 className="text-2xl font-semibold wrap-anywhere">{m.player_finish()}</h1>
+        <p className="max-w-prose text-base text-pretty text-muted-foreground">{m.player_nothing_yet()}</p>
       </header>
     )
   return (
-    <header className="flex flex-col gap-4">
-      <h1 className="text-3xl font-semibold wrap-anywhere">{m.player_finish()}</h1>
+    <header className="flex flex-col gap-3">
+      {/* The page's name is its label; the figure under it is what the learner came for. */}
+      <h1 className="text-2xl font-semibold wrap-anywhere">{m.player_finish()}</h1>
       <p className="flex flex-wrap items-baseline gap-x-3 tabular-nums">
         <span aria-hidden className="font-heading text-display font-semibold">
           {formatPercent(Math.round(progress.progress_pct))}

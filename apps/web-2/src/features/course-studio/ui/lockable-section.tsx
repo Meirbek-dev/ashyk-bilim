@@ -1,3 +1,4 @@
+import { Lock } from 'lucide-react'
 import type { ComponentProps } from 'react'
 
 import { SettingsSection } from '#/shared/components/templates/settings-section'
@@ -16,7 +17,11 @@ export function LockableSection({ lock, ...section }: LockableSectionProps) {
         <h2 className="text-xl font-semibold">{section.title}</h2>
         <p className="text-sm text-muted-foreground">{section.description}</p>
       </div>
-      <p className="text-sm">{lock}</p>
+      {/* A quiet field, as in the assessment builder: it is the reason the fields below are closed. */}
+      <p className="flex items-start gap-3 rounded-lg bg-muted/60 px-4 py-3 text-sm text-pretty">
+        <Lock aria-hidden className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+        <span>{lock}</span>
+      </p>
       {/* ponytail: `inert` because the shared Switch / RadioGroup fields are Base UI spans a disabled fieldset does not
           reach (and take no `disabled`); it also hides the values from assistive tech. Drop it once they do. The same
           spans keep their live colours, so they are dimmed like the disabled inputs beside them. */}
