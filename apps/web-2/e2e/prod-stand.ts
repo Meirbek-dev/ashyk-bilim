@@ -1,7 +1,13 @@
 // e2e against the production build on this machine (AGENTS.md "e2e against the production build"): the stand's nginx
 // in miniature. `/api/v2` goes to the API, buckets and `/content/<key>` to storage, the rest to `node serve.ts`.
 // `node e2e/prod-stand.ts` (Node strips the types); ports: PORT (3100, the base URL), WEB_PORT (3101).
-import { request as httpRequest, createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import {
+  request as httpRequest,
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+  type IncomingHttpHeaders,
+} from 'node:http'
 
 const env = (name: string, fallback: string) => process.env[name] ?? fallback
 const api = new URL(env('API_PROXY_TARGET', 'http://127.0.0.1:8000'))
@@ -19,8 +25,11 @@ function forward(incoming: IncomingMessage, outgoing: ServerResponse): void {
   const { target, path } = route(incoming.url ?? '/')
   // Storage signs against its own host; the API and the web see the public host, like behind nginx.
   const host = target === storage ? target.host : incoming.headers.host
+  const headers: IncomingHttpHeaders = { ...incoming.headers, host }
+  // API rate-limit fixtures override this header; S3 must not receive that client-controlled value.
+  if (target === storage) delete headers['x-real-ip']
   const upstream = httpRequest(
-    { host: target.hostname, port: target.port, method: incoming.method, path, headers: { ...incoming.headers, host } },
+    { host: target.hostname, port: target.port, method: incoming.method, path, headers },
     answer => {
       outgoing.writeHead(answer.statusCode ?? 502, answer.headers)
       answer.pipe(outgoing)
