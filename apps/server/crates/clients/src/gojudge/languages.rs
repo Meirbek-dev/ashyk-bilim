@@ -163,7 +163,7 @@ console.log(n * n);
     },
     Language {
         id: 74,
-        name: "TypeScript (5.9, Node.js 20)",
+        name: "TypeScript (6.0, Node.js 20)",
         editor: "typescript",
         source_file: "main.ts",
         compile: &[

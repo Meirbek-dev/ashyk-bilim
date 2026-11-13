@@ -6,3 +6,6 @@ src/routeTree.*-tmp*.ts
 src/paraglide.*-tmp*/
 test-results/
 playwright-report/
+
+# Paraglide compiler cache; generated and safe to recreate.
+/project.inlang/cache/

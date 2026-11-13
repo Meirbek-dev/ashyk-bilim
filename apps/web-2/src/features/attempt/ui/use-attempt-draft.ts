@@ -1,7 +1,7 @@
 import { useDebouncer, useThrottler } from '@tanstack/react-pacer'
 import { useMutation, useQueryClient, useSuspenseQuery, type QueryClient } from '@tanstack/react-query'
 import { useSelector } from '@tanstack/react-store'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import * as v from 'valibot'
 
@@ -91,9 +91,17 @@ function usePageLeave(leave: () => void) {
   })
 }
 
+/** Publish callbacks after commit, before layout effects can trigger scheduled work. */
+function useCommittedCallback(callback: (last?: boolean) => void) {
+  const latest = useRef(callback)
+  useLayoutEffect(() => {
+    latest.current = callback
+  })
+  return latest
+}
+
 /** Sends the queue to the server draft and keeps what came of it (the saving half of useAttemptDraft). */
 function useDraftSender(attempt: StudentSubmission) {
-  const id = attempt.id
   const queryClient = useQueryClient()
   const save = useMutation(saveOptions())
   const [failure, setFailure] = useState<{ outcome: SaveOutcome; error: unknown } | null>(null)
@@ -102,9 +110,10 @@ function useDraftSender(attempt: StudentSubmission) {
   // Saving stops on a closed gate (for good) or a conflict (until the learner decides or answers again).
   const stopped = useRef<'closed' | 'conflict' | null>(null)
   const waitMs = useRef(SAVE_WINDOW_MS)
-  const paced = useThrottler(() => flush(), { wait: SAVE_WINDOW_MS })
-  const retry = useDebouncer(() => flush(), { wait: () => waitMs.current })
-  const key = submissionOptions(id).queryKey
+  const flushRef = useCommittedCallback(flush)
+  const paced = useThrottler(() => flushRef.current(), { wait: SAVE_WINDOW_MS })
+  const retry = useDebouncer(() => flushRef.current(), { wait: () => waitMs.current })
+  const key = submissionOptions(attempt.id).queryKey
 
   async function failed(error: unknown) {
     sending.current = false
@@ -123,14 +132,14 @@ function useDraftSender(attempt: StudentSubmission) {
     sending.current = false
     // A hand-in that overtook this save keeps its result in the cache.
     queryClient.setQueryData(key, old => (old?.status === 'draft' ? fresh : old))
-    updateQueue(id, current => ack(current, ids))
+    updateQueue(attempt.id, current => ack(current, ids))
     setFailure(null)
-    if (queueOf(id).length) paced.maybeExecute()
+    if (queueOf(attempt.id).length) paced.maybeExecute()
   }
 
   // `last`: the page is going away; a refused last save is left to the ordinary autosave, which reports its outcome.
   function flush(last = false) {
-    const batch = queueOf(id)
+    const batch = queueOf(attempt.id)
     const draft = queryClient.getQueryData(key)
     // Offline nothing is sent: the queue holds the answers and the `online` event resumes.
     if (!batch.length || sending.current || stopped.current || !navigator.onLine || draft?.status !== 'draft') return
@@ -147,7 +156,7 @@ function useDraftSender(attempt: StudentSubmission) {
     else
       save.mutate(
         {
-          path: { submission_id: id },
+          path: { submission_id: attempt.id },
           body: { answers: patchOf(batch) },
           headers: { 'If-Match': draft.draft_version },
         },

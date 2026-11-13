@@ -89,30 +89,28 @@ fn docx_text(bytes: &[u8]) -> Option<String> {
     let mut in_text = false;
     loop {
         match reader.read_event() {
-            Ok(quick_xml::events::Event::Start(e)) if e.name().as_ref() == b"w:t" => in_text = true,
+            Ok(quick_xml::events::Event::Start(e)) if e.name().as_ref() == "w:t" => in_text = true,
             Ok(quick_xml::events::Event::End(e)) => match e.name().as_ref() {
-                b"w:t" => in_text = false,
-                b"w:p" => out.push('\n'),
+                "w:t" => in_text = false,
+                "w:p" => out.push('\n'),
                 _ => {}
             },
             Ok(quick_xml::events::Event::Empty(e)) => match e.name().as_ref() {
-                b"w:tab" => out.push('\t'),
-                b"w:br" | b"w:cr" => out.push('\n'),
+                "w:tab" => out.push('\t'),
+                "w:br" | "w:cr" => out.push('\n'),
                 _ => {}
             },
             Ok(quick_xml::events::Event::Text(t)) if in_text => {
-                if let Ok(text) = t.decode() {
-                    out.push_str(&text);
-                }
+                out.push_str(t.as_ref());
             }
             Ok(quick_xml::events::Event::GeneralRef(r)) if in_text => {
-                let name: &[u8] = &r;
+                let name: &str = r.as_ref();
                 let resolved = match name {
-                    b"amp" => "&",
-                    b"lt" => "<",
-                    b"gt" => ">",
-                    b"quot" => "\"",
-                    b"apos" => "'",
+                    "amp" => "&",
+                    "lt" => "<",
+                    "gt" => ">",
+                    "quot" => "\"",
+                    "apos" => "'",
                     _ => "",
                 };
                 out.push_str(resolved);

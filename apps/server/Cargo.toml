@@ -46,18 +46,18 @@ sqlx = { version = "0.9.0", features = [
   "migrate",
   "macros",
 ] }
-uuid = { version = "1.29.0", features = ["v4", "v7", "serde"] }
+uuid = { version = "1.29.2", features = ["v4", "v7", "serde"] }
 redis = { version = "1.8.1", features = ["tokio-comp", "connection-manager"] }
 sha2 = "0.11.1"
 hmac = "0.13.0"
 time = "0.3.55"
 base64 = "0.23.1"
 object_store = { version = "0.14.2", features = ["aws"] }
-jiff = { version = "0.2.38", features = ["serde", "tzdb-bundle-always"] }
+jiff = { version = "0.2.43", features = ["serde", "tzdb-bundle-always"] }
 
 # Document text extraction (AI pre-grading of submitted files)
-zip = { version = "9.2.0", default-features = false, features = ["deflate"] }
-quick-xml = "0.41.0"
+zip = { version = "9.5.1", default-features = false, features = ["deflate"] }
+quick-xml = "0.42.0"
 pdf-extract = "0.12.1"
 
 # Serde & validation
@@ -69,7 +69,7 @@ garde = { version = "0.23.0", features = ["derive", "email", "url"] }
 figment = { version = "0.10.19", features = ["env"] }
 secrecy = { version = "0.10.3", features = ["serde"] }
 thiserror = "2.0.21"
-unicode-properties = "0.1.4"
+unicode-properties = "0.1.5"
 anyhow = "1.0.104"
 
 # Telemetry
@@ -104,14 +104,14 @@ url = "2.5.8"
 # Certificate PDF (no headless browser): typst's low-level writer and
 # subsetter, plus Google's skrifa for glyph lookup and advance widths.
 pdf-writer = "0.15.0"
-skrifa = { version = "0.49.0", default-features = false, features = ["std"] }
+skrifa = { version = "0.50.0", default-features = false, features = ["std"] }
 subsetter = { version = "0.2.6", default-features = false }
 
 # Misc
 futures = "0.3.34"
 proc-macro2 = "1.0.107"
 quote = "1.0.47"
-syn = { version = "3.0.9", features = ["full"] }
+syn = { version = "3.0.10", features = ["full"] }
 http = "1.5.0"
 async-stream = "0.3.6"
 

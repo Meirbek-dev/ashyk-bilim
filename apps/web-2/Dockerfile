@@ -16,7 +16,7 @@ RUN bun run build
 FROM deps AS runtime-deps
 RUN rm -rf node_modules && bun install --frozen-lockfile --production --ignore-scripts
 
-FROM node:26.13.0-alpine
+FROM node:26.13.1-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5
 # The heap is capped for the 512m container (compose WEB_MEMORY): V8 sized it from the host (2 GiB) and collects
 # lazily, so RSS reached ~480 MiB at 50 rps; capped, it stayed under 300 MiB (docs/DECISIONS.md).
 ENV NODE_ENV=production \
