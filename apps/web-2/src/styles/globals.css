@@ -66,6 +66,21 @@ html[data-size='larger'] {
 body {
   @apply bg-background text-foreground antialiased;
   word-spacing: 0.05em;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Scrollbars in the page's own greys; a panel that scrolls inside the page (a contents list, a wide table, a menu)
+   gets a thin one, the page keeps the platform's width. */
+html {
+  scrollbar-color: color-mix(in oklab, var(--foreground) 24%, transparent) transparent;
+}
+:where(:not(html, body)) {
+  scrollbar-width: thin;
+}
+
+/* A paragraph never ends on a lone word where the browser can help it. */
+:where(p) {
+  text-wrap: pretty;
 }
 
 .brand-mark-night {
@@ -151,6 +166,24 @@ div.font-heading,
   background: color-mix(in oklab, var(--highlight) 22%, transparent);
 }
 
+/* The signed-in utility bar has no edge at rest (the page starts right under it) and draws its hairline once the
+   page has scrolled under it. Browsers without scroll timelines keep it edgeless, as before. */
+.ab-topbar {
+  border-bottom-color: transparent;
+}
+@supports (animation-timeline: scroll()) {
+  .ab-topbar {
+    animation: ab-topbar-edge linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0 1.5rem;
+  }
+  @keyframes ab-topbar-edge {
+    to {
+      border-bottom-color: var(--border);
+    }
+  }
+}
+
 /* Inside the rail the kit's quiet buttons speak the rail's colours. */
 .ab-rail {
   --muted: var(--sidebar-accent);
@@ -185,14 +218,14 @@ div.font-heading,
   opacity: 0.8;
 }
 
-/* Progress is a solid track. */
+/* Progress is a solid track with soft ends. */
 [data-slot='progress-track'] {
-  height: 3px;
-  border-radius: 0;
-  background: var(--muted);
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--foreground) 9%, var(--background));
 }
 [data-slot='progress-indicator'] {
-  height: 3px;
+  height: 4px;
   border-radius: 2px;
 }
 
@@ -231,10 +264,12 @@ div.font-heading,
 /* A thicker bar for a page's main progress (home, course): the stock track is 4 px. */
 @utility progress-lg {
   & [data-slot='progress-track'] {
-    height: 5px;
+    height: 6px;
+    border-radius: 3px;
   }
   & [data-slot='progress-indicator'] {
-    height: 5px;
+    height: 6px;
+    border-radius: 3px;
   }
 }
 

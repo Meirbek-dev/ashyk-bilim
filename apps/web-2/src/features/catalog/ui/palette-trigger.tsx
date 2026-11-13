@@ -45,13 +45,16 @@ export function PaletteTrigger() {
       </span>
       <Button
         variant="outline"
-        className="hidden h-9 w-56 justify-start border-border bg-card px-3 font-normal text-muted-foreground shadow-none md:inline-flex lg:w-72"
+        className="hidden h-9 w-56 justify-start border-transparent bg-muted px-3 font-normal text-muted-foreground shadow-none hover:border-control-border hover:bg-muted md:inline-flex lg:w-72"
         onClick={() => open('palette')}
       >
         <Search aria-hidden data-icon="inline-start" />
         <span className="truncate">{m.catalog_palette_title()}</span>
         {hydrated ? (
-          <kbd aria-hidden className="ml-auto text-xs text-muted-foreground">
+          <kbd
+            aria-hidden
+            className="ml-auto rounded-sm border bg-background px-1.5 font-sans text-xs text-muted-foreground"
+          >
             {formatForDisplay(shortcuts.palette.hotkey)}
           </kbd>
         ) : null}

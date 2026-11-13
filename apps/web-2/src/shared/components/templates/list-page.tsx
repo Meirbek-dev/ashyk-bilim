@@ -36,7 +36,8 @@ export function ListPage(props: ListPageProps) {
           <h1 className="text-2xl font-semibold">{title}</h1>
           {count ? <p className="text-sm text-muted-foreground tabular-nums">{count}</p> : null}
         </div>
-        <div className="flex items-center gap-2">
+        {/* Narrow, the actions wrap under the title: the primary button leads at the left edge and the menu follows. */}
+        <div className="flex flex-row-reverse items-center justify-end gap-2 @2xl:flex-row">
           <div className="hidden gap-2 @2xl:flex">
             {secondaryActions.map(action => (
               <Button key={action.label} variant="ghost" onClick={action.onSelect}>

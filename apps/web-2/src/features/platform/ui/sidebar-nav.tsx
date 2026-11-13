@@ -29,21 +29,27 @@ export function SidebarNav({ session, workspace }: { session: SessionInfo; works
   }
   return (
     <div
-      className={`ab-rail hidden shrink-0 bg-sidebar text-sidebar-foreground lg:block ${collapsed ? 'w-16' : 'w-64'}`}
+      className={`ab-rail hidden shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:block ${collapsed ? 'w-16' : 'w-64'}`}
     >
-      <div className="sticky top-0 flex h-dvh flex-col gap-5 py-4">
-        <RouterLink to="/" className="mx-3 flex h-10 items-center rounded-md px-2">
-          <span aria-hidden className={`ab-mark ${collapsed ? 'ab-mark-emblem h-8 w-8' : 'ab-mark-full h-9 w-24'}`} />
-          <span className="sr-only">{m.platform_brand()}</span>
-        </RouterLink>
+      <div className="sticky top-0 flex h-dvh flex-col gap-4 pb-3">
+        {/* As tall as the utility bar beside it, so the wordmark and the search sit on one line. */}
+        <div className="flex h-14 shrink-0 items-center px-3">
+          <RouterLink
+            to="/"
+            className={`flex h-10 items-center rounded-md ${collapsed ? 'w-10 justify-center' : 'px-2'}`}
+          >
+            <span aria-hidden className={`ab-mark ${collapsed ? 'ab-mark-emblem h-7 w-7' : 'ab-mark-full h-8 w-24'}`} />
+            <span className="sr-only">{m.platform_brand()}</span>
+          </RouterLink>
+        </div>
         {collapsed ? null : (
-          <div className="mx-3 empty:hidden">
+          <div className="mx-3 -mt-1 empty:hidden">
             <Suspense fallback={null}>
               <WorkspaceSwitch session={session} current={workspace.id} />
             </Suspense>
           </div>
         )}
-        <nav aria-label={m.platform_nav_label()} className="flex flex-col gap-0.5 px-3">
+        <nav aria-label={m.platform_nav_label()} className="flex min-h-0 flex-col gap-0.5 overflow-y-auto px-3">
           <NavSections
             session={session}
             workspace={workspace}
@@ -63,20 +69,17 @@ export function SidebarNav({ session, workspace }: { session: SessionInfo; works
             }
           />
         </nav>
-        <div className="mt-auto flex flex-col gap-3">
-          <div className={`flex px-3 ${collapsed ? 'justify-center' : 'justify-end'}`}>
-            <Suspense fallback={<span className="h-control w-control" />}>
-              <SidebarToggle collapsed={collapsed} onToggle={toggle} />
-            </Suspense>
-          </div>
+        {/* The foot: the university's mark and the toggle on one line. */}
+        <div className={`mt-auto flex items-center px-3 ${collapsed ? 'justify-center' : 'justify-between pl-5'}`}>
           {collapsed ? null : (
-            <>
-              <div className="px-5 pb-1">
-                <span aria-hidden className="ab-mark ab-mark-university block h-7 w-24" />
-                <span className="sr-only">{m.platform_university()}</span>
-              </div>
-            </>
+            <div>
+              <span aria-hidden className="ab-mark ab-mark-university block h-7 w-24" />
+              <span className="sr-only">{m.platform_university()}</span>
+            </div>
           )}
+          <Suspense fallback={<span className="h-control w-control" />}>
+            <SidebarToggle collapsed={collapsed} onToggle={toggle} />
+          </Suspense>
         </div>
       </div>
     </div>

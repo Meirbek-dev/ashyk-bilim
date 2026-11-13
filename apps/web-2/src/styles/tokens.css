@@ -49,6 +49,7 @@
   --color-highlight-foreground: var(--highlight-foreground);
   --color-highlight-soft: var(--highlight-soft);
   --color-link: var(--link);
+  --color-control-border: var(--control-border);
 
   /* Derived meaning (never set by themes) */
   --color-success: var(--success);
@@ -105,20 +106,25 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  /* Shadows: geometry + color from the theme, scale fixed here */
+  /* Shadows: the contact layer takes its geometry and color from the theme; what floats (menus, sheets, dialogs,
+     toasts) adds a soft ambient layer that is the same in every theme, so an overlay reads as lifted off the page. */
   --shadow-xs: var(--shadow-x) var(--shadow-y) var(--shadow-blur) var(--shadow-spread) var(--shadow-color-weak);
   --shadow-sm:
     var(--shadow-x) var(--shadow-y) var(--shadow-blur) var(--shadow-spread) var(--shadow-color),
     var(--shadow-x) 1px 2px calc(var(--shadow-spread) - 1px) var(--shadow-color);
   --shadow-md:
     var(--shadow-x) var(--shadow-y) var(--shadow-blur) var(--shadow-spread) var(--shadow-color),
-    var(--shadow-x) 2px 4px calc(var(--shadow-spread) - 1px) var(--shadow-color);
+    0 6px 16px -4px var(--shadow-ambient);
   --shadow-lg:
     var(--shadow-x) var(--shadow-y) var(--shadow-blur) var(--shadow-spread) var(--shadow-color),
-    var(--shadow-x) 4px 6px calc(var(--shadow-spread) - 1px) var(--shadow-color);
+    0 12px 32px -8px var(--shadow-ambient), 0 4px 8px -4px var(--shadow-ambient);
   --shadow-xl:
     var(--shadow-x) var(--shadow-y) var(--shadow-blur) var(--shadow-spread) var(--shadow-color),
-    var(--shadow-x) 8px 10px calc(var(--shadow-spread) - 1px) var(--shadow-color);
+    0 24px 56px -12px var(--shadow-ambient-strong), 0 8px 16px -8px var(--shadow-ambient);
+  /* Controls: a filled button is lit from above and stands on the page; a quiet control only stands on it. */
+  --shadow-button:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.16), inset 0 0 0 1px oklch(0 0 0 / 0.1), 0 1px 2px 0 var(--shadow-ambient);
+  --shadow-control: 0 1px 2px 0 var(--shadow-contact);
 
   /* Density: h-control, min-h-row, p-gutter / gap-gutter follow [data-density] */
   --spacing-control: var(--density-control);
@@ -149,22 +155,22 @@
      between things. Uploads and meaning colours stand out, not the ground. The one
      colour of the interface is blue (--highlight, --link below): the primary button, checks, progress, the current
      tab and nav item, charts, links. Rules: docs/web/DESIGN.md. */
-  --background: light-dark(oklch(1 0 0), oklch(0.145 0 0));
+  --background: light-dark(oklch(1 0 0), oklch(0.16 0 0));
   --foreground: light-dark(oklch(0.205 0 0), oklch(0.945 0 0));
-  --card: light-dark(oklch(1 0 0), oklch(0.17 0 0));
+  --card: light-dark(oklch(1 0 0), oklch(0.185 0 0));
   --card-foreground: var(--foreground);
-  --popover: light-dark(oklch(1 0 0), oklch(0.195 0 0));
+  --popover: light-dark(oklch(1 0 0), oklch(0.205 0 0));
   --popover-foreground: var(--foreground);
   --primary: light-dark(oklch(0.205 0 0), oklch(0.945 0 0));
   --primary-foreground: light-dark(oklch(0.985 0 0), oklch(0.17 0 0));
-  --secondary: light-dark(oklch(0.965 0 0), oklch(0.235 0 0));
+  --secondary: light-dark(oklch(0.965 0 0), oklch(0.245 0 0));
   --secondary-foreground: var(--foreground);
-  --muted: light-dark(oklch(0.97 0 0), oklch(0.205 0 0));
+  --muted: light-dark(oklch(0.97 0 0), oklch(0.215 0 0));
   --muted-foreground: light-dark(oklch(0.45 0 0), oklch(0.74 0 0));
-  --accent: light-dark(oklch(0.96 0 0), oklch(0.235 0 0));
+  --accent: light-dark(oklch(0.96 0 0), oklch(0.245 0 0));
   --accent-foreground: var(--foreground);
   --destructive: light-dark(oklch(0.53 0.2 27), oklch(0.72 0.17 24));
-  --border: light-dark(oklch(0.922 0 0), oklch(0.26 0 0));
+  --border: light-dark(oklch(0.922 0 0), oklch(0.27 0 0));
   --input: light-dark(oklch(0.675 0 0), oklch(0.5 0 0));
   --ring: light-dark(oklch(0.546 0.215 262.9), oklch(0.72 0.14 255));
   --chart-1: light-dark(oklch(0.546 0.215 262.9), oklch(0.72 0.14 255));
@@ -172,15 +178,15 @@
   --chart-3: light-dark(oklch(0.55 0.1 185), oklch(0.74 0.09 185));
   --chart-4: light-dark(oklch(0.68 0.13 75), oklch(0.8 0.12 80));
   --chart-5: light-dark(oklch(0.52 0.15 300), oklch(0.72 0.11 300));
-  --sidebar: light-dark(oklch(0.985 0 0), oklch(0.145 0 0));
+  --sidebar: light-dark(oklch(0.98 0 0), oklch(0.13 0 0));
   --sidebar-foreground: light-dark(oklch(0.27 0 0), oklch(0.86 0 0));
   --sidebar-primary: light-dark(oklch(0.205 0 0), oklch(0.945 0 0));
   --sidebar-primary-foreground: light-dark(oklch(0.985 0 0), oklch(0.17 0 0));
-  --sidebar-accent: light-dark(oklch(0.945 0 0), oklch(0.22 0 0));
+  --sidebar-accent: light-dark(oklch(0.945 0 0), oklch(0.215 0 0));
   --sidebar-accent-foreground: var(--foreground);
-  --sidebar-border: light-dark(oklch(0.922 0 0), oklch(0.26 0 0));
+  --sidebar-border: light-dark(oklch(0.922 0 0), oklch(0.25 0 0));
   --sidebar-ring: var(--ring);
-  --radius: 0.3125rem;
+  --radius: 0.5rem;
   --shadow-x: 0px;
   --shadow-y: 1px;
   --shadow-blur: 2px;
@@ -189,6 +195,13 @@
   /* ---- end of theme group ---- */
 
   --shadow-color-weak: color-mix(in oklab, var(--shadow-color) 50%, transparent);
+  /* The fixed layers of the shadow scale above (never set by themes). */
+  --shadow-ambient: light-dark(oklch(0 0 0 / 0.1), oklch(0 0 0 / 0.5));
+  --shadow-ambient-strong: light-dark(oklch(0 0 0 / 0.16), oklch(0 0 0 / 0.65));
+  --shadow-contact: light-dark(oklch(0 0 0 / 0.05), oklch(0 0 0 / 0.35));
+  /* The edge of a quiet button (outline): its label says what it is, so it needs no 3:1 boundary; a field does and
+     keeps --input. */
+  --control-border: color-mix(in oklab, var(--input) 42%, var(--background));
 
   /* The interface's one colour. Fill: switches, checkboxes, radios and progress, under white. Text: links, on the page.
      A theme's own colour takes over below. */

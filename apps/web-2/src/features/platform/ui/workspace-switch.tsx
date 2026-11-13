@@ -33,9 +33,9 @@ export function WorkspaceSwitch({ session, current }: { session: SessionInfo; cu
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" aria-label={`${choice.label}: ${label}`} className="w-full justify-between px-3">
+          <Button variant="outline" aria-label={`${choice.label}: ${label}`} className="w-full justify-between px-3">
             {label}
-            <ChevronsUpDown aria-hidden />
+            <ChevronsUpDown aria-hidden className="text-muted-foreground" />
           </Button>
         }
       />

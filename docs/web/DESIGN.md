@@ -20,7 +20,7 @@ look out of place in a Linear-grade tool, it is not finished.
    - **The picture.** `CourseCover` is a course's upload, whole, at 16:9 (uploads carry their own lettering), or a quiet
      grey field (`.ab-dye`) with the platform's emblem. It prints nothing: the title is set once, on the page under it.
 3. Quiet tools, a little louder only when a learner arrives somewhere (a finished course, a certificate): bigger type and
-   a solid ink field (`data-dye="ink"`), never decoration. Teacher and admin screens stay compact and quiet. Progress is a solid track.
+   a solid ink field (`data-dye="ink"`), never decoration. Teacher and admin screens stay compact and quiet. Progress is a solid track with soft ends (4 px; a page's main one 6 px).
 4. Hierarchy comes from type size, weight and spacing. No cards inside cards, no boxes around sections.
 5. Color carries meaning (status, activity type, action, reward) and never decorates, except a course's quiet field. The
    meaning always has a second channel too: a label or an icon.
@@ -48,6 +48,7 @@ palette classes (`bg-red-500`, G-11), `text-4xl`, `font-bold`, `tracking-*`, `sh
 | `activity-<type>`                               | activity type (derived)                    | the type icon and type label (table in section 3)         |
 | `border`                                        | dividers                                   | table rows, separators, card outline                      |
 | `input`                                         | form control boundary, >= 3:1 on background | input, select, checkbox and switch outlines              |
+| `control-border`                                | the edge of a quiet button (derived)       | the `outline` button only: its label says what it is, so it needs no 3:1 edge |
 | `ring`                                          | keyboard focus                             | the focus outline only                                    |
 | `chart-1..5`                                    | data series                                | charts in slot order                                      |
 | `highlight` / `highlight-foreground`, `link`    | the interface's one colour (derived; other themes: primary, foreground) | the one primary button, switch, checkbox, radio, progress, current tab and nav icon, notification count, chart-1; `highlight-soft`: the current nav item and initials; `link`: links on the page and short "way on" links (`Link variant="accent"`) |
@@ -60,6 +61,8 @@ palette classes (`bg-red-500`, G-11), `text-4xl`, `font-bold`, `tracking-*`, `sh
 - Primary is never used as text color (`text-primary` is forbidden; it falls below 4.5:1 in about 40 themes). Links
   use `text-link` with a quiet underline (`Link`'s default look, `.ab-prose a`).
 - Non-color tokens: `--radius`, `--shadow-x|y|blur|spread|color`, `--density-*`, `--focus-ring-*`, `--duration-*`.
+  Fixed shadow layers no theme sets: `--shadow-ambient[-strong]` (what floats), `--shadow-contact` (a control on the
+  page), composed into `shadow-button` and `shadow-control`.
 - Themes override only the "theme" group in tokens.css: 31 colors, `--radius` and the shadow parameters; never
   fonts, spacing, tracking or the derived tokens. Mode comes from `html[data-mode="light"|"dark"]`; with no
   attribute the system setting applies. Each color is a `light-dark()` pair.
@@ -124,12 +127,14 @@ behind it; it never colors a title, a row or a card background.
   for what the scale cannot say (a seek bar's position, pane sizes, editor and chart layout); colors stay tokens.
 - Rhythm: `gap-1`/`gap-2` inside a control group, `gap-4` between fields, `gap-gutter` between blocks, and
   `gap-8`/`gap-12` between page sections. Page padding is `px-4` up to `md` and `px-8` above it.
-- Radius (multiples of the theme's `--radius`, 5 px by default): `rounded-sm` badges, checkbox, menu rows; `rounded-md`
-  inputs, buttons; `rounded-lg` cards, popovers, dialogs; `rounded-full` avatars. Sections are not boxes: they sit on the
+- Radius (multiples of the theme's `--radius`, 8 px by default): `rounded-sm` badges, checkbox, menu rows; `rounded-md`
+  inputs, buttons; `rounded-lg` cards, covers, popovers, quiet fields; `rounded-xl` dialogs; `rounded-full` avatars. Sections are not boxes: they sit on the
   paper, split by hairlines; a card holds one object you could pick up.
-- Shadow: nothing in flow is shadowed or rises. `shadow-md` for menus and
-  popovers, `shadow-lg` for sheets and toasts. Dialogs rest on a plain scrim (`bg-black/40`, no blur) with a hairline
-  ring; a dialog's footer is a hairline to the edges with no tinted band.
+- Shadow: in flow only controls carry one, and it never grows on hover: a filled button is lit from above and stands
+  on the page (`shadow-button`), an outline button and a field stand on it (`shadow-control`). What floats is lifted by
+  a soft ambient layer: `shadow-md` popovers, `shadow-lg` menus, sheets and toasts, `shadow-xl` dialogs, which rest on
+  a plain scrim (`bg-black/45`, no blur) with a hairline ring; a dialog's footer is a hairline to the edges with no
+  tinted band.
 - Density: comfortable (default) for learning and reading; compact for teacher and admin tables. The layout or
   template sets `data-density="compact"` on its region. Features never pass density classes. Our composites use
   `h-control` (44 / 40 px), `min-h-row` (56 / 52 px) and `gap-gutter` / `p-gutter` (28 / 24 px); the kit's controls use
@@ -137,13 +142,13 @@ behind it; it never colors a title, a row or a card background.
 
 ## 6. Layouts and templates
 
-**App shell** (one for every role). Desktop (>= `lg`): a full-height rail `w-64` in the sidebar colours (a step off white by day, the page's black by night, split by a hairline),
-collapsible to icons: the wordmark, the space switcher (only with more than one space), the space's navigation (current
-item: a tint), then at its foot `UniversityMark`. Beside it a
-utility bar `h-14` on the paper (search with its `Ctrl+K`, notifications, profile) over the content. At 390 px: mark
+**App shell** (one for every role). Desktop (>= `lg`): a full-height rail `w-64` in the sidebar colours (a step off white by day, a step under the page by night, so the page is always the lightest surface; split from it by a hairline),
+collapsible to icons: the wordmark on the utility bar's line, the space switcher (an outline control, only with more than one space), the space's navigation (rows of 40 px; current
+item: a tint), then at its foot `UniversityMark` and the collapse toggle on one line. Beside it a
+utility bar `h-14` on the paper (search as a quiet filled field with its `Ctrl+K`, notifications, profile) over the content; the bar has no edge at rest and draws its hairline once the page scrolls under it. At 390 px: mark
 only, search icon, notifications and profile; the space switcher moves into the profile menu, and the navigation becomes
 a bottom bar `h-14` of at most 5 icon + label items. Guests get a bar with the wordmark, `UniversityMark` and public links, and the footer
-(`SiteFooter`: the two marks) under the page. Auth pages: the form on the paper beside a plain ink panel from lg. The university's navy artwork
+(`SiteFooter`: the two marks and the two public links) under the page. Auth pages: the form on the paper beside a plain ink panel from lg. The university's navy artwork
 switches to white in dark mode, including system mode before hydration. Content sits in `mx-auto w-full max-w-6xl`.
 
 **Focus layout**: no navigation. Top bar (sticky, like the side panels): back, context title (`text-lg`,
@@ -171,7 +176,9 @@ truncated), save status, actions right. Used by the activity player, attempt, ac
 Every data region renders exactly one of the kit's four states:
 
 1. Loading: a skeleton of the final layout (`bg-muted`, static); no page spinner, `animate-spin` only in a button.
-2. Empty: one sentence on what will appear here, plus the create action when the user is allowed to create.
+2. Empty: one sentence on what will appear here, plus the create action when the user is allowed to create, in
+   the middle of a quiet field as wide as the list (`EmptyState`; `ListState` draws it). A "none" fact inside a
+   section that has other content stays a muted sentence.
 3. No matches: shown when a filter is in the URL. One sentence plus a "Reset filters" action.
 4. Error / no access: the `ApiError` message from the code map plus "Retry"; a 403 is shown in place, same URL.
 

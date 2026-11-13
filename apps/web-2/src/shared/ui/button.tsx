@@ -7,9 +7,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-highlight text-highlight-foreground shadow-xs hover:bg-[color-mix(in_oklab,var(--highlight),black_12%)]",
+        default: "bg-highlight text-highlight-foreground shadow-button hover:bg-[color-mix(in_oklab,var(--highlight),black_10%)] active:bg-[color-mix(in_oklab,var(--highlight),black_16%)]",
         outline:
-          "border-[color-mix(in_oklab,var(--input),var(--background)_35%)] bg-transparent hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
+          "border-control-border bg-card shadow-control hover:border-[color-mix(in_oklab,var(--input),var(--background)_20%)] hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:

@@ -29,7 +29,7 @@ export function TopBar({ session, workspace }: { session: SessionInfo | null; wo
   // query only: the server never sees the hash (#main after the skip link), so with it the link would not hydrate.
   const back = returnTo(useLocation({ select: location => location.pathname + location.searchStr }))
   return (
-    <header className={`sticky top-0 z-30 shrink-0 bg-background ${session ? '' : 'border-b'}`}>
+    <header className={`sticky top-0 z-30 shrink-0 border-b bg-background ${session ? 'ab-topbar' : ''}`}>
       <div className={`mx-auto flex h-14 items-center gap-2 px-2 ${session ? 'md:px-6' : 'max-w-6xl md:px-8'}`}>
         <RouterLink
           to="/"

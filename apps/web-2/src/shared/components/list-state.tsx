@@ -4,6 +4,7 @@ import { m } from '#/paraglide/messages'
 import { presentError } from '#/shared/i18n/errors'
 import { Button } from '#/shared/ui/button'
 
+import { EmptyState } from './empty-state'
 import { ErrorAlert } from './error-alert'
 import { ListSkeleton } from './list-skeleton'
 import { listStatus, type ListStatusInput } from './list-status'
@@ -38,17 +39,20 @@ export function ListState({ emptyText, emptyAction, onResetFilters, onRetry, chi
     )
   const noMatches = status === 'no-matches'
   return (
-    <div className="flex flex-col items-start gap-4 pb-6">
-      {/* The text may quote what was typed (a search): a long unbroken query wraps instead of widening the page. */}
-      <p className="max-w-prose text-base wrap-anywhere text-muted-foreground in-data-[density=compact]:text-sm">
-        {noMatches ? m.ui_no_matches() : emptyText}
-      </p>
-      {noMatches && onResetFilters ? (
-        <Button variant="outline" onClick={onResetFilters}>
-          {m.ui_reset_filters()}
-        </Button>
-      ) : null}
-      {noMatches ? null : emptyAction}
-    </div>
+    <EmptyState
+      action={
+        noMatches ? (
+          onResetFilters ? (
+            <Button variant="outline" onClick={onResetFilters}>
+              {m.ui_reset_filters()}
+            </Button>
+          ) : null
+        ) : (
+          emptyAction
+        )
+      }
+    >
+      {noMatches ? m.ui_no_matches() : emptyText}
+    </EmptyState>
   )
 }

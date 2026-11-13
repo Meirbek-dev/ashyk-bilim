@@ -3,10 +3,12 @@
 //
 //   just shoot [--slot N] [--pages file.json] [--page name=/path ...] [--as <login>] [--filter <regex>]
 //              [--widths 1440,390] [--modes light,dark] [--label after] [--ref <git-ref>] [--locale kk|en]
-//              [--size large|larger]
+//              [--size large|larger] [--theme modern-minimal] [--base http://localhost:3111]
 //
 // Pages: `--pages` is a JSON list of { "name", "path", "as"? } (`as`: a username or email, signed in through the
 // dev-only /auth/dev-login; none: `--as`, else a guest). `--page name=/path` adds one more.
+// `--theme modern-minimal` shows the default palette on an account with a saved theme (`users.theme`).
+// `--base` shoots another dev server (a worktree's `vp dev` against this slot's API) instead of the slot's own.
 // Each shot: load, `html[data-mode]`, wait until no `[data-slot=skeleton]` remains (never `networkidle`: the
 // /me/events stream keeps the network busy), then the page in slices of two viewport heights, so a tall page stays
 // legible when an image is shrunk for reading: tmp/shots/<label>/<name>-<width>-<mode>[-<n>].png.
@@ -38,6 +40,8 @@ function parse(argv: string[]) {
     ref: '',
     locale: '',
     size: '',
+    theme: '',
+    base: '',
   }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i] ?? ''
@@ -60,6 +64,8 @@ function parse(argv: string[]) {
     else if (arg === '--label') o.label = value()
     else if (arg === '--locale') o.locale = value()
     else if (arg === '--size') o.size = value()
+    else if (arg === '--theme') o.theme = value()
+    else if (arg === '--base') o.base = value()
     else if (arg === '--ref') o.ref = value()
     else die(`unknown argument ${arg} (see the header of infra/dev/shoot.ts)`)
   }
@@ -113,13 +119,13 @@ async function serveRef(ref: string, slot: number): Promise<{ base: string; stop
 
 async function main(): Promise<void> {
   const o = parse(process.argv.slice(2))
-  if (!readManifest(String(o.slot))) die(`slot ${o.slot} is not running (just stack up ${o.slot})`)
+  if (!o.base && !readManifest(String(o.slot))) die(`slot ${o.slot} is not running (just stack up ${o.slot})`)
   const pages = o.pages.map(page => ({ ...page, as: page.as ?? o.as })).filter(page => o.filter.test(page.name))
   const cookies = new Map<string, string>()
   for (const login of new Set(pages.map(page => page.as).filter(Boolean)))
     cookies.set(login, (await devLogin(login, o.slot)).cookie.replace(/^ab_session=/, ''))
   const server = o.ref ? await serveRef(o.ref, o.slot) : null
-  const base = server?.base ?? `http://localhost:${slotPorts(o.slot).web2}`
+  const base = server?.base ?? (o.base || `http://localhost:${slotPorts(o.slot).web2}`)
   const out = join(root, 'tmp/shots', o.label)
   mkdirSync(out, { recursive: true })
   // Playwright from web-2's dependencies (the root workspace has none).
@@ -129,7 +135,17 @@ async function main(): Promise<void> {
     for (const page of pages)
       for (const mode of o.modes)
         for (const width of o.widths)
-          await shot(browser, { page, mode, width, base, out, cookie: cookies.get(page.as), locale: o.locale, size: o.size })
+          await shot(browser, {
+            page,
+            mode,
+            width,
+            base,
+            out,
+            cookie: cookies.get(page.as),
+            locale: o.locale,
+            size: o.size,
+            theme: o.theme,
+          })
   } finally {
     await browser.close()
     server?.stop()
@@ -148,9 +164,14 @@ type ShotArgs = {
   locale: string
   /** The web's ab_size cookie (settings, text size; none: normal). */
   size: string
+  /** `html[data-theme]` set after load (none: the account's own). */
+  theme: string
 }
 
-async function shot(browser: import('playwright').Browser, { page, mode, width, base, out, cookie, locale, size }: ShotArgs) {
+async function shot(
+  browser: import('playwright').Browser,
+  { page, mode, width, base, out, cookie, locale, size, theme }: ShotArgs,
+) {
   const height = width > 800 ? 900 : 844
   const context = await browser.newContext({
     viewport: { width, height },
@@ -166,6 +187,7 @@ async function shot(browser: import('playwright').Browser, { page, mode, width, 
   try {
     await tab.goto(base + page.path, { waitUntil: 'load', timeout: 60_000 })
     await tab.evaluate(value => document.documentElement.setAttribute('data-mode', value), mode)
+    if (theme) await tab.evaluate(value => document.documentElement.setAttribute('data-theme', value), theme)
     await tab
       .waitForFunction(() => !document.querySelector('[data-slot=skeleton]'), null, { timeout: 30_000 })
       .catch(() => flags.push('SKELETON'))

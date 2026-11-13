@@ -14,7 +14,7 @@ export const linkVariants = {
   /** A tab that is a route: the active one carries aria-current="page". */
   tab: '-mb-px inline-flex min-h-11 shrink-0 items-center border-b-2 border-transparent px-0.5 text-sm whitespace-nowrap text-muted-foreground transition-colors duration-150 hover:text-foreground current:border-highlight current:font-medium current:text-foreground',
   /** A sidebar item of the app shell: icon + label; the current section is highlighted. */
-  nav: 'relative flex min-h-control items-center gap-3 rounded-md px-3 py-1 text-sm transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground current:bg-highlight-soft current:font-medium current:text-sidebar-accent-foreground [&_svg]:size-4.5 [&_svg]:shrink-0 [&_svg]:opacity-80 current:[&_svg]:text-link current:[&_svg]:opacity-100 [&_svg]:stroke-[1.75]',
+  nav: 'relative flex min-h-10 items-center gap-3 rounded-md px-3 py-1 text-sm text-sidebar-foreground transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground current:bg-highlight-soft current:font-medium current:text-sidebar-accent-foreground [&_svg]:size-4.5 [&_svg]:shrink-0 [&_svg]:opacity-70 hover:[&_svg]:opacity-100 current:[&_svg]:text-link current:[&_svg]:opacity-100 [&_svg]:stroke-[1.75]',
   /** A row of a section nav or a course's contents on the paper: the same anatomy as `nav`, in the page's own colours. */
   contents:
     'relative flex min-h-control items-center gap-3 rounded-md px-3 py-1.5 text-sm transition-colors duration-150 hover:bg-accent hover:text-accent-foreground current:bg-accent current:font-medium current:text-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0',
