@@ -135,9 +135,9 @@ export function attemptItems(items: AssessmentItem[], attempt: Pick<StudentSubmi
 export const unanswered = (items: AssessmentItem[], answers: Record<string, ItemAnswer>) =>
   items.map((item, index) => ({ item, number: index + 1 })).filter(({ item }) => isBlank(answers[item.id], item.body))
 
-/** Seconds left on the server's clock: `time_remaining_seconds` was true when the answer arrived. */
+/** The last tick can predate a fresh server read; that must never add time to the server's remainder. */
 export const secondsLeft = (remaining: number, receivedAtMs: number, nowMs: number) =>
-  Math.max(0, Math.ceil(remaining - (nowMs - receivedAtMs) / 1000))
+  Math.max(0, Math.ceil(remaining - Math.max(0, nowMs - receivedAtMs) / 1000))
 
 /** When the server's clock reaches zero (unix seconds, to the minute: due dates are set to the minute). */
 export const clockEndsAt = (remaining: number, receivedAtMs: number) =>

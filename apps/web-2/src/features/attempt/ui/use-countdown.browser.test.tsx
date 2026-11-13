@@ -46,3 +46,23 @@ test('B-ATT-14 countdown keeps ticking during frequent answer renders and stops 
     vi.useRealTimers()
   }
 })
+
+test('a fresh server clock never gains time from a stale tick after an untimed attempt', () => {
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] })
+  const host = document.createElement('div')
+  const root = createRoot(host)
+  const render = (remaining: number | null) =>
+    flushSync(() => root.render(<Clock remaining={remaining} receivedAt={Date.now()} revision={0} />))
+  try {
+    render(null)
+    flushSync(() => vi.advanceTimersByTime(3_600_000))
+    render(5)
+    expect(host.textContent).toBe('5')
+    for (let second = 0; second < 5; second++) flushSync(() => vi.advanceTimersByTime(1000))
+    expect(host.textContent).toBe('0')
+    expect(vi.getTimerCount()).toBe(0)
+  } finally {
+    flushSync(() => root.unmount())
+    vi.useRealTimers()
+  }
+})
