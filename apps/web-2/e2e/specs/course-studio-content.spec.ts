@@ -155,7 +155,12 @@ test('B-CST-11 the keyboard moves an activity and a chapter; the order survives 
     chapters: [{ name: 'Глава 1', pages: [{ name: 'Первый' }, { name: 'Второй' }] }, { name: 'Глава 2' }],
   })
   await page.goto(content(made.course.id))
-  const links = page.getByRole('main').getByRole('listitem').getByRole('link')
+  // The activity links; each chapter's foot also links to the DOT import.
+  const links = page
+    .getByRole('main')
+    .getByRole('listitem')
+    .getByRole('link')
+    .filter({ hasNotText: m.studio_activity_from_excel({}, ru) })
   await expect(links).toHaveText(['Первый', 'Второй'])
   await dragByKeyboard(page.getByRole('button', { name: m.studio_drag_named({ name: 'Первый' }, ru) }), 'ArrowDown')
   await expect(links).toHaveText(['Второй', 'Первый'])

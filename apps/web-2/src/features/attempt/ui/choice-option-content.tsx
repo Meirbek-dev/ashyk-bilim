@@ -24,7 +24,8 @@ export function ChoiceOptionContent({ option, number, src }: OptionProps) {
           {text}
         </span>
       ) : null}
-      <ItemMedia media={media} src={src} />
+      {/* Inside the option's label: no zoom button there (a second control of the label). */}
+      <ItemMedia media={media} src={src} zoom={false} />
     </div>
   )
 }

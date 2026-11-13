@@ -11467,6 +11467,10 @@ export type CommitImportData = {
          * Retry-safe replay key
          */
         'Idempotency-Key'?: string | null;
+        /**
+         * Replace/append: the target test's `version`; stale → 412 (without it nothing is compared)
+         */
+        'If-Match'?: number | null;
     };
     path: {
         /**
@@ -11487,6 +11491,10 @@ export type CommitImportErrors = {
      * The import expired
      */
     410: Problem;
+    /**
+     * Replace/append: the test changed since it was loaded (`If-Match`)
+     */
+    412: Problem;
 };
 
 export type CommitImportError = CommitImportErrors[keyof CommitImportErrors];
@@ -14381,6 +14389,10 @@ export type CreateImportErrors = {
      * Upload not finalized or already used
      */
     409: Problem;
+    /**
+     * `rate-limited`: more than 10 imports a minute (`retry_after_seconds`)
+     */
+    429: Problem;
 };
 
 export type CreateImportError = CreateImportErrors[keyof CreateImportErrors];

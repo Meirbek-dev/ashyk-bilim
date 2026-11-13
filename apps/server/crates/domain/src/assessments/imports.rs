@@ -32,11 +32,16 @@ use crate::assessments::service::{
     ensure_editable,
 };
 use crate::identity::Actor;
+use crate::identity::rate_limit::RateLimiter;
 
 pub const IMPORT_PURPOSE: &str = "assessment-import";
 pub const IMAGE_PURPOSE: &str = "assessment-image";
 /// An import nobody committed goes after a day (spec Q-7)...
 const UNCOMMITTED_TTL: Duration = Duration::from_hours(24);
+/// Imports one person may create per minute: each reads a workbook of up
+/// to 20 MB (docs/XLSX-TEST-IMPORT.md 8).
+const CREATE_LIMIT: u32 = 10;
+const CREATE_WINDOW: Duration = Duration::from_mins(1);
 /// ...a committed one after 30 days (the audit event stays).
 const COMMITTED_TTL: Duration = Duration::from_hours(24 * 30);
 /// Staged pictures: their import row holds them; this clock only runs once
@@ -412,6 +417,7 @@ pub struct ImportsService {
     pool: PgPool,
     storage: Arc<StorageClient>,
     assessments: AssessmentsService,
+    limiter: Option<RateLimiter>,
 }
 
 impl ImportsService {
@@ -425,7 +431,32 @@ impl ImportsService {
             pool,
             storage,
             assessments,
+            limiter: None,
         }
+    }
+
+    /// Caps imports per person ([`CREATE_LIMIT`] a minute); without it
+    /// (unit tests) nothing is counted.
+    #[must_use]
+    pub fn with_limiter(mut self, limiter: RateLimiter) -> Self {
+        self.limiter = Some(limiter);
+        self
+    }
+
+    async fn check_rate(&self, actor: &Actor) -> Result<()> {
+        let Some(limiter) = &self.limiter else {
+            return Ok(());
+        };
+        let key = format!("assessment_import_rl:{}", actor.user_id);
+        if limiter.check(&key, CREATE_LIMIT, CREATE_WINDOW).await? {
+            return Ok(());
+        }
+        let retry = limiter.retry_after(&key, CREATE_WINDOW).await?;
+        Err(Error::app_with_details(
+            ErrorCode::RateLimited,
+            "too many spreadsheet imports; wait a minute",
+            serde_json::json!({ "retry_after_seconds": retry }),
+        ))
     }
 
     /// UX-311: the authoring gate on its own, before the handler reads a body.
@@ -462,6 +493,7 @@ impl ImportsService {
         unescape_newlines: bool,
     ) -> Result<AssessmentImport> {
         self.require_course(actor, course_id).await?;
+        self.check_rate(actor).await?;
         let file_name = ab_core::required_str("file_name", file_name)?;
         let file_name: String = file_name.chars().take(255).collect();
         let id = Uuid::now_v7();

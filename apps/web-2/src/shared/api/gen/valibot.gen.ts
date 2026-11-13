@@ -8335,7 +8335,8 @@ export const vReparseImportResponse = vAssessmentImport;
 export const vCommitImportBody = vCommitImportRequest;
 
 export const vCommitImportHeaders = v.object({
-    'Idempotency-Key': v.nullish(v.string())
+    'Idempotency-Key': v.nullish(v.string()),
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
 });
 
 export const vCommitImportPath = v.object({

@@ -3,7 +3,7 @@ import * as v from 'valibot'
 
 import type { ImportSettings, PlannedItem } from '#/shared/api/gen/types.gen'
 
-import { commitBody, commitDefaults, commitFormSchema, dotQuotas, type CommitForm } from './commit'
+import { commitBody, commitDefaults, commitFormSchema, commitHeaders, dotQuotas, type CommitForm } from './commit'
 
 const item = (row: number, draw_group: string | null = null): PlannedItem => ({
   row,
@@ -45,6 +45,7 @@ describe('the create form', () => {
       draw_count: '30',
       partial_credit: false,
       passing_score: '50',
+      map_concepts: false,
     })
     expect(commitDefaults({ settings: null }, undefined).title).toBe('')
   })
@@ -89,7 +90,7 @@ describe('the create form', () => {
   })
 
   test('an existing test gets only the target, unless the file settings are applied', () => {
-    const into = { into: 'test', assessmentId: 'as-1', activityId: 'ac-1' } as const
+    const into = { into: 'test', assessmentId: 'as-1', activityId: 'ac-1', version: 4 } as const
     const base = commitDefaults(imported, undefined)
     expect(commitBody({ ...base, mode: 'append' }, imported, into)).toEqual({
       target: { mode: 'append', assessment_id: 'as-1' },
@@ -100,6 +101,9 @@ describe('the create form', () => {
       max_attempts: 3,
       time_limit_seconds: 3300,
     })
+    // The version as loaded guards the replace; a new test has nothing to compare.
+    expect(commitHeaders(into, 'k')).toEqual({ 'Idempotency-Key': 'k', 'If-Match': 4 })
+    expect(commitHeaders({ into: 'new' }, 'k')).toEqual({ 'Idempotency-Key': 'k' })
   })
 })
 
@@ -124,7 +128,7 @@ describe('the create form schema', () => {
     expect(failing({ draw_count: '250' })).toEqual(['draw_count'])
     expect(failing({ draw_count: '301' })).toEqual(['draw_count'])
     // An existing test needs no title or chapter, and checks the (hidden) settings only when it takes them.
-    const into = commitFormSchema({ into: 'test', assessmentId: 'a', activityId: 'b' }, 3)
+    const into = commitFormSchema({ into: 'test', assessmentId: 'a', activityId: 'b', version: 1 }, 3)
     const loading = { ...valid, title: '', chapter_id: '', draw_count: '30' }
     expect(v.safeParse(into, loading).success).toBe(true)
     expect(v.safeParse(into, { ...loading, apply_settings: true }).success).toBe(false)

@@ -249,6 +249,9 @@ describe('complete answers', () => {
     }
     expect(isBlank(two, matching)).toBe(true)
     expect(isBlank({ ...two, matches: [...two.matches, { left: 'c', right: '3' }] }, matching)).toBe(false)
+    // «Без пары» (an imported test's left element that goes with none) is an answer: stored as an empty right.
+    expect(isBlank({ ...two, matches: [...two.matches, { left: 'c', right: '' }] }, matching)).toBe(false)
+    expect(answerText(matching, { kind: 'matching', matches: [{ left: 'c', right: '' }] })).toBe('c → —')
     const form: ItemBody = {
       kind: 'form',
       prompt: '',

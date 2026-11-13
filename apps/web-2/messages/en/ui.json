@@ -4,6 +4,8 @@
   "ui_toast_region": "Notifications",
   "ui_save": "Save",
   "ui_retry": "Retry",
+  "ui_picture_failed": "The picture did not load.",
+  "ui_picture_zoom": "Open the picture full size",
   "ui_show_more": "Show more",
   "ui_no_matches": "Nothing matches these filters.",
   "ui_chart_all_zero": "Every value is 0 so far.",

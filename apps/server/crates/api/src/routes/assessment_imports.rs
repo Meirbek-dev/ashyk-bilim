@@ -3,6 +3,7 @@
 
 use ab_core::Error;
 use ab_core::id::{AssessmentId, CourseId};
+use ab_db::versions::Versioned;
 use axum::Json;
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
@@ -10,10 +11,10 @@ use axum::response::{IntoResponse, Redirect, Response};
 use uuid::Uuid;
 
 use crate::dto::assessment_imports::{
-    AssessmentImport, CommitImportRequest, CreateImportRequest, ReparseImportRequest,
+    AssessmentImport, CommitImportRequest, CreateImportRequest, ImportTarget, ReparseImportRequest,
 };
 use crate::error::{ApiResult, Problem};
-use crate::extract::{CurrentActor, Path, ValidJson, idempotent};
+use crate::extract::{CurrentActor, Path, ValidJson, idempotent, require_if_match};
 use crate::state::AppState;
 
 const XLSX: &str = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -33,6 +34,8 @@ const XLSX: &str = "application/vnd.openxmlformats-officedocument.spreadsheetml.
          content_type = "application/problem+json"),
         (status = 409, description = "Upload not finalized or already used", body = Problem,
          content_type = "application/problem+json"),
+        (status = 429, description = "`rate-limited`: more than 10 imports a minute (`retry_after_seconds`)",
+         body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn create_import(
@@ -128,6 +131,7 @@ pub async fn discard_import(
     params(
         ("import_id" = Uuid, Path, description = "Import id"),
         ("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key"),
+        ("If-Match" = Option<i32>, Header, description = "Replace/append: the target test's `version`; stale → 412 (without it nothing is compared)"),
     ),
     request_body = CommitImportRequest,
     responses(
@@ -136,6 +140,8 @@ pub async fn discard_import(
          body = Problem, content_type = "application/problem+json"),
         (status = 410, description = "The import expired", body = Problem,
          content_type = "application/problem+json"),
+        (status = 412, description = "Replace/append: the test changed since it was loaded (`If-Match`)",
+         body = Problem, content_type = "application/problem+json"),
     )
 )]
 pub async fn commit_import(
@@ -147,6 +153,12 @@ pub async fn commit_import(
 ) -> ApiResult<Response> {
     state.imports.require_import(&actor, id).await?;
     let request = ValidJson::<CommitImportRequest>::parse(&body)?;
+    // Replace/append write into a test someone may be editing: its version as loaded must still hold.
+    if let ImportTarget::Replace { assessment_id } | ImportTarget::Append { assessment_id } =
+        &request.target
+    {
+        require_if_match(&state.pool, Versioned::Assessment(*assessment_id), &headers).await?;
+    }
     idempotent(
         state.pool.clone(),
         actor.user_id,

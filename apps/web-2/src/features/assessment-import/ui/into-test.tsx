@@ -34,7 +34,7 @@ export function IntoTest({ courseId, activityId }: { courseId: string; activityI
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-gutter">
         <ImportFlow
           courseId={courseId}
-          destination={{ into: 'test', activityId, assessmentId: test.id }}
+          destination={{ into: 'test', activityId, assessmentId: test.id, version: test.version }}
           chapters={[]}
           chapterId={undefined}
           editable={editable}

@@ -12,16 +12,26 @@ type MatchingProps = {
   disabled: boolean
 }
 
+// «Без пары» in the select; stored as an empty right value, which the grader reads as «left unplaced» (DOT `k-0`).
+const NONE = '__no_match__'
+
+const selectValue = (right: string | undefined) => {
+  if (right === undefined) return ''
+  return right === '' ? NONE : right
+}
+
 /**
  * Matching: each left element gets a pick from the right column (shuffled by the server, never the pairing). The right
- * column may hold extra values, and a left element may have no pair: «без пары» is a valid pick, not just a placeholder.
+ * column may hold extra values, and a left element may have no pair: «Без пары» is a pick of its own, so a question
+ * with such an element can be answered in full, while the placeholder still means «not answered yet».
  */
 export function MatchingItem({ body, answer, onChange, disabled }: MatchingProps) {
   const id = useId()
   const matches = answer?.kind === 'matching' ? (answer.matches ?? []) : []
   const pick = (left: string, right: string) => {
     const others = matches.filter(match => match.left !== left)
-    onChange({ kind: 'matching', matches: right ? [...others, { left, right }] : others })
+    const chosen = right === NONE ? '' : right
+    onChange({ kind: 'matching', matches: right ? [...others, { left, right: chosen }] : others })
   }
   return (
     <FieldGroup>
@@ -36,11 +46,12 @@ export function MatchingItem({ body, answer, onChange, disabled }: MatchingProps
           <NativeSelect
             id={`${id}-${left.id}`}
             className="w-full"
-            value={matches.find(match => match.left === left.id)?.right ?? ''}
+            value={selectValue(matches.find(match => match.left === left.id)?.right)}
             disabled={disabled}
             onChange={event => pick(left.id, event.target.value)}
           >
-            <NativeSelectOption value="">{m.attempt_match_none()}</NativeSelectOption>
+            <NativeSelectOption value="">{m.attempt_match_pick()}</NativeSelectOption>
+            <NativeSelectOption value={NONE}>{m.attempt_match_none()}</NativeSelectOption>
             {body.right.map(right => (
               <NativeSelectOption key={right.id} value={right.id}>
                 {right.text}

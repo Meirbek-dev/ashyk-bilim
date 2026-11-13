@@ -1,6 +1,7 @@
 //! Tests from DOT spreadsheets (docs/XLSX-TEST-IMPORT.md): upload, preview
 //! with issues, commit into a new test, idempotent replay, pictures, the
-//! question bank in a learner's attempt, export round-trip, access.
+//! question bank in a learner's attempt, export round-trip, access; a
+//! replace under a stale `If-Match` and the per-minute cap on imports.
 //! Every workbook here is synthetic, written by `ab_xlsx::write`.
 #![allow(
     clippy::unwrap_used,
@@ -11,7 +12,8 @@
 
 use ab_testkit::{MintedSession, TestApp};
 use ab_xlsx::{DotKind, DotOption, DotQuestion, DotTest, Image, ParseOptions};
-use axum::http::{StatusCode, header};
+use axum::body::Body;
+use axum::http::{Request, StatusCode, header};
 use base64::Engine as _;
 use serde_json::{Value, json};
 use sqlx::PgPool;
@@ -414,6 +416,97 @@ async fn a_broken_workbook_is_invalid_and_cannot_be_committed(pool: PgPool) {
             .status,
         StatusCode::NOT_FOUND
     );
+}
+
+#[ab_testdb::test]
+async fn replace_checks_the_loaded_version_and_imports_are_capped(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = course(&app, &teacher).await;
+    let imports = format!("/api/v2/courses/{course_id}/assessment-imports");
+    let create = async || {
+        let upload = upload_xlsx(&app, &teacher, &workbook()).await;
+        let created = app
+            .post_as(
+                &teacher,
+                &imports,
+                &json!({ "upload_id": upload, "file_name": "a.xlsx" }),
+            )
+            .await;
+        assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
+        created.json()["id"].as_str().unwrap().to_owned()
+    };
+    let first = create().await;
+    let committed = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/assessment-imports/{first}/commit"),
+            &json!({ "target": { "mode": "new", "chapter_id": chapter_id } }),
+        )
+        .await;
+    assert_eq!(committed.status, StatusCode::OK, "{}", committed.text());
+    let assessment_id = committed.json()["result"]["assessment_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let version = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{assessment_id}"))
+        .await
+        .json()["version"]
+        .as_i64()
+        .unwrap();
+
+    // Someone changed the test since it was loaded: the replace is refused.
+    let second = create().await;
+    let replace = |if_match: i64| {
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/v2/assessment-imports/{second}/commit"))
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::COOKIE, &teacher.cookie)
+            .header(header::IF_MATCH, format!("\"{if_match}\""))
+            .body(Body::from(
+                json!({ "target": { "mode": "replace", "assessment_id": assessment_id } })
+                    .to_string(),
+            ))
+            .unwrap()
+    };
+    let stale = app.send(replace(version - 1)).await;
+    assert_eq!(
+        stale.status,
+        StatusCode::PRECONDITION_FAILED,
+        "{}",
+        stale.text()
+    );
+    let replaced = app.send(replace(version)).await;
+    assert_eq!(replaced.status, StatusCode::OK, "{}", replaced.text());
+
+    // Ten imports a minute (two made above; an attempt with a wrong upload counts too).
+    for _ in 0..8 {
+        let refused = app
+            .post_as(
+                &teacher,
+                &imports,
+                &json!({ "upload_id": uuid::Uuid::now_v7(), "file_name": "a.xlsx" }),
+            )
+            .await;
+        assert_ne!(refused.status, StatusCode::TOO_MANY_REQUESTS);
+    }
+    let capped = app
+        .post_as(
+            &teacher,
+            &imports,
+            &json!({ "upload_id": uuid::Uuid::now_v7(), "file_name": "a.xlsx" }),
+        )
+        .await;
+    assert_eq!(
+        capped.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        capped.text()
+    );
+    assert_eq!(capped.json()["code"], "rate-limited");
+    assert!(capped.headers.contains_key(header::RETRY_AFTER));
 }
 
 /// Acceptance on a real DOT file kept outside the repository (it may be a

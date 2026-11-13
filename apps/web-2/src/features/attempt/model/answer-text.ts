@@ -8,9 +8,9 @@ import type { CorrectAnswer, ItemAnswer, ItemBody } from '#/shared/api/gen/types
 const optionText = (body: ItemBody, id: string) =>
   body.kind === 'choice' ? (body.options?.find(option => option.id === id)?.text ?? id) : id
 
-// A left element that goes with nothing (an imported test's `k-0`) reads «A → —».
+// A left element that goes with nothing (an imported test's `k-0`, or the learner's «Без пары») reads «A → —».
 const pairs = (list: { left: string; right: string | null }[]) =>
-  list.map(pair => `${pair.left} → ${pair.right ?? '—'}`).join('; ')
+  list.map(pair => `${pair.left} → ${pair.right || '—'}`).join('; ')
 
 /** The learner's answer as one line; empty when there is none. */
 export function answerText(body: ItemBody, answer: ItemAnswer | null | undefined): string {

@@ -29611,6 +29611,19 @@ expression: json
                 "null"
               ]
             }
+          },
+          {
+            "description": "Replace/append: the target test's `version`; stale → 412 (without it nothing is compared)",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
           }
         ],
         "requestBody": {
@@ -29653,6 +29666,16 @@ expression: json
               }
             },
             "description": "The import expired"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Replace/append: the test changed since it was loaded (`If-Match`)"
           }
         },
         "summary": "Create the questions: a new draft test, or replace / extend a draft\none. Repeating it answers with the test already made.",
@@ -34653,6 +34676,16 @@ expression: json
               }
             },
             "description": "Upload not finalized or already used"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "`rate-limited`: more than 10 imports a minute (`retry_after_seconds`)"
           }
         },
         "summary": "Read an uploaded spreadsheet (an `assessment-import` upload) and show\nwhat it would become. Nothing is created until `commit`.",

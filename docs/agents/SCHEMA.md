@@ -902,11 +902,12 @@ An uploaded DOT test spreadsheet: parse result (plan, issues) until committed in
 - Primary key `assessment_imports_pkey`: `PRIMARY KEY (id)`
 - Foreign key `assessment_imports_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `assessment_imports_created_by_fkey`: `FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL`
-- Foreign key `assessment_imports_result_assessment_id_fkey`: `FOREIGN KEY (result_assessment_id) REFERENCES assessments(id) ON DELETE SET NULL`
+- Foreign key `assessment_imports_result_assessment_id_fkey`: `FOREIGN KEY (result_assessment_id, course_id) REFERENCES assessments(id, course_id) ON DELETE SET NULL (result_assessment_id)`
 - Foreign key `assessment_imports_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 - Check `assessment_imports_file_name_check`: `CHECK (((length(file_name) >= 1) AND (length(file_name) <= 255)))`
 - Check `assessment_imports_issues_check`: `CHECK ((jsonb_typeof(issues) = 'array'::text))`
 - Check `assessment_imports_issues_truncated_check`: `CHECK ((issues_truncated >= 0))`
+- Check `assessment_imports_parsed_shape`: `CHECK (((parsed IS NULL) OR ((jsonb_typeof(parsed) = 'object'::text) AND (jsonb_typeof((parsed -> 'items'::text)) = 'array'::text) AND (jsonb_typeof((parsed -> 'settings'::text)) = 'object'::text))))`
 - Check `assessment_imports_status_check`: `CHECK ((status = ANY (ARRAY['parsing'::text, 'ready'::text, 'invalid'::text, 'committed'::text, 'discarded'::text, 'failed'::text])))`
 - Index `assessment_imports_course_idx`: `CREATE INDEX assessment_imports_course_idx ON learning.assessment_imports USING btree (course_id)`
 - Index `assessment_imports_created_by_idx`: `CREATE INDEX assessment_imports_created_by_idx ON learning.assessment_imports USING btree (created_by)`

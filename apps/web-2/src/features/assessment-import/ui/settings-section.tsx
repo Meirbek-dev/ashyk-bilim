@@ -45,6 +45,14 @@ export function SettingsSection({ form, imported, isNew, chapters }: SettingsSec
           ) : null
         }
       </form.Subscribe>
+      <form.AppField name="map_concepts">
+        {field => (
+          <field.SwitchField
+            label={m.assessment_import_field_concepts()}
+            description={m.assessment_import_concepts_hint()}
+          />
+        )}
+      </form.AppField>
       {hasEscapes(imported) ? <NewlinesSwitch imported={imported} /> : null}
     </section>
   )

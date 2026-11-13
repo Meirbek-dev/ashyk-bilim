@@ -170,7 +170,8 @@ impl AppState {
             platform: PlatformService::new(pool.clone()),
             search: SearchService::new(pool.clone()),
             usergroups: UsergroupsService::new(pool.clone()),
-            imports: ImportsService::new(pool.clone(), Arc::clone(&storage), assessments.clone()),
+            imports: ImportsService::new(pool.clone(), Arc::clone(&storage), assessments.clone())
+                .with_limiter(RateLimiter::new(sessions.redis())),
             assessments,
             courses,
             pool,

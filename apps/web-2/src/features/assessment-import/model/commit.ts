@@ -12,8 +12,13 @@ import type {
 // The "create" form of the preview: the file's row 1 as typed text (as DOT teachers know it: 0 means "no limit"), and
 // back to the commit body. Numbers are checked against the server's ranges here, so a refusal names the field.
 
-/** Where the questions go: a new test in a chapter, or an existing draft test of the course. */
-export type ImportDestination = { into: 'new' } | { into: 'test'; assessmentId: string; activityId: string }
+/**
+ * Where the questions go: a new test in a chapter, or an existing draft test of the course (its `version` as loaded:
+ * the commit's `If-Match`, so a test someone changed meanwhile is not overwritten).
+ */
+export type ImportDestination =
+  | { into: 'new' }
+  | { into: 'test'; assessmentId: string; activityId: string; version: number }
 
 export type CommitForm = {
   title: string
@@ -31,6 +36,8 @@ export type CommitForm = {
   draw_count: string
   partial_credit: boolean
   passing_score: string
+  /** After the commit, ask the AI to tag the questions with course concepts (suggestions await the teacher). */
+  map_concepts: boolean
 }
 
 /** The server's caps (MAX_ATTEMPTS, a day of time limit, MAX_DRAW). */
@@ -60,8 +67,15 @@ export function commitDefaults(
     draw_count: text(settings?.draw_count),
     partial_credit: false,
     passing_score: String(DEFAULT_PASSING_SCORE),
+    map_concepts: false,
   }
 }
+
+/** Idempotency, and an existing test's version as loaded (a stale one answers 412 `precondition-failed`). */
+export const commitHeaders = (destination: ImportDestination, idempotencyKey: string) =>
+  destination.into === 'test'
+    ? { 'Idempotency-Key': idempotencyKey, 'If-Match': destination.version }
+    : { 'Idempotency-Key': idempotencyKey }
 
 /** A blank, 0 or a value at or past `all` means "no limit": `null`. */
 function limit(value: string, all = Number.POSITIVE_INFINITY): number | null {
@@ -160,6 +174,7 @@ export function commitFormSchema(destination: ImportDestination, questions: numb
     chapter_id: isNew ? v.pipe(v.string(), v.minLength(1)) : v.string(),
     mode: v.picklist(['replace', 'append']),
     partial_credit: v.boolean(),
+    map_concepts: v.boolean(),
   }
   const checked = {
     ...base,

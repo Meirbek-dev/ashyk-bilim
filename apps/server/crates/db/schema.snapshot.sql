@@ -380,8 +380,9 @@ constraint assessment_imports assessment_imports_issues_check CHECK ((jsonb_type
 constraint assessment_imports assessment_imports_issues_not_null NOT NULL issues
 constraint assessment_imports assessment_imports_issues_truncated_check CHECK ((issues_truncated >= 0))
 constraint assessment_imports assessment_imports_issues_truncated_not_null NOT NULL issues_truncated
+constraint assessment_imports assessment_imports_parsed_shape CHECK (((parsed IS NULL) OR ((jsonb_typeof(parsed) = 'object'::text) AND (jsonb_typeof((parsed -> 'items'::text)) = 'array'::text) AND (jsonb_typeof((parsed -> 'settings'::text)) = 'object'::text))))
 constraint assessment_imports assessment_imports_pkey PRIMARY KEY (id)
-constraint assessment_imports assessment_imports_result_assessment_id_fkey FOREIGN KEY (result_assessment_id) REFERENCES assessments(id) ON DELETE SET NULL
+constraint assessment_imports assessment_imports_result_assessment_id_fkey FOREIGN KEY (result_assessment_id, course_id) REFERENCES assessments(id, course_id) ON DELETE SET NULL (result_assessment_id)
 constraint assessment_imports assessment_imports_status_check CHECK ((status = ANY (ARRAY['parsing'::text, 'ready'::text, 'invalid'::text, 'committed'::text, 'discarded'::text, 'failed'::text])))
 constraint assessment_imports assessment_imports_status_not_null NOT NULL status
 constraint assessment_imports assessment_imports_unescape_newlines_not_null NOT NULL unescape_newlines
@@ -1741,7 +1742,9 @@ BEGIN
             ('messages', ARRAY['body']),
             ('message_reports', ARRAY['reason', 'body_snapshot', 'resolution']),
             ('message_bans', ARRAY['reason']),
-            ('message_uploads', ARRAY['name'])
+            ('message_uploads', ARRAY['name']),
+            -- DOT imports (docs/XLSX-TEST-IMPORT.md): the file's name and text, as the uploads above.
+            ('assessment_imports', ARRAY['file_name', 'sheet_name', 'parsed', 'issues', 'error'])
         ) AS x(name, hidden)
         JOIN pg_class c ON c.relname = x.name
          AND c.relnamespace::regnamespace::name = ANY (ARRAY['public']::name[] || app_schemas())

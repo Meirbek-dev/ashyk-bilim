@@ -3063,6 +3063,7 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "activities_required_from_settings",
             "derived; goes with the settings key",
         ),
+        ("assessment_items_upload_ids", "derived"),
         ("assessment_versions_points", "derived"),
         ("blocks_upload_ids", "derived"),
         ("chapters_upload_ids", "derived"),
