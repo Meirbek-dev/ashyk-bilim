@@ -19,9 +19,7 @@ export function Contents({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        {/* Beside the page the top bar already names the course: the title stays for the sheet of narrow screens, which
-            is drawn outside the page's container and so never matches the query. */}
-        <p className="font-heading text-lg font-semibold wrap-anywhere @5xl:hidden">{state.title}</p>
+        <p className="font-heading text-lg font-semibold wrap-anywhere">{state.title}</p>
         <p className="flex items-baseline justify-between gap-2 text-sm text-muted-foreground tabular-nums">
           <span>{m.player_progress({ done, total })}</span>
           <span aria-hidden className="font-medium text-foreground">

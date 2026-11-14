@@ -32,7 +32,7 @@ export function RunList({ itemId, selected }: { itemId: string; selected: string
       </h2>
       {/* A typeset log: when, verdict, tests and the way in stand in the same columns down the list; narrow, a row is
           two lines, the date with its link over the verdict. */}
-      <ul className="grid divide-y border-y text-sm @md:grid-cols-[max-content_max-content_minmax(0,1fr)_max-content]">
+      <ul className="grid divide-y border-y text-sm @2xl:grid-cols-[max-content_max-content_minmax(max-content,1fr)_max-content]">
         {shown.map(run => {
           const status = runStatus[run.status]
           const open = run.id === selected
@@ -40,10 +40,10 @@ export function RunList({ itemId, selected }: { itemId: string; selected: string
           return (
             <li
               key={run.id}
-              className="col-span-full grid min-h-12 grid-cols-[minmax(0,1fr)_max-content] items-center gap-x-3 py-1 @md:grid-cols-subgrid @md:gap-x-6"
+              className="col-span-full grid min-h-12 grid-cols-[minmax(0,1fr)_max-content] items-center gap-x-3 py-1 @2xl:grid-cols-subgrid @2xl:gap-x-6"
             >
               <span className="text-muted-foreground tabular-nums">{when}</span>
-              <span className="col-span-2 row-start-2 flex flex-wrap items-center gap-x-4 pb-1.5 @md:contents">
+              <span className="col-span-2 row-start-2 flex flex-wrap items-center gap-x-4 pb-1.5 @2xl:contents">
                 <Verdict status={status} />
                 {run.total > 0 ? (
                   <span className="whitespace-nowrap text-muted-foreground tabular-nums">
@@ -60,7 +60,7 @@ export function RunList({ itemId, selected }: { itemId: string; selected: string
                 className={buttonVariants({
                   variant: 'ghost',
                   size: 'sm',
-                  className: 'col-start-2 row-start-1 justify-self-end @md:col-start-4',
+                  className: 'col-start-2 row-start-1 justify-self-end @2xl:col-start-4',
                 })}
               >
                 {m.code_run_results()}
