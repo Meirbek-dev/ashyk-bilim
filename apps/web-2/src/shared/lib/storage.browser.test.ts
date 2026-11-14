@@ -19,6 +19,18 @@ describe('storageItem (real Chromium storage)', () => {
 })
 
 describe('cookieItem (real Chromium cookies)', () => {
+  test('a malformed percent-encoded cookie falls back instead of crashing preferences', () => {
+    const mode = cookieItem('ab_test_malformed', v.picklist(['light', 'dark']))
+    document.cookie = 'ab_test_malformed=%E0%A4%A; path=/'
+    try {
+      expect(mode.get()).toBeNull()
+      mode.set('light')
+      expect(mode.get()).toBe('light')
+    } finally {
+      document.cookie = 'ab_test_malformed=; path=/; max-age=0'
+    }
+  })
+
   test('round-trips a value and reads a value outside the schema as null', () => {
     const mode = cookieItem('ab_test_mode', v.picklist(['light', 'dark']))
     mode.set('dark')

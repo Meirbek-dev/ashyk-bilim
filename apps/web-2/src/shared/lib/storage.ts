@@ -39,7 +39,12 @@ const readCookie = createIsomorphicFn()
       .split(';')
       .map(part => part.trim())
       .find(part => part.startsWith(prefix))
-    return raw === undefined ? undefined : decodeURIComponent(raw.slice(prefix.length))
+    if (raw === undefined) return undefined
+    try {
+      return decodeURIComponent(raw.slice(prefix.length))
+    } catch {
+      return undefined // A malformed preference cookie must still allow the page to render.
+    }
   })
 
 /**
