@@ -40,13 +40,13 @@ export function RunList({ itemId, selected }: { itemId: string; selected: string
           return (
             <li
               key={run.id}
-              className="col-span-full grid min-h-12 grid-cols-[minmax(0,1fr)_max-content] items-center gap-x-4 py-1 @md:grid-cols-subgrid"
+              className="col-span-full grid min-h-12 grid-cols-[minmax(0,1fr)_max-content] items-center gap-x-3 py-1 @md:grid-cols-subgrid @md:gap-x-6"
             >
               <span className="text-muted-foreground tabular-nums">{when}</span>
               <span className="col-span-2 row-start-2 flex flex-wrap items-center gap-x-4 pb-1.5 @md:contents">
                 <Verdict status={status} />
                 {run.total > 0 ? (
-                  <span className="text-muted-foreground tabular-nums">
+                  <span className="whitespace-nowrap text-muted-foreground tabular-nums">
                     {m.code_run_passed({ passed: run.passed, total: run.total })}
                   </span>
                 ) : null}

@@ -60,8 +60,7 @@ export function SettingsSection({
       {error && error !== edited ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
       {saveButton ? (
         <div>
-          {/* Quiet: a page stacks several sections, and a primary button in each would break "one per view". */}
-          <SubmitButton type="submit" variant="outline" pending={pending}>
+          <SubmitButton type="submit" pending={pending}>
             {submitLabel ?? m.ui_save()}
           </SubmitButton>
         </div>

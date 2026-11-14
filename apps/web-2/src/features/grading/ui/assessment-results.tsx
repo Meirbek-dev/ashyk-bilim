@@ -100,7 +100,7 @@ export function AssessmentResults({ activityId }: { activityId: string }) {
       </KpiStrip>
       {/* How well they did: the two outcomes beside the distribution they sum up. */}
       <div className={OUTCOMES}>
-        <div className="grid grid-cols-2 content-start gap-x-gutter gap-y-6 @3xl:grid-cols-1">
+        <div className="-mb-6 grid grid-cols-2 content-start gap-x-gutter @3xl:grid-cols-1">
           {/* Before the first graded work: a quiet dash, as the gradebook, not a headline «Нет оценки». */}
           <KpiTile
             label={m.grading_kpi_average()}
