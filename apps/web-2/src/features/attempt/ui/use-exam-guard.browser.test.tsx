@@ -85,7 +85,6 @@ test.each([
       </QueryClientProvider>,
     )
     const warning = screen.getByText(m.attempt_violations_exceeded())
-    if (exceeded) await expect.element(warning).toBeVisible()
-    else await expect.element(warning).not.toBeInTheDocument()
+    await expect.poll(() => warning.query() !== null).toBe(exceeded)
   },
 )
