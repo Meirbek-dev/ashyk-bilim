@@ -53,7 +53,7 @@ export function CourseItem({ course, level = 2 }: CourseItemProps) {
           <p className="line-clamp-2 pt-2 text-sm wrap-anywhere text-muted-foreground">{course.description}</p>
         ) : null}
         {state || course.certificate_offered ? (
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-2.5 text-xs text-muted-foreground">
+          <p className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2.5 text-xs text-muted-foreground">
             {state ? <span className="font-medium text-foreground">{stateLabels[state]()}</span> : null}
             {course.certificate_offered ? (
               <span className="flex items-center gap-1">
