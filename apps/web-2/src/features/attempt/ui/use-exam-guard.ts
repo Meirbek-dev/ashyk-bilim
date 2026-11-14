@@ -82,7 +82,12 @@ export function useExamGuard(policy: Policy, attempt: StudentSubmission) {
     active: on.length > 0,
     count: state?.violation_count ?? attempt.violation_count,
     threshold: state?.threshold ?? policy.violation_threshold,
-    exceeded: state?.exceeded ?? false,
+    // A reopened draft already carries violations; reloading must not hide the server's zero-score rule.
+    exceeded:
+      state?.exceeded ??
+      ((on.length > 0 || policy.devtools_detection) &&
+        policy.violation_threshold > 0 &&
+        attempt.violation_count >= policy.violation_threshold),
     needsFullscreen: on.includes('fullscreen') && !fullscreen,
     enterFullscreen,
   }
