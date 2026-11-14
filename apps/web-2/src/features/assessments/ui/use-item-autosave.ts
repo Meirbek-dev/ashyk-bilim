@@ -36,9 +36,15 @@ export function useItemAutosave(activityId: string, assessmentId: string, itemId
   useEffect(() => () => discardInvalid(), [])
 
   async function send() {
-    const body = unsaved.current
-    if (!body || sending.current) return
+    const next = unsaved.current
+    if (!next || sending.current) return
     unsaved.current = null
+    // Diff after the previous request settles: a newer edit may undo a field that request just saved.
+    const body = changedFields(saved.current, next)
+    if (Object.keys(body).length === 0) {
+      report(activityId, invalid.current ? 'dirty' : 'saved', itemId)
+      return
+    }
     sending.current = true
     report(activityId, 'saving', itemId)
     // Promise continuations survive leaving the question; per-mutate callbacks do not.
@@ -51,7 +57,7 @@ export function useItemAutosave(activityId: string, assessmentId: string, itemId
     } catch (error) {
       version.onError(error)
       sending.current = false
-      if (!invalid.current) unsaved.current ??= body
+      if (!invalid.current) unsaved.current ??= next
       report(activityId, 'failed', itemId)
     }
   }
@@ -61,13 +67,14 @@ export function useItemAutosave(activityId: string, assessmentId: string, itemId
     change: (next: UpdateItemRequest) => {
       invalid.current = false
       const patch = changedFields(saved.current, next)
-      if (Object.keys(patch).length === 0) {
+      if (Object.keys(patch).length === 0 && !sending.current) {
         // Back to what is saved (a typed change undone): nothing to send.
         unsaved.current = null
         if (!sending.current) report(activityId, 'saved', itemId)
         return
       }
-      unsaved.current = patch
+      // Keep the whole latest form while a write is in flight, including fields reverted to their old value.
+      unsaved.current = next
       report(activityId, 'dirty', itemId)
       later.maybeExecute()
     },

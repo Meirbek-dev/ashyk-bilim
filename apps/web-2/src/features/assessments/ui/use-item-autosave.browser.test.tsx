@@ -33,6 +33,7 @@ function Editor() {
         {m.assessments_field_title()}
       </Button>
       <Button onClick={() => save.change({ ...initial, max_score: 3 })}>{m.assessments_field_points()}</Button>
+      <Button onClick={() => save.change(initial)}>{m.assessments_item_untitled()}</Button>
       <Button onClick={save.invalid}>{m.validation_invalid()}</Button>
     </>
   )
@@ -106,3 +107,34 @@ test("B-ASM-10 a save sends only the changed fields: a co-author's rename is not
   await expect.poll(() => requests.length).toBe(1)
   expect(await requests[0]?.clone().json()).toEqual({ max_score: 3 })
 })
+
+test.each([false, true])(
+  'undoing a field during its save persists the latest form (other edit: %s)',
+  async otherEdit => {
+    const requests: Request[] = []
+    const replies: ((response: Response) => void)[] = []
+    vi.stubGlobal('fetch', (request: Request) => {
+      requests.push(request)
+      return new Promise<Response>(resolve => replies.push(resolve))
+    })
+    const { host, report } = mount()
+    const buttons = page.elementLocator(host)
+    await buttons.getByRole('button', { name: m.assessments_field_title() }).click()
+    await expect.poll(() => requests.length).toBe(1)
+    const first = await requests[0]?.clone().json()
+    expect(first.title).not.toBe(initial.title)
+    await buttons
+      .getByRole('button', {
+        name: otherEdit ? m.assessments_field_points() : m.assessments_item_untitled(),
+      })
+      .click()
+    replies[0]?.(Response.json({ ...item, title: first.title, assessment_version: 2 }))
+    await expect.poll(() => requests.length).toBe(2)
+    expect(await requests[1]?.clone().json()).toEqual({
+      title: initial.title,
+      ...(otherEdit ? { max_score: 3 } : {}),
+    })
+    replies[1]?.(Response.json({ ...item, max_score: otherEdit ? 3 : 1, assessment_version: 3 }))
+    await expect.poll(() => report.mock.calls.at(-1)).toEqual([activityId, 'saved', item.id])
+  },
+)
