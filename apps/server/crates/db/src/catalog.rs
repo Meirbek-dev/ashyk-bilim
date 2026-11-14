@@ -233,13 +233,10 @@ fn courses_list_query(
     if by_progress {
         qb.push(" LEFT JOIN pct ON pct.course_id = courses.id");
     }
-    qb.push(" WHERE course_visible(courses, ")
-        .push_bind(viewer)
-        .push(", ")
-        .push_bind(filter.see_all)
-        .push(")");
     if filter.mine && !filter.see_all {
-        qb.push(" AND (creator_id = ")
+        // Ownership/active authorship already grants visibility; only soft deletion can hide a match.
+        // Repeating course_visible would run the group/archive lookups before this more selective filter.
+        qb.push(" WHERE courses.deleted_at IS NULL AND (creator_id = ")
             .push_bind(viewer)
             .push(
                 " OR EXISTS (SELECT 1 FROM course_staff ra
@@ -247,6 +244,12 @@ fn courses_list_query(
             )
             .push_bind(viewer)
             .push(" AND ra.status = 'active' AND ra.authorship <> 'reporter'))");
+    } else {
+        qb.push(" WHERE course_visible(courses, ")
+            .push_bind(viewer)
+            .push(", ")
+            .push_bind(filter.see_all)
+            .push(")");
     }
     // UX-222: `q` matches like `/search` (the same trigram-indexed terms);
     // UX-143: metacharacters are literal.

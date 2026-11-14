@@ -1908,21 +1908,27 @@ AS $function$
                OR (v ? 'emoji' AND (jsonb_typeof(v -> 'emoji') IS DISTINCT FROM 'string'
                                     OR char_length(v ->> 'emoji') > 16)))
 $function$
+function CREATE OR REPLACE FUNCTION public.course_shared_with(p_course uuid, p_viewer uuid, p_archived boolean)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+AS $function$
+    SELECT EXISTS (SELECT 1 FROM course_staff cs
+                   WHERE cs.course_id = p_course AND cs.user_id = p_viewer AND cs.status = 'active')
+        OR EXISTS (SELECT 1 FROM usergroup_courses uc
+                   JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id
+                   WHERE uc.course_id = p_course AND m.user_id = p_viewer)
+        OR (p_archived AND EXISTS (SELECT 1 FROM enrolments e
+                                  WHERE e.course_id = p_course AND e.user_id = p_viewer))
+$function$
 function CREATE OR REPLACE FUNCTION public.course_visible(c courses, p_viewer uuid, p_see_all boolean)
  RETURNS boolean
  LANGUAGE sql
  STABLE
 AS $function$
-  SELECT c.deleted_at IS NULL AND (
-         c.public OR p_see_all OR c.creator_id = p_viewer
-      OR EXISTS (SELECT 1 FROM course_staff cs
-                 WHERE cs.course_id = c.id AND cs.user_id = p_viewer AND cs.status = 'active')
-      OR EXISTS (SELECT 1 FROM usergroup_courses uc
-                 JOIN usergroup_members m ON m.usergroup_id = uc.usergroup_id
-                 WHERE uc.course_id = c.id AND m.user_id = p_viewer)
-      OR (c.archived_at IS NOT NULL
-          AND EXISTS (SELECT 1 FROM enrolments e
-                      WHERE e.course_id = c.id AND e.user_id = p_viewer)))
+    SELECT c.deleted_at IS NULL AND (
+        c.public OR p_see_all OR c.creator_id = p_viewer
+        OR course_shared_with(c.id, p_viewer, c.archived_at IS NOT NULL))
 $function$
 function CREATE OR REPLACE FUNCTION public.discussion_image_keys(content text)
  RETURNS SETOF text
@@ -4104,7 +4110,12 @@ view learning.course_members  SELECT course_id,
     user_id,
     enrolled_at
    FROM enrolments e
-  WHERE NOT is_course_staff(course_id, user_id);
+  WHERE NOT (EXISTS ( SELECT 1
+           FROM course_staff cs
+          WHERE cs.course_id = e.course_id AND cs.user_id = e.user_id AND cs.status = 'active'::text AND cs.authorship <> 'reporter'::text)) AND NOT (EXISTS ( SELECT 1
+           FROM user_roles ur
+             JOIN role_permissions rp ON rp.role_id = ur.role_id
+          WHERE ur.user_id = e.user_id AND (rp.resource = ANY (ARRAY['*'::text, 'assessment'::text])) AND (rp.action = ANY (ARRAY['*'::text, 'author'::text])) AND (rp.scope = ANY (ARRAY[''::text, '*'::text, 'platform'::text, 'all'::text]))));
 view learning.learner_visible_activities  SELECT id AS activity_id,
     course_id
    FROM activities a

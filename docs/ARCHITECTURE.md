@@ -425,7 +425,10 @@ One migration set for the database `ashyq`. Rules:
   `enrolments` plus a staff filter. `has_course_role` (the roster alone: the creator has a row, and `courses.creator_id`
   only says who owns the course) and `is_platform_author` are the two halves of `is_course_staff`, which means "not a
   learner here". `learner_visible_activities` states what the publication flags mean together; the deadline queries
-  and the gradebook read it.
+  and the gradebook read it. Bulk membership reads expose the two staff predicates as anti joins in
+  `course_members`; the access-query tests check parity with `is_course_staff`. `course_visible` keeps its cheap
+  public/owner/platform branches in an inlinable SQL wrapper; `course_shared_with` holds the staff/group/archive
+  lookups, so a public course does not pay for a SQL function call per row.
 - **A leave leaves a trace.** `enrolment_events` says who ended a membership (`source`, `created_by`) and keeps the
   `completions` it reset. Rejoining still starts over: nothing reads them yet.
 
