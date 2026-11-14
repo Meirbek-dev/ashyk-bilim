@@ -30,6 +30,15 @@ function docker(...argv: string[]): { code: number; out: string } {
   return { code: p.status ?? 1, out: `${p.stdout ?? ''}${p.stderr ?? ''}` }
 }
 
+/** Docker accepts hours, not days; a failed read must never look like an empty, healthy log. */
+export function readLogs(name: string, window: string, run = docker): string {
+  const days = /^(\d+(?:\.\d+)?)d$/.exec(window)
+  const duration = days ? `${Number(days[1]) * 24}h` : window
+  const result = run('logs', '--since', duration, name)
+  if (result.code !== 0) throw new Error(`docker logs ${name}: ${redact(result.out).slice(0, 200)}`)
+  return result.out
+}
+
 export function redact(text: string): string {
   return text
     .replace(/\s+/g, ' ')
@@ -79,7 +88,7 @@ function state(names: string[]): string[] {
 function serverLog(names: string[]): string[] {
   const rows = new Map<string, [string, number, string]>()
   for (const name of names.filter(n => /-(server|worker)-\d+$/.test(n))) {
-    for (const line of docker('logs', '--since', since, name).out.split('\n')) {
+    for (const line of readLogs(name, since).split('\n')) {
       if (!line.startsWith('{')) continue
       let entry: { level?: string; timestamp?: string; target?: string; fields?: Record<string, unknown> }
       try {
@@ -106,7 +115,7 @@ function nginx(names: string[]): string[] {
   const rows = new Map<string, [string, number, string]>()
   let total = 0
   let failed = 0
-  for (const line of docker('logs', '--since', since, name).out.split('\n')) {
+  for (const line of readLogs(name, since).split('\n')) {
     if (!line.startsWith('{')) continue
     let entry: { status?: number | string; method?: string; uri?: string }
     try {
