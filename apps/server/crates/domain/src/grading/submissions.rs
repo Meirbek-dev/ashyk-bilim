@@ -1529,7 +1529,7 @@ impl SubmissionsService {
             )?)
         };
         let violation_count = submission.violation_count;
-        if Self::finalize(
+        Ok(Self::finalize(
             runner,
             events,
             Context {
@@ -1550,11 +1550,7 @@ impl SubmissionsService {
             },
         )
         .await?
-        .is_none()
-        {
-            return Ok(false);
-        }
-        Ok(true)
+        .is_some())
     }
 }
 

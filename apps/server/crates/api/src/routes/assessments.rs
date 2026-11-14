@@ -395,7 +395,7 @@ pub async fn create_item(
             request.title.as_deref().unwrap_or(""),
             request.body,
             request.max_score.unwrap_or(0.0),
-            request.metadata.map(Into::into).unwrap_or_default(),
+            request.metadata.map_or_default(Into::into),
         )
         .await?;
     Ok(item_reply(&state, StatusCode::CREATED, id, item).await?)

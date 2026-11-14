@@ -109,8 +109,7 @@ impl Actor {
                 permission.action.as_str(),
                 permission
                     .scope
-                    .map(|s| format!(":{}", s.as_str()))
-                    .unwrap_or_default(),
+                    .map_or_default(|s| format!(":{}", s.as_str())),
             )))
         }
     }

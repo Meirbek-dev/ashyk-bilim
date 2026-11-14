@@ -291,7 +291,7 @@ pub fn idempotency_key(headers: &HeaderMap) -> Result<Option<String>, ApiError> 
     let Some(raw) = headers.get(IDEMPOTENCY_KEY) else {
         return Ok(None);
     };
-    let key = raw.to_str().map(str::trim).unwrap_or_default();
+    let key = raw.to_str().map_or_default(str::trim);
     if key.is_empty() || key.len() > MAX_IDEMPOTENCY_KEY_LEN || !key.is_ascii() {
         return Err(ApiError(Error::validation(vec![FieldError {
             field: "Idempotency-Key".into(),

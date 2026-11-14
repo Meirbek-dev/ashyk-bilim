@@ -2069,8 +2069,7 @@ async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
 
     let reasons = |body: serde_json::Value| -> Vec<serde_json::Value> {
         find_row(&body["items"], "user_id", &bob.user_id.to_string())
-            .map(|row| row["reason_codes"].as_array().unwrap().clone())
-            .unwrap_or_default()
+            .map_or_default(|row| row["reason_codes"].as_array().unwrap().clone())
     };
     let held = app
         .get_as(&teacher, "/api/v2/analytics/teacher/learners/at-risk")

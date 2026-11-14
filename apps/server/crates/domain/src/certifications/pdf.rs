@@ -99,12 +99,10 @@ fn type_label(language: Language, key: &str) -> Option<&'static str> {
 
 /// `12.09.2026` (ru/kk) or `2026-09-12` (en), in Kazakhstan time (UTC+5).
 fn issued_date(language: Language, unix: i64) -> String {
-    let date = jiff::Timestamp::from_second(unix)
-        .map(|ts| {
-            ts.to_zoned(jiff::tz::TimeZone::fixed(crate::csv::KAZAKHSTAN))
-                .date()
-        })
-        .unwrap_or_default();
+    let date = jiff::Timestamp::from_second(unix).map_or_default(|ts| {
+        ts.to_zoned(jiff::tz::TimeZone::fixed(crate::csv::KAZAKHSTAN))
+            .date()
+    });
     match language {
         Language::En => format!("{:04}-{:02}-{:02}", date.year(), date.month(), date.day()),
         Language::Ru | Language::Kk => {
@@ -239,16 +237,13 @@ fn training_text(input: &CertificatePdf, language: Language) -> String {
             period.push(' ');
         }
     }
-    let hours = input
-        .training_hours
-        .map(|h| {
-            if language == Language::Kk {
-                format!(" көлемі {h} сағат болатын")
-            } else {
-                format!(" в объеме {h} часов")
-            }
-        })
-        .unwrap_or_default();
+    let hours = input.training_hours.map_or_default(|h| {
+        if language == Language::Kk {
+            format!(" көлемі {h} сағат болатын")
+        } else {
+            format!(" в объеме {h} часов")
+        }
+    });
     if language == Language::Kk {
         format!("{period}«{name}» тақырыбы бойынша{hours} курсты сәтті аяқтағанын растайды")
     } else {

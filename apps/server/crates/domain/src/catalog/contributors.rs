@@ -286,8 +286,7 @@ impl CoursesService {
             Ok(owners) => {
                 let applicant_name = ab_db::identity::get_profile(&self.pool, actor.user_id)
                     .await?
-                    .map(|p| p.display_name)
-                    .unwrap_or_default();
+                    .map_or_default(|p| p.display_name);
                 crate::notifications::notify(
                     &self.pool,
                     &owners,

@@ -325,7 +325,7 @@ pub(crate) async fn settle_file_draft(
     let teacher_scores: HashMap<String, f64> = rubric_scores
         .and_then(|r| r.get("criteria"))
         .and_then(Value::as_array)
-        .map(|cs| {
+        .map_or_default(|cs| {
             cs.iter()
                 .filter_map(|c| {
                     Some((
@@ -334,8 +334,7 @@ pub(crate) async fn settle_file_draft(
                     ))
                 })
                 .collect()
-        })
-        .unwrap_or_default();
+        });
     let feedback: String = feedback.unwrap_or_default().chars().take(1000).collect();
     for part in &proposal.parts {
         let excerpt: String = part.excerpt.chars().take(1000).collect();

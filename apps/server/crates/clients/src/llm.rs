@@ -614,7 +614,7 @@ impl LlmClient {
             text: content,
             model_name: model_label(&provider.config, parsed.model.as_deref()),
             provider: provider.config.name.clone(),
-            usage: parsed.usage.map(Into::into).unwrap_or_default(),
+            usage: parsed.usage.map_or_default(Into::into),
         })
     }
 
@@ -746,7 +746,7 @@ fn messages_completion(config: &ProviderConfig, body: &str) -> Result<Completion
         text,
         model_name: model_label(config, parsed.model.as_deref()),
         provider: config.name.clone(),
-        usage: parsed.usage.map(Into::into).unwrap_or_default(),
+        usage: parsed.usage.map_or_default(Into::into),
     })
 }
 
@@ -815,7 +815,7 @@ fn messages_stream(config: ProviderConfig, response: reqwest::Response) -> Compl
                 }
                 "message_stop" => break,
                 "error" => {
-                    let detail = parsed.error.map(|e| e.to_string()).unwrap_or_default();
+                    let detail = parsed.error.map_or_default(|e| e.to_string());
                     yield Err(LlmError::Unavailable(format!("stream error: {detail}")));
                     return;
                 }

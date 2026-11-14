@@ -229,7 +229,7 @@ pub fn criteria_from_file_rubric(rubric: &Value) -> Vec<TaskCriterion> {
     let criteria: Vec<TaskCriterion> = rubric
         .get("criteria")
         .and_then(Value::as_array)
-        .map(|list| {
+        .map_or_default(|list| {
             list.iter()
                 .filter_map(|c| {
                     let id = c.get("criterion_id").and_then(Value::as_str)?.to_owned();
@@ -248,8 +248,7 @@ pub fn criteria_from_file_rubric(rubric: &Value) -> Vec<TaskCriterion> {
                     })
                 })
                 .collect()
-        })
-        .unwrap_or_default();
+        });
     if criteria.is_empty() {
         vec![TaskCriterion {
             criterion_id: "overall".into(),
@@ -453,20 +452,18 @@ pub fn build_proposal<S: std::hash::BuildHasher>(
                     0.0
                 }
             });
-            let evidence: Vec<Evidence> = found
-                .map(|c| {
-                    c.evidence
-                        .iter()
-                        .take(3)
-                        .filter(|q| !q.trim().is_empty())
-                        .map(|q| Evidence {
-                            quote: q.trim().chars().take(500).collect(),
-                            verified: quote_verified(&part.answer, q),
-                        })
-                        .filter(|e| e.verified)
-                        .collect()
-                })
-                .unwrap_or_default();
+            let evidence: Vec<Evidence> = found.map_or_default(|c| {
+                c.evidence
+                    .iter()
+                    .take(3)
+                    .filter(|q| !q.trim().is_empty())
+                    .map(|q| Evidence {
+                        quote: q.trim().chars().take(500).collect(),
+                        verified: quote_verified(&part.answer, q),
+                    })
+                    .filter(|e| e.verified)
+                    .collect()
+            });
             // Files graded per criterion: offsets per criterion. Items: the part offset applies below.
             let offset = if task.is_file {
                 offsets
@@ -490,8 +487,7 @@ pub fn build_proposal<S: std::hash::BuildHasher>(
                 calibrated_score: calibrated,
                 evidence,
                 rationale: found
-                    .map(|c| c.rationale.trim().chars().take(1000).collect())
-                    .unwrap_or_default(),
+                    .map_or_default(|c| c.rationale.trim().chars().take(1000).collect()),
                 unsupported,
             });
         }
@@ -521,9 +517,7 @@ pub fn build_proposal<S: std::hash::BuildHasher>(
             max_score: part.max_score,
             ai_score: ai_total,
             calibrated_score: calibrated_total,
-            feedback: reported
-                .map(|p| p.feedback.trim().chars().take(4000).collect())
-                .unwrap_or_default(),
+            feedback: reported.map_or_default(|p| p.feedback.trim().chars().take(4000).collect()),
             criteria,
             excerpt: part.answer.chars().take(EXAMPLE_CHARS).collect(),
         });
@@ -808,14 +802,14 @@ impl AiService {
                     .rubric
                     .get("criteria")
                     .and_then(Value::as_array)
-                    .map(|cs| {
+                    .map_or_default(|cs| {
                         cs.iter()
                             .filter_map(|c| {
                                 let label = c.get("label").and_then(Value::as_str)?;
                                 let levels = c
                                     .get("levels")
                                     .and_then(Value::as_array)
-                                    .map(|ls| {
+                                    .map_or_default(|ls| {
                                         ls.iter()
                                             .filter_map(|l| {
                                                 Some(format!(
@@ -831,14 +825,12 @@ impl AiService {
                                             })
                                             .collect::<Vec<_>>()
                                             .join("\n")
-                                    })
-                                    .unwrap_or_default();
+                                    });
                                 Some(format!("- {label}\n{levels}"))
                             })
                             .collect::<Vec<_>>()
                             .join("\n")
-                    })
-                    .unwrap_or_default();
+                    });
                 Ok(GradeTask {
                     activity_id: config.activity_id,
                     parts: vec![TaskPart {

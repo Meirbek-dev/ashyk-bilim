@@ -1757,7 +1757,7 @@ impl AssessmentsService {
         // The editor re-sends the whole item, so compare, don't test presence;
         // a title/metadata edit neither locks nor stales open drafts.
         let current = items.iter().find(|i| i.id == item_id);
-        let pictures_before = current.map(|i| i.body.upload_ids()).unwrap_or_default();
+        let pictures_before = current.map_or_default(|i| i.body.upload_ids());
         let content_changed = current.is_none_or(|item| {
             changes
                 .body
@@ -1883,8 +1883,7 @@ impl AssessmentsService {
         let pictures = items
             .iter()
             .find(|i| i.id == item_id)
-            .map(|i| i.body.upload_ids())
-            .unwrap_or_default();
+            .map_or_default(|i| i.body.upload_ids());
         super::imports::sync_media(&mut tx, actor, assessment.course_id, &pictures, &[]).await?;
         let remaining: Vec<AssessmentItemId> = items
             .iter()

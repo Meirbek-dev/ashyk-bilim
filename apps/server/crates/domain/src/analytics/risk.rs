@@ -324,13 +324,8 @@ pub fn build_risk_rows(
             user_username: ctx
                 .users
                 .get(&user_id)
-                .map(|u| u.username.clone())
-                .unwrap_or_default(),
-            user_email: ctx
-                .users
-                .get(&user_id)
-                .map(|u| u.email.clone())
-                .unwrap_or_default(),
+                .map_or_default(|u| u.username.clone()),
+            user_email: ctx.users.get(&user_id).map_or_default(|u| u.email.clone()),
             cohort_name: {
                 let names = ctx.cohort_names_for_user(
                     user_id,

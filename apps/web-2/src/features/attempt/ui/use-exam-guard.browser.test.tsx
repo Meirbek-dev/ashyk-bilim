@@ -15,6 +15,7 @@ const policy: Policy = {
   copy_paste_protection: false,
   devtools_detection: false,
   due_at_unix: null,
+  draw_count: null,
   fullscreen_required: false,
   grace_period_minutes: 0,
   grade_release_mode: 'immediate',

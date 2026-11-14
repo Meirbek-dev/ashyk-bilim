@@ -95,8 +95,7 @@ impl LinkPreviewClient {
                 .get(CONTENT_TYPE)
                 .and_then(|v| v.to_str().ok())
                 .and_then(|v| v.split(';').next())
-                .map(|v| v.trim().to_ascii_lowercase())
-                .unwrap_or_default();
+                .map_or_default(|v| v.trim().to_ascii_lowercase());
             if !matches!(media.as_str(), "text/html" | "application/xhtml+xml") {
                 return Err(failed("page is not HTML"));
             }
@@ -296,8 +295,7 @@ fn parse(page: &Url, html: &str) -> LinkPreview {
                 .get(2)
                 .or_else(|| cap.get(3))
                 .or_else(|| cap.get(4))
-                .map(|m| m.as_str())
-                .unwrap_or_default();
+                .map_or_default(|m| m.as_str());
             match cap
                 .get(1)
                 .map(|m| m.as_str().to_ascii_lowercase())

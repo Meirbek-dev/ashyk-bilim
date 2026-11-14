@@ -157,12 +157,11 @@ pub fn build_content_bottlenecks(
         }
         let weak: Vec<&&AssessmentOutlierRow> = assessments_by_activity
             .get(activity_id)
-            .map(|v| {
+            .map_or_default(|v| {
                 v.iter()
                     .filter(|r| r.pass_rate.is_some_and(|p| p < 60.0))
                     .collect()
-            })
-            .unwrap_or_default();
+            });
         // The same three-learner sample as the other signals: one member's
         // failed attempt is not a repeated failure (BUG-267).
         if started_n >= 3 && !weak.is_empty() {

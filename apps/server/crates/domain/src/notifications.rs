@@ -376,8 +376,7 @@ pub async fn work_handed_in(
         .await
         .ok()
         .flatten()
-        .map(|a| a.activity_type)
-        .unwrap_or_default();
+        .map_or_default(|a| a.activity_type);
     let learner_name = ab_db::notifications::user_name(pool, learner)
         .await
         .ok()
@@ -437,8 +436,7 @@ pub async fn remediation_assigned(
         .await
         .ok()
         .flatten()
-        .map(|a| a.activity_type)
-        .unwrap_or_default();
+        .map_or_default(|a| a.activity_type);
     let payload = NotificationPayload::RemediationAssigned {
         course_id,
         course_name,

@@ -126,7 +126,7 @@ impl GoogleClient {
                 ErrorCode::ServiceUnavailable,
                 format!(
                     "google oauth temporarily unavailable: {}",
-                    last_err.map(|e| e.to_string()).unwrap_or_default()
+                    last_err.map_or_default(|e| e.to_string())
                 ),
             ));
         };

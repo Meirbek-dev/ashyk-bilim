@@ -602,7 +602,7 @@ impl CertificationsService {
         let code = "PREVIEW";
         pdf::render(&pdf::CertificatePdf {
             language,
-            holder_name: holder.map(|h| h.display_name).unwrap_or_default(),
+            holder_name: holder.map_or_default(|h| h.display_name),
             certificate_name: text("certification_name").unwrap_or_else(|| course.name.clone()),
             certificate_type: text("certification_type").unwrap_or_default(),
             teacher_name: self.instructor_name(config, course.creator_id).await?,

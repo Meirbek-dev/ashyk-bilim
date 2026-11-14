@@ -964,8 +964,7 @@ impl IdentityService {
         let base = self
             .web_url
             .as_deref()
-            .map(|b| b.trim_end_matches('/'))
-            .unwrap_or_default();
+            .map_or_default(|b| b.trim_end_matches('/'));
         let link = format!(
             "{base}{path}?email={}&code={code}",
             query_encode(to.email),

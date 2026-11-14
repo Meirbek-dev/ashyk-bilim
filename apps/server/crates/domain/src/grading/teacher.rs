@@ -1245,14 +1245,13 @@ impl GradingService {
                 } else {
                     user.display_name.clone()
                 },
-                user.email.clone(),
+                user.email,
                 row.attempt_number.to_string(),
                 language.submission_status(row.status).to_owned(),
                 language.yes_no(row.is_late).to_owned(),
                 row.submitted_at
-                    .map(|t| csv_datetime(t, language))
-                    .unwrap_or_default(),
-                row.auto_score.map(|s| s.to_string()).unwrap_or_default(),
+                    .map_or_default(|t| csv_datetime(t, language)),
+                row.auto_score.map_or_default(|s| s.to_string()),
                 // Rows returned unscored before the score-of-record fix
                 // stored the derived 0.
                 row.final_score
@@ -1261,15 +1260,13 @@ impl GradingService {
                             && breakdown.needs_manual_review
                             && breakdown.score_override.is_none())
                     })
-                    .map(|s| s.to_string())
-                    .unwrap_or_default(),
+                    .map_or_default(|s| s.to_string()),
             ];
-            fields.extend(items.iter().map(|i| {
-                by_item
-                    .get(&i.id)
-                    .map(ToString::to_string)
-                    .unwrap_or_default()
-            }));
+            fields.extend(
+                items
+                    .iter()
+                    .map(|i| by_item.get(&i.id).map_or_default(ToString::to_string)),
+            );
             out.push_str(&csv_row(&fields, language));
         }
         Ok(CsvExport {
@@ -2343,7 +2340,7 @@ fn merge_item_grades(
         pushed = true;
         breakdown.items.push(GradedItem {
             item_id: grade.item_id,
-            item_text: item.map(|i| i.title.clone()).unwrap_or_default(),
+            item_text: item.map_or_default(|i| i.title.clone()),
             score: grade.score.unwrap_or(0.0),
             max_score: item.map_or(0.0, |i| i.max_score),
             correct: None,

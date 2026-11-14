@@ -508,13 +508,9 @@ mod tests {
             serde_json::to_value(ab_domain::wire::AiEffectiveConfig::schema()).unwrap_or_default();
         let mut declared: Vec<&String> = schema["properties"]
             .as_object()
-            .map(|m| m.keys().collect())
-            .unwrap_or_default();
+            .map_or_default(|m| m.keys().collect());
         let redacted = ab_core::config::AiConfig::default().redacted();
-        let mut written: Vec<&String> = redacted
-            .as_object()
-            .map(|m| m.keys().collect())
-            .unwrap_or_default();
+        let mut written: Vec<&String> = redacted.as_object().map_or_default(|m| m.keys().collect());
         declared.sort();
         written.sort();
         assert_eq!(declared, written);

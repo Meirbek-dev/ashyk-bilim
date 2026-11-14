@@ -881,10 +881,7 @@ async fn review_queue_sorts_across_cursor_pages(pool: PgPool) {
         let mut ids = Vec::new();
         let mut cursor: Option<String> = None;
         loop {
-            let after = cursor
-                .as_deref()
-                .map(|c| format!("&cursor={c}"))
-                .unwrap_or_default();
+            let after = cursor.as_deref().map_or_default(|c| format!("&cursor={c}"));
             let page = app
                 .get_as(
                     &teacher,

@@ -871,7 +871,7 @@ impl ZitadelClient {
             ErrorCode::ServiceUnavailable,
             format!(
                 "zitadel set email failed: {status} {}",
-                err.map(|e| e.message).unwrap_or_default()
+                err.map_or_default(|e| e.message)
             ),
         ))
     }

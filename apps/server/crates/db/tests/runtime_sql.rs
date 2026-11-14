@@ -157,8 +157,9 @@ async fn every_runtime_sql_literal_prepares_on_the_schema(pool: PgPool) {
             let types: Vec<PgTypeInfo> = BOUND_TYPES
                 .iter()
                 .find(|(fragment, _)| sql.contains(fragment))
-                .map(|(_, names)| names.iter().map(|n| PgTypeInfo::with_name(n)).collect())
-                .unwrap_or_default();
+                .map_or_default(|(_, names)| {
+                    names.iter().map(|n| PgTypeInfo::with_name(n)).collect()
+                });
             let prepared = (&pool)
                 .prepare_with(sqlx::AssertSqlSafe(sql).into_sql_str(), &types)
                 .await;

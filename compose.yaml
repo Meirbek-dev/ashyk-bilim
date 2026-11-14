@@ -156,7 +156,7 @@ services:
 
   # The only place holding the Postgres admin credentials for Zitadel.
   zitadel-init:
-    image: &zitadel-image ghcr.io/zitadel/zitadel:v4.20.2@sha256:d7ffdecfe037940beeae24c8bb32a420b2adc67fab7bc51554bdae58f9624ef3
+    image: &zitadel-image ghcr.io/zitadel/zitadel:v4.20.3@sha256:1b30fea7ed88826dc0a98dacee4e2f2c8b05201fd26f5e4cb5386615b29f7638
     command: ['init']
     environment:
       <<: *zitadel-db
@@ -232,7 +232,7 @@ services:
 
   # Buckets, public-read policy, CORS, smoke probe object. Idempotent.
   storage-init:
-    image: docker.io/amazon/aws-cli:2.40.1
+    image: docker.io/amazon/aws-cli:2.40.3
     entrypoint: ['bash', '/storage/init.sh']
     environment:
       AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:?}

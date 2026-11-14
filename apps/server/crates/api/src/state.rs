@@ -98,11 +98,7 @@ impl AppState {
         .with_storage(Arc::clone(&storage));
         let courses = CoursesService::new(pool.clone());
         let assessments = AssessmentsService::new(pool.clone(), courses.clone());
-        let limits = config
-            .runner
-            .as_ref()
-            .map(|r| r.limits.clone())
-            .unwrap_or_default();
+        let limits = config.runner.as_ref().map_or_default(|r| r.limits.clone());
         let runner = CodeRunner::new(pool.clone(), runner, limits);
         let events = GradingEvents::new(sessions.client(), sessions.redis());
         Ok(Self {

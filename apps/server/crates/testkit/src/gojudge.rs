@@ -172,11 +172,10 @@ impl Respond for RunResponder {
         let source = cmd["copyIn"]
             .as_object()
             .and_then(|files| files.values().next())
-            .map(|file| match file["fileId"].as_str() {
+            .map_or_default(|file| match file["fileId"].as_str() {
                 Some(id) => state.files.get(id).cloned().unwrap_or_default(),
                 None => file["content"].as_str().unwrap_or_default().to_owned(),
-            })
-            .unwrap_or_default();
+            });
         let answer = if body["requestId"] == "compile" {
             state.compiles += 1;
             let verdict = (self.0.eval)(&source, "");

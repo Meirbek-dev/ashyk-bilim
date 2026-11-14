@@ -200,14 +200,11 @@ mod tests {
 
     fn values<T: PartialSchema>() -> Vec<String> {
         let schema = serde_json::to_value(T::schema()).unwrap_or_default();
-        schema["enum"]
-            .as_array()
-            .map(|v| {
-                v.iter()
-                    .filter_map(|s| s.as_str().map(String::from))
-                    .collect()
-            })
-            .unwrap_or_default()
+        schema["enum"].as_array().map_or_default(|v| {
+            v.iter()
+                .filter_map(|s| s.as_str().map(String::from))
+                .collect()
+        })
     }
 
     fn sorted<'a>(it: impl IntoIterator<Item = &'a str>) -> Vec<String> {

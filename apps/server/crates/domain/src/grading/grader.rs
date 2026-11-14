@@ -319,10 +319,7 @@ pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> Au
             score,
             max_score,
             correct: verdict.as_ref().and_then(|v| v.correct),
-            feedback: verdict
-                .as_ref()
-                .map(|v| v.feedback.clone())
-                .unwrap_or_default(),
+            feedback: verdict.as_ref().map_or_default(|v| v.feedback.clone()),
             feedback_code: verdict.as_ref().map(|v| v.code.as_str().to_owned()),
             feedback_params: verdict.and_then(|v| v.params),
             needs_manual_review,

@@ -5,8 +5,8 @@
 FROM docker.io/library/debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS fetch
 ARG KOTLIN_VERSION=2.4.21
 ARG KOTLIN_SHA256=7cc140e76daf416a0424a5557f99afd7ca89ebd463ea1101261e3e01c33e75cd
-ARG TYPESCRIPT_VERSION=6.0.3
-ARG TYPESCRIPT_SHA256=33cd0ee1beaa8c9e9d15a9da836c62ddea4c34a42d7c2d349dbc80d94165d22a
+ARG TYPESCRIPT_VERSION=7.0.2
+ARG TYPESCRIPT_SHA256=da2513f4b95176d6dde8b51aab7afe8a927656c9d277369793f77f7e59371c08
 # Node's own typings, so `require`, `process` and `fs` type-check (match the image's Node major).
 ARG TYPES_NODE_VERSION=20.19.43
 ARG TYPES_NODE_SHA256=9963f2cb96d2b26dbf9cf86262c698815cbec9503af73c7ce75209d1d0658f3d
@@ -17,10 +17,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 WORKDIR /fetch
 # Official release binaries and published SHA-256 digests; no mutable image tag.
 ARG TARGETARCH
-ARG GOJUDGE_VERSION=1.14.0
+ARG GOJUDGE_VERSION=1.14.1
 RUN case "$TARGETARCH" in \
-      amd64) gojudge_sha=b49c711f22dfce6c2d3620ff71eb9bc284de5d474ffe73b286b7ede64d72c634;; \
-      arm64) gojudge_sha=6d2e8ba9573efd3b75366b3c5a1139f35a799f09a7c0a615fb228df072661dba;; \
+      amd64) gojudge_sha=9fae8eb5d47503cdd26bd01df5fe1857d9c001e68f6e2e48e0c7b0f93720327e;; \
+      arm64) gojudge_sha=b8dfa8d70cc301f78eaf7be4813e1806c2c502f9f095cb682ba619c0d4868d9a;; \
       *) echo "Unsupported go-judge architecture: $TARGETARCH" >&2; exit 1;; \
     esac \
     && curl -fsSLo go-judge "https://github.com/criyle/go-judge/releases/download/v${GOJUDGE_VERSION}/go-judge_${GOJUDGE_VERSION}_linux_${TARGETARCH}" \
@@ -32,6 +32,14 @@ RUN curl -fsSLo kotlin.zip "https://github.com/JetBrains/kotlin/releases/downloa
     && curl -fsSLo typescript.tgz "https://registry.npmjs.org/typescript/-/typescript-${TYPESCRIPT_VERSION}.tgz" \
     && echo "${TYPESCRIPT_SHA256}  typescript.tgz" | sha256sum -c - \
     && tar xzf typescript.tgz && mv package typescript \
+    && case "$TARGETARCH" in \
+         amd64) ts_arch=x64; ts_sha=7ecad6f67377e831856367ab062ef394f21506a611405bf8ac0ff039348637d3;; \
+         arm64) ts_arch=arm64; ts_sha=c83d931ac9dd7549cde6e71246aa9d6a9812843023df3e277fe3b5dcf41dd0ea;; \
+       esac \
+    && curl -fsSLo typescript-native.tgz "https://registry.npmjs.org/@typescript/typescript-linux-${ts_arch}/-/typescript-linux-${ts_arch}-${TYPESCRIPT_VERSION}.tgz" \
+    && echo "$ts_sha  typescript-native.tgz" | sha256sum -c - \
+    && mkdir -p node_modules/@typescript && tar xzf typescript-native.tgz \
+    && mv package "node_modules/@typescript/typescript-linux-${ts_arch}" \
     && curl -fsSLo types-node.tgz "https://registry.npmjs.org/@types/node/-/node-${TYPES_NODE_VERSION}.tgz" \
     && echo "${TYPES_NODE_SHA256}  types-node.tgz" | sha256sum -c - \
     && mkdir -p node_modules/@types && tar xzf types-node.tgz && mv "node v20.19" node_modules/@types/node \

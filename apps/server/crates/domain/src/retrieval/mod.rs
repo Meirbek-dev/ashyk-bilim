@@ -172,23 +172,19 @@ impl Retrieval {
                 else {
                     return Ok((Vec::new(), "learner"));
                 };
-                let learnings = row
-                    .learnings
-                    .as_array()
-                    .map(|items| {
-                        items
-                            .iter()
-                            .filter_map(|v| {
-                                v.as_str().map(str::to_owned).or_else(|| {
-                                    v.get("text")
-                                        .and_then(serde_json::Value::as_str)
-                                        .map(str::to_owned)
-                                })
+                let learnings = row.learnings.as_array().map_or_default(|items| {
+                    items
+                        .iter()
+                        .filter_map(|v| {
+                            v.as_str().map(str::to_owned).or_else(|| {
+                                v.get("text")
+                                    .and_then(serde_json::Value::as_str)
+                                    .map(str::to_owned)
                             })
-                            .collect::<Vec<_>>()
-                            .join("\n")
-                    })
-                    .unwrap_or_default();
+                        })
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                });
                 let text = [
                     row.description.as_str(),
                     row.about.as_str(),

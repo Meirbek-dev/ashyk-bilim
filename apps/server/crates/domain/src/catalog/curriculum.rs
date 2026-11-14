@@ -589,8 +589,7 @@ impl CurriculumService {
                 Some(content) => content.clone(),
                 None => ab_db::catalog::get_activity_content(&mut *tx, activity_id)
                     .await?
-                    .map(|c| c.content)
-                    .unwrap_or_default(),
+                    .map_or_default(|c| c.content),
             };
             Self::require_media(merged_sub, &content)?;
         }

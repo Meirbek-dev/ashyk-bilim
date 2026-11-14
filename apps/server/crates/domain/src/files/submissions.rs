@@ -1716,11 +1716,10 @@ impl FileSubmissionsService {
                 a.row.attempt_number.to_string(),
                 a.row
                     .submitted_at
-                    .map(|t| csv_datetime(t, language))
-                    .unwrap_or_default(),
+                    .map_or_default(|t| csv_datetime(t, language)),
                 language.yes_no(a.row.is_late).to_owned(),
                 a.row.late_penalty_pct.to_string(),
-                a.row.final_score.map(|s| s.to_string()).unwrap_or_default(),
+                a.row.final_score.map_or_default(|s| s.to_string()),
                 a.files.len().to_string(),
             ];
             out.push_str(&csv_row(&fields, language));

@@ -22,7 +22,7 @@ use crate::grading::teacher::CsvLanguage;
 pub const MAX_EXPORT_ROWS: usize = 50_000;
 
 fn opt<T: ToString>(v: Option<T>) -> String {
-    v.map(|v| v.to_string()).unwrap_or_default()
+    v.map_or_default(|v| v.to_string())
 }
 
 fn document(
@@ -384,8 +384,7 @@ pub fn course_progress_csv(
                 s.completed_steps.to_string(),
                 s.total_steps.to_string(),
                 s.last_activity_at
-                    .map(|t| csv_datetime(t, language))
-                    .unwrap_or_default(),
+                    .map_or_default(|t| csv_datetime(t, language)),
                 language.yes_no(s.has_certificate).to_owned(),
             ]
         }),

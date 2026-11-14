@@ -583,11 +583,7 @@ async fn runner_check(config: &Config) -> anyhow::Result<()> {
     use ab_clients::gojudge::{Batch, Limits, languages};
     let client =
         build_runner(config)?.ok_or_else(|| anyhow::anyhow!("AB__RUNNER__BASE_URL must be set"))?;
-    let limits = config
-        .runner
-        .as_ref()
-        .map(|r| r.limits.clone())
-        .unwrap_or_default();
+    let limits = config.runner.as_ref().map_or_default(|r| r.limits.clone());
     let mut out = std::io::stdout();
     let mut failed = 0;
     for language in languages::all() {
@@ -690,11 +686,7 @@ async fn worker(config: Config) -> anyhow::Result<()> {
     let runner = ab_domain::code::CodeRunner::new(
         pool.clone(),
         build_runner(&config)?,
-        config
-            .runner
-            .as_ref()
-            .map(|r| r.limits.clone())
-            .unwrap_or_default(),
+        config.runner.as_ref().map_or_default(|r| r.limits.clone()),
     );
 
     // Recurring schedules are seeded idempotently at boot.

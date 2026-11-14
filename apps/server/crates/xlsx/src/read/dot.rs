@@ -105,8 +105,7 @@ impl Ctx<'_> {
         self.sheet
             .cells
             .get(&at)
-            .map(super::sheet::Cell::shown)
-            .unwrap_or_default()
+            .map_or_default(super::sheet::Cell::shown)
     }
 
     fn blank(&self, at: (u32, u32)) -> bool {
@@ -121,8 +120,7 @@ impl Ctx<'_> {
     fn pictures(&self, at: (u32, u32)) -> Vec<usize> {
         self.placed
             .get(&at)
-            .map(|list| list.iter().filter_map(|p| p.picture.ok()).collect())
-            .unwrap_or_default()
+            .map_or_default(|list| list.iter().filter_map(|p| p.picture.ok()).collect())
     }
 
     fn text(&mut self, at: (u32, u32), kind: Text) -> String {

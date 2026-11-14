@@ -51,17 +51,17 @@ assembly/finalize, ownership, replay, cancellation, reaping and the exact 2 GiB 
 
 ## Low
 
-### 33. shadcn CLI retains an unpatched braces dependency
+### 33. shadcn CLI retains an unpatched deepmerge dependency
 
-`apps/web-2`'s development dependency chain `shadcn -> @shadcn/registry -> fast-glob -> micromatch -> braces`
-includes `braces@3.0.3`. [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) rates its
-stack-exhaustion denial of service high; no patched release is available as of 2026-10-17. It is used by tooling,
-not the application runtime. Avoid processing untrusted glob patterns with the CLI. Remove this finding when
-shadcn drops the affected dependency or a compatible patched version becomes available; do not suppress the audit.
+`apps/web-2`'s development dependency chain `shadcn -> @shadcn/registry -> deepmerge` includes
+`deepmerge@4.3.1`. [GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4) rates prototype
+poisoning of returned objects low; the latest upstream release remains affected as of 2026-11-14. It is used by
+tooling, not the application runtime. Process only trusted registry inputs with the CLI. Remove this finding
+when shadcn drops the dependency or a patched version becomes available; do not suppress the audit.
 
 ### 34. Tiptap mathematics has not declared KaTeX 0.19 compatibility
 
-`apps/web-2` pins `katex@0.19.1`, but `@tiptap/extension-mathematics@3.32.2` declares
+`apps/web-2` pins `katex@0.19.1`, but `@tiptap/extension-mathematics@3.34.0` declares
 `^0.16.4 || ^0.17.0 || ^0.18.0` as its peer range. The markdown round-trip and browser math tests pass with
 the pinned version; this is an upstream compatibility declaration gap, not an observed rendering failure.
 Keep those tests when updating either package. Remove this finding when the extension's peer range includes
