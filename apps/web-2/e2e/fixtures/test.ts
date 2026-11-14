@@ -113,7 +113,15 @@ async function inspect(page: Page, problems: string[]): Promise<void> {
   if (overflow > 0) problems.push(`horizontal overflow of ${overflow}px at 390px on ${page.url()}`)
   if (viewport) await page.setViewportSize(viewport)
   // Contrast measured mid-fade (a tooltip opening on focus) is not the page's contrast: let transitions end first.
-  await page.evaluate(() => Promise.allSettled(document.getAnimations().map(animation => animation.finished)))
+  // Only time-driven ones: a scroll-driven animation (the top bar's edge) follows the scroll position and never finishes.
+  await page.evaluate(() =>
+    Promise.allSettled(
+      document
+        .getAnimations()
+        .filter(animation => animation.timeline === document.timeline)
+        .map(animation => animation.finished),
+    ),
+  )
   // Axe last: it opens and closes a helper page in the context, after which WebKit (Windows) answered the next
   // command on this page with "Target page, context or browser has been closed" although the page was open.
   const axe = await new AxeBuilder({ page }).analyze()
