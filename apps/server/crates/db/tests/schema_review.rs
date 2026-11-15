@@ -3724,3 +3724,67 @@ async fn a_message_is_written_by_a_member(pool: PgPool) {
         .await
         .unwrap();
 }
+
+/// Pipeline merge (`20261115155501`): a file task's body belongs to an assessment of its course, a
+/// hand-in's files hang on its submission, and the journal keeps which save returned the work.
+#[ab_testdb::test]
+async fn a_file_task_is_an_assessment(pool: PgPool) {
+    let w = world(&pool).await;
+    let orphan =
+        sqlx::query("INSERT INTO file_submissions (activity_id, course_id) VALUES ($1, $2)")
+            .bind(w.activity)
+            .bind(w.course)
+            .execute(&pool)
+            .await;
+    assert!(orphan.is_err(), "a file body without its assessment");
+    let hand_in = submission(&pool, &w, 1, false).await.unwrap();
+    let is_file = async || -> bool {
+        sqlx::query_scalar("SELECT submission_is_file_hand_in($1)")
+            .bind(hand_in)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+    };
+    assert!(!is_file().await);
+    sqlx::query("INSERT INTO file_submissions (id, activity_id, course_id) VALUES ($1, $2, $3)")
+        .bind(w.assessment)
+        .bind(w.activity)
+        .bind(w.course)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert!(is_file().await);
+
+    let parent: String = sqlx::query_scalar(
+        "SELECT confrelid::regclass::text FROM pg_constraint
+          WHERE conname = 'file_submission_files_attempt_id_fkey' AND convalidated",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(parent, "submissions");
+
+    let entry: Uuid = sqlx::query_scalar(
+        "INSERT INTO grading_entries (submission_id, raw_score, returned) VALUES ($1, 0, true)
+         RETURNING id",
+    )
+    .bind(hand_in)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let rewritten = sqlx::query("UPDATE grading_entries SET returned = false WHERE id = $1")
+        .bind(entry)
+        .execute(&pool)
+        .await;
+    assert!(rewritten.is_err(), "the journal keeps what a save did");
+
+    // 50 attempts is a file task's range; the column refuses more for any kind.
+    for (cap, allowed) in [(50, true), (51, false)] {
+        let set = sqlx::query("UPDATE assessments SET max_attempts = $2 WHERE id = $1")
+            .bind(w.assessment)
+            .bind(cap)
+            .execute(&pool)
+            .await;
+        assert_eq!(set.is_ok(), allowed, "max_attempts = {cap}");
+    }
+}

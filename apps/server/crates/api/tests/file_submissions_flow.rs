@@ -2328,6 +2328,39 @@ async fn a_file_task_lives_in_the_assessment_pipeline(pool: PgPool) {
         assert_eq!(rows, 0, "{table} is written by nothing");
     }
 
+    // One open attempt at a time: with a newer draft open, an older hand-in cannot be returned.
+    let bob = learner(&app, "bob").await;
+    let bobs = finalized_upload(&app, &bob, "application/pdf", b"%PDF bob").await;
+    let first = app
+        .post_as(
+            &bob,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": bobs }] }),
+        )
+        .await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let second = app
+        .post_as(
+            &bob,
+            &format!("/api/v2/file-submissions/{id}/draft"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(second.status, StatusCode::CREATED, "{}", second.text());
+    let refused = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            format!(
+                "/api/v2/file-submission-attempts/{}/grade",
+                first.json()["id"].as_str().unwrap()
+            ),
+            Some(&first.json()["version"].to_string()),
+            &serde_json::json!({ "action": "return" }),
+        ))
+        .await;
+    assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
+
     // The assessment API answers «not found» for the task and for its hand-in.
     for path in [
         format!("/api/v2/assessments/{id}"),
