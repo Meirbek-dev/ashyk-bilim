@@ -76,9 +76,14 @@ pub async fn current_version(pool: &PgPool, of: Versioned<'_>) -> Result<Option<
                 .await?
         }
         Versioned::Assessment(id) => {
-            sqlx::query_scalar!("SELECT version FROM assessments WHERE id = $1", id.0)
-                .fetch_optional(pool)
-                .await?
+            sqlx::query_scalar!(
+                // A file task answers to the file API only (`Versioned::FileSubmission`).
+                "SELECT version FROM assessments a WHERE id = $1
+                   AND NOT EXISTS (SELECT 1 FROM file_submissions f WHERE f.id = a.id)",
+                id.0
+            )
+            .fetch_optional(pool)
+            .await?
         }
         Versioned::Intervention(id) => {
             sqlx::query_scalar!(

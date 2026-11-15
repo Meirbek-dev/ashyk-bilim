@@ -1,0 +1,83 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT a.course_id AS \"course_id!: CourseId\", a.activity_id AS \"activity_id!: ActivityId\",\n                  s.id AS \"subject_id!\", (f.id IS NOT NULL) AS \"is_file!\", s.user_id AS \"learner_id!: UserId\",\n                  s.version AS \"version!\"\n           FROM submissions s JOIN assessments a ON a.id = s.assessment_id\n           LEFT JOIN file_submissions f ON f.id = a.id\n           WHERE s.id = $1 AND s.status = 'submitted' AND NOT s.preview",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "course_id!: CourseId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "course_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "activity_id!: ActivityId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "activity_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "subject_id!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "is_file!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "learner_id!: UserId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "version!",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "version"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      false,
+      false
+    ]
+  },
+  "hash": "fe263fe210c1a22161df8a33e259a120d8bf23d0c571080562bcbc62b9291f60"
+}

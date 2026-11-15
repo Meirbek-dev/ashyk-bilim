@@ -169,7 +169,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     (
         "file_submission_files",
         "attempt_id",
-        "file_submission_attempts",
+        "submissions",
         ATTEMPT_DELETE,
     ),
     (

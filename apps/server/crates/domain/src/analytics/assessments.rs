@@ -288,7 +288,7 @@ pub fn outlier_reason_codes(
                 codes.push("low_accuracy");
             }
         }
-        AssessmentKind::CodeChallenge => {
+        AssessmentKind::CodeChallenge | AssessmentKind::Assignment => {
             if submission_rate.is_some_and(|r| r < 60.0) {
                 codes.push("low_submission_rate");
             }
@@ -1087,7 +1087,7 @@ pub fn build_detail(
                 }
             })
             .collect(),
-        AssessmentKind::CodeChallenge => Vec::new(),
+        AssessmentKind::CodeChallenge | AssessmentKind::Assignment => Vec::new(),
     };
 
     let manual_required = a.grading_mode != ab_core::assessments::GradingMode::Auto
@@ -1105,7 +1105,9 @@ pub fn build_detail(
     let cohort_filter = (!filters.cohort_ids.is_empty()).then_some(filters.cohort_ids.as_slice());
     let released: &[SubmissionStatus] = match a.kind {
         AssessmentKind::Quiz => &[SubmissionStatus::Graded, SubmissionStatus::Published],
-        AssessmentKind::Exam | AssessmentKind::CodeChallenge => &[SubmissionStatus::Published],
+        AssessmentKind::Exam | AssessmentKind::CodeChallenge | AssessmentKind::Assignment => {
+            &[SubmissionStatus::Published]
+        }
     };
     let cohort_analytics = build_cohort_analytics(
         ctx,

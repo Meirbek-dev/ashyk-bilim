@@ -39,7 +39,7 @@ pub async fn stale_sources(pool: &PgPool, model: &str, limit: i64) -> Result<Vec
                SELECT 'item', s.id, a.course_id, a.id,
                       s.content_version::bigint * 2000000 + a.version::bigint * 2 + a.published::int
                FROM assessments s
-               JOIN activities a ON a.id = s.activity_id
+               JOIN activities a ON a.id = s.activity_id AND a.activity_type <> 'file_submission'
                JOIN courses c ON c.id = a.course_id AND c.archived_at IS NULL
                UNION ALL
                SELECT 'course', c.id, c.id, NULL::uuid,

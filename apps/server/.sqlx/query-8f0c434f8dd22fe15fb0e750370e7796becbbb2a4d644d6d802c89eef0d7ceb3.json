@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO ai_submission_analyses (submission_id, run_id,\n                                               triggered_by, language, gap_count, analysis,\n                                               evidence)\n           VALUES (COALESCE($1::uuid, $2::uuid), $3, $4, $5, $6, $7, $8) RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "ai_submission_analyses",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int4",
+        "Jsonb",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8f0c434f8dd22fe15fb0e750370e7796becbbb2a4d644d6d802c89eef0d7ceb3"
+}

@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (extract(epoch FROM due_at_override))::bigint AS \"due!\"\n           FROM assessment_overrides\n           WHERE assessment_id = $1 AND user_id = $2 AND due_at_override IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "due!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "fa9c6739212f51299b4db206d084b252840a2b4f52f0d24f2523b265decb463a"
+}

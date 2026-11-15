@@ -648,6 +648,8 @@ pub mod hooks {
             AssessmentKind::Quiz => XpSource::QuizCompletion,
             AssessmentKind::Exam => XpSource::ExamCompletion,
             AssessmentKind::CodeChallenge => XpSource::CodeChallengeCompletion,
+            // A file task pays nothing here: no hand-in of one reaches the submission pipeline.
+            AssessmentKind::Assignment => return,
         };
         let id = submission_id.to_string();
         let key = format!("submission_{id}");

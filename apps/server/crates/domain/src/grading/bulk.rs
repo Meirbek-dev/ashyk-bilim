@@ -355,6 +355,7 @@ async fn settle_lateness(
                 effective_breakdown: &entry.effective_breakdown,
                 overall_feedback: &entry.overall_feedback,
                 published: entry.published_at.is_some(),
+                returned: entry.returned,
             },
         )
         .await?;

@@ -1074,9 +1074,8 @@ async fn erase_attempt_ai(tx: &mut sqlx::PgConnection, uid: uuid::Uuid) -> Resul
              SELECT run_id FROM ai_grade_drafts WHERE learner_id = $1
              UNION SELECT run_id FROM ai_remediation_sessions WHERE student_user_id = $1
              UNION SELECT a.run_id FROM ai_submission_analyses a
-                    LEFT JOIN submissions s ON s.id = a.submission_id
-                    LEFT JOIN file_submission_attempts f ON f.id = a.file_submission_attempt_id
-                   WHERE s.user_id = $1 OR f.user_id = $1)",
+                    JOIN submissions s ON s.id = a.submission_id
+                   WHERE s.user_id = $1)",
         uid
     )
     .execute(&mut *tx)
@@ -1095,8 +1094,7 @@ async fn erase_attempt_ai(tx: &mut sqlx::PgConnection, uid: uuid::Uuid) -> Resul
     .rows_affected();
     removed += sqlx::query!(
         "DELETE FROM ai_submission_analyses a
-          WHERE a.submission_id IN (SELECT id FROM submissions WHERE user_id = $1)
-             OR a.file_submission_attempt_id IN (SELECT id FROM file_submission_attempts WHERE user_id = $1)",
+          WHERE a.submission_id IN (SELECT id FROM submissions WHERE user_id = $1)",
         uid
     )
     .execute(&mut *tx)
@@ -1104,8 +1102,7 @@ async fn erase_attempt_ai(tx: &mut sqlx::PgConnection, uid: uuid::Uuid) -> Resul
     .rows_affected();
     removed += sqlx::query!(
         "DELETE FROM ai_work_embeddings
-          WHERE subject_id IN (SELECT id FROM submissions WHERE user_id = $1
-                               UNION SELECT id FROM file_submission_attempts WHERE user_id = $1)",
+          WHERE subject_id IN (SELECT id FROM submissions WHERE user_id = $1)",
         uid
     )
     .execute(&mut *tx)

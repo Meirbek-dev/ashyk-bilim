@@ -138,16 +138,27 @@ pub async fn copy_activities(
             .await?;
         }
     }
+    // A file task is an assessment and its file body under one id (`file_submissions::insert_file_submission`).
     sqlx::query!(
-        r#"INSERT INTO file_submissions (activity_id, course_id, instructions, rubric,
-               allowed_mime_types, max_files, max_file_size_mb, due_at, allow_late,
-               late_policy_kind, late_penalty_percent_per_day, late_penalty_max_days,
-               late_cutoff_at, max_attempts, grade_release_mode, settings, creator_id)
-           SELECT m.new_id, $1, f.instructions, f.rubric, f.allowed_mime_types, f.max_files,
-                  f.max_file_size_mb, f.due_at, f.allow_late, f.late_policy_kind,
-                  f.late_penalty_percent_per_day, f.late_penalty_max_days, f.late_cutoff_at,
-                  f.max_attempts, f.grade_release_mode, f.settings, $2
-           FROM unnest($3::uuid[], $4::uuid[]) AS m(old_id, new_id)
+        r#"WITH a AS (
+               INSERT INTO assessments (activity_id, course_id, due_at, allow_late,
+                   late_policy_kind, late_penalty_percent_per_day, late_penalty_max_days,
+                   late_cutoff_at, max_attempts, grade_release_mode, creator_id,
+                   grading_mode, completion_rule, passing_score, required)
+               SELECT m.new_id, $1, s.due_at, s.allow_late, s.late_policy_kind,
+                      s.late_penalty_percent_per_day, s.late_penalty_max_days, s.late_cutoff_at,
+                      s.max_attempts, s.grade_release_mode, $2,
+                      s.grading_mode, s.completion_rule, s.passing_score, s.required
+               FROM unnest($3::uuid[], $4::uuid[]) AS m(old_id, new_id)
+               JOIN file_submissions f ON f.activity_id = m.old_id
+               JOIN assessments s ON s.id = f.id
+               RETURNING id, activity_id)
+           INSERT INTO file_submissions (id, activity_id, course_id, instructions, rubric,
+               allowed_mime_types, max_files, max_file_size_mb, settings)
+           SELECT a.id, a.activity_id, $1, f.instructions, f.rubric, f.allowed_mime_types, f.max_files,
+                  f.max_file_size_mb, f.settings
+           FROM a
+           JOIN unnest($3::uuid[], $4::uuid[]) AS m(old_id, new_id) ON m.new_id = a.activity_id
            JOIN file_submissions f ON f.activity_id = m.old_id"#,
         course.0,
         creator.0,

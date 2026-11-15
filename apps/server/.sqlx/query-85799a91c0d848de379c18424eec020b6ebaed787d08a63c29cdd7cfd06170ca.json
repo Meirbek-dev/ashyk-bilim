@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH a AS (\n               INSERT INTO assessments (activity_id, course_id, due_at, allow_late,\n                   late_policy_kind, late_penalty_percent_per_day, late_penalty_max_days,\n                   late_cutoff_at, max_attempts, grade_release_mode, creator_id,\n                   grading_mode, completion_rule, passing_score, required)\n               SELECT m.new_id, $1, s.due_at, s.allow_late, s.late_policy_kind,\n                      s.late_penalty_percent_per_day, s.late_penalty_max_days, s.late_cutoff_at,\n                      s.max_attempts, s.grade_release_mode, $2,\n                      s.grading_mode, s.completion_rule, s.passing_score, s.required\n               FROM unnest($3::uuid[], $4::uuid[]) AS m(old_id, new_id)\n               JOIN file_submissions f ON f.activity_id = m.old_id\n               JOIN assessments s ON s.id = f.id\n               RETURNING id, activity_id)\n           INSERT INTO file_submissions (id, activity_id, course_id, instructions, rubric,\n               allowed_mime_types, max_files, max_file_size_mb, settings)\n           SELECT a.id, a.activity_id, $1, f.instructions, f.rubric, f.allowed_mime_types, f.max_files,\n                  f.max_file_size_mb, f.settings\n           FROM a\n           JOIN unnest($3::uuid[], $4::uuid[]) AS m(old_id, new_id) ON m.new_id = a.activity_id\n           JOIN file_submissions f ON f.activity_id = m.old_id",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "UuidArray",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "85799a91c0d848de379c18424eec020b6ebaed787d08a63c29cdd7cfd06170ca"
+}

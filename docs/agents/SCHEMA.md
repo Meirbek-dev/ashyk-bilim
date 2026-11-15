@@ -83,7 +83,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`learning.file_submission_attempts`](#file_submission_attempts): A learner's hand-in for a file task and its grading state
 - [`learning.file_submission_files`](#file_submission_files): A file of a file-task hand-in (points at its upload)
 - [`learning.file_submission_overrides`](#file_submission_overrides): A per-learner deadline exception of a file task
-- [`learning.file_submissions`](#file_submissions): The file task of a file_submission activity: instructions, file limits, deadline and late policy
+- [`learning.file_submissions`](#file_submissions): The typed body of a file task: instructions, rubric and file caps
 - [`learning.gamification_completions`](#gamification_completions): Completion facts that award XP once (source kind + id per learner)
 - [`learning.gamification_config`](#gamification_config): XP rules: daily cap and rewards (versioned single row)
 - [`learning.gamification_profiles`](#gamification_profiles): A learner's XP total, level and streaks (reconciled weekly from xp_transactions)
@@ -1116,7 +1116,7 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Check `assessments_late_policy_kind_check`: `CHECK ((late_policy_kind = ANY (ARRAY['none'::text, 'penalty'::text, 'cutoff'::text])))`
 - Check `assessments_late_policy_shape`: `CHECK ((((late_policy_kind = 'none'::text) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'penalty'::text) AND (late_penalty_percent_per_day IS NOT NULL) AND (late_penalty_max_days IS NOT NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'cutoff'::text) AND (late_cutoff_at IS NOT NULL) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL))))`
 - Check `assessments_lifecycle_check`: `CHECK ((lifecycle = ANY (ARRAY['draft'::text, 'scheduled'::text, 'published'::text, 'archived'::text])))`
-- Check `assessments_max_attempts_cap`: `CHECK (((max_attempts IS NULL) OR (max_attempts <= 10)))`
+- Check `assessments_max_attempts_cap`: `CHECK (((max_attempts IS NULL) OR (max_attempts <= 50)))`
 - Check `assessments_max_attempts_check`: `CHECK (((max_attempts IS NULL) OR (max_attempts >= 1)))`
 - Check `assessments_published_at_check`: `CHECK (((lifecycle <> 'published'::text) OR (published_at IS NOT NULL)))`
 - Check `assessments_review_visibility_check`: `CHECK ((review_visibility = ANY (ARRAY['none'::text, 'score_only'::text, 'full'::text])))`
@@ -2175,7 +2175,7 @@ A file of a file-task hand-in (points at its upload).
 
 - Primary key `file_submission_files_pkey`: `PRIMARY KEY (id)`
 - Unique `file_submission_files_attempt_id_upload_id_key`: `UNIQUE (attempt_id, upload_id)`
-- Foreign key `file_submission_files_attempt_id_fkey`: `FOREIGN KEY (attempt_id) REFERENCES file_submission_attempts(id) ON DELETE CASCADE`
+- Foreign key `file_submission_files_attempt_id_fkey`: `FOREIGN KEY (attempt_id) REFERENCES submissions(id) ON DELETE CASCADE`
 - Foreign key `file_submission_files_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE RESTRICT`
 - Check `file_submission_files_content_type_mime`: `CHECK ((content_type ~ '^[A-Za-z0-9.+-]+/[A-Za-z0-9.+-]+'::text))`
 - Check `file_submission_files_scan_status_check`: `CHECK ((scan_status = ANY (ARRAY['pending'::text, 'clean'::text, 'flagged'::text, 'error'::text])))`
@@ -2205,7 +2205,7 @@ A per-learner deadline exception of a file task.
 
 ## file_submissions
 
-The file task of a file_submission activity: instructions, file limits, deadline and late policy.
+The typed body of a file task: instructions, rubric and file caps. Its id is its assessments row's; policy and lifecycle live there.
 
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
@@ -2238,6 +2238,7 @@ The file task of a file_submission activity: instructions, file limits, deadline
 - Unique `file_submissions_activity_id_key`: `UNIQUE (activity_id)`
 - Unique `file_submissions_id_course_key`: `UNIQUE (id, course_id)`
 - Foreign key `file_submissions_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
+- Foreign key `file_submissions_assessment_fkey`: `FOREIGN KEY (id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `file_submissions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `file_submissions_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
 - Check `file_submissions_grade_release_mode_check`: `CHECK ((grade_release_mode = ANY (ARRAY['immediate'::text, 'batch'::text])))`
@@ -2356,6 +2357,7 @@ Grade journal of submissions: one row per grading; append-only except published_
 | raw_points | score_points | null |  | points_of_percent(raw_score, max_points), set by the database. |
 | final_points | score_points | null |  | points_of_percent(final_score, max_points), set by the database. |
 | revision | integer |  |  | Number of the entry within its submission (1, 2, ...); the highest is the current grade. |
+| returned | boolean |  | `false` | This save returned the work for revision (the attempt went to status returned). |
 
 - Primary key `grading_entries_pkey`: `PRIMARY KEY (id)`
 - Unique `grading_entries_id_submission_key`: `UNIQUE (id, submission_id)`

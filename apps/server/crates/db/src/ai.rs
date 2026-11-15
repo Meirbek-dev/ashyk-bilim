@@ -1051,8 +1051,11 @@ pub async fn find_assistant_reply(
 
 // ── Submission analyses ─────────────────────────────────────────────────────
 
-/// The work an analysis or remediation is about (exactly one of the two
-/// columns is set - `*_one_subject` CHECK).
+/// The work an analysis or remediation is about.
+///
+/// Both kinds are `submissions` rows and are stored in `submission_id`; a read tells a file hand-in by
+/// its task (`submission_is_file_hand_in`). The `file_submission_attempt_id` column stays empty until
+/// its contract (pending-contracts.tsv).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AiSubject {
     Submission(SubmissionId),
@@ -1060,7 +1063,7 @@ pub enum AiSubject {
 }
 
 impl AiSubject {
-    /// The `(submission_id, file_submission_attempt_id)` column pair.
+    /// The id as a `(submission, file attempt)` pair: the queries store and match whichever is set.
     #[must_use]
     pub const fn columns(self) -> (Option<uuid::Uuid>, Option<uuid::Uuid>) {
         match self {
@@ -1112,10 +1115,10 @@ pub async fn insert_submission_analysis<'e>(
 ) -> Result<AiSubmissionAnalysisId> {
     let (submission_id, attempt_id) = a.subject.columns();
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO ai_submission_analyses (submission_id, file_submission_attempt_id, run_id,
+        r#"INSERT INTO ai_submission_analyses (submission_id, run_id,
                                                triggered_by, language, gap_count, analysis,
                                                evidence)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id"#,
+           VALUES (COALESCE($1::uuid, $2::uuid), $3, $4, $5, $6, $7, $8) RETURNING id"#,
         submission_id,
         attempt_id,
         a.run_id.0,
@@ -1171,8 +1174,10 @@ pub async fn get_submission_analysis(
 ) -> Result<Option<SubmissionAnalysisRow>> {
     let row = sqlx::query_as!(
         SubmissionAnalysisRaw,
-        r#"SELECT id AS "id: AiSubmissionAnalysisId", submission_id AS "submission_id: SubmissionId",
-                  file_submission_attempt_id AS "file_submission_attempt_id: FileAttemptId",
+        r#"SELECT id AS "id: AiSubmissionAnalysisId", CASE WHEN NOT submission_is_file_hand_in(submission_id) THEN submission_id END
+                      AS "submission_id?: SubmissionId",
+                  CASE WHEN submission_is_file_hand_in(submission_id) THEN submission_id END
+                      AS "file_submission_attempt_id?: FileAttemptId",
                   run_id AS "run_id: AiRunId", triggered_by AS "triggered_by: UserId", status,
                   language, gap_count, analysis, evidence,
                   (SELECT r.model_name FROM ai_runs r WHERE r.id = run_id) AS "model_name?",
@@ -1196,15 +1201,16 @@ pub async fn latest_submission_analysis(
     let (submission_id, attempt_id) = subject.columns();
     let row = sqlx::query_as!(
         SubmissionAnalysisRaw,
-        r#"SELECT id AS "id: AiSubmissionAnalysisId", submission_id AS "submission_id: SubmissionId",
-                  file_submission_attempt_id AS "file_submission_attempt_id: FileAttemptId",
+        r#"SELECT id AS "id: AiSubmissionAnalysisId", CASE WHEN NOT submission_is_file_hand_in(submission_id) THEN submission_id END
+                      AS "submission_id?: SubmissionId",
+                  CASE WHEN submission_is_file_hand_in(submission_id) THEN submission_id END
+                      AS "file_submission_attempt_id?: FileAttemptId",
                   run_id AS "run_id: AiRunId", triggered_by AS "triggered_by: UserId", status,
                   language, gap_count, analysis, evidence,
                   (SELECT r.model_name FROM ai_runs r WHERE r.id = run_id) AS "model_name?",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM ai_submission_analyses
-           WHERE (($1::uuid IS NOT NULL AND submission_id = $1)
-              OR ($2::uuid IS NOT NULL AND file_submission_attempt_id = $2))
+           WHERE submission_id = COALESCE($1::uuid, $2::uuid)
              AND ($3::uuid IS NULL OR triggered_by = $3)
            ORDER BY created_at DESC, id DESC LIMIT 1"#,
         submission_id,
@@ -1490,10 +1496,10 @@ pub async fn insert_remediation_session<'e>(
 ) -> Result<Option<AiRemediationSessionId>> {
     let (submission_id, attempt_id) = s.subject.columns();
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO ai_remediation_sessions (submission_id, file_submission_attempt_id,
+        r#"INSERT INTO ai_remediation_sessions (submission_id,
                                                 activity_id, student_user_id, analysis_id, run_id,
                                                 gate_mode, language, lecture, test)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           VALUES (COALESCE($1::uuid, $2::uuid), $3, $4, $5, $6, $7, $8, $9, $10)
            ON CONFLICT DO NOTHING RETURNING id"#,
         submission_id,
         attempt_id,
@@ -1560,8 +1566,10 @@ pub async fn get_remediation_session(
 ) -> Result<Option<RemediationSessionRow>> {
     let row = sqlx::query_as!(
         RemediationSessionRaw,
-        r#"SELECT id AS "id: AiRemediationSessionId", submission_id AS "submission_id: SubmissionId",
-                  file_submission_attempt_id AS "file_submission_attempt_id: FileAttemptId",
+        r#"SELECT id AS "id: AiRemediationSessionId", CASE WHEN NOT submission_is_file_hand_in(submission_id) THEN submission_id END
+                      AS "submission_id?: SubmissionId",
+                  CASE WHEN submission_is_file_hand_in(submission_id) THEN submission_id END
+                      AS "file_submission_attempt_id?: FileAttemptId",
                   activity_id AS "activity_id: ActivityId",
                   student_user_id AS "student_user_id: UserId",
                   analysis_id AS "analysis_id: AiSubmissionAnalysisId", run_id AS "run_id: AiRunId",
@@ -1586,8 +1594,10 @@ pub async fn latest_remediation_session(
     let (submission_id, attempt_id) = subject.columns();
     let row = sqlx::query_as!(
         RemediationSessionRaw,
-        r#"SELECT id AS "id: AiRemediationSessionId", submission_id AS "submission_id: SubmissionId",
-                  file_submission_attempt_id AS "file_submission_attempt_id: FileAttemptId",
+        r#"SELECT id AS "id: AiRemediationSessionId", CASE WHEN NOT submission_is_file_hand_in(submission_id) THEN submission_id END
+                      AS "submission_id?: SubmissionId",
+                  CASE WHEN submission_is_file_hand_in(submission_id) THEN submission_id END
+                      AS "file_submission_attempt_id?: FileAttemptId",
                   activity_id AS "activity_id: ActivityId",
                   student_user_id AS "student_user_id: UserId",
                   analysis_id AS "analysis_id: AiSubmissionAnalysisId", run_id AS "run_id: AiRunId",
@@ -1596,8 +1606,7 @@ pub async fn latest_remediation_session(
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM ai_remediation_sessions
-           WHERE ($1::uuid IS NOT NULL AND submission_id = $1)
-              OR ($2::uuid IS NOT NULL AND file_submission_attempt_id = $2)
+           WHERE submission_id = COALESCE($1::uuid, $2::uuid)
            ORDER BY (gate_mode AND status IN ('assigned', 'in_progress', 'failed')) DESC,
                     created_at DESC, id DESC LIMIT 1"#,
         submission_id,
@@ -1615,8 +1624,10 @@ pub async fn list_student_remediation_sessions(
 ) -> Result<Vec<RemediationSessionRow>> {
     let rows = sqlx::query_as!(
         RemediationSessionRaw,
-        r#"SELECT id AS "id: AiRemediationSessionId", submission_id AS "submission_id: SubmissionId",
-                  file_submission_attempt_id AS "file_submission_attempt_id: FileAttemptId",
+        r#"SELECT id AS "id: AiRemediationSessionId", CASE WHEN NOT submission_is_file_hand_in(submission_id) THEN submission_id END
+                      AS "submission_id?: SubmissionId",
+                  CASE WHEN submission_is_file_hand_in(submission_id) THEN submission_id END
+                      AS "file_submission_attempt_id?: FileAttemptId",
                   activity_id AS "activity_id: ActivityId",
                   student_user_id AS "student_user_id: UserId",
                   analysis_id AS "analysis_id: AiSubmissionAnalysisId", run_id AS "run_id: AiRunId",
@@ -1786,7 +1797,9 @@ pub async fn assessments_context(
                       AS "kind!",
                   grading_mode, passing_score::float8 AS "passing_score!", max_attempts, time_limit_seconds,
                   (extract(epoch FROM due_at))::bigint AS "due_at?"
-           FROM assessments WHERE course_id = $1 ORDER BY id"#,
+           FROM assessments WHERE course_id = $1
+             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)
+           ORDER BY id"#,
         course_id.0
     )
     .fetch_all(pool)

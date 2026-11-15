@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT (extract(epoch FROM first_pub - submitted_at) / 3600.0)::float8 AS \"hours!\"\n           FROM (\n               SELECT s.submitted_at,\n                      (SELECT min(g.published_at) FROM grading_entries g\n                       WHERE g.submission_id = s.id AND g.published_at IS NOT NULL\n                         AND g.graded_by IS NOT NULL) AS first_pub\n               FROM submissions s\n               WHERE s.course_id = $1 AND NOT s.preview AND s.submitted_at IS NOT NULL\n           ) w\n           WHERE first_pub IS NOT NULL\n             AND first_pub >= to_timestamp($2::bigint) AND first_pub < to_timestamp($3::bigint)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "hours!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "ea14f2fe317cd251dd37fc4d9118350dd41dd8a78cce76f464286366e540fc0e"
+}

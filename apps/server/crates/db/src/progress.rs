@@ -230,10 +230,9 @@ pub async fn ensure_course_rows<'e>(
         r#"INSERT INTO activity_progress (course_id, activity_id, user_id, required, due_at)
            SELECT a.course_id, a.id, $2,
                   a.activity_type = 'file_submission' OR s.id IS NOT NULL OR a.required,
-                  COALESCE(s.due_at, f.due_at)
+                  s.due_at
            FROM activities a
            LEFT JOIN assessments s ON s.activity_id = a.id
-           LEFT JOIN file_submissions f ON f.activity_id = a.id
            WHERE a.course_id = $1 AND a.published
            ON CONFLICT (activity_id, user_id) DO NOTHING"#,
         course_id.0,
@@ -292,12 +291,7 @@ pub async fn due_overrides<'e>(
            FROM assessment_overrides o
            JOIN assessments s ON s.id = o.assessment_id
            WHERE s.course_id = $1 AND o.user_id = $2 AND o.due_at_override IS NOT NULL
-             AND (o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended)
-           UNION ALL
-           SELECT f.activity_id, (extract(epoch FROM fo.due_at))::bigint
-           FROM file_submission_overrides fo
-           JOIN file_submissions f ON f.id = fo.file_submission_id
-           WHERE f.course_id = $1 AND fo.user_id = $2"#,
+             AND (o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended)"#,
         course_id.0,
         user_id.0
     )
@@ -916,9 +910,7 @@ pub async fn teaching_stats(
                    WHERE e.course_id = c.id) AS "learners!",
                   (SELECT count(*) FROM activities a WHERE a.course_id = c.id) AS "activities!",
                   (SELECT count(*) FROM submissions s
-                   WHERE s.course_id = c.id AND NOT s.preview AND s.status = 'submitted')
-                  + (SELECT count(*) FROM file_submission_attempts fa
-                     WHERE fa.course_id = c.id AND NOT fa.preview AND fa.status = 'submitted') AS "ungraded!"
+                   WHERE s.course_id = c.id AND NOT s.preview AND s.status = 'submitted') AS "ungraded!"
            FROM courses c WHERE c.id = ANY($1)"#,
         &ids
     )

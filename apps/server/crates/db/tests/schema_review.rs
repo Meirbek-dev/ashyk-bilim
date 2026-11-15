@@ -761,10 +761,11 @@ async fn grade_journals_guard_the_whole_row(pool: PgPool) {
     assert!(rewritten.is_err(), "only published_at changes");
 
     let task: Uuid = sqlx::query_scalar(
-        "INSERT INTO file_submissions (activity_id, course_id) VALUES ($1, $2) RETURNING id",
+        "INSERT INTO file_submissions (id, activity_id, course_id) VALUES ($3, $1, $2) RETURNING id",
     )
     .bind(w.activity)
     .bind(w.course)
+    .bind(w.assessment)
     .fetch_one(&pool)
     .await
     .unwrap();
@@ -825,10 +826,11 @@ async fn erasing_a_grader_keeps_both_journals(pool: PgPool) {
     .await
     .unwrap();
     let task: Uuid = sqlx::query_scalar(
-        "INSERT INTO file_submissions (activity_id, course_id) VALUES ($1, $2) RETURNING id",
+        "INSERT INTO file_submissions (id, activity_id, course_id) VALUES ($3, $1, $2) RETURNING id",
     )
     .bind(w.activity)
     .bind(w.course)
+    .bind(w.assessment)
     .fetch_one(&pool)
     .await
     .unwrap();
@@ -2017,10 +2019,11 @@ async fn attempts_share_one_status_vocabulary(pool: PgPool) {
     );
 
     let task: Uuid = sqlx::query_scalar(
-        "INSERT INTO file_submissions (activity_id, course_id) VALUES ($1, $2) RETURNING id",
+        "INSERT INTO file_submissions (id, activity_id, course_id) VALUES ($3, $1, $2) RETURNING id",
     )
     .bind(w.activity)
     .bind(w.course)
+    .bind(w.assessment)
     .fetch_one(&pool)
     .await
     .unwrap();

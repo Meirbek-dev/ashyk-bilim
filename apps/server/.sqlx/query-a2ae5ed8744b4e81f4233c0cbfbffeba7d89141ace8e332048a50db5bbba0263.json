@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"count!\" FROM submissions\n           WHERE assessment_id = $1 AND user_id = $2 AND status <> 'draft'\n             AND (NOT preview OR $3)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "a2ae5ed8744b4e81f4233c0cbfbffeba7d89141ace8e332048a50db5bbba0263"
+}

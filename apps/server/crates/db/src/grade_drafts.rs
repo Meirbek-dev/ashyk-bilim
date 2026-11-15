@@ -46,8 +46,10 @@ pub async fn get_draft(pool: &PgPool, id: GradeDraftId) -> Result<Option<DraftRo
         DraftRow,
         r#"SELECT d.id AS "id: GradeDraftId", d.course_id AS "course_id: CourseId",
                   d.activity_id AS "activity_id: ActivityId",
-                  d.submission_id AS "submission_id: SubmissionId",
-                  d.file_attempt_id AS "file_attempt_id: FileAttemptId",
+                  CASE WHEN NOT submission_is_file_hand_in(d.submission_id) THEN d.submission_id END
+                      AS "submission_id?: SubmissionId",
+                  CASE WHEN submission_is_file_hand_in(d.submission_id) THEN d.submission_id END
+                      AS "file_attempt_id?: FileAttemptId",
                   d.learner_id AS "learner_id: UserId", d.run_id AS "run_id: AiRunId", d.status,
                   d.subject_version, d.proposal, d.ai_score::float8 AS "ai_score?", d.calibrated_score::float8 AS "calibrated_score?", d.max_score::float8 AS "max_score?",
                   d.confidence, d.flags, (SELECT r.model_name FROM ai_runs r WHERE r.id = d.run_id) AS "model_name?", d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
@@ -67,14 +69,16 @@ pub async fn latest_for_subject(pool: &PgPool, subject: uuid::Uuid) -> Result<Op
         DraftRow,
         r#"SELECT d.id AS "id: GradeDraftId", d.course_id AS "course_id: CourseId",
                   d.activity_id AS "activity_id: ActivityId",
-                  d.submission_id AS "submission_id: SubmissionId",
-                  d.file_attempt_id AS "file_attempt_id: FileAttemptId",
+                  CASE WHEN NOT submission_is_file_hand_in(d.submission_id) THEN d.submission_id END
+                      AS "submission_id?: SubmissionId",
+                  CASE WHEN submission_is_file_hand_in(d.submission_id) THEN d.submission_id END
+                      AS "file_attempt_id?: FileAttemptId",
                   d.learner_id AS "learner_id: UserId", d.run_id AS "run_id: AiRunId", d.status,
                   d.subject_version, d.proposal, d.ai_score::float8 AS "ai_score?", d.calibrated_score::float8 AS "calibrated_score?", d.max_score::float8 AS "max_score?",
                   d.confidence, d.flags, (SELECT r.model_name FROM ai_runs r WHERE r.id = d.run_id) AS "model_name?", d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
                   extract(epoch FROM d.decided_at)::bigint AS decided_at,
                   extract(epoch FROM d.created_at)::bigint AS "created_at!"
-               FROM ai_grade_drafts d WHERE d.submission_id = $1 OR d.file_attempt_id = $1
+               FROM ai_grade_drafts d WHERE d.submission_id = $1
              ORDER BY d.created_at DESC, d.id DESC LIMIT 1"#,
         subject
     )
@@ -89,8 +93,10 @@ pub async fn latest_for_activity(pool: &PgPool, activity_id: ActivityId) -> Resu
         DraftRow,
         r#"SELECT d.id AS "id: GradeDraftId", d.course_id AS "course_id: CourseId",
                   d.activity_id AS "activity_id: ActivityId",
-                  d.submission_id AS "submission_id: SubmissionId",
-                  d.file_attempt_id AS "file_attempt_id: FileAttemptId",
+                  CASE WHEN NOT submission_is_file_hand_in(d.submission_id) THEN d.submission_id END
+                      AS "submission_id?: SubmissionId",
+                  CASE WHEN submission_is_file_hand_in(d.submission_id) THEN d.submission_id END
+                      AS "file_attempt_id?: FileAttemptId",
                   d.learner_id AS "learner_id: UserId", d.run_id AS "run_id: AiRunId", d.status,
                   d.subject_version, d.proposal, d.ai_score::float8 AS "ai_score?", d.calibrated_score::float8 AS "calibrated_score?", d.max_score::float8 AS "max_score?",
                   d.confidence, d.flags, (SELECT r.model_name FROM ai_runs r WHERE r.id = d.run_id) AS "model_name?", d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
@@ -99,7 +105,7 @@ pub async fn latest_for_activity(pool: &PgPool, activity_id: ActivityId) -> Resu
                FROM ai_grade_drafts d WHERE d.activity_id = $1 AND d.id = (
                  SELECT d2.id FROM ai_grade_drafts d2
                  WHERE d2.activity_id = d.activity_id
-                   AND (d2.submission_id = d.submission_id OR d2.file_attempt_id = d.file_attempt_id)
+                   AND d2.submission_id = d.submission_id
                  ORDER BY d2.created_at DESC, d2.id DESC LIMIT 1)
              ORDER BY d.created_at DESC"#,
         activity_id.0
@@ -134,14 +140,16 @@ pub async fn live_for_subject(
         DraftRow,
         r#"SELECT d.id AS "id: GradeDraftId", d.course_id AS "course_id: CourseId",
                   d.activity_id AS "activity_id: ActivityId",
-                  d.submission_id AS "submission_id: SubmissionId",
-                  d.file_attempt_id AS "file_attempt_id: FileAttemptId",
+                  CASE WHEN NOT submission_is_file_hand_in(d.submission_id) THEN d.submission_id END
+                      AS "submission_id?: SubmissionId",
+                  CASE WHEN submission_is_file_hand_in(d.submission_id) THEN d.submission_id END
+                      AS "file_attempt_id?: FileAttemptId",
                   d.learner_id AS "learner_id: UserId", d.run_id AS "run_id: AiRunId", d.status,
                   d.subject_version, d.proposal, d.ai_score::float8 AS "ai_score?", d.calibrated_score::float8 AS "calibrated_score?", d.max_score::float8 AS "max_score?",
                   d.confidence, d.flags, (SELECT r.model_name FROM ai_runs r WHERE r.id = d.run_id) AS "model_name?", d.error_code, d.agreement, d.final_score::float8 AS "final_score?",
                   extract(epoch FROM d.decided_at)::bigint AS decided_at,
                   extract(epoch FROM d.created_at)::bigint AS "created_at!"
-               FROM ai_grade_drafts d WHERE (d.submission_id = $1 OR d.file_attempt_id = $1)
+               FROM ai_grade_drafts d WHERE d.submission_id = $1
                AND d.status IN ('queued', 'ready')
              FOR UPDATE"#,
         subject
@@ -163,6 +171,9 @@ pub struct NewDraft {
 
 /// A queued draft; a live draft of an older version is superseded first. `None` when an equally fresh
 /// live draft already exists.
+///
+/// A file hand-in is a submission: either kind is stored in `submission_id` (a read tells them apart by
+/// `submission_is_file_hand_in`).
 pub async fn insert_queued(conn: &mut PgConnection, d: &NewDraft) -> Result<Option<GradeDraftId>> {
     let subject = d
         .submission_id
@@ -170,7 +181,7 @@ pub async fn insert_queued(conn: &mut PgConnection, d: &NewDraft) -> Result<Opti
         .or_else(|| d.file_attempt_id.map(|a| a.0));
     let fresh = sqlx::query_scalar!(
         r#"SELECT EXISTS (SELECT 1 FROM ai_grade_drafts
-                          WHERE (submission_id = $1 OR file_attempt_id = $1)
+                          WHERE submission_id = $1
                             AND status IN ('queued', 'ready') AND subject_version >= $2) AS "e!""#,
         subject,
         d.subject_version
@@ -182,20 +193,19 @@ pub async fn insert_queued(conn: &mut PgConnection, d: &NewDraft) -> Result<Opti
     }
     sqlx::query!(
         r#"UPDATE ai_grade_drafts SET status = 'superseded'
-           WHERE (submission_id = $1 OR file_attempt_id = $1) AND status IN ('queued', 'ready')"#,
+           WHERE submission_id = $1 AND status IN ('queued', 'ready')"#,
         subject
     )
     .execute(&mut *conn)
     .await?;
     let id = sqlx::query_scalar!(
         r#"INSERT INTO ai_grade_drafts
-               (course_id, activity_id, submission_id, file_attempt_id, learner_id, requested_by,
+               (course_id, activity_id, submission_id, learner_id, requested_by,
                 status, subject_version)
-           VALUES ($1, $2, $3, $4, $5, $6, 'queued', $7) RETURNING id"#,
+           VALUES ($1, $2, $3, $4, $5, 'queued', $6) RETURNING id"#,
         d.course_id.0,
         d.activity_id.0,
-        d.submission_id.map(|s| s.0),
-        d.file_attempt_id.map(|a| a.0),
+        subject,
         d.learner_id.0,
         d.requested_by.map(|u| u.0),
         d.subject_version
@@ -447,14 +457,11 @@ pub struct PendingWork {
 pub async fn pending_works(pool: &PgPool, activity_id: ActivityId) -> Result<Vec<PendingWork>> {
     let rows = sqlx::query_as!(
         PendingWork,
-        r#"SELECT s.id AS "subject_id!", false AS "is_file!", s.user_id AS "learner_id!: UserId",
+        r#"SELECT s.id AS "subject_id!", (f.id IS NOT NULL) AS "is_file!", s.user_id AS "learner_id!: UserId",
                   s.version AS "version!"
            FROM submissions s JOIN assessments a ON a.id = s.assessment_id
-           WHERE a.activity_id = $1 AND s.status = 'submitted' AND NOT s.preview
-           UNION ALL
-           SELECT t.id, true, t.user_id, t.version
-           FROM file_submission_attempts t JOIN file_submissions f ON f.id = t.file_submission_id
-           WHERE f.activity_id = $1 AND t.status = 'submitted' AND NOT t.preview"#,
+           LEFT JOIN file_submissions f ON f.id = a.id
+           WHERE a.activity_id = $1 AND s.status = 'submitted' AND NOT s.preview"#,
         activity_id.0
     )
     .fetch_all(pool)
@@ -473,16 +480,11 @@ pub struct PendingWorkOf {
 pub async fn pending_work(pool: &PgPool, subject_id: uuid::Uuid) -> Result<Option<PendingWorkOf>> {
     let row = sqlx::query!(
         r#"SELECT a.course_id AS "course_id!: CourseId", a.activity_id AS "activity_id!: ActivityId",
-                  s.id AS "subject_id!", false AS "is_file!", s.user_id AS "learner_id!: UserId",
+                  s.id AS "subject_id!", (f.id IS NOT NULL) AS "is_file!", s.user_id AS "learner_id!: UserId",
                   s.version AS "version!"
            FROM submissions s JOIN assessments a ON a.id = s.assessment_id
-           WHERE s.id = $1 AND s.status = 'submitted' AND NOT s.preview
-           UNION ALL
-           SELECT c.course_id, f.activity_id, t.id, true, t.user_id, t.version
-           FROM file_submission_attempts t
-           JOIN file_submissions f ON f.id = t.file_submission_id
-           JOIN activities c ON c.id = f.activity_id
-           WHERE t.id = $1 AND t.status = 'submitted' AND NOT t.preview"#,
+           LEFT JOIN file_submissions f ON f.id = a.id
+           WHERE s.id = $1 AND s.status = 'submitted' AND NOT s.preview"#,
         subject_id
     )
     .fetch_optional(pool)
@@ -555,12 +557,6 @@ pub async fn feedback_hours(
                          AND g.graded_by IS NOT NULL) AS first_pub
                FROM submissions s
                WHERE s.course_id = $1 AND NOT s.preview AND s.submitted_at IS NOT NULL
-               UNION ALL
-               SELECT t.submitted_at,
-                      (SELECT min(e.created_at) FROM file_grading_entries e
-                       WHERE e.attempt_id = t.id AND e.status = 'released')
-               FROM file_submission_attempts t JOIN file_submissions f ON f.id = t.file_submission_id
-               WHERE f.course_id = $1 AND NOT t.preview AND t.submitted_at IS NOT NULL
            ) w
            WHERE first_pub IS NOT NULL
              AND first_pub >= to_timestamp($2::bigint) AND first_pub < to_timestamp($3::bigint)"#,
@@ -653,8 +649,8 @@ pub async fn graded_file_attempts(
                   COALESCE(NULLIF(trim(u.display_name), ''), u.username) AS "learner_name!",
                   'file' AS "part_key!", '' AS "text!",
                   (COALESCE(t.final_score, 0))::float8 AS "score!", 100::float8 AS "max_score!"
-           FROM file_submission_attempts t
-           JOIN file_submissions f ON f.id = t.file_submission_id
+           FROM submissions t
+           JOIN file_submissions f ON f.id = t.assessment_id
            JOIN users u ON u.id = t.user_id
            WHERE f.activity_id = $1 AND NOT t.preview AND t.status IN ('graded', 'released')
              AND t.final_score IS NOT NULL"#,

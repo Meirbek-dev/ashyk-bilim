@@ -494,7 +494,7 @@ constraint assessments assessments_late_policy_kind_not_null NOT NULL late_polic
 constraint assessments assessments_late_policy_shape CHECK ((((late_policy_kind = 'none'::text) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'penalty'::text) AND (late_penalty_percent_per_day IS NOT NULL) AND (late_penalty_max_days IS NOT NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'cutoff'::text) AND (late_cutoff_at IS NOT NULL) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL))))
 constraint assessments assessments_lifecycle_check CHECK ((lifecycle = ANY (ARRAY['draft'::text, 'scheduled'::text, 'published'::text, 'archived'::text])))
 constraint assessments assessments_lifecycle_not_null NOT NULL lifecycle
-constraint assessments assessments_max_attempts_cap CHECK (((max_attempts IS NULL) OR (max_attempts <= 10)))
+constraint assessments assessments_max_attempts_cap CHECK (((max_attempts IS NULL) OR (max_attempts <= 50)))
 constraint assessments assessments_max_attempts_check CHECK (((max_attempts IS NULL) OR (max_attempts >= 1)))
 constraint assessments assessments_negative_marking_percent_not_null NOT NULL negative_marking_percent
 constraint assessments assessments_partial_credit_not_null NOT NULL partial_credit
@@ -1021,7 +1021,7 @@ constraint file_submission_attempts file_submission_attempts_updated_at_not_null
 constraint file_submission_attempts file_submission_attempts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 constraint file_submission_attempts file_submission_attempts_user_id_not_null NOT NULL user_id
 constraint file_submission_attempts file_submission_attempts_version_not_null NOT NULL version
-constraint file_submission_files file_submission_files_attempt_id_fkey FOREIGN KEY (attempt_id) REFERENCES file_submission_attempts(id) ON DELETE CASCADE
+constraint file_submission_files file_submission_files_attempt_id_fkey FOREIGN KEY (attempt_id) REFERENCES submissions(id) ON DELETE CASCADE
 constraint file_submission_files file_submission_files_attempt_id_not_null NOT NULL attempt_id
 constraint file_submission_files file_submission_files_attempt_id_upload_id_key UNIQUE (attempt_id, upload_id)
 constraint file_submission_files file_submission_files_content_type_mime CHECK ((content_type ~ '^[A-Za-z0-9.+-]+/[A-Za-z0-9.+-]+'::text))
@@ -1052,6 +1052,7 @@ constraint file_submissions file_submissions_activity_id_key UNIQUE (activity_id
 constraint file_submissions file_submissions_activity_id_not_null NOT NULL activity_id
 constraint file_submissions file_submissions_allow_late_not_null NOT NULL allow_late
 constraint file_submissions file_submissions_allowed_mime_types_not_null NOT NULL allowed_mime_types
+constraint file_submissions file_submissions_assessment_fkey FOREIGN KEY (id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE
 constraint file_submissions file_submissions_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint file_submissions file_submissions_course_id_not_null NOT NULL course_id
 constraint file_submissions file_submissions_created_at_not_null NOT NULL created_at
@@ -1136,6 +1137,7 @@ constraint grading_entries grading_entries_pkey PRIMARY KEY (id)
 constraint grading_entries grading_entries_points_check CHECK ((((max_points IS NULL) AND (raw_points IS NULL) AND (final_points IS NULL)) OR ((max_points IS NOT NULL) AND (raw_points IS NOT NULL) AND ((raw_points)::numeric <= (max_points)::numeric) AND ((final_points IS NULL) = (final_score IS NULL)) AND ((final_points IS NULL) OR ((final_points)::numeric <= (max_points)::numeric)))))
 constraint grading_entries grading_entries_raw_breakdown_not_null NOT NULL raw_breakdown
 constraint grading_entries grading_entries_raw_score_not_null NOT NULL raw_score
+constraint grading_entries grading_entries_returned_not_null NOT NULL returned
 constraint grading_entries grading_entries_revision_not_null NOT NULL revision
 constraint grading_entries grading_entries_submission_id_fkey FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE
 constraint grading_entries grading_entries_submission_id_not_null NOT NULL submission_id
@@ -1546,11 +1548,6 @@ BEGIN
          WHERE s.id = NEW.submission_id AND a.activity_id = NEW.activity_id) THEN
         RAISE EXCEPTION 'a grade draft names the activity of its submission' USING ERRCODE = 'integrity_constraint_violation';
     END IF;
-    IF NEW.file_attempt_id IS NOT NULL AND NOT EXISTS (
-        SELECT 1 FROM file_submission_attempts t JOIN file_submissions f ON f.id = t.file_submission_id
-         WHERE t.id = NEW.file_attempt_id AND f.activity_id = NEW.activity_id) THEN
-        RAISE EXCEPTION 'a grade draft names the activity of its file attempt' USING ERRCODE = 'integrity_constraint_violation';
-    END IF;
     RETURN NEW;
 END;
 $function$
@@ -1922,7 +1919,7 @@ function CREATE OR REPLACE FUNCTION public.course_has_learner_work(p_course uuid
  RETURNS boolean
  LANGUAGE sql
  STABLE PARALLEL SAFE
-RETURN ((EXISTS (SELECT 1 FROM submissions WHERE ((submissions.course_id = course_has_learner_work.p_course) AND (NOT submissions.preview)))) OR (EXISTS (SELECT 1 FROM file_submission_attempts WHERE ((file_submission_attempts.course_id = course_has_learner_work.p_course) AND (NOT file_submission_attempts.preview)))) OR (EXISTS (SELECT 1 FROM certificate_users WHERE (certificate_users.course_id = course_has_learner_work.p_course))))
+RETURN ((EXISTS (SELECT 1 FROM submissions WHERE ((submissions.course_id = course_has_learner_work.p_course) AND (NOT submissions.preview)))) OR (EXISTS (SELECT 1 FROM certificate_users WHERE (certificate_users.course_id = course_has_learner_work.p_course))))
 function CREATE OR REPLACE FUNCTION public.course_learnings_ok(items jsonb)
  RETURNS boolean
  LANGUAGE sql
@@ -2396,6 +2393,11 @@ BEGIN
     END IF;
 END;
 $function$
+function CREATE OR REPLACE FUNCTION public.submission_is_file_hand_in(p_submission uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE PARALLEL SAFE
+RETURN (EXISTS (SELECT 1 FROM (submissions s JOIN file_submissions f ON ((f.id = s.assessment_id))) WHERE (s.id = submission_is_file_hand_in.p_submission)))
 function CREATE OR REPLACE FUNCTION public.submission_violation_log(p_submission uuid)
  RETURNS jsonb
  LANGUAGE sql
@@ -3936,6 +3938,7 @@ table learning.grading_entries published_at timestamp with time zone DEFAULT -
 table learning.grading_entries raw_breakdown jsonb NOT NULL DEFAULT '{}'::jsonb
 table learning.grading_entries raw_points score_points DEFAULT -
 table learning.grading_entries raw_score percent NOT NULL DEFAULT -
+table learning.grading_entries returned boolean NOT NULL DEFAULT false
 table learning.grading_entries revision integer NOT NULL DEFAULT -
 table learning.grading_entries submission_id uuid NOT NULL DEFAULT -
 table learning.item_feedback annotation_key text DEFAULT -
@@ -4187,7 +4190,5 @@ view learning.learner_visible_activities  SELECT id AS activity_id,
     course_id
    FROM activities a
   WHERE published AND NOT (EXISTS ( SELECT 1
-           FROM file_submissions f
-          WHERE f.activity_id = a.id AND f.lifecycle <> 'published'::text)) AND NOT (EXISTS ( SELECT 1
            FROM assessments s
           WHERE s.activity_id = a.id AND s.lifecycle <> 'published'::text));

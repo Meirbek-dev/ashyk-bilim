@@ -552,13 +552,9 @@ pub async fn course_archive_preview(
                  AS "learners_in_progress!",
              (SELECT count(*) FROM submissions s
               WHERE s.course_id = $1 AND NOT s.preview AND s.status IN ('submitted', 'graded'))
-             + (SELECT count(*) FROM file_submission_attempts fa
-                WHERE fa.course_id = $1 AND NOT fa.preview AND fa.status IN ('submitted', 'graded'))
                  AS "ungraded_submissions!",
              (SELECT count(*) FROM submissions s
               WHERE s.course_id = $1 AND NOT s.preview AND s.status = 'draft')
-             + (SELECT count(*) FROM file_submission_attempts fa
-                WHERE fa.course_id = $1 AND NOT fa.preview AND fa.status = 'draft')
                  AS "open_attempts!",
              (SELECT count(*) FROM assessments a
               WHERE a.course_id = $1 AND a.lifecycle = 'scheduled')
@@ -597,15 +593,10 @@ pub async fn course_learner_work<'e>(
 ) -> Result<CourseLearnerWork> {
     let row = sqlx::query!(
         r#"WITH work AS (
-               SELECT u.user_id, true AS quiz FROM activities a
+               SELECT u.user_id, a.activity_type <> 'file_submission' AS quiz FROM activities a
                JOIN assessments s ON s.activity_id = a.id
                JOIN submissions u ON u.assessment_id = s.id
                WHERE a.course_id = $1 AND NOT u.preview
-               UNION ALL
-               SELECT t.user_id, false FROM activities a
-               JOIN file_submissions f ON f.activity_id = a.id
-               JOIN file_submission_attempts t ON t.file_submission_id = f.id
-               WHERE a.course_id = $1 AND NOT t.preview
            ), learners AS (
                SELECT d.user_id FROM (SELECT DISTINCT user_id FROM work OFFSET 0) d
                WHERE NOT is_course_staff($1, d.user_id)
@@ -660,12 +651,6 @@ pub async fn lock_course_for_delete(
         .await?;
         sqlx::query_scalar!(
             "SELECT id FROM assessments WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
-            &activities
-        )
-        .fetch_all(&mut *conn)
-        .await?;
-        sqlx::query_scalar!(
-            "SELECT id FROM file_submissions WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
             &activities
         )
         .fetch_all(&mut *conn)
@@ -775,9 +760,6 @@ pub async fn deleted_course_archive(
                'item_feedback', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM item_feedback x
                                   JOIN submissions s ON s.id = x.submission_id WHERE s.course_id = c.id),
                'file_tasks', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM file_submissions x WHERE x.course_id = c.id),
-               'file_attempts', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM file_submission_attempts x WHERE x.course_id = c.id),
-               'file_grading_entries', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM file_grading_entries x
-                                         JOIN file_submission_attempts t ON t.id = x.attempt_id WHERE t.course_id = c.id),
                'certificates', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM certificate_users x WHERE x.course_id = c.id),
                'enrolments', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM enrolments x WHERE x.course_id = c.id),
                'completions', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM completions x
@@ -856,13 +838,6 @@ async fn purge_course(
     .await?;
     sqlx::query!(
         "DELETE FROM submissions WHERE course_id = $1 AND (preview OR $2)",
-        id.0,
-        with_work
-    )
-    .execute(&mut *tx)
-    .await?;
-    sqlx::query!(
-        "DELETE FROM file_submission_attempts WHERE course_id = $1 AND (preview OR $2)",
         id.0,
         with_work
     )
@@ -1112,10 +1087,6 @@ pub async fn activities_with_learner_work<'e>(
                OR EXISTS (SELECT 1 FROM (SELECT DISTINCT r.user_id FROM assessments s
                                          JOIN code_runs r ON r.assessment_id = s.id
                                          WHERE s.activity_id = a.id OFFSET 0) w
-                          WHERE NOT is_course_staff(a.course_id, w.user_id))
-               OR EXISTS (SELECT 1 FROM (SELECT DISTINCT t.user_id FROM file_submissions f
-                                         JOIN file_submission_attempts t ON t.file_submission_id = f.id
-                                         WHERE f.activity_id = a.id AND NOT t.preview OFFSET 0) w
                           WHERE NOT is_course_staff(a.course_id, w.user_id)))"#,
         ids
     )
@@ -1134,12 +1105,6 @@ async fn refuse_learner_work(
 ) -> Result<()> {
     sqlx::query_scalar!(
         "SELECT id FROM assessments WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
-        activities
-    )
-    .fetch_all(&mut *conn)
-    .await?;
-    sqlx::query_scalar!(
-        "SELECT id FROM file_submissions WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
         activities
     )
     .fetch_all(&mut *conn)
@@ -1166,14 +1131,6 @@ async fn delete_preview_attempts(
         "DELETE FROM submissions s USING assessments a
          WHERE a.id = s.assessment_id AND a.activity_id = ANY($1)
            AND (s.preview OR is_course_staff(s.course_id, s.user_id))",
-        activities
-    )
-    .execute(&mut *conn)
-    .await?;
-    sqlx::query!(
-        "DELETE FROM file_submission_attempts t USING file_submissions f
-         WHERE f.id = t.file_submission_id AND f.activity_id = ANY($1)
-           AND (t.preview OR is_course_staff(t.course_id, t.user_id))",
         activities
     )
     .execute(&mut *conn)

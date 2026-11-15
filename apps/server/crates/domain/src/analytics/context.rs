@@ -171,6 +171,8 @@ impl EventSource {
             AssessmentKind::Quiz => Self::Quiz,
             AssessmentKind::Exam => Self::Exam,
             AssessmentKind::CodeChallenge => Self::CodeChallenge,
+            // The analytics context loads no file task as an assessment (`list_file_attempts` reads them).
+            AssessmentKind::Assignment => Self::Graded,
         }
     }
 }

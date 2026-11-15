@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO assessment_overrides\n             (assessment_id, user_id, due_at_override, due_extended, note, granted_by)\n         VALUES ($1, $2, to_timestamp($3::bigint), true, $4, $5)\n         ON CONFLICT (assessment_id, user_id) DO UPDATE\n             SET due_at_override = EXCLUDED.due_at_override, due_extended = true,\n                 note = EXCLUDED.note, granted_by = EXCLUDED.granted_by",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Int8",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5331cb1f7580205b1e035cf7d7f194f3ff41eec5b04ac105a35a47480badc530"
+}

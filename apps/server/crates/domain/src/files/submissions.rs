@@ -1412,9 +1412,18 @@ impl FileSubmissionsService {
         } else {
             late_penalty_pct(late_policy_of(&row), due, now, row.allow_late)
         };
+        // What the hand-in is graded against, stored before the hand-in's own transaction (BUG-377).
+        let task_version = ab_db::file_submissions::ensure_version(&self.pool, &row).await?;
         let mut tx = self.pool.begin().await?;
-        if !ab_db::file_submissions::submit_attempt(&mut *tx, attempt.id, version, is_late, penalty)
-            .await?
+        if !ab_db::file_submissions::submit_attempt(
+            &mut *tx,
+            attempt.id,
+            version,
+            is_late,
+            penalty,
+            task_version,
+        )
+        .await?
         {
             drop(tx);
             let latest = ab_db::file_submissions::get_attempt(&self.pool, attempt.id)
@@ -1562,6 +1571,23 @@ impl FileSubmissionsService {
         })
     }
 
+    /// A returned hand-in is the learner's open attempt and they have one at a time (`insert_attempt` asks
+    /// the same from its side): returning `attempt` while another one is open is a 409.
+    async fn require_sole_open(&self, attempt: &AttemptRow) -> Result<()> {
+        let open = ab_db::file_submissions::open_attempt(
+            &self.pool,
+            attempt.file_submission_id,
+            attempt.user_id,
+        )
+        .await?;
+        if open.is_some_and(|open| open.id != attempt.id) {
+            return Err(Error::conflict(
+                "the learner already has another open attempt",
+            ));
+        }
+        Ok(())
+    }
+
     /// Save / publish / return a grade under the `version` lock. A score is
     /// required unless the work is returned.
     pub async fn grade(
@@ -1604,6 +1630,9 @@ impl FileSubmissionsService {
                 "transition-not-allowed",
                 format!("cannot move a published attempt to {status}"),
             )]));
+        }
+        if status == FileAttemptStatus::Returned {
+            self.require_sole_open(&attempt).await?;
         }
         if status != FileAttemptStatus::Returned && input.final_score.is_none() {
             return Err(Error::validation(vec![field(

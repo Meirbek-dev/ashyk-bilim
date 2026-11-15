@@ -276,7 +276,8 @@ pub async fn list_submissions(
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!",
                   submission_breakdown(id, auto_breakdown) AS "grading!"
            FROM submissions
-           WHERE course_id = ANY($1) AND status <> 'draft' AND NOT preview
+           WHERE course_id = ANY($1) AND status <> 'draft'
+             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = submissions.assessment_id) AND NOT preview
              AND ($2::double precision IS NULL
                   OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))
            ORDER BY id"#,
@@ -317,8 +318,8 @@ pub async fn list_file_attempts(
                   (extract(epoch FROM fa.submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM fa.graded_at))::bigint AS "graded_at?",
                   (extract(epoch FROM fa.updated_at))::bigint AS "updated_at!"
-           FROM file_submission_attempts fa
-           JOIN file_submissions f ON f.id = fa.file_submission_id
+           FROM submissions fa
+           JOIN file_submissions f ON f.id = fa.assessment_id
            WHERE fa.course_id = ANY($1) AND fa.status <> 'draft' AND NOT fa.preview
              AND ($2::double precision IS NULL
                   OR COALESCE(fa.submitted_at, fa.updated_at) >= to_timestamp($2))
@@ -429,6 +430,7 @@ pub async fn count_excluded_attempts(
                       AS "teacher!"
            FROM submissions
            WHERE course_id = ANY($1) AND status <> 'draft'
+             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = submissions.assessment_id)
              AND ($2::double precision IS NULL
                   OR COALESCE(submitted_at, updated_at) >= to_timestamp($2))
              AND (cardinality($3::uuid[]) = 0

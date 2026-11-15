@@ -704,7 +704,7 @@ pub async fn submission_fact(pool: &PgPool, id: uuid::Uuid) -> Result<Option<Sub
                   extract(epoch FROM COALESCE(s.graded_at, s.submitted_at, s.started_at))::bigint
                       AS "observed_at!"
            FROM submissions s JOIN assessments a ON a.id = s.assessment_id
-           WHERE s.id = $1"#,
+           WHERE s.id = $1 AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = a.id)"#,
         id
     )
     .fetch_optional(pool)
@@ -731,7 +731,7 @@ pub async fn file_attempt_fact(pool: &PgPool, id: uuid::Uuid) -> Result<Option<F
                   (t.status = 'released') AS "published!", t.final_score::float8 AS "final_score?",
                   extract(epoch FROM COALESCE(t.graded_at, t.submitted_at, t.started_at))::bigint
                       AS "observed_at!"
-           FROM file_submission_attempts t JOIN file_submissions f ON f.id = t.file_submission_id
+           FROM submissions t JOIN file_submissions f ON f.id = t.assessment_id
            WHERE t.id = $1"#,
         id
     )
@@ -831,9 +831,10 @@ pub async fn course_fact_ids(
     let rows = sqlx::query!(
         r#"SELECT 'item' AS "kind!", s.id AS "id!" FROM submissions s
            WHERE s.course_id = $1 AND NOT s.preview AND s.status IN ('graded', 'released')
+             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = s.assessment_id)
            UNION ALL
-           SELECT 'file_attempt', t.id FROM file_submission_attempts t
-           JOIN file_submissions f ON f.id = t.file_submission_id
+           SELECT 'file_attempt', t.id FROM submissions t
+           JOIN file_submissions f ON f.id = t.assessment_id
            WHERE f.course_id = $1 AND NOT t.preview AND t.status = 'released'
            UNION ALL
            SELECT 'code_run', r.id FROM code_runs r JOIN assessments a ON a.id = r.assessment_id
@@ -891,7 +892,8 @@ pub async fn list_concepts_conn(
 /// The assessment behind an activity, if any.
 pub async fn assessment_of(pool: &PgPool, activity_id: ActivityId) -> Result<Option<uuid::Uuid>> {
     let id = sqlx::query_scalar!(
-        "SELECT id FROM assessments WHERE activity_id = $1",
+        "SELECT id FROM assessments a WHERE activity_id = $1
+           AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = a.id)",
         activity_id.0
     )
     .fetch_optional(pool)

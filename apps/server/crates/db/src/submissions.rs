@@ -256,7 +256,8 @@ pub async fn get_submission<'e>(
                   preview,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM submissions WHERE id = $1"#,
+           FROM submissions WHERE id = $1
+             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = submissions.assessment_id)"#,
         id.0
     )
     .fetch_optional(db)
@@ -750,10 +751,7 @@ pub async fn gradebook_members(
              AND (NOT $6
                   OR EXISTS (SELECT 1 FROM submissions s
                              WHERE s.course_id = $1 AND s.user_id = t.user_id AND NOT s.preview
-                               AND s.status IN ('submitted', 'graded'))
-                  OR EXISTS (SELECT 1 FROM file_submission_attempts fa
-                             WHERE fa.course_id = $1 AND fa.user_id = t.user_id AND NOT fa.preview
-                               AND fa.status IN ('submitted', 'graded')))
+                               AND s.status IN ('submitted', 'graded')))
            ORDER BY lower(COALESCE(NULLIF(u.display_name, ''), u.username)), u.id
            LIMIT $3"#,
         course_id.0,
@@ -770,7 +768,8 @@ pub async fn gradebook_members(
 
 /// Grade-of-record attempt per (learner, activity) of `users` in a course.
 ///
-/// Over both assessment submissions and file-submission attempts: the
+/// Over both assessment submissions and file hand-ins (a hand-in names its task and itself in
+/// `file_submission_id` / `attempt_id`): the
 /// attempts come out in attempt order and each pair folds to its
 /// [`GradeKey`] maximum.
 pub async fn gradebook_cells(
@@ -782,23 +781,20 @@ pub async fn gradebook_cells(
     let rows = sqlx::query_as!(
         GradebookCellRow,
         r#"WITH c AS (
-               SELECT s.user_id, a.activity_id, s.assessment_id, s.id AS submission_id,
-                      NULL::uuid AS file_submission_id, NULL::uuid AS attempt_id,
+               SELECT s.user_id, a.activity_id,
+                      CASE WHEN f.id IS NULL THEN s.assessment_id END AS assessment_id,
+                      CASE WHEN f.id IS NULL THEN s.id END AS submission_id,
+                      f.id AS file_submission_id,
+                      CASE WHEN f.id IS NOT NULL THEN s.id END AS attempt_id,
                       s.status, s.attempt_number, s.final_score, s.is_late,
-                      o.due_at_override, s.submitted_at, s.graded_at
+                      CASE WHEN f.id IS NULL THEN o.due_at_override END AS due_at_override,
+                      s.submitted_at, s.graded_at
                FROM submissions s JOIN assessments a ON a.id = s.assessment_id
+               LEFT JOIN file_submissions f ON f.id = s.assessment_id
                LEFT JOIN assessment_overrides o ON o.assessment_id = s.assessment_id
                     AND o.user_id = s.user_id
                     AND (o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended)
                WHERE s.course_id = $1 AND s.status <> 'draft' AND NOT s.preview
-               UNION ALL
-               SELECT fa.user_id, f.activity_id, NULL::uuid, NULL::uuid, f.id, fa.id,
-                      fa.status,
-                      fa.attempt_number, fa.final_score, fa.is_late, NULL::timestamptz,
-                      fa.submitted_at, fa.graded_at
-               FROM file_submission_attempts fa
-               JOIN file_submissions f ON f.id = fa.file_submission_id
-               WHERE fa.course_id = $1 AND fa.status <> 'draft' AND NOT fa.preview
            )
            SELECT c.user_id AS "user_id!: UserId", c.activity_id AS "activity_id!: ActivityId",
                   c.assessment_id AS "assessment_id?: AssessmentId",
@@ -879,11 +875,7 @@ pub async fn gradebook_due_overrides(
                   (extract(epoch FROM o.due_at_override))::bigint AS "due_at!"
            FROM assessment_overrides o JOIN assessments a ON a.id = o.assessment_id
            WHERE a.course_id = $1 AND o.user_id = ANY($2) AND o.due_at_override IS NOT NULL
-             AND (o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended)
-           UNION ALL
-           SELECT fo.user_id, f.activity_id, (extract(epoch FROM fo.due_at))::bigint
-           FROM file_submission_overrides fo JOIN file_submissions f ON f.id = fo.file_submission_id
-           WHERE f.course_id = $1 AND fo.user_id = ANY($2)"#,
+             AND (o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended)"#,
         course_id.0,
         &users
     )
@@ -1160,6 +1152,8 @@ pub async fn list_expired_drafts(pool: &PgPool, limit: i64) -> Result<Vec<Submis
                          WHEN a.late_policy_kind = 'cutoff' AND NOT p.waived
                            THEN GREATEST(p.due, a.late_cutoff_at) END AS hand_in_at) d
            WHERE s.status = 'draft'
+             -- A file draft is the learner's to hand in: nothing submits it for them.
+             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = a.id)
              AND (s.auto_submit_retry_at IS NULL OR s.auto_submit_retry_at <= now())
              AND ((s.started_at IS NOT NULL AND a.time_limit_seconds IS NOT NULL
                    AND s.started_at + make_interval(secs => a.time_limit_seconds + a.grace_period_minutes * 60) <= now())
@@ -1222,6 +1216,8 @@ pub struct GradingEntryRow {
     pub effective_breakdown: serde_json::Value,
     pub overall_feedback: String,
     pub published_at: Option<i64>,
+    /// This save returned the work for revision.
+    pub returned: bool,
     pub created_at: i64,
 }
 
@@ -1235,6 +1231,8 @@ pub struct NewGradingEntry<'a> {
     pub effective_breakdown: &'a serde_json::Value,
     pub overall_feedback: &'a str,
     pub published: bool,
+    /// This save returns the work for revision.
+    pub returned: bool,
 }
 
 pub async fn insert_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
@@ -1244,9 +1242,9 @@ pub async fn insert_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
     let id = sqlx::query_scalar!(
         r#"INSERT INTO grading_entries
                (submission_id, graded_by, raw_score, penalty_pct, final_score,
-                raw_breakdown, effective_breakdown, overall_feedback, published_at)
+                raw_breakdown, effective_breakdown, overall_feedback, published_at, returned)
            VALUES ($1, $2, $3::float8, $4::float8, $5::float8, $6, $7, $8,
-                   CASE WHEN $9 THEN now() ELSE NULL END)
+                   CASE WHEN $9 THEN now() ELSE NULL END, $10)
            RETURNING id AS "id: GradingEntryId""#,
         e.submission_id.0,
         e.graded_by.map(|u| u.0),
@@ -1256,7 +1254,8 @@ pub async fn insert_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
         e.raw_breakdown,
         e.effective_breakdown,
         e.overall_feedback,
-        e.published
+        e.published,
+        e.returned
     )
     .fetch_one(executor)
     .await?;
@@ -1272,7 +1271,7 @@ pub async fn latest_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
         r#"SELECT id AS "id: GradingEntryId", submission_id AS "submission_id: SubmissionId",
                   graded_by AS "graded_by: UserId", raw_score::float8 AS "raw_score!", penalty_pct::float8 AS "penalty_pct!", final_score::float8 AS "final_score?",
                   raw_breakdown, effective_breakdown, overall_feedback,
-                  (extract(epoch FROM published_at))::bigint AS "published_at?",
+                  (extract(epoch FROM published_at))::bigint AS "published_at?", returned,
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM grading_entries WHERE submission_id = $1 ORDER BY revision DESC LIMIT 1"#,
         submission_id.0
@@ -1291,7 +1290,7 @@ pub async fn list_grading_entries(
         r#"SELECT id AS "id: GradingEntryId", submission_id AS "submission_id: SubmissionId",
                   graded_by AS "graded_by: UserId", raw_score::float8 AS "raw_score!", penalty_pct::float8 AS "penalty_pct!", final_score::float8 AS "final_score?",
                   raw_breakdown, effective_breakdown, overall_feedback,
-                  (extract(epoch FROM published_at))::bigint AS "published_at?",
+                  (extract(epoch FROM published_at))::bigint AS "published_at?", returned,
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM grading_entries WHERE submission_id = $1 ORDER BY revision DESC"#,
         submission_id.0

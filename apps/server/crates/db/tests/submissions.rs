@@ -193,6 +193,7 @@ async fn grading_ledger_is_append_only(pool: PgPool) {
             effective_breakdown: &breakdown,
             overall_feedback: "ok",
             published: false,
+            returned: false,
         },
     )
     .await

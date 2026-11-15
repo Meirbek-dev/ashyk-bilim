@@ -1,0 +1,59 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"total!\",\n                  count(*) FILTER (WHERE status = 'submitted') AS \"submitted!\",\n                  count(*) FILTER (WHERE status = 'graded') AS \"graded!\",\n                  count(*) FILTER (WHERE status = 'released') AS \"published!\",\n                  count(*) FILTER (WHERE status = 'returned') AS \"returned!\",\n                  count(*) FILTER (WHERE is_late) AS \"late!\"\n           FROM submissions a\n           WHERE a.assessment_id = $1 AND a.status <> 'draft' AND NOT a.preview\n             AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m\n                  WHERE m.usergroup_id = $2 AND m.user_id = a.user_id))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "total!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "submitted!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "graded!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "published!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "returned!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 5,
+        "name": "late!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "7e521e379d6c511bb6b013b9985ca784864004d295c766c6de07221f2add9a94"
+}

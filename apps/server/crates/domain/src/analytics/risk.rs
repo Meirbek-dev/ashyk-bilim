@@ -263,7 +263,7 @@ pub fn build_risk_rows(
                 None => {}
             },
             // Legacy never counted quiz outcomes towards risk.
-            AssessmentKind::Quiz => {}
+            AssessmentKind::Quiz | AssessmentKind::Assignment => {}
         }
     }
 

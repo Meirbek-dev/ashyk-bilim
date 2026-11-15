@@ -677,12 +677,12 @@ in the order it can be done, each step a forward migration on the current schema
    `daily_user_course_progress.trail_run_id`. The DTOs' `id` is the course / activity id and a run id is no cursor any
    more. Production held nothing else in them (every run `in_progress`, no grade, no verified step, empty `data`) but 74 marks
    on graded activities, now `trail_legacy_marks`. `20261107999910` (contract) dropped them.
-6. **One submission pipeline** (item 12). `file_submission_attempts` becomes `submissions` rows of an
-   `assessments.kind = 'assignment'` task: map `file_submissions` → `assessments` (policy columns already
-   overlap), attempts → `submissions` (files to an `attempt_files` table as in 5.4, grades to `grading_entries`;
-   `file_grading_entries` merges into it). The projector's submission and file-attempt branches
-   (`projector.rs`, legacy `_apply_progress_from_submissions` / `_recalculate_file_submission_progress`) become one. Needs the AI grading reader to move with it: schedule
-   after the AI rubric-draft work lands, behind a contract-compatible read model.
+6. **One submission pipeline** (item 12). Done 2026-11-15 (`20261115155501_merge_file_pipeline`): a file task is an
+   `assessments` row (kind `file_submission`) with `file_submissions` as its typed body under the same id, a hand-in a
+   `submissions` row, its grades `grading_entries`, its files `file_submission_files` (re-pointed, not a new
+   `attempt_files` table: it was empty). Production held 23 draft tasks and no hand-in, so one release mapped the tasks
+   and moved readers and writers; nothing mirrors the old tables. The file API and its ids did not change. The
+   projector keeps its two pure functions (`project_submissions`, `project_file_attempts`): both read `submissions`.
 7. **Assessment versions** (item 13). `assessment_versions (id, assessment_id, number, policy jsonb, items
    jsonb, created_at, UNIQUE (assessment_id, number))` written when an assessment is published or changed while
    published; `submissions.assessment_version_id` replaces `items_snapshot`/`policy_snapshot` (backfill: one
@@ -815,54 +815,15 @@ in the order it can be done, each step a forward migration on the current schema
     - *One status vocabulary* (item 2): done (ARCHITECTURE §8 "One attempt status vocabulary"); the
       contract `20261103070000` rewrites the rows (journal `file_grading_entries` included) and narrows the
       CHECKs. Left: the Rust variants keep their API names (`SubmissionStatus::Pending` = stored
-      `submitted`); with the pipeline merge the two enums become one.
-    - *One overrides table* (item 3) falls out of the merge: `file_submission_overrides` rows become
-      `assessment_overrides` rows of the assignment's assessment (`due_at_override` = `due_at`,
-      `due_extended = true`, `note` = `reason`, `granted_by`, `created_at`; no `expires_at`). Not started:
-      it waits for R1 of the merge below.
-      Before the merge the only arc-free shape is per activity, which the merge would undo.
-    - *Pipeline merge* (item 1) as in step 6 above; `file_submission_attempts` had 0 rows when 9.1 was
-      written, so the data step is small and the work is the code (`files/submissions.rs`, the projector's
-      file branch, the AI grading reader, work queue, analytics). The AI tables then lose their
-      `submission_id`/`file_attempt_id` arc. Not started (review 2, wave 2): no expand step is safe alone,
-      because a file attempt can be a `submissions` row only under an `assessments` row, and an assessment of
-      a file task is a new `AssessmentKind` that every assessment and submission reader sees at once. Ready:
-      both pipelines share the status words (item 2, so the status maps as is) and attempt ids are uuidv7 in
-      both tables (a file attempt keeps its id as a submission: API paths and AI subject ids stay). The
-      mapping, checked against the schema of 2026-11-02:
-      - `file_submissions` → an `assessments` row per task (`activity_id`, `course_id`, `due_at`,
-        `allow_late`, `late_policy_kind`, `late_penalty_*`, `late_cutoff_at`, `max_attempts`,
-        `grade_release_mode`, `lifecycle`, `published_at`, `archived_at`, `version` as they are;
-        `grading_mode = 'manual'`); `file_submissions` stays as the task's typed extension (instructions,
-        rubric, allowed MIME types, file caps, settings) with `assessment_id UNIQUE REFERENCES assessments`,
-        like `assessment_items` for a quiz. Its version's policy holds the file caps and rubric;
-        `max_points` = 100 (file grades are percentages).
-      - `file_submission_attempts` → `submissions` (same `id`, `assessment_id` = the task's, `course_id`,
-        `user_id`, `attempt_number`, `status`, `preview`, `is_late`, `late_penalty_pct`, `final_score`,
-        `started_at` / `submitted_at` / `graded_at`, `version`; `answers = '{}'`, snapshots = the version's);
-        `raw_score`, `feedback`, `rubric_scores`, `graded_by` live only in the grade entries.
-      - `file_submission_files` → `attempt_files (attempt_id → submissions, upload_id, position, display_name,
-        content_type, size_bytes, storage_key, scan_status)`; `upload_referenced` asks it.
-      - `file_grading_entries` → `grading_entries` (`attempt_id` → `submission_id`, `feedback` →
-        `overall_feedback`, `rubric_scores` → `effective_breakdown`, `released` → `published_at` =
-        `created_at`; the journal guard allows the insert).
-      - `file_submission_overrides` → `assessment_overrides` (item 3 below).
-      - AI: `ai_grade_drafts.file_attempt_id`, `ai_remediation_sessions` / `ai_submission_analyses
-        .file_submission_attempt_id` → their `submission_id` (same uuid); `ai_work_embeddings.subject_id` gets
-        a key onto `submissions`.
-      Production held 0 `file_submission_attempts` (23 file tasks) on 2026-11-07. While that holds, skip the mirror
-      and reverse triggers of R1 and R3: one release moves readers and writers and maps the tasks, the next drops the
-      tables. Count again before starting; with real attempts, the releases below apply.
-      Releases, in order: (R0) `AssessmentKind::Assignment` (an additive API enum value: owner decision, both
-      web clients render or filter it) and every reader of `assessments` / `submissions` that must not see
-      file tasks filters them (`kind <> 'assignment'`, through the activity's type once contract B dropped
-      `assessments.kind`); (R1, expand) the columns/tables above and triggers that mirror every file-task
-      write into the new rows (both releases write the old tables); (R2) readers move to `submissions` and
-      `grading_entries`: the `UNION ALL`s of the two pipelines (gradebook, work queue, teaching and catalog
-      counts, AI pending works, mastery facts, analytics) collapse, the projector's file branch goes;
-      (R3) writers move (`files/submissions.rs` writes submissions, entries, attempt files; reverse
-      triggers keep the file tables for R2's rollback); (R4, contract) drop the file tables, the reverse
-      triggers and the AI arcs with their `num_nonnulls` checks.
+      `submitted`).
+    - *One overrides table* (item 3): done with the merge; a file task's extension is an `assessment_overrides`
+      row (`due_at_override`, `due_extended = true`, `note` = the reason, `granted_by`).
+    - *Pipeline merge* (item 1): done 2026-11-15 in one release, the short path of step 6 (migration
+      `20261115155501`; ARCHITECTURE §8 "One submission pipeline"). Left for the contract release: drop
+      `file_submission_attempts`, `file_grading_entries`, `file_submission_overrides`, the policy columns of
+      `file_submissions` and the AI `file_*attempt_id` columns with their arc checks; `ai_work_embeddings.subject_id`
+      can then take a key onto `submissions`. The two Rust status enums and `FileAttemptId` / `FileSubmissionId`
+      stay: they are the file API's names for a submission and its assessment.
     - *Versions as the record* (item 4, rest of step 7): readers move from `items_snapshot`/`policy_snapshot`
       to `assessment_version_id`; a contract release drops the snapshots and `content_version` (BUG-237's
       staleness test becomes "the draft's version is not the assessment's current one"); the policy columns
@@ -984,8 +945,8 @@ How the queue runs:
 
 Queue, in order:
 
-1. **Pipeline merge** (5.6 n6, n16): the short path while production holds no file hand-in (count again first);
-   `AssessmentKind::Assignment` is approved.
+1. **Pipeline merge** (5.6 n6, n16): done as one switch release (`20261115155501_merge_file_pipeline`, production held
+   no file hand-in). Left: the contract that drops what it emptied (`just contracts-pending`).
 2. **Settings** (5.6 n9): one typed settings row replaces `gamification_config`, `ai_feature_switches` and
    `feature_activations`.
 3. **Formal checks go**: the `jsonb_typeof(x) = 'object'` checks that state nothing else, the `_word` regex

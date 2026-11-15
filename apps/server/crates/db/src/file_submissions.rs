@@ -1,11 +1,17 @@
-//! File-submission queries (compile-checked). Timestamps as epoch seconds.
+//! File-task queries (compile-checked). Timestamps as epoch seconds.
+//!
+//! A file task is an `assessments` row (policy, lifecycle) and a `file_submissions` row with the same id
+//! (instructions, rubric, file caps). A hand-in is a `submissions` row: [`FileSubmissionId`] holds the
+//! assessment id, [`FileAttemptId`] the submission id. Its grades are `grading_entries`, a learner's own
+//! due date is an `assessment_overrides` row (REWRITE 5.6 n6).
 
 use ab_core::Result;
 use ab_core::assessments::{
     FileAttemptStatus, FileSubmissionLifecycle, GradeReleaseMode, LatePolicyKind, ScanStatus,
 };
 use ab_core::id::{
-    ActivityId, CourseId, FileAttemptFileId, FileAttemptId, FileSubmissionId, UserId, UsergroupId,
+    ActivityId, AssessmentId, AssessmentVersionId, CourseId, FileAttemptFileId, FileAttemptId,
+    FileSubmissionId, UserId, UsergroupId,
 };
 use sqlx::PgPool;
 
@@ -67,6 +73,10 @@ pub struct FileSubmissionValues<'a> {
     pub settings: &'a serde_json::Value,
 }
 
+/// The assessment and its file body in one statement, under one id.
+///
+/// The policy a file task never sets is fixed here as migration `20261115155501` mapped it: graded by a
+/// teacher, always required, completed by a released grade, 60 passes.
 pub async fn insert_file_submission<'e>(
     db: impl sqlx::PgExecutor<'e>,
     activity_id: ActivityId,
@@ -75,13 +85,19 @@ pub async fn insert_file_submission<'e>(
     v: FileSubmissionValues<'_>,
 ) -> Result<FileSubmissionId> {
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO file_submissions
-               (activity_id, course_id, instructions, rubric, allowed_mime_types, max_files,
-                max_file_size_mb, due_at, allow_late, late_policy_kind,
-                late_penalty_percent_per_day, late_penalty_max_days, late_cutoff_at,
-                max_attempts, grade_release_mode, settings, creator_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, to_timestamp($8), $9, $10, $11::float8, $12,
-                   to_timestamp($13), $14, $15, $16, $17)
+        r#"WITH a AS (
+               INSERT INTO assessments
+                   (activity_id, course_id, due_at, allow_late, late_policy_kind,
+                    late_penalty_percent_per_day, late_penalty_max_days, late_cutoff_at,
+                    max_attempts, grade_release_mode, creator_id,
+                    grading_mode, completion_rule, passing_score, required)
+               VALUES ($1, $2, to_timestamp($8), $9, $10, $11::float8, $12, to_timestamp($13),
+                       $14, $15, $17, 'manual', 'graded', 60, true)
+               RETURNING id)
+           INSERT INTO file_submissions
+               (id, activity_id, course_id, instructions, rubric, allowed_mime_types, max_files,
+                max_file_size_mb, settings)
+           SELECT a.id, $1, $2, $3, $4, $5, $6, $7, $16 FROM a
            RETURNING id AS "id: FileSubmissionId""#,
         activity_id.0,
         course_id.0,
@@ -112,21 +128,21 @@ pub async fn get_file_submission<'e>(
 ) -> Result<Option<FileSubmissionRow>> {
     let row = sqlx::query_as!(
         FileSubmissionRow,
-        r#"SELECT id AS "id: FileSubmissionId", activity_id AS "activity_id: ActivityId",
-                  course_id AS "course_id: CourseId", instructions, rubric, allowed_mime_types,
-                  max_files, max_file_size_mb,
-                  (extract(epoch FROM due_at))::bigint AS "due_at?", allow_late,
-                  late_policy_kind AS "late_policy_kind: LatePolicyKind",
-                  late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", late_penalty_max_days,
-                  (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
-                  max_attempts, grade_release_mode AS "grade_release_mode: GradeReleaseMode",
-                  lifecycle AS "lifecycle: FileSubmissionLifecycle",
-                  (extract(epoch FROM published_at))::bigint AS "published_at?",
-                  (extract(epoch FROM archived_at))::bigint AS "archived_at?",
-                  settings, creator_id AS "creator_id: UserId", version,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM file_submissions WHERE id = $1"#,
+        r#"SELECT f.id AS "id: FileSubmissionId", f.activity_id AS "activity_id: ActivityId",
+                  f.course_id AS "course_id: CourseId", f.instructions, f.rubric, f.allowed_mime_types,
+                  f.max_files, f.max_file_size_mb,
+                  (extract(epoch FROM a.due_at))::bigint AS "due_at?", a.allow_late,
+                  a.late_policy_kind AS "late_policy_kind: LatePolicyKind",
+                  a.late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", a.late_penalty_max_days,
+                  (extract(epoch FROM a.late_cutoff_at))::bigint AS "late_cutoff_at?",
+                  a.max_attempts, a.grade_release_mode AS "grade_release_mode: GradeReleaseMode",
+                  a.lifecycle AS "lifecycle: FileSubmissionLifecycle",
+                  (extract(epoch FROM a.published_at))::bigint AS "published_at?",
+                  (extract(epoch FROM a.archived_at))::bigint AS "archived_at?",
+                  f.settings, a.creator_id AS "creator_id: UserId", f.version,
+                  (extract(epoch FROM f.created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM f.updated_at))::bigint AS "updated_at!"
+           FROM file_submissions f JOIN assessments a ON a.id = f.id WHERE f.id = $1"#,
         id.0
     )
     .fetch_optional(db)
@@ -140,21 +156,21 @@ pub async fn get_file_submission_by_activity<'e>(
 ) -> Result<Option<FileSubmissionRow>> {
     let row = sqlx::query_as!(
         FileSubmissionRow,
-        r#"SELECT id AS "id: FileSubmissionId", activity_id AS "activity_id: ActivityId",
-                  course_id AS "course_id: CourseId", instructions, rubric, allowed_mime_types,
-                  max_files, max_file_size_mb,
-                  (extract(epoch FROM due_at))::bigint AS "due_at?", allow_late,
-                  late_policy_kind AS "late_policy_kind: LatePolicyKind",
-                  late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", late_penalty_max_days,
-                  (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
-                  max_attempts, grade_release_mode AS "grade_release_mode: GradeReleaseMode",
-                  lifecycle AS "lifecycle: FileSubmissionLifecycle",
-                  (extract(epoch FROM published_at))::bigint AS "published_at?",
-                  (extract(epoch FROM archived_at))::bigint AS "archived_at?",
-                  settings, creator_id AS "creator_id: UserId", version,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM file_submissions WHERE activity_id = $1"#,
+        r#"SELECT f.id AS "id: FileSubmissionId", f.activity_id AS "activity_id: ActivityId",
+                  f.course_id AS "course_id: CourseId", f.instructions, f.rubric, f.allowed_mime_types,
+                  f.max_files, f.max_file_size_mb,
+                  (extract(epoch FROM a.due_at))::bigint AS "due_at?", a.allow_late,
+                  a.late_policy_kind AS "late_policy_kind: LatePolicyKind",
+                  a.late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", a.late_penalty_max_days,
+                  (extract(epoch FROM a.late_cutoff_at))::bigint AS "late_cutoff_at?",
+                  a.max_attempts, a.grade_release_mode AS "grade_release_mode: GradeReleaseMode",
+                  a.lifecycle AS "lifecycle: FileSubmissionLifecycle",
+                  (extract(epoch FROM a.published_at))::bigint AS "published_at?",
+                  (extract(epoch FROM a.archived_at))::bigint AS "archived_at?",
+                  f.settings, a.creator_id AS "creator_id: UserId", f.version,
+                  (extract(epoch FROM f.created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM f.updated_at))::bigint AS "updated_at!"
+           FROM file_submissions f JOIN assessments a ON a.id = f.id WHERE f.activity_id = $1"#,
         activity_id.0
     )
     .fetch_optional(db)
@@ -162,15 +178,17 @@ pub async fn get_file_submission_by_activity<'e>(
     Ok(row)
 }
 
-/// BUG-229: `SELECT … FOR UPDATE` on the config row, then the row as the
-/// previous writer left it - publish, the config PATCH and the curriculum
-/// publish toggle serialize here.
+/// BUG-229: `SELECT … FOR UPDATE` on the task's assessment row, then the task as the previous writer left it.
+///
+/// Publish, the config PATCH and the curriculum publish toggle serialize here (the row
+/// `catalog::refuse_learner_work` locks too).
 pub async fn lock_file_submission(
     conn: &mut sqlx::PgConnection,
     id: FileSubmissionId,
 ) -> Result<Option<FileSubmissionRow>> {
     sqlx::query!(
-        "SELECT id FROM file_submissions WHERE id = $1 FOR UPDATE",
+        "SELECT a.id FROM assessments a JOIN file_submissions f ON f.id = a.id
+         WHERE a.id = $1 FOR UPDATE OF a",
         id.0
     )
     .fetch_optional(&mut *conn)
@@ -184,7 +202,8 @@ pub async fn lock_file_submission_by_activity(
     activity_id: ActivityId,
 ) -> Result<Option<FileSubmissionRow>> {
     sqlx::query!(
-        "SELECT id FROM file_submissions WHERE activity_id = $1 FOR UPDATE",
+        "SELECT a.id FROM assessments a JOIN file_submissions f ON f.id = a.id
+         WHERE a.activity_id = $1 FOR UPDATE OF a",
         activity_id.0
     )
     .fetch_optional(&mut *conn)
@@ -192,19 +211,29 @@ pub async fn lock_file_submission_by_activity(
     get_file_submission_by_activity(conn, activity_id).await
 }
 
+/// The policy lands on the assessment, the body on `file_submissions`.
+///
+/// The task's `version` (If-Match) moves once when either changed (`touch_row` bumps it for the body, the
+/// assessment's own bump is carried over).
 pub async fn update_file_submission<'e>(
     db: impl sqlx::PgExecutor<'e>,
     id: FileSubmissionId,
     v: FileSubmissionValues<'_>,
 ) -> Result<bool> {
     let updated = sqlx::query!(
-        r#"UPDATE file_submissions SET
+        r#"WITH old AS (SELECT version FROM assessments WHERE id = $1),
+           a AS (
+               UPDATE assessments SET
+                   due_at = to_timestamp($7), allow_late = $8,
+                   late_policy_kind = $9, late_penalty_percent_per_day = $10::float8,
+                   late_penalty_max_days = $11, late_cutoff_at = to_timestamp($12),
+                   max_attempts = $13, grade_release_mode = $14
+               WHERE id = $1 RETURNING version)
+           UPDATE file_submissions f SET
                instructions = $2, rubric = $3, allowed_mime_types = $4, max_files = $5,
-               max_file_size_mb = $6, due_at = to_timestamp($7), allow_late = $8,
-               late_policy_kind = $9, late_penalty_percent_per_day = $10::float8,
-               late_penalty_max_days = $11, late_cutoff_at = to_timestamp($12),
-               max_attempts = $13, grade_release_mode = $14, settings = $15
-           WHERE id = $1"#,
+               max_file_size_mb = $6, settings = $15,
+               version = f.version + (a.version <> old.version)::int
+           FROM a, old WHERE f.id = $1"#,
         id.0,
         v.instructions,
         v.rubric,
@@ -234,12 +263,16 @@ pub async fn set_file_submission_lifecycle<'e>(
     lifecycle: FileSubmissionLifecycle,
 ) -> Result<bool> {
     let updated = sqlx::query!(
-        r#"UPDATE file_submissions SET
-               lifecycle = $2,
-               published_at = CASE WHEN $2 = 'published' THEN COALESCE(published_at, now())
-                                   ELSE published_at END,
-               archived_at = CASE WHEN $2 = 'archived' THEN now() ELSE NULL END
-           WHERE id = $1"#,
+        r#"WITH old AS (SELECT version FROM assessments WHERE id = $1),
+           a AS (
+               UPDATE assessments SET
+                   lifecycle = $2,
+                   published_at = CASE WHEN $2 = 'published' THEN COALESCE(published_at, now())
+                                       ELSE published_at END,
+                   archived_at = CASE WHEN $2 = 'archived' THEN now() ELSE NULL END
+               WHERE id = $1 RETURNING version)
+           UPDATE file_submissions f SET version = f.version + (a.version <> old.version)::int
+           FROM a, old WHERE f.id = $1"#,
         id.0,
         lifecycle.as_str()
     )
@@ -268,13 +301,14 @@ pub async fn list_for_course(
     let rows = sqlx::query_as!(
         GradebookFileSubmissionRow,
         r#"SELECT f.id AS "id: FileSubmissionId", f.activity_id AS "activity_id: ActivityId",
-                  a.name AS title, (extract(epoch FROM f.due_at))::bigint AS "due_at?"
-           FROM file_submissions f JOIN activities a ON a.id = f.activity_id
+                  a.name AS title, (extract(epoch FROM s.due_at))::bigint AS "due_at?"
+           FROM file_submissions f JOIN assessments s ON s.id = f.id
+           JOIN activities a ON a.id = f.activity_id
            JOIN chapters c ON c.id = a.chapter_id
            WHERE f.course_id = $1
              AND (EXISTS (SELECT 1 FROM learner_visible_activities v WHERE v.activity_id = a.id)
-                  OR EXISTS (SELECT 1 FROM file_submission_attempts x
-                             WHERE x.file_submission_id = f.id
+                  OR EXISTS (SELECT 1 FROM submissions x
+                             WHERE x.assessment_id = f.id
                                AND x.status <> 'draft' AND NOT x.preview))
            ORDER BY c.position, c.id, a.position, a.id"#,
         course_id.0
@@ -328,8 +362,9 @@ impl AttemptRow {
 /// Open a draft (started now); `None` when a unique index refused it.
 ///
 /// Either the learner already has an open (draft or returned) attempt, or a
-/// concurrent submit took `attempt_number`
-/// (`file_submission_attempts_attempt_number_key`); the caller re-reads.
+/// concurrent submit took `attempt_number` (`submissions_attempt_number_key`);
+/// the caller re-reads. A returned hand-in is the open one (the learner revises
+/// it in place), which no index of `submissions` says: the insert asks.
 pub async fn insert_attempt(
     db: impl sqlx::PgExecutor<'_>,
     file_submission_id: FileSubmissionId,
@@ -339,9 +374,11 @@ pub async fn insert_attempt(
     preview: bool,
 ) -> Result<Option<FileAttemptId>> {
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO file_submission_attempts
-               (file_submission_id, course_id, user_id, attempt_number, preview, started_at)
-           VALUES ($1, $2, $3, $4, $5, now())
+        r#"INSERT INTO submissions
+               (assessment_id, course_id, user_id, attempt_number, preview, started_at)
+           SELECT $1::uuid, $2::uuid, $3::uuid, $4::int, $5::bool, now()
+           WHERE NOT EXISTS (SELECT 1 FROM submissions o
+                             WHERE o.assessment_id = $1 AND o.user_id = $3 AND o.status = 'returned')
            ON CONFLICT DO NOTHING
            RETURNING id AS "id: FileAttemptId""#,
         file_submission_id.0,
@@ -358,18 +395,27 @@ pub async fn insert_attempt(
 pub async fn get_attempt(pool: &PgPool, id: FileAttemptId) -> Result<Option<AttemptRow>> {
     let row = sqlx::query_as!(
         AttemptRow,
-        r#"SELECT id AS "id: FileAttemptId",
-                  file_submission_id AS "file_submission_id: FileSubmissionId",
-                  course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  status AS "status: FileAttemptStatus", attempt_number,
-                  (extract(epoch FROM started_at))::bigint AS "started_at?",
-                  (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
-                  (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  is_late, late_penalty_pct::float8 AS "late_penalty_pct!", raw_score::float8 AS "raw_score?", final_score::float8 AS "final_score?", feedback, rubric_scores,
-                  graded_by AS "graded_by: UserId", version, preview,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM file_submission_attempts WHERE id = $1"#,
+        r#"SELECT s.id AS "id: FileAttemptId",
+                  s.assessment_id AS "file_submission_id: FileSubmissionId",
+                  s.course_id AS "course_id: CourseId", s.user_id AS "user_id: UserId",
+                  s.status AS "status: FileAttemptStatus", s.attempt_number,
+                  (extract(epoch FROM s.started_at))::bigint AS "started_at?",
+                  (extract(epoch FROM s.submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM s.graded_at))::bigint AS "graded_at?",
+                  s.is_late, s.late_penalty_pct::float8 AS "late_penalty_pct!",
+                  CASE WHEN e.final_score IS NOT NULL THEN e.raw_score::float8 END AS "raw_score?",
+                  s.final_score::float8 AS "final_score?",
+                  CASE WHEN s.status = 'submitted' THEN '' ELSE COALESCE(e.overall_feedback, '') END AS "feedback!",
+                  COALESCE(e.effective_breakdown, '{}'::jsonb) AS "rubric_scores!",
+                  e.graded_by AS "graded_by?: UserId", s.version, s.preview,
+                  (extract(epoch FROM s.created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM s.updated_at))::bigint AS "updated_at!"
+           FROM submissions s
+           JOIN file_submissions f ON f.id = s.assessment_id
+           LEFT JOIN LATERAL (SELECT g.raw_score, g.final_score, g.overall_feedback,
+                                     g.effective_breakdown, g.graded_by
+                              FROM grading_entries g WHERE g.submission_id = s.id
+                              ORDER BY g.revision DESC LIMIT 1) e ON true WHERE s.id = $1"#,
         id.0
     )
     .fetch_optional(pool)
@@ -385,20 +431,29 @@ pub async fn open_attempt(
 ) -> Result<Option<AttemptRow>> {
     let row = sqlx::query_as!(
         AttemptRow,
-        r#"SELECT id AS "id: FileAttemptId",
-                  file_submission_id AS "file_submission_id: FileSubmissionId",
-                  course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  status AS "status: FileAttemptStatus", attempt_number,
-                  (extract(epoch FROM started_at))::bigint AS "started_at?",
-                  (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
-                  (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  is_late, late_penalty_pct::float8 AS "late_penalty_pct!", raw_score::float8 AS "raw_score?", final_score::float8 AS "final_score?", feedback, rubric_scores,
-                  graded_by AS "graded_by: UserId", version, preview,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM file_submission_attempts
-           WHERE file_submission_id = $1 AND user_id = $2 AND status IN ('draft', 'returned')
-           ORDER BY attempt_number DESC LIMIT 1"#,
+        r#"SELECT s.id AS "id: FileAttemptId",
+                  s.assessment_id AS "file_submission_id: FileSubmissionId",
+                  s.course_id AS "course_id: CourseId", s.user_id AS "user_id: UserId",
+                  s.status AS "status: FileAttemptStatus", s.attempt_number,
+                  (extract(epoch FROM s.started_at))::bigint AS "started_at?",
+                  (extract(epoch FROM s.submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM s.graded_at))::bigint AS "graded_at?",
+                  s.is_late, s.late_penalty_pct::float8 AS "late_penalty_pct!",
+                  CASE WHEN e.final_score IS NOT NULL THEN e.raw_score::float8 END AS "raw_score?",
+                  s.final_score::float8 AS "final_score?",
+                  CASE WHEN s.status = 'submitted' THEN '' ELSE COALESCE(e.overall_feedback, '') END AS "feedback!",
+                  COALESCE(e.effective_breakdown, '{}'::jsonb) AS "rubric_scores!",
+                  e.graded_by AS "graded_by?: UserId", s.version, s.preview,
+                  (extract(epoch FROM s.created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM s.updated_at))::bigint AS "updated_at!"
+           FROM submissions s
+           JOIN file_submissions f ON f.id = s.assessment_id
+           LEFT JOIN LATERAL (SELECT g.raw_score, g.final_score, g.overall_feedback,
+                                     g.effective_breakdown, g.graded_by
+                              FROM grading_entries g WHERE g.submission_id = s.id
+                              ORDER BY g.revision DESC LIMIT 1) e ON true
+           WHERE s.assessment_id = $1 AND s.user_id = $2 AND s.status IN ('draft', 'returned')
+           ORDER BY s.attempt_number DESC LIMIT 1"#,
         file_submission_id.0,
         user_id.0
     )
@@ -418,20 +473,29 @@ pub async fn list_user_attempts<'e>(
 ) -> Result<Vec<AttemptRow>> {
     let rows = sqlx::query_as!(
         AttemptRow,
-        r#"SELECT id AS "id: FileAttemptId",
-                  file_submission_id AS "file_submission_id: FileSubmissionId",
-                  course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  status AS "status: FileAttemptStatus", attempt_number,
-                  (extract(epoch FROM started_at))::bigint AS "started_at?",
-                  (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
-                  (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  is_late, late_penalty_pct::float8 AS "late_penalty_pct!", raw_score::float8 AS "raw_score?", final_score::float8 AS "final_score?", feedback, rubric_scores,
-                  graded_by AS "graded_by: UserId", version, preview,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM file_submission_attempts
-           WHERE file_submission_id = $1 AND user_id = $2 AND (NOT preview OR $3)
-           ORDER BY attempt_number DESC"#,
+        r#"SELECT s.id AS "id: FileAttemptId",
+                  s.assessment_id AS "file_submission_id: FileSubmissionId",
+                  s.course_id AS "course_id: CourseId", s.user_id AS "user_id: UserId",
+                  s.status AS "status: FileAttemptStatus", s.attempt_number,
+                  (extract(epoch FROM s.started_at))::bigint AS "started_at?",
+                  (extract(epoch FROM s.submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM s.graded_at))::bigint AS "graded_at?",
+                  s.is_late, s.late_penalty_pct::float8 AS "late_penalty_pct!",
+                  CASE WHEN e.final_score IS NOT NULL THEN e.raw_score::float8 END AS "raw_score?",
+                  s.final_score::float8 AS "final_score?",
+                  CASE WHEN s.status = 'submitted' THEN '' ELSE COALESCE(e.overall_feedback, '') END AS "feedback!",
+                  COALESCE(e.effective_breakdown, '{}'::jsonb) AS "rubric_scores!",
+                  e.graded_by AS "graded_by?: UserId", s.version, s.preview,
+                  (extract(epoch FROM s.created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM s.updated_at))::bigint AS "updated_at!"
+           FROM submissions s
+           JOIN file_submissions f ON f.id = s.assessment_id
+           LEFT JOIN LATERAL (SELECT g.raw_score, g.final_score, g.overall_feedback,
+                                     g.effective_breakdown, g.graded_by
+                              FROM grading_entries g WHERE g.submission_id = s.id
+                              ORDER BY g.revision DESC LIMIT 1) e ON true
+           WHERE s.assessment_id = $1 AND s.user_id = $2 AND (NOT s.preview OR $3)
+           ORDER BY s.attempt_number DESC"#,
         file_submission_id.0,
         user_id.0,
         include_preview
@@ -449,20 +513,29 @@ pub async fn list_attempts(
 ) -> Result<Vec<AttemptRow>> {
     let rows = sqlx::query_as!(
         AttemptRow,
-        r#"SELECT id AS "id: FileAttemptId",
-                  file_submission_id AS "file_submission_id: FileSubmissionId",
-                  course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  status AS "status: FileAttemptStatus", attempt_number,
-                  (extract(epoch FROM started_at))::bigint AS "started_at?",
-                  (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
-                  (extract(epoch FROM graded_at))::bigint AS "graded_at?",
-                  is_late, late_penalty_pct::float8 AS "late_penalty_pct!", raw_score::float8 AS "raw_score?", final_score::float8 AS "final_score?", feedback, rubric_scores,
-                  graded_by AS "graded_by: UserId", version, preview,
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM file_submission_attempts
-           WHERE file_submission_id = $1 AND NOT preview
-           ORDER BY submitted_at DESC NULLS LAST, id DESC"#,
+        r#"SELECT s.id AS "id: FileAttemptId",
+                  s.assessment_id AS "file_submission_id: FileSubmissionId",
+                  s.course_id AS "course_id: CourseId", s.user_id AS "user_id: UserId",
+                  s.status AS "status: FileAttemptStatus", s.attempt_number,
+                  (extract(epoch FROM s.started_at))::bigint AS "started_at?",
+                  (extract(epoch FROM s.submitted_at))::bigint AS "submitted_at?",
+                  (extract(epoch FROM s.graded_at))::bigint AS "graded_at?",
+                  s.is_late, s.late_penalty_pct::float8 AS "late_penalty_pct!",
+                  CASE WHEN e.final_score IS NOT NULL THEN e.raw_score::float8 END AS "raw_score?",
+                  s.final_score::float8 AS "final_score?",
+                  CASE WHEN s.status = 'submitted' THEN '' ELSE COALESCE(e.overall_feedback, '') END AS "feedback!",
+                  COALESCE(e.effective_breakdown, '{}'::jsonb) AS "rubric_scores!",
+                  e.graded_by AS "graded_by?: UserId", s.version, s.preview,
+                  (extract(epoch FROM s.created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM s.updated_at))::bigint AS "updated_at!"
+           FROM submissions s
+           JOIN file_submissions f ON f.id = s.assessment_id
+           LEFT JOIN LATERAL (SELECT g.raw_score, g.final_score, g.overall_feedback,
+                                     g.effective_breakdown, g.graded_by
+                              FROM grading_entries g WHERE g.submission_id = s.id
+                              ORDER BY g.revision DESC LIMIT 1) e ON true
+           WHERE s.assessment_id = $1 AND NOT s.preview
+           ORDER BY s.submitted_at DESC NULLS LAST, s.id DESC"#,
         file_submission_id.0
     )
     .fetch_all(pool)
@@ -479,8 +552,8 @@ pub async fn count_completed_attempts(
     include_preview: bool,
 ) -> Result<i64> {
     let count = sqlx::query_scalar!(
-        r#"SELECT count(*) AS "count!" FROM file_submission_attempts
-           WHERE file_submission_id = $1 AND user_id = $2 AND status <> 'draft'
+        r#"SELECT count(*) AS "count!" FROM submissions
+           WHERE assessment_id = $1 AND user_id = $2 AND status <> 'draft'
              AND (NOT preview OR $3)"#,
         file_submission_id.0,
         user_id.0,
@@ -498,7 +571,7 @@ pub async fn touch_attempt<'e>(
     expected_version: i64,
 ) -> Result<bool> {
     let updated = sqlx::query!(
-        "UPDATE file_submission_attempts SET version = version + 1 WHERE id = $1 AND version = $2",
+        "UPDATE submissions SET version = version + 1 WHERE id = $1 AND version = $2",
         id.0,
         expected_version
     )
@@ -507,26 +580,56 @@ pub async fn touch_attempt<'e>(
     Ok(updated.rows_affected() == 1)
 }
 
-/// Draft/returned → submitted under the lock.
+/// The assessment version a hand-in of `task` names.
+///
+/// `assessment_versions::ensure`: its own short transaction, before the hand-in's. Its policy holds the
+/// file caps and the rubric; the one item is the hand-in itself, worth 100 points: a file grade is a
+/// percentage, so a grade entry's points equal it.
+pub async fn ensure_version(
+    pool: &PgPool,
+    task: &FileSubmissionRow,
+) -> Result<AssessmentVersionId> {
+    crate::assessment_versions::ensure(
+        pool,
+        AssessmentId(task.id.0),
+        &serde_json::json!({ "items": [{ "kind": "files", "max_score": 100 }] }),
+        &serde_json::json!({
+            "allowed_mime_types": task.allowed_mime_types,
+            "max_files": task.max_files,
+            "max_file_size_mb": task.max_file_size_mb,
+            "rubric": task.rubric,
+        }),
+    )
+    .await
+}
+
+/// Draft/returned → submitted under the lock. The first hand-in names `version` (and copies its
+/// snapshots, `submissions_handed_in_snapshots_check`); a revision keeps the one it was handed in against.
 pub async fn submit_attempt(
     db: impl sqlx::PgExecutor<'_>,
     id: FileAttemptId,
     expected_version: i64,
     is_late: bool,
     late_penalty_pct: f64,
+    version: AssessmentVersionId,
 ) -> Result<bool> {
     let updated = sqlx::query!(
         // A revision handed in starts a new review round: the return comment
-        // stays in the grading history, not on the form the grader reopens.
-        r#"UPDATE file_submission_attempts SET
+        // stays in the grading history, not on the form the grader reopens
+        // (an attempt reads no feedback while it is `submitted`).
+        r#"UPDATE submissions s SET
                status = 'submitted', submitted_at = now(), is_late = $3, late_penalty_pct = $4::float8,
-               feedback = CASE WHEN status = 'returned' THEN '' ELSE feedback END,
-               version = version + 1
-           WHERE id = $1 AND version = $2 AND status IN ('draft', 'returned')"#,
+               assessment_version_id = COALESCE(s.assessment_version_id, v.id),
+               items_snapshot = COALESCE(s.items_snapshot, v.items),
+               policy_snapshot = COALESCE(s.policy_snapshot, v.policy),
+               version = s.version + 1
+           FROM assessment_versions v
+           WHERE s.id = $1 AND s.version = $2 AND s.status IN ('draft', 'returned') AND v.id = $5"#,
         id.0,
         expected_version,
         is_late,
-        late_penalty_pct
+        late_penalty_pct,
+        version.0
     )
     .execute(db)
     .await?;
@@ -554,18 +657,28 @@ pub async fn grade_attempt(
 ) -> Result<bool> {
     // L-6: every save appends to the attempt's grading ledger in the same
     // statement - no ledger row without the grade and no grade without one.
+    // The entry carries what the attempt reads back: feedback and rubric
+    // scores a save leaves out are the previous entry's (`s` and `p` are the
+    // statement's snapshot: the row before this save). An entry needs a raw
+    // score, so a return without one stores 0 beside a NULL final score,
+    // which is how every reader tells «no score».
     let updated = sqlx::query!(
         r#"WITH u AS (
-               UPDATE file_submission_attempts SET
-                   status = $3, final_score = $4::float8, feedback = COALESCE($5, feedback),
-                   rubric_scores = COALESCE($6, rubric_scores),
-                   graded_by = $7, graded_at = now(), version = version + 1, raw_score = $8::float8
+               UPDATE submissions SET
+                   status = $3, final_score = $4::float8, graded_at = now(), version = version + 1
                WHERE id = $1 AND version = $2
-               RETURNING id, graded_by, status, raw_score, late_penalty_pct, final_score, feedback)
-           INSERT INTO file_grading_entries
-               (attempt_id, graded_by, status, raw_score, penalty_pct, final_score, feedback)
-           SELECT id, graded_by, status, raw_score, late_penalty_pct, final_score, feedback
-           FROM u"#,
+               RETURNING id, late_penalty_pct)
+           INSERT INTO grading_entries
+               (submission_id, graded_by, raw_score, penalty_pct, final_score,
+                overall_feedback, effective_breakdown, published_at, returned)
+           SELECT u.id, $7, COALESCE($8::float8, 0), u.late_penalty_pct, $4::float8,
+                  COALESCE($5, CASE WHEN s.status = 'submitted' THEN '' ELSE p.overall_feedback END, ''),
+                  COALESCE($6, p.effective_breakdown, '{}'::jsonb),
+                  CASE WHEN $3 = 'released' THEN now() END, $3 = 'returned'
+           FROM u JOIN submissions s ON s.id = u.id
+           LEFT JOIN LATERAL (SELECT g.overall_feedback, g.effective_breakdown
+                              FROM grading_entries g WHERE g.submission_id = u.id
+                              ORDER BY g.revision DESC LIMIT 1) p ON true"#,
         id.0,
         expected_version,
         grade.status.stored(),
@@ -587,9 +700,11 @@ pub async fn lock_attempt_lateness(
     id: FileAttemptId,
 ) -> Result<Option<(bool, f64, Option<f64>)>> {
     let row = sqlx::query!(
-        r#"SELECT is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
-                  raw_score::float8 AS "raw_score?"
-           FROM file_submission_attempts WHERE id = $1 FOR UPDATE"#,
+        r#"SELECT s.is_late, s.late_penalty_pct::float8 AS "late_penalty_pct!",
+                  (SELECT CASE WHEN g.final_score IS NOT NULL THEN g.raw_score::float8 END
+                   FROM grading_entries g WHERE g.submission_id = s.id
+                   ORDER BY g.revision DESC LIMIT 1) AS "raw_score?"
+           FROM submissions s WHERE s.id = $1 FOR UPDATE OF s"#,
         id.0
     )
     .fetch_optional(conn)
@@ -599,6 +714,10 @@ pub async fn lock_attempt_lateness(
 
 /// BUG-316: re-judged lateness and the final score it prices; the version
 /// bumps, so a grade save that priced the old penalty is stale (412).
+///
+/// A changed score of record is a new ledger entry (the latest one again, at the new penalty), as for a
+/// quiz (`grading::bulk::settle_lateness`): the journal's latest entry is the grade
+/// (`submissions_current_grade`).
 pub async fn set_attempt_lateness(
     conn: &mut sqlx::PgConnection,
     id: FileAttemptId,
@@ -607,9 +726,19 @@ pub async fn set_attempt_lateness(
     final_score: Option<f64>,
 ) -> Result<()> {
     sqlx::query!(
-        "UPDATE file_submission_attempts SET is_late = $2, late_penalty_pct = $3::float8,
-             final_score = $4::float8, version = version + 1
-         WHERE id = $1",
+        r#"WITH u AS (
+               UPDATE submissions SET is_late = $2, late_penalty_pct = $3::float8,
+                   final_score = $4::float8, version = version + 1
+               WHERE id = $1 RETURNING id)
+           INSERT INTO grading_entries
+               (submission_id, graded_by, raw_score, penalty_pct, final_score,
+                overall_feedback, effective_breakdown, published_at, returned)
+           SELECT u.id, p.graded_by, p.raw_score, $3::float8, $4::float8,
+                  p.overall_feedback, p.effective_breakdown,
+                  CASE WHEN p.published_at IS NOT NULL THEN now() END, p.returned
+           FROM u CROSS JOIN LATERAL (SELECT g.* FROM grading_entries g WHERE g.submission_id = u.id
+                                      ORDER BY g.revision DESC LIMIT 1) p
+           WHERE p.final_score IS DISTINCT FROM ($4::float8)::percent"#,
         id.0,
         is_late,
         late_penalty_pct,
@@ -679,7 +808,7 @@ pub async fn list_for_review(
                   EXISTS (SELECT 1 FROM course_members r
                           WHERE r.course_id = a.course_id AND r.user_id = a.user_id) AS "enrolled!",
                   is_course_staff(a.course_id, a.user_id) AS "staff!"
-           FROM file_submission_attempts a JOIN users u ON u.id = a.user_id
+           FROM submissions a JOIN users u ON u.id = a.user_id
            CROSS JOIN LATERAL (SELECT $8::float8 * CASE $7::text
                   WHEN 'final_score' THEN coalesce(a.final_score, -1)
                   WHEN 'attempt_number' THEN a.attempt_number::float8
@@ -690,8 +819,8 @@ pub async fn list_for_review(
                   WHEN 'attempt_number' THEN c.attempt_number::float8
                   WHEN 'submitted_at' THEN coalesce(extract(epoch FROM c.submitted_at)::float8, 0)
                   ELSE 0 END AS key
-                  FROM file_submission_attempts c WHERE c.id = $4) ck ON true
-           WHERE a.file_submission_id = $1 AND a.status <> 'draft' AND NOT a.preview
+                  FROM submissions c WHERE c.id = $4) ck ON true
+           WHERE a.assessment_id = $1 AND a.status <> 'draft' AND NOT a.preview
              AND ($2::text[] IS NULL OR a.status = ANY($2))
              AND ($3::text IS NULL OR u.username ILIKE $3 ESCAPE '\' OR u.display_name ILIKE $3 ESCAPE '\'
                   OR u.email ILIKE $3 ESCAPE '\')
@@ -739,8 +868,8 @@ pub async fn review_counts(
                   count(*) FILTER (WHERE status = 'released') AS "published!",
                   count(*) FILTER (WHERE status = 'returned') AS "returned!",
                   count(*) FILTER (WHERE is_late) AS "late!"
-           FROM file_submission_attempts a
-           WHERE a.file_submission_id = $1 AND a.status <> 'draft' AND NOT a.preview
+           FROM submissions a
+           WHERE a.assessment_id = $1 AND a.status <> 'draft' AND NOT a.preview
              AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
                   WHERE m.usergroup_id = $2 AND m.user_id = a.user_id))"#,
         file_submission_id.0,
@@ -766,8 +895,8 @@ pub async fn graded_scores(
     group_id: Option<UsergroupId>,
 ) -> Result<Vec<f64>> {
     let scores = sqlx::query_scalar!(
-        r#"SELECT final_score::float8 AS "final_score!" FROM file_submission_attempts a
-           WHERE a.file_submission_id = $1 AND a.status IN ('graded', 'released')
+        r#"SELECT final_score::float8 AS "final_score!" FROM submissions a
+           WHERE a.assessment_id = $1 AND a.status IN ('graded', 'released')
              AND a.final_score IS NOT NULL AND NOT a.preview
              AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m
                   WHERE m.usergroup_id = $2 AND m.user_id = a.user_id))"#,
@@ -786,8 +915,8 @@ pub async fn list_ids_in_status(
     status: FileAttemptStatus,
 ) -> Result<Vec<(FileAttemptId, i64)>> {
     let rows = sqlx::query!(
-        r#"SELECT id AS "id: FileAttemptId", version FROM file_submission_attempts
-           WHERE file_submission_id = $1 AND status = ANY($2) AND NOT preview
+        r#"SELECT id AS "id: FileAttemptId", version FROM submissions
+           WHERE assessment_id = $1 AND status = ANY($2) AND NOT preview
            ORDER BY id"#,
         file_submission_id.0,
         status.stored_spellings() as _
@@ -809,7 +938,8 @@ pub struct FileGradingEntryRow {
     pub created_at: i64,
 }
 
-/// The grading ledger of one attempt, newest first (L-6).
+/// The grading ledger of one attempt, newest first (L-6). An entry's status is what its save did: released
+/// the grade (`published_at`), returned the work (`returned`) or held the grade.
 pub async fn list_grading_entries(
     pool: &PgPool,
     attempt_id: FileAttemptId,
@@ -817,9 +947,12 @@ pub async fn list_grading_entries(
     let rows = sqlx::query_as!(
         FileGradingEntryRow,
         r#"SELECT id, graded_by AS "graded_by: UserId",
-                  status AS "status: FileAttemptStatus", raw_score::float8 AS "raw_score?", penalty_pct::float8 AS "penalty_pct!", final_score::float8 AS "final_score?",
-                  feedback, (extract(epoch FROM created_at))::bigint AS "created_at!"
-           FROM file_grading_entries WHERE attempt_id = $1
+                  CASE WHEN published_at IS NOT NULL THEN 'released' WHEN returned THEN 'returned'
+                       ELSE 'graded' END AS "status!: FileAttemptStatus",
+                  CASE WHEN final_score IS NOT NULL THEN raw_score::float8 END AS "raw_score?",
+                  penalty_pct::float8 AS "penalty_pct!", final_score::float8 AS "final_score?",
+                  overall_feedback AS feedback, (extract(epoch FROM created_at))::bigint AS "created_at!"
+           FROM grading_entries WHERE submission_id = $1
            ORDER BY revision DESC"#,
         attempt_id.0
     )
@@ -941,9 +1074,9 @@ pub async fn replace_files(
 /// Delete the submitted-file rows under locked activities.
 ///
 /// One upload reference is released per row the DELETE returned (BUG-259:
-/// the activity → file-submission → attempt cascade drops the rows, not the
-/// counts). Lock order activity (caller) → file submissions → attempts → uploads by
-/// key: the file-submission row lock keeps new attempts out and the
+/// the activity → assessment → submission cascade drops the rows, not the
+/// counts). Lock order activity (caller) → file tasks (their assessment rows) → hand-ins → uploads by
+/// key: the assessment row lock keeps new attempts out and the
 /// attempt locks keep a racing draft swap (`touch_attempt`) out of the set.
 pub async fn delete_files_releasing(
     conn: &mut sqlx::PgConnection,
@@ -951,13 +1084,14 @@ pub async fn delete_files_releasing(
     grace_secs: f64,
 ) -> Result<u64> {
     let submissions = sqlx::query_scalar!(
-        "SELECT id FROM file_submissions WHERE activity_id = ANY($1) ORDER BY id FOR UPDATE",
+        "SELECT a.id FROM assessments a JOIN file_submissions f ON f.id = a.id
+         WHERE a.activity_id = ANY($1) ORDER BY a.id FOR UPDATE OF a",
         activity_ids
     )
     .fetch_all(&mut *conn)
     .await?;
     let attempts = sqlx::query_scalar!(
-        "SELECT id FROM file_submission_attempts WHERE file_submission_id = ANY($1)
+        "SELECT id FROM submissions WHERE assessment_id = ANY($1)
          ORDER BY id FOR UPDATE",
         &submissions
     )
@@ -977,8 +1111,8 @@ pub async fn discard_preview_attempts(
     grace_secs: f64,
 ) -> Result<()> {
     let attempts = sqlx::query_scalar!(
-        "SELECT id FROM file_submission_attempts
-         WHERE file_submission_id = $1 AND user_id = $2 AND preview
+        "SELECT id FROM submissions
+         WHERE assessment_id = $1 AND user_id = $2 AND preview
            AND status IN ('draft', 'returned')
          ORDER BY id FOR UPDATE",
         file_submission_id.0,
@@ -987,12 +1121,9 @@ pub async fn discard_preview_attempts(
     .fetch_all(&mut *conn)
     .await?;
     delete_attempt_files_releasing(&mut *conn, &attempts, grace_secs).await?;
-    sqlx::query!(
-        "DELETE FROM file_submission_attempts WHERE id = ANY($1)",
-        &attempts
-    )
-    .execute(conn)
-    .await?;
+    sqlx::query!("DELETE FROM submissions WHERE id = ANY($1)", &attempts)
+        .execute(conn)
+        .await?;
     Ok(())
 }
 
@@ -1032,12 +1163,12 @@ pub async fn upsert_override_due(
     granted_by: UserId,
 ) -> Result<()> {
     sqlx::query!(
-        "INSERT INTO file_submission_overrides
-             (file_submission_id, user_id, due_at, reason, granted_by)
-         VALUES ($1, $2, to_timestamp($3::bigint), $4, $5)
-         ON CONFLICT (file_submission_id, user_id) DO UPDATE
-             SET due_at = EXCLUDED.due_at, reason = EXCLUDED.reason,
-                 granted_by = EXCLUDED.granted_by",
+        "INSERT INTO assessment_overrides
+             (assessment_id, user_id, due_at_override, due_extended, note, granted_by)
+         VALUES ($1, $2, to_timestamp($3::bigint), true, $4, $5)
+         ON CONFLICT (assessment_id, user_id) DO UPDATE
+             SET due_at_override = EXCLUDED.due_at_override, due_extended = true,
+                 note = EXCLUDED.note, granted_by = EXCLUDED.granted_by",
         file_submission_id.0,
         user_id.0,
         due_at,
@@ -1056,8 +1187,9 @@ pub async fn override_due<'e>(
     user_id: UserId,
 ) -> Result<Option<i64>> {
     let due = sqlx::query_scalar!(
-        r#"SELECT (extract(epoch FROM due_at))::bigint AS "due!"
-           FROM file_submission_overrides WHERE file_submission_id = $1 AND user_id = $2"#,
+        r#"SELECT (extract(epoch FROM due_at_override))::bigint AS "due!"
+           FROM assessment_overrides
+           WHERE assessment_id = $1 AND user_id = $2 AND due_at_override IS NOT NULL"#,
         file_submission_id.0,
         user_id.0
     )

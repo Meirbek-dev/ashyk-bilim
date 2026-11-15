@@ -569,6 +569,7 @@ impl CsvLanguage {
             (Self::En, AssessmentKind::Quiz) => "Quiz",
             (Self::En, AssessmentKind::Exam) => "Exam",
             (Self::En, AssessmentKind::CodeChallenge) => "Code challenge",
+            (_, AssessmentKind::Assignment) => self.file_task_kind(),
         }
     }
 
@@ -1680,6 +1681,7 @@ impl GradingService {
                 effective_breakdown: ledger.effective,
                 overall_feedback: ledger.feedback,
                 published: ledger.target == SubmissionStatus::Published,
+                returned: ledger.target == SubmissionStatus::Returned,
             },
         )
         .await?;
@@ -1845,6 +1847,7 @@ impl GradingService {
                     effective_breakdown: &effective,
                     overall_feedback: &feedback,
                     published: true,
+                    returned: false,
                 },
             )
             .await?;

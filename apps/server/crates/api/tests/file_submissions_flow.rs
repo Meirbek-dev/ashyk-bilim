@@ -449,11 +449,22 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
             .await;
         assert_eq!(preview.status, StatusCode::CREATED, "{}", preview.text());
         assert_eq!(preview.json()["attempt_number"], number);
+        // A hand-in names the version it was made against (`submissions_handed_in_version_check`).
+        let version = ab_db::assessment_versions::ensure(
+            &app.pool,
+            ab_core::id::AssessmentId(uuid::Uuid::parse_str(&id).unwrap()),
+            &serde_json::json!({}),
+            &serde_json::json!({}),
+        )
+        .await
+        .unwrap();
         sqlx::query(
-            "UPDATE file_submission_attempts SET status = 'submitted', submitted_at = now()
+            "UPDATE submissions SET status = 'submitted', submitted_at = now(),
+                 items_snapshot = '{}', policy_snapshot = '{}', assessment_version_id = $2
              WHERE id = $1",
         )
         .bind(uuid::Uuid::parse_str(preview.json()["id"].as_str().unwrap()).unwrap())
+        .bind(version.0)
         .execute(&app.pool)
         .await
         .unwrap();
@@ -1054,13 +1065,11 @@ async fn a_late_rule_change_settles_every_file_hand_in(pool: PgPool) {
             &serde_json::json!({ "due_at_unix": now_unix() - 2 * 86_400 - 60 }),
         ),
         async || {
-            sqlx::query_scalar::<_, bool>(
-                "SELECT due_at < now() FROM file_submissions WHERE id = $1",
-            )
-            .bind(fs)
-            .fetch_one(&app.pool)
-            .await
-            .unwrap()
+            sqlx::query_scalar::<_, bool>("SELECT due_at < now() FROM assessments WHERE id = $1")
+                .bind(fs)
+                .fetch_one(&app.pool)
+                .await
+                .unwrap()
         },
         |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
     )
@@ -1835,13 +1844,12 @@ async fn a_learner_never_resumes_a_file_preview(pool: PgPool) {
     assert_ne!(reopened.json()["id"], preview.json()["id"]);
     assert_eq!(reopened.json()["attempt_number"], 1);
     assert_eq!(referenced_count(&app, &old).await, 0);
-    let rows: Vec<bool> = sqlx::query_scalar(
-        "SELECT preview FROM file_submission_attempts WHERE file_submission_id = $1",
-    )
-    .bind(uuid::Uuid::parse_str(&fresh).unwrap())
-    .fetch_all(&app.pool)
-    .await
-    .unwrap();
+    let rows: Vec<bool> =
+        sqlx::query_scalar("SELECT preview FROM submissions WHERE assessment_id = $1")
+            .bind(uuid::Uuid::parse_str(&fresh).unwrap())
+            .fetch_all(&app.pool)
+            .await
+            .unwrap();
     assert_eq!(rows, [false]);
 }
 
@@ -1885,7 +1893,7 @@ async fn dropped_file_grade_publish_still_projects(pool: PgPool) {
         )),
         async || {
             sqlx::query_scalar::<_, ab_core::assessments::FileAttemptStatus>(
-                "SELECT status FROM file_submission_attempts WHERE id = $1",
+                "SELECT status FROM submissions WHERE id = $1",
             )
             .bind(attempt)
             .fetch_one(&app.pool)
@@ -2152,5 +2160,240 @@ async fn handed_in_work_puts_the_course_in_progress(pool: PgPool) {
         true,
         "{}",
         agenda.text()
+    );
+}
+
+/// Pipeline merge (REWRITE 5.6 n6): a file task is an assessment under the task's id, a hand-in is a
+/// `submissions` row whose grades are `grading_entries` and whose extension is an `assessment_overrides`
+/// row. A full round (hand in, extend, return, revise, publish) leaves the three old tables empty, and the
+/// assessment API does not know the task or its hand-in.
+#[ab_testdb::test]
+async fn a_file_task_lives_in_the_assessment_pipeline(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher).await;
+    let alice = learner(&app, "alice").await;
+    let id = published_activity(
+        &app,
+        &teacher,
+        &chapter_id,
+        serde_json::json!({ "due_at_unix": now_unix() + 3600, "max_attempts": 50 }),
+    )
+    .await;
+    let task = uuid::Uuid::parse_str(&id).unwrap();
+    let (kind, lifecycle, grading_mode, max_attempts): (String, String, String, i32) =
+        sqlx::query_as(
+            "SELECT act.activity_type, a.lifecycle, a.grading_mode, a.max_attempts
+             FROM file_submissions f JOIN assessments a ON a.id = f.id
+             JOIN activities act ON act.id = a.activity_id WHERE f.id = $1",
+        )
+        .bind(task)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        (
+            kind.as_str(),
+            lifecycle.as_str(),
+            grading_mode.as_str(),
+            max_attempts
+        ),
+        ("file_submission", "published", "manual", 50)
+    );
+
+    let upload = finalized_upload(&app, &alice, "application/pdf", b"%PDF merged").await;
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({ "files": [{ "upload_id": upload }] }),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    let attempt_id = submitted.json()["id"].as_str().unwrap().to_owned();
+    let attempt = uuid::Uuid::parse_str(&attempt_id).unwrap();
+    let extended = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/file-submissions/{id}/deadline-extensions"),
+            &serde_json::json!({
+                "user_ids": [alice.user_id], "new_due_at_unix": now_unix() + 7200,
+                "reason": "sick leave",
+            }),
+        )
+        .await;
+    assert_eq!(extended.status, StatusCode::OK, "{}", extended.text());
+    let grade_path = format!("/api/v2/file-submission-attempts/{attempt_id}/grade");
+    let attempt_path = format!("/api/v2/file-submission-attempts/{attempt_id}");
+    let version = async || app.get_as(&teacher, &attempt_path).await.json()["version"].to_string();
+    let returned = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            grade_path.clone(),
+            Some(&version().await),
+            &serde_json::json!({ "action": "return", "feedback": "Add references" }),
+        ))
+        .await;
+    assert_eq!(returned.status, StatusCode::OK, "{}", returned.text());
+    assert!(
+        returned.json()["final_score"].is_null(),
+        "{}",
+        returned.text()
+    );
+    let again = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/file-submissions/{id}/submit"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(again.json()["id"], attempt_id.as_str(), "{}", again.text());
+    let published = app
+        .send(with_if_match(
+            &teacher,
+            "PATCH",
+            grade_path,
+            Some(&version().await),
+            &serde_json::json!({ "action": "publish", "final_score": 88, "feedback": "Good" }),
+        ))
+        .await;
+    assert_eq!(
+        published.json()["status"],
+        "published",
+        "{}",
+        published.text()
+    );
+    assert_eq!(published.json()["final_score"], 88.0);
+    let history = app
+        .get_as(&teacher, &format!("{attempt_path}/grading-history"))
+        .await;
+    let entries = history.json();
+    assert_eq!(entries[0]["status"], "published", "{}", history.text());
+    assert_eq!(entries[1]["status"], "returned", "{}", history.text());
+    assert!(entries[1]["raw_score"].is_null(), "{}", history.text());
+    assert_eq!(entries.as_array().unwrap().len(), 2);
+
+    // The hand-in is a submission of the task's assessment, handed in against a 100-point version.
+    let (assessment, status, max_points, files): (uuid::Uuid, String, f64, i64) = sqlx::query_as(
+        "SELECT s.assessment_id, s.status, v.max_points::float8,
+                (SELECT count(*) FROM file_submission_files f WHERE f.attempt_id = s.id)
+         FROM submissions s JOIN assessment_versions v ON v.id = s.assessment_version_id
+         WHERE s.id = $1",
+    )
+    .bind(attempt)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        (assessment, status.as_str(), max_points, files),
+        (task, "released", 100.0, 1)
+    );
+    let entries: Vec<(bool, bool, Option<f64>, Option<f64>)> = sqlx::query_as(
+        "SELECT returned, published_at IS NOT NULL, final_score::float8, final_points::float8
+         FROM grading_entries WHERE submission_id = $1 ORDER BY revision",
+    )
+    .bind(attempt)
+    .fetch_all(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        entries,
+        [
+            (true, false, None, None),
+            (false, true, Some(88.0), Some(88.0))
+        ]
+    );
+    let (extension, note): (bool, String) = sqlx::query_as(
+        "SELECT due_extended, note FROM assessment_overrides WHERE assessment_id = $1 AND user_id = $2",
+    )
+    .bind(task)
+    .bind(alice.user_id.0)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert!(extension);
+    assert_eq!(note, "sick leave");
+    for table in [
+        "file_submission_attempts",
+        "file_grading_entries",
+        "file_submission_overrides",
+    ] {
+        // SAFETY: `table` comes from the list above, never from input.
+        let rows: i64 =
+            sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT count(*) FROM {table}")))
+                .fetch_one(&app.pool)
+                .await
+                .unwrap();
+        assert_eq!(rows, 0, "{table} is written by nothing");
+    }
+
+    // The assessment API answers «not found» for the task and for its hand-in.
+    for path in [
+        format!("/api/v2/assessments/{id}"),
+        format!("/api/v2/assessments/{id}/readiness"),
+        format!("/api/v2/assessments/{id}/audit"),
+        format!("/api/v2/assessments/{id}/overrides"),
+        format!("/api/v2/assessments/{id}/submissions"),
+        format!("/api/v2/assessments/{id}/submissions/stats"),
+        format!("/api/v2/submissions/{attempt_id}"),
+        format!("/api/v2/submissions/{attempt_id}/review"),
+        format!("/api/v2/submissions/{attempt_id}/grading-history"),
+    ] {
+        let response = app.get_as(&teacher, &path).await;
+        assert_eq!(
+            response.status,
+            StatusCode::NOT_FOUND,
+            "{path}: {}",
+            response.text()
+        );
+    }
+    for path in [
+        format!("/api/v2/assessments/{id}/attempt-state"),
+        format!("/api/v2/assessments/{id}/submissions/me"),
+    ] {
+        let response = app.get_as(&alice, &path).await;
+        assert_eq!(
+            response.status,
+            StatusCode::NOT_FOUND,
+            "{path}: {}",
+            response.text()
+        );
+    }
+    let started = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/assessments/{id}/submissions"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(started.status, StatusCode::NOT_FOUND, "{}", started.text());
+
+    // A copied course gets the task as a draft, again one id for the assessment and its file body.
+    let copied = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/courses/{course_id}/duplicate"),
+            &serde_json::json!({ "name": "Copy" }),
+        )
+        .await;
+    assert_eq!(copied.status, StatusCode::CREATED, "{}", copied.text());
+    let copy = uuid::Uuid::parse_str(copied.json()["id"].as_str().unwrap()).unwrap();
+    let tasks: Vec<(String, i32, String)> = sqlx::query_as(
+        "SELECT a.lifecycle, a.max_attempts, f.instructions
+         FROM file_submissions f JOIN assessments a ON a.id = f.id AND a.activity_id = f.activity_id
+         WHERE f.course_id = $1",
+    )
+    .bind(copy)
+    .fetch_all(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        tasks,
+        [(
+            "draft".to_owned(),
+            50,
+            "Upload your essay as a PDF.".to_owned()
+        )]
     );
 }

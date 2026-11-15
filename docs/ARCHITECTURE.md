@@ -409,6 +409,19 @@ One migration set for the database `ashyq`. Rules:
 
 ### Schema guarantees (2026-11-07 schema review)
 
+- **One submission pipeline** (`20261115155501_merge_file_pipeline`). A file task is an `assessments` row (policy,
+  lifecycle; kind `file_submission`, `AssessmentKind::Assignment`, storage only) and a `file_submissions` row with the
+  same id (`file_submissions_assessment_fkey`: instructions, rubric, file caps, the task's `version`). A hand-in is a
+  `submissions` row (the file API's attempt id), handed in against an `assessment_versions` row whose policy holds the
+  caps and rubric and whose one item is worth 100 points; its files are `file_submission_files`, its grades
+  `grading_entries` (`returned` marks a save that sent the work back; a score re-priced by a deadline change is a new
+  entry) and a learner's own due date an `assessment_overrides` row. The file API (`/file-submissions`) is the only
+  door: the assessment API answers 404 for a file task and its hand-ins (`get_assessment`, `get_submission` skip them)
+  and no timer hands a file draft in. AI rows name a file hand-in in `submission_id`
+  (`submission_is_file_hand_in` tells the kinds apart). `file_submission_attempts`, `file_grading_entries`,
+  `file_submission_overrides`, the policy columns of `file_submissions` and the AI `file_*attempt_id` columns are read
+  and written by nothing and wait for their contract (`pending-contracts.tsv`); where this section still names them,
+  it describes those idle tables.
 - **Learner work outlives content.** `RESTRICT` keys refuse deleting an assessment, file task or course under an
   attempt. Retention purges only courses without learner work (`course_has_learner_work`); the rest wait for
   `ashyq admin purge-course`, which writes a JSON archive first. A certificate carries its own `course_id` and survives
@@ -460,8 +473,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   percentages in 0..100; text columns are capped at the API's garde limits (course description 5 000, about
   20 000, chapter/collection description 5 000, post 20 000, course update 500/50 000, file-task instructions
   50 000; since `20261115120559`: assessment description 20 000, override note 1 000, bio 2 000, organization 200,
-  group description 5 000, intervention notes 4 000 / outcome 2 000) and an assessment allows at most 10 attempts
-  (`MAX_ATTEMPTS`); JSONB written by typed server code is an object (`submissions.violations` an array) and an item's
+  group description 5 000, intervention notes 4 000 / outcome 2 000) and an assessment allows at most 50 attempts
+  (a file task's range; the server keeps `MAX_ATTEMPTS` = 10 for the other kinds); JSONB written by typed server code is an object (`submissions.violations` an array) and an item's
   body is tagged with its `kind`. A check whose existing rows violate it is skipped with a WARNING and a
   `schema_skipped_checks` row instead of failing the deploy (RUNBOOK 2.4).
 - **Grade journals are append-only** (`20261102000000_ledger_guards.sql`): a `grading_entries` row changes only

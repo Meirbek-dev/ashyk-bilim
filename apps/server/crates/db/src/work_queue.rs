@@ -115,8 +115,8 @@ pub async fn list_teacher_grading_work(
                   (extract(epoch FROM p.updated_at))::bigint AS "updated_at!",
                   COALESCE(
                       p.latest_submission_id,
-                      (SELECT fa.id FROM file_submission_attempts fa
-                       JOIN file_submissions f ON f.id = fa.file_submission_id
+                      (SELECT fa.id FROM submissions fa
+                       JOIN file_submissions f ON f.id = fa.assessment_id
                        WHERE f.activity_id = p.activity_id AND fa.user_id = p.user_id
                          AND fa.status = 'submitted' AND NOT fa.preview
                        ORDER BY fa.updated_at DESC LIMIT 1)
@@ -132,8 +132,8 @@ pub async fn list_teacher_grading_work(
                  THEN p.teacher_action_required
                  ELSE EXISTS (SELECT 1 FROM submissions s
                               WHERE s.id = p.latest_submission_id AND s.status = 'submitted')
-                   OR EXISTS (SELECT 1 FROM file_submission_attempts fa
-                              JOIN file_submissions f ON f.id = fa.file_submission_id
+                   OR EXISTS (SELECT 1 FROM submissions fa
+                              JOIN file_submissions f ON f.id = fa.assessment_id
                               WHERE f.activity_id = p.activity_id AND fa.user_id = p.user_id
                                 AND fa.status = 'submitted' AND NOT fa.preview)
              END
@@ -171,8 +171,8 @@ pub async fn list_teacher_release_work(
                   COALESCE(
                       (SELECT s.id FROM submissions s
                        WHERE s.id = p.latest_submission_id AND s.status = 'graded'),
-                      (SELECT fa.id FROM file_submission_attempts fa
-                       JOIN file_submissions f ON f.id = fa.file_submission_id
+                      (SELECT fa.id FROM submissions fa
+                       JOIN file_submissions f ON f.id = fa.assessment_id
                        WHERE f.activity_id = p.activity_id AND fa.user_id = p.user_id
                          AND fa.status = 'graded' AND NOT fa.preview
                        ORDER BY fa.updated_at DESC LIMIT 1)
@@ -221,7 +221,8 @@ pub struct DeadlineRow {
 /// (run ∧ ¬staff, course not archived); assessments must be published and
 /// reach the learner (course-wide or on an allowlist, direct or via a
 /// group); the override's due date applies while in force or when it is an
-/// extension; a file submission's per-learner due date always applies (S-GAPS).
+/// extension (a file task's per-learner due date is one, S-GAPS). A file task
+/// is an assessment: the row names it in `file_submission_id` instead.
 pub async fn upcoming_deadlines(
     pool: &PgPool,
     user_id: Option<UserId>,
@@ -239,8 +240,9 @@ pub async fn upcoming_deadlines(
                  AND course_visible(c, r.user_id, false)
            ),
            work AS (
-               SELECT m.user_id, m.course_id, s.activity_id, s.id AS assessment_id,
-                      NULL::uuid AS file_submission_id,
+               SELECT m.user_id, m.course_id, s.activity_id,
+                      CASE WHEN f.id IS NULL THEN s.id END AS assessment_id,
+                      f.id AS file_submission_id,
                       COALESCE(CASE WHEN o.expires_at IS NULL OR o.expires_at > now()
                                          OR o.due_extended
                                     THEN o.due_at_override END,
@@ -251,26 +253,19 @@ pub async fn upcoming_deadlines(
                JOIN learner_visible_activities v ON v.activity_id = s.activity_id
                LEFT JOIN assessment_overrides o
                       ON o.assessment_id = s.id AND o.user_id = m.user_id
+               LEFT JOIN file_submissions f ON f.id = s.id
                WHERE s.access_mode = 'all_course_learners'
                   OR EXISTS (SELECT 1 FROM assessment_access_users u
                              WHERE u.assessment_id = s.id AND u.user_id = m.user_id)
                   OR EXISTS (SELECT 1 FROM assessment_access_usergroups g
                              JOIN usergroup_members gm ON gm.usergroup_id = g.usergroup_id
                              WHERE g.assessment_id = s.id AND gm.user_id = m.user_id)
-               UNION ALL
-               SELECT m.user_id, m.course_id, f.activity_id, NULL, f.id,
-                      COALESCE(fo.due_at, f.due_at), f.late_cutoff_at
-               FROM members m
-               JOIN file_submissions f ON f.course_id = m.course_id
-               JOIN learner_visible_activities v ON v.activity_id = f.activity_id
-               LEFT JOIN file_submission_overrides fo
-                      ON fo.file_submission_id = f.id AND fo.user_id = m.user_id
            )
            SELECT w.user_id AS "user_id!: UserId", w.course_id AS "course_id!: CourseId",
                   c.name AS course_name, w.activity_id AS "activity_id!: ActivityId",
                   a.name AS activity_name, a.activity_type,
-                  w.assessment_id AS "assessment_id: ab_core::id::AssessmentId",
-                  w.file_submission_id AS "file_submission_id: ab_core::id::FileSubmissionId",
+                  w.assessment_id AS "assessment_id?: ab_core::id::AssessmentId",
+                  w.file_submission_id AS "file_submission_id?: ab_core::id::FileSubmissionId",
                   (extract(epoch FROM w.due_at))::bigint AS "due_at!",
                   (extract(epoch FROM w.cutoff_at))::bigint AS "cutoff_at?",
                   COALESCE(p.state, 'not_started') AS "state!: ActivityProgressState"

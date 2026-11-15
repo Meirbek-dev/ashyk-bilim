@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT version FROM assessments a WHERE id = $1\n                   AND NOT EXISTS (SELECT 1 FROM file_submissions f WHERE f.id = a.id)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "version",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "version"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b65d04c0db7ed9afc9fcb200da265692eadd7f8da5718d79d4f03facc9dfd263"
+}

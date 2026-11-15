@@ -1171,6 +1171,7 @@ impl SubmissionsService {
                     effective_breakdown: &breakdown,
                     overall_feedback: "",
                     published: verdict.status == SubmissionStatus::Published,
+                    returned: false,
                 },
             )
             .await?;

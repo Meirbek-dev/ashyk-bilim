@@ -7,7 +7,7 @@
 use serde::{Deserialize, Serialize};
 
 macro_rules! text_enum {
-    ($(#[$doc:meta])* $name:ident { $($variant:ident => $s:literal),+ $(,)? }) => {
+    ($(#[$doc:meta])* $name:ident { $($(#[$vmeta:meta])* $variant:ident => $s:literal),+ $(,)? }) => {
         $(#[$doc])*
         #[derive(
             Debug, Clone, Copy, PartialEq, Eq, Hash,
@@ -16,7 +16,7 @@ macro_rules! text_enum {
         #[serde(rename_all = "snake_case")]
         #[sqlx(type_name = "text", rename_all = "snake_case")]
         pub enum $name {
-            $($variant),+
+            $($(#[$vmeta])* $variant),+
         }
 
         impl $name {
@@ -146,6 +146,11 @@ text_enum!(
         Quiz => "quiz",
         Exam => "exam",
         CodeChallenge => "code_challenge",
+        /// A file task (`files/submissions.rs`), named as its activity type is stored. Storage only: the file
+        /// API serves it, so no request names it and no response of the assessment API carries it.
+        #[serde(skip)]
+        #[sqlx(rename = "file_submission")]
+        Assignment => "file_submission",
     }
 );
 
@@ -157,6 +162,7 @@ impl AssessmentKind {
             Self::Quiz => ("quiz", "quiz_standard"),
             Self::Exam => ("exam", "exam_standard"),
             Self::CodeChallenge => ("code_challenge", "code_general"),
+            Self::Assignment => ("file_submission", "file_submission_standard"),
         }
     }
 
@@ -171,6 +177,7 @@ impl AssessmentKind {
                 ItemKind::Form,
             ],
             Self::CodeChallenge => &[ItemKind::Code],
+            Self::Assignment => &[],
         }
     }
 }
@@ -566,6 +573,12 @@ mod tests {
     fn round_trips_as_wire_strings() {
         for kind in AssessmentKind::ALL {
             assert_eq!(AssessmentKind::parse(kind.as_str()), Some(*kind));
+            if *kind == AssessmentKind::Assignment {
+                // Storage only: the assessment API neither takes nor returns a file task.
+                assert!(serde_json::to_string(kind).is_err());
+                assert!(serde_json::from_str::<AssessmentKind>("\"file_submission\"").is_err());
+                continue;
+            }
             let json = serde_json::to_string(kind).unwrap();
             assert_eq!(json, format!("\"{}\"", kind.as_str()));
         }

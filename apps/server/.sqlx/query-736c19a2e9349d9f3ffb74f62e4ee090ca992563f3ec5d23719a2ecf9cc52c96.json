@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO submissions\n               (assessment_id, course_id, user_id, attempt_number, preview, started_at)\n           SELECT $1::uuid, $2::uuid, $3::uuid, $4::int, $5::bool, now()\n           WHERE NOT EXISTS (SELECT 1 FROM submissions o\n                             WHERE o.assessment_id = $1 AND o.user_id = $3 AND o.status = 'returned')\n           ON CONFLICT DO NOTHING\n           RETURNING id AS \"id: FileAttemptId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: FileAttemptId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "submissions",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "736c19a2e9349d9f3ffb74f62e4ee090ca992563f3ec5d23719a2ecf9cc52c96"
+}

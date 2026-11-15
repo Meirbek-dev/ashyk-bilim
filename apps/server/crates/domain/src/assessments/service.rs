@@ -326,7 +326,7 @@ impl PolicyInput {
                 review_visibility: ReviewVisibility::Full,
                 ..base
             },
-            AssessmentKind::CodeChallenge => base,
+            AssessmentKind::CodeChallenge | AssessmentKind::Assignment => base,
         }
     }
 
