@@ -28,7 +28,7 @@ Every table, column, key and foreign key with the table's purpose: `docs/agents/
 | what an attempt answered against  | `submissions.items_snapshot` / `policy_snapshot`, `assessment_version_id` -> `assessment_versions` |
 | a grade and its history           | `grading_entries` (journal, highest `revision` = current) = `submissions.final_score`; breakdown `submission_breakdown(id, auto_breakdown)` (latest entry's, else the hand-in's) |
 | code "Run"                        | `code_runs` (+ `code_run_cases`, `verdict`)                                          |
-| file task, its hand-ins           | `file_submissions` (`lifecycle`, `instructions`) + `file_submission_attempts` (`status`, same words as `submissions`) |
+| file task, its hand-ins           | `assessments` (policy, `lifecycle`) + `file_submissions` (same `id`: `instructions`, rubric, file caps); hand-ins are `submissions`, their files `file_submission_files` (`attempt_id` = the submission) |
 | lesson media                      | `activities.content->>'filename'` (video, PDF), `blocks.content` (page blocks)       |
 | role, permission                  | `user_roles` -> `roles` (`slug`); permissions in `role_permissions`                 |
 | group                             | `usergroups`, `usergroup_members`, `usergroup_courses`                               |

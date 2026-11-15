@@ -76,10 +76,9 @@ in one transaction after `just backup`:
 
 ```sql
 BEGIN;
--- the person's work (grading_entries and item_feedback go with the submissions)
+-- the person's work (grading_entries, item_feedback and the file rows of a file hand-in go with the submissions)
 DELETE FROM code_runs WHERE user_id = :'uid';
 DELETE FROM submissions WHERE user_id = :'uid';
-DELETE FROM file_submission_attempts WHERE user_id = :'uid';
 DELETE FROM certificate_users WHERE user_id = :'uid';
 DELETE FROM trail_legacy_marks WHERE user_id = :'uid';
 DELETE FROM activity_progress WHERE user_id = :'uid';
