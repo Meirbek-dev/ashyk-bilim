@@ -777,28 +777,11 @@ in the order it can be done, each step a forward migration on the current schema
   half the platform. Generic plan cost on the `query_plans.rs` fixture: 270 000+ to under 600; the grading and
   release queue cases there bound it.
 
-15. **Naming** (review 3, item 33). The convention is ARCHITECTURE §8 rule 2 (`naming_rules.rs` holds new
-    migrations to it). Existing columns that break it, renamed one table at a time as expand/contract (add the
-    new column, backfill, a trigger mirrors old ↔ new while the previous release runs, switch the queries, drop
-    the old one in a `-- contract:` file); API field names stay unless a contract version changes them:
-    - `creator_id` → `created_by`: activities, assessments, chapters, collections, courses, file_submissions,
-      usergroups; `course_updates.author_id` → `created_by`;
-    - `actor_id` → `performed_by` (like `bulk_actions`): analytics_events, assessment_audit_events;
-    - `teacher_user_id` → `teacher_id`: daily_course_metrics, daily_teacher_metrics, learner_risk_snapshots;
-      → `user_id` where the teacher owns the row (analytics_saved_views); → `created_by` where the teacher
-      made it (teacher_interventions);
-    - `student_user_id` → `user_id`: ai_remediation_sessions, ai_student_memory; `ai_grade_drafts.learner_id`
-      → `user_id`; `ai_grade_corrections.teacher_id` → `corrected_by`;
-    - `*_type` → `kind`: activities.activity_type (+ `activity_sub_type` → `sub_kind`), blocks.block_type,
-      teacher_interventions.intervention_type, analytics_saved_views.view_type, item_feedback.annotation_type,
-      ai_approvals / bulk_actions.action_type; → `<thing>_kind`: assessments.grading_type, courses.thumbnail_type,
-      `source_type` (ai_evidence, ai_student_memory, content_chunks, content_index_state, mastery_evidence);
-      `event_type` → `event` (analytics_events, ai_events; like auth_audit_log / assessment_audit_events);
-    - `lifecycle` → `status`: assessments, file_submissions; `activity_progress.state` → `status`;
-    - `assessments.title` goes with item 5 of review 3 (it repeats `activities.name`); `title` stays on
-      assessment_items, course_updates, ai_threads (authored text).
-    Order: the AI tables with their AI work; the rest after the lane merges of review 3 settle (several of
-    these tables change shape there: submissions/file tasks, resource_authors, progress).
+15. **Naming** (review 3, item 33). The convention is ARCHITECTURE §8 rule 2 and `naming_rules.rs` holds new
+    migrations to it. Existing columns that break it (`creator_id`, `*_type`, `lifecycle`, `teacher_user_id`,
+    `student_user_id`) keep their names (database review 2026-11-15): about 40 renames, each an expand/contract
+    with a mirror trigger, would change no behavior. A column is renamed only when its table changes shape anyway
+    (the pipeline merge of n16, the policy split of n7).
 16. **Grading records** (schema review 2, items 1-10; ARCHITECTURE §8 has what landed: own code-run
     verdicts, score domains and numeric scores, snapshot and current-grade guarantees, assessment
     versions). Left, in order:

@@ -10,6 +10,7 @@
 //   checks      CHECK constraints a migration skipped because old rows violate them (RUNBOOK 2.4)
 //   archive     WAL archiving for point-in-time recovery: last archived segment, failures (RUNBOOK 3.13)
 //   indexes     indexes no query used since the last stats reset, largest first (candidates, not verdicts)
+//   tables      the largest tables with their index size, live and dead rows
 //   statements  the app database's statements by total execution time since the last stats reset
 //               (pg_stat_statements; their text has parameters as $n, never values)
 //
@@ -239,6 +240,20 @@ function unusedIndexes(names: string[]): string[] {
   return out.rows.length ? out.rows.map(r => `  ${r.replaceAll('|', '  ')}`) : ['  none']
 }
 
+// What grows: decide retention, partitioning and index cuts from these numbers, not from the schema text.
+function tables(names: string[]): string[] {
+  const out = psql(
+    names,
+    `SELECT relname, pg_size_pretty(pg_total_relation_size(relid)), pg_size_pretty(pg_indexes_size(relid)),
+            n_live_tup, n_dead_tup
+       FROM pg_stat_user_tables ORDER BY pg_total_relation_size(relid) DESC LIMIT ${ROWS}`,
+  )
+  if ('error' in out) return [out.error]
+  return ['  table  total (heap + TOAST + indexes)  indexes  live rows  dead rows'].concat(
+    out.rows.map(r => `  ${r.replaceAll('|', '  ')}`),
+  )
+}
+
 function statements(names: string[]): string[] {
   const out = psql(
     names,
@@ -279,6 +294,7 @@ if (import.meta.main) {
     ['skipped schema checks', checks(names)],
     ['WAL archive', archives(names)],
     ['indexes with no scan since the stats reset', unusedIndexes(names)],
+    ['largest tables', tables(names)],
     ['top statements by total time (pg_stat_statements)', statements(names)],
   ] as const)
     console.log(`${title}\n${lines.join('\n')}\n`)

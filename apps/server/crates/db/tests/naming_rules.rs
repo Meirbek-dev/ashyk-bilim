@@ -206,6 +206,28 @@ fn new_columns_follow_the_naming_convention() {
     assert!(found.is_empty(), "{}", found.join("\n"));
 }
 
+/// A table-level CHECK without a name becomes `<table>_check`, `<table>_check1`: an error that says nothing.
+#[test]
+fn new_table_checks_are_named() {
+    const FROM: i64 = 20_261_115_120_559;
+    let mut found = Vec::new();
+    for m in ab_db::MIGRATOR.iter().filter(|m| m.version >= FROM) {
+        for line in m.sql.as_str().lines() {
+            let line = line.trim_start().to_ascii_lowercase();
+            if line.starts_with("check (")
+                || line.starts_with("check(")
+                || line.contains(" add check")
+            {
+                found.push(format!(
+                    "{}_{}: name it: CONSTRAINT <table>_<rule> {line}",
+                    m.version, m.description
+                ));
+            }
+        }
+    }
+    assert!(found.is_empty(), "{}", found.join("\n"));
+}
+
 #[test]
 fn the_naming_rules_see_what_they_check() {
     let sql = "-- creator_id uuid REFERENCES users\n\

@@ -357,7 +357,8 @@ One migration set for the database `ashyq`. Rules:
      is a MIME type); an event log's variant is `event`;
    - a row's state machine is `status` (one per table), not `state` / `lifecycle`; a status's moments are
      `<status>_at` timestamps.
-   Older columns that break it are renamed by REWRITE §5.6 n15 (each rename is expand/contract).
+   Older columns that break it keep their names (REWRITE §5.6 n15). A table-level CHECK is named
+   (`CONSTRAINT <table>_<rule> CHECK`): unnamed it becomes `<table>_check1`.
    Every table has a `COMMENT ON TABLE` (what one row is, who writes it) in the migration that creates it;
    `docs/agents/SCHEMA.md` is generated from the schema (`just schema-docs`) and `crates/db/tests/schema_docs.rs`
    fails while it is stale or a table has no comment.
@@ -458,7 +459,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   a published/archived assessment its stamp, a reply its post (and a post none); scores and penalties are
   percentages in 0..100; text columns are capped at the API's garde limits (course description 5 000, about
   20 000, chapter/collection description 5 000, post 20 000, course update 500/50 000, file-task instructions
-  50 000); JSONB written by typed server code is an object (`submissions.violations` an array) and an item's
+  50 000; since `20261115120559`: assessment description 20 000, override note 1 000, bio 2 000, organization 200,
+  group description 5 000, intervention notes 4 000 / outcome 2 000) and an assessment allows at most 10 attempts
+  (`MAX_ATTEMPTS`); JSONB written by typed server code is an object (`submissions.violations` an array) and an item's
   body is tagged with its `kind`. A check whose existing rows violate it is skipped with a WARNING and a
   `schema_skipped_checks` row instead of failing the deploy (RUNBOOK 2.4).
 - **Grade journals are append-only** (`20261102000000_ledger_guards.sql`): a `grading_entries` row changes only
@@ -488,7 +491,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   the threads they leave empty, submission analyses, superseded lecture reviews, every course analysis but the
   newest and the newest published (the course page shows it), and discarded/superseded/failed grade drafts. An
   applied grade draft lives as long as its grade; a queued or ready one until the teacher decides. Time-ordered append tables carry BRIN indexes on their
-  timestamp for these sweeps and the analytics prune.
+  timestamp for these sweeps and the analytics prune; a daily rollup is swept through its primary key, which its date leads.
 - **Growing value lists are lookup tables**: `notifications.kind` → `notification_kinds`, `uploads.purpose` →
   `upload_purposes`, `activities (activity_type, activity_sub_type)` → `activity_kinds (kind, sub_kind)` (a new kind or purpose is one
   `INSERT` in a migration; an activity kind also gets its row in `curriculum::TYPE_SUBTYPES`). A user's switched-off kinds are

@@ -209,7 +209,6 @@ Projection: a learner's state in one activity (from submissions, hand-ins and st
 - Foreign key `activity_progress_latest_submission_id_fkey`: `FOREIGN KEY (latest_submission_id, user_id) REFERENCES submissions(id, user_id) ON DELETE SET NULL (latest_submission_id)`
 - Foreign key `activity_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Check `activity_progress_attempt_count_check`: `CHECK ((attempt_count >= 0))`
-- Check `activity_progress_score_check`: `CHECK (((score IS NULL) OR (((score)::double precision >= (0)::double precision) AND ((score)::double precision <= (100)::double precision))))`
 - Check `activity_progress_state_check`: `CHECK ((state = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'submitted'::text, 'needs_grading'::text, 'returned'::text, 'graded'::text, 'passed'::text, 'failed'::text, 'completed'::text])))`
 - Index `activity_progress_activity_state_idx`: `CREATE INDEX activity_progress_activity_state_idx ON learning.activity_progress USING btree (activity_id, state)`
 - Index `activity_progress_best_submission_idx`: `CREATE INDEX activity_progress_best_submission_idx ON learning.activity_progress USING btree (best_submission_id)`
@@ -998,6 +997,7 @@ Per-learner exceptions of an assessment: extra attempts, a later due date, a wai
 - Foreign key `assessment_overrides_granted_by_fkey`: `FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `assessment_overrides_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Check `assessment_overrides_max_attempts_override_check`: `CHECK (((max_attempts_override IS NULL) OR ((max_attempts_override >= 1) AND (max_attempts_override <= 10))))`
+- Check `assessment_overrides_note_check`: `CHECK ((char_length(note) <= 1000))`
 - Index `assessment_overrides_user_idx`: `CREATE INDEX assessment_overrides_user_idx ON learning.assessment_overrides USING btree (user_id)`
 
 ## assessment_version_uploads
@@ -1104,6 +1104,7 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Check `assessments_access_mode_check`: `CHECK ((access_mode = ANY (ARRAY['all_course_learners'::text, 'restricted'::text])))`
 - Check `assessments_archived_at_check`: `CHECK (((lifecycle <> 'archived'::text) OR (archived_at IS NOT NULL)))`
 - Check `assessments_completion_rule_check`: `CHECK ((completion_rule = ANY (ARRAY['viewed'::text, 'submitted'::text, 'graded'::text, 'passed'::text, 'teacher_verified'::text])))`
+- Check `assessments_description_check`: `CHECK ((char_length(description) <= 20000))`
 - Check `assessments_draw_count_check`: `CHECK (((draw_count IS NULL) OR ((draw_count >= 1) AND (draw_count <= 200))))`
 - Check `assessments_draw_strata_check`: `CHECK (((draw_strata IS NULL) OR (jsonb_typeof(draw_strata) = 'array'::text)))`
 - Check `assessments_draw_strata_shape`: `CHECK (((draw_strata IS NULL) OR draw_strata_ok(draw_strata)))`
@@ -1115,6 +1116,7 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Check `assessments_late_policy_kind_check`: `CHECK ((late_policy_kind = ANY (ARRAY['none'::text, 'penalty'::text, 'cutoff'::text])))`
 - Check `assessments_late_policy_shape`: `CHECK ((((late_policy_kind = 'none'::text) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'penalty'::text) AND (late_penalty_percent_per_day IS NOT NULL) AND (late_penalty_max_days IS NOT NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'cutoff'::text) AND (late_cutoff_at IS NOT NULL) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL))))`
 - Check `assessments_lifecycle_check`: `CHECK ((lifecycle = ANY (ARRAY['draft'::text, 'scheduled'::text, 'published'::text, 'archived'::text])))`
+- Check `assessments_max_attempts_cap`: `CHECK (((max_attempts IS NULL) OR (max_attempts <= 10)))`
 - Check `assessments_max_attempts_check`: `CHECK (((max_attempts IS NULL) OR (max_attempts >= 1)))`
 - Check `assessments_published_at_check`: `CHECK (((lifecycle <> 'published'::text) OR (published_at IS NOT NULL)))`
 - Check `assessments_review_visibility_check`: `CHECK ((review_visibility = ANY (ARRAY['none'::text, 'score_only'::text, 'full'::text])))`
@@ -1367,7 +1369,7 @@ Courses of a collection, ordered by position.
 | --- | --- | --- | --- |
 | collection_id | uuid |  |  |
 | course_id | uuid |  |  |
-| position | integer |  | `0` |
+| position | integer |  |  |
 | created_at | timestamp with time zone |  | `now()` |
 
 - Primary key `collection_courses_pkey`: `PRIMARY KEY (collection_id, course_id)`
@@ -1889,7 +1891,6 @@ Daily rollup per assessment: submission, pass and score figures.
 - Index `daily_assessment_metrics_activity_idx`: `CREATE INDEX daily_assessment_metrics_activity_idx ON analytics.daily_assessment_metrics USING btree (activity_id)`
 - Index `daily_assessment_metrics_assessment_idx`: `CREATE INDEX daily_assessment_metrics_assessment_idx ON analytics.daily_assessment_metrics USING btree (assessment_id)`
 - Index `daily_assessment_metrics_course_idx`: `CREATE INDEX daily_assessment_metrics_course_idx ON analytics.daily_assessment_metrics USING btree (course_id, metric_date DESC)`
-- Index `daily_assessment_metrics_date_brin`: `CREATE INDEX daily_assessment_metrics_date_brin ON analytics.daily_assessment_metrics USING brin (metric_date)`
 
 ## daily_course_engagement
 
@@ -1914,7 +1915,6 @@ Daily rollup per course step: learners who started/completed it, drop-off.
 - Index `daily_course_engagement_activity_idx`: `CREATE INDEX daily_course_engagement_activity_idx ON analytics.daily_course_engagement USING btree (activity_id)`
 - Index `daily_course_engagement_chapter_idx`: `CREATE INDEX daily_course_engagement_chapter_idx ON analytics.daily_course_engagement USING btree (chapter_id)`
 - Index `daily_course_engagement_course_idx`: `CREATE INDEX daily_course_engagement_course_idx ON analytics.daily_course_engagement USING btree (course_id, metric_date DESC)`
-- Index `daily_course_engagement_date_brin`: `CREATE INDEX daily_course_engagement_date_brin ON analytics.daily_course_engagement USING brin (metric_date)`
 
 ## daily_course_metrics
 
@@ -1942,7 +1942,6 @@ Daily rollup per course: enrolment, activity, completion, risk, grading backlog.
 - Foreign key `daily_course_metrics_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `daily_course_metrics_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE SET NULL`
 - Index `daily_course_metrics_course_idx`: `CREATE INDEX daily_course_metrics_course_idx ON analytics.daily_course_metrics USING btree (course_id, metric_date DESC)`
-- Index `daily_course_metrics_date_brin`: `CREATE INDEX daily_course_metrics_date_brin ON analytics.daily_course_metrics USING brin (metric_date)`
 
 ## daily_platform_metrics
 
@@ -2015,7 +2014,6 @@ Daily snapshot of each learner's progress in each course.
 - Foreign key `daily_user_course_progress_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `daily_user_course_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Index `daily_user_course_progress_course_idx`: `CREATE INDEX daily_user_course_progress_course_idx ON analytics.daily_user_course_progress USING btree (course_id, metric_date DESC)`
-- Index `daily_user_course_progress_date_brin`: `CREATE INDEX daily_user_course_progress_date_brin ON analytics.daily_user_course_progress USING brin (metric_date)`
 - Index `daily_user_course_progress_user_idx`: `CREATE INDEX daily_user_course_progress_user_idx ON analytics.daily_user_course_progress USING btree (user_id)`
 
 ## discussion_reactions
@@ -2502,7 +2500,6 @@ Daily risk score of a learner in a course, with reasons and a recommended action
 - Foreign key `learner_risk_snapshots_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `learner_risk_snapshots_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Check `learner_risk_snapshots_risk_level_check`: `CHECK ((risk_level = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text])))`
-- Index `learner_risk_snapshots_date_brin`: `CREATE INDEX learner_risk_snapshots_date_brin ON analytics.learner_risk_snapshots USING brin (snapshot_date)`
 - Index `learner_risk_snapshots_pair_idx`: `CREATE INDEX learner_risk_snapshots_pair_idx ON analytics.learner_risk_snapshots USING btree (course_id, user_id, snapshot_date DESC)`
 - Index `learner_risk_snapshots_user_idx`: `CREATE INDEX learner_risk_snapshots_user_idx ON analytics.learner_risk_snapshots USING btree (user_id)`
 
@@ -2909,6 +2906,8 @@ An action a teacher logged for an at-risk learner and its outcome.
 - Foreign key `teacher_interventions_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Foreign key `teacher_interventions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Check `teacher_interventions_intervention_type_check`: `CHECK ((intervention_type = ANY (ARRAY['message_sent'::text, 'submission_graded'::text, 'extension_granted'::text, 'meeting_scheduled'::text, 'learner_recovered'::text])))`
+- Check `teacher_interventions_notes_check`: `CHECK ((char_length(notes) <= 4000))`
+- Check `teacher_interventions_outcome_check`: `CHECK ((char_length(outcome) <= 2000))`
 - Check `teacher_interventions_outcome_code_check`: `CHECK ((outcome_code = ANY (ARRAY['improved'::text, 'no_change'::text, 'worsened'::text, 'no_response'::text])))`
 - Check `teacher_interventions_payload_object`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
 - Check `teacher_interventions_status_check`: `CHECK ((status = ANY (ARRAY['planned'::text, 'completed'::text, 'resolved'::text])))`
@@ -3063,6 +3062,7 @@ A named group of learners a teacher assigns courses or assessments to.
 
 - Primary key `usergroups_pkey`: `PRIMARY KEY (id)`
 - Foreign key `usergroups_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
+- Check `usergroups_description_check`: `CHECK ((char_length(description) <= 5000))`
 - Check `usergroups_name_check`: `CHECK ((char_length(name) <= 500))`
 
 ## users
@@ -3095,9 +3095,11 @@ An account. Never deleted by the app: disabled (status) or anonymised (deleted_a
 - Primary key `users_pkey`: `PRIMARY KEY (id)`
 - Unique `users_zitadel_user_id_key`: `UNIQUE (zitadel_user_id)`
 - Foreign key `users_avatar_upload_id_fkey`: `FOREIGN KEY (avatar_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
+- Check `users_bio_check`: `CHECK ((char_length(bio) <= 2000))`
 - Check `users_deleted_anonymised_check`: `CHECK (((deleted_at IS NULL) OR ((username ~~ 'deleted-%'::text) AND (email = (username \|\| '@deleted.invalid'::text)) AND (display_name = ''::text) AND (bio = ''::text) AND (organization = ''::text) AND (avatar_key IS NULL))))`
 - Check `users_deleted_disabled_at_check`: `CHECK (((deleted_at IS NULL) OR (disabled_at IS NOT NULL)))`
 - Check `users_locale_check`: `CHECK ((locale = ANY (ARRAY['ru'::text, 'kk'::text, 'en'::text])))`
+- Check `users_organization_check`: `CHECK ((char_length(organization) <= 200))`
 - Check `users_profile_check`: `CHECK ((jsonb_typeof(profile) = 'object'::text))`
 - Index `users_avatar_upload_id_idx`: `CREATE INDEX users_avatar_upload_id_idx ON core.users USING btree (avatar_upload_id) WHERE (avatar_upload_id IS NOT NULL)`
 - Index `users_display_name_trgm_idx`: `CREATE INDEX users_display_name_trgm_idx ON core.users USING gin (search_fold(display_name) gin_trgm_ops)`

@@ -40,7 +40,6 @@ constraint activity_progress activity_progress_is_late_not_null NOT NULL is_late
 constraint activity_progress activity_progress_latest_submission_id_fkey FOREIGN KEY (latest_submission_id, user_id) REFERENCES submissions(id, user_id) ON DELETE SET NULL (latest_submission_id)
 constraint activity_progress activity_progress_pkey PRIMARY KEY (activity_id, user_id)
 constraint activity_progress activity_progress_required_not_null NOT NULL required
-constraint activity_progress activity_progress_score_check CHECK (((score IS NULL) OR (((score)::double precision >= (0)::double precision) AND ((score)::double precision <= (100)::double precision))))
 constraint activity_progress activity_progress_state_check CHECK ((state = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'submitted'::text, 'needs_grading'::text, 'returned'::text, 'graded'::text, 'passed'::text, 'failed'::text, 'completed'::text])))
 constraint activity_progress activity_progress_state_not_null NOT NULL state
 constraint activity_progress activity_progress_teacher_action_required_not_null NOT NULL teacher_action_required
@@ -426,6 +425,7 @@ constraint assessment_overrides assessment_overrides_due_extended_not_null NOT N
 constraint assessment_overrides assessment_overrides_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL
 constraint assessment_overrides assessment_overrides_id_not_null NOT NULL id
 constraint assessment_overrides assessment_overrides_max_attempts_override_check CHECK (((max_attempts_override IS NULL) OR ((max_attempts_override >= 1) AND (max_attempts_override <= 10))))
+constraint assessment_overrides assessment_overrides_note_check CHECK ((char_length(note) <= 1000))
 constraint assessment_overrides assessment_overrides_note_not_null NOT NULL note
 constraint assessment_overrides assessment_overrides_pkey PRIMARY KEY (id)
 constraint assessment_overrides assessment_overrides_updated_at_not_null NOT NULL updated_at
@@ -471,6 +471,7 @@ constraint assessments assessments_course_id_fkey FOREIGN KEY (course_id) REFERE
 constraint assessments assessments_course_id_not_null NOT NULL course_id
 constraint assessments assessments_created_at_not_null NOT NULL created_at
 constraint assessments assessments_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL
+constraint assessments assessments_description_check CHECK ((char_length(description) <= 20000))
 constraint assessments assessments_description_not_null NOT NULL description
 constraint assessments assessments_devtools_detection_not_null NOT NULL devtools_detection
 constraint assessments assessments_draw_count_check CHECK (((draw_count IS NULL) OR ((draw_count >= 1) AND (draw_count <= 200))))
@@ -493,6 +494,7 @@ constraint assessments assessments_late_policy_kind_not_null NOT NULL late_polic
 constraint assessments assessments_late_policy_shape CHECK ((((late_policy_kind = 'none'::text) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'penalty'::text) AND (late_penalty_percent_per_day IS NOT NULL) AND (late_penalty_max_days IS NOT NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'cutoff'::text) AND (late_cutoff_at IS NOT NULL) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL))))
 constraint assessments assessments_lifecycle_check CHECK ((lifecycle = ANY (ARRAY['draft'::text, 'scheduled'::text, 'published'::text, 'archived'::text])))
 constraint assessments assessments_lifecycle_not_null NOT NULL lifecycle
+constraint assessments assessments_max_attempts_cap CHECK (((max_attempts IS NULL) OR (max_attempts <= 10)))
 constraint assessments assessments_max_attempts_check CHECK (((max_attempts IS NULL) OR (max_attempts >= 1)))
 constraint assessments assessments_negative_marking_percent_not_null NOT NULL negative_marking_percent
 constraint assessments assessments_partial_credit_not_null NOT NULL partial_credit
@@ -1388,6 +1390,8 @@ constraint teacher_interventions teacher_interventions_created_at_not_null NOT N
 constraint teacher_interventions teacher_interventions_id_not_null NOT NULL id
 constraint teacher_interventions teacher_interventions_intervention_type_check CHECK ((intervention_type = ANY (ARRAY['message_sent'::text, 'submission_graded'::text, 'extension_granted'::text, 'meeting_scheduled'::text, 'learner_recovered'::text])))
 constraint teacher_interventions teacher_interventions_intervention_type_not_null NOT NULL intervention_type
+constraint teacher_interventions teacher_interventions_notes_check CHECK ((char_length(notes) <= 4000))
+constraint teacher_interventions teacher_interventions_outcome_check CHECK ((char_length(outcome) <= 2000))
 constraint teacher_interventions teacher_interventions_outcome_code_check CHECK ((outcome_code = ANY (ARRAY['improved'::text, 'no_change'::text, 'worsened'::text, 'no_response'::text])))
 constraint teacher_interventions teacher_interventions_payload_not_null NOT NULL payload
 constraint teacher_interventions teacher_interventions_payload_object CHECK ((jsonb_typeof(payload) = 'object'::text))
@@ -1460,6 +1464,7 @@ constraint usergroup_members usergroup_members_usergroup_id_fkey FOREIGN KEY (us
 constraint usergroup_members usergroup_members_usergroup_id_not_null NOT NULL usergroup_id
 constraint usergroups usergroups_created_at_not_null NOT NULL created_at
 constraint usergroups usergroups_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL
+constraint usergroups usergroups_description_check CHECK ((char_length(description) <= 5000))
 constraint usergroups usergroups_description_not_null NOT NULL description
 constraint usergroups usergroups_id_not_null NOT NULL id
 constraint usergroups usergroups_name_check CHECK ((char_length(name) <= 500))
@@ -1468,6 +1473,7 @@ constraint usergroups usergroups_pkey PRIMARY KEY (id)
 constraint usergroups usergroups_updated_at_not_null NOT NULL updated_at
 constraint usergroups usergroups_version_not_null NOT NULL version
 constraint users users_avatar_upload_id_fkey FOREIGN KEY (avatar_upload_id) REFERENCES uploads(id) ON DELETE SET NULL
+constraint users users_bio_check CHECK ((char_length(bio) <= 2000))
 constraint users users_bio_not_null NOT NULL bio
 constraint users users_created_at_not_null NOT NULL created_at
 constraint users users_deleted_anonymised_check CHECK (((deleted_at IS NULL) OR ((username ~~ 'deleted-%'::text) AND (email = (username || '@deleted.invalid'::text)) AND (display_name = ''::text) AND (bio = ''::text) AND (organization = ''::text) AND (avatar_key IS NULL))))
@@ -1477,6 +1483,7 @@ constraint users users_email_not_null NOT NULL email
 constraint users users_id_not_null NOT NULL id
 constraint users users_locale_check CHECK ((locale = ANY (ARRAY['ru'::text, 'kk'::text, 'en'::text])))
 constraint users users_locale_not_null NOT NULL locale
+constraint users users_organization_check CHECK ((char_length(organization) <= 200))
 constraint users users_organization_not_null NOT NULL organization
 constraint users users_pkey PRIMARY KEY (id)
 constraint users users_profile_check CHECK ((jsonb_typeof(profile) = 'object'::text))
@@ -2699,17 +2706,13 @@ index CREATE INDEX courses_thumbnail_video_upload_id_idx ON core.courses USING b
 index CREATE INDEX daily_assessment_metrics_activity_idx ON analytics.daily_assessment_metrics USING btree (activity_id)
 index CREATE INDEX daily_assessment_metrics_assessment_idx ON analytics.daily_assessment_metrics USING btree (assessment_id)
 index CREATE INDEX daily_assessment_metrics_course_idx ON analytics.daily_assessment_metrics USING btree (course_id, metric_date DESC)
-index CREATE INDEX daily_assessment_metrics_date_brin ON analytics.daily_assessment_metrics USING brin (metric_date)
 index CREATE INDEX daily_course_engagement_activity_idx ON analytics.daily_course_engagement USING btree (activity_id)
 index CREATE INDEX daily_course_engagement_chapter_idx ON analytics.daily_course_engagement USING btree (chapter_id)
 index CREATE INDEX daily_course_engagement_course_idx ON analytics.daily_course_engagement USING btree (course_id, metric_date DESC)
-index CREATE INDEX daily_course_engagement_date_brin ON analytics.daily_course_engagement USING brin (metric_date)
 index CREATE INDEX daily_course_metrics_course_idx ON analytics.daily_course_metrics USING btree (course_id, metric_date DESC)
-index CREATE INDEX daily_course_metrics_date_brin ON analytics.daily_course_metrics USING brin (metric_date)
 index CREATE INDEX daily_teacher_metrics_date_brin ON analytics.daily_teacher_metrics USING brin (metric_date)
 index CREATE INDEX daily_teacher_metrics_teacher_idx ON analytics.daily_teacher_metrics USING btree (teacher_user_id)
 index CREATE INDEX daily_user_course_progress_course_idx ON analytics.daily_user_course_progress USING btree (course_id, metric_date DESC)
-index CREATE INDEX daily_user_course_progress_date_brin ON analytics.daily_user_course_progress USING brin (metric_date)
 index CREATE INDEX daily_user_course_progress_user_idx ON analytics.daily_user_course_progress USING btree (user_id)
 index CREATE INDEX discussion_reactions_user_idx ON core.discussion_reactions USING btree (user_id)
 index CREATE INDEX enrolment_events_course_user_idx ON learning.enrolment_events USING btree (course_id, user_id, created_at)
@@ -2732,7 +2735,6 @@ index CREATE INDEX item_feedback_item_idx ON learning.item_feedback USING btree 
 index CREATE INDEX item_feedback_submission_item_idx ON learning.item_feedback USING btree (submission_id, item_ref)
 index CREATE INDEX jobs_claim_idx ON ops.jobs USING btree (priority DESC, run_at) WHERE (status = 'queued'::text)
 index CREATE INDEX jobs_status_kind_idx ON ops.jobs USING btree (status, kind, created_at)
-index CREATE INDEX learner_risk_snapshots_date_brin ON analytics.learner_risk_snapshots USING brin (snapshot_date)
 index CREATE INDEX learner_risk_snapshots_pair_idx ON analytics.learner_risk_snapshots USING btree (course_id, user_id, snapshot_date DESC)
 index CREATE INDEX learner_risk_snapshots_user_idx ON analytics.learner_risk_snapshots USING btree (user_id)
 index CREATE INDEX mastery_evidence_concept_idx ON learning.mastery_evidence USING btree (concept_id)
@@ -3325,7 +3327,7 @@ table core.chapters version integer NOT NULL DEFAULT 1
 table core.collection_courses collection_id uuid NOT NULL DEFAULT -
 table core.collection_courses course_id uuid NOT NULL DEFAULT -
 table core.collection_courses created_at timestamp with time zone NOT NULL DEFAULT now()
-table core.collection_courses position integer NOT NULL DEFAULT 0
+table core.collection_courses position integer NOT NULL DEFAULT -
 table core.collection_staff authorship text NOT NULL DEFAULT -
 table core.collection_staff collection_id uuid NOT NULL DEFAULT -
 table core.collection_staff created_at timestamp with time zone NOT NULL DEFAULT now()
