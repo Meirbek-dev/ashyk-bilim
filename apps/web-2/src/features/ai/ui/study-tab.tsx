@@ -27,13 +27,14 @@ export function StudyTab({ courseId }: { courseId: CourseId }) {
   return (
     <div className="flex flex-col gap-4">
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-medium">{m.ai_mode()}</legend>
-        <div className="flex flex-wrap gap-2">
+        <legend className="pb-2 text-xs font-medium text-muted-foreground">{m.ai_mode()}</legend>
+        <div className="flex flex-wrap gap-1.5">
           {vStudyMode.options.map(option => (
             <Button
               key={option}
               size="sm"
-              variant={option === mode ? 'secondary' : 'ghost'}
+              variant={option === mode ? 'secondary' : 'outline'}
+              className="rounded-full"
               aria-pressed={option === mode}
               onClick={() => setMode(option)}
             >
@@ -41,7 +42,7 @@ export function StudyTab({ courseId }: { courseId: CourseId }) {
             </Button>
           ))}
         </div>
-        <p className="text-sm text-muted-foreground">{modeHints[mode]()}</p>
+        <p className="pt-1 text-sm text-pretty text-muted-foreground">{modeHints[mode]()}</p>
       </fieldset>
       <AskForm label={m.ai_question()} pending={run.pending} onAsk={ask} />
       <RunStatus

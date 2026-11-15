@@ -4,11 +4,11 @@ import * as v from 'valibot'
 import { MarkdownView } from '#/features/markdown'
 import { m } from '#/paraglide/messages'
 import type { AiRunId, RunArtifact } from '#/shared/api/gen/types.gen'
-import { Button } from '#/shared/ui/button'
 
 import { artifactsOptions } from '../queries'
 import { Citations } from './citations'
 import { PracticeItem } from './practice-item'
+import { Suggestion } from './suggestion'
 
 // `StudyCompanionAnswer.flashcards` is `JsonValue[]` in the contract: the two shapes the agent writes are read.
 const vCard = v.union([
@@ -50,7 +50,7 @@ export function StudyAnswer({ runId, onFollowUp }: { runId: AiRunId; onFollowUp:
           <h4 className="text-sm font-medium">{m.ai_flashcards()}</h4>
           <dl className="flex flex-col gap-2 text-sm">
             {cards.map(card => (
-              <div key={card.front} className="rounded-md border p-2">
+              <div key={card.front} className="rounded-lg bg-muted/60 px-3 py-2">
                 <dt className="font-medium">{card.front}</dt>
                 <dd className="text-muted-foreground">{card.back}</dd>
               </div>
@@ -60,18 +60,12 @@ export function StudyAnswer({ runId, onFollowUp }: { runId: AiRunId; onFollowUp:
       ) : null}
       <Citations citations={answer.citations ?? []} />
       {answer.follow_up_suggestions && answer.follow_up_suggestions.length > 0 ? (
-        <section className="flex flex-col items-start gap-2">
-          <h4 className="text-sm font-medium">{m.ai_follow_ups()}</h4>
+        <section className="flex flex-col gap-1.5">
+          <h4 className="pb-0.5 text-sm font-medium">{m.ai_follow_ups()}</h4>
           {answer.follow_up_suggestions.map(question => (
-            <Button
-              key={question}
-              variant="outline"
-              size="sm"
-              className="h-auto text-left whitespace-normal"
-              onClick={() => onFollowUp(question)}
-            >
+            <Suggestion key={question} onClick={() => onFollowUp(question)}>
               {question}
-            </Button>
+            </Suggestion>
           ))}
         </section>
       ) : null}

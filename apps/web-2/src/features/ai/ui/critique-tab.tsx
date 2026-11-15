@@ -20,8 +20,15 @@ export function CritiqueTab({ courseId, activityId }: { courseId: CourseId; acti
   const start = () => run.start(getLocale())
   return (
     <div className="flex flex-col gap-4">
+      {/* Before the first review the tab says what a review is and its run is the tab's one action. */}
+      {reviews.length === 0 ? (
+        <div className="flex flex-col gap-1.5">
+          <h3 className="text-lg font-semibold">{m.ai_tab_critique()}</h3>
+          <p className="text-sm text-pretty text-muted-foreground">{m.ai_critique_intro()}</p>
+        </div>
+      ) : null}
       <div>
-        <SubmitButton variant="outline" pending={run.pending} onClick={start}>
+        <SubmitButton variant={reviews.length === 0 ? 'default' : 'outline'} pending={run.pending} onClick={start}>
           {m.ai_critique_run()}
         </SubmitButton>
       </div>

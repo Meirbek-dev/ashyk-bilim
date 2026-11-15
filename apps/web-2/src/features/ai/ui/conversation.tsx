@@ -30,7 +30,7 @@ export function Conversation({ courseId, activityId, threadId, onThread }: Conve
   const failure = chat.turn?.status === 'failed' ? chat.turn.errorCode : null
   return (
     <div className="flex flex-col gap-4">
-      <Transcript entries={transcript(messages, chat.turn)} />
+      <Transcript entries={transcript(messages, chat.turn)} onAsk={chat.ask} pending={chat.pending} />
       {failure && failure !== STOPPED ? (
         <div className="flex flex-col items-start gap-2">
           <ErrorAlert>{runErrorText(failure)}</ErrorAlert>

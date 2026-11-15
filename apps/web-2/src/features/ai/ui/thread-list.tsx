@@ -19,18 +19,18 @@ type ThreadListProps = {
 export function ThreadList({ courseId, threadId, onSelect }: ThreadListProps) {
   const { data: threads } = useSuspenseQuery(threadsOptions(courseId))
   return (
-    <section className="flex flex-col gap-2 border-t pt-4">
+    <section className="flex flex-col gap-1.5 border-t pt-4">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-base font-semibold">{m.ai_threads()}</h3>
+        <h3 className="font-sans text-xs font-medium text-muted-foreground">{m.ai_threads()}</h3>
         <Button variant="ghost" size="sm" onClick={() => onSelect(undefined)}>
           <Plus data-icon="inline-start" aria-hidden />
           {m.ai_new_thread()}
         </Button>
       </div>
       {threads.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{m.ai_threads_empty()}</p>
+        <p className="pb-1 text-sm text-muted-foreground">{m.ai_threads_empty()}</p>
       ) : (
-        <ul className="flex flex-col gap-1">
+        <ul className="-mx-2 flex flex-col gap-0.5">
           {threads.map(thread => {
             const title = thread.title ?? (thread.last_message_preview || m.ai_thread_untitled())
             return (
@@ -38,7 +38,7 @@ export function ThreadList({ courseId, threadId, onSelect }: ThreadListProps) {
                 <Button
                   variant={thread.id === threadId ? 'secondary' : 'ghost'}
                   aria-current={thread.id === threadId ? 'true' : undefined}
-                  className="h-auto! min-w-0 flex-1 flex-col items-start gap-0 py-1.5 text-left"
+                  className="h-auto! min-w-0 flex-1 flex-col items-start gap-0 px-2 py-1.5 text-left font-normal aria-[current=true]:font-medium"
                   onClick={() => onSelect(thread.id)}
                 >
                   <span className="w-full truncate">{title}</span>

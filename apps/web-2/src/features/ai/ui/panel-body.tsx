@@ -1,9 +1,11 @@
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch, Link as RouterLink } from '@tanstack/react-router'
 
+import { Sparkles } from 'lucide-react'
 import { m } from '#/paraglide/messages'
 import type { UserId } from '#/shared/api/gen/types.gen'
 import { buttonVariants } from '#/shared/components/button-variants'
+import { EmptyState } from '#/shared/components/empty-state'
 
 import { offersAnalysis, panelTabs, pickTab, sessionsOf, unavailableReason, type UnavailableReason } from '../model/ai'
 import { capabilitiesOptions, sessionsOptions, type Scope } from '../queries'
@@ -41,17 +43,21 @@ export function PanelBody({ scope, userId }: { scope: Scope; userId: UserId }) {
   ) : null
   if (!tab)
     return (
-      <div className="flex flex-col items-start gap-4">
-        <p className="text-sm text-muted-foreground">{unavailableText[unavailableReason(caps)]()}</p>
+      <div className="flex flex-col gap-4">
+        <EmptyState>{unavailableText[unavailableReason(caps)]()}</EmptyState>
         {analysis}
       </div>
     )
   return (
     <div data-density="compact" className="flex flex-col gap-4">
       {caps.context ? (
-        <p className="text-xs text-muted-foreground">
-          {m.ai_context({ label: caps.context.activity_label ?? caps.context.course_label })} ·{' '}
-          {m.ai_sources({ count: caps.context.source_count })}
+        // What the assistant answers from, under its mark: the panel's one line of identity.
+        <p className="flex items-start gap-2 text-sm text-pretty text-muted-foreground">
+          <Sparkles aria-hidden className="mt-0.5 size-4 shrink-0 text-highlight" />
+          <span>
+            {m.ai_context({ label: caps.context.activity_label ?? caps.context.course_label })} ·{' '}
+            {m.ai_sources({ count: caps.context.source_count })}
+          </span>
         </p>
       ) : null}
       {tabs.length > 1 ? (
