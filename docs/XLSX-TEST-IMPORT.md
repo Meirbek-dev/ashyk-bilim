@@ -344,7 +344,9 @@ ready ──► POST commit ──► committed (result.assessment_id)        re
      `replace` / `append`: блокирует целевой тест, он должен быть того же курса и редактируемым (`ensure_editable`);
    - пачкой вставляет вопросы (`insert_imported_items`, `UNNEST WITH ORDINALITY`) с `source_file` и `source_row`;
    - снимает часы удаления с картинок (`uploads::hold`); ссылки вопрос → картинка ведёт триггер
-     `assessment_items_upload_ids` (таблица `assessment_item_uploads`);
+     `assessment_items_upload_ids` (таблица `assessment_item_uploads`); картинки сданной версии держит
+     `assessment_version_uploads` (триггер `assessment_versions_upload_ids`), так что `replace` не отнимает их у
+     старых попыток;
    - один раз увеличивает версию содержимого и пишет событие аудита `imported-from-xlsx`;
    - ставит `status = committed`.
 

@@ -209,14 +209,24 @@ async fn erasure_removes_derived_data_and_keeps_the_grade(pool: PgPool) {
     .fetch_one(&pool)
     .await
     .unwrap();
+    let empty = serde_json::json!({});
+    let version = ab_db::assessment_versions::ensure(
+        &pool,
+        ab_core::id::AssessmentId(assessment),
+        &empty,
+        &empty,
+    )
+    .await
+    .unwrap();
     let submission: Uuid = sqlx::query_scalar(
         "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, submitted_at,
-                                  items_snapshot, policy_snapshot)
-         VALUES ($1, $2, $3, 'graded', 1, now(), '{}', '{}') RETURNING id",
+                                  items_snapshot, policy_snapshot, assessment_version_id)
+         VALUES ($1, $2, $3, 'graded', 1, now(), '{}', '{}', $4) RETURNING id",
     )
     .bind(assessment)
     .bind(course)
     .bind(user)
+    .bind(version.0)
     .fetch_one(&pool)
     .await
     .unwrap();

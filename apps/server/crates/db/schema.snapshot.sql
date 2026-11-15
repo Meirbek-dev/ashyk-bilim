@@ -395,6 +395,7 @@ constraint assessment_item_uploads assessment_item_uploads_upload_id_not_null NO
 constraint assessment_items assessment_items_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE
 constraint assessment_items assessment_items_assessment_id_not_null NOT NULL assessment_id
 constraint assessment_items assessment_items_body_kind_check CHECK (((jsonb_typeof(body) = 'object'::text) AND ((body ->> 'kind'::text) = kind)))
+constraint assessment_items assessment_items_body_kind_set CHECK (((body ->> 'kind'::text) IS NOT NULL))
 constraint assessment_items assessment_items_body_not_null NOT NULL body
 constraint assessment_items assessment_items_created_at_not_null NOT NULL created_at
 constraint assessment_items assessment_items_difficulty_check CHECK (((difficulty IS NULL) OR (difficulty = ANY (ARRAY['easy'::text, 'medium'::text, 'hard'::text]))))
@@ -432,6 +433,11 @@ constraint assessment_overrides assessment_overrides_user_id_fkey FOREIGN KEY (u
 constraint assessment_overrides assessment_overrides_user_id_not_null NOT NULL user_id
 constraint assessment_overrides assessment_overrides_version_not_null NOT NULL version
 constraint assessment_overrides assessment_overrides_waive_late_penalty_not_null NOT NULL waive_late_penalty
+constraint assessment_version_uploads assessment_version_uploads_pkey PRIMARY KEY (version_id, upload_id)
+constraint assessment_version_uploads assessment_version_uploads_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE
+constraint assessment_version_uploads assessment_version_uploads_upload_id_not_null NOT NULL upload_id
+constraint assessment_version_uploads assessment_version_uploads_version_id_fkey FOREIGN KEY (version_id) REFERENCES assessment_versions(id) ON DELETE CASCADE
+constraint assessment_version_uploads assessment_version_uploads_version_id_not_null NOT NULL version_id
 constraint assessment_versions assessment_versions_assessment_id_content_hash_key UNIQUE (assessment_id, content_hash)
 constraint assessment_versions assessment_versions_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE
 constraint assessment_versions assessment_versions_assessment_id_not_null NOT NULL assessment_id
@@ -469,6 +475,7 @@ constraint assessments assessments_description_not_null NOT NULL description
 constraint assessments assessments_devtools_detection_not_null NOT NULL devtools_detection
 constraint assessments assessments_draw_count_check CHECK (((draw_count IS NULL) OR ((draw_count >= 1) AND (draw_count <= 200))))
 constraint assessments assessments_draw_strata_check CHECK (((draw_strata IS NULL) OR (jsonb_typeof(draw_strata) = 'array'::text)))
+constraint assessments assessments_draw_strata_shape CHECK (((draw_strata IS NULL) OR draw_strata_ok(draw_strata)))
 constraint assessments assessments_fullscreen_required_not_null NOT NULL fullscreen_required
 constraint assessments assessments_grace_period_minutes_check CHECK ((grace_period_minutes >= 0))
 constraint assessments assessments_grace_period_minutes_not_null NOT NULL grace_period_minutes
@@ -1262,6 +1269,7 @@ constraint messages messages_conversation_id_not_null NOT NULL conversation_id
 constraint messages messages_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL
 constraint messages messages_created_at_not_null NOT NULL created_at
 constraint messages messages_id_not_null NOT NULL id
+constraint messages messages_member_fkey FOREIGN KEY (conversation_id, user_id) REFERENCES conversation_members(conversation_id, user_id)
 constraint messages messages_pkey PRIMARY KEY (id)
 constraint messages messages_status_check CHECK ((status = ANY (ARRAY['active'::text, 'deleted'::text])))
 constraint messages messages_status_not_null NOT NULL status
@@ -1339,7 +1347,7 @@ constraint submissions submissions_answers_check CHECK ((jsonb_typeof(answers) =
 constraint submissions submissions_answers_not_null NOT NULL answers
 constraint submissions submissions_assessment_id_fkey FOREIGN KEY (assessment_id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE RESTRICT
 constraint submissions submissions_assessment_id_not_null NOT NULL assessment_id
-constraint submissions submissions_assessment_version_id_fkey FOREIGN KEY (assessment_version_id) REFERENCES assessment_versions(id)
+constraint submissions submissions_assessment_version_fkey FOREIGN KEY (assessment_version_id, assessment_id) REFERENCES assessment_versions(id, assessment_id)
 constraint submissions submissions_attempt_number_check CHECK ((attempt_number >= 1))
 constraint submissions submissions_attempt_number_not_null NOT NULL attempt_number
 constraint submissions submissions_auto_breakdown_check CHECK (((auto_breakdown IS NULL) OR (jsonb_typeof(auto_breakdown) = 'object'::text)))
@@ -1353,6 +1361,7 @@ constraint submissions submissions_current_grade TRIGGER DEFERRABLE INITIALLY DE
 constraint submissions submissions_draft_version_not_null NOT NULL draft_version
 constraint submissions submissions_duration_seconds_check CHECK (((duration_seconds IS NULL) OR (duration_seconds >= 0)))
 constraint submissions submissions_handed_in_snapshots_check CHECK (((status = 'draft'::text) OR ((items_snapshot IS NOT NULL) AND (policy_snapshot IS NOT NULL)) OR (created_at < '2026-11-07 00:00:00+00'::timestamp with time zone)))
+constraint submissions submissions_handed_in_version_check CHECK (((status = 'draft'::text) OR (assessment_version_id IS NOT NULL) OR (created_at < '2026-11-07 00:00:00+00'::timestamp with time zone)))
 constraint submissions submissions_id_not_null NOT NULL id
 constraint submissions submissions_id_user_key UNIQUE (id, user_id)
 constraint submissions submissions_is_late_not_null NOT NULL is_late
@@ -1361,6 +1370,7 @@ constraint submissions submissions_late_penalty_pct_not_null NOT NULL late_penal
 constraint submissions submissions_pkey PRIMARY KEY (id)
 constraint submissions submissions_policy_snapshot_check CHECK (((policy_snapshot IS NULL) OR (jsonb_typeof(policy_snapshot) = 'object'::text)))
 constraint submissions submissions_preview_not_null NOT NULL preview
+constraint submissions submissions_selected_item_ids_check CHECK (((selected_item_ids IS NULL) OR uuid_list_ok(selected_item_ids, 200)))
 constraint submissions submissions_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'submitted'::text, 'graded'::text, 'released'::text, 'returned'::text])))
 constraint submissions submissions_status_not_null NOT NULL status
 constraint submissions submissions_submitted_at_check CHECK (((status = 'draft'::text) OR (submitted_at IS NOT NULL)))
@@ -1797,6 +1807,20 @@ BEGIN
     ON CONFLICT DO NOTHING;
     RETURN NULL;
 END $function$
+function CREATE OR REPLACE FUNCTION public.assessment_version_uploads_sync()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    INSERT INTO assessment_version_uploads (version_id, upload_id)
+    SELECT DISTINCT NEW.id, u.id
+    FROM jsonb_path_query(NEW.items, 'lax $.**.upload_id') AS ref (value)
+    JOIN uploads u ON u.id::text = ref.value #>> '{}'
+    WHERE jsonb_typeof(ref.value) = 'string'
+    ON CONFLICT DO NOTHING;
+    RETURN NULL;
+END $function$
 function CREATE OR REPLACE FUNCTION public.assessment_versions_frozen()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1813,6 +1837,7 @@ function CREATE OR REPLACE FUNCTION public.assessment_versions_points()
 AS $function$
 BEGIN
     NEW.max_points := snapshot_max_points(NEW.items);
+    NEW.content_hash := assessment_content_hash(NEW.items, NEW.policy);
     RETURN NEW;
 END;
 $function$
@@ -1958,6 +1983,27 @@ BEGIN
     END IF;
     RETURN NULL;
 END $function$
+function CREATE OR REPLACE FUNCTION public.draw_strata_ok(strata jsonb)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+AS $function$
+    SELECT jsonb_typeof(strata) = 'array'
+       AND jsonb_array_length(strata) BETWEEN 1 AND 200
+       AND NOT EXISTS (
+           SELECT 1 FROM jsonb_array_elements(strata) AS s (v)
+           WHERE CASE WHEN jsonb_typeof(v) = 'object'
+                           AND jsonb_typeof(v -> 'group') = 'string'
+                           AND jsonb_typeof(v -> 'count') = 'number'
+                      THEN NOT (v - 'group' - 'count' = '{}'::jsonb
+                                AND char_length(v ->> 'group') BETWEEN 1 AND 32
+                                AND v ->> 'group' = btrim(v ->> 'group')
+                                AND (v -> 'count')::numeric BETWEEN 1 AND 200
+                                AND (v -> 'count')::numeric = trunc((v -> 'count')::numeric))
+                      ELSE true END)
+       AND (SELECT count(DISTINCT v ->> 'group') FROM jsonb_array_elements(strata) AS s (v))
+           = jsonb_array_length(strata)
+$function$
 function CREATE OR REPLACE FUNCTION public.ensure_app_search_path()
  RETURNS text
  LANGUAGE plpgsql
@@ -2373,7 +2419,9 @@ BEGIN
     IF (OLD.items_snapshot IS NOT NULL AND NEW.items_snapshot IS DISTINCT FROM OLD.items_snapshot)
        OR (OLD.policy_snapshot IS NOT NULL AND NEW.policy_snapshot IS DISTINCT FROM OLD.policy_snapshot)
        OR (OLD.assessment_version_id IS NOT NULL
-           AND NEW.assessment_version_id IS DISTINCT FROM OLD.assessment_version_id) THEN
+           AND NEW.assessment_version_id IS DISTINCT FROM OLD.assessment_version_id)
+       OR (OLD.selected_item_ids IS NOT NULL
+           AND NEW.selected_item_ids IS DISTINCT FROM OLD.selected_item_ids) THEN
         RAISE EXCEPTION 'a submission''s snapshots are written once'
             USING ERRCODE = 'integrity_constraint_violation';
     END IF;
@@ -2461,6 +2509,7 @@ AS $function$
     SELECT EXISTS (SELECT 1 FROM file_submission_files WHERE upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM block_uploads WHERE upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM post_uploads WHERE upload_id = p_upload)
+        OR EXISTS (SELECT 1 FROM message_uploads WHERE upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM users WHERE avatar_upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM courses WHERE thumbnail_image_upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM courses WHERE thumbnail_video_upload_id = p_upload)
@@ -2470,6 +2519,7 @@ AS $function$
         OR EXISTS (SELECT 1 FROM platforms WHERE thumbnail_upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM item_feedback WHERE annotation_upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM assessment_item_uploads WHERE upload_id = p_upload)
+        OR EXISTS (SELECT 1 FROM assessment_version_uploads WHERE upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM assessment_imports WHERE upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM assessment_imports WHERE image_upload_ids @> ARRAY[p_upload])
 $function$
@@ -2506,6 +2556,15 @@ BEGIN
     END IF;
     RETURN NEW;
 END $function$
+function CREATE OR REPLACE FUNCTION public.uuid_list_ok(ids uuid[], max_items integer)
+ RETURNS boolean
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+AS $function$
+    SELECT cardinality(ids) <= max_items
+       AND array_position(ids, NULL) IS NULL
+       AND (SELECT count(DISTINCT v) FROM unnest(ids) AS t (v)) = cardinality(ids)
+$function$
 index CREATE INDEX activities_course_idx ON core.activities USING btree (course_id)
 index CREATE INDEX activities_search_trgm_idx ON core.activities USING gin (search_fold(name) gin_trgm_ops)
 index CREATE INDEX activity_progress_activity_state_idx ON learning.activity_progress USING btree (activity_id, state)
@@ -2582,6 +2641,7 @@ index CREATE INDEX assessment_imports_result_idx ON learning.assessment_imports 
 index CREATE INDEX assessment_imports_upload_idx ON learning.assessment_imports USING btree (upload_id)
 index CREATE INDEX assessment_item_uploads_upload_idx ON learning.assessment_item_uploads USING btree (upload_id)
 index CREATE INDEX assessment_overrides_user_idx ON learning.assessment_overrides USING btree (user_id)
+index CREATE INDEX assessment_version_uploads_upload_idx ON learning.assessment_version_uploads USING btree (upload_id)
 index CREATE INDEX assessments_course_idx ON learning.assessments USING btree (course_id)
 index CREATE INDEX assessments_due_publish_idx ON learning.assessments USING btree (scheduled_at) WHERE (lifecycle = 'scheduled'::text)
 index CREATE INDEX auth_audit_log_created_brin ON ops.auth_audit_log USING brin (created_at)
@@ -2760,8 +2820,10 @@ index CREATE UNIQUE INDEX assessment_items_pkey ON learning.assessment_items USI
 index CREATE UNIQUE INDEX assessment_items_position_key ON learning.assessment_items USING btree (assessment_id, "position")
 index CREATE UNIQUE INDEX assessment_overrides_assessment_id_user_id_key ON learning.assessment_overrides USING btree (assessment_id, user_id)
 index CREATE UNIQUE INDEX assessment_overrides_pkey ON learning.assessment_overrides USING btree (id)
+index CREATE UNIQUE INDEX assessment_version_uploads_pkey ON learning.assessment_version_uploads USING btree (version_id, upload_id)
 index CREATE UNIQUE INDEX assessment_versions_assessment_id_content_hash_key ON learning.assessment_versions USING btree (assessment_id, content_hash)
 index CREATE UNIQUE INDEX assessment_versions_assessment_id_number_key ON learning.assessment_versions USING btree (assessment_id, number)
+index CREATE UNIQUE INDEX assessment_versions_id_assessment_key ON learning.assessment_versions USING btree (id, assessment_id)
 index CREATE UNIQUE INDEX assessment_versions_pkey ON learning.assessment_versions USING btree (id)
 index CREATE UNIQUE INDEX assessments_activity_id_key ON learning.assessments USING btree (activity_id)
 index CREATE UNIQUE INDEX assessments_id_course_key ON learning.assessments USING btree (id, course_id)
@@ -3569,6 +3631,8 @@ table learning.assessment_overrides updated_at timestamp with time zone NOT NULL
 table learning.assessment_overrides user_id uuid NOT NULL DEFAULT -
 table learning.assessment_overrides version integer NOT NULL DEFAULT 1
 table learning.assessment_overrides waive_late_penalty boolean NOT NULL DEFAULT false
+table learning.assessment_version_uploads upload_id uuid NOT NULL DEFAULT -
+table learning.assessment_version_uploads version_id uuid NOT NULL DEFAULT -
 table learning.assessment_versions assessment_id uuid NOT NULL DEFAULT -
 table learning.assessment_versions content_hash text NOT NULL DEFAULT -
 table learning.assessment_versions created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -4023,6 +4087,7 @@ trigger CREATE TRIGGER assessment_items_upload_ids AFTER INSERT OR UPDATE OF bod
 trigger CREATE TRIGGER assessment_overrides_touch BEFORE UPDATE ON learning.assessment_overrides FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()
 trigger CREATE TRIGGER assessment_versions_points BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_points()
+trigger CREATE TRIGGER assessment_versions_upload_ids AFTER INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_version_uploads_sync()
 trigger CREATE TRIGGER assessments_touch BEFORE UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER blocks_touch BEFORE UPDATE ON core.blocks FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER blocks_upload_ids AFTER INSERT OR UPDATE OF content, claimed ON core.blocks FOR EACH ROW EXECUTE FUNCTION block_uploads_sync()
@@ -4065,7 +4130,7 @@ trigger CREATE TRIGGER jobs_touch BEFORE UPDATE ON ops.jobs FOR EACH ROW EXECUTE
 trigger CREATE TRIGGER platforms_touch BEFORE UPDATE ON core.platforms FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER platforms_upload_ids BEFORE INSERT OR UPDATE OF logo_key, thumbnail_key ON core.platforms FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('logo_key', 'logo_upload_id', 'thumbnail_key', 'thumbnail_upload_id')
 trigger CREATE TRIGGER roles_touch BEFORE UPDATE ON core.roles FOR EACH ROW EXECUTE FUNCTION touch_row('version')
-trigger CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()
+trigger CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id, selected_item_ids ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()
 trigger CREATE TRIGGER submissions_touch BEFORE UPDATE ON learning.submissions FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER teacher_interventions_touch BEFORE UPDATE ON learning.teacher_interventions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER translations_touch BEFORE UPDATE ON core.translations FOR EACH ROW EXECUTE FUNCTION touch_row()

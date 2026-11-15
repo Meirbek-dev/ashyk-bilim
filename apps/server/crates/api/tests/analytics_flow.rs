@@ -28,6 +28,15 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use sqlx::PgPool;
 
+/// The version of an empty test, for submissions a test writes by hand (a hand-in names one).
+async fn empty_version(pool: &sqlx::PgPool, assessment: uuid::Uuid) -> uuid::Uuid {
+    let empty = serde_json::json!({});
+    ab_db::assessment_versions::ensure(pool, ab_core::id::AssessmentId(assessment), &empty, &empty)
+        .await
+        .unwrap()
+        .0
+}
+
 async fn instructor(app: &TestApp, name: &str) -> MintedSession {
     let user = app
         .create_user(name, &format!("{name}@example.com"), &["instructor"])
@@ -2058,11 +2067,15 @@ async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
     enrol(&pool, &course_id, bob.user_id, 100.0).await;
     // Submitted 20 days ago: idle enough to be at risk and listed (UX-240).
     let submission_id: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, final_score,          submitted_at, graded_at, items_snapshot, policy_snapshot) VALUES ($1, $2, $3, 'graded', 1, 10, now() - interval '20 days', now() - interval '20 days', '{}', '{}') RETURNING id",
+        "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, final_score,
+                                  submitted_at, graded_at, items_snapshot, policy_snapshot, assessment_version_id)
+         VALUES ($1, $2, $3, 'graded', 1, 10, now() - interval '20 days', now() - interval '20 days', '{}', '{}', $4)
+         RETURNING id",
     )
     .bind(code_id)
     .bind(course_uuid)
     .bind(bob.user_id.0)
+    .bind(empty_version(&pool, code_id).await)
     .fetch_one(&pool)
     .await
     .unwrap();
@@ -2123,14 +2136,15 @@ async fn exam_and_code_challenge_common_failures_use_the_catalogued_codes(pool: 
         sqlx::query(
             "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
                                       final_score, is_late, submitted_at, graded_at,
-                                      items_snapshot, policy_snapshot)
-             VALUES ($1, $2, $3, 'submitted', 1, NULL, false, now(), NULL, '{}', '{}'),
-                    ($1, $2, $4, 'released', 1, 80, true, now(), now(), '{}', '{}')",
+                                      items_snapshot, policy_snapshot, assessment_version_id)
+             VALUES ($1, $2, $3, 'submitted', 1, NULL, false, now(), NULL, '{}', '{}', $5),
+                    ($1, $2, $4, 'released', 1, 80, true, now(), now(), '{}', '{}', $5)",
         )
         .bind(id)
         .bind(course_uuid)
         .bind(bob.user_id.0)
         .bind(ann.user_id.0)
+        .bind(empty_version(&pool, id).await)
         .execute(&pool)
         .await
         .unwrap();
@@ -2777,14 +2791,15 @@ async fn exam_common_failures_name_the_missed_questions(pool: PgPool) {
         sqlx::query(
             "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
                                       final_score, auto_breakdown, submitted_at, graded_at,
-                                      items_snapshot, policy_snapshot)
-             VALUES ($1, $2, $3, 'released', 1, $4, $5, now(), now(), '{}', '{}')",
+                                      items_snapshot, policy_snapshot, assessment_version_id)
+             VALUES ($1, $2, $3, 'released', 1, $4, $5, now(), now(), '{}', '{}', $6)",
         )
         .bind(exam_id)
         .bind(course_uuid)
         .bind(who.user_id.0)
         .bind(if hard_correct { 100.0 } else { 50.0 })
         .bind(&grading)
+        .bind(empty_version(&pool, exam_id).await)
         .execute(&pool)
         .await
         .unwrap();

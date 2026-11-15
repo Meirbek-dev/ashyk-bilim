@@ -37,6 +37,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`learning.assessment_item_uploads`](#assessment_item_uploads): Uploads an assessment item body names (any `upload_id` in it); synced by trigger from the body
 - [`learning.assessment_items`](#assessment_items): A question or task of an assessment (typed body by kind), ordered by position, max_score in points
 - [`learning.assessment_overrides`](#assessment_overrides): Per-learner exceptions of an assessment: extra attempts, a later due date, a waived late penalty
+- [`learning.assessment_version_uploads`](#assessment_version_uploads): Uploads a frozen assessment version's items name (any `upload_id` in them); written by trigger when the version is
 - [`learning.assessment_versions`](#assessment_versions): Frozen policy + items of an assessment as handed in (content-addressed, numbered per assessment); a hand-in names its version once
 - [`learning.assessments`](#assessments): The graded part of a quiz, exam or code challenge activity: lifecycle, attempt and grading policy
 - [`ops.auth_audit_log`](#auth_audit_log): Security events of accounts (logins, failures, erasure)
@@ -959,6 +960,7 @@ A question or task of an assessment (typed body by kind), ordered by position, m
 - Unique `assessment_items_position_key`: `UNIQUE (assessment_id, "position") DEFERRABLE INITIALLY DEFERRED`
 - Foreign key `assessment_items_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
 - Check `assessment_items_body_kind_check`: `CHECK (((jsonb_typeof(body) = 'object'::text) AND ((body ->> 'kind'::text) = kind)))`
+- Check `assessment_items_body_kind_set`: `CHECK (((body ->> 'kind'::text) IS NOT NULL))`
 - Check `assessment_items_difficulty_check`: `CHECK (((difficulty IS NULL) OR (difficulty = ANY (ARRAY['easy'::text, 'medium'::text, 'hard'::text]))))`
 - Check `assessment_items_draw_group_check`: `CHECK (((draw_group IS NULL) OR ((length(draw_group) >= 1) AND (length(draw_group) <= 32))))`
 - Check `assessment_items_estimated_minutes_check`: `CHECK (((estimated_minutes IS NULL) OR (estimated_minutes >= 0)))`
@@ -998,6 +1000,20 @@ Per-learner exceptions of an assessment: extra attempts, a later due date, a wai
 - Check `assessment_overrides_max_attempts_override_check`: `CHECK (((max_attempts_override IS NULL) OR ((max_attempts_override >= 1) AND (max_attempts_override <= 10))))`
 - Index `assessment_overrides_user_idx`: `CREATE INDEX assessment_overrides_user_idx ON learning.assessment_overrides USING btree (user_id)`
 
+## assessment_version_uploads
+
+Uploads a frozen assessment version's items name (any `upload_id` in them); written by trigger when the version is.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| version_id | uuid |  |  |
+| upload_id | uuid |  |  |
+
+- Primary key `assessment_version_uploads_pkey`: `PRIMARY KEY (version_id, upload_id)`
+- Foreign key `assessment_version_uploads_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE`
+- Foreign key `assessment_version_uploads_version_id_fkey`: `FOREIGN KEY (version_id) REFERENCES assessment_versions(id) ON DELETE CASCADE`
+- Index `assessment_version_uploads_upload_idx`: `CREATE INDEX assessment_version_uploads_upload_idx ON learning.assessment_version_uploads USING btree (upload_id)`
+
 ## assessment_versions
 
 Frozen policy + items of an assessment as handed in (content-addressed, numbered per assessment); a hand-in names its version once.
@@ -1022,8 +1038,10 @@ Frozen policy + items of an assessment as handed in (content-addressed, numbered
 - Check `assessment_versions_max_points_check`: `CHECK ((max_points >= (0)::numeric))`
 - Check `assessment_versions_number_check`: `CHECK ((number >= 1))`
 - Check `assessment_versions_policy_check`: `CHECK ((jsonb_typeof(policy) = 'object'::text))`
+- Index `assessment_versions_id_assessment_key`: `CREATE UNIQUE INDEX assessment_versions_id_assessment_key ON learning.assessment_versions USING btree (id, assessment_id)`
 - Trigger `assessment_versions_frozen`: `CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()`
 - Trigger `assessment_versions_points`: `CREATE TRIGGER assessment_versions_points BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_points()`
+- Trigger `assessment_versions_upload_ids`: `CREATE TRIGGER assessment_versions_upload_ids AFTER INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_version_uploads_sync()`
 
 ## assessments
 
@@ -1088,6 +1106,7 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Check `assessments_completion_rule_check`: `CHECK ((completion_rule = ANY (ARRAY['viewed'::text, 'submitted'::text, 'graded'::text, 'passed'::text, 'teacher_verified'::text])))`
 - Check `assessments_draw_count_check`: `CHECK (((draw_count IS NULL) OR ((draw_count >= 1) AND (draw_count <= 200))))`
 - Check `assessments_draw_strata_check`: `CHECK (((draw_strata IS NULL) OR (jsonb_typeof(draw_strata) = 'array'::text)))`
+- Check `assessments_draw_strata_shape`: `CHECK (((draw_strata IS NULL) OR draw_strata_ok(draw_strata)))`
 - Check `assessments_grace_period_minutes_check`: `CHECK ((grace_period_minutes >= 0))`
 - Check `assessments_grade_release_mode_check`: `CHECK ((grade_release_mode = ANY (ARRAY['immediate'::text, 'batch'::text])))`
 - Check `assessments_grading_mode_check`: `CHECK ((grading_mode = ANY (ARRAY['auto'::text, 'manual'::text, 'auto_then_manual'::text])))`
@@ -2616,6 +2635,7 @@ One message of a conversation, by user_id. A deleted one stays as a tombstone (s
 - Foreign key `messages_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL`
 - Foreign key `messages_conversation_id_fkey`: `FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE`
 - Foreign key `messages_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL`
+- Foreign key `messages_member_fkey`: `FOREIGN KEY (conversation_id, user_id) REFERENCES conversation_members(conversation_id, user_id)`
 - Foreign key `messages_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id)`
 - Check `messages_body_check`: `CHECK ((char_length(body) <= 4000))`
 - Check `messages_check`: `CHECK (((status = 'deleted'::text) = (deleted_at IS NOT NULL)))`
@@ -2834,7 +2854,7 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 - Primary key `submissions_pkey`: `PRIMARY KEY (id)`
 - Unique `submissions_id_user_key`: `UNIQUE (id, user_id)`
 - Foreign key `submissions_assessment_id_fkey`: `FOREIGN KEY (assessment_id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE RESTRICT`
-- Foreign key `submissions_assessment_version_id_fkey`: `FOREIGN KEY (assessment_version_id) REFERENCES assessment_versions(id)`
+- Foreign key `submissions_assessment_version_fkey`: `FOREIGN KEY (assessment_version_id, assessment_id) REFERENCES assessment_versions(id, assessment_id)`
 - Foreign key `submissions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE RESTRICT`
 - Foreign key `submissions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Check `submissions_answers_check`: `CHECK ((jsonb_typeof(answers) = 'object'::text))`
@@ -2843,8 +2863,10 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 - Check `submissions_auto_submit_reason_check`: `CHECK (((auto_submit_reason IS NULL) OR (auto_submit_reason = ANY (ARRAY['time_expired'::text, 'integrity_violation'::text, 'deadline_passed'::text, 'late_cutoff_passed'::text]))))`
 - Check `submissions_duration_seconds_check`: `CHECK (((duration_seconds IS NULL) OR (duration_seconds >= 0)))`
 - Check `submissions_handed_in_snapshots_check`: `CHECK (((status = 'draft'::text) OR ((items_snapshot IS NOT NULL) AND (policy_snapshot IS NOT NULL)) OR (created_at < '2026-11-07 00:00:00+00'::timestamp with time zone)))`
+- Check `submissions_handed_in_version_check`: `CHECK (((status = 'draft'::text) OR (assessment_version_id IS NOT NULL) OR (created_at < '2026-11-07 00:00:00+00'::timestamp with time zone)))`
 - Check `submissions_items_snapshot_check`: `CHECK (((items_snapshot IS NULL) OR (jsonb_typeof(items_snapshot) = 'object'::text)))`
 - Check `submissions_policy_snapshot_check`: `CHECK (((policy_snapshot IS NULL) OR (jsonb_typeof(policy_snapshot) = 'object'::text)))`
+- Check `submissions_selected_item_ids_check`: `CHECK (((selected_item_ids IS NULL) OR uuid_list_ok(selected_item_ids, 200)))`
 - Check `submissions_status_check`: `CHECK ((status = ANY (ARRAY['draft'::text, 'submitted'::text, 'graded'::text, 'released'::text, 'returned'::text])))`
 - Check `submissions_submitted_at_check`: `CHECK (((status = 'draft'::text) OR (submitted_at IS NOT NULL)))`
 - Check `submissions_violation_count_check`: `CHECK ((violation_count >= 0))`
@@ -2857,7 +2879,7 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 - Index `submissions_timer_idx`: `CREATE INDEX submissions_timer_idx ON learning.submissions USING btree (started_at) WHERE ((status = 'draft'::text) AND (started_at IS NOT NULL))`
 - Index `submissions_user_idx`: `CREATE INDEX submissions_user_idx ON learning.submissions USING btree (user_id)`
 - Trigger `submissions_current_grade`: `CREATE CONSTRAINT TRIGGER submissions_current_grade AFTER UPDATE OF final_score ON learning.submissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.final_score)::numeric IS DISTINCT FROM (new.final_score)::numeric)) EXECUTE FUNCTION submissions_current_grade_check()`
-- Trigger `submissions_snapshots_frozen`: `CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()`
+- Trigger `submissions_snapshots_frozen`: `CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id, selected_item_ids ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()`
 
 ## teacher_interventions
 
