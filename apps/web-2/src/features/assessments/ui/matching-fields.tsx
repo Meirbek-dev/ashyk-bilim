@@ -1,16 +1,14 @@
-import { Plus, X } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type { MatchingBody, MatchingPair } from '#/shared/api/gen/types.gen'
-import { IconButton } from '#/shared/components/icon-button'
 import { Button } from '#/shared/ui/button'
 import { FieldDescription, FieldLegend, FieldSet } from '#/shared/ui/field'
-import { Checkbox } from '#/shared/ui/checkbox'
 import { Input } from '#/shared/ui/input'
-import { Label } from '#/shared/ui/label'
 
 import type { EditMode } from '../model/route'
 import { MarkdownField } from './markdown-field'
+import { PairTools } from './pair-tools'
 import { TextList } from './text-list'
 
 type Matching = MatchingBody & { kind: 'matching' }
@@ -54,23 +52,14 @@ export function MatchingFields({ body, onChange, mode }: MatchingFieldsProps) {
                 disabled={!editable || pair.right === null}
                 onChange={event => patch(at, { right: event.target.value })}
               />
-              <Label className="col-start-2 row-start-2 shrink-0 font-normal @xl:col-start-3 @xl:row-start-1">
-                <Checkbox
-                  aria-label={m.assessments_pair_unpaired({ number: at + 1 })}
-                  checked={pair.right === null}
-                  disabled={!editable}
-                  onCheckedChange={checked => patch(at, { right: checked ? null : '' })}
-                />
-                {m.assessments_pair_none()}
-              </Label>
-              <div className="col-start-2 row-start-1 justify-self-end @xl:col-start-4">
-                <IconButton
-                  label={m.assessments_pair_remove({ number: at + 1 })}
-                  icon={<X aria-hidden />}
-                  disabled={!editable || body.pairs.length <= 1}
-                  onClick={() => setPairs(body.pairs.filter((_, index) => index !== at))}
-                />
-              </div>
+              <PairTools
+                number={at + 1}
+                unpaired={pair.right === null}
+                editable={editable}
+                removable={body.pairs.length > 1}
+                onUnpaired={unpaired => patch(at, { right: unpaired ? null : '' })}
+                onRemove={() => setPairs(body.pairs.filter((_, index) => index !== at))}
+              />
             </li>
           ))}
         </ol>
