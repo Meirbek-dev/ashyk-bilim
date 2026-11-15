@@ -66,3 +66,25 @@ test('a fresh server clock never gains time from a stale tick after an untimed a
     vi.useRealTimers()
   }
 })
+
+test('a save that re-syncs the clock between two ticks does not stop it', () => {
+  vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] })
+  const host = document.createElement('div')
+  const root = createRoot(host)
+  const render = (remaining: number) =>
+    flushSync(() => root.render(<Clock remaining={remaining} receivedAt={Date.now()} revision={0} />))
+  try {
+    render(7)
+    flushSync(() => vi.advanceTimersByTime(700))
+    // The save's answer: the same seven seconds, counted from now. The pending tick lands 300 ms later, still on 7.
+    render(7)
+    flushSync(() => vi.advanceTimersByTime(300))
+    expect(host.textContent).toBe('7')
+    for (let second = 0; second < 7; second++) flushSync(() => vi.advanceTimersByTime(1000))
+    expect(host.textContent).toBe('0')
+    expect(vi.getTimerCount()).toBe(0)
+  } finally {
+    flushSync(() => root.unmount())
+    vi.useRealTimers()
+  }
+})
