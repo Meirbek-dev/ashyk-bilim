@@ -33,9 +33,10 @@ export function DataTableCards<T>({ rows, columns, getKey, stretch }: DataTableC
               {title ? <h3 className="min-w-0 flex-1 font-sans font-medium">{title.cell(row)}</h3> : null}
             </div>
           ) : title && actions.length === 1 ? (
-            // A single action stands on the name's line: on its own line it reads as a row of its own.
-            <div className="flex items-start justify-between gap-3">
-              <h3 className="min-w-0 font-sans font-medium">{title.cell(row)}</h3>
+            // A single action stands on the name's line: on its own line it reads as a row of its own. A wide action
+            // that would leave the name under 10rem goes under it instead of squeezing it into a column of words.
+            <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+              <h3 className="min-w-0 flex-1 basis-40 font-sans font-medium">{title.cell(row)}</h3>
               <div className="shrink-0" data-stretch={actions[0]?.stretch ? '' : undefined}>
                 {actions[0]?.cell(row)}
               </div>

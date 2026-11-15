@@ -1,6 +1,7 @@
 import { useHydrated } from '@tanstack/react-router'
-import type { ReactElement, ReactNode } from 'react'
+import { type ReactElement, type ReactNode, use } from 'react'
 
+import { DensityContext } from './density'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '#/shared/ui/sheet'
 
 type SheetPanelProps = {
@@ -19,12 +20,13 @@ type SheetPanelProps = {
 export function SheetPanel({ trigger, open, onOpenChange, title, side, initialFocus, children }: SheetPanelProps) {
   // Before hydration a click on an SSR page opens nothing (AGENTS.md): the trigger waits, like the auth fieldset.
   const hydrated = useHydrated()
+  const density = use(DensityContext)
   return (
     <Sheet open={open} onOpenChange={next => onOpenChange?.(next)}>
       {trigger ? (
         <SheetTrigger render={trigger} disabled={!hydrated || undefined} data-hydrating={hydrated ? undefined : true} />
       ) : null}
-      <SheetContent side={side} initialFocus={initialFocus}>
+      <SheetContent side={side} initialFocus={initialFocus} data-density={density}>
         {/* Clear of the stock close button (absolute, top right): a long name wraps before it, a long login too. */}
         <SheetHeader className="pr-12">
           <SheetTitle className="wrap-anywhere">{title}</SheetTitle>

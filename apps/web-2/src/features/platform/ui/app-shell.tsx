@@ -6,6 +6,7 @@ import { useLiveEvents } from '#/features/notifications/route'
 import { useSessionExpired } from '#/shared/api/held-session'
 import { shellWorkspace } from '#/shared/auth/access'
 import { sessionOptions } from '#/shared/auth/session'
+import { DensityContext } from '#/shared/components/density'
 import { SkipLink } from '#/shared/components/skip-link'
 
 import { BottomBar } from './bottom-bar'
@@ -41,7 +42,9 @@ export function AppShell() {
           className={`mx-auto w-full max-w-6xl min-w-0 flex-1 px-4 pt-6 md:px-8 ${session ? 'pb-24 lg:pb-16' : 'pb-16'}`}
         >
           {session && !session.user.email_verified ? <EmailBannerSlot /> : null}
-          <Outlet />
+          <DensityContext value={workspace.id === 'learn' ? undefined : 'compact'}>
+            <Outlet />
+          </DensityContext>
         </main>
         {session ? null : <SiteFooter />}
       </div>

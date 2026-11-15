@@ -6,6 +6,7 @@ import { useState, type ReactNode } from 'react'
 import { m } from '#/paraglide/messages'
 import type { ActivityDetail, ActivityType } from '#/shared/api/gen/types.gen'
 import { FocusPage } from '#/shared/components/templates/focus-page'
+import { DensityContext } from '#/shared/components/density'
 import { buttonVariants } from '#/shared/components/button-variants'
 
 import { activityOptions } from '../curriculum-queries'
@@ -116,13 +117,15 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
         <StudioTabs handedIn={HANDED_IN[activity.activity_type]} />
         {/* A teacher's tool is compact (DESIGN 5), except the lesson's page: it is written at the size it is read. */}
         <div data-density={writing ? undefined : 'compact'} className="flex min-w-0 flex-col">
-          <SaveStatusContext
-            value={(id, next, editorId = id) =>
-              setSave(current => ({ ...current, [id]: { ...current[id], [editorId]: next } }))
-            }
-          >
-            <Outlet />
-          </SaveStatusContext>
+          <DensityContext value={writing ? undefined : 'compact'}>
+            <SaveStatusContext
+              value={(id, next, editorId = id) =>
+                setSave(current => ({ ...current, [id]: { ...current[id], [editorId]: next } }))
+              }
+            >
+              <Outlet />
+            </SaveStatusContext>
+          </DensityContext>
         </div>
       </div>
     </FocusPage>
