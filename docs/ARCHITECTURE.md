@@ -357,7 +357,7 @@ One migration set for the database `ashyq`. Rules:
      is a MIME type); an event log's variant is `event`;
    - a row's state machine is `status` (one per table), not `state` / `lifecycle`; a status's moments are
      `<status>_at` timestamps.
-   Older columns that break it keep their names (REWRITE §5.6 n15). A table-level CHECK is named
+   Older columns that break it are renamed by REWRITE §5.6 n15 (each rename is expand/contract). A table-level CHECK is named
    (`CONSTRAINT <table>_<rule> CHECK`): unnamed it becomes `<table>_check1`.
    Every table has a `COMMENT ON TABLE` (what one row is, who writes it) in the migration that creates it;
    `docs/agents/SCHEMA.md` is generated from the schema (`just schema-docs`) and `crates/db/tests/schema_docs.rs`

@@ -777,11 +777,29 @@ in the order it can be done, each step a forward migration on the current schema
   half the platform. Generic plan cost on the `query_plans.rs` fixture: 270 000+ to under 600; the grading and
   release queue cases there bound it.
 
-15. **Naming** (review 3, item 33). The convention is ARCHITECTURE §8 rule 2 and `naming_rules.rs` holds new
-    migrations to it. Existing columns that break it (`creator_id`, `*_type`, `lifecycle`, `teacher_user_id`,
-    `student_user_id`) keep their names (database review 2026-11-15): about 40 renames, each an expand/contract
-    with a mirror trigger, would change no behavior. A column is renamed only when its table changes shape anyway
-    (the pipeline merge of n16, the policy split of n7).
+15. **Naming** (review 3, item 33). The convention is ARCHITECTURE §8 rule 2 (`naming_rules.rs` holds new
+    migrations to it). Existing columns that break it, renamed one table at a time as expand/contract (add the
+    new column, backfill, a trigger mirrors old ↔ new while the previous release runs, switch the queries, drop
+    the old one in a `-- contract:` file); the API fields of the same names change with them, in place
+    (owner decision 2026-11-15, 5.8; last in its queue):
+    - `creator_id` → `created_by`: activities, assessments, chapters, collections, courses, file_submissions,
+      usergroups; `course_updates.author_id` → `created_by`;
+    - `actor_id` → `performed_by` (like `bulk_actions`): analytics_events, assessment_audit_events;
+    - `teacher_user_id` → `teacher_id`: daily_course_metrics, daily_teacher_metrics, learner_risk_snapshots;
+      → `user_id` where the teacher owns the row (analytics_saved_views); → `created_by` where the teacher
+      made it (teacher_interventions);
+    - `student_user_id` → `user_id`: ai_remediation_sessions, ai_student_memory; `ai_grade_drafts.learner_id`
+      → `user_id`; `ai_grade_corrections.teacher_id` → `corrected_by`;
+    - `*_type` → `kind`: activities.activity_type (+ `activity_sub_type` → `sub_kind`), blocks.block_type,
+      teacher_interventions.intervention_type, analytics_saved_views.view_type, item_feedback.annotation_type,
+      ai_approvals / bulk_actions.action_type; → `<thing>_kind`: assessments.grading_type, courses.thumbnail_type,
+      `source_type` (ai_evidence, ai_student_memory, content_chunks, content_index_state, mastery_evidence);
+      `event_type` → `event` (analytics_events, ai_events; like auth_audit_log / assessment_audit_events);
+    - `lifecycle` → `status`: assessments, file_submissions; `activity_progress.state` → `status`;
+    - `assessments.title` goes with item 5 of review 3 (it repeats `activities.name`); `title` stays on
+      assessment_items, course_updates, ai_threads (authored text).
+    Order: the AI tables with their AI work; the rest after the lane merges of review 3 settle (several of
+    these tables change shape there: submissions/file tasks, resource_authors, progress).
 16. **Grading records** (schema review 2, items 1-10; ARCHITECTURE §8 has what landed: own code-run
     verdicts, score domains and numeric scores, snapshot and current-grade guarantees, assessment
     versions). Left, in order:
@@ -937,6 +955,58 @@ Decided, not done:
     sessions already have `extensions` on the path). Left: functions and domains stay in `public` (moving them
     changes nothing for queries; do it only with a reason); a role-level `search_path` overrides the database
     one, so a role setting must carry the same path (vector-to-extensions.sql does).
+
+### 5.8 Database review 2026-11-15: owner decisions and queue
+
+A full review of the schema (116 tables, 55 jsonb columns, 224 indexes) against production as it is: 96 MB,
+277 accounts, 71 courses, 353 enrolments, 119 submissions, 23 file tasks with no hand-in (2026-11-15). What one
+release could take landed as `20261115120559_review_cleanup`. The owner settled the rest the same day.
+
+Not done, by decision:
+
+- Growth and speed work (index cuts by `idx_scan`, the test copies in `code_run_cases`, the daily per-member
+  snapshots, memory for HNSW): nothing measured asks for it at this size. `just prod-report` ("largest tables",
+  "indexes with no scan") says when that changes.
+- Migrations stay unsquashed. `translations` stays and is not extended to other entities. `trail_legacy_marks`
+  stays. `schema_try_check` keeps skipping a check old rows violate: left NOT VALID it would refuse every later
+  update of those rows.
+- Cohorts, a leave that keeps its progress (`enrolments.left_at`) and staff rows in `enrolments` wait for the
+  owner's answer on cohorts (QUESTIONS Q-2026-11-07-1, due January 2027). Until then no key on
+  `(course_id, user_id)` changes.
+
+How the queue runs:
+
+- One slice at a time, one writer. A slice that changes stored names or values changes the API and web-2 with
+  them, in place: one release carries the server and the web, and an open tab of the old web fails until reloaded.
+- The agent deploys after a green CI run: an expand release at any time; a contract release and a release that
+  breaks the API on weekday evenings (after 20:00 Almaty) or at the weekend. After a failed deploy or a red check
+  on production: `just rollback`, fix, deploy again, report afterwards.
+
+Queue, in order:
+
+1. **Pipeline merge** (5.6 n6, n16): the short path while production holds no file hand-in (count again first);
+   `AssessmentKind::Assignment` is approved.
+2. **Settings** (5.6 n9): one typed settings row replaces `gamification_config`, `ai_feature_switches` and
+   `feature_activations`.
+3. **Formal checks go**: the `jsonb_typeof(x) = 'object'` checks that state nothing else, the `_word` regex
+   checks, and the rule tests that ask for them (`jsonb_columns_state_their_shape`,
+   `set_named_columns_are_constrained`). Checks that state a real shape stay.
+4. **One copy of each fact**: derived columns (`updated_at` on frozen rows, `item_feedback.graded_by`,
+   `xp_transactions.previous_level` / `triggered_level_up`, `code_run_cases.passed`); `*_key` beside
+   `*_upload_id` and the `uploads` copies in `file_submission_files`; the creator in `courses` /
+   `collections` and in their staff table; `gamification_completions` beside the XP journal; `source_id` as
+   `uuid`, and a key for `ai_work_embeddings.subject_id` once the merge gives it one target.
+5. **Statuses**: `activity_progress.state` becomes a status plus `passed`; `code_runs.status` splits into the
+   run's state and its verdict, and the language is its name, not Judge0's number; one soft-delete idiom (a
+   timestamp, the status derived).
+6. **Language, units, hashes**: one language domain; durations in seconds; hashes as sha256 `bytea`.
+7. **Smaller**: `assessments.access_mode` derived from the access rows; `teacher_user_id` out of the rollups
+   (a course has several staff); the last login moves from `gamification_profiles` to `users`; triggers that
+   fill business values (certificate names, a grade entry's points and number) move into the server, guards stay.
+8. **Planned work, pulled forward**: readers move to `course_progress_v` now, without the four weekly zero-drift
+   runs (5.6 n8 step 4); points as the record (n16) and the policy split of `assessments` (n7) follow the merge.
+9. **Names, last**: `certifications` -> `certificate_templates`, `certificate_users` -> `certificates`,
+   `course_discussions` -> `discussion_posts`, and the column renames of 5.6 n15, in the API too.
 
 ## 6. Auth
 

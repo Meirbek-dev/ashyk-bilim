@@ -19,6 +19,8 @@ Zitadel is unreachable, so the other candidate is "verified at `created_at`".
 A course exists once, with absolute deadlines; only per-person exceptions exist. A second intake of the same course
 today means copying it or moving every deadline. Do you need cohorts or semesters (one course, several runs, each with
 its own dates and roster)? The answer decides whether deadlines move to a `course_runs` table. Until then nothing changes.
+Owner, 2026-11-15: answer by January 2027 (before the second semester is set up). Waiting on it: a leave that keeps
+its progress and staff rows in `enrolments` (REWRITE 5.8); no key on `(course_id, user_id)` changes before.
 
 ## Q-2026-11-07-2: row-level security (schema review 47)
 
