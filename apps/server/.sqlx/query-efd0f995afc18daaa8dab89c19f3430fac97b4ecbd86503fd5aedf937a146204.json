@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: AssessmentId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\",\n                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id) AS \"kind!: AssessmentKind\",\n                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id) AS \"title!\",\n                  lifecycle AS \"lifecycle: Lifecycle\", grading_mode AS \"grading_mode: GradingMode\",\n                  passing_score::float8 AS \"passing_score!\", (extract(epoch FROM due_at))::bigint AS \"due_at?\"\n           FROM assessments WHERE course_id = ANY($1) ORDER BY id",
+  "query": "SELECT id AS \"id: AssessmentId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\",\n                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id) AS \"kind!: AssessmentKind\",\n                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id) AS \"title!\",\n                  lifecycle AS \"lifecycle: Lifecycle\", grading_mode AS \"grading_mode: GradingMode\",\n                  passing_score::float8 AS \"passing_score!\", (extract(epoch FROM due_at))::bigint AS \"due_at?\"\n           FROM assessments WHERE course_id = ANY($1)\n             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)\n           ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -100,5 +100,5 @@
       null
     ]
   },
-  "hash": "186a33bfabd4f7aca04a1a3ba726a1780085a7a626099f4d35b91b6d0d87abf5"
+  "hash": "efd0f995afc18daaa8dab89c19f3430fac97b4ecbd86503fd5aedf937a146204"
 }

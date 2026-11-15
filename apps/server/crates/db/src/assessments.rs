@@ -262,7 +262,8 @@ pub async fn get_assessment<'e>(
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM assessments WHERE id = $1"#,
+           FROM assessments WHERE id = $1
+             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)"#,
         id.0
     )
     .fetch_optional(db)
@@ -334,7 +335,8 @@ pub async fn get_assessment_by_activity<'e>(
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM assessments WHERE activity_id = $1"#,
+           FROM assessments WHERE activity_id = $1
+             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)"#,
         activity_id.0
     )
     .fetch_optional(db)
@@ -379,7 +381,9 @@ pub async fn list_assessments_for_course(
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM assessments WHERE course_id = $1 ORDER BY id"#,
+           FROM assessments WHERE course_id = $1
+             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)
+           ORDER BY id"#,
         course_id.0
     )
     .fetch_all(pool)
@@ -417,7 +421,7 @@ pub async fn gradebook_columns(
            FROM assessments s
            JOIN activities a ON a.id = s.activity_id
            JOIN chapters c ON c.id = a.chapter_id
-           WHERE s.course_id = $1
+           WHERE s.course_id = $1 AND a.activity_type <> 'file_submission'
              AND (EXISTS (SELECT 1 FROM learner_visible_activities v WHERE v.activity_id = a.id)
                   OR EXISTS (SELECT 1 FROM submissions x WHERE x.assessment_id = s.id
                              AND x.status <> 'draft' AND NOT x.preview))
@@ -1102,8 +1106,10 @@ pub async fn drop_member_access(
     .execute(&mut *conn)
     .await?;
     let dropped = sqlx::query_scalar!(
+        // A file task's extension stays, as it always did: its lateness is settled by the file pipeline.
         r#"DELETE FROM assessment_overrides o USING assessments s
            WHERE o.assessment_id = s.id AND s.course_id = $1 AND o.user_id = $2
+             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = s.id)
            RETURNING o.assessment_id AS "id: AssessmentId""#,
         course_id.0,
         user_id.0

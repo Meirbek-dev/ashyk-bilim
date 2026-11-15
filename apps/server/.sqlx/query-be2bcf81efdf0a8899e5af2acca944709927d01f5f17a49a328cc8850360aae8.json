@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "DELETE FROM assessment_overrides o USING assessments s\n           WHERE o.assessment_id = s.id AND s.course_id = $1 AND o.user_id = $2\n           RETURNING o.assessment_id AS \"id: AssessmentId\"",
+  "query": "DELETE FROM assessment_overrides o USING assessments s\n           WHERE o.assessment_id = s.id AND s.course_id = $1 AND o.user_id = $2\n             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = s.id)\n           RETURNING o.assessment_id AS \"id: AssessmentId\"",
   "describe": {
     "columns": [
       {
@@ -25,5 +25,5 @@
       false
     ]
   },
-  "hash": "47247e9794bc11507b4663a9e5a5854cbf8064024b57187dde93c54048236bf0"
+  "hash": "be2bcf81efdf0a8899e5af2acca944709927d01f5f17a49a328cc8850360aae8"
 }

@@ -215,7 +215,9 @@ pub async fn list_assessments(
                   (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id) AS "title!",
                   lifecycle AS "lifecycle: Lifecycle", grading_mode AS "grading_mode: GradingMode",
                   passing_score::float8 AS "passing_score!", (extract(epoch FROM due_at))::bigint AS "due_at?"
-           FROM assessments WHERE course_id = ANY($1) ORDER BY id"#,
+           FROM assessments WHERE course_id = ANY($1)
+             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)
+           ORDER BY id"#,
         &ids
     )
     .fetch_all(pool)
