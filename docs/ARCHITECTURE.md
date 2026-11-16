@@ -520,8 +520,11 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   award's `previous_level` / `triggered_level_up` come from `xp_transactions_v` (the levels, `xp_level()`, of the
   user's XP before and after the row in journal order; filter the view by `user_id`); a test's `passed` is
   `verdict = 'accepted'` or a custom-input run; a feedback row's grader is its grade entry's `graded_by`; frozen rows
-  (`item_feedback`, `certificate_users`) have no `updated_at` the server reads. The stored copies stay for the
-  previous release, filled by insert triggers, until a contract drops them (`just contracts-pending`).
+  (`item_feedback`, `certificate_users`) have no `updated_at` the server reads; a handed-in file's key, type and size
+  are its `uploads` row's (`file_submission_files` stores the upload id, the display name, position and scan
+  status). The stored copies stay for the previous release, filled by insert triggers, until a contract drops them
+  (`just contracts-pending`). The media `*_key` columns are still the record beside their `*_upload_id`: keys from
+  before the upload table have no `uploads` row.
 - **No import artefacts**: the `etl_*` tables and every `legacy_uuid` except `blocks.legacy_uuid` (lesson
   content still links blocks by it) were dropped at T+32d.
 - **One platform day in SQL too** (§16 `AB__SERVER__TIME_ZONE`; `20261102030000_platform_day.sql`,

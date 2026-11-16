@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: FileAttemptFileId\", attempt_id AS \"attempt_id: FileAttemptId\",\n                  upload_id, display_name, content_type, size_bytes, storage_key, position,\n                  scan_status AS \"scan_status: ScanStatus\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM file_submission_files WHERE id = $1",
+  "query": "SELECT f.id AS \"id: FileAttemptFileId\", f.attempt_id AS \"attempt_id: FileAttemptId\",\n                  f.upload_id, f.display_name, u.mime AS content_type, u.size_bytes AS \"size_bytes?\",\n                  u.key AS storage_key, f.position, f.scan_status AS \"scan_status: ScanStatus\",\n                  (extract(epoch FROM f.created_at))::bigint AS \"created_at!\"\n           FROM file_submission_files f JOIN uploads u ON u.id = f.upload_id WHERE f.attempt_id = $1 ORDER BY f.position, f.id",
   "describe": {
     "columns": [
       {
@@ -53,18 +53,18 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "file_submission_files",
-            "name": "content_type"
+            "table": "uploads",
+            "name": "mime"
           }
         }
       },
       {
         "ordinal": 5,
-        "name": "size_bytes",
+        "name": "size_bytes?",
         "type_info": "Int8",
         "origin": {
           "Table": {
-            "table": "file_submission_files",
+            "table": "uploads",
             "name": "size_bytes"
           }
         }
@@ -75,8 +75,8 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "file_submission_files",
-            "name": "storage_key"
+            "table": "uploads",
+            "name": "key"
           }
         }
       },
@@ -120,12 +120,12 @@
       false,
       false,
       false,
-      true,
+      false,
       false,
       false,
       false,
       null
     ]
   },
-  "hash": "a8763c76d0a4abfafcaa48d151782165f28aa77e54e0fac7754f35a1952306a9"
+  "hash": "ce67cc45732a68ab8beb244e8e97099cfe6bcdc6f3acd8a199120a62a37b902a"
 }

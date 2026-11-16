@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: FileAttemptFileId\", attempt_id AS \"attempt_id: FileAttemptId\",\n                  upload_id, display_name, content_type, size_bytes, storage_key, position,\n                  scan_status AS \"scan_status: ScanStatus\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM file_submission_files WHERE attempt_id = ANY($1) ORDER BY attempt_id, position, id",
+  "query": "SELECT f.id AS \"id: FileAttemptFileId\", f.attempt_id AS \"attempt_id: FileAttemptId\",\n                  f.upload_id, f.display_name, u.mime AS content_type, u.size_bytes AS \"size_bytes?\",\n                  u.key AS storage_key, f.position, f.scan_status AS \"scan_status: ScanStatus\",\n                  (extract(epoch FROM f.created_at))::bigint AS \"created_at!\"\n           FROM file_submission_files f JOIN uploads u ON u.id = f.upload_id WHERE f.id = $1",
   "describe": {
     "columns": [
       {
@@ -53,18 +53,18 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "file_submission_files",
-            "name": "content_type"
+            "table": "uploads",
+            "name": "mime"
           }
         }
       },
       {
         "ordinal": 5,
-        "name": "size_bytes",
+        "name": "size_bytes?",
         "type_info": "Int8",
         "origin": {
           "Table": {
-            "table": "file_submission_files",
+            "table": "uploads",
             "name": "size_bytes"
           }
         }
@@ -75,8 +75,8 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "file_submission_files",
-            "name": "storage_key"
+            "table": "uploads",
+            "name": "key"
           }
         }
       },
@@ -111,7 +111,7 @@
     ],
     "parameters": {
       "Left": [
-        "UuidArray"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -120,12 +120,12 @@
       false,
       false,
       false,
-      true,
+      false,
       false,
       false,
       false,
       null
     ]
   },
-  "hash": "a1c60165c456187b9d5982ea021585eec7b01d32102c5383d8c9d4f217b35671"
+  "hash": "4243da842d99b58d4e8bcad156add6c5dbb7c390e167e41f3271ec24988c754d"
 }

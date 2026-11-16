@@ -32,3 +32,7 @@ column	certificate_users.updated_at	the release after the readers moved to their
 trigger	certificate_users_touch	the contract that drops certificate_users.updated_at	REWRITE 5.8 item 4
 column	code_run_cases.passed	the release after the readers moved to their source (20261116072922): verdict = 'accepted' or a custom run	REWRITE 5.8 item 4
 trigger	code_run_cases_passed	the contract that drops code_run_cases.passed	REWRITE 5.8 item 4
+column	file_submission_files.storage_key	the release after file rows read their upload (20261116074602): uploads.key	REWRITE 5.8 item 4
+column	file_submission_files.content_type	the release after file rows read their upload (20261116074602): uploads.mime	REWRITE 5.8 item 4
+column	file_submission_files.size_bytes	the release after file rows read their upload (20261116074602): uploads.size_bytes	REWRITE 5.8 item 4
+trigger	file_submission_files_from_upload	the contract that drops the file_submission_files copies	REWRITE 5.8 item 4

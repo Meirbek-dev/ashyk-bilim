@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: FileAttemptFileId\", attempt_id AS \"attempt_id: FileAttemptId\",\n                  upload_id, display_name, content_type, size_bytes, storage_key, position,\n                  scan_status AS \"scan_status: ScanStatus\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM file_submission_files WHERE attempt_id = $1 ORDER BY position, id",
+  "query": "SELECT f.id AS \"id: FileAttemptFileId\", f.attempt_id AS \"attempt_id: FileAttemptId\",\n                  f.upload_id, f.display_name, u.mime AS content_type, u.size_bytes AS \"size_bytes?\",\n                  u.key AS storage_key, f.position, f.scan_status AS \"scan_status: ScanStatus\",\n                  (extract(epoch FROM f.created_at))::bigint AS \"created_at!\"\n           FROM file_submission_files f JOIN uploads u ON u.id = f.upload_id WHERE f.attempt_id = ANY($1) ORDER BY f.attempt_id, f.position, f.id",
   "describe": {
     "columns": [
       {
@@ -53,18 +53,18 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "file_submission_files",
-            "name": "content_type"
+            "table": "uploads",
+            "name": "mime"
           }
         }
       },
       {
         "ordinal": 5,
-        "name": "size_bytes",
+        "name": "size_bytes?",
         "type_info": "Int8",
         "origin": {
           "Table": {
-            "table": "file_submission_files",
+            "table": "uploads",
             "name": "size_bytes"
           }
         }
@@ -75,8 +75,8 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "file_submission_files",
-            "name": "storage_key"
+            "table": "uploads",
+            "name": "key"
           }
         }
       },
@@ -111,7 +111,7 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "UuidArray"
       ]
     },
     "nullable": [
@@ -120,12 +120,12 @@
       false,
       false,
       false,
-      true,
+      false,
       false,
       false,
       false,
       null
     ]
   },
-  "hash": "ac47af3b521f07f4f3d8df794c841ba98af28118f81ee690e8eaf9e268806826"
+  "hash": "b1b08ce07d7b3462b32d24a39c284ccb98039e5d63eb3ab58814a803f7f1477e"
 }

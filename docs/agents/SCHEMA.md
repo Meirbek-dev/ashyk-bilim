@@ -2058,6 +2058,7 @@ A file of a file-task hand-in (points at its upload).
 - Check `file_submission_files_scan_status_check`: `CHECK ((scan_status = ANY (ARRAY['pending'::text, 'clean'::text, 'flagged'::text, 'error'::text])))`
 - Index `file_submission_files_attempt_idx`: `CREATE INDEX file_submission_files_attempt_idx ON learning.file_submission_files USING btree (attempt_id, "position")`
 - Index `file_submission_files_upload_idx`: `CREATE INDEX file_submission_files_upload_idx ON learning.file_submission_files USING btree (upload_id)`
+- Trigger `file_submission_files_from_upload`: `CREATE TRIGGER file_submission_files_from_upload BEFORE INSERT ON learning.file_submission_files FOR EACH ROW EXECUTE FUNCTION file_submission_files_from_upload()`
 
 ## file_submissions
 

@@ -89,7 +89,8 @@
 //!   draw is written once; a hand-in names a version of its own assessment;
 //!   a message's author is a member of its conversation.
 //! - REWRITE 5.8 item 4: one copy of each fact. An award's levels, a test's
-//!   `passed` and a feedback row's grader are read from their source.
+//!   `passed` and a feedback row's grader are read from their source; a
+//!   handed-in file's key, type and size are its upload's.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -2936,6 +2937,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "derived; reads count on read, a contract drops it",
         ),
         ("course_discussions_upload_ids", "derived"),
+        (
+            "file_submission_files_from_upload",
+            "derived; the previous release's copy, a contract drops it",
+        ),
         ("courses_upload_ids", "derived"),
         (
             "discussion_reactions_recount",
@@ -3702,4 +3707,61 @@ async fn derived_values_are_read_from_their_source(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(feedback[0].graded_by, Some(user));
+}
+
+/// REWRITE 5.8 item 4, part 2: a handed-in file is its upload. The row's own
+/// copies (filled for the previous release) drift; reads follow `uploads`.
+#[ab_testdb::test]
+async fn a_handed_in_file_reads_its_upload(pool: PgPool) {
+    use ab_core::id::FileAttemptId;
+    let w = world(&pool).await;
+    let hand_in = submission(&pool, &w, 1, false).await.unwrap();
+    let upload: Uuid = sqlx::query_scalar(
+        "INSERT INTO uploads (created_by, purpose, bucket, key, mime, size_bytes, status)
+         VALUES ($1, 'file-submission', 'private', 'k/essay.pdf', 'application/pdf', 42, 'finalized')
+         RETURNING id",
+    )
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let mut conn = pool.acquire().await.unwrap();
+    let file = ab_db::file_submissions::NewFile {
+        upload_id: upload,
+        display_name: "essay.pdf",
+    };
+    ab_db::file_submissions::replace_files(&mut conn, FileAttemptId(hand_in), &[file])
+        .await
+        .unwrap();
+    let stored: (String, String, Option<i64>) =
+        sqlx::query_as("SELECT storage_key, content_type, size_bytes FROM file_submission_files")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        stored,
+        (
+            "k/essay.pdf".to_owned(),
+            "application/pdf".to_owned(),
+            Some(42)
+        )
+    );
+    sqlx::query("UPDATE file_submission_files SET storage_key = 'stale', content_type = 'text/plain', size_bytes = 1")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let files = ab_db::file_submissions::list_files(&pool, FileAttemptId(hand_in))
+        .await
+        .unwrap();
+    let read: Vec<(&str, &str, Option<i64>)> = files
+        .iter()
+        .map(|f| {
+            (
+                f.storage_key.as_str(),
+                f.content_type.as_str(),
+                f.size_bytes,
+            )
+        })
+        .collect();
+    assert_eq!(read, [("k/essay.pdf", "application/pdf", Some(42))]);
 }

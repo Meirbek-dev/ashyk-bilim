@@ -961,6 +961,11 @@ Queue, in order:
    - Derived columns: switched in `20261116072922_derived_columns` (readers compute them, `xp_transactions_v`;
      insert triggers keep the stored copies for the previous release). Left: the contract dropping the columns
      and triggers.
+   - `file_submission_files` copies of the upload: switched in `20261116074602_file_files_read_uploads` (reads
+     join `uploads`; a trigger fills the copies for the previous release). Left: their contract. The media
+     `*_key` columns wait: keys from before the upload table have no `uploads` row (their `*_upload_id` is NULL),
+     so the join would lose those pictures. First an `ashyq admin` command that gives every such key its row
+     (HEAD for the size and type) and is run in production; then readers move to the join and writers to the id.
 5. **Statuses**: `activity_progress.state` becomes a status plus `passed`; `code_runs.status` splits into the
    run's state and its verdict, and the language is its name, not Judge0's number; one soft-delete idiom (a
    timestamp, the status derived).

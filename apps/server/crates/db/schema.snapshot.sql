@@ -1926,6 +1926,16 @@ BEGIN
     RETURN level;
 END
 $function$
+function CREATE OR REPLACE FUNCTION public.file_submission_files_from_upload()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    SELECT u.key, u.mime, u.size_bytes INTO NEW.storage_key, NEW.content_type, NEW.size_bytes
+    FROM uploads u WHERE u.id = NEW.upload_id;
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.grading_entries_current_check()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -3934,6 +3944,7 @@ trigger CREATE TRIGGER course_updates_touch BEFORE UPDATE ON core.course_updates
 trigger CREATE TRIGGER courses_touch BEFORE UPDATE ON core.courses FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_image_key, thumbnail_video_key ON core.courses FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_image_key', 'thumbnail_image_upload_id', 'thumbnail_video_key', 'thumbnail_video_upload_id')
 trigger CREATE TRIGGER discussion_reactions_recount AFTER INSERT OR DELETE OR UPDATE ON core.discussion_reactions FOR EACH ROW EXECUTE FUNCTION discussion_reactions_recount()
+trigger CREATE TRIGGER file_submission_files_from_upload BEFORE INSERT ON learning.file_submission_files FOR EACH ROW EXECUTE FUNCTION file_submission_files_from_upload()
 trigger CREATE TRIGGER file_submissions_touch BEFORE UPDATE ON learning.file_submissions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER gamification_config_touch BEFORE UPDATE ON learning.gamification_config FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER gamification_profiles_touch BEFORE UPDATE ON learning.gamification_profiles FOR EACH ROW EXECUTE FUNCTION touch_row()

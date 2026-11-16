@@ -969,6 +969,8 @@ pub struct FileRow {
     pub attempt_id: FileAttemptId,
     pub upload_id: uuid::Uuid,
     pub display_name: String,
+    /// `content_type`, `size_bytes` and `storage_key` are the upload row's
+    /// `mime`, `size_bytes` and `key` (REWRITE 5.8 item 4).
     pub content_type: String,
     pub size_bytes: Option<i64>,
     pub storage_key: String,
@@ -980,9 +982,6 @@ pub struct FileRow {
 pub struct NewFile<'a> {
     pub upload_id: uuid::Uuid,
     pub display_name: &'a str,
-    pub content_type: &'a str,
-    pub size_bytes: Option<i64>,
-    pub storage_key: &'a str,
 }
 
 pub async fn list_files<'e>(
@@ -991,11 +990,11 @@ pub async fn list_files<'e>(
 ) -> Result<Vec<FileRow>> {
     let rows = sqlx::query_as!(
         FileRow,
-        r#"SELECT id AS "id: FileAttemptFileId", attempt_id AS "attempt_id: FileAttemptId",
-                  upload_id, display_name, content_type, size_bytes, storage_key, position,
-                  scan_status AS "scan_status: ScanStatus",
-                  (extract(epoch FROM created_at))::bigint AS "created_at!"
-           FROM file_submission_files WHERE attempt_id = $1 ORDER BY position, id"#,
+        r#"SELECT f.id AS "id: FileAttemptFileId", f.attempt_id AS "attempt_id: FileAttemptId",
+                  f.upload_id, f.display_name, u.mime AS content_type, u.size_bytes AS "size_bytes?",
+                  u.key AS storage_key, f.position, f.scan_status AS "scan_status: ScanStatus",
+                  (extract(epoch FROM f.created_at))::bigint AS "created_at!"
+           FROM file_submission_files f JOIN uploads u ON u.id = f.upload_id WHERE f.attempt_id = $1 ORDER BY f.position, f.id"#,
         attempt_id.0
     )
     .fetch_all(db)
@@ -1011,11 +1010,11 @@ pub async fn list_files_for_attempts(
     let ids: Vec<uuid::Uuid> = attempt_ids.iter().map(|a| a.0).collect();
     let rows = sqlx::query_as!(
         FileRow,
-        r#"SELECT id AS "id: FileAttemptFileId", attempt_id AS "attempt_id: FileAttemptId",
-                  upload_id, display_name, content_type, size_bytes, storage_key, position,
-                  scan_status AS "scan_status: ScanStatus",
-                  (extract(epoch FROM created_at))::bigint AS "created_at!"
-           FROM file_submission_files WHERE attempt_id = ANY($1) ORDER BY attempt_id, position, id"#,
+        r#"SELECT f.id AS "id: FileAttemptFileId", f.attempt_id AS "attempt_id: FileAttemptId",
+                  f.upload_id, f.display_name, u.mime AS content_type, u.size_bytes AS "size_bytes?",
+                  u.key AS storage_key, f.position, f.scan_status AS "scan_status: ScanStatus",
+                  (extract(epoch FROM f.created_at))::bigint AS "created_at!"
+           FROM file_submission_files f JOIN uploads u ON u.id = f.upload_id WHERE f.attempt_id = ANY($1) ORDER BY f.attempt_id, f.position, f.id"#,
         &ids
     )
     .fetch_all(pool)
@@ -1026,11 +1025,11 @@ pub async fn list_files_for_attempts(
 pub async fn get_file(pool: &PgPool, id: FileAttemptFileId) -> Result<Option<FileRow>> {
     let row = sqlx::query_as!(
         FileRow,
-        r#"SELECT id AS "id: FileAttemptFileId", attempt_id AS "attempt_id: FileAttemptId",
-                  upload_id, display_name, content_type, size_bytes, storage_key, position,
-                  scan_status AS "scan_status: ScanStatus",
-                  (extract(epoch FROM created_at))::bigint AS "created_at!"
-           FROM file_submission_files WHERE id = $1"#,
+        r#"SELECT f.id AS "id: FileAttemptFileId", f.attempt_id AS "attempt_id: FileAttemptId",
+                  f.upload_id, f.display_name, u.mime AS content_type, u.size_bytes AS "size_bytes?",
+                  u.key AS storage_key, f.position, f.scan_status AS "scan_status: ScanStatus",
+                  (extract(epoch FROM f.created_at))::bigint AS "created_at!"
+           FROM file_submission_files f JOIN uploads u ON u.id = f.upload_id WHERE f.id = $1"#,
         id.0
     )
     .fetch_optional(pool)
@@ -1054,15 +1053,11 @@ pub async fn replace_files(
     for (position, f) in files.iter().enumerate() {
         sqlx::query!(
             r#"INSERT INTO file_submission_files
-                   (attempt_id, upload_id, display_name, content_type, size_bytes, storage_key,
-                    position)
-               VALUES ($1, $2, $3, $4, $5, $6, $7)"#,
+                   (attempt_id, upload_id, display_name, position)
+               VALUES ($1, $2, $3, $4)"#,
             attempt_id.0,
             f.upload_id,
             f.display_name,
-            f.content_type,
-            f.size_bytes,
-            f.storage_key,
             i32::try_from(position).unwrap_or(i32::MAX)
         )
         .execute(&mut *conn)

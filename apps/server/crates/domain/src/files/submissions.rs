@@ -1330,9 +1330,6 @@ impl FileSubmissionsService {
                     .as_deref()
                     .filter(|n| !n.trim().is_empty())
                     .unwrap_or_else(|| upload.key.rsplit('/').next().unwrap_or(&upload.key)),
-                content_type: &upload.mime,
-                size_bytes: Some(upload.size_bytes),
-                storage_key: &upload.key,
             })
             .collect();
         ab_db::file_submissions::replace_files(&mut tx, attempt.id, &new_files).await?;
