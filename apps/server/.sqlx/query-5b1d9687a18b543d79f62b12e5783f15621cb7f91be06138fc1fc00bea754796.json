@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT user_id AS \"user_id: UserId\", total_xp, level,\n                  (SELECT coalesce(sum(x.amount), 0) FROM xp_transactions x\n                   WHERE x.user_id = p.user_id\n                     AND x.created_at >= platform_day_start(platform_date(now())))::int\n                      AS \"daily_xp_earned!\",\n                  login_streak, learning_streak, longest_login_streak,\n                  longest_learning_streak, total_activities_completed, total_courses_completed,\n                  (extract(epoch FROM last_xp_award_at))::bigint AS \"last_xp_award_at?\",\n                  (extract(epoch FROM last_login_at))::bigint AS \"last_login_at?\",\n                  (extract(epoch FROM last_learning_at))::bigint AS \"last_learning_at?\",\n                  preferences,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM gamification_profiles p WHERE user_id = $1",
+  "query": "SELECT user_id AS \"user_id: UserId\", total_xp, level,\n                  (SELECT coalesce(sum(x.amount), 0) FROM xp_transactions x\n                   WHERE x.user_id = p.user_id\n                     AND x.created_at >= platform_day_start(platform_date(now())))::int\n                      AS \"daily_xp_earned!\",\n                  login_streak, learning_streak, longest_login_streak,\n                  longest_learning_streak, total_activities_completed, total_courses_completed,\n                  (extract(epoch FROM last_xp_award_at))::bigint AS \"last_xp_award_at?\",\n                  (SELECT extract(epoch FROM u.last_login_at)::bigint FROM users u WHERE u.id = p.user_id)\n                      AS \"last_login_at?\",\n                  (extract(epoch FROM last_learning_at))::bigint AS \"last_learning_at?\",\n                  preferences,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM gamification_profiles p WHERE user_id = $1",
   "describe": {
     "columns": [
       {
@@ -174,5 +174,5 @@
       null
     ]
   },
-  "hash": "8ba16e08ba40dfcdfabe877d582e8d0ef09040fda4b7159f38618115c18c9ef0"
+  "hash": "5b1d9687a18b543d79f62b12e5783f15621cb7f91be06138fc1fc00bea754796"
 }

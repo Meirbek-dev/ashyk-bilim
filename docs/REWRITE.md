@@ -1048,6 +1048,11 @@ Queue, in order:
      `learner_risk_snapshots.teacher_user_id` held the course's creator and nothing read them; the rollup stops
      writing them (NULL), per-teacher numbers stay in `daily_teacher_metrics`. Left: the contract dropping both
      columns.
+   - The last login: switched in `20261116075640_users_last_login`. `users.last_login_at` (backfilled) is set by
+     every sign-in and the login streak counts from it; the streak stays in `gamification_profiles`, the API keeps
+     the profile's `last_login_at_unix`. Triggers on both tables keep the previous release's
+     `gamification_profiles.last_login_at` equal both ways. Left: the contract dropping that column and
+     `users_last_login` / `gamification_profiles_last_login`.
 8. **Planned work, pulled forward**: readers move to `course_progress_v` now, without the four weekly zero-drift
    runs (5.6 n8 step 4); points as the record (n16) and the policy split of `assessments` (n7) follow the merge.
 9. **Names, last**: `certifications` -> `certificate_templates`, `certificate_users` -> `certificates`,

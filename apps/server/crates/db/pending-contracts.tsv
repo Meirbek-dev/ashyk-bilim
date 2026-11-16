@@ -73,3 +73,6 @@ trigger	ai_course_analyses_sha256	the contract that drops ai_course_analyses.con
 column	assessment_versions.content_hash	the release after versions are found by content_sha256 (20261116075638): drop assessment_versions_assessment_id_content_hash_key, assessment_content_hash() and the content_hash line of assessment_versions_points() with it	REWRITE 5.8 item 6
 column	daily_course_metrics.teacher_user_id	the release after the rollups stopped writing it (a course has several staff); drop daily_course_metrics_teacher_user_id_fkey with it	REWRITE 5.8 item 7
 column	learner_risk_snapshots.teacher_user_id	the release after the rollups stopped writing it (a course has several staff); drop learner_risk_snapshots_teacher_user_id_fkey with it	REWRITE 5.8 item 7
+column	gamification_profiles.last_login_at	the release after the last login is read from users (20261116075640)	REWRITE 5.8 item 7
+trigger	gamification_profiles_last_login	the contract that drops gamification_profiles.last_login_at	REWRITE 5.8 item 7
+trigger	users_last_login	the contract that drops gamification_profiles.last_login_at	REWRITE 5.8 item 7

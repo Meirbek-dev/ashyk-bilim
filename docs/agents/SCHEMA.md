@@ -2196,6 +2196,7 @@ A learner's XP total, level and streaks (reconciled weekly from xp_transactions)
 - Check `gamification_profiles_total_courses_completed_check`: `CHECK ((total_courses_completed >= 0))`
 - Check `gamification_profiles_total_xp_check`: `CHECK ((total_xp >= 0))`
 - Index `gamification_profiles_board_idx`: `CREATE INDEX gamification_profiles_board_idx ON learning.gamification_profiles USING btree (total_xp DESC, user_id)`
+- Trigger `gamification_profiles_last_login`: `CREATE TRIGGER gamification_profiles_last_login AFTER UPDATE OF last_login_at ON learning.gamification_profiles FOR EACH ROW WHEN ((new.last_login_at IS DISTINCT FROM old.last_login_at)) EXECUTE FUNCTION gamification_profiles_last_login()`
 
 ## google_accounts
 
@@ -2969,6 +2970,7 @@ An account. Never deleted by the app: disabled (status) or anonymised (deleted_a
 | disabled_at | timestamp with time zone | null |  | When the account was disabled; NULL = active. |
 | email_verified_at | timestamp with time zone | null |  | When the address was confirmed; NULL = not confirmed (or, while email_verified IS NULL, not known yet). |
 | avatar_upload_id | uuid | null |  |  |
+| last_login_at | timestamp with time zone | null |  | The latest sign-in (password or Google); the login streak counts from it. |
 
 - Primary key `users_pkey`: `PRIMARY KEY (id)`
 - Unique `users_zitadel_user_id_key`: `UNIQUE (zitadel_user_id)`
@@ -2982,6 +2984,7 @@ An account. Never deleted by the app: disabled (status) or anonymised (deleted_a
 - Index `users_email_lower_key`: `CREATE UNIQUE INDEX users_email_lower_key ON core.users USING btree (lower(email))`
 - Index `users_username_lower_key`: `CREATE UNIQUE INDEX users_username_lower_key ON core.users USING btree (lower(username))`
 - Index `users_username_trgm_idx`: `CREATE INDEX users_username_trgm_idx ON core.users USING gin (search_fold(username) gin_trgm_ops)`
+- Trigger `users_last_login`: `CREATE TRIGGER users_last_login AFTER UPDATE OF last_login_at ON core.users FOR EACH ROW WHEN ((new.last_login_at IS DISTINCT FROM old.last_login_at)) EXECUTE FUNCTION users_last_login()`
 - Trigger `users_reissue_certificates`: `CREATE TRIGGER users_reissue_certificates AFTER UPDATE OF display_name ON core.users FOR EACH ROW WHEN ((old.display_name IS DISTINCT FROM new.display_name)) EXECUTE FUNCTION users_reissue_certificates()`
 - Trigger `users_sync_state`: `CREATE TRIGGER users_sync_state BEFORE INSERT OR UPDATE ON core.users FOR EACH ROW EXECUTE FUNCTION users_sync_state()`
 - Trigger `users_upload_ids`: `CREATE TRIGGER users_upload_ids BEFORE INSERT OR UPDATE OF avatar_key ON core.users FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('avatar_key', 'avatar_upload_id')`

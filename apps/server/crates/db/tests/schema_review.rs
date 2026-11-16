@@ -108,6 +108,10 @@
 //!   hours and `ai_runs.duration_ms` follow, and its writes set the seconds.
 //!   A hash is a sha256 `bytea` of 32 bytes; until the contract the
 //!   previous release's hex copies follow both ways.
+//! - REWRITE 5.8 item 7: the last login is `users.last_login_at`; until the
+//!   contract the gamification profile's copy follows both ways. The server
+//!   numbers a grade entry and sets its points; the triggers fill only what
+//!   the previous release leaves unset.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -3015,6 +3019,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "gamification_completions_source_ref",
             "derived; the previous release's text copy, a contract drops it",
         ),
+        (
+            "gamification_profiles_last_login",
+            "derived; the previous release's writes, a contract drops it",
+        ),
         ("grading_entries_number", "derived"),
         ("grading_entries_points", "derived"),
         (
@@ -3027,6 +3035,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "derived; the previous release's status, a contract drops it",
         ),
         ("platforms_upload_ids", "derived"),
+        (
+            "users_last_login",
+            "derived; the previous release's copy, a contract drops it",
+        ),
         ("translations_touch_platform", "derived"),
         ("users_upload_ids", "derived"),
         (
@@ -4545,4 +4557,51 @@ async fn a_hash_is_32_bytes(pool: PgPool) {
     .await
     .unwrap();
     assert!(same, "a version's hash is the sha256 of its pair");
+}
+
+#[ab_testdb::test]
+async fn the_last_login_is_the_users(pool: PgPool) {
+    let w = world(&pool).await;
+    sqlx::query("INSERT INTO gamification_profiles (user_id) VALUES ($1)")
+        .bind(w.user)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let both = || async {
+        sqlx::query_as::<_, (bool, bool)>(
+            "SELECT u.last_login_at = '2026-11-01 10:00+05', g.last_login_at = '2026-11-01 10:00+05'
+             FROM users u JOIN gamification_profiles g ON g.user_id = u.id WHERE u.id = $1",
+        )
+        .bind(w.user)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    sqlx::query("UPDATE users SET last_login_at = '2026-11-01 10:00+05' WHERE id = $1")
+        .bind(w.user)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        both().await,
+        (true, true),
+        "the previous release reads the profile's copy"
+    );
+    sqlx::query("UPDATE users SET last_login_at = NULL WHERE id = $1")
+        .bind(w.user)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "UPDATE gamification_profiles SET last_login_at = '2026-11-01 10:00+05' WHERE user_id = $1",
+    )
+    .bind(w.user)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        both().await,
+        (true, true),
+        "the previous release writes the profile's copy"
+    );
 }

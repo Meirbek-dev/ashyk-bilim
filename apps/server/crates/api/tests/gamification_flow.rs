@@ -534,9 +534,9 @@ async fn the_platform_day_starts_at_almaty_midnight(pool: PgPool) {
         let service = service.clone();
         async move {
             sqlx::query(
-                "UPDATE gamification_profiles SET login_streak = 4,
-                     last_login_at = platform_day_start(platform_date(now())) - $2::interval
-                 WHERE user_id = $1",
+                "WITH u AS (UPDATE users SET last_login_at = platform_day_start(platform_date(now())) - $2::interval
+                            WHERE id = $1)
+                 UPDATE gamification_profiles SET login_streak = 4 WHERE user_id = $1",
             )
             .bind(user.0)
             .bind(before)

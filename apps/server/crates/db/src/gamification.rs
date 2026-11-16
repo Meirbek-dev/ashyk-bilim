@@ -41,7 +41,8 @@ pub async fn get_profile(pool: &PgPool, user_id: UserId) -> Result<Option<Profil
                   login_streak, learning_streak, longest_login_streak,
                   longest_learning_streak, total_activities_completed, total_courses_completed,
                   (extract(epoch FROM last_xp_award_at))::bigint AS "last_xp_award_at?",
-                  (extract(epoch FROM last_login_at))::bigint AS "last_login_at?",
+                  (SELECT extract(epoch FROM u.last_login_at)::bigint FROM users u WHERE u.id = p.user_id)
+                      AS "last_login_at?",
                   (extract(epoch FROM last_learning_at))::bigint AS "last_learning_at?",
                   preferences,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
@@ -256,14 +257,15 @@ pub async fn touch_streak(
     let row = match kind {
         StreakKind::Login => sqlx::query!(
             r#"WITH next AS (
-                       SELECT CASE platform_date(now()) - platform_date(last_login_at)
-                                  WHEN 0 THEN GREATEST(login_streak, 1)
-                                  WHEN 1 THEN login_streak + 1
+                       SELECT CASE platform_date(now()) - platform_date(u.last_login_at)
+                                  WHEN 0 THEN GREATEST(g.login_streak, 1)
+                                  WHEN 1 THEN g.login_streak + 1
                                   ELSE 1 END AS streak
-                       FROM gamification_profiles WHERE user_id = $1 FOR UPDATE)
+                       FROM gamification_profiles g JOIN users u ON u.id = g.user_id
+                       WHERE g.user_id = $1 FOR NO KEY UPDATE),
+                   seen AS (UPDATE users SET last_login_at = now() FROM next WHERE id = $1)
                    UPDATE gamification_profiles g SET login_streak = n.streak,
-                       longest_login_streak = GREATEST(g.longest_login_streak, n.streak),
-                       last_login_at = now()
+                       longest_login_streak = GREATEST(g.longest_login_streak, n.streak)
                    FROM next n
                    WHERE g.user_id = $1
                    RETURNING g.login_streak AS "current!", g.longest_login_streak AS "longest!""#,

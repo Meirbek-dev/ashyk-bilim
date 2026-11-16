@@ -2163,6 +2163,16 @@ BEGIN
     END IF;
     RETURN NEW;
 END $function$
+function CREATE OR REPLACE FUNCTION public.gamification_profiles_last_login()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    UPDATE users SET last_login_at = NEW.last_login_at
+     WHERE id = NEW.user_id AND last_login_at IS DISTINCT FROM NEW.last_login_at;
+    RETURN NULL;
+END $function$
 function CREATE OR REPLACE FUNCTION public.grading_entries_current_check()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2656,6 +2666,16 @@ AS $function$
         OR EXISTS (SELECT 1 FROM assessment_imports WHERE upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM assessment_imports WHERE image_upload_ids @> ARRAY[p_upload])
 $function$
+function CREATE OR REPLACE FUNCTION public.users_last_login()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    UPDATE gamification_profiles SET last_login_at = NEW.last_login_at
+     WHERE user_id = NEW.id AND last_login_at IS DISTINCT FROM NEW.last_login_at;
+    RETURN NULL;
+END $function$
 function CREATE OR REPLACE FUNCTION public.users_reissue_certificates()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -3699,6 +3719,7 @@ table core.users email text NOT NULL DEFAULT -
 table core.users email_verified boolean DEFAULT -
 table core.users email_verified_at timestamp with time zone DEFAULT -
 table core.users id uuid NOT NULL DEFAULT uuidv7()
+table core.users last_login_at timestamp with time zone DEFAULT -
 table core.users locale language_code NOT NULL DEFAULT 'ru'::text
 table core.users organization text NOT NULL DEFAULT ''::text
 table core.users profile jsonb NOT NULL DEFAULT '{"sections": []}'::jsonb
@@ -4251,6 +4272,7 @@ trigger CREATE TRIGGER file_submission_files_from_upload BEFORE INSERT ON learni
 trigger CREATE TRIGGER file_submissions_touch BEFORE UPDATE ON learning.file_submissions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER gamification_completions_source_ref BEFORE INSERT ON learning.gamification_completions FOR EACH ROW EXECUTE FUNCTION gamification_completions_source_ref()
 trigger CREATE TRIGGER gamification_config_touch BEFORE UPDATE ON learning.gamification_config FOR EACH ROW EXECUTE FUNCTION touch_row('version')
+trigger CREATE TRIGGER gamification_profiles_last_login AFTER UPDATE OF last_login_at ON learning.gamification_profiles FOR EACH ROW WHEN ((new.last_login_at IS DISTINCT FROM old.last_login_at)) EXECUTE FUNCTION gamification_profiles_last_login()
 trigger CREATE TRIGGER gamification_profiles_touch BEFORE UPDATE ON learning.gamification_profiles FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER grading_entries_append_only BEFORE DELETE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_no_delete()
 trigger CREATE TRIGGER grading_entries_immutable BEFORE UPDATE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_guard()
@@ -4273,6 +4295,7 @@ trigger CREATE TRIGGER translations_touch BEFORE UPDATE ON core.translations FOR
 trigger CREATE TRIGGER translations_touch_platform AFTER INSERT OR DELETE OR UPDATE ON core.translations FOR EACH ROW EXECUTE FUNCTION translations_touch_platform()
 trigger CREATE TRIGGER uploads_touch BEFORE UPDATE ON core.uploads FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER usergroups_touch BEFORE UPDATE ON core.usergroups FOR EACH ROW EXECUTE FUNCTION touch_row('version')
+trigger CREATE TRIGGER users_last_login AFTER UPDATE OF last_login_at ON core.users FOR EACH ROW WHEN ((new.last_login_at IS DISTINCT FROM old.last_login_at)) EXECUTE FUNCTION users_last_login()
 trigger CREATE TRIGGER users_reissue_certificates AFTER UPDATE OF display_name ON core.users FOR EACH ROW WHEN ((old.display_name IS DISTINCT FROM new.display_name)) EXECUTE FUNCTION users_reissue_certificates()
 trigger CREATE TRIGGER users_sync_state BEFORE INSERT OR UPDATE ON core.users FOR EACH ROW EXECUTE FUNCTION users_sync_state()
 trigger CREATE TRIGGER users_touch BEFORE UPDATE ON core.users FOR EACH ROW EXECUTE FUNCTION touch_row()
