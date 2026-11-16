@@ -52,3 +52,12 @@ column	messages.status	the release after deletions are read from deleted_at (202
 trigger	messages_deleted_status	the contract that drops messages.status	REWRITE 5.8 item 5
 constraint	course_discussions_status_check	the release after deletions are read from deleted_at (20261116075635): data-fix status 'deleted' to 'active', check active/hidden, rebuild course_discussions_posts_keyset_idx and course_discussions_replies_keyset_idx on deleted_at IS NULL	REWRITE 5.8 item 5
 trigger	course_discussions_deleted_status	the contract that narrows course_discussions_status_check	REWRITE 5.8 item 5
+column	assessments.grace_period_minutes	the release after grace periods are read in seconds (20261116075637): grace_period_seconds; drop assessments_grace_period_minutes_check with it	REWRITE 5.8 item 6
+trigger	assessments_grace_period	the contract that drops assessments.grace_period_minutes	REWRITE 5.8 item 6
+column	assessment_items.estimated_minutes	the release after estimates are read in seconds (20261116075637): estimated_seconds	REWRITE 5.8 item 6
+trigger	assessment_items_estimate	the contract that drops assessment_items.estimated_minutes	REWRITE 5.8 item 6
+column	daily_assessment_metrics.grading_latency_hours_p50	the release after latencies are written in seconds (20261116075637): grading_latency_seconds_p50	REWRITE 5.8 item 6
+column	daily_assessment_metrics.grading_latency_hours_p90	the release after latencies are written in seconds (20261116075637): grading_latency_seconds_p90	REWRITE 5.8 item 6
+trigger	daily_assessment_metrics_latency	the contract that drops daily_assessment_metrics.grading_latency_hours_*	REWRITE 5.8 item 6
+column	ai_runs.duration_ms	the release after durations are read from completed_at - started_at (20261116075637); drop ai_runs_duration_ms_check with it	REWRITE 5.8 item 6
+trigger	ai_runs_duration	the contract that drops ai_runs.duration_ms	REWRITE 5.8 item 6

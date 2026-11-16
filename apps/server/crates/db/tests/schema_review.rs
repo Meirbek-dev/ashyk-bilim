@@ -103,7 +103,9 @@
 //!   message's or a discussion's `deleted` status follows it.
 //! - REWRITE 5.8 item 6: a stored human language is the `language_code`
 //!   domain (`ru`, `kk`, `en`); an AI answer's language is `auto` or one of
-//!   them, no region tag.
+//!   them, no region tag. A stored duration is whole seconds
+//!   (`*_seconds`); until the contract the previous release's minutes,
+//!   hours and `ai_runs.duration_ms` follow, and its writes set the seconds.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -2936,10 +2938,22 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "derived; the previous release's state, a contract drops it",
         ),
         (
+            "ai_runs_duration",
+            "derived; the previous release's duration_ms, a contract drops it",
+        ),
+        (
             "activities_required_from_settings",
             "derived; goes with the settings key",
         ),
+        (
+            "assessment_items_estimate",
+            "derived; the previous release's minutes, a contract drops it",
+        ),
         ("assessment_items_upload_ids", "derived"),
+        (
+            "assessments_grace_period",
+            "derived; the previous release's minutes, a contract drops it",
+        ),
         ("assessment_versions_points", "derived"),
         ("assessment_versions_upload_ids", "derived"),
         ("blocks_upload_ids", "derived"),
@@ -2975,6 +2989,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "derived; writers that name only creator_id, a contract drops it",
         ),
         ("courses_upload_ids", "derived"),
+        (
+            "daily_assessment_metrics_latency",
+            "derived; the previous release's hours, a contract drops it",
+        ),
         (
             "discussion_reactions_recount",
             "derived; reads count on read, a contract drops it",
@@ -4353,4 +4371,78 @@ async fn one_language_domain(pool: PgPool) {
         .execute(&pool)
         .await;
     assert!(locale.is_err(), "not a platform language");
+}
+
+#[ab_testdb::test]
+async fn durations_are_seconds(pool: PgPool) {
+    // What the contract drops (pending-contracts.tsv); nothing else is stored in another unit.
+    let previous = [
+        "ai_runs.duration_ms",
+        "assessment_items.estimated_minutes",
+        "assessments.grace_period_minutes",
+        "daily_assessment_metrics.grading_latency_hours_p50",
+        "daily_assessment_metrics.grading_latency_hours_p90",
+    ];
+    let other: Vec<String> = sqlx::query_scalar(
+        "SELECT c.table_name || '.' || c.column_name
+         FROM information_schema.columns c
+         JOIN information_schema.tables t USING (table_schema, table_name)
+         WHERE t.table_type = 'BASE TABLE' AND c.table_schema::name = ANY (app_schemas() || 'public'::name)
+           AND (c.column_name ~ '_(ms|minutes|hours)(_|$)' OR c.data_type = 'interval')
+         ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(other, previous);
+
+    let w = world(&pool).await;
+    let grace: (i32, i32) = sqlx::query_as(
+        "UPDATE assessments SET grace_period_seconds = 300 WHERE id = $1
+         RETURNING grace_period_seconds, grace_period_minutes",
+    )
+    .bind(w.assessment)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(grace, (300, 5));
+    let grace: (i32, i32) = sqlx::query_as(
+        "UPDATE assessments SET grace_period_minutes = 2 WHERE id = $1
+         RETURNING grace_period_seconds, grace_period_minutes",
+    )
+    .bind(w.assessment)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(grace, (120, 2), "the previous release writes minutes");
+
+    let estimate: (Option<i32>, Option<i32>) = sqlx::query_as(
+        "INSERT INTO assessment_items (assessment_id, kind, position, body, estimated_minutes)
+         VALUES ($1, 'code', 1, '{\"kind\": \"code\"}', 3) RETURNING estimated_seconds, estimated_minutes",
+    )
+    .bind(w.assessment)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(estimate, (Some(180), Some(3)));
+
+    let run: Uuid = sqlx::query_scalar(
+        "INSERT INTO ai_runs (kind, status, started_at) VALUES ('course_qa', 'running', now()) RETURNING id",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let duration: Option<i32> = sqlx::query_scalar(
+        "UPDATE ai_runs SET status = 'succeeded', completed_at = started_at + interval '1.5 seconds'
+         WHERE id = $1 RETURNING duration_ms",
+    )
+    .bind(run)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        duration,
+        Some(1500),
+        "the previous release reads duration_ms"
+    );
 }

@@ -225,7 +225,8 @@ pub async fn get_run(pool: &PgPool, id: AiRunId) -> Result<Option<RunRow>> {
         RunRow,
         r#"SELECT id AS "id: AiRunId", thread_id AS "thread_id!: AiThreadId",
                   kind AS "kind: AiRunKind", status AS "status: AiRunStatus",
-                  triggered_by AS "triggered_by: UserId", model_name, duration_ms,
+                  triggered_by AS "triggered_by: UserId", model_name,
+                  (extract(epoch FROM completed_at - started_at) * 1000)::integer AS duration_ms,
                   input_tokens, output_tokens,
                   cost_estimate::double precision AS "cost_estimate?",
                   safety_state, error_code, metadata,
@@ -279,8 +280,7 @@ pub async fn finish_run<'e>(
     let result = sqlx::query!(
         r#"WITH settled AS (DELETE FROM ai_token_reservations WHERE run_id = $1)
            UPDATE ai_runs SET status = 'succeeded', model_name = $2, input_tokens = $3,
-               output_tokens = $4, metadata = metadata || $5, completed_at = now(),
-               duration_ms = (extract(epoch FROM now() - started_at) * 1000)::integer
+               output_tokens = $4, metadata = metadata || $5, completed_at = now()
            WHERE id = $1 AND status = 'running'"#,
         id.0,
         model_name,
@@ -314,8 +314,7 @@ async fn end_run(pool: &PgPool, id: AiRunId, status: &str, error_code: &str) -> 
     let moved = sqlx::query_scalar!(
         r#"WITH released AS (DELETE FROM ai_token_reservations WHERE run_id = $1),
            moved AS (
-               UPDATE ai_runs SET status = $2, error_code = $3, completed_at = now(),
-                   duration_ms = (extract(epoch FROM now() - started_at) * 1000)::integer
+               UPDATE ai_runs SET status = $2, error_code = $3, completed_at = now()
                WHERE id = $1 AND status IN ('queued', 'running')
                RETURNING triggered_by, coalesce(input_tokens, 0)::bigint AS input_tokens,
                          coalesce(output_tokens, 0)::bigint AS output_tokens),
@@ -387,7 +386,8 @@ pub async fn find_run_by_turn(
         RunRow,
         r#"SELECT id AS "id: AiRunId", thread_id AS "thread_id!: AiThreadId",
                   kind AS "kind: AiRunKind", status AS "status: AiRunStatus",
-                  triggered_by AS "triggered_by: UserId", model_name, duration_ms,
+                  triggered_by AS "triggered_by: UserId", model_name,
+                  (extract(epoch FROM completed_at - started_at) * 1000)::integer AS duration_ms,
                   input_tokens, output_tokens,
                   cost_estimate::double precision AS "cost_estimate?",
                   safety_state, error_code, metadata,
@@ -424,7 +424,8 @@ pub async fn list_runs(pool: &PgPool, filter: &RunFilter<'_>) -> Result<Vec<RunR
         RunRow,
         r#"SELECT id AS "id: AiRunId", thread_id AS "thread_id!: AiThreadId",
                   kind AS "kind: AiRunKind", status AS "status: AiRunStatus",
-                  triggered_by AS "triggered_by: UserId", model_name, duration_ms,
+                  triggered_by AS "triggered_by: UserId", model_name,
+                  (extract(epoch FROM completed_at - started_at) * 1000)::integer AS duration_ms,
                   input_tokens, output_tokens,
                   cost_estimate::double precision AS "cost_estimate?",
                   safety_state, error_code, metadata,

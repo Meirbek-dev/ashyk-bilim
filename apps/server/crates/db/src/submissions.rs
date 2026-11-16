@@ -1156,7 +1156,7 @@ pub async fn list_expired_drafts(pool: &PgPool, limit: i64) -> Result<Vec<Submis
              AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = a.id)
              AND (s.auto_submit_retry_at IS NULL OR s.auto_submit_retry_at <= now())
              AND ((s.started_at IS NOT NULL AND a.time_limit_seconds IS NOT NULL
-                   AND s.started_at + make_interval(secs => a.time_limit_seconds + a.grace_period_minutes * 60) <= now())
+                   AND s.started_at + make_interval(secs => a.time_limit_seconds + a.grace_period_seconds) <= now())
                OR (NOT s.preview AND p.due IS NOT NULL AND d.hand_in_at <= now()
                    AND d.hand_in_at > (SELECT deadline_auto_submit_since FROM platforms WHERE singleton)))
            ORDER BY s.started_at

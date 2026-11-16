@@ -1063,10 +1063,10 @@ pub async fn insert_assessment_metrics(
         r"INSERT INTO daily_assessment_metrics
               (metric_date, assessment_id, course_id, activity_id, assessment_kind,
                eligible_learners, submitted_learners, submission_rate, completion_rate, pass_rate,
-               median_score, avg_score, avg_attempts, grading_latency_hours_p50,
-               grading_latency_hours_p90, difficulty_score, generated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-                  $16, to_timestamp($17))
+               median_score, avg_score, avg_attempts, grading_latency_seconds_p50,
+               grading_latency_seconds_p90, difficulty_score, generated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, round($14::float8 * 3600),
+                  round($15::float8 * 3600), $16, to_timestamp($17))
           ON CONFLICT (metric_date, assessment_id) DO UPDATE SET
               course_id = EXCLUDED.course_id,
               activity_id = EXCLUDED.activity_id,
@@ -1079,8 +1079,8 @@ pub async fn insert_assessment_metrics(
               median_score = EXCLUDED.median_score,
               avg_score = EXCLUDED.avg_score,
               avg_attempts = EXCLUDED.avg_attempts,
-              grading_latency_hours_p50 = EXCLUDED.grading_latency_hours_p50,
-              grading_latency_hours_p90 = EXCLUDED.grading_latency_hours_p90,
+              grading_latency_seconds_p50 = EXCLUDED.grading_latency_seconds_p50,
+              grading_latency_seconds_p90 = EXCLUDED.grading_latency_seconds_p90,
               difficulty_score = EXCLUDED.difficulty_score,
               generated_at = EXCLUDED.generated_at",
         date as _,

@@ -604,6 +604,7 @@ One AI job (grading draft, analysis, review, answer): model, tokens, cost, statu
 - Index `ai_runs_status_idx`: `CREATE INDEX ai_runs_status_idx ON ai.ai_runs USING btree (status, started_at DESC)`
 - Index `ai_runs_thread_status_idx`: `CREATE INDEX ai_runs_thread_status_idx ON ai.ai_runs USING btree (thread_id, status, started_at DESC)`
 - Index `ai_runs_triggered_by_idx`: `CREATE INDEX ai_runs_triggered_by_idx ON ai.ai_runs USING btree (triggered_by, started_at DESC)`
+- Trigger `ai_runs_duration`: `CREATE TRIGGER ai_runs_duration BEFORE INSERT OR UPDATE OF completed_at, started_at ON ai.ai_runs FOR EACH ROW EXECUTE FUNCTION ai_runs_duration()`
 
 ## ai_student_memory
 
@@ -912,6 +913,7 @@ A question or task of an assessment (typed body by kind), ordered by position, m
 | draw_group | text | null |  | Draw quota group (a DOT level such as 1 or 101); NULL: none. |
 | source_file | text | null |  | Spreadsheet the item was imported from. |
 | source_row | integer | null |  | Row of `source_file` the item came from. |
+| estimated_seconds | integer | null |  |  |
 
 - Primary key `assessment_items_pkey`: `PRIMARY KEY (id)`
 - Unique `assessment_items_id_assessment_key`: `UNIQUE (id, assessment_id)`
@@ -922,12 +924,14 @@ A question or task of an assessment (typed body by kind), ordered by position, m
 - Check `assessment_items_difficulty_check`: `CHECK (((difficulty IS NULL) OR (difficulty = ANY (ARRAY['easy'::text, 'medium'::text, 'hard'::text]))))`
 - Check `assessment_items_draw_group_check`: `CHECK (((draw_group IS NULL) OR ((length(draw_group) >= 1) AND (length(draw_group) <= 32))))`
 - Check `assessment_items_estimated_minutes_check`: `CHECK (((estimated_minutes IS NULL) OR (estimated_minutes >= 0)))`
+- Check `assessment_items_estimated_seconds_check`: `CHECK ((estimated_seconds >= 0))`
 - Check `assessment_items_kind_check`: `CHECK ((kind = ANY (ARRAY['choice'::text, 'open_text'::text, 'form'::text, 'code'::text, 'matching'::text])))`
 - Check `assessment_items_outcome_ids_check`: `CHECK (text_list_ok(outcome_ids, 50, 64))`
 - Check `assessment_items_position_check`: `CHECK (("position" >= 1))`
 - Check `assessment_items_source_file_check`: `CHECK (((source_file IS NULL) OR ((length(source_file) >= 1) AND (length(source_file) <= 255))))`
 - Check `assessment_items_source_row_check`: `CHECK (((source_row IS NULL) OR (source_row >= 1)))`
 - Check `assessment_items_tags_check`: `CHECK (text_list_ok(tags, 50, 64))`
+- Trigger `assessment_items_estimate`: `CREATE TRIGGER assessment_items_estimate BEFORE INSERT OR UPDATE ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_items_estimate()`
 - Trigger `assessment_items_upload_ids`: `CREATE TRIGGER assessment_items_upload_ids AFTER INSERT OR UPDATE OF body ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_item_uploads_sync()`
 
 ## assessment_overrides
@@ -1051,6 +1055,7 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 | version | integer |  | `1` |  |
 | draw_count | integer | null |  | Questions drawn at random for each attempt; NULL: every question. |
 | draw_strata | jsonb | null |  | Draw quotas `[{group, count}]` taken first from items with that `draw_group`; NULL: none. |
+| grace_period_seconds | integer |  |  | How long after the time limit a timed attempt is still accepted. |
 
 - Primary key `assessments_pkey`: `PRIMARY KEY (id)`
 - Unique `assessments_activity_id_key`: `UNIQUE (activity_id)`
@@ -1066,6 +1071,7 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Check `assessments_draw_strata_check`: `CHECK (((draw_strata IS NULL) OR (jsonb_typeof(draw_strata) = 'array'::text)))`
 - Check `assessments_draw_strata_shape`: `CHECK (((draw_strata IS NULL) OR draw_strata_ok(draw_strata)))`
 - Check `assessments_grace_period_minutes_check`: `CHECK ((grace_period_minutes >= 0))`
+- Check `assessments_grace_period_seconds_check`: `CHECK ((grace_period_seconds >= 0))`
 - Check `assessments_grade_release_mode_check`: `CHECK ((grade_release_mode = ANY (ARRAY['immediate'::text, 'batch'::text])))`
 - Check `assessments_grading_mode_check`: `CHECK ((grading_mode = ANY (ARRAY['auto'::text, 'manual'::text, 'auto_then_manual'::text])))`
 - Check `assessments_grading_type_check`: `CHECK ((grading_type = ANY (ARRAY['numeric'::text, 'percentage'::text])))`
@@ -1082,6 +1088,7 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Check `assessments_violation_threshold_check`: `CHECK ((violation_threshold >= 1))`
 - Index `assessments_course_idx`: `CREATE INDEX assessments_course_idx ON learning.assessments USING btree (course_id)`
 - Index `assessments_due_publish_idx`: `CREATE INDEX assessments_due_publish_idx ON learning.assessments USING btree (scheduled_at) WHERE (lifecycle = 'scheduled'::text)`
+- Trigger `assessments_grace_period`: `CREATE TRIGGER assessments_grace_period BEFORE INSERT OR UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION assessments_grace_period()`
 
 ## auth_audit_log
 
@@ -1844,6 +1851,8 @@ Daily rollup per assessment: submission, pass and score figures.
 | grading_latency_hours_p90 | double precision | null |  |
 | difficulty_score | double precision | null |  |
 | generated_at | timestamp with time zone |  | `now()` |
+| grading_latency_seconds_p50 | integer | null |  |
+| grading_latency_seconds_p90 | integer | null |  |
 
 - Primary key `daily_assessment_metrics_pkey`: `PRIMARY KEY (metric_date, assessment_id)`
 - Foreign key `daily_assessment_metrics_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL`
@@ -1853,6 +1862,7 @@ Daily rollup per assessment: submission, pass and score figures.
 - Index `daily_assessment_metrics_activity_idx`: `CREATE INDEX daily_assessment_metrics_activity_idx ON analytics.daily_assessment_metrics USING btree (activity_id)`
 - Index `daily_assessment_metrics_assessment_idx`: `CREATE INDEX daily_assessment_metrics_assessment_idx ON analytics.daily_assessment_metrics USING btree (assessment_id)`
 - Index `daily_assessment_metrics_course_idx`: `CREATE INDEX daily_assessment_metrics_course_idx ON analytics.daily_assessment_metrics USING btree (course_id, metric_date DESC)`
+- Trigger `daily_assessment_metrics_latency`: `CREATE TRIGGER daily_assessment_metrics_latency BEFORE INSERT OR UPDATE ON analytics.daily_assessment_metrics FOR EACH ROW EXECUTE FUNCTION daily_assessment_metrics_latency()`
 
 ## daily_course_engagement
 

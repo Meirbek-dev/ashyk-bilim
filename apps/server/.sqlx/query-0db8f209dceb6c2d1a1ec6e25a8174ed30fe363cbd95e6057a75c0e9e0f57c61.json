@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: AssessmentItemId\",\n                  assessment_id AS \"assessment_id: AssessmentId\",\n                  position, kind AS \"kind: ItemKind\", title, body, max_score::float8 AS \"max_score!\",\n                  section_label, difficulty AS \"difficulty: Difficulty\",\n                  tags, outcome_ids, estimated_minutes, draw_group, source_file, source_row\n           FROM assessment_items WHERE id = $1",
+  "query": "SELECT id AS \"id: AssessmentItemId\",\n                  assessment_id AS \"assessment_id: AssessmentId\",\n                  position, kind AS \"kind: ItemKind\", title, body, max_score::float8 AS \"max_score!\",\n                  section_label, difficulty AS \"difficulty: Difficulty\",\n                  tags, outcome_ids, estimated_seconds / 60 AS estimated_minutes, draw_group, source_file, source_row\n           FROM assessment_items WHERE assessment_id = $1 ORDER BY position, id",
   "describe": {
     "columns": [
       {
@@ -123,12 +123,7 @@
         "ordinal": 11,
         "name": "estimated_minutes",
         "type_info": "Int4",
-        "origin": {
-          "Table": {
-            "table": "assessment_items",
-            "name": "estimated_minutes"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 12,
@@ -181,11 +176,11 @@
       true,
       false,
       false,
-      true,
+      null,
       true,
       true,
       true
     ]
   },
-  "hash": "9eafa041d860d6c4c1c16b6c08f2099d42587c6689d7ff06212b822ae22a3c84"
+  "hash": "0db8f209dceb6c2d1a1ec6e25a8174ed30fe363cbd95e6057a75c0e9e0f57c61"
 }

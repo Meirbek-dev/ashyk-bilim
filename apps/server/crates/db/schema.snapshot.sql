@@ -369,6 +369,7 @@ constraint assessment_items assessment_items_created_at_not_null NOT NULL create
 constraint assessment_items assessment_items_difficulty_check CHECK (((difficulty IS NULL) OR (difficulty = ANY (ARRAY['easy'::text, 'medium'::text, 'hard'::text]))))
 constraint assessment_items assessment_items_draw_group_check CHECK (((draw_group IS NULL) OR ((length(draw_group) >= 1) AND (length(draw_group) <= 32))))
 constraint assessment_items assessment_items_estimated_minutes_check CHECK (((estimated_minutes IS NULL) OR (estimated_minutes >= 0)))
+constraint assessment_items assessment_items_estimated_seconds_check CHECK ((estimated_seconds >= 0))
 constraint assessment_items assessment_items_id_assessment_key UNIQUE (id, assessment_id)
 constraint assessment_items assessment_items_id_not_null NOT NULL id
 constraint assessment_items assessment_items_kind_check CHECK ((kind = ANY (ARRAY['choice'::text, 'open_text'::text, 'form'::text, 'code'::text, 'matching'::text])))
@@ -447,6 +448,8 @@ constraint assessments assessments_draw_strata_shape CHECK (((draw_strata IS NUL
 constraint assessments assessments_fullscreen_required_not_null NOT NULL fullscreen_required
 constraint assessments assessments_grace_period_minutes_check CHECK ((grace_period_minutes >= 0))
 constraint assessments assessments_grace_period_minutes_not_null NOT NULL grace_period_minutes
+constraint assessments assessments_grace_period_seconds_check CHECK ((grace_period_seconds >= 0))
+constraint assessments assessments_grace_period_seconds_not_null NOT NULL grace_period_seconds
 constraint assessments assessments_grade_release_mode_check CHECK ((grade_release_mode = ANY (ARRAY['immediate'::text, 'batch'::text])))
 constraint assessments assessments_grade_release_mode_not_null NOT NULL grade_release_mode
 constraint assessments assessments_grading_mode_check CHECK ((grading_mode = ANY (ARRAY['auto'::text, 'manual'::text, 'auto_then_manual'::text])))
@@ -1460,6 +1463,15 @@ BEGIN
     RETURN NEW;
 END;
 $function$
+function CREATE OR REPLACE FUNCTION public.ai_runs_duration()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    NEW.duration_ms := (extract(epoch FROM NEW.completed_at - NEW.started_at) * 1000)::integer;
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.analytics_events_drop_partitions(before timestamp with time zone)
  RETURNS integer
  LANGUAGE plpgsql
@@ -1720,6 +1732,21 @@ BEGIN
     ON CONFLICT DO NOTHING;
     RETURN NULL;
 END $function$
+function CREATE OR REPLACE FUNCTION public.assessment_items_estimate()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF (TG_OP = 'INSERT' AND NEW.estimated_seconds IS NULL)
+       OR (TG_OP = 'UPDATE' AND NEW.estimated_minutes IS DISTINCT FROM OLD.estimated_minutes
+           AND NEW.estimated_seconds IS NOT DISTINCT FROM OLD.estimated_seconds) THEN
+        NEW.estimated_seconds := NEW.estimated_minutes * 60;
+    ELSE
+        NEW.estimated_minutes := NEW.estimated_seconds / 60;
+    END IF;
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.assessment_version_uploads_sync()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1754,6 +1781,21 @@ BEGIN
     RETURN NEW;
 END;
 $function$
+function CREATE OR REPLACE FUNCTION public.assessments_grace_period()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF (TG_OP = 'INSERT' AND NEW.grace_period_seconds IS NULL)
+       OR (TG_OP = 'UPDATE' AND NEW.grace_period_minutes IS DISTINCT FROM OLD.grace_period_minutes
+           AND NEW.grace_period_seconds IS NOT DISTINCT FROM OLD.grace_period_seconds) THEN
+        NEW.grace_period_seconds := NEW.grace_period_minutes * 60;
+    ELSE
+        NEW.grace_period_minutes := NEW.grace_period_seconds / 60;
+    END IF;
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.block_uploads_sync()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1942,6 +1984,26 @@ BEGIN
     VALUES (NEW.id, NEW.creator_id, 'creator', 'active')
     ON CONFLICT DO NOTHING;
     RETURN NULL;
+END $function$
+function CREATE OR REPLACE FUNCTION public.daily_assessment_metrics_latency()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF (TG_OP = 'INSERT' AND NEW.grading_latency_seconds_p50 IS NULL AND NEW.grading_latency_seconds_p90 IS NULL)
+       OR (TG_OP = 'UPDATE'
+           AND (NEW.grading_latency_hours_p50, NEW.grading_latency_hours_p90)
+               IS DISTINCT FROM (OLD.grading_latency_hours_p50, OLD.grading_latency_hours_p90)
+           AND (NEW.grading_latency_seconds_p50, NEW.grading_latency_seconds_p90)
+               IS NOT DISTINCT FROM (OLD.grading_latency_seconds_p50, OLD.grading_latency_seconds_p90)) THEN
+        NEW.grading_latency_seconds_p50 := round(NEW.grading_latency_hours_p50 * 3600);
+        NEW.grading_latency_seconds_p90 := round(NEW.grading_latency_hours_p90 * 3600);
+    ELSE
+        NEW.grading_latency_hours_p50 := NEW.grading_latency_seconds_p50 / 3600.0;
+        NEW.grading_latency_hours_p90 := NEW.grading_latency_seconds_p90 / 3600.0;
+    END IF;
+    RETURN NEW;
 END $function$
 function CREATE OR REPLACE FUNCTION public.discussion_image_keys(content text)
  RETURNS SETOF text
@@ -3207,6 +3269,8 @@ table analytics.daily_assessment_metrics eligible_learners integer NOT NULL DEFA
 table analytics.daily_assessment_metrics generated_at timestamp with time zone NOT NULL DEFAULT now()
 table analytics.daily_assessment_metrics grading_latency_hours_p50 double precision DEFAULT -
 table analytics.daily_assessment_metrics grading_latency_hours_p90 double precision DEFAULT -
+table analytics.daily_assessment_metrics grading_latency_seconds_p50 integer DEFAULT -
+table analytics.daily_assessment_metrics grading_latency_seconds_p90 integer DEFAULT -
 table analytics.daily_assessment_metrics median_score double precision DEFAULT -
 table analytics.daily_assessment_metrics metric_date date NOT NULL DEFAULT -
 table analytics.daily_assessment_metrics pass_rate double precision DEFAULT -
@@ -3619,6 +3683,7 @@ table learning.assessment_items created_at timestamp with time zone NOT NULL DEF
 table learning.assessment_items difficulty text DEFAULT -
 table learning.assessment_items draw_group text DEFAULT -
 table learning.assessment_items estimated_minutes integer DEFAULT -
+table learning.assessment_items estimated_seconds integer DEFAULT -
 table learning.assessment_items id uuid NOT NULL DEFAULT uuidv7()
 table learning.assessment_items kind text NOT NULL DEFAULT -
 table learning.assessment_items max_score score_points NOT NULL DEFAULT 0
@@ -3671,6 +3736,7 @@ table learning.assessments draw_strata jsonb DEFAULT -
 table learning.assessments due_at timestamp with time zone DEFAULT -
 table learning.assessments fullscreen_required boolean NOT NULL DEFAULT false
 table learning.assessments grace_period_minutes integer NOT NULL DEFAULT 0
+table learning.assessments grace_period_seconds integer NOT NULL DEFAULT -
 table learning.assessments grade_release_mode text NOT NULL DEFAULT -
 table learning.assessments grading_mode text NOT NULL DEFAULT -
 table learning.assessments grading_type text NOT NULL DEFAULT 'percentage'::text
@@ -4048,15 +4114,18 @@ trigger CREATE TRIGGER ai_course_settings_touch BEFORE UPDATE ON ai.ai_course_se
 trigger CREATE TRIGGER ai_grade_drafts_same_activity BEFORE INSERT ON ai.ai_grade_drafts FOR EACH ROW EXECUTE FUNCTION ai_grade_drafts_same_activity()
 trigger CREATE TRIGGER ai_grade_drafts_touch BEFORE UPDATE ON ai.ai_grade_drafts FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER ai_remediation_sessions_touch BEFORE UPDATE ON ai.ai_remediation_sessions FOR EACH ROW EXECUTE FUNCTION touch_row()
+trigger CREATE TRIGGER ai_runs_duration BEFORE INSERT OR UPDATE OF completed_at, started_at ON ai.ai_runs FOR EACH ROW EXECUTE FUNCTION ai_runs_duration()
 trigger CREATE TRIGGER ai_student_memory_touch BEFORE UPDATE ON ai.ai_student_memory FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER ai_threads_touch BEFORE UPDATE ON ai.ai_threads FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER analytics_saved_views_touch BEFORE UPDATE ON analytics.analytics_saved_views FOR EACH ROW EXECUTE FUNCTION touch_row()
+trigger CREATE TRIGGER assessment_items_estimate BEFORE INSERT OR UPDATE ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_items_estimate()
 trigger CREATE TRIGGER assessment_items_touch BEFORE UPDATE ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER assessment_items_upload_ids AFTER INSERT OR UPDATE OF body ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_item_uploads_sync()
 trigger CREATE TRIGGER assessment_overrides_touch BEFORE UPDATE ON learning.assessment_overrides FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()
 trigger CREATE TRIGGER assessment_versions_points BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_points()
 trigger CREATE TRIGGER assessment_versions_upload_ids AFTER INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_version_uploads_sync()
+trigger CREATE TRIGGER assessments_grace_period BEFORE INSERT OR UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION assessments_grace_period()
 trigger CREATE TRIGGER assessments_touch BEFORE UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER blocks_touch BEFORE UPDATE ON core.blocks FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER blocks_upload_ids AFTER INSERT OR UPDATE OF content, claimed ON core.blocks FOR EACH ROW EXECUTE FUNCTION block_uploads_sync()
@@ -4083,6 +4152,7 @@ trigger CREATE TRIGGER course_updates_touch BEFORE UPDATE ON core.course_updates
 trigger CREATE TRIGGER courses_creator_row AFTER INSERT ON core.courses FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION courses_creator_row()
 trigger CREATE TRIGGER courses_touch BEFORE UPDATE ON core.courses FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_image_key, thumbnail_video_key ON core.courses FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_image_key', 'thumbnail_image_upload_id', 'thumbnail_video_key', 'thumbnail_video_upload_id')
+trigger CREATE TRIGGER daily_assessment_metrics_latency BEFORE INSERT OR UPDATE ON analytics.daily_assessment_metrics FOR EACH ROW EXECUTE FUNCTION daily_assessment_metrics_latency()
 trigger CREATE TRIGGER discussion_reactions_recount AFTER INSERT OR DELETE OR UPDATE ON core.discussion_reactions FOR EACH ROW EXECUTE FUNCTION discussion_reactions_recount()
 trigger CREATE TRIGGER file_submission_files_from_upload BEFORE INSERT ON learning.file_submission_files FOR EACH ROW EXECUTE FUNCTION file_submission_files_from_upload()
 trigger CREATE TRIGGER file_submissions_touch BEFORE UPDATE ON learning.file_submissions FOR EACH ROW EXECUTE FUNCTION touch_row('version')

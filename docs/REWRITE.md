@@ -1019,6 +1019,16 @@ Queue, in order:
      is asked in) is `auto` or a `language_code`, no region tag: old rows lost the region, the API takes the bare
      code only (the web sends nothing else). The previous release still accepts a region tag, which the new check
      refuses (no client sends one).
+   - Durations: switched in `20261116075637_durations_in_seconds`. `assessments.grace_period_seconds`,
+     `assessment_items.estimated_seconds` and `daily_assessment_metrics.grading_latency_seconds_p50` / `_p90`
+     (whole seconds, backfilled) are what the server reads and writes; the API keeps `grace_period_minutes`,
+     `estimated_minutes` and `grading_latency_hours_*` (teachers enter minutes). `ai_runs.duration_ms` repeated
+     `completed_at - started_at`: readers compute it, the API keeps `duration_ms`. Triggers keep the previous
+     release's columns equal both ways (`ai_runs_duration` derives the old one). Left: the contract dropping
+     the minutes, hours and `duration_ms` columns, their checks and the four triggers. Unchanged:
+     `time_limit_seconds`, `submissions.duration_seconds`, `job_schedules.interval_seconds` are seconds already,
+     `code_run_cases.time_seconds` is a measured fraction of a second, `late_penalty_max_days` counts the days a
+     per-day penalty applies (the policy's unit, not a duration).
 7. **Smaller**: `assessments.access_mode` derived from the access rows; `teacher_user_id` out of the rollups
    (a course has several staff); the last login moves from `gamification_profiles` to `users`; triggers that
    fill business values (certificate names, a grade entry's points and number) move into the server, guards stay.

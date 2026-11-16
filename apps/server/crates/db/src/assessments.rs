@@ -175,14 +175,14 @@ pub async fn insert_assessment<'e>(
                late_policy_kind, late_penalty_percent_per_day, late_penalty_max_days,
                late_cutoff_at,
                required, review_visibility, randomize_questions, randomize_options,
-               partial_credit, negative_marking_percent, grace_period_minutes,
+               partial_credit, negative_marking_percent, grace_period_seconds,
                copy_paste_protection, tab_switch_detection, devtools_detection,
                right_click_disabled, fullscreen_required, violation_threshold,
                attempt_penalty_percent, draw_count, draw_strata)
            VALUES ($1, $2, $3, $4::float8, $5, $6,
                    $7, $8, $9, $10::float8, $11, $12, to_timestamp($13), $14,
                    $15, $16::float8, $17, to_timestamp($18),
-                   $19, $20, $21, $22, $23, $24::float8, $25,
+                   $19, $20, $21, $22, $23, $24::float8, $25 * 60,
                    $26, $27, $28, $29, $30, $31, $32::float8, $33, $34)
            RETURNING id"#,
         new.activity_id.0,
@@ -253,7 +253,8 @@ pub async fn get_assessment<'e>(
                   (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
                   required, review_visibility AS "review_visibility: ReviewVisibility",
                   randomize_questions, randomize_options, partial_credit,
-                  negative_marking_percent::float8 AS "negative_marking_percent!", grace_period_minutes,
+                  negative_marking_percent::float8 AS "negative_marking_percent!",
+                  grace_period_seconds / 60 AS "grace_period_minutes!",
                   copy_paste_protection, tab_switch_detection, devtools_detection,
                   right_click_disabled, fullscreen_required, violation_threshold,
                   attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
@@ -326,7 +327,8 @@ pub async fn get_assessment_by_activity<'e>(
                   (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
                   required, review_visibility AS "review_visibility: ReviewVisibility",
                   randomize_questions, randomize_options, partial_credit,
-                  negative_marking_percent::float8 AS "negative_marking_percent!", grace_period_minutes,
+                  negative_marking_percent::float8 AS "negative_marking_percent!",
+                  grace_period_seconds / 60 AS "grace_period_minutes!",
                   copy_paste_protection, tab_switch_detection, devtools_detection,
                   right_click_disabled, fullscreen_required, violation_threshold,
                   attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
@@ -372,7 +374,8 @@ pub async fn list_assessments_for_course(
                   (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
                   required, review_visibility AS "review_visibility: ReviewVisibility",
                   randomize_questions, randomize_options, partial_credit,
-                  negative_marking_percent::float8 AS "negative_marking_percent!", grace_period_minutes,
+                  negative_marking_percent::float8 AS "negative_marking_percent!",
+                  grace_period_seconds / 60 AS "grace_period_minutes!",
                   copy_paste_protection, tab_switch_detection, devtools_detection,
                   right_click_disabled, fullscreen_required, violation_threshold,
                   attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
@@ -473,7 +476,7 @@ pub async fn update_policy<'e>(
                late_penalty_max_days = $12, late_cutoff_at = to_timestamp($13),
                required = $14, review_visibility = $15, randomize_questions = $16,
                randomize_options = $17, partial_credit = $18,
-               negative_marking_percent = $19::float8, grace_period_minutes = $20,
+               negative_marking_percent = $19::float8, grace_period_seconds = $20 * 60,
                copy_paste_protection = $21, tab_switch_detection = $22,
                devtools_detection = $23, right_click_disabled = $24,
                fullscreen_required = $25, violation_threshold = $26,
@@ -689,11 +692,11 @@ pub async fn insert_item<'e>(
     let id = sqlx::query_scalar!(
         r#"INSERT INTO assessment_items
                (assessment_id, position, kind, title, body, max_score,
-                section_label, difficulty, tags, outcome_ids, estimated_minutes, draw_group)
+                section_label, difficulty, tags, outcome_ids, estimated_seconds, draw_group)
            VALUES ($1,
                    (SELECT COALESCE(MAX(position), 0) + 1
                     FROM assessment_items WHERE assessment_id = $1),
-                   $2, $3, $4, $5::float8, $6, $7, $8, $9, $10, $11)
+                   $2, $3, $4, $5::float8, $6, $7, $8, $9, $10 * 60, $11)
            RETURNING id"#,
         assessment_id.0,
         kind.as_str(),
@@ -769,7 +772,7 @@ pub async fn get_item(pool: &PgPool, id: AssessmentItemId) -> Result<Option<Item
                   assessment_id AS "assessment_id: AssessmentId",
                   position, kind AS "kind: ItemKind", title, body, max_score::float8 AS "max_score!",
                   section_label, difficulty AS "difficulty: Difficulty",
-                  tags, outcome_ids, estimated_minutes, draw_group, source_file, source_row
+                  tags, outcome_ids, estimated_seconds / 60 AS estimated_minutes, draw_group, source_file, source_row
            FROM assessment_items WHERE id = $1"#,
         id.0
     )
@@ -788,7 +791,7 @@ pub async fn list_items<'e>(
                   assessment_id AS "assessment_id: AssessmentId",
                   position, kind AS "kind: ItemKind", title, body, max_score::float8 AS "max_score!",
                   section_label, difficulty AS "difficulty: Difficulty",
-                  tags, outcome_ids, estimated_minutes, draw_group, source_file, source_row
+                  tags, outcome_ids, estimated_seconds / 60 AS estimated_minutes, draw_group, source_file, source_row
            FROM assessment_items WHERE assessment_id = $1 ORDER BY position, id"#,
         assessment_id.0
     )
@@ -835,7 +838,7 @@ pub async fn update_item<'e>(
                difficulty = CASE WHEN $6 THEN $8 ELSE difficulty END,
                tags = CASE WHEN $6 THEN $9 ELSE tags END,
                outcome_ids = CASE WHEN $6 THEN $10 ELSE outcome_ids END,
-               estimated_minutes = CASE WHEN $6 THEN $11 ELSE estimated_minutes END,
+               estimated_seconds = CASE WHEN $6 THEN $11 * 60 ELSE estimated_seconds END,
                draw_group = CASE WHEN $6 THEN $12 ELSE draw_group END
            WHERE id = $1"#,
         id.0,
