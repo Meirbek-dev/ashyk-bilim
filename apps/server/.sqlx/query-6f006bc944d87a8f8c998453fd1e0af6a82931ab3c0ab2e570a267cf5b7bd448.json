@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CodeRunId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  item_id AS \"item_id: AssessmentItemId\",\n                  submission_id AS \"submission_id: SubmissionId\", user_id AS \"user_id: UserId\",\n                  purpose AS \"purpose: CodeRunPurpose\",\n                  code_run_status(status, verdict) AS \"status!: CodeRunStatus\",\n                  verdict AS \"verdict: RunVerdict\", language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,\n                  score::float8 AS \"score?\", compile_output, error_message,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM finished_at))::bigint AS \"finished_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM code_runs\n           WHERE user_id = $1 AND item_id = $2 AND purpose = $3 AND idempotency_key = $4",
+  "query": "SELECT id AS \"id: CodeRunId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  item_id AS \"item_id: AssessmentItemId\",\n                  submission_id AS \"submission_id: SubmissionId\", user_id AS \"user_id: UserId\",\n                  purpose AS \"purpose: CodeRunPurpose\",\n                  code_run_status(status, verdict) AS \"status!: CodeRunStatus\",\n                  verdict AS \"verdict: RunVerdict\", language_id,\n                  encode(code_sha256, 'hex') AS \"source_sha256!\", encode(input_sha256, 'hex') AS stdin_sha256,\n                  idempotency_key, passed, total,\n                  score::float8 AS \"score?\", compile_output, error_message,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM finished_at))::bigint AS \"finished_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM code_runs\n           WHERE user_id = $1 AND item_id = $2 AND purpose = $3 AND idempotency_key = $4",
   "describe": {
     "columns": [
       {
@@ -99,25 +99,15 @@
       },
       {
         "ordinal": 9,
-        "name": "source_sha256",
+        "name": "source_sha256!",
         "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "code_runs",
-            "name": "source_sha256"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 10,
         "name": "stdin_sha256",
         "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "code_runs",
-            "name": "stdin_sha256"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 11,
@@ -217,8 +207,8 @@
       null,
       true,
       false,
-      false,
-      true,
+      null,
+      null,
       true,
       false,
       false,
@@ -230,5 +220,5 @@
       null
     ]
   },
-  "hash": "78026cd95378d31ddb18480908ae57472ca7de5c9739629e25a6b06a20a64f6f"
+  "hash": "6f006bc944d87a8f8c998453fd1e0af6a82931ab3c0ab2e570a267cf5b7bd448"
 }

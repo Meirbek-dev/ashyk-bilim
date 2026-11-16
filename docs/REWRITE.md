@@ -1029,6 +1029,14 @@ Queue, in order:
      `time_limit_seconds`, `submissions.duration_seconds`, `job_schedules.interval_seconds` are seconds already,
      `code_run_cases.time_seconds` is a measured fraction of a second, `late_penalty_max_days` counts the days a
      per-day penalty applies (the policy's unit, not a duration).
+   - Hashes: switched in `20261116075638_hashes_as_bytes` (+ the unique key on the version's sha256). Each hex
+     sha256 got a `bytea` of 32 bytes the server reads and writes: `code_runs.code_sha256` / `input_sha256` (the
+     names `source_sha256` / `stdin_sha256` are the hex copies), `idempotency_keys.request_sha256`,
+     `ai_work_embeddings.text_sha256`, `ai_course_analyses.content_sha256` (the API keeps the hex
+     `content_hash`). `assessment_versions.content_hash` was md5: `content_sha256` is the sha256 of the pair, a
+     generated column the server finds versions by. `assessment_imports.file_sha256` was `bytea` already and got
+     its length check. Triggers keep the previous release's hex copies equal both ways. Left: the contract
+     dropping the hex columns, their format checks and triggers, the md5 key and `assessment_content_hash()`.
 7. **Smaller**: `assessments.access_mode` derived from the access rows; `teacher_user_id` out of the rollups
    (a course has several staff); the last login moves from `gamification_profiles` to `users`; triggers that
    fill business values (certificate names, a grade entry's points and number) move into the server, guards stay.

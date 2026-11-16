@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO assessment_versions (assessment_id, number, items, policy, content_hash)\n                   SELECT $1, COALESCE(max(number), 0) + 1, $2, $3, assessment_content_hash($2, $3)\n                   FROM assessment_versions WHERE assessment_id = $1\n                   RETURNING id AS \"id: AssessmentVersionId\"",
+  "query": "INSERT INTO assessment_versions (assessment_id, number, items, policy)\n                   SELECT $1, COALESCE(max(number), 0) + 1, $2, $3\n                   FROM assessment_versions WHERE assessment_id = $1\n                   RETURNING id AS \"id: AssessmentVersionId\"",
   "describe": {
     "columns": [
       {
@@ -26,5 +26,5 @@
       false
     ]
   },
-  "hash": "a34810c1670456399f7e3c47d25acb477449d9d13b47cb434b43833ebfb2866f"
+  "hash": "6e6ef53625cbdd5d74cc8bb896728054fca903de355157273f2682eac973b739"
 }

@@ -3,7 +3,7 @@
 //! Each distinct (items, policy) pair an attempt was handed in against,
 //! stored once and numbered per assessment (migration `20261102020600`).
 //! Content-addressed: the hash is computed by
-//! Postgres from the jsonb values (`assessment_content_hash`), so the server
+//! Postgres from the jsonb values (`assessment_content_sha256`), so the server
 //! never has to reproduce jsonb's text form.
 
 use ab_core::Result;
@@ -32,7 +32,7 @@ pub async fn ensure(
     .await?;
     let existing = sqlx::query_scalar!(
         r#"SELECT id AS "id: AssessmentVersionId" FROM assessment_versions
-           WHERE assessment_id = $1 AND content_hash = assessment_content_hash($2, $3)"#,
+           WHERE assessment_id = $1 AND content_sha256 = assessment_content_sha256($2, $3)"#,
         assessment_id.0,
         items,
         policy
@@ -41,17 +41,19 @@ pub async fn ensure(
     .await?;
     let id = match existing {
         Some(id) => id,
-        None => sqlx::query_scalar!(
-            r#"INSERT INTO assessment_versions (assessment_id, number, items, policy, content_hash)
-                   SELECT $1, COALESCE(max(number), 0) + 1, $2, $3, assessment_content_hash($2, $3)
+        None => {
+            sqlx::query_scalar!(
+                r#"INSERT INTO assessment_versions (assessment_id, number, items, policy)
+                   SELECT $1, COALESCE(max(number), 0) + 1, $2, $3
                    FROM assessment_versions WHERE assessment_id = $1
                    RETURNING id AS "id: AssessmentVersionId""#,
-            assessment_id.0,
-            items,
-            policy
-        )
-        .fetch_one(&mut *tx)
-        .await?,
+                assessment_id.0,
+                items,
+                policy
+            )
+            .fetch_one(&mut *tx)
+            .await?
+        }
     };
     tx.commit().await?;
     Ok(id)

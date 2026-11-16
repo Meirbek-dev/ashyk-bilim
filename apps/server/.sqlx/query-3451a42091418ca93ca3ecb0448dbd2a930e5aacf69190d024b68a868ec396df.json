@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO code_runs\n               (assessment_id, item_id, submission_id, user_id, purpose, status, language_id,\n                source_sha256, stdin_sha256, idempotency_key, total, started_at)\n           VALUES ($1, $2, $3, $4, $5, 'running', $6, $7, $8, $9, $10, now())\n           ON CONFLICT (user_id, item_id, purpose, idempotency_key) DO NOTHING\n           RETURNING id AS \"id: CodeRunId\"",
+  "query": "INSERT INTO code_runs\n               (assessment_id, item_id, submission_id, user_id, purpose, status, language_id,\n                code_sha256, input_sha256, idempotency_key, total, started_at)\n           VALUES ($1, $2, $3, $4, $5, 'running', $6, decode($7, 'hex'), decode($8, 'hex'), $9, $10, now())\n           ON CONFLICT (user_id, item_id, purpose, idempotency_key) DO NOTHING\n           RETURNING id AS \"id: CodeRunId\"",
   "describe": {
     "columns": [
       {
@@ -33,5 +33,5 @@
       false
     ]
   },
-  "hash": "f82b608f7d1754ce1c3f18e245e06ab0b0530dc4b4cbacba3a4d4dfe1aa502ae"
+  "hash": "3451a42091418ca93ca3ecb0448dbd2a930e5aacf69190d024b68a868ec396df"
 }

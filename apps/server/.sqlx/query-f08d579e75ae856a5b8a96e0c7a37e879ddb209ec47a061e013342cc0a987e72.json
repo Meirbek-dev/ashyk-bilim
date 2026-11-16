@@ -1,18 +1,13 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT request_hash, status_code, response FROM idempotency_keys\n         WHERE user_id = $1 AND key = $2",
+  "query": "SELECT encode(request_sha256, 'hex') AS \"request_hash!\", status_code, response FROM idempotency_keys\n         WHERE user_id = $1 AND key = $2",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "request_hash",
+        "name": "request_hash!",
         "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "idempotency_keys",
-            "name": "request_hash"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 1,
@@ -44,10 +39,10 @@
       ]
     },
     "nullable": [
-      false,
+      null,
       false,
       false
     ]
   },
-  "hash": "88a0193d210850903caf93e2f6755d91ce654eea25c232200bb31e38d0de6522"
+  "hash": "f08d579e75ae856a5b8a96e0c7a37e879ddb209ec47a061e013342cc0a987e72"
 }

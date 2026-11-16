@@ -106,6 +106,8 @@
 //!   them, no region tag. A stored duration is whole seconds
 //!   (`*_seconds`); until the contract the previous release's minutes,
 //!   hours and `ai_runs.duration_ms` follow, and its writes set the seconds.
+//!   A hash is a sha256 `bytea` of 32 bytes; until the contract the
+//!   previous release's hex copies follow both ways.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -2938,6 +2940,14 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "derived; the previous release's state, a contract drops it",
         ),
         (
+            "ai_course_analyses_sha256",
+            "derived; the previous release's hex copy, a contract drops it",
+        ),
+        (
+            "ai_work_embeddings_sha256",
+            "derived; the previous release's hex copy, a contract drops it",
+        ),
+        (
             "ai_runs_duration",
             "derived; the previous release's duration_ms, a contract drops it",
         ),
@@ -2961,6 +2971,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         (
             "code_runs_verdict",
             "derived; the previous release's spelling, a contract drops it",
+        ),
+        (
+            "code_runs_sha256",
+            "derived; the previous release's hex copies, a contract drops it",
         ),
         (
             "code_run_cases_passed",
@@ -3003,6 +3017,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ),
         ("grading_entries_number", "derived"),
         ("grading_entries_points", "derived"),
+        (
+            "idempotency_keys_sha256",
+            "derived; the previous release's hex copy, a contract drops it",
+        ),
         ("item_feedback_upload_ids", "derived"),
         (
             "messages_deleted_status",
@@ -3213,24 +3231,49 @@ async fn has_course_role_reads_the_roster(pool: PgPool) {
     assert!(role().await.unwrap());
 }
 
-/// A hash column refuses what no hash function writes (schema review 38).
+/// A hash column refuses what no hash function writes (schema review 38):
+/// a sha256 of 32 bytes (REWRITE 5.8 item 6); the hex copies the previous
+/// release reads keep their format check until the contract.
 #[ab_testdb::test]
 async fn hashes_say_what_they_hold(pool: PgPool) {
-    for (table, column) in [
-        ("assessment_versions", "content_hash"),
+    let columns: Vec<(String, String, String)> = sqlx::query_as(
+        "SELECT c.table_name::text, c.column_name::text, c.data_type::text
+         FROM information_schema.columns c
+         JOIN information_schema.tables t USING (table_schema, table_name)
+         WHERE t.table_type = 'BASE TABLE' AND c.table_schema::name = ANY (app_schemas() || 'public'::name)
+           AND (c.column_name LIKE '%hash%' OR c.column_name LIKE '%sha256%')
+         ORDER BY 1, 2",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    let hex = [
         ("ai_course_analyses", "content_hash"),
         ("ai_work_embeddings", "text_hash"),
+        ("assessment_versions", "content_hash"),
+        ("code_runs", "source_sha256"),
+        ("code_runs", "stdin_sha256"),
         ("idempotency_keys", "request_hash"),
-    ] {
-        let name = format!("{table}_{column}_format");
-        let found: bool =
-            sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = $1)")
-                .bind(&name)
-                .fetch_one(&pool)
-                .await
-                .unwrap();
-        assert!(found, "{name}");
+    ];
+    let mut text = Vec::new();
+    for (table, column, ty) in &columns {
+        let (name, length) = if ty == "bytea" {
+            (format!("{table}_{column}_check"), "octet_length")
+        } else {
+            text.push((table.as_str(), column.as_str()));
+            (format!("{table}_{column}_format"), "~")
+        };
+        let check: String = sqlx::query_scalar(
+            "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = $1",
+        )
+        .bind(&name)
+        .fetch_one(&pool)
+        .await
+        .unwrap_or_else(|e| panic!("{name}: {e}"));
+        assert!(check.contains(length), "{name}: {check}");
     }
+    assert_eq!(text, hex, "only the previous release's hex copies are text");
+    assert_eq!(columns.len(), 13, "{columns:?}");
     let score: String = sqlx::query_scalar(
         "SELECT format_type(atttypid, atttypmod) FROM pg_attribute
          WHERE attrelid = 'certificate_users'::regclass AND attname = 'score'",
@@ -4445,4 +4488,61 @@ async fn durations_are_seconds(pool: PgPool) {
         Some(1500),
         "the previous release reads duration_ms"
     );
+}
+
+#[ab_testdb::test]
+async fn a_hash_is_32_bytes(pool: PgPool) {
+    let w = world(&pool).await;
+    let hex = "ab".repeat(32);
+    let stored = |key: &'static str| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query_as::<_, (String, Vec<u8>)>(
+                "SELECT request_hash, request_sha256 FROM idempotency_keys WHERE key = $1",
+            )
+            .bind(key)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+        }
+    };
+    sqlx::query(
+        "INSERT INTO idempotency_keys (user_id, key, request_sha256, status_code, response)
+         VALUES ($1, 'ours', decode($2, 'hex'), 0, 'null')",
+    )
+    .bind(w.user)
+    .bind(&hex)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert_eq!(stored("ours").await, (hex.clone(), vec![0xab; 32]));
+    // The previous release writes the hex copy.
+    sqlx::query(
+        "INSERT INTO idempotency_keys (user_id, key, request_hash, status_code, response)
+         VALUES ($1, 'theirs', $2, 0, 'null')",
+    )
+    .bind(w.user)
+    .bind(&hex)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert_eq!(stored("theirs").await, (hex, vec![0xab; 32]));
+    let short = sqlx::query(
+        "INSERT INTO idempotency_keys (user_id, key, request_sha256, status_code, response)
+         VALUES ($1, 'short', '\x00', 0, 'null')",
+    )
+    .bind(w.user)
+    .execute(&pool)
+    .await;
+    assert!(short.is_err(), "a sha256 is 32 bytes");
+
+    let version = empty_version(&pool, w.assessment).await;
+    let same: bool = sqlx::query_scalar(
+        "SELECT content_sha256 = sha256(convert_to('{}|{}', 'UTF8')) FROM assessment_versions WHERE id = $1",
+    )
+    .bind(version)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(same, "a version's hash is the sha256 of its pair");
 }

@@ -276,17 +276,20 @@ An AI review of a whole course.
 | content_hash | text | null |  |
 | created_at | timestamp with time zone |  | `now()` |
 | published_at | timestamp with time zone | null |  |
+| content_sha256 | bytea | null |  |
 
 - Primary key `ai_course_analyses_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_course_analyses_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_course_analyses_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_course_analyses_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
 - Check `ai_course_analyses_content_hash_format`: `CHECK ((content_hash ~ '^[0-9a-f]{64}$'::text))`
+- Check `ai_course_analyses_content_sha256_check`: `CHECK ((octet_length(content_sha256) = 32))`
 - Check `ai_course_analyses_language_check`: `CHECK (((language = 'auto'::text) OR ((language)::language_code IS NOT NULL)))`
 - Check `ai_course_analyses_public_score_check`: `CHECK (((public_score >= 0) AND (public_score <= 100)))`
 - Check `ai_course_analyses_status_check`: `CHECK ((status = ANY (ARRAY['draft'::text, 'needs_human_review'::text, 'published'::text])))`
 - Index `ai_course_analyses_course_status_idx`: `CREATE INDEX ai_course_analyses_course_status_idx ON ai.ai_course_analyses USING btree (course_id, status, created_at DESC)`
 - Index `ai_course_analyses_run_idx`: `CREATE INDEX ai_course_analyses_run_idx ON ai.ai_course_analyses USING btree (run_id)`
+- Trigger `ai_course_analyses_sha256`: `CREATE TRIGGER ai_course_analyses_sha256 BEFORE INSERT OR UPDATE ON ai.ai_course_analyses FOR EACH ROW EXECUTE FUNCTION ai_course_analyses_sha256()`
 
 ## ai_course_settings
 
@@ -733,12 +736,15 @@ Embedding of a part of learner work (similarity, grading context).
 | embedding_model | text |  |  |
 | embedding | halfvec(1024) |  |  |
 | created_at | timestamp with time zone |  | `now()` |
+| text_sha256 | bytea |  |  |
 
 - Primary key `ai_work_embeddings_pkey`: `PRIMARY KEY (subject_id, part_key)`
 - Foreign key `ai_work_embeddings_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
 - Foreign key `ai_work_embeddings_subject_id_fkey`: `FOREIGN KEY (subject_id) REFERENCES submissions(id) ON DELETE CASCADE`
 - Check `ai_work_embeddings_text_hash_format`: `CHECK ((text_hash ~ '^[0-9a-f]{64}$'::text))`
+- Check `ai_work_embeddings_text_sha256_check`: `CHECK ((octet_length(text_sha256) = 32))`
 - Index `ai_work_embeddings_activity_idx`: `CREATE INDEX ai_work_embeddings_activity_idx ON ai.ai_work_embeddings USING btree (activity_id)`
+- Trigger `ai_work_embeddings_sha256`: `CREATE TRIGGER ai_work_embeddings_sha256 BEFORE INSERT OR UPDATE ON ai.ai_work_embeddings FOR EACH ROW EXECUTE FUNCTION ai_work_embeddings_sha256()`
 
 ## analytics_events (partitioned)
 
@@ -866,6 +872,7 @@ An uploaded DOT test spreadsheet: parse result (plan, issues) until committed in
 - Foreign key `assessment_imports_result_assessment_id_fkey`: `FOREIGN KEY (result_assessment_id, course_id) REFERENCES assessments(id, course_id) ON DELETE SET NULL (result_assessment_id)`
 - Foreign key `assessment_imports_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 - Check `assessment_imports_file_name_check`: `CHECK (((length(file_name) >= 1) AND (length(file_name) <= 255)))`
+- Check `assessment_imports_file_sha256_check`: `CHECK ((octet_length(file_sha256) = 32))`
 - Check `assessment_imports_issues_truncated_check`: `CHECK ((issues_truncated >= 0))`
 - Check `assessment_imports_parsed_shape`: `CHECK (((parsed IS NULL) OR ((jsonb_typeof(parsed) = 'object'::text) AND (jsonb_typeof((parsed -> 'items'::text)) = 'array'::text) AND (jsonb_typeof((parsed -> 'settings'::text)) = 'object'::text))))`
 - Check `assessment_imports_status_check`: `CHECK ((status = ANY (ARRAY['parsing'::text, 'ready'::text, 'invalid'::text, 'committed'::text, 'discarded'::text, 'failed'::text])))`
@@ -991,14 +998,17 @@ Frozen policy + items of an assessment as handed in (content-addressed, numbered
 | content_hash | text |  |  |
 | max_points | numeric(10,2) |  |  |
 | created_at | timestamp with time zone |  | `now()` |
+| content_sha256 | bytea |  | generated: `assessment_content_sha256(items, policy)` |
 
 - Primary key `assessment_versions_pkey`: `PRIMARY KEY (id)`
 - Unique `assessment_versions_assessment_id_content_hash_key`: `UNIQUE (assessment_id, content_hash)`
 - Unique `assessment_versions_assessment_id_number_key`: `UNIQUE (assessment_id, number)`
 - Foreign key `assessment_versions_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
 - Check `assessment_versions_content_hash_format`: `CHECK ((content_hash ~ '^[0-9a-f]{32}$'::text))`
+- Check `assessment_versions_content_sha256_check`: `CHECK ((octet_length(content_sha256) = 32))`
 - Check `assessment_versions_max_points_check`: `CHECK ((max_points >= (0)::numeric))`
 - Check `assessment_versions_number_check`: `CHECK ((number >= 1))`
+- Index `assessment_versions_content_sha256_key`: `CREATE UNIQUE INDEX assessment_versions_content_sha256_key ON learning.assessment_versions USING btree (assessment_id, content_sha256)`
 - Index `assessment_versions_id_assessment_key`: `CREATE UNIQUE INDEX assessment_versions_id_assessment_key ON learning.assessment_versions USING btree (id, assessment_id)`
 - Trigger `assessment_versions_frozen`: `CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()`
 - Trigger `assessment_versions_points`: `CREATE TRIGGER assessment_versions_points BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_points()`
@@ -1304,6 +1314,8 @@ A run of learner code in the go-judge runner: a practice run or the graded run o
 | finished_at | timestamp with time zone | null |  |  |
 | created_at | timestamp with time zone |  | `now()` |  |
 | verdict | text | null |  | How an executed run ended (the first failing test's verdict, else accepted); NULL while it runs or when it never ran. |
+| code_sha256 | bytea |  |  | sha256 of the source code that ran. |
+| input_sha256 | bytea | null |  | sha256 of the custom stdin; NULL: the tests ran. |
 
 - Primary key `code_runs_pkey`: `PRIMARY KEY (id)`
 - Unique `code_runs_user_id_item_id_purpose_idempotency_key_key`: `UNIQUE (user_id, item_id, purpose, idempotency_key)`
@@ -1311,8 +1323,10 @@ A run of learner code in the go-judge runner: a practice run or the graded run o
 - Foreign key `code_runs_item_id_fkey`: `FOREIGN KEY (item_id, assessment_id) REFERENCES assessment_items(id, assessment_id) ON DELETE CASCADE`
 - Foreign key `code_runs_submission_id_fkey`: `FOREIGN KEY (submission_id, user_id) REFERENCES submissions(id, user_id) ON DELETE SET NULL (submission_id)`
 - Foreign key `code_runs_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Check `code_runs_code_sha256_check`: `CHECK ((octet_length(code_sha256) = 32))`
 - Check `code_runs_counts_check`: `CHECK (((passed >= 0) AND (total >= 0) AND (passed <= total)))`
 - Check `code_runs_finished_check`: `CHECK (((status = ANY (ARRAY['queued'::text, 'running'::text])) OR (finished_at IS NOT NULL)))`
+- Check `code_runs_input_sha256_check`: `CHECK ((octet_length(input_sha256) = 32))`
 - Check `code_runs_purpose_check`: `CHECK ((purpose = ANY (ARRAY['custom'::text, 'visible'::text, 'final'::text, 'reference_check'::text])))`
 - Check `code_runs_source_sha256_format`: `CHECK ((source_sha256 ~ '^[0-9a-f]{64}$'::text))`
 - Check `code_runs_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text, 'degraded'::text])))`
@@ -1323,6 +1337,7 @@ A run of learner code in the go-judge runner: a practice run or the graded run o
 - Index `code_runs_created_brin`: `CREATE INDEX code_runs_created_brin ON learning.code_runs USING brin (created_at)`
 - Index `code_runs_item_idx`: `CREATE INDEX code_runs_item_idx ON learning.code_runs USING btree (item_id, user_id, created_at DESC)`
 - Index `code_runs_submission_idx`: `CREATE INDEX code_runs_submission_idx ON learning.code_runs USING btree (submission_id)`
+- Trigger `code_runs_sha256`: `CREATE TRIGGER code_runs_sha256 BEFORE INSERT OR UPDATE ON learning.code_runs FOR EACH ROW EXECUTE FUNCTION code_runs_sha256()`
 - Trigger `code_runs_verdict`: `CREATE TRIGGER code_runs_verdict BEFORE INSERT OR UPDATE OF status ON learning.code_runs FOR EACH ROW EXECUTE FUNCTION code_runs_verdict()`
 
 ## collection_courses
@@ -2245,12 +2260,15 @@ Stored responses of mutating requests sent with an Idempotency-Key, replayed on 
 | status_code | integer |  |  |
 | response | jsonb |  |  |
 | created_at | timestamp with time zone |  | `now()` |
+| request_sha256 | bytea |  |  |
 
 - Primary key `idempotency_keys_pkey`: `PRIMARY KEY (user_id, key)`
 - Foreign key `idempotency_keys_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Check `idempotency_keys_key_check`: `CHECK ((char_length(key) <= 200))`
 - Check `idempotency_keys_request_hash_format`: `CHECK ((request_hash ~ '^[0-9a-f]{64}$'::text))`
+- Check `idempotency_keys_request_sha256_check`: `CHECK ((octet_length(request_sha256) = 32))`
 - Index `idempotency_keys_sweep_idx`: `CREATE INDEX idempotency_keys_sweep_idx ON ops.idempotency_keys USING btree (created_at)`
+- Trigger `idempotency_keys_sha256`: `CREATE TRIGGER idempotency_keys_sha256 BEFORE INSERT OR UPDATE ON ops.idempotency_keys FOR EACH ROW EXECUTE FUNCTION idempotency_keys_sha256()`
 
 ## item_feedback
 

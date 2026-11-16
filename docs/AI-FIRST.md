@@ -278,7 +278,7 @@ ai_course_settings (course_id pk, auto_grade_drafts bool, enabled_by null, updat
     различающимися на ≥ 15% максимума: «эти две похожие работы оценены по-разному»;
   - `disagreements` - работы, где итог преподавателя отличается от черновика больше чем на 20%;
   - `drift` - средняя поправка по критериям (насколько ИИ систематически выше/ниже).
-  Эмбеддинги ответов кешируются в `ai_work_embeddings (subject_id, part_key) pk, text_hash, model,
+  Эмбеддинги ответов кешируются в `ai_work_embeddings (subject_id, part_key) pk, text_sha256, model,
   embedding`.
 - `GET /ai/grading/{course_id}/metrics?days=30`: черновики (всего, принято как есть, с правкой,
   отклонено), средняя абсолютная разница ИИ и преподавателя, медианное время до отзыва за период и за

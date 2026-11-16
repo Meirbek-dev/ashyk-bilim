@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO ai_course_analyses (course_id, run_id, triggered_by, status, language,\n                                           public_score, report, evidence, content_hash)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id",
+  "query": "INSERT INTO ai_course_analyses (course_id, run_id, triggered_by, status, language,\n                                           public_score, report, evidence, content_sha256)\n           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, decode($9, 'hex')) RETURNING id",
   "describe": {
     "columns": [
       {
@@ -32,5 +32,5 @@
       false
     ]
   },
-  "hash": "6fc8b489ccffdb5eaa1224525ca80dea11c1a56274ffe4be03d28c8ca16920ac"
+  "hash": "611516ac19f6cf81e07fc6dd9a90bd9010c01fed0b8e59795c3a8ce1815998ca"
 }

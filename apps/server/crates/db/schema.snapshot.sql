@@ -65,6 +65,7 @@ constraint ai_artifacts ai_artifacts_pkey PRIMARY KEY (id)
 constraint ai_artifacts ai_artifacts_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE
 constraint ai_artifacts ai_artifacts_run_id_not_null NOT NULL run_id
 constraint ai_course_analyses ai_course_analyses_content_hash_format CHECK ((content_hash ~ '^[0-9a-f]{64}$'::text))
+constraint ai_course_analyses ai_course_analyses_content_sha256_check CHECK ((octet_length(content_sha256) = 32))
 constraint ai_course_analyses ai_course_analyses_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint ai_course_analyses ai_course_analyses_course_id_not_null NOT NULL course_id
 constraint ai_course_analyses ai_course_analyses_created_at_not_null NOT NULL created_at
@@ -298,6 +299,8 @@ constraint ai_work_embeddings ai_work_embeddings_subject_id_fkey FOREIGN KEY (su
 constraint ai_work_embeddings ai_work_embeddings_subject_id_not_null NOT NULL subject_id
 constraint ai_work_embeddings ai_work_embeddings_text_hash_format CHECK ((text_hash ~ '^[0-9a-f]{64}$'::text))
 constraint ai_work_embeddings ai_work_embeddings_text_hash_not_null NOT NULL text_hash
+constraint ai_work_embeddings ai_work_embeddings_text_sha256_check CHECK ((octet_length(text_sha256) = 32))
+constraint ai_work_embeddings ai_work_embeddings_text_sha256_not_null NOT NULL text_sha256
 constraint analytics_events analytics_events_created_at_not_null NOT NULL created_at
 constraint analytics_events analytics_events_event_type_check CHECK ((event_type = ANY (ARRAY['submission.submitted'::text, 'submission.graded'::text, 'submission.published'::text, 'submission.returned'::text, 'activity.completed'::text, 'discussion.posted'::text, 'login'::text])))
 constraint analytics_events analytics_events_event_type_not_null NOT NULL event_type
@@ -343,6 +346,7 @@ constraint assessment_imports assessment_imports_created_by_fkey FOREIGN KEY (cr
 constraint assessment_imports assessment_imports_expires_at_not_null NOT NULL expires_at
 constraint assessment_imports assessment_imports_file_name_check CHECK (((length(file_name) >= 1) AND (length(file_name) <= 255)))
 constraint assessment_imports assessment_imports_file_name_not_null NOT NULL file_name
+constraint assessment_imports assessment_imports_file_sha256_check CHECK ((octet_length(file_sha256) = 32))
 constraint assessment_imports assessment_imports_id_not_null NOT NULL id
 constraint assessment_imports assessment_imports_image_upload_ids_not_null NOT NULL image_upload_ids
 constraint assessment_imports assessment_imports_issues_not_null NOT NULL issues
@@ -414,6 +418,8 @@ constraint assessment_versions assessment_versions_assessment_id_not_null NOT NU
 constraint assessment_versions assessment_versions_assessment_id_number_key UNIQUE (assessment_id, number)
 constraint assessment_versions assessment_versions_content_hash_format CHECK ((content_hash ~ '^[0-9a-f]{32}$'::text))
 constraint assessment_versions assessment_versions_content_hash_not_null NOT NULL content_hash
+constraint assessment_versions assessment_versions_content_sha256_check CHECK ((octet_length(content_sha256) = 32))
+constraint assessment_versions assessment_versions_content_sha256_not_null NOT NULL content_sha256
 constraint assessment_versions assessment_versions_created_at_not_null NOT NULL created_at
 constraint assessment_versions assessment_versions_id_not_null NOT NULL id
 constraint assessment_versions assessment_versions_items_not_null NOT NULL items
@@ -576,10 +582,13 @@ constraint code_run_cases code_run_cases_verdict_not_null NOT NULL verdict
 constraint code_run_cases code_run_cases_weight_not_null NOT NULL weight
 constraint code_runs code_runs_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE
 constraint code_runs code_runs_assessment_id_not_null NOT NULL assessment_id
+constraint code_runs code_runs_code_sha256_check CHECK ((octet_length(code_sha256) = 32))
+constraint code_runs code_runs_code_sha256_not_null NOT NULL code_sha256
 constraint code_runs code_runs_counts_check CHECK (((passed >= 0) AND (total >= 0) AND (passed <= total)))
 constraint code_runs code_runs_created_at_not_null NOT NULL created_at
 constraint code_runs code_runs_finished_check CHECK (((status = ANY (ARRAY['queued'::text, 'running'::text])) OR (finished_at IS NOT NULL)))
 constraint code_runs code_runs_id_not_null NOT NULL id
+constraint code_runs code_runs_input_sha256_check CHECK ((octet_length(input_sha256) = 32))
 constraint code_runs code_runs_item_id_fkey FOREIGN KEY (item_id, assessment_id) REFERENCES assessment_items(id, assessment_id) ON DELETE CASCADE
 constraint code_runs code_runs_item_id_not_null NOT NULL item_id
 constraint code_runs code_runs_language_id_not_null NOT NULL language_id
@@ -1051,6 +1060,8 @@ constraint idempotency_keys idempotency_keys_key_not_null NOT NULL key
 constraint idempotency_keys idempotency_keys_pkey PRIMARY KEY (user_id, key)
 constraint idempotency_keys idempotency_keys_request_hash_format CHECK ((request_hash ~ '^[0-9a-f]{64}$'::text))
 constraint idempotency_keys idempotency_keys_request_hash_not_null NOT NULL request_hash
+constraint idempotency_keys idempotency_keys_request_sha256_check CHECK ((octet_length(request_sha256) = 32))
+constraint idempotency_keys idempotency_keys_request_sha256_not_null NOT NULL request_sha256
 constraint idempotency_keys idempotency_keys_response_not_null NOT NULL response
 constraint idempotency_keys idempotency_keys_status_code_not_null NOT NULL status_code
 constraint idempotency_keys idempotency_keys_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -1449,6 +1460,21 @@ BEGIN
     END IF;
     RETURN NEW;
 END $function$
+function CREATE OR REPLACE FUNCTION public.ai_course_analyses_sha256()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF (TG_OP = 'INSERT' AND NEW.content_sha256 IS NULL)
+       OR (TG_OP = 'UPDATE' AND NEW.content_hash IS DISTINCT FROM OLD.content_hash
+           AND NEW.content_sha256 IS NOT DISTINCT FROM OLD.content_sha256) THEN
+        NEW.content_sha256 := decode(NEW.content_hash, 'hex');
+    ELSE
+        NEW.content_hash := encode(NEW.content_sha256, 'hex');
+    END IF;
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.ai_grade_drafts_same_activity()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1470,6 +1496,21 @@ function CREATE OR REPLACE FUNCTION public.ai_runs_duration()
 AS $function$
 BEGIN
     NEW.duration_ms := (extract(epoch FROM NEW.completed_at - NEW.started_at) * 1000)::integer;
+    RETURN NEW;
+END $function$
+function CREATE OR REPLACE FUNCTION public.ai_work_embeddings_sha256()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF (TG_OP = 'INSERT' AND NEW.text_sha256 IS NULL)
+       OR (TG_OP = 'UPDATE' AND NEW.text_hash IS DISTINCT FROM OLD.text_hash
+           AND NEW.text_sha256 IS NOT DISTINCT FROM OLD.text_sha256) THEN
+        NEW.text_sha256 := decode(NEW.text_hash, 'hex');
+    ELSE
+        NEW.text_hash := encode(NEW.text_sha256, 'hex');
+    END IF;
     RETURN NEW;
 END $function$
 function CREATE OR REPLACE FUNCTION public.analytics_events_drop_partitions(before timestamp with time zone)
@@ -1712,6 +1753,11 @@ function CREATE OR REPLACE FUNCTION public.assessment_content_hash(items jsonb, 
  LANGUAGE sql
  IMMUTABLE
 AS $function$ SELECT md5(items::text || '|' || policy::text) $function$
+function CREATE OR REPLACE FUNCTION public.assessment_content_sha256(items jsonb, policy jsonb)
+ RETURNS bytea
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+AS $function$ SELECT sha256(convert_to(items::text || '|' || policy::text, 'UTF8')) $function$
 function CREATE OR REPLACE FUNCTION public.assessment_item_uploads_sync()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1852,6 +1898,28 @@ function CREATE OR REPLACE FUNCTION public.code_run_status(status text, verdict 
  LANGUAGE sql
  IMMUTABLE PARALLEL SAFE
 RETURN CASE WHEN ((verdict IS NOT NULL) OR (status = 'done'::text)) THEN 'done'::text WHEN (status = ANY (ARRAY['internal_error'::text, 'failed'::text])) THEN 'failed'::text ELSE status END
+function CREATE OR REPLACE FUNCTION public.code_runs_sha256()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF (TG_OP = 'INSERT' AND NEW.code_sha256 IS NULL)
+       OR (TG_OP = 'UPDATE' AND NEW.source_sha256 IS DISTINCT FROM OLD.source_sha256
+           AND NEW.code_sha256 IS NOT DISTINCT FROM OLD.code_sha256) THEN
+        NEW.code_sha256 := decode(NEW.source_sha256, 'hex');
+    ELSE
+        NEW.source_sha256 := encode(NEW.code_sha256, 'hex');
+    END IF;
+    IF (TG_OP = 'INSERT' AND NEW.input_sha256 IS NULL)
+       OR (TG_OP = 'UPDATE' AND NEW.stdin_sha256 IS DISTINCT FROM OLD.stdin_sha256
+           AND NEW.input_sha256 IS NOT DISTINCT FROM OLD.input_sha256) THEN
+        NEW.input_sha256 := decode(NEW.stdin_sha256, 'hex');
+    ELSE
+        NEW.stdin_sha256 := encode(NEW.input_sha256, 'hex');
+    END IF;
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.code_runs_verdict()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2167,6 +2235,21 @@ AS $function$
                    WHERE cs.course_id = p_course AND cs.user_id = p_user
                      AND cs.status = 'active' AND cs.authorship <> 'reporter')
 $function$
+function CREATE OR REPLACE FUNCTION public.idempotency_keys_sha256()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF (TG_OP = 'INSERT' AND NEW.request_sha256 IS NULL)
+       OR (TG_OP = 'UPDATE' AND NEW.request_hash IS DISTINCT FROM OLD.request_hash
+           AND NEW.request_sha256 IS NOT DISTINCT FROM OLD.request_sha256) THEN
+        NEW.request_sha256 := decode(NEW.request_hash, 'hex');
+    ELSE
+        NEW.request_hash := encode(NEW.request_sha256, 'hex');
+    END IF;
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.inet_or_null(p text)
  RETURNS inet
  LANGUAGE plpgsql
@@ -2895,6 +2978,7 @@ index CREATE UNIQUE INDEX assessment_overrides_pkey ON learning.assessment_overr
 index CREATE UNIQUE INDEX assessment_version_uploads_pkey ON learning.assessment_version_uploads USING btree (version_id, upload_id)
 index CREATE UNIQUE INDEX assessment_versions_assessment_id_content_hash_key ON learning.assessment_versions USING btree (assessment_id, content_hash)
 index CREATE UNIQUE INDEX assessment_versions_assessment_id_number_key ON learning.assessment_versions USING btree (assessment_id, number)
+index CREATE UNIQUE INDEX assessment_versions_content_sha256_key ON learning.assessment_versions USING btree (assessment_id, content_sha256)
 index CREATE UNIQUE INDEX assessment_versions_id_assessment_key ON learning.assessment_versions USING btree (id, assessment_id)
 index CREATE UNIQUE INDEX assessment_versions_pkey ON learning.assessment_versions USING btree (id)
 index CREATE UNIQUE INDEX assessments_activity_id_key ON learning.assessments USING btree (activity_id)
@@ -3037,6 +3121,7 @@ table ai.ai_artifacts id uuid NOT NULL DEFAULT uuidv7()
 table ai.ai_artifacts kind text NOT NULL DEFAULT -
 table ai.ai_artifacts run_id uuid NOT NULL DEFAULT -
 table ai.ai_course_analyses content_hash text DEFAULT -
+table ai.ai_course_analyses content_sha256 bytea DEFAULT -
 table ai.ai_course_analyses course_id uuid NOT NULL DEFAULT -
 table ai.ai_course_analyses created_at timestamp with time zone NOT NULL DEFAULT now()
 table ai.ai_course_analyses evidence jsonb NOT NULL DEFAULT '{}'::jsonb
@@ -3215,6 +3300,7 @@ table ai.ai_work_embeddings embedding_model text NOT NULL DEFAULT -
 table ai.ai_work_embeddings part_key text NOT NULL DEFAULT -
 table ai.ai_work_embeddings subject_id uuid NOT NULL DEFAULT -
 table ai.ai_work_embeddings text_hash text NOT NULL DEFAULT -
+table ai.ai_work_embeddings text_sha256 bytea NOT NULL DEFAULT -
 table ai.content_chunks activity_id uuid DEFAULT -
 table ai.content_chunks anchor jsonb NOT NULL DEFAULT '{}'::jsonb
 table ai.content_chunks audience text NOT NULL DEFAULT -
@@ -3712,6 +3798,7 @@ table learning.assessment_version_uploads upload_id uuid NOT NULL DEFAULT -
 table learning.assessment_version_uploads version_id uuid NOT NULL DEFAULT -
 table learning.assessment_versions assessment_id uuid NOT NULL DEFAULT -
 table learning.assessment_versions content_hash text NOT NULL DEFAULT -
+table learning.assessment_versions content_sha256 bytea NOT NULL GENERATED assessment_content_sha256(items, policy)
 table learning.assessment_versions created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.assessment_versions id uuid NOT NULL DEFAULT uuidv7()
 table learning.assessment_versions items jsonb NOT NULL DEFAULT -
@@ -3814,12 +3901,14 @@ table learning.code_run_cases time_seconds double precision DEFAULT -
 table learning.code_run_cases verdict text NOT NULL DEFAULT -
 table learning.code_run_cases weight score_weight NOT NULL DEFAULT 1
 table learning.code_runs assessment_id uuid NOT NULL DEFAULT -
+table learning.code_runs code_sha256 bytea NOT NULL DEFAULT -
 table learning.code_runs compile_output text DEFAULT -
 table learning.code_runs created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.code_runs error_message text DEFAULT -
 table learning.code_runs finished_at timestamp with time zone DEFAULT -
 table learning.code_runs id uuid NOT NULL DEFAULT uuidv7()
 table learning.code_runs idempotency_key text DEFAULT -
+table learning.code_runs input_sha256 bytea DEFAULT -
 table learning.code_runs item_id uuid NOT NULL DEFAULT -
 table learning.code_runs language_id integer NOT NULL DEFAULT -
 table learning.code_runs passed integer NOT NULL DEFAULT 0
@@ -4073,6 +4162,7 @@ table ops.auth_audit_log user_id uuid DEFAULT -
 table ops.idempotency_keys created_at timestamp with time zone NOT NULL DEFAULT now()
 table ops.idempotency_keys key text NOT NULL DEFAULT -
 table ops.idempotency_keys request_hash text NOT NULL DEFAULT -
+table ops.idempotency_keys request_sha256 bytea NOT NULL DEFAULT -
 table ops.idempotency_keys response jsonb NOT NULL DEFAULT -
 table ops.idempotency_keys status_code integer NOT NULL DEFAULT -
 table ops.idempotency_keys user_id uuid NOT NULL DEFAULT -
@@ -4110,6 +4200,7 @@ trigger CREATE TRIGGER activities_required_from_settings BEFORE INSERT OR UPDATE
 trigger CREATE TRIGGER activities_touch BEFORE UPDATE ON core.activities FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER activity_progress_status BEFORE INSERT OR UPDATE ON learning.activity_progress FOR EACH ROW EXECUTE FUNCTION activity_progress_status()
 trigger CREATE TRIGGER activity_progress_touch BEFORE UPDATE ON learning.activity_progress FOR EACH ROW EXECUTE FUNCTION touch_row()
+trigger CREATE TRIGGER ai_course_analyses_sha256 BEFORE INSERT OR UPDATE ON ai.ai_course_analyses FOR EACH ROW EXECUTE FUNCTION ai_course_analyses_sha256()
 trigger CREATE TRIGGER ai_course_settings_touch BEFORE UPDATE ON ai.ai_course_settings FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER ai_grade_drafts_same_activity BEFORE INSERT ON ai.ai_grade_drafts FOR EACH ROW EXECUTE FUNCTION ai_grade_drafts_same_activity()
 trigger CREATE TRIGGER ai_grade_drafts_touch BEFORE UPDATE ON ai.ai_grade_drafts FOR EACH ROW EXECUTE FUNCTION touch_row()
@@ -4117,6 +4208,7 @@ trigger CREATE TRIGGER ai_remediation_sessions_touch BEFORE UPDATE ON ai.ai_reme
 trigger CREATE TRIGGER ai_runs_duration BEFORE INSERT OR UPDATE OF completed_at, started_at ON ai.ai_runs FOR EACH ROW EXECUTE FUNCTION ai_runs_duration()
 trigger CREATE TRIGGER ai_student_memory_touch BEFORE UPDATE ON ai.ai_student_memory FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER ai_threads_touch BEFORE UPDATE ON ai.ai_threads FOR EACH ROW EXECUTE FUNCTION touch_row()
+trigger CREATE TRIGGER ai_work_embeddings_sha256 BEFORE INSERT OR UPDATE ON ai.ai_work_embeddings FOR EACH ROW EXECUTE FUNCTION ai_work_embeddings_sha256()
 trigger CREATE TRIGGER analytics_saved_views_touch BEFORE UPDATE ON analytics.analytics_saved_views FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER assessment_items_estimate BEFORE INSERT OR UPDATE ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_items_estimate()
 trigger CREATE TRIGGER assessment_items_touch BEFORE UPDATE ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION touch_row()
@@ -4135,6 +4227,7 @@ trigger CREATE TRIGGER certifications_touch BEFORE UPDATE ON learning.certificat
 trigger CREATE TRIGGER chapters_touch BEFORE UPDATE ON core.chapters FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER chapters_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_key ON core.chapters FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_key', 'thumbnail_upload_id')
 trigger CREATE TRIGGER code_run_cases_passed BEFORE INSERT ON learning.code_run_cases FOR EACH ROW EXECUTE FUNCTION code_run_cases_passed()
+trigger CREATE TRIGGER code_runs_sha256 BEFORE INSERT OR UPDATE ON learning.code_runs FOR EACH ROW EXECUTE FUNCTION code_runs_sha256()
 trigger CREATE TRIGGER code_runs_verdict BEFORE INSERT OR UPDATE OF status ON learning.code_runs FOR EACH ROW EXECUTE FUNCTION code_runs_verdict()
 trigger CREATE TRIGGER collection_staff_touch BEFORE UPDATE ON core.collection_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER collections_creator_row AFTER INSERT ON core.collections FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION collections_creator_row()
@@ -4163,6 +4256,7 @@ trigger CREATE TRIGGER grading_entries_append_only BEFORE DELETE ON learning.gra
 trigger CREATE TRIGGER grading_entries_immutable BEFORE UPDATE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_guard()
 trigger CREATE TRIGGER grading_entries_number BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_number()
 trigger CREATE TRIGGER grading_entries_points BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_points()
+trigger CREATE TRIGGER idempotency_keys_sha256 BEFORE INSERT OR UPDATE ON ops.idempotency_keys FOR EACH ROW EXECUTE FUNCTION idempotency_keys_sha256()
 trigger CREATE TRIGGER item_feedback_frozen BEFORE UPDATE ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION item_feedback_frozen()
 trigger CREATE TRIGGER item_feedback_touch BEFORE UPDATE ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER item_feedback_upload_ids BEFORE INSERT OR UPDATE OF annotation_key ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('annotation_key', 'annotation_upload_id')

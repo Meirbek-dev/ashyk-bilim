@@ -1260,8 +1260,8 @@ pub async fn insert_course_analysis<'e>(
 ) -> Result<AiCourseAnalysisId> {
     let id = sqlx::query_scalar!(
         r#"INSERT INTO ai_course_analyses (course_id, run_id, triggered_by, status, language,
-                                           public_score, report, evidence, content_hash)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id"#,
+                                           public_score, report, evidence, content_sha256)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, decode($9, 'hex')) RETURNING id"#,
         a.course_id.0,
         a.run_id.0,
         a.triggered_by.0,
@@ -1286,7 +1286,8 @@ pub async fn get_course_analysis(
         r#"SELECT id AS "id: AiCourseAnalysisId", course_id AS "course_id: CourseId",
                   run_id AS "run_id: AiRunId", triggered_by AS "triggered_by: UserId",
                   status AS "status: CourseAnalysisStatus", language, public_score, report,
-                  evidence, (SELECT r.model_name FROM ai_runs r WHERE r.id = run_id) AS "model_name?", content_hash,
+                  evidence, (SELECT r.model_name FROM ai_runs r WHERE r.id = run_id) AS "model_name?",
+                  encode(content_sha256, 'hex') AS content_hash,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM published_at))::bigint AS "published_at?"
            FROM ai_course_analyses WHERE id = $1"#,
@@ -1309,7 +1310,8 @@ pub async fn latest_course_analyses(
         r#"SELECT id AS "id: AiCourseAnalysisId", course_id AS "course_id: CourseId",
                   run_id AS "run_id: AiRunId", triggered_by AS "triggered_by: UserId",
                   status AS "status: CourseAnalysisStatus", language, public_score, report,
-                  evidence, (SELECT r.model_name FROM ai_runs r WHERE r.id = run_id) AS "model_name?", content_hash,
+                  evidence, (SELECT r.model_name FROM ai_runs r WHERE r.id = run_id) AS "model_name?",
+                  encode(content_sha256, 'hex') AS content_hash,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM published_at))::bigint AS "published_at?"
            FROM ai_course_analyses

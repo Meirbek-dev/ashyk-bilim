@@ -61,3 +61,13 @@ column	daily_assessment_metrics.grading_latency_hours_p90	the release after late
 trigger	daily_assessment_metrics_latency	the contract that drops daily_assessment_metrics.grading_latency_hours_*	REWRITE 5.8 item 6
 column	ai_runs.duration_ms	the release after durations are read from completed_at - started_at (20261116075637); drop ai_runs_duration_ms_check with it	REWRITE 5.8 item 6
 trigger	ai_runs_duration	the contract that drops ai_runs.duration_ms	REWRITE 5.8 item 6
+column	code_runs.source_sha256	the release after run hashes are read as bytes (20261116075638): code_sha256; drop code_runs_source_sha256_format with it	REWRITE 5.8 item 6
+column	code_runs.stdin_sha256	the release after run hashes are read as bytes (20261116075638): input_sha256; drop code_runs_stdin_sha256_format with it	REWRITE 5.8 item 6
+trigger	code_runs_sha256	the contract that drops code_runs.source_sha256 and stdin_sha256	REWRITE 5.8 item 6
+column	idempotency_keys.request_hash	the release after request hashes are read as bytes (20261116075638): request_sha256	REWRITE 5.8 item 6
+trigger	idempotency_keys_sha256	the contract that drops idempotency_keys.request_hash	REWRITE 5.8 item 6
+column	ai_work_embeddings.text_hash	the release after text hashes are read as bytes (20261116075638): text_sha256	REWRITE 5.8 item 6
+trigger	ai_work_embeddings_sha256	the contract that drops ai_work_embeddings.text_hash	REWRITE 5.8 item 6
+column	ai_course_analyses.content_hash	the release after analysis hashes are read as bytes (20261116075638): content_sha256	REWRITE 5.8 item 6
+trigger	ai_course_analyses_sha256	the contract that drops ai_course_analyses.content_hash	REWRITE 5.8 item 6
+column	assessment_versions.content_hash	the release after versions are found by content_sha256 (20261116075638): drop assessment_versions_assessment_id_content_hash_key, assessment_content_hash() and the content_hash line of assessment_versions_points() with it	REWRITE 5.8 item 6

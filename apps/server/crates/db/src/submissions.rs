@@ -1460,8 +1460,8 @@ pub async fn insert_code_run(pool: &PgPool, r: NewCodeRun<'_>) -> Result<Option<
     let id = sqlx::query_scalar!(
         r#"INSERT INTO code_runs
                (assessment_id, item_id, submission_id, user_id, purpose, status, language_id,
-                source_sha256, stdin_sha256, idempotency_key, total, started_at)
-           VALUES ($1, $2, $3, $4, $5, 'running', $6, $7, $8, $9, $10, now())
+                code_sha256, input_sha256, idempotency_key, total, started_at)
+           VALUES ($1, $2, $3, $4, $5, 'running', $6, decode($7, 'hex'), decode($8, 'hex'), $9, $10, now())
            ON CONFLICT (user_id, item_id, purpose, idempotency_key) DO NOTHING
            RETURNING id AS "id: CodeRunId""#,
         r.assessment_id.0,
@@ -1547,7 +1547,9 @@ pub async fn get_code_run(pool: &PgPool, id: CodeRunId) -> Result<Option<CodeRun
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
                   purpose AS "purpose: CodeRunPurpose",
                   code_run_status(status, verdict) AS "status!: CodeRunStatus",
-                  verdict AS "verdict: RunVerdict", language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,
+                  verdict AS "verdict: RunVerdict", language_id,
+                  encode(code_sha256, 'hex') AS "source_sha256!", encode(input_sha256, 'hex') AS stdin_sha256,
+                  idempotency_key, passed, total,
                   score::float8 AS "score?", compile_output, error_message,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM finished_at))::bigint AS "finished_at?",
@@ -1575,7 +1577,9 @@ pub async fn find_idempotent_run(
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
                   purpose AS "purpose: CodeRunPurpose",
                   code_run_status(status, verdict) AS "status!: CodeRunStatus",
-                  verdict AS "verdict: RunVerdict", language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,
+                  verdict AS "verdict: RunVerdict", language_id,
+                  encode(code_sha256, 'hex') AS "source_sha256!", encode(input_sha256, 'hex') AS stdin_sha256,
+                  idempotency_key, passed, total,
                   score::float8 AS "score?", compile_output, error_message,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM finished_at))::bigint AS "finished_at?",
@@ -1616,7 +1620,9 @@ pub async fn latest_final_run(
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
                   purpose AS "purpose: CodeRunPurpose",
                   code_run_status(status, verdict) AS "status!: CodeRunStatus",
-                  verdict AS "verdict: RunVerdict", language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,
+                  verdict AS "verdict: RunVerdict", language_id,
+                  encode(code_sha256, 'hex') AS "source_sha256!", encode(input_sha256, 'hex') AS stdin_sha256,
+                  idempotency_key, passed, total,
                   score::float8 AS "score?", compile_output, error_message,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM finished_at))::bigint AS "finished_at?",
@@ -1842,7 +1848,7 @@ pub async fn get_idempotent(
 ) -> Result<Option<IdempotentResponse>> {
     let row = sqlx::query_as!(
         IdempotentResponse,
-        "SELECT request_hash, status_code, response FROM idempotency_keys
+        "SELECT encode(request_sha256, 'hex') AS \"request_hash!\", status_code, response FROM idempotency_keys
          WHERE user_id = $1 AND key = $2",
         user_id.0,
         key
@@ -1856,7 +1862,7 @@ pub async fn get_idempotent(
 pub async fn get_idempotent_by_key(pool: &PgPool, key: &str) -> Result<Option<IdempotentResponse>> {
     let row = sqlx::query_as!(
         IdempotentResponse,
-        "SELECT request_hash, status_code, response FROM idempotency_keys
+        "SELECT encode(request_sha256, 'hex') AS \"request_hash!\", status_code, response FROM idempotency_keys
          WHERE key = $1 ORDER BY created_at LIMIT 1",
         key
     )
@@ -1874,8 +1880,8 @@ pub async fn store_idempotent(
     response: &serde_json::Value,
 ) -> Result<()> {
     sqlx::query!(
-        r#"INSERT INTO idempotency_keys (user_id, key, request_hash, status_code, response)
-           VALUES ($1, $2, $3, $4, $5)
+        r#"INSERT INTO idempotency_keys (user_id, key, request_sha256, status_code, response)
+           VALUES ($1, $2, decode($3, 'hex'), $4, $5)
            ON CONFLICT (user_id, key) DO NOTHING"#,
         user_id.0,
         key,
@@ -1908,10 +1914,10 @@ pub async fn reserve_idempotent(
     request_hash: &str,
 ) -> Result<bool> {
     let inserted = sqlx::query!(
-        r#"INSERT INTO idempotency_keys (user_id, key, request_hash, status_code, response)
-           VALUES ($1, $2, $3, $4, 'null'::jsonb)
+        r#"INSERT INTO idempotency_keys (user_id, key, request_sha256, status_code, response)
+           VALUES ($1, $2, decode($3, 'hex'), $4, 'null'::jsonb)
            ON CONFLICT (user_id, key) DO UPDATE
-               SET request_hash = EXCLUDED.request_hash, created_at = now()
+               SET request_sha256 = EXCLUDED.request_sha256, created_at = now()
              WHERE idempotency_keys.status_code = $4
                AND idempotency_keys.created_at < now() - make_interval(secs => $5)"#,
         user_id.0,

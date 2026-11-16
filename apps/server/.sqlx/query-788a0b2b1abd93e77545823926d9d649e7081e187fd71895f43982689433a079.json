@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: AiCourseAnalysisId\", course_id AS \"course_id: CourseId\",\n                  run_id AS \"run_id: AiRunId\", triggered_by AS \"triggered_by: UserId\",\n                  status AS \"status: CourseAnalysisStatus\", language, public_score, report,\n                  evidence, (SELECT r.model_name FROM ai_runs r WHERE r.id = run_id) AS \"model_name?\", content_hash,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\"\n           FROM ai_course_analyses WHERE id = $1",
+  "query": "SELECT id AS \"id: AiCourseAnalysisId\", course_id AS \"course_id: CourseId\",\n                  run_id AS \"run_id: AiRunId\", triggered_by AS \"triggered_by: UserId\",\n                  status AS \"status: CourseAnalysisStatus\", language, public_score, report,\n                  evidence, (SELECT r.model_name FROM ai_runs r WHERE r.id = run_id) AS \"model_name?\",\n                  encode(content_sha256, 'hex') AS content_hash,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\"\n           FROM ai_course_analyses\n           WHERE course_id = $1 AND (NOT $2 OR status = 'published')\n           ORDER BY created_at DESC, id DESC LIMIT $3",
   "describe": {
     "columns": [
       {
@@ -112,12 +112,7 @@
         "ordinal": 10,
         "name": "content_hash",
         "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "ai_course_analyses",
-            "name": "content_hash"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 11,
@@ -134,7 +129,9 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Bool",
+        "Int8"
       ]
     },
     "nullable": [
@@ -148,10 +145,10 @@
       false,
       false,
       null,
-      true,
+      null,
       null,
       null
     ]
   },
-  "hash": "ed70f85ec6b15318218c7cf56ae1c02fcc22e7c69624a7c94876aa005523108b"
+  "hash": "788a0b2b1abd93e77545823926d9d649e7081e187fd71895f43982689433a079"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT EXISTS (SELECT 1 FROM ai_work_embeddings\n                          WHERE subject_id = $1 AND part_key = $2 AND text_hash = $3\n                            AND embedding_model = $4) AS \"e!\"",
+  "query": "SELECT EXISTS (SELECT 1 FROM ai_work_embeddings\n                          WHERE subject_id = $1 AND part_key = $2 AND text_sha256 = decode($3, 'hex')\n                            AND embedding_model = $4) AS \"e!\"",
   "describe": {
     "columns": [
       {
@@ -22,5 +22,5 @@
       null
     ]
   },
-  "hash": "84299e2838cee76eded7f786bf5e1a9cf8f7b4d5f82b46df577eb974d843e540"
+  "hash": "730dab7aae789bd7d3c2143beb2eff72045aac687fcbfde47aef7d7dcf445cd8"
 }

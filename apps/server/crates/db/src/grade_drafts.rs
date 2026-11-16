@@ -670,7 +670,7 @@ pub async fn cached_embedding(
 ) -> Result<bool> {
     let hit = sqlx::query_scalar!(
         r#"SELECT EXISTS (SELECT 1 FROM ai_work_embeddings
-                          WHERE subject_id = $1 AND part_key = $2 AND text_hash = $3
+                          WHERE subject_id = $1 AND part_key = $2 AND text_sha256 = decode($3, 'hex')
                             AND embedding_model = $4) AS "e!""#,
         subject_id,
         part_key,
@@ -692,10 +692,10 @@ pub async fn store_embedding(
     vector: &str,
 ) -> Result<()> {
     sqlx::query!(
-        r#"INSERT INTO ai_work_embeddings (subject_id, part_key, activity_id, text_hash, embedding_model, embedding)
-           VALUES ($1, $2, $3, $4, $5, $6::text::halfvec)
+        r#"INSERT INTO ai_work_embeddings (subject_id, part_key, activity_id, text_sha256, embedding_model, embedding)
+           VALUES ($1, $2, $3, decode($4, 'hex'), $5, $6::text::halfvec)
            ON CONFLICT (subject_id, part_key) DO UPDATE
-           SET text_hash = EXCLUDED.text_hash, embedding_model = EXCLUDED.embedding_model,
+           SET text_sha256 = EXCLUDED.text_sha256, embedding_model = EXCLUDED.embedding_model,
                embedding = EXCLUDED.embedding, activity_id = EXCLUDED.activity_id"#,
         subject_id,
         part_key,
