@@ -6131,6 +6131,10 @@ expression: json
           "description": {
             "type": "string"
           },
+          "guest_access": {
+            "description": "The published lessons of this course open in the player without\nsigning in or enrolling while the course is `public` (a review\ncommittee reads it by its link); graded work still needs sign-in.\nThe learner state reports the effective value. Default `false`.",
+            "type": "boolean"
+          },
           "id": {
             "$ref": "#/components/schemas/CourseId"
           },
@@ -6188,6 +6192,7 @@ expression: json
           "public",
           "open_to_contributors",
           "assessments_require_enrollment",
+          "guest_access",
           "learnings",
           "contributor_ids",
           "allowed_actions",
@@ -12924,6 +12929,10 @@ expression: json
           "enrollment_state": {
             "$ref": "#/components/schemas/EnrollmentState"
           },
+          "guest_access": {
+            "description": "The lessons open in the player without sign-in or enrolment: the\ncourse's `guest_access` while it is public and not archived. Graded\nwork still needs sign-in (and an enrolment where the course asks).",
+            "type": "boolean"
+          },
           "next_action": {
             "oneOf": [
               {
@@ -12958,6 +12967,7 @@ expression: json
           "course_id",
           "title",
           "public",
+          "guest_access",
           "enrolled",
           "enrollment_state",
           "permissions",
@@ -22086,6 +22096,10 @@ expression: json
           "description": {
             "maxLength": 5000,
             "type": "string"
+          },
+          "guest_access": {
+            "description": "See `Course.guest_access`.",
+            "type": "boolean"
           },
           "learnings": {
             "description": "Replaces the whole \"What you'll learn\" list (≤ 30 entries).",

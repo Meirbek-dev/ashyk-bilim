@@ -2137,6 +2137,13 @@ export type Course = {
     created_at_unix: UnixTime;
     creator_id: UserId | null;
     description: string;
+    /**
+     * The published lessons of this course open in the player without
+     * signing in or enrolling while the course is `public` (a review
+     * committee reads it by its link); graded work still needs sign-in.
+     * The learner state reports the effective value. Default `false`.
+     */
+    guest_access: boolean;
     id: CourseId;
     /**
      * "What you'll learn", in display order.
@@ -4578,6 +4585,12 @@ export type LearnerCourseState = {
     course_id: CourseId;
     enrolled: boolean;
     enrollment_state: EnrollmentState;
+    /**
+     * The lessons open in the player without sign-in or enrolment: the
+     * course's `guest_access` while it is public and not archived. Graded
+     * work still needs sign-in (and an enrolment where the course asks).
+     */
+    guest_access: boolean;
     next_action: NextAction | null;
     outline: Array<ChapterState>;
     permissions: CoursePermissions;
@@ -7721,6 +7734,10 @@ export type UpdateCourseRequest = {
      */
     assessments_require_enrollment?: boolean;
     description?: string;
+    /**
+     * See `Course.guest_access`.
+     */
+    guest_access?: boolean;
     /**
      * Replaces the whole "What you'll learn" list (≤ 30 entries).
      */

@@ -6,6 +6,8 @@ use ab_core::Result;
 use ab_core::id::{ActivityId, BlockId, ChapterId, CourseId, CourseUpdateId, UserId};
 use sqlx::{PgConnection, PgPool, Postgres, QueryBuilder};
 
+// The bools are independent course settings, one column each: no state machine hides among them.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, sqlx::FromRow)]
 pub struct CourseRow {
     pub id: CourseId,
@@ -18,6 +20,9 @@ pub struct CourseRow {
     /// Only learners enrolled in the course (or in a linked usergroup)
     /// take its assessments (cluster G, 2026-10-10).
     pub assessments_require_enrollment: bool,
+    /// The public course's lessons open in the player without sign-in or
+    /// enrolment (2026-11-16).
+    pub guest_access: bool,
     /// Storage key of the `course-thumbnail` upload (`/content/<key>`).
     pub thumbnail_key: Option<String>,
     /// `[{id, text, emoji?}]` as stored (legacy rows may not conform).
@@ -111,7 +116,7 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
     let row = sqlx::query_as!(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, assessments_require_enrollment, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
+                  public, open_to_contributors, assessments_require_enrollment, guest_access, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
@@ -357,7 +362,7 @@ pub async fn list_user_courses(
     let rows = sqlx::query_as!(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, assessments_require_enrollment, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
+                  public, open_to_contributors, assessments_require_enrollment, guest_access, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
@@ -400,6 +405,7 @@ pub struct CourseChanges<'a> {
     pub tags: Option<&'a [String]>,
     pub open_to_contributors: Option<bool>,
     pub assessments_require_enrollment: Option<bool>,
+    pub guest_access: Option<bool>,
     pub learnings: Option<&'a serde_json::Value>,
 }
 
@@ -417,10 +423,11 @@ pub async fn update_course<'e>(
                tags = COALESCE($5, tags),
                open_to_contributors = COALESCE($6, open_to_contributors),
                learnings = COALESCE($7, learnings),
-               assessments_require_enrollment = COALESCE($8, assessments_require_enrollment)
+               assessments_require_enrollment = COALESCE($8, assessments_require_enrollment),
+               guest_access = COALESCE($9, guest_access)
            WHERE id = $1
            RETURNING id AS "id: CourseId", name, description, about, tags,
-                  public, open_to_contributors, assessments_require_enrollment, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
+                  public, open_to_contributors, assessments_require_enrollment, guest_access, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
                   creator_id AS "creator_id: UserId",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
@@ -442,7 +449,8 @@ pub async fn update_course<'e>(
         changes.tags,
         changes.open_to_contributors,
         changes.learnings,
-        changes.assessments_require_enrollment
+        changes.assessments_require_enrollment,
+        changes.guest_access
     )
     .fetch_optional(db)
     .await?;

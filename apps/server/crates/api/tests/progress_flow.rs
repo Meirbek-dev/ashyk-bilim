@@ -2934,3 +2934,59 @@ async fn graded_writers_own_their_completions(pool: PgPool) {
     assert_eq!(ab_db::progress::completion_drift(&pool).await.unwrap(), 0);
     assert_view_matches_projection(&pool).await;
 }
+
+/// `guest_access` (owner, 2026-11-16): off by default; the author turns it on
+/// with `PATCH /courses/{id}`; the learner state reports it to a guest and a
+/// signed-in visitor of the public course, whose lessons it reads without
+/// enrolling. A course that is not public, or archived, reports `false`
+/// whatever the setting says.
+#[ab_testdb::test]
+async fn guest_access_opens_a_public_course_to_guests(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "ga_teacher").await;
+    let visitor = learner(&app, "ga_visitor").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Open course").await;
+    let activity_id = lesson(&app, &teacher, &chapter_id, "Intro").await;
+    let course_url = format!("/api/v2/courses/{course_id}");
+    let state_url = format!("{course_url}/learner-state");
+
+    assert_eq!(app.get(&course_url).await.json()["guest_access"], false);
+    assert_eq!(app.get(&state_url).await.json()["guest_access"], false);
+
+    let patched = app
+        .patch_as(
+            &teacher,
+            &course_url,
+            &serde_json::json!({ "guest_access": true }),
+        )
+        .await;
+    assert_eq!(patched.status, StatusCode::OK, "{}", patched.text());
+    assert_eq!(patched.json()["guest_access"], true);
+
+    let guest = app.get(&state_url).await;
+    assert_eq!(guest.status, StatusCode::OK, "{}", guest.text());
+    assert_eq!(guest.json()["guest_access"], true);
+    assert_eq!(guest.json()["enrolled"], false);
+    let seen = app.get_as(&visitor, &state_url).await.json();
+    assert_eq!(seen["guest_access"], true);
+    assert_eq!(seen["enrolled"], false);
+    let read = app.get(&format!("/api/v2/activities/{activity_id}")).await;
+    assert_eq!(read.status, StatusCode::OK, "{}", read.text());
+
+    // Not public: the setting stays, the state says it does not apply.
+    let id: uuid::Uuid = course_id.parse().unwrap();
+    sqlx::query("UPDATE courses SET public = false WHERE id = $1")
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        app.get_as(&teacher, &course_url).await.json()["guest_access"],
+        true
+    );
+    assert_eq!(
+        app.get_as(&teacher, &state_url).await.json()["guest_access"],
+        false
+    );
+    assert_eq!(app.get(&state_url).await.status, StatusCode::NOT_FOUND);
+}

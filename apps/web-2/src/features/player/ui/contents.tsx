@@ -3,6 +3,7 @@ import type { LearnerCourseState } from '#/shared/api/gen/types.gen'
 import { Progress } from '#/shared/components/progress'
 import { formatPercent } from '#/shared/i18n/format'
 
+import { openView } from '../model/player'
 import { ContentsRow } from './contents-row'
 
 /** The course contents: the course's thread, numbered chapters and activities with marks and locks, as the server sent them. */
@@ -20,13 +21,18 @@ export function Contents({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
         <p className="font-heading text-lg font-semibold wrap-anywhere">{state.title}</p>
-        <p className="flex items-baseline justify-between gap-2 text-sm text-muted-foreground tabular-nums">
-          <span>{m.player_progress({ done, total })}</span>
-          <span aria-hidden className="font-medium text-foreground">
-            {formatPercent(Math.round(percent))}
-          </span>
-        </p>
-        <Progress value={percent} aria-label={m.player_progress_label()} />
+        {/* An open view counts nothing: «Пройдено 0 из N» would be a progress the reader never makes here. */}
+        {openView(state) ? null : (
+          <>
+            <p className="flex items-baseline justify-between gap-2 text-sm text-muted-foreground tabular-nums">
+              <span>{m.player_progress({ done, total })}</span>
+              <span aria-hidden className="font-medium text-foreground">
+                {formatPercent(Math.round(percent))}
+              </span>
+            </p>
+            <Progress value={percent} aria-label={m.player_progress_label()} />
+          </>
+        )}
       </div>
       {state.outline.map((chapter, index) => (
         <section key={chapter.id} aria-labelledby={`chapter-${chapter.id}`} className="flex flex-col gap-1">

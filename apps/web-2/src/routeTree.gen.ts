@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as GuestRouteImport } from './routes/_guest'
+import { Route as OpenRouteImport } from './routes/_open'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
@@ -53,7 +54,6 @@ import { Route as PublicUsersUsernameRouteImport } from './routes/_public/users/
 import { Route as AuthedAdminRolesIndexRouteImport } from './routes/_authed/admin/roles/index'
 import { Route as AuthedAdminRolesRoleSlugRouteImport } from './routes/_authed/admin/roles/$roleSlug'
 import { Route as AuthedCollectionsCollectionIdEditRouteImport } from './routes/_authed/collections/$collectionId/edit'
-import { Route as AuthedLearnCourseIdActivityIdRouteImport } from './routes/_authed/learn/$courseId/$activityId'
 import { Route as AuthedLearnCourseIdCompleteRouteImport } from './routes/_authed/learn/$courseId/complete'
 import { Route as AuthedTeachAnalyticsIndexRouteImport } from './routes/_authed/teach/analytics/index'
 import { Route as AuthedTeachAnalyticsLearnersRouteImport } from './routes/_authed/teach/analytics/learners'
@@ -64,6 +64,7 @@ import { Route as AuthedTeachCoursesIndexRouteImport } from './routes/_authed/te
 import { Route as AuthedTeachCoursesCourseIdRouteImport } from './routes/_authed/teach/courses/$courseId'
 import { Route as AuthedTeachGroupsIndexRouteImport } from './routes/_authed/teach/groups/index'
 import { Route as AuthedTeachGroupsGroupIdRouteImport } from './routes/_authed/teach/groups/$groupId'
+import { Route as OpenLearnCourseIdActivityIdRouteImport } from './routes/_open/learn/$courseId/$activityId'
 import { Route as PublicCertificatesCertificateIdVerifyRouteImport } from './routes/_public/certificates/$certificateId/verify'
 import { Route as PublicCoursesCourseIdIndexRouteImport } from './routes/_public/courses/$courseId/index'
 import { Route as PublicCoursesCourseIdAboutRouteImport } from './routes/_public/courses/$courseId/about'
@@ -104,6 +105,10 @@ const AuthedRoute = AuthedRouteImport.update({
 } as any)
 const GuestRoute = GuestRouteImport.update({
   id: '/_guest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpenRoute = OpenRouteImport.update({
+  id: '/_open',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PublicRoute = PublicRouteImport.update({
@@ -318,12 +323,6 @@ const AuthedCollectionsCollectionIdEditRoute =
     path: '/collections/$collectionId/edit',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedLearnCourseIdActivityIdRoute =
-  AuthedLearnCourseIdActivityIdRouteImport.update({
-    id: '/learn/$courseId/$activityId',
-    path: '/learn/$courseId/$activityId',
-    getParentRoute: () => AuthedRoute,
-  } as any)
 const AuthedLearnCourseIdCompleteRoute =
   AuthedLearnCourseIdCompleteRouteImport.update({
     id: '/learn/$courseId/complete',
@@ -381,6 +380,12 @@ const AuthedTeachGroupsGroupIdRoute =
     id: '/groups/$groupId',
     path: '/groups/$groupId',
     getParentRoute: () => AuthedTeachRoute,
+  } as any)
+const OpenLearnCourseIdActivityIdRoute =
+  OpenLearnCourseIdActivityIdRouteImport.update({
+    id: '/learn/$courseId/$activityId',
+    path: '/learn/$courseId/$activityId',
+    getParentRoute: () => OpenRoute,
   } as any)
 const PublicCertificatesCertificateIdVerifyRoute =
   PublicCertificatesCertificateIdVerifyRouteImport.update({
@@ -594,7 +599,6 @@ export interface FileRoutesByFullPath {
   '/courses/': typeof PublicCoursesIndexRoute
   '/admin/roles/$roleSlug': typeof AuthedAdminRolesRoleSlugRoute
   '/collections/$collectionId/edit': typeof AuthedCollectionsCollectionIdEditRoute
-  '/learn/$courseId/$activityId': typeof AuthedLearnCourseIdActivityIdRoute
   '/learn/$courseId/complete': typeof AuthedLearnCourseIdCompleteRoute
   '/teach/analytics/learners': typeof AuthedTeachAnalyticsLearnersRoute
   '/teach/analytics/operations': typeof AuthedTeachAnalyticsOperationsRoute
@@ -602,6 +606,7 @@ export interface FileRoutesByFullPath {
   '/teach/analytics/performance': typeof AuthedTeachAnalyticsPerformanceRoute
   '/teach/courses/$courseId': typeof AuthedTeachCoursesCourseIdRouteWithChildren
   '/teach/groups/$groupId': typeof AuthedTeachGroupsGroupIdRoute
+  '/learn/$courseId/$activityId': typeof OpenLearnCourseIdActivityIdRoute
   '/certificates/$certificateId/verify': typeof PublicCertificatesCertificateIdVerifyRoute
   '/courses/$courseId/about': typeof PublicCoursesCourseIdAboutRoute
   '/courses/$courseId/discussions': typeof PublicCoursesCourseIdDiscussionsRoute
@@ -671,13 +676,13 @@ export interface FileRoutesByTo {
   '/courses': typeof PublicCoursesIndexRoute
   '/admin/roles/$roleSlug': typeof AuthedAdminRolesRoleSlugRoute
   '/collections/$collectionId/edit': typeof AuthedCollectionsCollectionIdEditRoute
-  '/learn/$courseId/$activityId': typeof AuthedLearnCourseIdActivityIdRoute
   '/learn/$courseId/complete': typeof AuthedLearnCourseIdCompleteRoute
   '/teach/analytics/learners': typeof AuthedTeachAnalyticsLearnersRoute
   '/teach/analytics/operations': typeof AuthedTeachAnalyticsOperationsRoute
   '/teach/analytics/overview': typeof AuthedTeachAnalyticsOverviewRoute
   '/teach/analytics/performance': typeof AuthedTeachAnalyticsPerformanceRoute
   '/teach/groups/$groupId': typeof AuthedTeachGroupsGroupIdRoute
+  '/learn/$courseId/$activityId': typeof OpenLearnCourseIdActivityIdRoute
   '/certificates/$certificateId/verify': typeof PublicCertificatesCertificateIdVerifyRoute
   '/courses/$courseId/about': typeof PublicCoursesCourseIdAboutRoute
   '/courses/$courseId/discussions': typeof PublicCoursesCourseIdDiscussionsRoute
@@ -715,6 +720,7 @@ export interface FileRoutesById {
   '/$': typeof SplatRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/_guest': typeof GuestRouteWithChildren
+  '/_open': typeof OpenRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -755,7 +761,6 @@ export interface FileRoutesById {
   '/_public/courses/': typeof PublicCoursesIndexRoute
   '/_authed/admin/roles/$roleSlug': typeof AuthedAdminRolesRoleSlugRoute
   '/_authed/collections/$collectionId/edit': typeof AuthedCollectionsCollectionIdEditRoute
-  '/_authed/learn/$courseId/$activityId': typeof AuthedLearnCourseIdActivityIdRoute
   '/_authed/learn/$courseId/complete': typeof AuthedLearnCourseIdCompleteRoute
   '/_authed/teach/analytics/learners': typeof AuthedTeachAnalyticsLearnersRoute
   '/_authed/teach/analytics/operations': typeof AuthedTeachAnalyticsOperationsRoute
@@ -763,6 +768,7 @@ export interface FileRoutesById {
   '/_authed/teach/analytics/performance': typeof AuthedTeachAnalyticsPerformanceRoute
   '/_authed/teach/courses/$courseId': typeof AuthedTeachCoursesCourseIdRouteWithChildren
   '/_authed/teach/groups/$groupId': typeof AuthedTeachGroupsGroupIdRoute
+  '/_open/learn/$courseId/$activityId': typeof OpenLearnCourseIdActivityIdRoute
   '/_public/certificates/$certificateId/verify': typeof PublicCertificatesCertificateIdVerifyRoute
   '/_public/courses/$courseId/about': typeof PublicCoursesCourseIdAboutRoute
   '/_public/courses/$courseId/discussions': typeof PublicCoursesCourseIdDiscussionsRoute
@@ -839,7 +845,6 @@ export interface FileRouteTypes {
     | '/courses/'
     | '/admin/roles/$roleSlug'
     | '/collections/$collectionId/edit'
-    | '/learn/$courseId/$activityId'
     | '/learn/$courseId/complete'
     | '/teach/analytics/learners'
     | '/teach/analytics/operations'
@@ -847,6 +852,7 @@ export interface FileRouteTypes {
     | '/teach/analytics/performance'
     | '/teach/courses/$courseId'
     | '/teach/groups/$groupId'
+    | '/learn/$courseId/$activityId'
     | '/certificates/$certificateId/verify'
     | '/courses/$courseId/about'
     | '/courses/$courseId/discussions'
@@ -916,13 +922,13 @@ export interface FileRouteTypes {
     | '/courses'
     | '/admin/roles/$roleSlug'
     | '/collections/$collectionId/edit'
-    | '/learn/$courseId/$activityId'
     | '/learn/$courseId/complete'
     | '/teach/analytics/learners'
     | '/teach/analytics/operations'
     | '/teach/analytics/overview'
     | '/teach/analytics/performance'
     | '/teach/groups/$groupId'
+    | '/learn/$courseId/$activityId'
     | '/certificates/$certificateId/verify'
     | '/courses/$courseId/about'
     | '/courses/$courseId/discussions'
@@ -959,6 +965,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/_authed'
     | '/_guest'
+    | '/_open'
     | '/_public'
     | '/robots.txt'
     | '/sitemap.xml'
@@ -999,7 +1006,6 @@ export interface FileRouteTypes {
     | '/_public/courses/'
     | '/_authed/admin/roles/$roleSlug'
     | '/_authed/collections/$collectionId/edit'
-    | '/_authed/learn/$courseId/$activityId'
     | '/_authed/learn/$courseId/complete'
     | '/_authed/teach/analytics/learners'
     | '/_authed/teach/analytics/operations'
@@ -1007,6 +1013,7 @@ export interface FileRouteTypes {
     | '/_authed/teach/analytics/performance'
     | '/_authed/teach/courses/$courseId'
     | '/_authed/teach/groups/$groupId'
+    | '/_open/learn/$courseId/$activityId'
     | '/_public/certificates/$certificateId/verify'
     | '/_public/courses/$courseId/about'
     | '/_public/courses/$courseId/discussions'
@@ -1045,6 +1052,7 @@ export interface RootRouteChildren {
   SplatRoute: typeof SplatRoute
   AuthedRoute: typeof AuthedRouteWithChildren
   GuestRoute: typeof GuestRouteWithChildren
+  OpenRoute: typeof OpenRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -1071,6 +1079,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof GuestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_open': {
+      id: '/_open'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof OpenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_public': {
@@ -1360,13 +1375,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedCollectionsCollectionIdEditRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/learn/$courseId/$activityId': {
-      id: '/_authed/learn/$courseId/$activityId'
-      path: '/learn/$courseId/$activityId'
-      fullPath: '/learn/$courseId/$activityId'
-      preLoaderRoute: typeof AuthedLearnCourseIdActivityIdRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/learn/$courseId/complete': {
       id: '/_authed/learn/$courseId/complete'
       path: '/learn/$courseId/complete'
@@ -1436,6 +1444,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/teach/groups/$groupId'
       preLoaderRoute: typeof AuthedTeachGroupsGroupIdRouteImport
       parentRoute: typeof AuthedTeachRoute
+    }
+    '/_open/learn/$courseId/$activityId': {
+      id: '/_open/learn/$courseId/$activityId'
+      path: '/learn/$courseId/$activityId'
+      fullPath: '/learn/$courseId/$activityId'
+      preLoaderRoute: typeof OpenLearnCourseIdActivityIdRouteImport
+      parentRoute: typeof OpenRoute
     }
     '/_public/certificates/$certificateId/verify': {
       id: '/_public/certificates/$certificateId/verify'
@@ -1815,7 +1830,6 @@ interface AuthedRouteChildren {
   AuthedConversationsNewRoute: typeof AuthedConversationsNewRoute
   AuthedConversationsIndexRoute: typeof AuthedConversationsIndexRoute
   AuthedCollectionsCollectionIdEditRoute: typeof AuthedCollectionsCollectionIdEditRoute
-  AuthedLearnCourseIdActivityIdRoute: typeof AuthedLearnCourseIdActivityIdRoute
   AuthedLearnCourseIdCompleteRoute: typeof AuthedLearnCourseIdCompleteRoute
   AuthedLearnCourseIdActivityIdAttemptRoute: typeof AuthedLearnCourseIdActivityIdAttemptRoute
   AuthedLearnCourseIdActivityIdCodeRoute: typeof AuthedLearnCourseIdActivityIdCodeRoute
@@ -1836,7 +1850,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedConversationsIndexRoute: AuthedConversationsIndexRoute,
   AuthedCollectionsCollectionIdEditRoute:
     AuthedCollectionsCollectionIdEditRoute,
-  AuthedLearnCourseIdActivityIdRoute: AuthedLearnCourseIdActivityIdRoute,
   AuthedLearnCourseIdCompleteRoute: AuthedLearnCourseIdCompleteRoute,
   AuthedLearnCourseIdActivityIdAttemptRoute:
     AuthedLearnCourseIdActivityIdAttemptRoute,
@@ -1866,6 +1879,16 @@ const GuestRouteChildren: GuestRouteChildren = {
 }
 
 const GuestRouteWithChildren = GuestRoute._addFileChildren(GuestRouteChildren)
+
+interface OpenRouteChildren {
+  OpenLearnCourseIdActivityIdRoute: typeof OpenLearnCourseIdActivityIdRoute
+}
+
+const OpenRouteChildren: OpenRouteChildren = {
+  OpenLearnCourseIdActivityIdRoute: OpenLearnCourseIdActivityIdRoute,
+}
+
+const OpenRouteWithChildren = OpenRoute._addFileChildren(OpenRouteChildren)
 
 interface PublicCoursesCourseIdRouteChildren {
   PublicCoursesCourseIdAboutRoute: typeof PublicCoursesCourseIdAboutRoute
@@ -1917,6 +1940,7 @@ const rootRouteChildren: RootRouteChildren = {
   SplatRoute: SplatRoute,
   AuthedRoute: AuthedRouteWithChildren,
   GuestRoute: GuestRouteWithChildren,
+  OpenRoute: OpenRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,

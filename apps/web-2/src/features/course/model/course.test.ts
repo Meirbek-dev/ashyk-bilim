@@ -7,6 +7,7 @@ import {
   authorNames,
   certificateLine,
   curriculumSyllabus,
+  guestReadable,
   inFlight,
   outlineSyllabus,
   primaryAction,
@@ -31,6 +32,7 @@ const course = (patch: Partial<Course> = {}): Course => ({
   learnings: [],
   open_to_contributors: false,
   assessments_require_enrollment: true,
+  guest_access: false,
   public: true,
   tags: [],
   thumbnail_key: null,
@@ -42,6 +44,7 @@ const state = (patch: Partial<LearnerCourseState> = {}): LearnerCourseState => (
   course_id: 'c1',
   title: 'Course',
   public: true,
+  guest_access: false,
   enrolled: false,
   enrollment_state: 'not_enrolled',
   permissions: { can_access: true, can_discover: true, can_enroll: true, denial_reason: null },
@@ -248,6 +251,29 @@ describe('progress in the syllabus', () => {
     // Not enrolled: nothing links into the player.
     expect(outlineSyllabus(state())[0]?.activities[0]).toMatchObject({ available: false })
   })
+})
+
+test('B-CRS-22 a course open without sign-in links its rows for a visitor and a guest', () => {
+  expect(outlineSyllabus(state({ guest_access: true }))[0]?.activities[0]).toMatchObject({ available: true })
+  const curriculum = {
+    chapters: [
+      {
+        id: 'ch1',
+        course_id: 'c1',
+        name: 'One',
+        description: '',
+        position: 1,
+        version: 1,
+        allowed_actions: [],
+        activities: [{ ...activity('a1'), published: true }],
+      },
+    ],
+  }
+  expect(curriculumSyllabus(curriculum)[0]?.activities[0]).toMatchObject({ available: false })
+  expect(curriculumSyllabus(curriculum, true)[0]?.activities[0]).toMatchObject({ available: true })
+  expect(guestReadable(course({ guest_access: true }))).toBe(true)
+  expect(guestReadable(course({ guest_access: true, public: false }))).toBe(false)
+  expect(guestReadable(course({ guest_access: true, archived_at_unix: 1 }))).toBe(false)
 })
 
 test('B-CRS-19 the course staff previewing the page open the lessons, though never enrolled', () => {

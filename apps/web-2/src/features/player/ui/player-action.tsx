@@ -12,8 +12,9 @@ import { presentError } from '#/shared/i18n/errors'
 import { buttonVariants } from '#/shared/components/button-variants'
 import { toast } from '#/shared/ui/toast'
 
-import { activityKind, courseArchived, locate, playerAction, type EntryAction } from '../model/player'
+import { activityKind, courseArchived, locate, openView, playerAction, type EntryAction } from '../model/player'
 import { markOptions, unmarkOptions } from '../queries'
+import { OpenViewEnroll } from './open-view-enroll'
 
 const entryLabels = {
   start: m.player_entry_start,
@@ -48,6 +49,9 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
   }
   useHotkey(shortcuts.mark.hotkey, submit)
   const error = mark.error ?? unmark.error
+  // An open view: work leads into the enrolment; a lesson has no action (the note above the page offers it).
+  if (openView(state))
+    return activityKind(entry.activity_type) === 'lesson' ? null : <OpenViewEnroll courseId={courseId} />
   const unmarkable =
     entry.complete && !entry.blocked_reason && activityKind(entry.activity_type) === 'lesson' && !courseArchived(state)
   // Nothing to offer (an archived course): no empty box that the card's gap would still space out.

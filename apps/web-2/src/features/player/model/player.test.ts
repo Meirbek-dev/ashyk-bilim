@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import type { ActivityState, ActivityType, LearnerCourseState, NextAction } from '#/shared/api/gen/types.gen'
 
-import { activityKind, locate, nextStep, playerAction } from './player'
+import { activityKind, locate, nextStep, openView, playerAction } from './player'
 
 const activity = (id: string, patch: Partial<ActivityState> = {}): ActivityState => ({
   id,
@@ -29,6 +29,7 @@ function course(activities: ActivityState[][], next: Partial<NextAction> | null 
     enrolled: true,
     enrollment_state: 'in_progress',
     public: true,
+    guest_access: false,
     next_action: next && {
       id: 'start',
       label: '',
@@ -145,6 +146,22 @@ describe('staff preview', () => {
       permissions: { ...state.permissions, denial_reason: 'staff_preview' as const },
     }
     expect(playerAction(preview, entry)).toBeNull()
+  })
+})
+
+describe('open view', () => {
+  test('B-PLY-23 a reader of a course open without sign-in gets no mark and no attempt: nothing is recorded', () => {
+    const lesson = activity('a')
+    const quiz = activity('q', { activity_type: 'quiz', allowed_actions: ['start'] })
+    const state = { ...course([[lesson, quiz]]), enrolled: false, guest_access: true }
+    expect(openView(state)).toBe(true)
+    expect(playerAction(state, lesson)).toBeNull()
+    expect(playerAction(state, quiz)).toBeNull()
+    // Enrolled, or staff previewing: the course's own rules, whatever the setting says.
+    expect(openView({ ...state, enrolled: true })).toBe(false)
+    expect(openView({ ...state, permissions: { ...state.permissions, denial_reason: 'staff_preview' as const } })).toBe(
+      false,
+    )
   })
 })
 

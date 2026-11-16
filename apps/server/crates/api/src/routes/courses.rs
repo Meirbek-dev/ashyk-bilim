@@ -537,6 +537,7 @@ pub async fn update_course(
                 tags: request.tags,
                 open_to_contributors: request.open_to_contributors,
                 assessments_require_enrollment: request.assessments_require_enrollment,
+                guest_access: request.guest_access,
                 thumbnail_upload_id: request.thumbnail_upload_id,
                 learnings: request
                     .learnings

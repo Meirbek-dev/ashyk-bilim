@@ -23,6 +23,12 @@ export const activityKind = (type: ActivityType): ActivityKind => KINDS[type]
 export const staffPreview = (state: LearnerCourseState) =>
   !state.enrolled && state.permissions.denial_reason === 'staff_preview'
 
+/**
+ * Someone not enrolled reading a course its author opened without sign-in (the server's `guest_access`: public, not
+ * archived): a guest or a signed-in visitor. Lessons read as a learner's do; nothing is marked, no work is started.
+ */
+export const openView = (state: LearnerCourseState) => !state.enrolled && !staffPreview(state) && state.guest_access
+
 /** The course went to the archive (the server's `course_archived`): read-only, no marks and no new work. */
 export const courseArchived = (state: LearnerCourseState) => state.permissions.denial_reason === 'course_archived'
 
@@ -75,7 +81,8 @@ export type PlayerAction =
  * lesson is done the course's `next_action` (its `href` is a legacy URL, so the target comes from `activity_id`).
  */
 export function playerAction(state: LearnerCourseState, entry: ActivityState): PlayerAction {
-  if (entry.blocked_reason) return null
+  // An open view's one action is the enrolment (`OpenViewNote`, the entry card's link): no mark, no attempt.
+  if (entry.blocked_reason || openView(state)) return null
   const kind = activityKind(entry.activity_type)
   if (kind !== 'lesson') {
     const action = entry.allowed_actions.find(isEntryAction)

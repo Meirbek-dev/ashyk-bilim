@@ -49,6 +49,9 @@ export function primaryAction(
   return null
 }
 
+/** The course reads without sign-in (the course's own fields; the learner state says it as `guest_access`). */
+export const guestReadable = (course: Course) => course.public && course.guest_access && !course.archived_at_unix
+
 /** One syllabus row: the same shape from the guest's curriculum and from the learner's outline. */
 export type SyllabusActivity = {
   id: ActivityId
@@ -65,8 +68,11 @@ export type SyllabusActivity = {
 }
 export type SyllabusChapter = { id: string; title: string; activities: SyllabusActivity[] }
 
-/** A guest's syllabus: published activities only, chapters left without any are dropped. */
-export function curriculumSyllabus(curriculum: Curriculum): SyllabusChapter[] {
+/**
+ * A guest's syllabus: published activities only, chapters left without any are dropped. `open`: the course reads
+ * without sign-in (`guest_access`), so the rows link into the player.
+ */
+export function curriculumSyllabus(curriculum: Curriculum, open = false): SyllabusChapter[] {
   return curriculum.chapters
     .map(chapter => ({
       id: chapter.id,
@@ -78,7 +84,7 @@ export function curriculumSyllabus(curriculum: Curriculum): SyllabusChapter[] {
           title: activity.name,
           type: activity.activity_type,
           complete: false,
-          available: false,
+          available: open,
           opensAt: null,
           work: 'not_started',
           due: null,
@@ -92,7 +98,8 @@ const OPEN_WORK = new Set<WorkState>(['not_started', 'in_progress', 'returned'])
 
 /**
  * A signed-in user's syllabus with the server's per-activity state. Rows link into the player for an enrolled learner,
- * and for the course's staff (`staff`), who reach this page by «Предпросмотр как у учащегося» (B-CRS-19). An enrolled
+ * for the course's staff (`staff`), who reach this page by «Предпросмотр как у учащегося» (B-CRS-19), and for anyone
+ * while the course reads without sign-in (`guest_access`). An enrolled
  * learner's open work carries its due date (B-CRS-21), past or not as of `nowUnix` (when the state was read).
  */
 export const outlineSyllabus = (state: LearnerCourseState, staff = false, nowUnix = 0): SyllabusChapter[] =>
@@ -104,7 +111,7 @@ export const outlineSyllabus = (state: LearnerCourseState, staff = false, nowUni
       title: activity.title,
       type: activity.activity_type,
       complete: activity.complete,
-      available: (state.enrolled || staff) && activity.available,
+      available: (state.enrolled || staff || state.guest_access) && activity.available,
       opensAt: activity.opens_at_unix,
       work: activity.state,
       due:

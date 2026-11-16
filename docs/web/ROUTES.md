@@ -3,7 +3,9 @@
 Read before touching `src/routes/`, `shared/auth/`, the shell, live data or hydration-sensitive actions.
 
 - Tree: `_public` (`ssr: true`), `_guest` (signed-in -> `/home`, except the emailed-code links of `opensEmailLink`),
-  `_authed` (`ssr: 'data-only'`, `requireSession`) with `teach.tsx` / `admin.tsx` guarded by `requireCapability`.
+  `_authed` (`ssr: 'data-only'`, `requireSession`) with `teach.tsx` / `admin.tsx` guarded by `requireCapability`,
+  `_open` (`ssr: 'data-only'`, no guard: the loader decides) for the player `/learn/$courseId/$activityId`, which a
+  course open without sign-in (`guest_access`) shows to guests; elsewhere its loader sends a guest to `/login`.
   Two root routes answer documents that are not pages (`server.handlers`): `sitemap[.]xml.ts` (public courses,
   collections, their authors) and `robots[.]txt.ts`. The splat `$.tsx` sends an old-web URL
   (`shared/lib/legacy-urls.ts`) on with a 301 and an old `/assessments/<id>` link to where it lives now; anything else

@@ -17,6 +17,7 @@ const course: Course = {
   archived_at_unix: null,
   archived_by: null,
   assessments_require_enrollment: true,
+  guest_access: false,
   contributor_ids: [],
   created_at_unix: 1_760_000_000,
   creator_id: null,

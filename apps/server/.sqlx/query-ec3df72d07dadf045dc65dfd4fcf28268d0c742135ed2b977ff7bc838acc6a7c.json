@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, assessments_require_enrollment, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,\n                  creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM archived_at))::bigint AS \"archived_at?\",\n                  archived_by AS \"archived_by: UserId\",\n                  version,\n                  ARRAY(SELECT ra.user_id FROM course_staff ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship NOT IN ('reporter', 'creator'))\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  ARRAY(SELECT ra.user_id FROM course_staff ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship = 'maintainer')\n                      AS \"maintainer_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM courses WHERE id = $1 AND deleted_at IS NULL",
+  "query": "SELECT c.id AS \"id: CourseId\", c.name, c.description, c.about, c.tags,\n                  c.public, c.open_to_contributors, c.assessments_require_enrollment, c.guest_access,\n                  c.thumbnail_image_key AS thumbnail_key, c.learnings, c.thumbnail_video_key,\n                  c.creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM c.archived_at))::bigint AS \"archived_at?\",\n                  c.archived_by AS \"archived_by: UserId\",\n                  c.version,\n                  ARRAY(SELECT ra.user_id FROM course_staff ra\n                        WHERE ra.course_id = c.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  ARRAY(SELECT ra.user_id FROM course_staff ra\n                        WHERE ra.course_id = c.id AND ra.status = 'active'\n                          AND ra.authorship = 'maintainer')\n                      AS \"maintainer_ids!: Vec<UserId>\",\n                  (extract(epoch FROM c.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM c.updated_at))::bigint AS \"updated_at!\"\n           FROM collection_courses cc\n           JOIN courses c ON c.id = cc.course_id\n           WHERE cc.collection_id = $1\n             AND course_visible(c, $3, $2)\n             AND (c.archived_at IS NULL OR $2\n                  OR EXISTS (SELECT 1 FROM collections col\n                             WHERE col.id = cc.collection_id AND col.creator_id = $3))\n           ORDER BY cc.position, c.id",
   "describe": {
     "columns": [
       {
@@ -93,6 +93,17 @@
       },
       {
         "ordinal": 8,
+        "name": "guest_access",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "guest_access"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
         "name": "thumbnail_key",
         "type_info": "Text",
         "origin": {
@@ -103,7 +114,7 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "learnings",
         "type_info": "Jsonb",
         "origin": {
@@ -114,7 +125,7 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "thumbnail_video_key",
         "type_info": "Text",
         "origin": {
@@ -125,7 +136,7 @@
         }
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "creator_id: UserId",
         "type_info": "Uuid",
         "origin": {
@@ -136,13 +147,13 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "archived_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "archived_by: UserId",
         "type_info": "Uuid",
         "origin": {
@@ -153,7 +164,7 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "version",
         "type_info": "Int4",
         "origin": {
@@ -164,25 +175,25 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "contributor_ids!: Vec<UserId>",
         "type_info": "UuidArray",
         "origin": "Expression"
       },
       {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "maintainer_ids!: Vec<UserId>",
         "type_info": "UuidArray",
         "origin": "Expression"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -190,10 +201,13 @@
     ],
     "parameters": {
       "Left": [
+        "Uuid",
+        "Bool",
         "Uuid"
       ]
     },
     "nullable": [
+      false,
       false,
       false,
       false,
@@ -215,5 +229,5 @@
       null
     ]
   },
-  "hash": "5fe11204dd8a93f5fdedfc59f3d62dd2c1edd41b34486a49e222a753d8982866"
+  "hash": "ec3df72d07dadf045dc65dfd4fcf28268d0c742135ed2b977ff7bc838acc6a7c"
 }

@@ -3,6 +3,8 @@ use ab_domain::identity::Actor;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+// The bools are independent course settings (the row's columns): no state machine hides among them.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Serialize, ToSchema)]
 pub struct Course {
     pub id: CourseId,
@@ -17,6 +19,11 @@ pub struct Course {
     /// gets `NOT_ENROLLED` in the attempt state and 403
     /// `enrollment-required` on start / save / submit. Default `true`.
     pub assessments_require_enrollment: bool,
+    /// The published lessons of this course open in the player without
+    /// signing in or enrolling while the course is `public` (a review
+    /// committee reads it by its link); graded work still needs sign-in.
+    /// The learner state reports the effective value. Default `false`.
+    pub guest_access: bool,
     /// Storage key of the thumbnail image, served at `/content/<key>`.
     pub thumbnail_key: Option<String>,
     /// Storage key of the legacy video thumbnail (migrated courses only;
@@ -63,6 +70,7 @@ impl Course {
             public: c.public,
             open_to_contributors: c.open_to_contributors,
             assessments_require_enrollment: c.assessments_require_enrollment,
+            guest_access: c.guest_access,
             learnings: ab_domain::catalog::courses::learnings(&c.learnings)
                 .into_iter()
                 .map(Into::into)
@@ -330,6 +338,9 @@ pub struct UpdateCourseRequest {
     /// See `Course.assessments_require_enrollment`.
     #[garde(skip)]
     pub assessments_require_enrollment: Option<bool>,
+    /// See `Course.guest_access`.
+    #[garde(skip)]
+    pub guest_access: Option<bool>,
     /// Finalized `course-thumbnail` upload to claim as the thumbnail;
     /// `null` removes the current one.
     #[garde(skip)]

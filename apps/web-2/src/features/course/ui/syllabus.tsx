@@ -16,16 +16,18 @@ type SyllabusProps = {
   chapters: SyllabusChapter[]
   /** Facts that belong to the programme when no progress block stands over it (what finishing earns). */
   note?: ReactNode
+  /** Rows open for reading without an enrolment (`guest_access`): they link, but nothing is counted or marked. */
+  open?: boolean
 }
 
 /**
  * Chapters and their activities in order, one under another. An
  * activity the learner may open links into the player; the whole row is the link.
  */
-export function Syllabus({ courseId, chapters, note }: SyllabusProps) {
+export function Syllabus({ courseId, chapters, note, open = false }: SyllabusProps) {
   const size = syllabusSize(chapters)
   // A guest's or a visitor's programme has nothing to mark: the rows then end on the type, flush with the rules.
-  const marks = chapters.some(chapter => chapter.activities.some(activity => activity.available))
+  const marks = !open && chapters.some(chapter => chapter.activities.some(activity => activity.available))
   return (
     <section aria-labelledby="course-syllabus" className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -60,7 +62,7 @@ export function Syllabus({ courseId, chapters, note }: SyllabusProps) {
         {chapters.map((chapter, index) => {
           const done = chapter.activities.filter(activity => activity.complete).length
           const total = chapter.activities.length
-          const tracked = chapter.activities.some(activity => activity.available)
+          const tracked = !open && chapter.activities.some(activity => activity.available)
           const finished = total > 0 && done === total
           return (
             <div key={chapter.id} className="flex flex-col gap-1">

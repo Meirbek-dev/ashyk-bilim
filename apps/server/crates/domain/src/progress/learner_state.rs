@@ -240,6 +240,10 @@ pub struct LearnerCourseState {
     pub course_id: CourseId,
     pub title: String,
     pub public: bool,
+    /// The lessons open in the player without sign-in or enrolment: the
+    /// course's `guest_access` while it is public and not archived. Graded
+    /// work still needs sign-in (and an enrolment where the course asks).
+    pub guest_access: bool,
     pub enrolled: bool,
     pub enrollment_state: EnrollmentState,
     pub permissions: CoursePermissions,
@@ -471,6 +475,7 @@ impl LearnerStateService {
             course_id: course.id,
             title: course.name,
             public: course.public,
+            guest_access: course.guest_access && course.public && !archived,
             enrolled,
             enrollment_state,
             permissions: CoursePermissions {

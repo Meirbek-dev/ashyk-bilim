@@ -38,6 +38,7 @@ export function DetailsSection({ course }: { course: Course }) {
     description: course.description,
     open_to_contributors: course.open_to_contributors,
     assessments_require_enrollment: course.assessments_require_enrollment,
+    guest_access: course.guest_access,
   }))
   const form = useAppForm(vUpdateCourseRequest, {
     leaveGuard: true,
@@ -78,6 +79,12 @@ export function DetailsSection({ course }: { course: Course }) {
               label={m.studio_field_enrolled_only()}
               description={m.studio_field_enrolled_only_hint()}
             />
+          )}
+        </form.AppField>
+        {/* Lessons readable from a link without an account (B-CST-54); it takes effect while the course is public. */}
+        <form.AppField name="guest_access">
+          {field => (
+            <field.SwitchField label={m.studio_field_guest_access()} description={m.studio_field_guest_access_hint()} />
           )}
         </form.AppField>
       </SettingsSection>

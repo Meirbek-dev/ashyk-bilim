@@ -157,7 +157,7 @@ pub(crate) const COLLECTION_HAY: &str = "(name || ' ' || description)";
 
 /// The [`CourseRow`] columns of a `courses` row (search and the `GET /courses` listing).
 pub(crate) const COURSE_COLUMNS: &str = "SELECT courses.id, name, description, about, tags,
-        public, open_to_contributors, assessments_require_enrollment,
+        public, open_to_contributors, assessments_require_enrollment, guest_access,
         thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key, creator_id,
         (extract(epoch FROM archived_at))::bigint AS archived_at, archived_by, version,
         ARRAY(SELECT ra.user_id FROM course_staff ra

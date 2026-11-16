@@ -89,6 +89,8 @@ pub struct CourseChanges {
     pub open_to_contributors: Option<bool>,
     /// Only enrolled learners take the course's assessments.
     pub assessments_require_enrollment: Option<bool>,
+    /// The public course's lessons open without sign-in or enrolment.
+    pub guest_access: Option<bool>,
     /// `Some(Some(id))`: claim that finalized `course-thumbnail` upload;
     /// `Some(None)`: remove the thumbnail. The replaced object is released
     /// for reaping either way.
@@ -442,6 +444,7 @@ impl CoursesService {
                 tags: tags.as_deref(),
                 open_to_contributors: changes.open_to_contributors,
                 assessments_require_enrollment: changes.assessments_require_enrollment,
+                guest_access: changes.guest_access,
                 learnings: learnings.as_ref(),
             },
         )

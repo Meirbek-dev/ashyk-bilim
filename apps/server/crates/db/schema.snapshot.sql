@@ -865,6 +865,7 @@ constraint courses courses_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES u
 constraint courses courses_deleted_is_archived CHECK (((deleted_at IS NULL) OR (archived_at IS NOT NULL)))
 constraint courses courses_description_check CHECK ((char_length(description) <= 5000))
 constraint courses courses_description_not_null NOT NULL description
+constraint courses courses_guest_access_not_null NOT NULL guest_access
 constraint courses courses_id_not_null NOT NULL id
 constraint courses courses_language_check CHECK ((language = ANY (ARRAY['ru'::text, 'kk'::text, 'en'::text])))
 constraint courses courses_language_not_null NOT NULL language
@@ -3396,6 +3397,7 @@ table core.courses creator_id uuid DEFAULT -
 table core.courses deleted_at timestamp with time zone DEFAULT -
 table core.courses deleted_by uuid DEFAULT -
 table core.courses description text NOT NULL DEFAULT ''::text
+table core.courses guest_access boolean NOT NULL DEFAULT false
 table core.courses id uuid NOT NULL DEFAULT uuidv7()
 table core.courses language text NOT NULL DEFAULT 'ru'::text
 table core.courses learnings jsonb NOT NULL DEFAULT '[]'::jsonb

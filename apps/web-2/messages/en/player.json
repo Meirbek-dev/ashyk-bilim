@@ -80,5 +80,8 @@
   "player_hours_left": "{hours} h left",
   "player_archived_title": "Course archived",
   "player_archived_text": "The materials and your results stay readable. New attempts, hand-ins and activity marks are no longer accepted.",
-  "player_nothing_yet": "This course has nothing to complete yet. Once the author publishes lessons, your progress will show here."
+  "player_nothing_yet": "This course has nothing to complete yet. Once the author publishes lessons, your progress will show here.",
+  "player_open_title": "Open view",
+  "player_open_text": "This course can be read without an account. Enrol in the course to mark lessons done and take its assessments.",
+  "player_open_enroll": "Enrol in the course"
 }

@@ -63,7 +63,12 @@ export function LearnerOutline({ course, description, learnings }: LearnerOutlin
           {facts}
         </section>
       ) : null}
-      <Syllabus courseId={course.id} chapters={outline} note={tracked ? null : facts} />
+      <Syllabus
+        courseId={course.id}
+        chapters={outline}
+        note={tracked ? null : facts}
+        open={!state.enrolled && state.guest_access && !course.allowed_actions.includes('update')}
+      />
       {/* Where the learner stands per concept and what to review (docs/AI-FIRST.md 5), absent without
           concepts; then the search over the course material. */}
       {state.enrolled ? <MyConcepts courseId={course.id} /> : null}

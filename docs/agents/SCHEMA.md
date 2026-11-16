@@ -1836,6 +1836,7 @@ A course: catalog card, visibility (public), lifecycle (archived_at) and setting
 | deleted_at | timestamp with time zone | null |  |  |
 | deleted_by | uuid | null |  |  |
 | language | text |  | `'ru'::text` | The language the course is taught in. |
+| guest_access | boolean |  | `false` | Lessons of the public course open in the player without sign-in or enrolment (graded work does not). |
 
 - Primary key `courses_pkey`: `PRIMARY KEY (id)`
 - Foreign key `courses_archived_by_fkey`: `FOREIGN KEY (archived_by) REFERENCES users(id) ON DELETE SET NULL`
