@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT cu.id AS \"id: CertificateId\",\n                  cu.certification_id AS \"certification_id: CertificationId\",\n                  cu.course_id AS \"course_id: CourseId\", cu.user_id AS \"user_id: UserId\",\n                  cu.verify_code, cu.holder_name, cu.course_name, cu.certificate_name,\n                  cu.instructor_name, cu.score::float8 AS score,\n                  (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,\n                  (extract(epoch FROM cu.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM cu.updated_at))::bigint AS \"updated_at!\"\n           FROM certificate_users cu\n           -- Dash-insensitive: ETL-migrated legacy codes keep their own\n           -- `XX-XXXXXXXX-XXXX-XXXXXX` layout (the table is small; a seq\n           -- scan is fine until it is not - then an expression index).\n           WHERE upper(regexp_replace(cu.verify_code, '[^A-Za-z0-9]', '', 'g'))\n               = upper(regexp_replace($1, '[^A-Za-z0-9]', '', 'g'))",
+  "query": "SELECT cu.id AS \"id: CertificateId\",\n                  cu.certification_id AS \"certification_id: CertificationId\",\n                  cu.course_id AS \"course_id: CourseId\", cu.user_id AS \"user_id: UserId\",\n                  cu.verify_code, cu.holder_name, cu.course_name, cu.certificate_name,\n                  cu.instructor_name, cu.score::float8 AS score,\n                  (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,\n                  (extract(epoch FROM cu.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM coalesce(cu.reissued_at, cu.created_at)))::bigint AS \"updated_at!\"\n           FROM certificate_users cu\n           WHERE cu.user_id = $1\n           ORDER BY cu.id DESC",
   "describe": {
     "columns": [
       {
@@ -129,7 +129,7 @@
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -148,5 +148,5 @@
       null
     ]
   },
-  "hash": "047e17b44ec031eb62b414ed90c00caf25572222323a4379fd529807cfe7a342"
+  "hash": "c3969155fc2d3053cf88466d7d3f3cd1c296661446dacbb8da584e4a361fe142"
 }

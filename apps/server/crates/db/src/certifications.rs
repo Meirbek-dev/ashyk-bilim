@@ -193,6 +193,7 @@ pub struct CertificateRow {
     pub score: Option<f64>,
     pub reissued_at: Option<i64>,
     pub created_at: i64,
+    /// The last re-issue, else the issue (the row is frozen otherwise).
     pub updated_at: i64,
 }
 
@@ -207,10 +208,10 @@ pub async fn issue_certificate<'e>(
 ) -> Result<bool> {
     let inserted = sqlx::query!(
         r#"INSERT INTO certificate_users
-               (certification_id, user_id, verify_code, created_at, updated_at, course_id, holder_name,
+               (certification_id, user_id, verify_code, created_at, course_id, holder_name,
                 course_name, certificate_name, instructor_name, score)
            SELECT ce.id, u.id, $3, COALESCE(to_timestamp($4::bigint), now()),
-                  COALESCE(to_timestamp($4::bigint), now()), ce.course_id, u.display_name, co.name,
+                  ce.course_id, u.display_name, co.name,
                   COALESCE(certification_text(ce.config, 'certification_name'), co.name),
                   COALESCE(certification_text(ce.config, 'certificate_instructor'), creator.display_name),
                   COALESCE(p.weighted_grade_average, p.grade_average)
@@ -265,7 +266,7 @@ pub async fn list_user_certificates_for_course(
                   cu.instructor_name, cu.score::float8 AS score,
                   (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
+                  (extract(epoch FROM coalesce(cu.reissued_at, cu.created_at)))::bigint AS "updated_at!"
            FROM certificate_users cu
            WHERE cu.course_id = $1 AND cu.user_id = $2
            ORDER BY cu.id"#,
@@ -287,7 +288,7 @@ pub async fn list_user_certificates(pool: &PgPool, user_id: UserId) -> Result<Ve
                   cu.instructor_name, cu.score::float8 AS score,
                   (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
+                  (extract(epoch FROM coalesce(cu.reissued_at, cu.created_at)))::bigint AS "updated_at!"
            FROM certificate_users cu
            WHERE cu.user_id = $1
            ORDER BY cu.id DESC"#,
@@ -311,7 +312,7 @@ pub async fn get_certificate_by_code(
                   cu.instructor_name, cu.score::float8 AS score,
                   (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
+                  (extract(epoch FROM coalesce(cu.reissued_at, cu.created_at)))::bigint AS "updated_at!"
            FROM certificate_users cu
            -- Dash-insensitive: ETL-migrated legacy codes keep their own
            -- `XX-XXXXXXXX-XXXX-XXXXXX` layout (the table is small; a seq

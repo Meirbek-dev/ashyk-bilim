@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT cu.id AS \"id: CertificateId\",\n                  cu.certification_id AS \"certification_id: CertificationId\",\n                  cu.course_id AS \"course_id: CourseId\", cu.user_id AS \"user_id: UserId\",\n                  cu.verify_code, cu.holder_name, cu.course_name, cu.certificate_name,\n                  cu.instructor_name, cu.score::float8 AS score,\n                  (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,\n                  (extract(epoch FROM cu.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM cu.updated_at))::bigint AS \"updated_at!\"\n           FROM certificate_users cu\n           WHERE cu.user_id = $1\n           ORDER BY cu.id DESC",
+  "query": "SELECT cu.id AS \"id: CertificateId\",\n                  cu.certification_id AS \"certification_id: CertificationId\",\n                  cu.course_id AS \"course_id: CourseId\", cu.user_id AS \"user_id: UserId\",\n                  cu.verify_code, cu.holder_name, cu.course_name, cu.certificate_name,\n                  cu.instructor_name, cu.score::float8 AS score,\n                  (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,\n                  (extract(epoch FROM cu.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM coalesce(cu.reissued_at, cu.created_at)))::bigint AS \"updated_at!\"\n           FROM certificate_users cu\n           WHERE cu.course_id = $1 AND cu.user_id = $2\n           ORDER BY cu.id",
   "describe": {
     "columns": [
       {
@@ -129,6 +129,7 @@
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid"
       ]
     },
@@ -148,5 +149,5 @@
       null
     ]
   },
-  "hash": "1fea96abe920844b1cdf152e9691bc3ebbb839592c86c594f373f96b9e02210f"
+  "hash": "14111abfa7b8f2d8d3eec934c57c0382d4da7f9486c9d064e0109837a867ca71"
 }
