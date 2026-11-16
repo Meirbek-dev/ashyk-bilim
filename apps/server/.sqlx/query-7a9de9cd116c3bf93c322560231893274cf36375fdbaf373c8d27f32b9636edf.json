@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT u.id AS \"user_id: UserId\", u.username, u.display_name, u.avatar_key,\n                  'creator' AS \"role!\", 'active' AS \"status!\", 1 AS \"version!\",\n                  (extract(epoch FROM c.created_at))::bigint AS \"created_at!\"\n           FROM courses c JOIN users u ON u.id = c.creator_id\n           WHERE c.id = $1",
+  "query": "SELECT u.id AS \"user_id: UserId\", u.username, u.display_name, u.avatar_key,\n                  'creator' AS \"role!\", 'active' AS \"status!\", 1 AS \"version!\",\n                  (extract(epoch FROM c.created_at))::bigint AS \"created_at!\"\n           FROM courses c\n           JOIN course_staff s ON s.course_id = c.id AND s.authorship = 'creator'\n           JOIN users u ON u.id = s.user_id\n           WHERE c.id = $1",
   "describe": {
     "columns": [
       {
@@ -88,5 +88,5 @@
       null
     ]
   },
-  "hash": "fc5b2be0cb6152e17354e44e8ba274afcb5516591453b06e0c5a94dea5e51059"
+  "hash": "7a9de9cd116c3bf93c322560231893274cf36375fdbaf373c8d27f32b9636edf"
 }

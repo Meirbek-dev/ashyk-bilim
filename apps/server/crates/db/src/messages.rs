@@ -54,9 +54,6 @@ pub async fn related_peers(pool: &PgPool, me: UserId, peers: &[UserId]) -> Resul
                SELECT cs.course_id, cs.user_id, cs.authorship <> 'reporter' AS teaches
                FROM course_staff cs JOIN live ON live.id = cs.course_id
                WHERE cs.status = 'active'
-               UNION ALL
-               SELECT c.id, c.creator_id, true FROM courses c JOIN live ON live.id = c.id
-               WHERE c.creator_id IS NOT NULL
            ),
            mine AS (SELECT course_id, bool_or(teaches) AS teaches FROM team WHERE user_id = $1 GROUP BY course_id),
            learning AS (
@@ -92,7 +89,6 @@ pub async fn shared_courses(pool: &PgPool, a: UserId, b: UserId) -> Result<Vec<S
         SharedCourseRow,
         r#"WITH people AS (
                SELECT cs.course_id, cs.user_id FROM course_staff cs WHERE cs.status = 'active'
-               UNION SELECT c.id, c.creator_id FROM courses c WHERE c.creator_id IS NOT NULL
                UNION SELECT m.course_id, m.user_id FROM learning.course_members m
            )
            SELECT c.id AS "id!: CourseId", c.name AS "name!"
@@ -782,9 +778,6 @@ pub async fn recipients(
                SELECT cs.course_id, cs.user_id, cs.authorship <> 'reporter' AS teaches
                FROM course_staff cs JOIN live ON live.id = cs.course_id
                WHERE cs.status = 'active'
-               UNION ALL
-               SELECT c.id, c.creator_id, true FROM courses c JOIN live ON live.id = c.id
-               WHERE c.creator_id IS NOT NULL
            ),
            mine AS (SELECT course_id, bool_or(teaches) AS teaches FROM team WHERE user_id = $1 GROUP BY course_id),
            links AS (
@@ -957,10 +950,9 @@ pub async fn teaches<'e>(
         r#"SELECT EXISTS (
                SELECT 1 FROM courses c
                WHERE c.id = $2 AND c.deleted_at IS NULL AND c.archived_at IS NULL
-                 AND (c.creator_id = $1
-                      OR EXISTS (SELECT 1 FROM course_staff cs
-                                 WHERE cs.course_id = c.id AND cs.user_id = $1
-                                   AND cs.status = 'active' AND cs.authorship <> 'reporter'))
+                 AND EXISTS (SELECT 1 FROM course_staff cs
+                             WHERE cs.course_id = c.id AND cs.user_id = $1
+                               AND cs.status = 'active' AND cs.authorship <> 'reporter')
            ) AS "teaches!""#,
         user.0,
         course.0
@@ -981,8 +973,7 @@ pub async fn learners_of<'e>(
            WHERE m.course_id = $1 AND m.user_id = ANY($2)
              AND NOT EXISTS (SELECT 1 FROM course_staff cs
                              WHERE cs.course_id = m.course_id AND cs.user_id = m.user_id
-                               AND cs.status = 'active')
-             AND NOT EXISTS (SELECT 1 FROM courses c WHERE c.id = m.course_id AND c.creator_id = m.user_id)"#,
+                               AND cs.status = 'active')"#,
         course.0,
         &ids
     )

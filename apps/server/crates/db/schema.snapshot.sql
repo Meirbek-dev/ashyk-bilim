@@ -1786,19 +1786,41 @@ BEGIN
         OR EXISTS (SELECT 1 FROM code_runs r WHERE r.id = NEW.run_id AND r.purpose = 'custom');
     RETURN NEW;
 END $function$
+function CREATE OR REPLACE FUNCTION public.collection_creator(p_collection uuid)
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE PARALLEL SAFE
+RETURN (SELECT s.user_id FROM collection_staff s WHERE ((s.collection_id = collection_creator.p_collection) AND (s.authorship = 'creator'::text)))
 function CREATE OR REPLACE FUNCTION public.collection_listable(p_collection uuid, p_viewer uuid, p_see_all_courses boolean)
  RETURNS boolean
  LANGUAGE sql
  STABLE
 AS $function$
   SELECT p_see_all_courses
-      OR EXISTS (SELECT 1 FROM collections WHERE id = p_collection AND creator_id = p_viewer)
+      OR EXISTS (SELECT 1 FROM collection_staff s
+                 WHERE s.collection_id = p_collection AND s.user_id = p_viewer AND s.authorship = 'creator')
       OR EXISTS (SELECT 1 FROM collection_courses cc
                  JOIN courses c ON c.id = cc.course_id
                  WHERE cc.collection_id = p_collection
                    AND c.archived_at IS NULL
                    AND course_visible(c, p_viewer, p_see_all_courses))
 $function$
+function CREATE OR REPLACE FUNCTION public.collections_creator_row()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    INSERT INTO collection_staff (collection_id, user_id, authorship, status)
+    VALUES (NEW.id, NEW.creator_id, 'creator', 'active')
+    ON CONFLICT DO NOTHING;
+    RETURN NULL;
+END $function$
+function CREATE OR REPLACE FUNCTION public.course_creator(p_course uuid)
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE PARALLEL SAFE
+RETURN (SELECT s.user_id FROM course_staff s WHERE ((s.course_id = course_creator.p_course) AND (s.authorship = 'creator'::text)))
 function CREATE OR REPLACE FUNCTION public.course_discussions_recount_replies()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1856,9 +1878,19 @@ function CREATE OR REPLACE FUNCTION public.course_visible(c courses, p_viewer uu
  STABLE
 AS $function$
     SELECT c.deleted_at IS NULL AND (
-        c.public OR p_see_all OR c.creator_id = p_viewer
-        OR course_shared_with(c.id, p_viewer, c.archived_at IS NOT NULL))
+        c.public OR p_see_all OR course_shared_with(c.id, p_viewer, c.archived_at IS NOT NULL))
 $function$
+function CREATE OR REPLACE FUNCTION public.courses_creator_row()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    INSERT INTO course_staff (course_id, user_id, authorship, status)
+    VALUES (NEW.id, NEW.creator_id, 'creator', 'active')
+    ON CONFLICT DO NOTHING;
+    RETURN NULL;
+END $function$
 function CREATE OR REPLACE FUNCTION public.discussion_image_keys(content text)
  RETURNS SETOF text
  LANGUAGE sql
@@ -2733,6 +2765,7 @@ index CREATE UNIQUE INDEX code_runs_pkey ON learning.code_runs USING btree (id)
 index CREATE UNIQUE INDEX code_runs_user_id_item_id_purpose_idempotency_key_key ON learning.code_runs USING btree (user_id, item_id, purpose, idempotency_key)
 index CREATE UNIQUE INDEX collection_courses_pkey ON core.collection_courses USING btree (collection_id, course_id)
 index CREATE UNIQUE INDEX collection_courses_position_key ON core.collection_courses USING btree (collection_id, "position")
+index CREATE UNIQUE INDEX collection_staff_one_creator_idx ON core.collection_staff USING btree (collection_id) WHERE (authorship = 'creator'::text)
 index CREATE UNIQUE INDEX collection_staff_pkey ON core.collection_staff USING btree (collection_id, user_id)
 index CREATE UNIQUE INDEX collections_pkey ON core.collections USING btree (id)
 index CREATE UNIQUE INDEX completions_pkey ON learning.completions USING btree (activity_id, user_id)
@@ -2752,6 +2785,7 @@ index CREATE UNIQUE INDEX course_concepts_pkey ON learning.course_concepts USING
 index CREATE UNIQUE INDEX course_discussions_id_course_key ON core.course_discussions USING btree (id, course_id)
 index CREATE UNIQUE INDEX course_discussions_pkey ON core.course_discussions USING btree (id)
 index CREATE UNIQUE INDEX course_progress_pkey ON learning.course_progress USING btree (course_id, user_id)
+index CREATE UNIQUE INDEX course_staff_one_creator_idx ON core.course_staff USING btree (course_id) WHERE (authorship = 'creator'::text)
 index CREATE UNIQUE INDEX course_staff_pkey ON core.course_staff USING btree (course_id, user_id)
 index CREATE UNIQUE INDEX course_update_activities_pkey ON core.course_update_activities USING btree (update_id, activity_id)
 index CREATE UNIQUE INDEX course_updates_pkey ON core.course_updates USING btree (id)
@@ -3931,6 +3965,7 @@ trigger CREATE TRIGGER chapters_touch BEFORE UPDATE ON core.chapters FOR EACH RO
 trigger CREATE TRIGGER chapters_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_key ON core.chapters FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_key', 'thumbnail_upload_id')
 trigger CREATE TRIGGER code_run_cases_passed BEFORE INSERT ON learning.code_run_cases FOR EACH ROW EXECUTE FUNCTION code_run_cases_passed()
 trigger CREATE TRIGGER collection_staff_touch BEFORE UPDATE ON core.collection_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
+trigger CREATE TRIGGER collections_creator_row AFTER INSERT ON core.collections FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION collections_creator_row()
 trigger CREATE TRIGGER collections_touch BEFORE UPDATE ON core.collections FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER collections_upload_ids BEFORE INSERT OR UPDATE OF cover_key ON core.collections FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('cover_key', 'cover_upload_id')
 trigger CREATE TRIGGER concept_tags_touch BEFORE UPDATE ON learning.concept_tags FOR EACH ROW EXECUTE FUNCTION touch_row()
@@ -3941,6 +3976,7 @@ trigger CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF c
 trigger CREATE TRIGGER course_progress_touch BEFORE UPDATE ON learning.course_progress FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER course_staff_touch BEFORE UPDATE ON core.course_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER course_updates_touch BEFORE UPDATE ON core.course_updates FOR EACH ROW EXECUTE FUNCTION touch_row('version')
+trigger CREATE TRIGGER courses_creator_row AFTER INSERT ON core.courses FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION courses_creator_row()
 trigger CREATE TRIGGER courses_touch BEFORE UPDATE ON core.courses FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_image_key, thumbnail_video_key ON core.courses FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_image_key', 'thumbnail_image_upload_id', 'thumbnail_video_key', 'thumbnail_video_upload_id')
 trigger CREATE TRIGGER discussion_reactions_recount AFTER INSERT OR DELETE OR UPDATE ON core.discussion_reactions FOR EACH ROW EXECUTE FUNCTION discussion_reactions_recount()

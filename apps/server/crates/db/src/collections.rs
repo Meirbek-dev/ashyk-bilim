@@ -33,9 +33,13 @@ pub async fn insert_collection(
     course_ids: &[CourseId],
 ) -> Result<CollectionId> {
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO collections (name, description, public, creator_id)
-           VALUES ($1, $2, $3, $4)
-           RETURNING id"#,
+        r#"WITH collection AS (INSERT INTO collections (name, description, public, creator_id)
+                               VALUES ($1, $2, $3, $4)
+                               RETURNING id, creator_id),
+                staff AS (INSERT INTO collection_staff (collection_id, user_id, authorship, status)
+                          SELECT id, creator_id, 'creator', 'active' FROM collection
+                          ON CONFLICT DO NOTHING)
+           SELECT id AS "id!" FROM collection"#,
         name,
         description,
         public,
@@ -73,7 +77,7 @@ pub async fn get_collection(pool: &PgPool, id: CollectionId) -> Result<Option<Co
     let row = sqlx::query_as!(
         CollectionRow,
         r#"SELECT id AS "id: CollectionId", name, description, public,
-                  creator_id AS "creator_id: UserId", version, cover_key,
+                  collection_creator(id) AS "creator_id: UserId", version, cover_key,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM collections WHERE id = $1"#,
@@ -162,14 +166,14 @@ fn collections_list_query(
     let viewer = viewer.map(|v| v.0);
     let mut qb = QueryBuilder::<Postgres>::new(prefix);
     qb.push(
-        "SELECT id, name, description, public, creator_id, version, cover_key,
+        "SELECT id, name, description, public, collection_creator(id) AS creator_id, version, cover_key,
                 (extract(epoch FROM created_at))::bigint AS created_at,
                 (extract(epoch FROM updated_at))::bigint AS updated_at
          FROM collections
          WHERE (public OR ",
     )
     .push_bind(see_all)
-    .push(" OR creator_id = ")
+    .push(" OR collection_creator(id) = ")
     .push_bind(viewer)
     .push(") AND collection_listable(id, ")
     .push_bind(viewer)
@@ -311,7 +315,7 @@ pub async fn list_collection_courses(
         r#"SELECT c.id AS "id: CourseId", c.name, c.description, c.about, c.tags,
                   c.public, c.open_to_contributors, c.assessments_require_enrollment, c.guest_access,
                   c.thumbnail_image_key AS thumbnail_key, c.learnings, c.thumbnail_video_key,
-                  c.creator_id AS "creator_id: UserId",
+                  course_creator(c.id) AS "creator_id: UserId",
                   (extract(epoch FROM c.archived_at))::bigint AS "archived_at?",
                   c.archived_by AS "archived_by: UserId",
                   c.version,
@@ -330,8 +334,7 @@ pub async fn list_collection_courses(
            WHERE cc.collection_id = $1
              AND course_visible(c, $3, $2)
              AND (c.archived_at IS NULL OR $2
-                  OR EXISTS (SELECT 1 FROM collections col
-                             WHERE col.id = cc.collection_id AND col.creator_id = $3))
+                  OR collection_creator(cc.collection_id) = $3)
            ORDER BY cc.position, c.id"#,
         id.0,
         see_all,

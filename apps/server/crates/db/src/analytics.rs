@@ -47,10 +47,10 @@ pub async fn teacher_course_ids(
     let rows = sqlx::query_scalar!(
         r#"SELECT c.id AS "id: CourseId"
            FROM courses c
-           WHERE c.deleted_at IS NULL AND (c.creator_id = $1 OR EXISTS (
+           WHERE c.deleted_at IS NULL AND EXISTS (
                  SELECT 1 FROM course_staff ra
                  WHERE ra.course_id = c.id AND ra.user_id = $1 AND ra.status = 'active'
-                   AND ra.authorship <> 'reporter'))
+                   AND ra.authorship <> 'reporter')
              AND ($2 OR c.archived_at IS NULL)
            ORDER BY c.id"#,
         user_id.0,
@@ -87,10 +87,7 @@ pub async fn list_course_authors(
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
         CourseAuthorRow,
-        r#"SELECT c.id AS "course_id!: CourseId", c.creator_id AS "user_id!: UserId"
-           FROM courses c WHERE c.id = ANY($1) AND c.creator_id IS NOT NULL
-           UNION
-           SELECT ra.course_id AS "course_id!: CourseId", ra.user_id AS "user_id!: UserId"
+        r#"SELECT DISTINCT ra.course_id AS "course_id!: CourseId", ra.user_id AS "user_id!: UserId"
            FROM course_staff ra
            WHERE ra.course_id = ANY($1) AND ra.status = 'active'
              AND ra.authorship <> 'reporter'"#,
@@ -127,7 +124,7 @@ pub async fn list_courses(pool: &PgPool, course_ids: &[CourseId]) -> Result<Vec<
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
         CourseInfoRow,
-        r#"SELECT id AS "id: CourseId", name, creator_id AS "creator_id: UserId",
+        r#"SELECT id AS "id: CourseId", name, course_creator(id) AS "creator_id: UserId",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!",
                   archived_at IS NOT NULL AS "archived!"
            FROM courses WHERE id = ANY($1) ORDER BY id"#,

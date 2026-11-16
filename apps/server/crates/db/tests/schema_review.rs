@@ -90,7 +90,8 @@
 //!   a message's author is a member of its conversation.
 //! - REWRITE 5.8 item 4: one copy of each fact. An award's levels, a test's
 //!   `passed` and a feedback row's grader are read from their source; a
-//!   handed-in file's key, type and size are its upload's.
+//!   handed-in file's key, type and size are its upload's; a course's or
+//!   collection's creator is its one `creator` staff row.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -2931,6 +2932,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "code_run_cases_passed",
             "derived; the previous release's copy, a contract drops it",
         ),
+        (
+            "collections_creator_row",
+            "derived; the previous release's writes, a contract drops it",
+        ),
         ("collections_upload_ids", "derived"),
         (
             "course_discussions_recount_replies",
@@ -2940,6 +2945,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         (
             "file_submission_files_from_upload",
             "derived; the previous release's copy, a contract drops it",
+        ),
+        (
+            "courses_creator_row",
+            "derived; writers that name only creator_id, a contract drops it",
         ),
         ("courses_upload_ids", "derived"),
         (
@@ -3764,4 +3773,67 @@ async fn a_handed_in_file_reads_its_upload(pool: PgPool) {
         })
         .collect();
     assert_eq!(read, [("k/essay.pdf", "application/pdf", Some(42))]);
+}
+
+/// REWRITE 5.8 item 4, part 3: the creator of a course or a collection is its
+/// staff row with authorship `creator`, one per target. `creator_id` is still
+/// written for the previous release; a drifted copy is not what is read.
+#[ab_testdb::test]
+async fn the_creator_is_the_staff_row(pool: PgPool) {
+    use ab_core::id::UserId;
+    let owner = user(&pool, "owner").await;
+    let other = user(&pool, "other").await;
+    let course = ab_db::catalog::insert_course(&pool, "c", "", "", &[], UserId(owner))
+        .await
+        .unwrap();
+    let mut tx = pool.begin().await.unwrap();
+    let collection =
+        ab_db::collections::insert_collection(&mut tx, "col", "", false, UserId(owner), &[])
+            .await
+            .unwrap();
+    tx.commit().await.unwrap();
+    sqlx::query("UPDATE courses SET creator_id = $1")
+        .bind(other)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE collections SET creator_id = NULL")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let read = ab_db::catalog::get_course(&pool, course)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(read.creator_id, Some(UserId(owner)));
+    let read = ab_db::collections::get_collection(&pool, collection)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(read.creator_id, Some(UserId(owner)));
+
+    // A writer that names only creator_id (the previous release's collections) gets the row.
+    let old: Uuid = sqlx::query_scalar(
+        "INSERT INTO collections (name, creator_id) VALUES ('old', $1) RETURNING id",
+    )
+    .bind(other)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let creator: Option<Uuid> = sqlx::query_scalar("SELECT collection_creator($1)")
+        .bind(old)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(creator, Some(other));
+
+    // One creator per course.
+    let second = sqlx::query(
+        "INSERT INTO course_staff (course_id, user_id, authorship) VALUES ($1, $2, 'creator')",
+    )
+    .bind(course.0)
+    .bind(other)
+    .execute(&pool)
+    .await;
+    assert!(second.is_err(), "a second creator row");
 }

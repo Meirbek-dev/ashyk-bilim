@@ -966,6 +966,10 @@ Queue, in order:
      `*_key` columns wait: keys from before the upload table have no `uploads` row (their `*_upload_id` is NULL),
      so the join would lose those pictures. First an `ashyq admin` command that gives every such key its row
      (HEAD for the size and type) and is run in production; then readers move to the join and writers to the id.
+   - The creator: switched in `20261116075624_creator_is_a_staff_row` (+ the two one-creator indexes). Readers take
+     the `creator` staff row (`course_creator()`, `collection_creator()`); collections now write theirs;
+     `creator_id` is still written on insert for the previous release. Left: a release that stops writing
+     `creator_id`, then the contract dropping it and the `*_creator_row` triggers.
 5. **Statuses**: `activity_progress.state` becomes a status plus `passed`; `code_runs.status` splits into the
    run's state and its verdict, and the language is its name, not Judge0's number; one soft-delete idiom (a
    timestamp, the status derived).

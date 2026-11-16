@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CollectionId\", name, description, public,\n                  creator_id AS \"creator_id: UserId\", version, cover_key,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM collections WHERE id = $1",
+  "query": "SELECT id AS \"id: CollectionId\", name, description, public,\n                  collection_creator(id) AS \"creator_id: UserId\", version, cover_key,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM collections WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -51,12 +51,7 @@
         "ordinal": 4,
         "name": "creator_id: UserId",
         "type_info": "Uuid",
-        "origin": {
-          "Table": {
-            "table": "collections",
-            "name": "creator_id"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 5,
@@ -103,12 +98,12 @@
       false,
       false,
       false,
-      true,
+      null,
       false,
       true,
       null,
       null
     ]
   },
-  "hash": "701e0f59b1cb0e3cc2118d075313a642df9080b5284520625cdac0184ee25d8f"
+  "hash": "2e20358e1235b1ac7fe89029b157553081b11cd9e714a3362bc743533a98aeb8"
 }

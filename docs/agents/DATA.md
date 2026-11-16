@@ -20,7 +20,7 @@ Every table, column, key and foreign key with the table's purpose: `docs/agents/
 | --------------------------------- | ------------------------------------------------------------------------------------ |
 | course, its picture               | `courses` (`public`, `archived_at`; `thumbnail_image_key` under `/content/<key>`)    |
 | chapter, activity                 | `chapters`, `activities` (`activity_type`, `activity_sub_type`, `published`, `content`) |
-| course teacher / author           | `course_staff` (`course_id`, `user_id`, `authorship`, `status`)                      |
+| course teacher / author           | `course_staff` (`course_id`, `user_id`, `authorship`, `status`); the creator is the one `authorship = 'creator'` row (`course_creator(id)`; `collection_staff` / `collection_creator(id)` for a collection), not `creator_id` |
 | enrolled learner                  | `course_members` (view: `enrolments` without staff); joins and leaves: `enrolment_events` (a leave keeps its marks in `completions`); per activity: `completions` (the fact), `activity_progress` (projection); old marks on graded activities: `trail_legacy_marks` (history only) |
 | quiz, exam, code challenge        | `assessments` (`activity_id`, `lifecycle`; title/kind = the activity's) + `assessment_items` (`body` json) |
 | code statement, tests, languages  | `assessment_items.body`: `prompt`, `tests[]`, `languages[]`, `time_limit_seconds`     |

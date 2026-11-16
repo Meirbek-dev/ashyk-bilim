@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CourseId\", name, creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\",\n                  archived_at IS NOT NULL AS \"archived!\"\n           FROM courses WHERE id = ANY($1) ORDER BY id",
+  "query": "SELECT id AS \"id: CourseId\", name, course_creator(id) AS \"creator_id: UserId\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\",\n                  archived_at IS NOT NULL AS \"archived!\"\n           FROM courses WHERE id = ANY($1) ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -29,12 +29,7 @@
         "ordinal": 2,
         "name": "creator_id: UserId",
         "type_info": "Uuid",
-        "origin": {
-          "Table": {
-            "table": "courses",
-            "name": "creator_id"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 3,
@@ -57,10 +52,10 @@
     "nullable": [
       false,
       false,
-      true,
+      null,
       null,
       null
     ]
   },
-  "hash": "f22a23a4fb06c3b3ebf6d4c426fb7b47e76a6c49c4b0737e48b5279f08291fdb"
+  "hash": "f940fbda46524787c0dbe9a5374a68d8e7c85cacca2696ffe3a7363c9fca4f8c"
 }

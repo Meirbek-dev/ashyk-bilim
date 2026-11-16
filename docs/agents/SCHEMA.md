@@ -1346,6 +1346,7 @@ Staff of a collection: creator, maintainer, contributor or reporter, with a stat
 - Foreign key `collection_staff_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Check `collection_staff_authorship_check`: `CHECK ((authorship = ANY (ARRAY['creator'::text, 'contributor'::text, 'maintainer'::text, 'reporter'::text])))`
 - Check `collection_staff_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'pending'::text, 'inactive'::text])))`
+- Index `collection_staff_one_creator_idx`: `CREATE UNIQUE INDEX collection_staff_one_creator_idx ON core.collection_staff USING btree (collection_id) WHERE (authorship = 'creator'::text)`
 - Index `collection_staff_user_idx`: `CREATE INDEX collection_staff_user_idx ON core.collection_staff USING btree (user_id)`
 
 ## collections
@@ -1372,6 +1373,7 @@ A curated, ordered set of courses shown in the catalog.
 - Check `collections_name_check`: `CHECK ((char_length(name) <= 500))`
 - Index `collections_cover_upload_id_idx`: `CREATE INDEX collections_cover_upload_id_idx ON core.collections USING btree (cover_upload_id) WHERE (cover_upload_id IS NOT NULL)`
 - Index `collections_search_trgm_idx`: `CREATE INDEX collections_search_trgm_idx ON core.collections USING gin (search_fold(((name \|\| ' '::text) \|\| description)) gin_trgm_ops)`
+- Trigger `collections_creator_row`: `CREATE TRIGGER collections_creator_row AFTER INSERT ON core.collections FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION collections_creator_row()`
 - Trigger `collections_upload_ids`: `CREATE TRIGGER collections_upload_ids BEFORE INSERT OR UPDATE OF cover_key ON core.collections FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('cover_key', 'cover_upload_id')`
 
 ## completions
@@ -1714,6 +1716,7 @@ Staff of a course: creator, maintainer, contributor or reporter, with a status.
 - Foreign key `course_staff_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Check `course_staff_authorship_check`: `CHECK ((authorship = ANY (ARRAY['creator'::text, 'contributor'::text, 'maintainer'::text, 'reporter'::text])))`
 - Check `course_staff_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'pending'::text, 'inactive'::text])))`
+- Index `course_staff_one_creator_idx`: `CREATE UNIQUE INDEX course_staff_one_creator_idx ON core.course_staff USING btree (course_id) WHERE (authorship = 'creator'::text)`
 - Index `course_staff_user_idx`: `CREATE INDEX course_staff_user_idx ON core.course_staff USING btree (user_id, course_id)`
 
 ## course_update_activities
@@ -1805,6 +1808,7 @@ A course: catalog card, visibility (public), lifecycle (archived_at) and setting
 - Index `courses_search_trgm_idx`: `CREATE INDEX courses_search_trgm_idx ON core.courses USING gin (search_fold(((((name \|\| ' '::text) \|\| description) \|\| ' '::text) \|\| COALESCE(about, ''::text))) gin_trgm_ops)`
 - Index `courses_thumbnail_image_upload_id_idx`: `CREATE INDEX courses_thumbnail_image_upload_id_idx ON core.courses USING btree (thumbnail_image_upload_id) WHERE (thumbnail_image_upload_id IS NOT NULL)`
 - Index `courses_thumbnail_video_upload_id_idx`: `CREATE INDEX courses_thumbnail_video_upload_id_idx ON core.courses USING btree (thumbnail_video_upload_id) WHERE (thumbnail_video_upload_id IS NOT NULL)`
+- Trigger `courses_creator_row`: `CREATE TRIGGER courses_creator_row AFTER INSERT ON core.courses FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION courses_creator_row()`
 - Trigger `courses_upload_ids`: `CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_image_key, thumbnail_video_key ON core.courses FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_image_key', 'thumbnail_image_upload_id', 'thumbnail_video_key', 'thumbnail_video_upload_id')`
 
 ## daily_assessment_metrics

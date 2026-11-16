@@ -58,7 +58,8 @@ async fn world(pool: PgPool) -> World {
     .await
     .unwrap();
     sqlx::query(
-        "INSERT INTO course_staff (course_id, user_id, authorship, status) VALUES ($1, $2, 'creator', 'active')",
+        "INSERT INTO course_staff (course_id, user_id, authorship, status) VALUES ($1, $2, 'creator', 'active')
+         ON CONFLICT DO NOTHING",
     )
     .bind(course)
     .bind(teacher.user_id.0)

@@ -108,9 +108,7 @@ pub async fn upsert_work_submitted(
 /// nor platform admins).
 pub async fn course_teachers(pool: &PgPool, course_id: CourseId) -> Result<Vec<UserId>> {
     let ids = sqlx::query_scalar!(
-        r#"SELECT creator_id AS "id!" FROM courses WHERE id = $1 AND creator_id IS NOT NULL
-           UNION
-           SELECT user_id FROM course_staff
+        r#"SELECT user_id FROM course_staff
            WHERE course_id = $1 AND status = 'active' AND authorship <> 'reporter'"#,
         course_id.0
     )
@@ -254,9 +252,7 @@ pub async fn prune(pool: &PgPool, days: i32) -> Result<u64> {
 /// `Grant::grants` reads them - admins and maintainers).
 pub async fn course_graders(pool: &PgPool, course_id: CourseId) -> Result<Vec<UserId>> {
     let ids = sqlx::query_scalar!(
-        r#"SELECT creator_id AS "id!" FROM courses WHERE id = $1 AND creator_id IS NOT NULL
-           UNION
-           SELECT user_id FROM course_staff
+        r#"SELECT user_id AS "id!" FROM course_staff
            WHERE course_id = $1 AND status = 'active' AND authorship <> 'reporter'
            UNION
            SELECT ur.user_id FROM user_roles ur
@@ -291,10 +287,8 @@ pub async fn platform_holders(pool: &PgPool, resource: &str, action: &str) -> Re
 /// Who manages the roster: the creator and active maintainers.
 pub async fn course_owners(pool: &PgPool, course_id: CourseId) -> Result<Vec<UserId>> {
     let ids = sqlx::query_scalar!(
-        r#"SELECT creator_id AS "id!" FROM courses WHERE id = $1 AND creator_id IS NOT NULL
-           UNION
-           SELECT user_id FROM course_staff
-           WHERE course_id = $1 AND status = 'active' AND authorship = 'maintainer'"#,
+        r#"SELECT user_id FROM course_staff
+           WHERE course_id = $1 AND status = 'active' AND authorship IN ('creator', 'maintainer')"#,
         course_id.0
     )
     .fetch_all(pool)

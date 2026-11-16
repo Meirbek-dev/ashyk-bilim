@@ -158,7 +158,8 @@ pub(crate) const COLLECTION_HAY: &str = "(name || ' ' || description)";
 /// The [`CourseRow`] columns of a `courses` row (search and the `GET /courses` listing).
 pub(crate) const COURSE_COLUMNS: &str = "SELECT courses.id, name, description, about, tags,
         public, open_to_contributors, assessments_require_enrollment, guest_access,
-        thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key, creator_id,
+        thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
+        course_creator(courses.id) AS creator_id,
         (extract(epoch FROM archived_at))::bigint AS archived_at, archived_by, version,
         ARRAY(SELECT ra.user_id FROM course_staff ra
               WHERE ra.course_id = courses.id AND ra.status = 'active'
@@ -231,14 +232,14 @@ pub async fn search_collections(
 ) -> Result<Vec<CollectionRow>> {
     let viewer = viewer.map(|v| v.0);
     let mut qb = QueryBuilder::<Postgres>::new(
-        "SELECT id, name, description, public, creator_id, version, cover_key,
+        "SELECT id, name, description, public, collection_creator(id) AS creator_id, version, cover_key,
                 (extract(epoch FROM created_at))::bigint AS created_at,
                 (extract(epoch FROM updated_at))::bigint AS updated_at
          FROM collections
          WHERE (public OR ",
     );
     qb.push_bind(see_all)
-        .push(" OR creator_id = ")
+        .push(" OR collection_creator(id) = ")
         .push_bind(viewer)
         .push(") AND collection_listable(id, ")
         .push_bind(viewer)

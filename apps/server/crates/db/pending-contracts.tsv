@@ -36,3 +36,7 @@ column	file_submission_files.storage_key	the release after file rows read their 
 column	file_submission_files.content_type	the release after file rows read their upload (20261116074602): uploads.mime	REWRITE 5.8 item 4
 column	file_submission_files.size_bytes	the release after file rows read their upload (20261116074602): uploads.size_bytes	REWRITE 5.8 item 4
 trigger	file_submission_files_from_upload	the contract that drops the file_submission_files copies	REWRITE 5.8 item 4
+column	courses.creator_id	the release after creators are read from the staff rows (20261116075624) and a release that stops writing it on insert (the previous release reads it)	REWRITE 5.8 item 4
+column	collections.creator_id	the release after creators are read from the staff rows (20261116075624) and a release that stops writing it on insert (the previous release reads it)	REWRITE 5.8 item 4
+trigger	courses_creator_row	the contract that drops courses.creator_id	REWRITE 5.8 item 4
+trigger	collections_creator_row	the contract that drops collections.creator_id	REWRITE 5.8 item 4

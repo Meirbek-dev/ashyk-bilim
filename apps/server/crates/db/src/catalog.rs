@@ -100,8 +100,7 @@ pub async fn insert_course(
 /// the creator, or an active author other than a reporter.
 pub async fn authors_any_course(pool: &PgPool, user_id: UserId) -> Result<bool> {
     let authors = sqlx::query_scalar!(
-        r#"SELECT EXISTS (SELECT 1 FROM courses WHERE creator_id = $1 AND deleted_at IS NULL)
-               OR EXISTS (SELECT 1 FROM course_staff s JOIN courses c ON c.id = s.course_id
+        r#"SELECT EXISTS (SELECT 1 FROM course_staff s JOIN courses c ON c.id = s.course_id
                           WHERE s.user_id = $1 AND s.status = 'active' AND s.authorship <> 'reporter'
                             AND c.deleted_at IS NULL)
                AS "authors!""#,
@@ -117,7 +116,7 @@ pub async fn get_course(pool: &PgPool, id: CourseId) -> Result<Option<CourseRow>
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, assessments_require_enrollment, guest_access, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
-                  creator_id AS "creator_id: UserId",
+                  course_creator(id) AS "creator_id: UserId",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
                   version,
@@ -241,14 +240,12 @@ fn courses_list_query(
     if filter.mine && !filter.see_all {
         // Ownership/active authorship already grants visibility; only soft deletion can hide a match.
         // Repeating course_visible would run the group/archive lookups before this more selective filter.
-        qb.push(" WHERE courses.deleted_at IS NULL AND (creator_id = ")
-            .push_bind(viewer)
-            .push(
-                " OR EXISTS (SELECT 1 FROM course_staff ra
-                             WHERE ra.course_id = courses.id AND ra.user_id = ",
-            )
-            .push_bind(viewer)
-            .push(" AND ra.status = 'active' AND ra.authorship <> 'reporter'))");
+        qb.push(
+            " WHERE courses.deleted_at IS NULL AND EXISTS (SELECT 1 FROM course_staff ra
+                     WHERE ra.course_id = courses.id AND ra.user_id = ",
+        )
+        .push_bind(viewer)
+        .push(" AND ra.status = 'active' AND ra.authorship <> 'reporter')");
     } else {
         qb.push(" WHERE course_visible(courses, ")
             .push_bind(viewer)
@@ -335,7 +332,7 @@ pub async fn summarize_courses(
                   count(*) FILTER (WHERE archived_at IS NOT NULL) AS "archived!"
            FROM courses
            WHERE deleted_at IS NULL
-             AND ($1 OR creator_id = $2
+             AND ($1
                   OR EXISTS (SELECT 1 FROM course_staff ra
                              WHERE ra.course_id = courses.id AND ra.user_id = $2
                                AND ra.status = 'active' AND ra.authorship <> 'reporter'))"#,
@@ -363,7 +360,7 @@ pub async fn list_user_courses(
         CourseRow,
         r#"SELECT id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, assessments_require_enrollment, guest_access, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
-                  creator_id AS "creator_id: UserId",
+                  course_creator(id) AS "creator_id: UserId",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
                   version,
@@ -378,10 +375,9 @@ pub async fn list_user_courses(
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM courses
-           WHERE (creator_id = $1
-                  OR EXISTS (SELECT 1 FROM course_staff ra
-                             WHERE ra.course_id = courses.id AND ra.user_id = $1
-                               AND ra.status = 'active' AND ra.authorship <> 'reporter'))
+           WHERE EXISTS (SELECT 1 FROM course_staff ra
+                         WHERE ra.course_id = courses.id AND ra.user_id = $1
+                           AND ra.status = 'active' AND ra.authorship <> 'reporter')
              AND course_visible(courses, $2, $5)
              AND archived_at IS NULL
              AND ($3::uuid IS NULL OR id < $3)
@@ -428,7 +424,7 @@ pub async fn update_course<'e>(
            WHERE id = $1
            RETURNING id AS "id: CourseId", name, description, about, tags,
                   public, open_to_contributors, assessments_require_enrollment, guest_access, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,
-                  creator_id AS "creator_id: UserId",
+                  course_creator(id) AS "creator_id: UserId",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   archived_by AS "archived_by: UserId",
                   version,
@@ -1609,8 +1605,8 @@ pub async fn delete_course_update(pool: &PgPool, id: CourseUpdateId) -> Result<b
 
 // ── Contributors (`course_staff`) ─────────────────────────────────
 
-/// One roster row joined with the user. The creator is not stored - the
-/// service synthesizes it from `courses.creator_id`.
+/// One roster row joined with the user. The creator's row (authorship
+/// `creator`) is read by [`creator_row`], never by the contributor reads.
 #[derive(Debug, Clone)]
 pub struct ContributorRow {
     pub user_id: UserId,
@@ -1639,15 +1635,17 @@ pub async fn list_contributors(pool: &PgPool, course_id: CourseId) -> Result<Vec
     Ok(rows)
 }
 
-/// The creator synthesized as a `creator/active` roster row (`None` when the
-/// creator account is gone).
+/// The creator's roster row (`creator/active`, dated and versioned as the
+/// course; `None` when the creator account is gone).
 pub async fn creator_row(pool: &PgPool, course_id: CourseId) -> Result<Option<ContributorRow>> {
     let row = sqlx::query_as!(
         ContributorRow,
         r#"SELECT u.id AS "user_id: UserId", u.username, u.display_name, u.avatar_key,
                   'creator' AS "role!", 'active' AS "status!", 1 AS "version!",
                   (extract(epoch FROM c.created_at))::bigint AS "created_at!"
-           FROM courses c JOIN users u ON u.id = c.creator_id
+           FROM courses c
+           JOIN course_staff s ON s.course_id = c.id AND s.authorship = 'creator'
+           JOIN users u ON u.id = s.user_id
            WHERE c.id = $1"#,
         course_id.0
     )

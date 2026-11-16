@@ -2,10 +2,10 @@
 //! `ResourceAuthor`).
 //!
 //! Roles `maintainer | contributor | reporter`, statuses `pending | active |
-//! inactive`. The creator is `courses.creator_id`: creating a course stores a
-//! `creator/active` row, which grants access like any other (`has_course_role`),
-//! but this roster neither lists nor edits it and shows the creator from
-//! `courses`. Any *active* row authors on the course like the creator
+//! inactive`. The creator is the course's one `creator/active` row (written
+//! when the course is created; REWRITE 5.8 item 4), which grants access like
+//! any other (`has_course_role`); this roster neither lists nor edits it and
+//! shows it apart (`ab_db::catalog::creator_row`). Any *active* row authors on the course like the creator
 //! (`Course::is_author`, legacy `is_owner`). Roster management: the creator,
 //! an active maintainer, or `course:manage:platform`.
 

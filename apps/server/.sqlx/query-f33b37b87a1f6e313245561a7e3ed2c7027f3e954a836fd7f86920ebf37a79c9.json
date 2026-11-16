@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE courses SET\n               name = COALESCE($2, name),\n               description = COALESCE($3, description),\n               about = COALESCE($4, about),\n               tags = COALESCE($5, tags),\n               open_to_contributors = COALESCE($6, open_to_contributors),\n               learnings = COALESCE($7, learnings),\n               assessments_require_enrollment = COALESCE($8, assessments_require_enrollment),\n               guest_access = COALESCE($9, guest_access)\n           WHERE id = $1\n           RETURNING id AS \"id: CourseId\", name, description, about, tags,\n                  public, open_to_contributors, assessments_require_enrollment, guest_access, thumbnail_image_key AS thumbnail_key, learnings, thumbnail_video_key,\n                  creator_id AS \"creator_id: UserId\",\n                  (extract(epoch FROM archived_at))::bigint AS \"archived_at?\",\n                  archived_by AS \"archived_by: UserId\",\n                  version,\n                  ARRAY(SELECT ra.user_id FROM course_staff ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship NOT IN ('reporter', 'creator'))\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  ARRAY(SELECT ra.user_id FROM course_staff ra\n                        WHERE ra.course_id = courses.id AND ra.status = 'active'\n                          AND ra.authorship = 'maintainer')\n                      AS \"maintainer_ids!: Vec<UserId>\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"",
+  "query": "SELECT c.id AS \"id: CourseId\", c.name, c.description, c.about, c.tags,\n                  c.public, c.open_to_contributors, c.assessments_require_enrollment, c.guest_access,\n                  c.thumbnail_image_key AS thumbnail_key, c.learnings, c.thumbnail_video_key,\n                  course_creator(c.id) AS \"creator_id: UserId\",\n                  (extract(epoch FROM c.archived_at))::bigint AS \"archived_at?\",\n                  c.archived_by AS \"archived_by: UserId\",\n                  c.version,\n                  ARRAY(SELECT ra.user_id FROM course_staff ra\n                        WHERE ra.course_id = c.id AND ra.status = 'active'\n                          AND ra.authorship <> 'reporter')\n                      AS \"contributor_ids!: Vec<UserId>\",\n                  ARRAY(SELECT ra.user_id FROM course_staff ra\n                        WHERE ra.course_id = c.id AND ra.status = 'active'\n                          AND ra.authorship = 'maintainer')\n                      AS \"maintainer_ids!: Vec<UserId>\",\n                  (extract(epoch FROM c.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM c.updated_at))::bigint AS \"updated_at!\"\n           FROM collection_courses cc\n           JOIN courses c ON c.id = cc.course_id\n           WHERE cc.collection_id = $1\n             AND course_visible(c, $3, $2)\n             AND (c.archived_at IS NULL OR $2\n                  OR collection_creator(cc.collection_id) = $3)\n           ORDER BY cc.position, c.id",
   "describe": {
     "columns": [
       {
@@ -139,12 +139,7 @@
         "ordinal": 12,
         "name": "creator_id: UserId",
         "type_info": "Uuid",
-        "origin": {
-          "Table": {
-            "table": "courses",
-            "name": "creator_id"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 13,
@@ -202,14 +197,8 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Text",
-        "Text",
-        "Text",
-        "TextArray",
         "Bool",
-        "Jsonb",
-        "Bool",
-        "Bool"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -225,7 +214,7 @@
       true,
       false,
       true,
-      true,
+      null,
       null,
       true,
       false,
@@ -235,5 +224,5 @@
       null
     ]
   },
-  "hash": "97a3985be4962ef624a4f843774863bc5ca8410357e3a83b163e78343edbc609"
+  "hash": "f33b37b87a1f6e313245561a7e3ed2c7027f3e954a836fd7f86920ebf37a79c9"
 }

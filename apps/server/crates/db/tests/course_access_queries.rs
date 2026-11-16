@@ -38,8 +38,15 @@ async fn member(pool: &PgPool, course: Uuid, user: Uuid) -> bool {
 async fn membership_keeps_roster_and_platform_author_rules(pool: PgPool) {
     let owner = user(&pool, "owner").await;
     let course = course(&pool, owner).await;
+    // The creator's row (one per course) came with the course.
+    sqlx::query("INSERT INTO enrolments (course_id, user_id) VALUES ($1, $2)")
+        .bind(course)
+        .bind(owner)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert!(!member(&pool, course, owner).await, "creator/active");
     for (i, (authorship, status, staff)) in [
-        ("creator", "active", true),
         ("maintainer", "active", true),
         ("contributor", "active", true),
         ("reporter", "active", false),

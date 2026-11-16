@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT EXISTS (\n               SELECT 1 FROM courses c\n               WHERE c.id = $2 AND c.deleted_at IS NULL AND c.archived_at IS NULL\n                 AND EXISTS (SELECT 1 FROM course_staff cs\n                             WHERE cs.course_id = c.id AND cs.user_id = $1\n                               AND cs.status = 'active' AND cs.authorship <> 'reporter')\n           ) AS \"teaches!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "teaches!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "474528c8ce057910ed46227026dcefea0fd7a35d5a8c49e302225e8b549db5b3"
+}

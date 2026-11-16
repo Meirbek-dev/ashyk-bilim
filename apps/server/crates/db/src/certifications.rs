@@ -218,7 +218,7 @@ pub async fn issue_certificate<'e>(
            FROM certifications ce
            JOIN courses co ON co.id = ce.course_id
            JOIN users u ON u.id = $2
-           LEFT JOIN users creator ON creator.id = co.creator_id
+           LEFT JOIN users creator ON creator.id = course_creator(co.id)
            LEFT JOIN course_progress p ON p.course_id = ce.course_id AND p.user_id = u.id
            WHERE ce.id = $1
            ON CONFLICT (certification_id, user_id) DO NOTHING"#,
