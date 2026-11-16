@@ -1702,7 +1702,6 @@ impl GradingService {
                     max_score: by_id.get(&grade.item_id).map(|i| i.max_score),
                     annotation_type: ab_core::assessments::AnnotationType::Text,
                     annotation_key: None,
-                    graded_by: actor.user_id,
                 },
             )
             .await?;

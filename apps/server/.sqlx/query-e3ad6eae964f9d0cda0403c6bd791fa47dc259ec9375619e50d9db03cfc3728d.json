@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO xp_transactions\n               (user_id, amount, source, source_id, reason, previous_level, idempotency_key)\n           VALUES ($1, $2, $3, $4, $5, $6, $7)\n           ON CONFLICT DO NOTHING\n           RETURNING id AS \"id: XpTransactionId\"",
+  "query": "INSERT INTO xp_transactions\n               (user_id, amount, source, source_id, reason, idempotency_key)\n           VALUES ($1, $2, $3, $4, $5, $6)\n           ON CONFLICT DO NOTHING\n           RETURNING id AS \"id: XpTransactionId\"",
   "describe": {
     "columns": [
       {
@@ -22,7 +22,6 @@
         "Text",
         "Text",
         "Text",
-        "Int4",
         "Text"
       ]
     },
@@ -30,5 +29,5 @@
       false
     ]
   },
-  "hash": "7a510201963a11f8d384594eec8fde38f6d88a99620533a28fd907723df553ec"
+  "hash": "e3ad6eae964f9d0cda0403c6bd791fa47dc259ec9375619e50d9db03cfc3728d"
 }

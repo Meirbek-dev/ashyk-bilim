@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT position, test_id, stdin, expected_output, description, weight::float8 AS \"weight!\",\n                  is_visible, verdict AS \"verdict: TestVerdict\", status_description, passed,\n                  stdout, stderr,\n                  compile_output, message, time_seconds, memory_kb\n           FROM code_run_cases WHERE run_id = $1 ORDER BY position",
+  "query": "SELECT c.position, c.test_id, c.stdin, c.expected_output, c.description,\n                  c.weight::float8 AS \"weight!\", c.is_visible, c.verdict AS \"verdict: TestVerdict\",\n                  c.status_description, (c.verdict = 'accepted' OR r.purpose = 'custom') AS \"passed!\",\n                  c.stdout, c.stderr, c.compile_output, c.message, c.time_seconds, c.memory_kb\n           FROM code_run_cases c JOIN code_runs r ON r.id = c.run_id\n           WHERE c.run_id = $1 ORDER BY c.position",
   "describe": {
     "columns": [
       {
@@ -99,14 +99,9 @@
       },
       {
         "ordinal": 9,
-        "name": "passed",
+        "name": "passed!",
         "type_info": "Bool",
-        "origin": {
-          "Table": {
-            "table": "code_run_cases",
-            "name": "passed"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 10,
@@ -190,7 +185,7 @@
       false,
       false,
       false,
-      false,
+      null,
       true,
       true,
       true,
@@ -199,5 +194,5 @@
       true
     ]
   },
-  "hash": "5bf4e73e07174bcbdd762ee7c7b0c66db483d9f4b1f526b202e0d5549d6dbe1f"
+  "hash": "b8b97bc84913d5adf0ff654bf82682d598a71074a4952068162b016506daf299"
 }

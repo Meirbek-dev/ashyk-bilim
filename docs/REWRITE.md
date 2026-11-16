@@ -958,6 +958,9 @@ Queue, in order:
    `*_upload_id` and the `uploads` copies in `file_submission_files`; the creator in `courses` /
    `collections` and in their staff table; `gamification_completions` beside the XP journal; `source_id` as
    `uuid`, and a key for `ai_work_embeddings.subject_id` once the merge gives it one target.
+   - Derived columns: switched in `20261116072922_derived_columns` (readers compute them, `xp_transactions_v`;
+     insert triggers keep the stored copies for the previous release). Left: the contract dropping the columns
+     and triggers.
 5. **Statuses**: `activity_progress.state` becomes a status plus `passed`; `code_runs.status` splits into the
    run's state and its verdict, and the language is its name, not Judge0's number; one soft-delete idiom (a
    timestamp, the status derived).

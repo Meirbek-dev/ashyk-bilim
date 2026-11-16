@@ -88,6 +88,8 @@
 //!   names its kind; draw quotas and drawn lists keep the API's shape and a
 //!   draw is written once; a hand-in names a version of its own assessment;
 //!   a message's author is a member of its conversation.
+//! - REWRITE 5.8 item 4: one copy of each fact. An award's levels, a test's
+//!   `passed` and a feedback row's grader are read from their source.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -2924,6 +2926,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("assessment_versions_upload_ids", "derived"),
         ("blocks_upload_ids", "derived"),
         ("chapters_upload_ids", "derived"),
+        (
+            "code_run_cases_passed",
+            "derived; the previous release's copy, a contract drops it",
+        ),
         ("collections_upload_ids", "derived"),
         (
             "course_discussions_recount_replies",
@@ -2941,6 +2947,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("platforms_upload_ids", "derived"),
         ("translations_touch_platform", "derived"),
         ("users_upload_ids", "derived"),
+        (
+            "xp_transactions_levels",
+            "derived; the previous release's copy, a contract drops it",
+        ),
         // Business steps, known debts: move to the code that issues and renames. The renaming writers re-issue
         // themselves since 2026-11-08 (`certificates::renaming_writers_reissue_without_the_trigger`): a contract
         // a release later drops `users_reissue_certificates`.
@@ -3561,4 +3571,135 @@ async fn a_file_task_is_an_assessment(pool: PgPool) {
             .await;
         assert_eq!(set.is_ok(), allowed, "max_attempts = {cap}");
     }
+}
+
+/// REWRITE 5.8 item 4, part 1: a value that follows from another column is
+/// read from it. The stored copies (kept by triggers for the previous
+/// release) are set wrong by hand; the readers answer from the XP journal,
+/// the run's purpose and verdict, and the grade entry.
+#[ab_testdb::test]
+async fn derived_values_are_read_from_their_source(pool: PgPool) {
+    use ab_core::id::{CodeRunId, SubmissionId, UserId};
+    use ab_db::gamification::{NewTransaction, Recorded};
+    let w = world(&pool).await;
+    let user = UserId(w.user);
+    ab_db::gamification::ensure_profile(&pool, user)
+        .await
+        .unwrap();
+    for amount in [60, 50] {
+        let award = NewTransaction {
+            user_id: user,
+            amount,
+            source: ab_core::assessments::XpSource::AdminAward,
+            source_id: None,
+            reason: None,
+            idempotency_key: None,
+        };
+        let recorded = ab_db::gamification::record_award(&pool, award, None)
+            .await
+            .unwrap();
+        assert!(matches!(recorded, Recorded::New(_)), "{recorded:?}");
+    }
+    // The trigger stored what the view computes; then the copy drifts.
+    let stored: Vec<(i32, bool)> = sqlx::query_as(
+        "SELECT previous_level, triggered_level_up FROM xp_transactions ORDER BY created_at",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(stored, [(1, false), (1, true)]);
+    sqlx::query("UPDATE xp_transactions SET previous_level = 9, triggered_level_up = NOT triggered_level_up")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let journal = ab_db::gamification::recent_transactions(&pool, user, 10)
+        .await
+        .unwrap();
+    let levels: Vec<(i32, i32, bool)> = journal
+        .iter()
+        .map(|t| (t.amount, t.previous_level, t.triggered_level_up))
+        .collect();
+    assert_eq!(levels, [(50, 1, true), (60, 1, false)]);
+
+    // A test passed when it was accepted, or when nothing was scored (custom input).
+    let item: Uuid = sqlx::query_scalar(
+        "INSERT INTO assessment_items (assessment_id, kind, position, body)
+         VALUES ($1, 'code', 1, '{\"kind\": \"code\"}') RETURNING id",
+    )
+    .bind(w.assessment)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    for (purpose, verdict, passed) in [
+        ("final", "wrong_answer", false),
+        ("custom", "runtime_error", true),
+    ] {
+        let run: Uuid = sqlx::query_scalar(
+            "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, source_sha256,
+                                    finished_at)
+             VALUES ($1, $2, $3, $4, 'accepted', 71, repeat('a', 64), now()) RETURNING id",
+        )
+        .bind(w.assessment)
+        .bind(item)
+        .bind(w.user)
+        .bind(purpose)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        let stored: bool = sqlx::query_scalar(
+            "INSERT INTO code_run_cases (run_id, position, test_id, verdict) VALUES ($1, 0, 't', $2)
+             RETURNING passed",
+        )
+        .bind(run)
+        .bind(verdict)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(stored, passed, "{purpose}");
+        sqlx::query("UPDATE code_run_cases SET passed = NOT passed WHERE run_id = $1")
+            .bind(run)
+            .execute(&pool)
+            .await
+            .unwrap();
+        let cases = ab_db::submissions::list_code_run_cases(&pool, CodeRunId(run))
+            .await
+            .unwrap();
+        assert_eq!(cases[0].passed, passed, "{purpose}");
+    }
+
+    // A feedback row's grader is its entry's.
+    let hand_in = submission(&pool, &w, 1, false).await.unwrap();
+    let entry: Uuid = sqlx::query_scalar(
+        "INSERT INTO grading_entries (submission_id, raw_score, graded_by) VALUES ($1, 0, $2) RETURNING id",
+    )
+    .bind(hand_in)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    ab_db::submissions::insert_item_feedback(
+        &pool,
+        ab_db::submissions::NewItemFeedback {
+            grading_entry_id: ab_core::id::GradingEntryId(entry),
+            submission_id: SubmissionId(hand_in),
+            item_id: None,
+            item_ref: "i1",
+            comment: "good",
+            score: None,
+            max_score: None,
+            annotation_type: ab_core::assessments::AnnotationType::Text,
+            annotation_key: None,
+        },
+    )
+    .await
+    .unwrap();
+    let stored: Option<Uuid> = sqlx::query_scalar("SELECT graded_by FROM item_feedback")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(stored, None, "the row keeps no grader of its own");
+    let feedback = ab_db::submissions::list_item_feedback(&pool, SubmissionId(hand_in), false)
+        .await
+        .unwrap();
+    assert_eq!(feedback[0].graded_by, Some(user));
 }

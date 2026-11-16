@@ -22,3 +22,13 @@ constraint	daily_teacher_metrics_metric_date_teacher_user_id_key	the same contra
 table	gamification_config	the release after the settings move (20261116064418): the values live on the platforms row	REWRITE 5.6 n9
 table	ai_feature_switches	the release after the settings move (20261116064418): platforms.ai_features	REWRITE 5.6 n9
 table	feature_activations	the release after the settings move (20261116064418): platforms.deadline_auto_submit_since	REWRITE 5.6 n9
+column	xp_transactions.previous_level	the release after the readers moved to their source (20261116072922): xp_transactions_v computes it	REWRITE 5.8 item 4
+column	xp_transactions.triggered_level_up	the release after the readers moved to their source (20261116072922): xp_transactions_v computes it	REWRITE 5.8 item 4
+trigger	xp_transactions_levels	the contract that drops xp_transactions.previous_level	REWRITE 5.8 item 4
+column	item_feedback.graded_by	the release after the readers moved to their source (20261116072922): the grade entry's graded_by	REWRITE 5.8 item 4
+column	item_feedback.updated_at	the release after the readers moved to their source (20261116072922): a frozen row; drop the item_feedback_touch trigger with it	REWRITE 5.8 item 4
+trigger	item_feedback_touch	the contract that drops item_feedback.updated_at	REWRITE 5.8 item 4
+column	certificate_users.updated_at	the release after the readers moved to their source (20261116072922): a frozen row, a re-issue has reissued_at; drop certificate_users_touch with it	REWRITE 5.8 item 4
+trigger	certificate_users_touch	the contract that drops certificate_users.updated_at	REWRITE 5.8 item 4
+column	code_run_cases.passed	the release after the readers moved to their source (20261116072922): verdict = 'accepted' or a custom run	REWRITE 5.8 item 4
+trigger	code_run_cases_passed	the contract that drops code_run_cases.passed	REWRITE 5.8 item 4

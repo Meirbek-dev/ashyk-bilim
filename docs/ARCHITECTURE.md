@@ -516,6 +516,12 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **Derived aggregates are reconciled** weekly (`maintenance:reconcile`): every member's progress projection
   is re-projected (the `progress-backfill` pass; changed members are logged) and gamification totals/level
   are re-derived from `xp_transactions` / `gamification_completions`.
+- **One copy of each fact** (REWRITE 5.8 item 4): a value that follows from another column is read from it. An XP
+  award's `previous_level` / `triggered_level_up` come from `xp_transactions_v` (the levels, `xp_level()`, of the
+  user's XP before and after the row in journal order; filter the view by `user_id`); a test's `passed` is
+  `verdict = 'accepted'` or a custom-input run; a feedback row's grader is its grade entry's `graded_by`; frozen rows
+  (`item_feedback`, `certificate_users`) have no `updated_at` the server reads. The stored copies stay for the
+  previous release, filled by insert triggers, until a contract drops them (`just contracts-pending`).
 - **No import artefacts**: the `etl_*` tables and every `legacy_uuid` except `blocks.legacy_uuid` (lesson
   content still links blocks by it) were dropped at T+32d.
 - **One platform day in SQL too** (§16 `AB__SERVER__TIME_ZONE`; `20261102030000_platform_day.sql`,

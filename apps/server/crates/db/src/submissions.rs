@@ -1323,9 +1323,9 @@ pub struct ItemFeedbackRow {
     pub max_score: Option<f64>,
     pub annotation_type: AnnotationType,
     pub annotation_key: Option<String>,
+    /// The grade entry's grader (the row keeps no copy of its own).
     pub graded_by: Option<UserId>,
     pub created_at: i64,
-    pub updated_at: i64,
 }
 
 pub struct NewItemFeedback<'a> {
@@ -1338,7 +1338,6 @@ pub struct NewItemFeedback<'a> {
     pub max_score: Option<f64>,
     pub annotation_type: AnnotationType,
     pub annotation_key: Option<&'a str>,
-    pub graded_by: UserId,
 }
 
 pub async fn insert_item_feedback<'e, E: sqlx::PgExecutor<'e>>(
@@ -1348,8 +1347,8 @@ pub async fn insert_item_feedback<'e, E: sqlx::PgExecutor<'e>>(
     let id = sqlx::query_scalar!(
         r#"INSERT INTO item_feedback
                (grading_entry_id, submission_id, item_id, item_ref, comment, score, max_score,
-                annotation_type, annotation_key, graded_by)
-           VALUES ($1, $2, $3, $4, $5, $6::float8, $7::float8, $8, $9, $10)
+                annotation_type, annotation_key)
+           VALUES ($1, $2, $3, $4, $5, $6::float8, $7::float8, $8, $9)
            RETURNING id AS "id: ItemFeedbackId""#,
         f.grading_entry_id.0,
         f.submission_id.0,
@@ -1359,8 +1358,7 @@ pub async fn insert_item_feedback<'e, E: sqlx::PgExecutor<'e>>(
         f.score,
         f.max_score,
         f.annotation_type.as_str(),
-        f.annotation_key,
-        f.graded_by.0
+        f.annotation_key
     )
     .fetch_one(executor)
     .await?;
@@ -1373,15 +1371,15 @@ pub async fn get_item_feedback(
 ) -> Result<Option<ItemFeedbackRow>> {
     let row = sqlx::query_as!(
         ItemFeedbackRow,
-        r#"SELECT id AS "id: ItemFeedbackId",
-                  grading_entry_id AS "grading_entry_id: GradingEntryId",
-                  submission_id AS "submission_id: SubmissionId",
-                  item_id AS "item_id: AssessmentItemId", item_ref, comment, score::float8 AS "score?", max_score::float8 AS "max_score?",
-                  annotation_type AS "annotation_type: AnnotationType", annotation_key,
-                  graded_by AS "graded_by: UserId",
-                  (extract(epoch FROM created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM item_feedback WHERE id = $1"#,
+        r#"SELECT f.id AS "id: ItemFeedbackId",
+                  f.grading_entry_id AS "grading_entry_id: GradingEntryId",
+                  f.submission_id AS "submission_id: SubmissionId",
+                  f.item_id AS "item_id: AssessmentItemId", f.item_ref, f.comment, f.score::float8 AS "score?",
+                  f.max_score::float8 AS "max_score?", f.annotation_type AS "annotation_type: AnnotationType",
+                  f.annotation_key, g.graded_by AS "graded_by: UserId",
+                  (extract(epoch FROM f.created_at))::bigint AS "created_at!"
+           FROM item_feedback f JOIN grading_entries g ON g.id = f.grading_entry_id
+           WHERE f.id = $1"#,
         id.0
     )
     .fetch_optional(pool)
@@ -1403,9 +1401,8 @@ pub async fn list_item_feedback(
                   f.submission_id AS "submission_id: SubmissionId",
                   f.item_id AS "item_id: AssessmentItemId", f.item_ref, f.comment, f.score::float8 AS "score?",
                   f.max_score::float8 AS "max_score?", f.annotation_type AS "annotation_type: AnnotationType",
-                  f.annotation_key, f.graded_by AS "graded_by: UserId",
-                  (extract(epoch FROM f.created_at))::bigint AS "created_at!",
-                  (extract(epoch FROM f.updated_at))::bigint AS "updated_at!"
+                  f.annotation_key, g.graded_by AS "graded_by: UserId",
+                  (extract(epoch FROM f.created_at))::bigint AS "created_at!"
            FROM item_feedback f JOIN grading_entries g ON g.id = f.grading_entry_id
            WHERE f.submission_id = $1 AND (NOT $2 OR g.published_at IS NOT NULL)
            ORDER BY f.id"#,
@@ -1644,6 +1641,8 @@ pub struct CodeRunCaseRow {
     pub is_visible: bool,
     pub verdict: TestVerdict,
     pub status_description: String,
+    /// Read as "accepted, or a custom-input run" (`list_code_run_cases`);
+    /// never written: the stored column is the previous release's.
     pub passed: bool,
     pub stdout: Option<String>,
     pub stderr: Option<String>,
@@ -1663,10 +1662,9 @@ pub async fn insert_code_run_cases(
         sqlx::query!(
             r#"INSERT INTO code_run_cases
                    (run_id, position, test_id, stdin, expected_output, description,
-                    weight, is_visible, verdict, status_description, passed, stdout, stderr,
+                    weight, is_visible, verdict, status_description, stdout, stderr,
                     compile_output, message, time_seconds, memory_kb)
-               VALUES ($1, $2, $3, $4, $5, $6, $7::float8, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-                       $17)"#,
+               VALUES ($1, $2, $3, $4, $5, $6, $7::float8, $8, $9, $10, $11, $12, $13, $14, $15, $16)"#,
             run_id.0,
             c.position,
             c.test_id,
@@ -1677,7 +1675,6 @@ pub async fn insert_code_run_cases(
             c.is_visible,
             c.verdict.as_str(),
             c.status_description,
-            c.passed,
             c.stdout,
             c.stderr,
             c.compile_output,
@@ -1695,11 +1692,12 @@ pub async fn insert_code_run_cases(
 pub async fn list_code_run_cases(pool: &PgPool, run_id: CodeRunId) -> Result<Vec<CodeRunCaseRow>> {
     let rows = sqlx::query_as!(
         CodeRunCaseRow,
-        r#"SELECT position, test_id, stdin, expected_output, description, weight::float8 AS "weight!",
-                  is_visible, verdict AS "verdict: TestVerdict", status_description, passed,
-                  stdout, stderr,
-                  compile_output, message, time_seconds, memory_kb
-           FROM code_run_cases WHERE run_id = $1 ORDER BY position"#,
+        r#"SELECT c.position, c.test_id, c.stdin, c.expected_output, c.description,
+                  c.weight::float8 AS "weight!", c.is_visible, c.verdict AS "verdict: TestVerdict",
+                  c.status_description, (c.verdict = 'accepted' OR r.purpose = 'custom') AS "passed!",
+                  c.stdout, c.stderr, c.compile_output, c.message, c.time_seconds, c.memory_kb
+           FROM code_run_cases c JOIN code_runs r ON r.id = c.run_id
+           WHERE c.run_id = $1 ORDER BY c.position"#,
         run_id.0
     )
     .fetch_all(pool)

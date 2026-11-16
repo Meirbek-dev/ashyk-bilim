@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: ItemFeedbackId\",\n                  grading_entry_id AS \"grading_entry_id: GradingEntryId\",\n                  submission_id AS \"submission_id: SubmissionId\",\n                  item_id AS \"item_id: AssessmentItemId\", item_ref, comment, score::float8 AS \"score?\", max_score::float8 AS \"max_score?\",\n                  annotation_type AS \"annotation_type: AnnotationType\", annotation_key,\n                  graded_by AS \"graded_by: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM item_feedback WHERE id = $1",
+  "query": "SELECT f.id AS \"id: ItemFeedbackId\",\n                  f.grading_entry_id AS \"grading_entry_id: GradingEntryId\",\n                  f.submission_id AS \"submission_id: SubmissionId\",\n                  f.item_id AS \"item_id: AssessmentItemId\", f.item_ref, f.comment, f.score::float8 AS \"score?\",\n                  f.max_score::float8 AS \"max_score?\", f.annotation_type AS \"annotation_type: AnnotationType\",\n                  f.annotation_key, g.graded_by AS \"graded_by: UserId\",\n                  (extract(epoch FROM f.created_at))::bigint AS \"created_at!\"\n           FROM item_feedback f JOIN grading_entries g ON g.id = f.grading_entry_id\n           WHERE f.submission_id = $1 AND (NOT $2 OR g.published_at IS NOT NULL)\n           ORDER BY f.id",
   "describe": {
     "columns": [
       {
@@ -109,7 +109,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "item_feedback",
+            "table": "grading_entries",
             "name": "graded_by"
           }
         }
@@ -119,17 +119,12 @@
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
-      },
-      {
-        "ordinal": 12,
-        "name": "updated_at!",
-        "type_info": "Int8",
-        "origin": "Expression"
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Bool"
       ]
     },
     "nullable": [
@@ -144,9 +139,8 @@
       false,
       true,
       true,
-      null,
       null
     ]
   },
-  "hash": "f5abdb869f725227eaa6ea531511aab840fb25e4e3a7e899f9a6f6bc19fe6f4d"
+  "hash": "6bd44d8d20e5c289b279f4d9d03b16253973f5df3bf0a1a9392d42eea5d4973a"
 }

@@ -1776,6 +1776,16 @@ function CREATE OR REPLACE FUNCTION public.certification_text(config jsonb, key 
 AS $function$
     SELECT NULLIF(btrim(CASE jsonb_typeof(config -> key) WHEN 'string' THEN config ->> key END), '')
 $function$
+function CREATE OR REPLACE FUNCTION public.code_run_cases_passed()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    NEW.passed := NEW.verdict = 'accepted'
+        OR EXISTS (SELECT 1 FROM code_runs r WHERE r.id = NEW.run_id AND r.purpose = 'custom');
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.collection_listable(p_collection uuid, p_viewer uuid, p_see_all_courses boolean)
  RETURNS boolean
  LANGUAGE sql
@@ -2427,6 +2437,24 @@ AS $function$
        AND array_position(ids, NULL) IS NULL
        AND (SELECT count(DISTINCT v) FROM unnest(ids) AS t (v)) = cardinality(ids)
 $function$
+function CREATE OR REPLACE FUNCTION public.xp_level(total bigint)
+ RETURNS integer
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+RETURN LEAST(100, GREATEST(1, ((floor(((('-1'::integer)::numeric + sqrt(((1)::numeric + (0.08 * (GREATEST(total, (0)::bigint))::numeric)))) / (2)::numeric)))::integer + 1)))
+function CREATE OR REPLACE FUNCTION public.xp_transactions_levels()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+DECLARE
+    before bigint;
+BEGIN
+    SELECT coalesce(sum(x.amount), 0) INTO before FROM xp_transactions x WHERE x.user_id = NEW.user_id;
+    NEW.previous_level := xp_level(before);
+    NEW.triggered_level_up := xp_level(before + NEW.amount) > NEW.previous_level;
+    RETURN NEW;
+END $function$
 index CREATE INDEX activities_course_idx ON core.activities USING btree (course_id)
 index CREATE INDEX activities_search_trgm_idx ON core.activities USING gin (search_fold(name) gin_trgm_ops)
 index CREATE INDEX activity_progress_activity_state_idx ON learning.activity_progress USING btree (activity_id, state)
@@ -3891,6 +3919,7 @@ trigger CREATE TRIGGER certificate_users_touch BEFORE UPDATE ON learning.certifi
 trigger CREATE TRIGGER certifications_touch BEFORE UPDATE ON learning.certifications FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER chapters_touch BEFORE UPDATE ON core.chapters FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER chapters_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_key ON core.chapters FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_key', 'thumbnail_upload_id')
+trigger CREATE TRIGGER code_run_cases_passed BEFORE INSERT ON learning.code_run_cases FOR EACH ROW EXECUTE FUNCTION code_run_cases_passed()
 trigger CREATE TRIGGER collection_staff_touch BEFORE UPDATE ON core.collection_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER collections_touch BEFORE UPDATE ON core.collections FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER collections_upload_ids BEFORE INSERT OR UPDATE OF cover_key ON core.collections FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('cover_key', 'cover_upload_id')
@@ -3931,6 +3960,7 @@ trigger CREATE TRIGGER users_reissue_certificates AFTER UPDATE OF display_name O
 trigger CREATE TRIGGER users_sync_state BEFORE INSERT OR UPDATE ON core.users FOR EACH ROW EXECUTE FUNCTION users_sync_state()
 trigger CREATE TRIGGER users_touch BEFORE UPDATE ON core.users FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER users_upload_ids BEFORE INSERT OR UPDATE OF avatar_key ON core.users FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('avatar_key', 'avatar_upload_id')
+trigger CREATE TRIGGER xp_transactions_levels BEFORE INSERT ON learning.xp_transactions FOR EACH ROW EXECUTE FUNCTION xp_transactions_levels()
 view core.course_progress_v  SELECT e.course_id,
     e.user_id,
     count(r.activity_id)::integer AS total_required_count,
@@ -3977,3 +4007,23 @@ view learning.learner_visible_activities  SELECT id AS activity_id,
   WHERE published AND NOT (EXISTS ( SELECT 1
            FROM assessments s
           WHERE s.activity_id = a.id AND s.lifecycle <> 'published'::text));
+view learning.xp_transactions_v  SELECT id,
+    user_id,
+    amount,
+    source,
+    source_id,
+    reason,
+    idempotency_key,
+    created_at,
+    xp_level(before) AS previous_level,
+    xp_level(before + amount) > xp_level(before) AS triggered_level_up
+   FROM ( SELECT x.id,
+            x.user_id,
+            x.amount,
+            x.source,
+            x.source_id,
+            x.reason,
+            x.idempotency_key,
+            x.created_at,
+            COALESCE(sum(x.amount) OVER (PARTITION BY x.user_id ORDER BY x.created_at, x.id ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING), 0::bigint) AS before
+           FROM xp_transactions x) j;

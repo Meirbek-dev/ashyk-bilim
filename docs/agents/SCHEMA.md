@@ -119,6 +119,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`core.usergroups`](#usergroups): A named group of learners a teacher assigns courses or assessments to
 - [`core.users`](#users): An account
 - [`learning.xp_transactions`](#xp_transactions): XP journal: every award with its source; the profile totals are derived from it
+- [`learning.xp_transactions_v`](#xp_transactions_v): xp_transactions with previous_level and triggered_level_up computed from the XP before each row
 
 ## activities
 
@@ -1263,6 +1264,7 @@ The result of one test case of a code run.
 - Unique `code_run_cases_run_position_key`: `UNIQUE (run_id, "position")`
 - Foreign key `code_run_cases_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES code_runs(id) ON DELETE CASCADE`
 - Check `code_run_cases_verdict_check`: `CHECK ((verdict = ANY (ARRAY['accepted'::text, 'wrong_answer'::text, 'time_limit'::text, 'memory_limit'::text, 'output_limit'::text, 'compile_error'::text, 'runtime_error'::text, 'internal_error'::text])))`
+- Trigger `code_run_cases_passed`: `CREATE TRIGGER code_run_cases_passed BEFORE INSERT ON learning.code_run_cases FOR EACH ROW EXECUTE FUNCTION code_run_cases_passed()`
 
 ## code_runs
 
@@ -2964,3 +2966,21 @@ XP journal: every award with its source; the profile totals are derived from it.
 - Check `xp_transactions_source_check`: `CHECK ((source = ANY (ARRAY['activity_completion'::text, 'course_completion'::text, 'login_bonus'::text, 'quiz_completion'::text, 'exam_completion'::text, 'streak_bonus'::text, 'admin_award'::text, 'code_challenge_completion'::text, 'code_challenge_perfect'::text, 'code_challenge_first_solve'::text])))`
 - Check `xp_transactions_source_id_shape`: `CHECK (((source_id IS NULL) OR CASE WHEN (source = 'login_bonus'::text) THEN (source_id ~ '^[0-9]{1,6}$'::text) ELSE (source_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text) END))`
 - Index `xp_transactions_user_recent_idx`: `CREATE INDEX xp_transactions_user_recent_idx ON learning.xp_transactions USING btree (user_id, created_at DESC)`
+- Trigger `xp_transactions_levels`: `CREATE TRIGGER xp_transactions_levels BEFORE INSERT ON learning.xp_transactions FOR EACH ROW EXECUTE FUNCTION xp_transactions_levels()`
+
+## xp_transactions_v (view)
+
+xp_transactions with previous_level and triggered_level_up computed from the XP before each row.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| id | uuid | null |  |
+| user_id | uuid | null |  |
+| amount | integer | null |  |
+| source | text | null |  |
+| source_id | text | null |  |
+| reason | text | null |  |
+| idempotency_key | text | null |  |
+| created_at | timestamp with time zone | null |  |
+| previous_level | integer | null |  |
+| triggered_level_up | boolean | null |  |

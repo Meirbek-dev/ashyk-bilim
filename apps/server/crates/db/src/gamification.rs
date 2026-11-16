@@ -90,11 +90,11 @@ pub async fn find_transaction(
 ) -> Result<Option<TransactionRow>> {
     let row = sqlx::query_as!(
         TransactionRow,
-        r#"SELECT id AS "id: XpTransactionId", user_id AS "user_id: UserId", amount,
-                  source AS "source: XpSource", source_id, reason, previous_level,
-                  triggered_level_up,
+        r#"SELECT id AS "id!: XpTransactionId", user_id AS "user_id!: UserId", amount AS "amount!",
+                  source AS "source!: XpSource", source_id, reason, previous_level AS "previous_level!",
+                  triggered_level_up AS "triggered_level_up!",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
-           FROM xp_transactions
+           FROM xp_transactions_v
            WHERE user_id = $1
              AND (($4::text IS NOT NULL AND idempotency_key = $4)
                   OR ($3::text IS NOT NULL AND source = $2 AND source_id = $3))
@@ -136,16 +136,16 @@ pub enum Recorded {
 /// profile row lock, so parallel awards serialize on it (BUG-252). Today's
 /// total is summed from the ledger in the statement after the lock: READ
 /// COMMITTED takes a fresh snapshot per statement, so it sees every award
-/// that held the lock before this one. Returns the new row with
-/// `triggered_level_up` resolved.
+/// that held the lock before this one. Returns the new row with its levels,
+/// which `xp_transactions_v` computes from the journal (REWRITE 5.8 item 4).
 pub async fn record_award(
     pool: &PgPool,
     new: NewTransaction<'_>,
     daily_limit: Option<i32>,
 ) -> Result<Recorded> {
     let mut tx = pool.begin().await?;
-    let previous_level = sqlx::query_scalar!(
-        "SELECT level FROM gamification_profiles WHERE user_id = $1 FOR UPDATE",
+    sqlx::query_scalar!(
+        "SELECT user_id FROM gamification_profiles WHERE user_id = $1 FOR UPDATE",
         new.user_id.0
     )
     .fetch_one(&mut *tx)
@@ -159,8 +159,8 @@ pub async fn record_award(
     .await?;
     let inserted = sqlx::query_scalar!(
         r#"INSERT INTO xp_transactions
-               (user_id, amount, source, source_id, reason, previous_level, idempotency_key)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
+               (user_id, amount, source, source_id, reason, idempotency_key)
+           VALUES ($1, $2, $3, $4, $5, $6)
            ON CONFLICT DO NOTHING
            RETURNING id AS "id: XpTransactionId""#,
         new.user_id.0,
@@ -168,7 +168,6 @@ pub async fn record_award(
         new.source.as_str(),
         new.source_id,
         new.reason,
-        previous_level,
         new.idempotency_key
     )
     .fetch_optional(&mut *tx)
@@ -183,28 +182,26 @@ pub async fn record_award(
     }
     // Level curve: XP(level) = 50(level-1)^2 + 50(level-1), capped at 100.
     // Today's XP is summed from the journal, never stored (review item 16).
-    let new_level: i32 = sqlx::query_scalar!(
+    sqlx::query!(
         r#"UPDATE gamification_profiles SET
                total_xp = total_xp + $2,
-               level = LEAST(100, GREATEST(1,
-                   floor((-1 + sqrt(1 + 0.08 * (total_xp + $2))) / 2)::int + 1)),
+               level = xp_level(total_xp + $2),
                last_xp_award_at = now()
-           WHERE user_id = $1
-           RETURNING level AS "level!""#,
+           WHERE user_id = $1"#,
         new.user_id.0,
         new.amount
     )
-    .fetch_one(&mut *tx)
+    .execute(&mut *tx)
     .await?;
     let row = sqlx::query_as!(
         TransactionRow,
-        r#"UPDATE xp_transactions SET triggered_level_up = $2 WHERE id = $1
-           RETURNING id AS "id: XpTransactionId", user_id AS "user_id: UserId", amount,
-                     source AS "source: XpSource", source_id, reason, previous_level,
-                     triggered_level_up,
-                     (extract(epoch FROM created_at))::bigint AS "created_at!""#,
-        id.0,
-        new_level > previous_level
+        r#"SELECT id AS "id!: XpTransactionId", user_id AS "user_id!: UserId", amount AS "amount!",
+                  source AS "source!: XpSource", source_id, reason, previous_level AS "previous_level!",
+                  triggered_level_up AS "triggered_level_up!",
+                  (extract(epoch FROM created_at))::bigint AS "created_at!"
+           FROM xp_transactions_v WHERE user_id = $1 AND id = $2"#,
+        new.user_id.0,
+        id.0
     )
     .fetch_one(&mut *tx)
     .await?;
@@ -315,11 +312,11 @@ pub async fn recent_transactions(
 ) -> Result<Vec<TransactionRow>> {
     let rows = sqlx::query_as!(
         TransactionRow,
-        r#"SELECT id AS "id: XpTransactionId", user_id AS "user_id: UserId", amount,
-                  source AS "source: XpSource", source_id, reason, previous_level,
-                  triggered_level_up,
+        r#"SELECT id AS "id!: XpTransactionId", user_id AS "user_id!: UserId", amount AS "amount!",
+                  source AS "source!: XpSource", source_id, reason, previous_level AS "previous_level!",
+                  triggered_level_up AS "triggered_level_up!",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
-           FROM xp_transactions WHERE user_id = $1
+           FROM xp_transactions_v WHERE user_id = $1
            ORDER BY created_at DESC, id DESC LIMIT $2"#,
         user_id.0,
         limit
@@ -338,11 +335,11 @@ pub async fn transactions_page(
 ) -> Result<Vec<TransactionRow>> {
     let rows = sqlx::query_as!(
         TransactionRow,
-        r#"SELECT id AS "id: XpTransactionId", user_id AS "user_id: UserId", amount,
-                  source AS "source: XpSource", source_id, reason, previous_level,
-                  triggered_level_up,
+        r#"SELECT id AS "id!: XpTransactionId", user_id AS "user_id!: UserId", amount AS "amount!",
+                  source AS "source!: XpSource", source_id, reason, previous_level AS "previous_level!",
+                  triggered_level_up AS "triggered_level_up!",
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
-           FROM xp_transactions
+           FROM xp_transactions_v
            WHERE user_id = $1 AND ($2::uuid IS NULL OR id < $2)
            ORDER BY id DESC LIMIT $3"#,
         user_id.0,
@@ -519,8 +516,7 @@ pub async fn reconcile_profiles(pool: &PgPool) -> Result<Vec<UserId>> {
                            WHERE user_id = $1 AND kind = 'course')::int AS courses)
                UPDATE gamification_profiles g SET
                    total_xp = t.xp,
-                   level = LEAST(100, GREATEST(1,
-                       floor((-1 + sqrt(1 + 0.08 * t.xp)) / 2)::int + 1)),
+                   level = xp_level(t.xp),
                    total_activities_completed = t.activities,
                    total_courses_completed = t.courses
                FROM truth t

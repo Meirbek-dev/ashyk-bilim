@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE gamification_profiles SET\n               total_xp = total_xp + $2,\n               level = xp_level(total_xp + $2),\n               last_xp_award_at = now()\n           WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7a283fcca80a67cdad2c7ee8efb14d7e1871f07a93b20a33c4e79d2ab9ab8d88"
+}

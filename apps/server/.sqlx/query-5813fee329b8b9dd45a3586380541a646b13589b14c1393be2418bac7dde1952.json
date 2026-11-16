@@ -1,48 +1,48 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: XpTransactionId\", user_id AS \"user_id: UserId\", amount,\n                  source AS \"source: XpSource\", source_id, reason, previous_level,\n                  triggered_level_up,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM xp_transactions WHERE user_id = $1\n           ORDER BY created_at DESC, id DESC LIMIT $2",
+  "query": "SELECT id AS \"id!: XpTransactionId\", user_id AS \"user_id!: UserId\", amount AS \"amount!\",\n                  source AS \"source!: XpSource\", source_id, reason, previous_level AS \"previous_level!\",\n                  triggered_level_up AS \"triggered_level_up!\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM xp_transactions_v WHERE user_id = $1 AND id = $2",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id: XpTransactionId",
+        "name": "id!: XpTransactionId",
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "xp_transactions",
+            "table": "xp_transactions_v",
             "name": "id"
           }
         }
       },
       {
         "ordinal": 1,
-        "name": "user_id: UserId",
+        "name": "user_id!: UserId",
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "xp_transactions",
+            "table": "xp_transactions_v",
             "name": "user_id"
           }
         }
       },
       {
         "ordinal": 2,
-        "name": "amount",
+        "name": "amount!",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "xp_transactions",
+            "table": "xp_transactions_v",
             "name": "amount"
           }
         }
       },
       {
         "ordinal": 3,
-        "name": "source: XpSource",
+        "name": "source!: XpSource",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "xp_transactions",
+            "table": "xp_transactions_v",
             "name": "source"
           }
         }
@@ -53,7 +53,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "xp_transactions",
+            "table": "xp_transactions_v",
             "name": "source_id"
           }
         }
@@ -64,29 +64,29 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "xp_transactions",
+            "table": "xp_transactions_v",
             "name": "reason"
           }
         }
       },
       {
         "ordinal": 6,
-        "name": "previous_level",
+        "name": "previous_level!",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "xp_transactions",
+            "table": "xp_transactions_v",
             "name": "previous_level"
           }
         }
       },
       {
         "ordinal": 7,
-        "name": "triggered_level_up",
+        "name": "triggered_level_up!",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "xp_transactions",
+            "table": "xp_transactions_v",
             "name": "triggered_level_up"
           }
         }
@@ -101,20 +101,20 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Int8"
+        "Uuid"
       ]
     },
     "nullable": [
-      false,
-      false,
-      false,
-      false,
       true,
       true,
-      false,
-      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
       null
     ]
   },
-  "hash": "d90b4e6c0d777f4b0e57cfc8f8f634e8224afc5d315aa2aef1f442313572bc6c"
+  "hash": "5813fee329b8b9dd45a3586380541a646b13589b14c1393be2418bac7dde1952"
 }
