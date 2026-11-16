@@ -1053,6 +1053,14 @@ Queue, in order:
      the profile's `last_login_at_unix`. Triggers on both tables keep the previous release's
      `gamification_profiles.last_login_at` equal both ways. Left: the contract dropping that column and
      `users_last_login` / `gamification_profiles_last_login`.
+   - Business values: switched in `20261116075641_grade_entry_values`. The server writes a grade entry's
+     `revision` (the highest plus one, under the submission's row lock) and its `max_points` / `raw_points` /
+     `final_points` (`points_of_percent` of the stored percentage and the attempt's version);
+     `grading_entries_number` and `grading_entries_points` now fill only what an insert leaves unset (the previous
+     release's). The certificate names moved earlier: an issue writes them (the insert trigger went in
+     `20261107999950`) and the renaming writers re-issue (3ba18e76); `users_reissue_certificates` waits for its
+     contract. The guards stay. Left: the contract dropping the two grade triggers and their functions, together
+     with `users_reissue_certificates`.
 8. **Planned work, pulled forward**: readers move to `course_progress_v` now, without the four weekly zero-drift
    runs (5.6 n8 step 4); points as the record (n16) and the policy split of `assessments` (n7) follow the merge.
 9. **Names, last**: `certifications` -> `certificate_templates`, `certificate_users` -> `certificates`,

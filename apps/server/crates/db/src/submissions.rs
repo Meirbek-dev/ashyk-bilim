@@ -1232,16 +1232,32 @@ pub struct NewGradingEntry<'a> {
     pub returned: bool,
 }
 
-pub async fn insert_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
-    executor: E,
+/// Append a grade entry, numbered and priced by the server.
+///
+/// The number is the submission's highest plus one, read under its row lock (two graders saving at once take
+/// turns); the points are the stored percentages of the attempt's version (`points_of_percent`, no version = no
+/// points).
+pub async fn insert_grading_entry(
+    conn: &mut sqlx::PgConnection,
     e: NewGradingEntry<'_>,
 ) -> Result<GradingEntryId> {
+    sqlx::query!(
+        "SELECT 1 AS one FROM submissions WHERE id = $1 FOR NO KEY UPDATE",
+        e.submission_id.0
+    )
+    .fetch_optional(&mut *conn)
+    .await?;
     let id = sqlx::query_scalar!(
         r#"INSERT INTO grading_entries
-               (submission_id, graded_by, raw_score, penalty_pct, final_score,
-                raw_breakdown, effective_breakdown, overall_feedback, published_at, returned)
-           VALUES ($1, $2, $3::float8, $4::float8, $5::float8, $6, $7, $8,
-                   CASE WHEN $9 THEN now() ELSE NULL END, $10)
+               (submission_id, revision, graded_by, raw_score, penalty_pct, final_score, max_points, raw_points,
+                final_points, raw_breakdown, effective_breakdown, overall_feedback, published_at, returned)
+           SELECT $1, (SELECT COALESCE(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1),
+                  $2, $3::float8, $4::float8, $5::float8, v.max_points,
+                  points_of_percent(($3::float8)::percent, v.max_points),
+                  points_of_percent(($5::float8)::percent, v.max_points),
+                  $6, $7, $8, CASE WHEN $9 THEN now() ELSE NULL END, $10
+           FROM submissions s LEFT JOIN assessment_versions v ON v.id = s.assessment_version_id
+           WHERE s.id = $1
            RETURNING id AS "id: GradingEntryId""#,
         e.submission_id.0,
         e.graded_by.map(|u| u.0),
@@ -1254,7 +1270,7 @@ pub async fn insert_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
         e.published,
         e.returned
     )
-    .fetch_one(executor)
+    .fetch_one(&mut *conn)
     .await?;
     Ok(id)
 }

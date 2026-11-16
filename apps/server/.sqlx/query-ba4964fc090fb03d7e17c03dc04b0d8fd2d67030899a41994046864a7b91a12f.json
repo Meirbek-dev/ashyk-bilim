@@ -1,0 +1,37 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO grading_entries\n               (submission_id, revision, graded_by, raw_score, penalty_pct, final_score, max_points, raw_points,\n                final_points, raw_breakdown, effective_breakdown, overall_feedback, published_at, returned)\n           SELECT $1, (SELECT COALESCE(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1),\n                  $2, $3::float8, $4::float8, $5::float8, v.max_points,\n                  points_of_percent(($3::float8)::percent, v.max_points),\n                  points_of_percent(($5::float8)::percent, v.max_points),\n                  $6, $7, $8, CASE WHEN $9 THEN now() ELSE NULL END, $10\n           FROM submissions s LEFT JOIN assessment_versions v ON v.id = s.assessment_version_id\n           WHERE s.id = $1\n           RETURNING id AS \"id: GradingEntryId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: GradingEntryId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "grading_entries",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Float8",
+        "Float8",
+        "Float8",
+        "Jsonb",
+        "Jsonb",
+        "Text",
+        "Bool",
+        "Bool"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ba4964fc090fb03d7e17c03dc04b0d8fd2d67030899a41994046864a7b91a12f"
+}

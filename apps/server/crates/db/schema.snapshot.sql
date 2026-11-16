@@ -2215,27 +2215,29 @@ function CREATE OR REPLACE FUNCTION public.grading_entries_number()
  SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
 AS $function$
 BEGIN
-    -- Two graders saving at once take turns on the submission, so the second reads the first's number.
-    PERFORM 1 FROM submissions WHERE id = NEW.submission_id FOR NO KEY UPDATE;
-    SELECT COALESCE(max(revision), 0) + 1 INTO NEW.revision
-      FROM grading_entries WHERE submission_id = NEW.submission_id;
+    IF NEW.revision IS NULL THEN
+        -- Two graders saving at once take turns on the submission, so the second reads the first's number.
+        PERFORM 1 FROM submissions WHERE id = NEW.submission_id FOR NO KEY UPDATE;
+        SELECT COALESCE(max(revision), 0) + 1 INTO NEW.revision
+          FROM grading_entries WHERE submission_id = NEW.submission_id;
+    END IF;
     RETURN NEW;
-END;
-$function$
+END $function$
 function CREATE OR REPLACE FUNCTION public.grading_entries_points()
  RETURNS trigger
  LANGUAGE plpgsql
  SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
 AS $function$
 BEGIN
-    SELECT v.max_points INTO NEW.max_points
-    FROM submissions s JOIN assessment_versions v ON v.id = s.assessment_version_id
-    WHERE s.id = NEW.submission_id;
-    NEW.raw_points := points_of_percent(NEW.raw_score::numeric, NEW.max_points);
-    NEW.final_points := points_of_percent(NEW.final_score::numeric, NEW.max_points);
+    IF NEW.max_points IS NULL THEN
+        SELECT v.max_points INTO NEW.max_points
+          FROM submissions s JOIN assessment_versions v ON v.id = s.assessment_version_id
+         WHERE s.id = NEW.submission_id;
+        NEW.raw_points := points_of_percent(NEW.raw_score::numeric, NEW.max_points);
+        NEW.final_points := points_of_percent(NEW.final_score::numeric, NEW.max_points);
+    END IF;
     RETURN NEW;
-END
-$function$
+END $function$
 function CREATE OR REPLACE FUNCTION public.has_course_role(p_course uuid, p_user uuid)
  RETURNS boolean
  LANGUAGE sql

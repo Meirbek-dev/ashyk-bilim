@@ -182,7 +182,7 @@ async fn grading_ledger_is_append_only(pool: PgPool) {
     // The submission shows its latest entry (checked at commit).
     let mut tx = pool.begin().await.unwrap();
     let entry = submissions::insert_grading_entry(
-        &mut *tx,
+        &mut tx,
         NewGradingEntry {
             submission_id: submission,
             graded_by: None,

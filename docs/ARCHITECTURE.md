@@ -428,8 +428,8 @@ One migration set for the database `ashyq`. Rules:
   the purge with its template (`certifications.course_id` NULL).
 - **A row cannot point at someone else's work.** Composite keys bind code runs, progress, AI drafts and remediation to
   the attempt's owner; `(parent, course_id)` keys bind course-scoped children (`children_of_a_course_scoped_parent_bind_the_course`).
-- **Grades are numbered.** `grading_entries.revision` counts per attempt under the
-  attempt's row lock; the highest revision is current. `item_feedback` is frozen once written, one row per item.
+- **Grades are numbered.** `grading_entries.revision` counts per attempt: the server writes the highest plus one
+  under the attempt's row lock (the unique key refuses a lost race); the highest revision is current. `item_feedback` is frozen once written, one row per item.
 - **History stays.** `enrolment_events` keeps joins and leaves past the course; `submission_violations` keeps every
   anti-cheat event, and the API reads its newest 200 (`submission_violation_log`); the bounded array
   `submissions.violations` is still written for the previous release (`pending-contracts.tsv`).
@@ -635,8 +635,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   it in the hand-in UPDATE; `submissions.assessment_version_id` is then write-once like the snapshots. Readers
   take items and policy from the version (`20261108000200`); the snapshot columns wait for a contract.
 - **A grade entry keeps its points** (`20261102070100_grading_points`): `grading_entries.max_points` (the
-  attempt's `assessment_versions.max_points`), `raw_points`, `final_points` (`score_points`) are set by a BEFORE
-  INSERT trigger from the percentages, whoever writes the entry (both releases), and frozen with the row. The rule
+  attempt's `assessment_versions.max_points`), `raw_points`, `final_points` (`score_points`) are written by the server from the stored
+  percentages (a BEFORE INSERT trigger fills them for the previous release's inserts until a contract), and frozen
+  with the row. The rule
   is `points_of_percent(pct, max) = round(pct × max / 100, 2)` and back `percent_of_points(points, max) =
   round(points × 100 / max, 2)` (numeric, half away from zero; NULL for max 0): a percentage that passes through
   points returns within 0.5 / max_points percentage points. A hand-in without a version has no points. The

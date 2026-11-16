@@ -1160,7 +1160,7 @@ impl SubmissionsService {
         // crash in between used to leave a submitted attempt with no grade entry.
         if !verdict.manual {
             ab_db::submissions::insert_grading_entry(
-                &mut *attempts,
+                &mut attempts,
                 NewGradingEntry {
                     submission_id: submission.id,
                     graded_by: None,

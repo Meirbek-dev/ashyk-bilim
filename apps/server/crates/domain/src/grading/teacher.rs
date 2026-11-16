@@ -1670,7 +1670,7 @@ impl GradingService {
         ledger: LedgerEntry<'_>,
     ) -> Result<()> {
         let entry = ab_db::submissions::insert_grading_entry(
-            &mut **tx,
+            tx,
             NewGradingEntry {
                 submission_id: row.id,
                 graded_by: Some(actor.user_id),
@@ -1835,7 +1835,7 @@ impl GradingService {
             // since keeps its version and the row is skipped.
             let mut tx = self.pool.begin().await?;
             ab_db::submissions::insert_grading_entry(
-                &mut *tx,
+                &mut tx,
                 NewGradingEntry {
                     submission_id: row.id,
                     graded_by: Some(actor.user_id),

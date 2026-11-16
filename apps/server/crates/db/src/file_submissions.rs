@@ -669,14 +669,17 @@ pub async fn grade_attempt(
                WHERE id = $1 AND version = $2
                RETURNING id, late_penalty_pct)
            INSERT INTO grading_entries
-               (submission_id, graded_by, raw_score, penalty_pct, final_score,
-                overall_feedback, effective_breakdown, published_at, returned)
-           SELECT u.id, $7, COALESCE($8::float8, 0), u.late_penalty_pct, $4::float8,
+               (submission_id, revision, graded_by, raw_score, penalty_pct, final_score, max_points, raw_points,
+                final_points, overall_feedback, effective_breakdown, published_at, returned)
+           SELECT u.id, COALESCE(p.revision, 0) + 1, $7, COALESCE($8::float8, 0), u.late_penalty_pct, $4::float8,
+                  v.max_points, points_of_percent(COALESCE($8::float8, 0)::percent, v.max_points),
+                  points_of_percent(($4::float8)::percent, v.max_points),
                   COALESCE($5, CASE WHEN s.status = 'submitted' THEN '' ELSE p.overall_feedback END, ''),
                   COALESCE($6, p.effective_breakdown, '{}'::jsonb),
                   CASE WHEN $3 = 'released' THEN now() END, $3 = 'returned'
            FROM u JOIN submissions s ON s.id = u.id
-           LEFT JOIN LATERAL (SELECT g.overall_feedback, g.effective_breakdown
+           LEFT JOIN assessment_versions v ON v.id = s.assessment_version_id
+           LEFT JOIN LATERAL (SELECT g.revision, g.overall_feedback, g.effective_breakdown
                               FROM grading_entries g WHERE g.submission_id = u.id
                               ORDER BY g.revision DESC LIMIT 1) p ON true"#,
         id.0,
@@ -731,9 +734,10 @@ pub async fn set_attempt_lateness(
                    final_score = $4::float8, version = version + 1
                WHERE id = $1 RETURNING id)
            INSERT INTO grading_entries
-               (submission_id, graded_by, raw_score, penalty_pct, final_score,
-                overall_feedback, effective_breakdown, published_at, returned)
-           SELECT u.id, p.graded_by, p.raw_score, $3::float8, $4::float8,
+               (submission_id, revision, graded_by, raw_score, penalty_pct, final_score, max_points, raw_points,
+                final_points, overall_feedback, effective_breakdown, published_at, returned)
+           SELECT u.id, p.revision + 1, p.graded_by, p.raw_score, $3::float8, $4::float8, p.max_points, p.raw_points,
+                  points_of_percent(($4::float8)::percent, p.max_points),
                   p.overall_feedback, p.effective_breakdown,
                   CASE WHEN p.published_at IS NOT NULL THEN now() END, p.returned
            FROM u CROSS JOIN LATERAL (SELECT g.* FROM grading_entries g WHERE g.submission_id = u.id

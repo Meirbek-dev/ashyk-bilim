@@ -1927,25 +1927,81 @@ async fn a_grade_entry_keeps_its_points(pool: PgPool) {
         .await
         .unwrap();
     let sub = handed_in(&pool, &w, 1, false, version.0).await.unwrap();
+    let entry = |revision: i32| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query_as::<_, (i32, f64, f64, f64)>(
+                "SELECT revision, max_points::float8, raw_points::float8, final_points::float8
+                 FROM grading_entries WHERE submission_id = $1 AND revision = $2",
+            )
+            .bind(sub)
+            .bind(revision)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+        }
+    };
+    // REWRITE 5.8 item 7: the server numbers the entry and sets its points.
     let mut tx = pool.begin().await.unwrap();
-    // A writer's own points are ignored: the database derives them.
-    let points: (f64, f64, f64) = sqlx::query_as(
-        "INSERT INTO grading_entries (submission_id, raw_score, final_score, effective_breakdown,
-                                      max_points, raw_points, final_points)
-         VALUES ($1, 100, 33.33, '{}', 50, 50, 50)
-         RETURNING max_points::float8, raw_points::float8, final_points::float8",
+    let breakdown = serde_json::json!({});
+    ab_db::submissions::insert_grading_entry(
+        &mut tx,
+        ab_db::submissions::NewGradingEntry {
+            submission_id: ab_core::id::SubmissionId(sub),
+            graded_by: None,
+            raw_score: 100.0,
+            penalty_pct: 0.0,
+            final_score: Some(33.333),
+            raw_breakdown: &breakdown,
+            effective_breakdown: &breakdown,
+            overall_feedback: "",
+            published: false,
+            returned: false,
+        },
     )
-    .bind(sub)
-    .fetch_one(&mut *tx)
     .await
     .unwrap();
-    assert_eq!(points, (3.0, 3.0, 1.0), "round(33.33 * 3 / 100, 2) = 1.00");
     sqlx::query("UPDATE submissions SET final_score = 33.33 WHERE id = $1")
         .bind(sub)
         .execute(&mut *tx)
         .await
         .unwrap();
     tx.commit().await.unwrap();
+    assert_eq!(
+        entry(1).await,
+        (1, 3.0, 3.0, 1.0),
+        "round(33.33 * 3 / 100, 2) = 1.00"
+    );
+    // The previous release inserts without them: the triggers fill only what it leaves unset.
+    let mut tx = pool.begin().await.unwrap();
+    sqlx::query(
+        "INSERT INTO grading_entries (submission_id, raw_score, final_score) VALUES ($1, 100, 66.67)",
+    )
+    .bind(sub)
+    .execute(&mut *tx)
+    .await
+    .unwrap();
+    sqlx::query(
+        "INSERT INTO grading_entries (submission_id, revision, raw_score, final_score,
+                                      max_points, raw_points, final_points)
+         VALUES ($1, 7, 100, 50, 4, 4, 2)",
+    )
+    .bind(sub)
+    .execute(&mut *tx)
+    .await
+    .unwrap();
+    sqlx::query("UPDATE submissions SET final_score = 50 WHERE id = $1")
+        .bind(sub)
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(entry(2).await, (2, 3.0, 3.0, 2.0));
+    assert_eq!(
+        entry(7).await,
+        (7, 4.0, 4.0, 2.0),
+        "a writer's own values stay"
+    );
 
     // Round trip: within 0.5 / max_points percentage points.
     for (percent, max_points) in [(33.33, 3.0), (66.67, 3.0), (12.34, 7.0), (99.99, 1.0)] {
@@ -3023,8 +3079,14 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "gamification_profiles_last_login",
             "derived; the previous release's writes, a contract drops it",
         ),
-        ("grading_entries_number", "derived"),
-        ("grading_entries_points", "derived"),
+        (
+            "grading_entries_number",
+            "derived; fills the previous release's inserts, a contract drops it",
+        ),
+        (
+            "grading_entries_points",
+            "derived; fills the previous release's inserts, a contract drops it",
+        ),
         (
             "idempotency_keys_sha256",
             "derived; the previous release's hex copy, a contract drops it",

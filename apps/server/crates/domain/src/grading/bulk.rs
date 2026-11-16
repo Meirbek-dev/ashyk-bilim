@@ -344,7 +344,7 @@ async fn settle_lateness(
         && let (Some(entry), Some(rescored)) = (entry, rescored)
     {
         ab_db::submissions::insert_grading_entry(
-            &mut *tx,
+            &mut tx,
             NewGradingEntry {
                 submission_id: submission.id,
                 graded_by: granted_by,
