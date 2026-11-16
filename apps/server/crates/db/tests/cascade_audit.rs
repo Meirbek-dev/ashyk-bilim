@@ -92,12 +92,6 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ),
     (
         "ai_remediation_sessions",
-        "student_user_id,file_submission_attempt_id",
-        "file_submission_attempts",
-        ATTEMPT_DELETE,
-    ),
-    (
-        "ai_remediation_sessions",
         "student_user_id",
         "users",
         USER_ERASURE,
@@ -114,12 +108,6 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         "student_user_id",
         "users",
         USER_ERASURE,
-    ),
-    (
-        "ai_submission_analyses",
-        "file_submission_attempt_id",
-        "file_submission_attempts",
-        ATTEMPT_DELETE,
     ),
     (
         "ai_submission_analyses",
@@ -160,12 +148,6 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         "reactions are part of the post they react to",
     ),
     ("discussion_reactions", "user_id", "users", USER_ERASURE),
-    (
-        "file_grading_entries",
-        "attempt_id",
-        "file_submission_attempts",
-        ATTEMPT_DELETE,
-    ),
     (
         "file_submission_files",
         "attempt_id",
@@ -240,7 +222,6 @@ const NOT_USER_DATA: &[&str] = &[
     "course_staff",
     "course_update_activities",
     "course_updates",
-    "file_submission_overrides",
     "file_submissions",
     "usergroup_courses",
     "usergroup_members",

@@ -236,7 +236,7 @@ p   := p + w·(next - p)
 ### 4.3 Черновики
 
 ```sql
-ai_grade_drafts (id, course_id, activity_id, submission_id null, file_attempt_id null (ровно один),
+ai_grade_drafts (id, course_id, activity_id, submission_id,
   learner_id, run_id null, status ('queued'|'ready'|'applied'|'discarded'|'superseded'|'failed'),
   subject_version bigint, proposal jsonb object, ai_score, calibrated_score, max_score, confidence,
   flags text[], agreement ('exact'|'adjusted') null, final_score null,

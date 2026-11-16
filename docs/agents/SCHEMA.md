@@ -79,10 +79,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`learning.enrolment_events`](#enrolment_events): One join or leave of a course, appended by enrol/unenrol
 - [`learning.enrolments`](#enrolments): Course membership (a learner joined or was enrolled)
 - [`core.feature_activations`](#feature_activations): When a feature switch was first turned on (one row per feature)
-- [`learning.file_grading_entries`](#file_grading_entries): Grade journal of file-task hand-ins: append-only (trigger-guarded)
-- [`learning.file_submission_attempts`](#file_submission_attempts): A learner's hand-in for a file task and its grading state
 - [`learning.file_submission_files`](#file_submission_files): A file of a file-task hand-in (points at its upload)
-- [`learning.file_submission_overrides`](#file_submission_overrides): A per-learner deadline exception of a file task
 - [`learning.file_submissions`](#file_submissions): The typed body of a file task: instructions, rubric and file caps
 - [`learning.gamification_completions`](#gamification_completions): Completion facts that award XP once (source kind + id per learner)
 - [`learning.gamification_config`](#gamification_config): XP rules: daily cap and rewards (versioned single row)
@@ -440,8 +437,7 @@ An AI-proposed grade for an attempt, for a teacher to accept or correct.
 | id | uuid |  | `uuidv7()` |
 | course_id | uuid |  |  |
 | activity_id | uuid |  |  |
-| submission_id | uuid | null |  |
-| file_attempt_id | uuid | null |  |
+| submission_id | uuid |  |  |
 | learner_id | uuid |  |  |
 | run_id | uuid | null |  |
 | requested_by | uuid | null |  |
@@ -465,23 +461,19 @@ An AI-proposed grade for an attempt, for a teacher to accept or correct.
 - Foreign key `ai_grade_drafts_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE`
 - Foreign key `ai_grade_drafts_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_grade_drafts_decided_by_fkey`: `FOREIGN KEY (decided_by) REFERENCES users(id) ON DELETE SET NULL`
-- Foreign key `ai_grade_drafts_file_attempt_id_fkey`: `FOREIGN KEY (file_attempt_id, learner_id) REFERENCES file_submission_attempts(id, user_id) ON DELETE CASCADE`
 - Foreign key `ai_grade_drafts_learner_id_fkey`: `FOREIGN KEY (learner_id) REFERENCES users(id) ON DELETE CASCADE`
 - Foreign key `ai_grade_drafts_requested_by_fkey`: `FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `ai_grade_drafts_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_grade_drafts_submission_id_fkey`: `FOREIGN KEY (submission_id, learner_id) REFERENCES submissions(id, user_id) ON DELETE CASCADE`
 - Check `ai_grade_drafts_agreement_check`: `CHECK ((agreement = ANY (ARRAY['exact'::text, 'adjusted'::text])))`
-- Check `ai_grade_drafts_check`: `CHECK (((submission_id IS NULL) <> (file_attempt_id IS NULL)))`
 - Check `ai_grade_drafts_check1`: `CHECK (((status = 'applied'::text) = (agreement IS NOT NULL)))`
 - Check `ai_grade_drafts_confidence_check`: `CHECK (((confidence IS NULL) OR ((confidence >= (0)::double precision) AND (confidence <= (1)::double precision))))`
 - Check `ai_grade_drafts_proposal_check`: `CHECK ((jsonb_typeof(proposal) = 'object'::text))`
 - Check `ai_grade_drafts_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'ready'::text, 'applied'::text, 'discarded'::text, 'superseded'::text, 'failed'::text])))`
 - Index `ai_grade_drafts_activity_idx`: `CREATE INDEX ai_grade_drafts_activity_idx ON ai.ai_grade_drafts USING btree (activity_id, status, created_at DESC)`
-- Index `ai_grade_drafts_attempt_idx`: `CREATE INDEX ai_grade_drafts_attempt_idx ON ai.ai_grade_drafts USING btree (file_attempt_id, created_at DESC)`
 - Index `ai_grade_drafts_course_idx`: `CREATE INDEX ai_grade_drafts_course_idx ON ai.ai_grade_drafts USING btree (course_id, created_at DESC)`
 - Index `ai_grade_drafts_decided_by_idx`: `CREATE INDEX ai_grade_drafts_decided_by_idx ON ai.ai_grade_drafts USING btree (decided_by)`
 - Index `ai_grade_drafts_learner_idx`: `CREATE INDEX ai_grade_drafts_learner_idx ON ai.ai_grade_drafts USING btree (learner_id)`
-- Index `ai_grade_drafts_live_attempt_idx`: `CREATE UNIQUE INDEX ai_grade_drafts_live_attempt_idx ON ai.ai_grade_drafts USING btree (file_attempt_id) WHERE ((status = ANY (ARRAY['queued'::text, 'ready'::text])) AND (file_attempt_id IS NOT NULL))`
 - Index `ai_grade_drafts_live_submission_idx`: `CREATE UNIQUE INDEX ai_grade_drafts_live_submission_idx ON ai.ai_grade_drafts USING btree (submission_id) WHERE ((status = ANY (ARRAY['queued'::text, 'ready'::text])) AND (submission_id IS NOT NULL))`
 - Index `ai_grade_drafts_requested_by_idx`: `CREATE INDEX ai_grade_drafts_requested_by_idx ON ai.ai_grade_drafts USING btree (requested_by)`
 - Index `ai_grade_drafts_run_idx`: `CREATE INDEX ai_grade_drafts_run_idx ON ai.ai_grade_drafts USING btree (run_id)`
@@ -557,7 +549,7 @@ Remediation (lecture + test) generated from a submission analysis.
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
 | id | uuid |  | `uuidv7()` |
-| submission_id | uuid | null |  |
+| submission_id | uuid |  |  |
 | activity_id | uuid |  |  |
 | student_user_id | uuid |  |  |
 | analysis_id | uuid | null |  |
@@ -571,25 +563,21 @@ Remediation (lecture + test) generated from a submission analysis.
 | passed_at | timestamp with time zone | null |  |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
-| file_submission_attempt_id | uuid | null |  |
 
 - Primary key `ai_remediation_sessions_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_remediation_sessions_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
 - Foreign key `ai_remediation_sessions_analysis_id_fkey`: `FOREIGN KEY (analysis_id) REFERENCES ai_submission_analyses(id) ON DELETE SET NULL`
-- Foreign key `ai_remediation_sessions_file_submission_attempt_id_fkey`: `FOREIGN KEY (file_submission_attempt_id, student_user_id) REFERENCES file_submission_attempts(id, user_id) ON DELETE CASCADE`
 - Foreign key `ai_remediation_sessions_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_remediation_sessions_student_user_id_fkey`: `FOREIGN KEY (student_user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Foreign key `ai_remediation_sessions_submission_id_fkey`: `FOREIGN KEY (submission_id, student_user_id) REFERENCES submissions(id, user_id) ON DELETE CASCADE`
 - Check `ai_remediation_sessions_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
 - Check `ai_remediation_sessions_lecture_object`: `CHECK ((jsonb_typeof(lecture) = 'object'::text))`
-- Check `ai_remediation_sessions_one_subject`: `CHECK (((submission_id IS NULL) <> (file_submission_attempt_id IS NULL)))`
 - Check `ai_remediation_sessions_score_check`: `CHECK (((score IS NULL) OR ((score >= 0) AND (score <= 100))))`
 - Check `ai_remediation_sessions_status_check`: `CHECK ((status = ANY (ARRAY['assigned'::text, 'in_progress'::text, 'passed'::text, 'failed'::text])))`
 - Check `ai_remediation_sessions_test_object`: `CHECK ((jsonb_typeof(test) = 'object'::text))`
 - Index `ai_remediation_sessions_active_gate_uidx`: `CREATE UNIQUE INDEX ai_remediation_sessions_active_gate_uidx ON ai.ai_remediation_sessions USING btree (student_user_id, activity_id) WHERE (gate_mode AND (status = ANY (ARRAY['assigned'::text, 'in_progress'::text, 'failed'::text])))`
 - Index `ai_remediation_sessions_activity_idx`: `CREATE INDEX ai_remediation_sessions_activity_idx ON ai.ai_remediation_sessions USING btree (activity_id)`
 - Index `ai_remediation_sessions_analysis_idx`: `CREATE INDEX ai_remediation_sessions_analysis_idx ON ai.ai_remediation_sessions USING btree (analysis_id)`
-- Index `ai_remediation_sessions_attempt_idx`: `CREATE INDEX ai_remediation_sessions_attempt_idx ON ai.ai_remediation_sessions USING btree (file_submission_attempt_id, created_at DESC) WHERE (file_submission_attempt_id IS NOT NULL)`
 - Index `ai_remediation_sessions_run_idx`: `CREATE INDEX ai_remediation_sessions_run_idx ON ai.ai_remediation_sessions USING btree (run_id)`
 - Index `ai_remediation_sessions_student_activity_idx`: `CREATE INDEX ai_remediation_sessions_student_activity_idx ON ai.ai_remediation_sessions USING btree (student_user_id, activity_id, status)`
 - Index `ai_remediation_sessions_student_idx`: `CREATE INDEX ai_remediation_sessions_student_idx ON ai.ai_remediation_sessions USING btree (student_user_id, created_at DESC)`
@@ -667,7 +655,7 @@ AI gap analysis of one attempt (a submission or a file hand-in).
 | Column | Type | Null | Default |
 | --- | --- | --- | --- |
 | id | uuid |  | `uuidv7()` |
-| submission_id | uuid | null |  |
+| submission_id | uuid |  |  |
 | run_id | uuid | null |  |
 | triggered_by | uuid | null |  |
 | status | text |  | `'complete'::text` |
@@ -676,10 +664,8 @@ AI gap analysis of one attempt (a submission or a file hand-in).
 | analysis | jsonb |  | `'{}'::jsonb` |
 | evidence | jsonb |  | `'{}'::jsonb` |
 | created_at | timestamp with time zone |  | `now()` |
-| file_submission_attempt_id | uuid | null |  |
 
 - Primary key `ai_submission_analyses_pkey`: `PRIMARY KEY (id)`
-- Foreign key `ai_submission_analyses_file_submission_attempt_id_fkey`: `FOREIGN KEY (file_submission_attempt_id) REFERENCES file_submission_attempts(id) ON DELETE CASCADE`
 - Foreign key `ai_submission_analyses_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_submission_analyses_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE`
 - Foreign key `ai_submission_analyses_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
@@ -687,9 +673,7 @@ AI gap analysis of one attempt (a submission or a file hand-in).
 - Check `ai_submission_analyses_evidence_object`: `CHECK ((jsonb_typeof(evidence) = 'object'::text))`
 - Check `ai_submission_analyses_gap_count_check`: `CHECK ((gap_count >= 0))`
 - Check `ai_submission_analyses_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
-- Check `ai_submission_analyses_one_subject`: `CHECK (((submission_id IS NULL) <> (file_submission_attempt_id IS NULL)))`
 - Check `ai_submission_analyses_status_check`: `CHECK ((status = ANY (ARRAY['complete'::text, 'failed'::text, 'superseded'::text])))`
-- Index `ai_submission_analyses_attempt_idx`: `CREATE INDEX ai_submission_analyses_attempt_idx ON ai.ai_submission_analyses USING btree (file_submission_attempt_id, status, created_at DESC) WHERE (file_submission_attempt_id IS NOT NULL)`
 - Index `ai_submission_analyses_run_idx`: `CREATE INDEX ai_submission_analyses_run_idx ON ai.ai_submission_analyses USING btree (run_id)`
 - Index `ai_submission_analyses_submission_idx`: `CREATE INDEX ai_submission_analyses_submission_idx ON ai.ai_submission_analyses USING btree (submission_id, status, created_at DESC)`
 
@@ -2087,76 +2071,6 @@ When a feature switch was first turned on (one row per feature).
 - Primary key `feature_activations_pkey`: `PRIMARY KEY (feature)`
 - Check `feature_activations_feature_check`: `CHECK ((feature = 'deadline_auto_submit'::text))`
 
-## file_grading_entries
-
-Grade journal of file-task hand-ins: append-only (trigger-guarded).
-
-| Column | Type | Null | Default | Comment |
-| --- | --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |  |
-| attempt_id | uuid |  |  |  |
-| graded_by | uuid | null |  |  |
-| status | text |  |  |  |
-| raw_score | percent | null |  |  |
-| penalty_pct | percent |  | `0` |  |
-| final_score | percent | null |  |  |
-| feedback | text |  | `''::text` |  |
-| created_at | timestamp with time zone |  | `now()` |  |
-| revision | integer |  |  | Number of the entry within its attempt (1, 2, ...); the highest is the current grade. |
-
-- Primary key `file_grading_entries_pkey`: `PRIMARY KEY (id)`
-- Foreign key `file_grading_entries_attempt_id_fkey`: `FOREIGN KEY (attempt_id) REFERENCES file_submission_attempts(id) ON DELETE CASCADE`
-- Foreign key `file_grading_entries_graded_by_fkey`: `FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL`
-- Check `file_grading_entries_status_check`: `CHECK ((status = ANY (ARRAY['graded'::text, 'released'::text, 'returned'::text])))`
-- Index `file_grading_entries_attempt_idx`: `CREATE INDEX file_grading_entries_attempt_idx ON learning.file_grading_entries USING btree (attempt_id, id DESC)`
-- Index `file_grading_entries_attempt_revision_key`: `CREATE UNIQUE INDEX file_grading_entries_attempt_revision_key ON learning.file_grading_entries USING btree (attempt_id, revision)`
-- Trigger `file_grading_entries_append_only`: `CREATE TRIGGER file_grading_entries_append_only BEFORE DELETE ON learning.file_grading_entries FOR EACH ROW EXECUTE FUNCTION file_grading_entries_no_delete()`
-- Trigger `file_grading_entries_immutable`: `CREATE TRIGGER file_grading_entries_immutable BEFORE UPDATE ON learning.file_grading_entries FOR EACH ROW EXECUTE FUNCTION file_grading_entries_immutable()`
-- Trigger `file_grading_entries_number`: `CREATE TRIGGER file_grading_entries_number BEFORE INSERT ON learning.file_grading_entries FOR EACH ROW EXECUTE FUNCTION file_grading_entries_number()`
-
-## file_submission_attempts
-
-A learner's hand-in for a file task and its grading state.
-
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| file_submission_id | uuid |  |  |
-| course_id | uuid |  |  |
-| user_id | uuid |  |  |
-| status | text |  | `'draft'::text` |
-| attempt_number | integer |  | `1` |
-| started_at | timestamp with time zone | null |  |
-| submitted_at | timestamp with time zone | null |  |
-| graded_at | timestamp with time zone | null |  |
-| is_late | boolean |  | `false` |
-| late_penalty_pct | percent |  | `0` |
-| final_score | percent | null |  |
-| feedback | text |  | `''::text` |
-| rubric_scores | jsonb |  | `'{}'::jsonb` |
-| graded_by | uuid | null |  |
-| version | bigint |  | `1` |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-| raw_score | percent | null |  |
-| preview | boolean |  | `false` |
-
-- Primary key `file_submission_attempts_pkey`: `PRIMARY KEY (id)`
-- Unique `file_submission_attempts_id_user_key`: `UNIQUE (id, user_id)`
-- Foreign key `file_submission_attempts_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE RESTRICT`
-- Foreign key `file_submission_attempts_file_submission_id_fkey`: `FOREIGN KEY (file_submission_id, course_id) REFERENCES file_submissions(id, course_id) ON UPDATE RESTRICT ON DELETE RESTRICT`
-- Foreign key `file_submission_attempts_graded_by_fkey`: `FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL`
-- Foreign key `file_submission_attempts_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
-- Check `file_submission_attempts_attempt_number_check`: `CHECK ((attempt_number >= 1))`
-- Check `file_submission_attempts_rubric_scores_object`: `CHECK ((jsonb_typeof(rubric_scores) = 'object'::text))`
-- Check `file_submission_attempts_status_check`: `CHECK ((status = ANY (ARRAY['draft'::text, 'submitted'::text, 'graded'::text, 'released'::text, 'returned'::text])))`
-- Check `file_submission_attempts_submitted_at_check`: `CHECK (((status = 'draft'::text) OR (submitted_at IS NOT NULL)))`
-- Index `file_submission_attempts_attempt_number_key`: `CREATE UNIQUE INDEX file_submission_attempts_attempt_number_key ON learning.file_submission_attempts USING btree (file_submission_id, user_id, attempt_number) WHERE (NOT preview)`
-- Index `file_submission_attempts_course_idx`: `CREATE INDEX file_submission_attempts_course_idx ON learning.file_submission_attempts USING btree (course_id, user_id)`
-- Index `file_submission_attempts_one_open`: `CREATE UNIQUE INDEX file_submission_attempts_one_open ON learning.file_submission_attempts USING btree (file_submission_id, user_id) WHERE (status = ANY (ARRAY['draft'::text, 'returned'::text]))`
-- Index `file_submission_attempts_review_idx`: `CREATE INDEX file_submission_attempts_review_idx ON learning.file_submission_attempts USING btree (file_submission_id, status, submitted_at DESC)`
-- Index `file_submission_attempts_user_idx`: `CREATE INDEX file_submission_attempts_user_idx ON learning.file_submission_attempts USING btree (user_id)`
-
 ## file_submission_files
 
 A file of a file-task hand-in (points at its upload).
@@ -2183,27 +2097,6 @@ A file of a file-task hand-in (points at its upload).
 - Index `file_submission_files_attempt_idx`: `CREATE INDEX file_submission_files_attempt_idx ON learning.file_submission_files USING btree (attempt_id, "position")`
 - Index `file_submission_files_upload_idx`: `CREATE INDEX file_submission_files_upload_idx ON learning.file_submission_files USING btree (upload_id)`
 
-## file_submission_overrides
-
-A per-learner deadline exception of a file task.
-
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| file_submission_id | uuid |  |  |
-| user_id | uuid |  |  |
-| due_at | timestamp with time zone |  |  |
-| reason | text |  | `''::text` |
-| granted_by | uuid | null |  |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-
-- Primary key `file_submission_overrides_pkey`: `PRIMARY KEY (file_submission_id, user_id)`
-- Foreign key `file_submission_overrides_file_submission_id_fkey`: `FOREIGN KEY (file_submission_id) REFERENCES file_submissions(id) ON DELETE CASCADE`
-- Foreign key `file_submission_overrides_granted_by_fkey`: `FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL`
-- Foreign key `file_submission_overrides_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
-- Check `file_submission_overrides_reason_check`: `CHECK ((char_length(reason) <= 1000))`
-- Index `file_submission_overrides_user_idx`: `CREATE INDEX file_submission_overrides_user_idx ON learning.file_submission_overrides USING btree (user_id)`
-
 ## file_submissions
 
 The typed body of a file task: instructions, rubric and file caps. Its id is its assessments row's; policy and lifecycle live there.
@@ -2218,19 +2111,7 @@ The typed body of a file task: instructions, rubric and file caps. Its id is its
 | allowed_mime_types | text[] |  | `'{}'::text[]` |
 | max_files | integer |  | `1` |
 | max_file_size_mb | integer | null |  |
-| due_at | timestamp with time zone | null |  |
-| allow_late | boolean |  | `true` |
-| late_policy_kind | text |  | `'none'::text` |
-| late_penalty_percent_per_day | percent | null |  |
-| late_penalty_max_days | integer | null |  |
-| late_cutoff_at | timestamp with time zone | null |  |
-| max_attempts | integer | null |  |
-| grade_release_mode | text |  | `'immediate'::text` |
-| lifecycle | text |  | `'draft'::text` |
-| published_at | timestamp with time zone | null |  |
-| archived_at | timestamp with time zone | null |  |
 | settings | jsonb |  | `'{}'::jsonb` |
-| creator_id | uuid | null |  |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
 | version | integer |  | `1` |
@@ -2241,14 +2122,7 @@ The typed body of a file task: instructions, rubric and file caps. Its id is its
 - Foreign key `file_submissions_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `file_submissions_assessment_fkey`: `FOREIGN KEY (id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `file_submissions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `file_submissions_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
-- Check `file_submissions_grade_release_mode_check`: `CHECK ((grade_release_mode = ANY (ARRAY['immediate'::text, 'batch'::text])))`
 - Check `file_submissions_instructions_check`: `CHECK ((char_length(instructions) <= 50000))`
-- Check `file_submissions_late_penalty_max_days_check`: `CHECK ((late_penalty_max_days >= 1))`
-- Check `file_submissions_late_policy_kind_check`: `CHECK ((late_policy_kind = ANY (ARRAY['none'::text, 'penalty'::text, 'cutoff'::text])))`
-- Check `file_submissions_late_policy_shape`: `CHECK ((((late_policy_kind = 'none'::text) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'penalty'::text) AND (late_penalty_percent_per_day IS NOT NULL) AND (late_penalty_max_days IS NOT NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'cutoff'::text) AND (late_cutoff_at IS NOT NULL) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL))))`
-- Check `file_submissions_lifecycle_check`: `CHECK ((lifecycle = ANY (ARRAY['draft'::text, 'published'::text, 'archived'::text])))`
-- Check `file_submissions_max_attempts_check`: `CHECK (((max_attempts >= 1) AND (max_attempts <= 50)))`
 - Check `file_submissions_max_file_size_mb_check`: `CHECK (((max_file_size_mb >= 1) AND (max_file_size_mb <= 500)))`
 - Check `file_submissions_max_files_check`: `CHECK (((max_files >= 1) AND (max_files <= 25)))`
 - Check `file_submissions_rubric_object`: `CHECK ((jsonb_typeof(rubric) = 'object'::text))`

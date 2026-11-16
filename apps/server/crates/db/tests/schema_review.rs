@@ -759,57 +759,10 @@ async fn grade_journals_guard_the_whole_row(pool: PgPool) {
         .execute(&pool)
         .await;
     assert!(rewritten.is_err(), "only published_at changes");
-
-    let task: Uuid = sqlx::query_scalar(
-        "INSERT INTO file_submissions (id, activity_id, course_id) VALUES ($3, $1, $2) RETURNING id",
-    )
-    .bind(w.activity)
-    .bind(w.course)
-    .bind(w.assessment)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    let attempt: Uuid = sqlx::query_scalar(
-        "INSERT INTO file_submission_attempts (file_submission_id, course_id, user_id)
-         VALUES ($1, $2, $3) RETURNING id",
-    )
-    .bind(task)
-    .bind(w.course)
-    .bind(w.user)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    let file_entry: Uuid = sqlx::query_scalar(
-        "INSERT INTO file_grading_entries (attempt_id, status, raw_score, final_score)
-         VALUES ($1, 'graded', 70, 70) RETURNING id",
-    )
-    .bind(attempt)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    for bad in [
-        "UPDATE file_grading_entries SET final_score = 100 WHERE id = $1",
-        "DELETE FROM file_grading_entries WHERE id = $1",
-    ] {
-        let refused = sqlx::query(bad).bind(file_entry).execute(&pool).await;
-        assert!(refused.is_err(), "{bad}");
-    }
-    // The cascade from the attempt still removes its history.
-    sqlx::query("DELETE FROM file_submission_attempts WHERE id = $1")
-        .bind(attempt)
-        .execute(&pool)
-        .await
-        .unwrap();
-    let left: i64 = sqlx::query_scalar("SELECT count(*) FROM file_grading_entries WHERE id = $1")
-        .bind(file_entry)
-        .fetch_one(&pool)
-        .await
-        .unwrap();
-    assert_eq!(left, 0);
 }
 
 #[ab_testdb::test]
-async fn erasing_a_grader_keeps_both_journals(pool: PgPool) {
+async fn erasing_a_grader_keeps_the_journal(pool: PgPool) {
     let w = world(&pool).await;
     let grader = user(&pool, "grader").await;
     let submission = submission(&pool, &w, 1, false).await.unwrap();
@@ -825,42 +778,12 @@ async fn erasing_a_grader_keeps_both_journals(pool: PgPool) {
     .fetch_one(&pool)
     .await
     .unwrap();
-    let task: Uuid = sqlx::query_scalar(
-        "INSERT INTO file_submissions (id, activity_id, course_id) VALUES ($3, $1, $2) RETURNING id",
-    )
-    .bind(w.activity)
-    .bind(w.course)
-    .bind(w.assessment)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    let attempt: Uuid = sqlx::query_scalar(
-        "INSERT INTO file_submission_attempts (file_submission_id, course_id, user_id)
-         VALUES ($1, $2, $3) RETURNING id",
-    )
-    .bind(task)
-    .bind(w.course)
-    .bind(w.user)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    let file_entry: Uuid = sqlx::query_scalar(
-        "INSERT INTO file_grading_entries (attempt_id, graded_by, status, raw_score, final_score)
-         VALUES ($1, $2, 'graded', 70, 70) RETURNING id",
-    )
-    .bind(attempt)
-    .bind(grader)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
 
-    for reassign in [
-        "UPDATE grading_entries SET graded_by = $1",
-        "UPDATE file_grading_entries SET graded_by = $1",
-    ] {
-        let refused = sqlx::query(reassign).bind(w.user).execute(&pool).await;
-        assert!(refused.is_err(), "{reassign}");
-    }
+    let refused = sqlx::query("UPDATE grading_entries SET graded_by = $1")
+        .bind(w.user)
+        .execute(&pool)
+        .await;
+    assert!(refused.is_err(), "the grader of an entry is not rewritten");
 
     sqlx::query("DELETE FROM users WHERE id = $1")
         .bind(grader)
@@ -870,13 +793,6 @@ async fn erasing_a_grader_keeps_both_journals(pool: PgPool) {
     let graded_by: Option<Uuid> =
         sqlx::query_scalar("SELECT graded_by FROM grading_entries WHERE id = $1")
             .bind(entry)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
-    assert_eq!(graded_by, None);
-    let graded_by: Option<Uuid> =
-        sqlx::query_scalar("SELECT graded_by FROM file_grading_entries WHERE id = $1")
-            .bind(file_entry)
             .fetch_one(&pool)
             .await
             .unwrap();
@@ -1384,51 +1300,6 @@ async fn a_violated_check_is_skipped_until_repaired(pool: PgPool) {
         .execute(&pool)
         .await;
     assert!(refused.is_err(), "a new violating row is refused");
-}
-
-/// Review 3, item 20: until the file-task pipeline merges into submissions,
-/// every table keyed onto both a submission and a file attempt names exactly
-/// one of them (a validated CHECK over both columns). A new arc table fails
-/// here until it gets one.
-#[ab_testdb::test]
-async fn every_submission_or_file_attempt_arc_names_exactly_one(pool: PgPool) {
-    let arcs: Vec<(String, String, String, bool)> = sqlx::query_as(
-        "SELECT s.conrelid::regclass::text, sa.attname::text, fa.attname::text,
-                EXISTS (SELECT 1 FROM pg_constraint c
-                         WHERE c.conrelid = s.conrelid AND c.contype = 'c' AND c.convalidated
-                           AND c.conkey @> ARRAY[s.conkey[1], f.conkey[1]]
-                           AND cardinality(c.conkey) = 2
-                           AND pg_get_constraintdef(c.oid) ~ '(num_nonnulls\\(.*\\) = 1|IS NULL\\) <> \\()')
-           FROM pg_constraint s
-           JOIN pg_constraint f ON f.conrelid = s.conrelid AND f.contype = 'f'
-                               AND f.confrelid = 'file_submission_attempts'::regclass
-           JOIN pg_attribute sa ON sa.attrelid = s.conrelid AND sa.attnum = s.conkey[1]
-           JOIN pg_attribute fa ON fa.attrelid = f.conrelid AND fa.attnum = f.conkey[1]
-          WHERE s.contype = 'f' AND s.confrelid = 'submissions'::regclass
-          ORDER BY 1",
-    )
-    .fetch_all(&pool)
-    .await
-    .unwrap();
-    let tables: Vec<&str> = arcs.iter().map(|(t, ..)| t.as_str()).collect();
-    assert_eq!(
-        tables,
-        [
-            "ai_grade_drafts",
-            "ai_remediation_sessions",
-            "ai_submission_analyses"
-        ],
-        "the arc tables changed: update this list (and the check)"
-    );
-    let unchecked: Vec<String> = arcs
-        .iter()
-        .filter(|(.., checked)| !checked)
-        .map(|(t, s, f, _)| format!("{t}({s}, {f})"))
-        .collect();
-    assert!(
-        unchecked.is_empty(),
-        "arc without a CHECK num_nonnulls(..) = 1: {unchecked:?}"
-    );
 }
 
 /// Review 3, item 23: a parent's course never changes under its children:
@@ -1979,7 +1850,7 @@ async fn a_hand_in_names_one_frozen_assessment_version(pool: PgPool) {
 
 #[ab_testdb::test]
 async fn attempts_share_one_status_vocabulary(pool: PgPool) {
-    use ab_core::assessments::{FileAttemptStatus, SubmissionStatus};
+    use ab_core::assessments::SubmissionStatus;
     let w = world(&pool).await;
     let expand: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'submissions_status_previous_spelling')",
@@ -2018,45 +1889,11 @@ async fn attempts_share_one_status_vocabulary(pool: PgPool) {
         if expand { "published" } else { "released" }
     );
 
-    let task: Uuid = sqlx::query_scalar(
-        "INSERT INTO file_submissions (id, activity_id, course_id) VALUES ($3, $1, $2) RETURNING id",
-    )
-    .bind(w.activity)
-    .bind(w.course)
-    .bind(w.assessment)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    let attempt: Uuid = sqlx::query_scalar(
-        "INSERT INTO file_submission_attempts (file_submission_id, course_id, user_id, status, submitted_at)
-         VALUES ($1, $2, $3, 'released', now()) RETURNING id",
-    )
-    .bind(task)
-    .bind(w.course)
-    .bind(w.user)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    let attempt_read = "SELECT status FROM file_submission_attempts WHERE id = $1";
-    assert_eq!(
-        stored(attempt_read, attempt).await,
-        if expand { "published" } else { "released" }
-    );
-    let status: FileAttemptStatus = sqlx::query_scalar(attempt_read)
-        .bind(attempt)
-        .fetch_one(&pool)
-        .await
-        .unwrap();
-    assert_eq!(status, FileAttemptStatus::Published);
-
-    for bad in [
-        "UPDATE submissions SET status = 'done' WHERE id = $1",
-        "UPDATE file_submission_attempts SET status = 'pending' WHERE id = $1",
-    ] {
-        let id = if bad.contains("file_") { attempt } else { sub };
-        let refused = sqlx::query(bad).bind(id).execute(&pool).await;
-        assert!(refused.is_err(), "{bad}");
-    }
+    let refused = sqlx::query("UPDATE submissions SET status = 'done' WHERE id = $1")
+        .bind(sub)
+        .execute(&pool)
+        .await;
+    assert!(refused.is_err(), "an unknown status is refused");
 }
 
 #[ab_testdb::test]
@@ -2607,8 +2444,7 @@ async fn scores_are_exact_numerics_behind_domains(pool: PgPool) {
          WHERE table_schema::name = ANY (ARRAY['public']::name[] || app_schemas()) AND data_type = 'double precision'
            AND column_name <> 'time_seconds'
            AND table_name IN ('submissions', 'grading_entries', 'assessments', 'assessment_items',
-                              'file_submissions', 'file_submission_attempts',
-                              'file_grading_entries', 'item_feedback', 'code_runs',
+                              'file_submissions', 'item_feedback', 'code_runs',
                               'code_run_cases', 'ai_grade_drafts', 'ai_grade_corrections')",
     )
     .fetch_one(&pool)
@@ -3091,8 +2927,6 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("ai_grade_drafts_same_activity", "guard"),
         ("assessment_versions_frozen", "guard"),
         ("certificate_users_frozen", "guard"),
-        ("file_grading_entries_append_only", "guard"),
-        ("file_grading_entries_immutable", "guard"),
         ("grading_entries_append_only", "guard"),
         ("grading_entries_current", "guard"),
         ("grading_entries_immutable", "guard"),
@@ -3120,7 +2954,6 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "discussion_reactions_recount",
             "derived; reads count on read, a contract drops it",
         ),
-        ("file_grading_entries_number", "derived"),
         ("grading_entries_number", "derived"),
         ("grading_entries_points", "derived"),
         ("item_feedback_upload_ids", "derived"),

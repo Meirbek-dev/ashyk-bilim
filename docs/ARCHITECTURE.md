@@ -418,17 +418,14 @@ One migration set for the database `ashyq`. Rules:
   entry) and a learner's own due date an `assessment_overrides` row. The file API (`/file-submissions`) is the only
   door: the assessment API answers 404 for a file task and its hand-ins (`get_assessment`, `get_submission` skip them)
   and no timer hands a file draft in. AI rows name a file hand-in in `submission_id`
-  (`submission_is_file_hand_in` tells the kinds apart). `file_submission_attempts`, `file_grading_entries`,
-  `file_submission_overrides`, the policy columns of `file_submissions` and the AI `file_*attempt_id` columns are read
-  and written by nothing and wait for their contract (`pending-contracts.tsv`); where this section still names them,
-  it describes those idle tables.
+  (`submission_is_file_hand_in` tells the kinds apart). The file pipeline's own tables went in `20261116062344`.
 - **Learner work outlives content.** `RESTRICT` keys refuse deleting an assessment, file task or course under an
   attempt. Retention purges only courses without learner work (`course_has_learner_work`); the rest wait for
   `ashyq admin purge-course`, which writes a JSON archive first. A certificate carries its own `course_id` and survives
   the purge with its template (`certifications.course_id` NULL).
 - **A row cannot point at someone else's work.** Composite keys bind code runs, progress, AI drafts and remediation to
   the attempt's owner; `(parent, course_id)` keys bind course-scoped children (`children_of_a_course_scoped_parent_bind_the_course`).
-- **Grades are numbered.** `grading_entries.revision` and `file_grading_entries.revision` count per attempt under the
+- **Grades are numbered.** `grading_entries.revision` counts per attempt under the
   attempt's row lock; the highest revision is current. `item_feedback` is frozen once written, one row per item.
 - **History stays.** `enrolment_events` keeps joins and leaves past the course; `submission_violations` keeps every
   anti-cheat event, and the API reads its newest 200 (`submission_violation_log`); the bounded array
@@ -456,7 +453,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   Settings-like rows (roles, preferences, notifications, reactions, analytics) still cascade.
   `crates/db/tests/cascade_audit.rs` lists every remaining cascade with its reason.
 - **Attempt numbers** are unique per learner and task among counted attempts
-  (`submissions_attempt_number_key`, `file_submission_attempts_attempt_number_key`, both `WHERE NOT preview`).
+  (`submissions_attempt_number_key`, `WHERE NOT preview`).
 - **Notifications** carry generated `course_id` / `activity_id` columns (from the typed payload) with
   `ON DELETE CASCADE`: deleting a course or activity removes the notifications that link into it.
 - **A copied `course_id` cannot drift.** Chapters, activities, assessments, file tasks and posts carry
@@ -478,8 +475,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   body is tagged with its `kind`. A check whose existing rows violate it is skipped with a WARNING and a
   `schema_skipped_checks` row instead of failing the deploy (RUNBOOK 2.4).
 - **Grade journals are append-only** (`20261102000000_ledger_guards.sql`): a `grading_entries` row changes only
-  its `published_at`, a `file_grading_entries` row never changes; neither is deleted except by the cascade
-  from its submission / attempt. The guards compare the whole row, so a new column is frozen too. The one
+  its `published_at` and is not deleted except by the cascade
+  from its submission. The guards compare the whole row, so a new column is frozen too. The one
   extra change is `graded_by` becoming NULL (its `ON DELETE SET NULL`), so a grader can be erased by hand
   (`20261102000100_ledger_grader_erasure.sql`); naming another grader is refused.
 - **A certificate states what was issued** (`20261102000200_certificates_freeze_issued.sql`): issuing stores the

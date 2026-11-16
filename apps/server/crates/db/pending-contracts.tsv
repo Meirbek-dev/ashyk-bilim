@@ -19,21 +19,3 @@ column	course_discussions.dislikes_count	the release after reads counted on read
 column	course_discussions.replies_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
 column	daily_teacher_metrics.id	the release after the platform rollup moved to daily_platform_metrics (20261108000500): delete the NULL-teacher rows, teacher_user_id NOT NULL, (metric_date, teacher_user_id) the primary key	schema review 2026-11-08 item 16
 constraint	daily_teacher_metrics_metric_date_teacher_user_id_key	the same contract as daily_teacher_metrics.id	schema review 2026-11-08 item 16
-table	file_submission_attempts	the release after the pipeline merge (20261115155501): nothing reads or writes it	REWRITE 5.6 n16 "Pipeline merge"
-table	file_grading_entries	the release after the pipeline merge (20261115155501); with it file_grading_entries_immutable / _no_delete / _number	REWRITE 5.6 n16 "Pipeline merge"
-table	file_submission_overrides	the release after the pipeline merge (20261115155501)	REWRITE 5.6 n16 "Pipeline merge"
-column	file_submissions.due_at	the release after the pipeline merge (20261115155501): the value lives on the task's assessments row	REWRITE 5.6 n16 "Pipeline merge"
-column	file_submissions.allow_late	the release after the pipeline merge (20261115155501): the value lives on the task's assessments row	REWRITE 5.6 n16 "Pipeline merge"
-column	file_submissions.late_policy_kind	the release after the pipeline merge (20261115155501): the value lives on the task's assessments row	REWRITE 5.6 n16 "Pipeline merge"
-column	file_submissions.late_penalty_percent_per_day	the release after the pipeline merge (20261115155501): the value lives on the task's assessments row	REWRITE 5.6 n16 "Pipeline merge"
-column	file_submissions.late_penalty_max_days	the release after the pipeline merge (20261115155501): the value lives on the task's assessments row	REWRITE 5.6 n16 "Pipeline merge"
-column	file_submissions.late_cutoff_at	the release after the pipeline merge (20261115155501): the value lives on the task's assessments row	REWRITE 5.6 n16 "Pipeline merge"
-column	file_submissions.max_attempts	the release after the pipeline merge (20261115155501): the value lives on the task's assessments row	REWRITE 5.6 n16 "Pipeline merge"
-column	file_submissions.grade_release_mode	the release after the pipeline merge (20261115155501): the value lives on the task's assessments row	REWRITE 5.6 n16 "Pipeline merge"
-column	file_submissions.lifecycle	the release after the pipeline merge (20261115155501): the value lives on the task's assessments row	REWRITE 5.6 n16 "Pipeline merge"
-column	file_submissions.published_at	the release after the pipeline merge (20261115155501): the value lives on the task's assessments row	REWRITE 5.6 n16 "Pipeline merge"
-column	file_submissions.archived_at	the release after the pipeline merge (20261115155501): the value lives on the task's assessments row	REWRITE 5.6 n16 "Pipeline merge"
-column	file_submissions.creator_id	the release after the pipeline merge (20261115155501): the value lives on the task's assessments row	REWRITE 5.6 n16 "Pipeline merge"
-column	ai_grade_drafts.file_attempt_id	the release after the pipeline merge (20261115155501): a file hand-in is named in submission_id; its check and indexes go with it	REWRITE 5.6 n16 "Pipeline merge"
-column	ai_remediation_sessions.file_submission_attempt_id	the release after the pipeline merge (20261115155501): a file hand-in is named in submission_id	REWRITE 5.6 n16 "Pipeline merge"
-column	ai_submission_analyses.file_submission_attempt_id	the release after the pipeline merge (20261115155501): a file hand-in is named in submission_id	REWRITE 5.6 n16 "Pipeline merge"

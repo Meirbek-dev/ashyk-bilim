@@ -160,14 +160,12 @@ constraint ai_grade_corrections ai_grade_corrections_teacher_score_not_null NOT 
 constraint ai_grade_drafts ai_grade_drafts_activity_id_fkey FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE
 constraint ai_grade_drafts ai_grade_drafts_activity_id_not_null NOT NULL activity_id
 constraint ai_grade_drafts ai_grade_drafts_agreement_check CHECK ((agreement = ANY (ARRAY['exact'::text, 'adjusted'::text])))
-constraint ai_grade_drafts ai_grade_drafts_check CHECK (((submission_id IS NULL) <> (file_attempt_id IS NULL)))
 constraint ai_grade_drafts ai_grade_drafts_check1 CHECK (((status = 'applied'::text) = (agreement IS NOT NULL)))
 constraint ai_grade_drafts ai_grade_drafts_confidence_check CHECK (((confidence IS NULL) OR ((confidence >= (0)::double precision) AND (confidence <= (1)::double precision))))
 constraint ai_grade_drafts ai_grade_drafts_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint ai_grade_drafts ai_grade_drafts_course_id_not_null NOT NULL course_id
 constraint ai_grade_drafts ai_grade_drafts_created_at_not_null NOT NULL created_at
 constraint ai_grade_drafts ai_grade_drafts_decided_by_fkey FOREIGN KEY (decided_by) REFERENCES users(id) ON DELETE SET NULL
-constraint ai_grade_drafts ai_grade_drafts_file_attempt_id_fkey FOREIGN KEY (file_attempt_id, learner_id) REFERENCES file_submission_attempts(id, user_id) ON DELETE CASCADE
 constraint ai_grade_drafts ai_grade_drafts_flags_not_null NOT NULL flags
 constraint ai_grade_drafts ai_grade_drafts_id_not_null NOT NULL id
 constraint ai_grade_drafts ai_grade_drafts_learner_id_fkey FOREIGN KEY (learner_id) REFERENCES users(id) ON DELETE CASCADE
@@ -181,6 +179,7 @@ constraint ai_grade_drafts ai_grade_drafts_status_check CHECK ((status = ANY (AR
 constraint ai_grade_drafts ai_grade_drafts_status_not_null NOT NULL status
 constraint ai_grade_drafts ai_grade_drafts_subject_version_not_null NOT NULL subject_version
 constraint ai_grade_drafts ai_grade_drafts_submission_id_fkey FOREIGN KEY (submission_id, learner_id) REFERENCES submissions(id, user_id) ON DELETE CASCADE
+constraint ai_grade_drafts ai_grade_drafts_submission_id_not_null NOT NULL submission_id
 constraint ai_grade_drafts ai_grade_drafts_updated_at_not_null NOT NULL updated_at
 constraint ai_lecture_reviews ai_lecture_reviews_activity_id_fkey FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE
 constraint ai_lecture_reviews ai_lecture_reviews_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
@@ -218,14 +217,12 @@ constraint ai_remediation_sessions ai_remediation_sessions_activity_id_fkey FORE
 constraint ai_remediation_sessions ai_remediation_sessions_activity_id_not_null NOT NULL activity_id
 constraint ai_remediation_sessions ai_remediation_sessions_analysis_id_fkey FOREIGN KEY (analysis_id) REFERENCES ai_submission_analyses(id) ON DELETE SET NULL
 constraint ai_remediation_sessions ai_remediation_sessions_created_at_not_null NOT NULL created_at
-constraint ai_remediation_sessions ai_remediation_sessions_file_submission_attempt_id_fkey FOREIGN KEY (file_submission_attempt_id, student_user_id) REFERENCES file_submission_attempts(id, user_id) ON DELETE CASCADE
 constraint ai_remediation_sessions ai_remediation_sessions_gate_mode_not_null NOT NULL gate_mode
 constraint ai_remediation_sessions ai_remediation_sessions_id_not_null NOT NULL id
 constraint ai_remediation_sessions ai_remediation_sessions_language_not_null NOT NULL language
 constraint ai_remediation_sessions ai_remediation_sessions_language_tag CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))
 constraint ai_remediation_sessions ai_remediation_sessions_lecture_not_null NOT NULL lecture
 constraint ai_remediation_sessions ai_remediation_sessions_lecture_object CHECK ((jsonb_typeof(lecture) = 'object'::text))
-constraint ai_remediation_sessions ai_remediation_sessions_one_subject CHECK (((submission_id IS NULL) <> (file_submission_attempt_id IS NULL)))
 constraint ai_remediation_sessions ai_remediation_sessions_pkey PRIMARY KEY (id)
 constraint ai_remediation_sessions ai_remediation_sessions_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL
 constraint ai_remediation_sessions ai_remediation_sessions_score_check CHECK (((score IS NULL) OR ((score >= 0) AND (score <= 100))))
@@ -234,6 +231,7 @@ constraint ai_remediation_sessions ai_remediation_sessions_status_not_null NOT N
 constraint ai_remediation_sessions ai_remediation_sessions_student_user_id_fkey FOREIGN KEY (student_user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint ai_remediation_sessions ai_remediation_sessions_student_user_id_not_null NOT NULL student_user_id
 constraint ai_remediation_sessions ai_remediation_sessions_submission_id_fkey FOREIGN KEY (submission_id, student_user_id) REFERENCES submissions(id, user_id) ON DELETE CASCADE
+constraint ai_remediation_sessions ai_remediation_sessions_submission_id_not_null NOT NULL submission_id
 constraint ai_remediation_sessions ai_remediation_sessions_test_not_null NOT NULL test
 constraint ai_remediation_sessions ai_remediation_sessions_test_object CHECK ((jsonb_typeof(test) = 'object'::text))
 constraint ai_remediation_sessions ai_remediation_sessions_updated_at_not_null NOT NULL updated_at
@@ -273,18 +271,17 @@ constraint ai_submission_analyses ai_submission_analyses_analysis_object CHECK (
 constraint ai_submission_analyses ai_submission_analyses_created_at_not_null NOT NULL created_at
 constraint ai_submission_analyses ai_submission_analyses_evidence_not_null NOT NULL evidence
 constraint ai_submission_analyses ai_submission_analyses_evidence_object CHECK ((jsonb_typeof(evidence) = 'object'::text))
-constraint ai_submission_analyses ai_submission_analyses_file_submission_attempt_id_fkey FOREIGN KEY (file_submission_attempt_id) REFERENCES file_submission_attempts(id) ON DELETE CASCADE
 constraint ai_submission_analyses ai_submission_analyses_gap_count_check CHECK ((gap_count >= 0))
 constraint ai_submission_analyses ai_submission_analyses_gap_count_not_null NOT NULL gap_count
 constraint ai_submission_analyses ai_submission_analyses_id_not_null NOT NULL id
 constraint ai_submission_analyses ai_submission_analyses_language_not_null NOT NULL language
 constraint ai_submission_analyses ai_submission_analyses_language_tag CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))
-constraint ai_submission_analyses ai_submission_analyses_one_subject CHECK (((submission_id IS NULL) <> (file_submission_attempt_id IS NULL)))
 constraint ai_submission_analyses ai_submission_analyses_pkey PRIMARY KEY (id)
 constraint ai_submission_analyses ai_submission_analyses_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL
 constraint ai_submission_analyses ai_submission_analyses_status_check CHECK ((status = ANY (ARRAY['complete'::text, 'failed'::text, 'superseded'::text])))
 constraint ai_submission_analyses ai_submission_analyses_status_not_null NOT NULL status
 constraint ai_submission_analyses ai_submission_analyses_submission_id_fkey FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE
+constraint ai_submission_analyses ai_submission_analyses_submission_id_not_null NOT NULL submission_id
 constraint ai_submission_analyses ai_submission_analyses_triggered_by_fkey FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL
 constraint ai_threads ai_threads_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL
 constraint ai_threads ai_threads_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL
@@ -987,41 +984,6 @@ constraint feature_activations feature_activations_activated_at_not_null NOT NUL
 constraint feature_activations feature_activations_feature_check CHECK ((feature = 'deadline_auto_submit'::text))
 constraint feature_activations feature_activations_feature_not_null NOT NULL feature
 constraint feature_activations feature_activations_pkey PRIMARY KEY (feature)
-constraint file_grading_entries file_grading_entries_attempt_id_fkey FOREIGN KEY (attempt_id) REFERENCES file_submission_attempts(id) ON DELETE CASCADE
-constraint file_grading_entries file_grading_entries_attempt_id_not_null NOT NULL attempt_id
-constraint file_grading_entries file_grading_entries_created_at_not_null NOT NULL created_at
-constraint file_grading_entries file_grading_entries_feedback_not_null NOT NULL feedback
-constraint file_grading_entries file_grading_entries_graded_by_fkey FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL
-constraint file_grading_entries file_grading_entries_id_not_null NOT NULL id
-constraint file_grading_entries file_grading_entries_penalty_pct_not_null NOT NULL penalty_pct
-constraint file_grading_entries file_grading_entries_pkey PRIMARY KEY (id)
-constraint file_grading_entries file_grading_entries_revision_not_null NOT NULL revision
-constraint file_grading_entries file_grading_entries_status_check CHECK ((status = ANY (ARRAY['graded'::text, 'released'::text, 'returned'::text])))
-constraint file_grading_entries file_grading_entries_status_not_null NOT NULL status
-constraint file_submission_attempts file_submission_attempts_attempt_number_check CHECK ((attempt_number >= 1))
-constraint file_submission_attempts file_submission_attempts_attempt_number_not_null NOT NULL attempt_number
-constraint file_submission_attempts file_submission_attempts_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE RESTRICT
-constraint file_submission_attempts file_submission_attempts_course_id_not_null NOT NULL course_id
-constraint file_submission_attempts file_submission_attempts_created_at_not_null NOT NULL created_at
-constraint file_submission_attempts file_submission_attempts_feedback_not_null NOT NULL feedback
-constraint file_submission_attempts file_submission_attempts_file_submission_id_fkey FOREIGN KEY (file_submission_id, course_id) REFERENCES file_submissions(id, course_id) ON UPDATE RESTRICT ON DELETE RESTRICT
-constraint file_submission_attempts file_submission_attempts_file_submission_id_not_null NOT NULL file_submission_id
-constraint file_submission_attempts file_submission_attempts_graded_by_fkey FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL
-constraint file_submission_attempts file_submission_attempts_id_not_null NOT NULL id
-constraint file_submission_attempts file_submission_attempts_id_user_key UNIQUE (id, user_id)
-constraint file_submission_attempts file_submission_attempts_is_late_not_null NOT NULL is_late
-constraint file_submission_attempts file_submission_attempts_late_penalty_pct_not_null NOT NULL late_penalty_pct
-constraint file_submission_attempts file_submission_attempts_pkey PRIMARY KEY (id)
-constraint file_submission_attempts file_submission_attempts_preview_not_null NOT NULL preview
-constraint file_submission_attempts file_submission_attempts_rubric_scores_not_null NOT NULL rubric_scores
-constraint file_submission_attempts file_submission_attempts_rubric_scores_object CHECK ((jsonb_typeof(rubric_scores) = 'object'::text))
-constraint file_submission_attempts file_submission_attempts_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'submitted'::text, 'graded'::text, 'released'::text, 'returned'::text])))
-constraint file_submission_attempts file_submission_attempts_status_not_null NOT NULL status
-constraint file_submission_attempts file_submission_attempts_submitted_at_check CHECK (((status = 'draft'::text) OR (submitted_at IS NOT NULL)))
-constraint file_submission_attempts file_submission_attempts_updated_at_not_null NOT NULL updated_at
-constraint file_submission_attempts file_submission_attempts_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
-constraint file_submission_attempts file_submission_attempts_user_id_not_null NOT NULL user_id
-constraint file_submission_attempts file_submission_attempts_version_not_null NOT NULL version
 constraint file_submission_files file_submission_files_attempt_id_fkey FOREIGN KEY (attempt_id) REFERENCES submissions(id) ON DELETE CASCADE
 constraint file_submission_files file_submission_files_attempt_id_not_null NOT NULL attempt_id
 constraint file_submission_files file_submission_files_attempt_id_upload_id_key UNIQUE (attempt_id, upload_id)
@@ -1037,40 +999,18 @@ constraint file_submission_files file_submission_files_scan_status_not_null NOT 
 constraint file_submission_files file_submission_files_storage_key_not_null NOT NULL storage_key
 constraint file_submission_files file_submission_files_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE RESTRICT
 constraint file_submission_files file_submission_files_upload_id_not_null NOT NULL upload_id
-constraint file_submission_overrides file_submission_overrides_created_at_not_null NOT NULL created_at
-constraint file_submission_overrides file_submission_overrides_due_at_not_null NOT NULL due_at
-constraint file_submission_overrides file_submission_overrides_file_submission_id_fkey FOREIGN KEY (file_submission_id) REFERENCES file_submissions(id) ON DELETE CASCADE
-constraint file_submission_overrides file_submission_overrides_file_submission_id_not_null NOT NULL file_submission_id
-constraint file_submission_overrides file_submission_overrides_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL
-constraint file_submission_overrides file_submission_overrides_pkey PRIMARY KEY (file_submission_id, user_id)
-constraint file_submission_overrides file_submission_overrides_reason_check CHECK ((char_length(reason) <= 1000))
-constraint file_submission_overrides file_submission_overrides_reason_not_null NOT NULL reason
-constraint file_submission_overrides file_submission_overrides_updated_at_not_null NOT NULL updated_at
-constraint file_submission_overrides file_submission_overrides_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-constraint file_submission_overrides file_submission_overrides_user_id_not_null NOT NULL user_id
 constraint file_submissions file_submissions_activity_id_fkey FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE
 constraint file_submissions file_submissions_activity_id_key UNIQUE (activity_id)
 constraint file_submissions file_submissions_activity_id_not_null NOT NULL activity_id
-constraint file_submissions file_submissions_allow_late_not_null NOT NULL allow_late
 constraint file_submissions file_submissions_allowed_mime_types_not_null NOT NULL allowed_mime_types
 constraint file_submissions file_submissions_assessment_fkey FOREIGN KEY (id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE
 constraint file_submissions file_submissions_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint file_submissions file_submissions_course_id_not_null NOT NULL course_id
 constraint file_submissions file_submissions_created_at_not_null NOT NULL created_at
-constraint file_submissions file_submissions_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL
-constraint file_submissions file_submissions_grade_release_mode_check CHECK ((grade_release_mode = ANY (ARRAY['immediate'::text, 'batch'::text])))
-constraint file_submissions file_submissions_grade_release_mode_not_null NOT NULL grade_release_mode
 constraint file_submissions file_submissions_id_course_key UNIQUE (id, course_id)
 constraint file_submissions file_submissions_id_not_null NOT NULL id
 constraint file_submissions file_submissions_instructions_check CHECK ((char_length(instructions) <= 50000))
 constraint file_submissions file_submissions_instructions_not_null NOT NULL instructions
-constraint file_submissions file_submissions_late_penalty_max_days_check CHECK ((late_penalty_max_days >= 1))
-constraint file_submissions file_submissions_late_policy_kind_check CHECK ((late_policy_kind = ANY (ARRAY['none'::text, 'penalty'::text, 'cutoff'::text])))
-constraint file_submissions file_submissions_late_policy_kind_not_null NOT NULL late_policy_kind
-constraint file_submissions file_submissions_late_policy_shape CHECK ((((late_policy_kind = 'none'::text) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'penalty'::text) AND (late_penalty_percent_per_day IS NOT NULL) AND (late_penalty_max_days IS NOT NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'cutoff'::text) AND (late_cutoff_at IS NOT NULL) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL))))
-constraint file_submissions file_submissions_lifecycle_check CHECK ((lifecycle = ANY (ARRAY['draft'::text, 'published'::text, 'archived'::text])))
-constraint file_submissions file_submissions_lifecycle_not_null NOT NULL lifecycle
-constraint file_submissions file_submissions_max_attempts_check CHECK (((max_attempts >= 1) AND (max_attempts <= 50)))
 constraint file_submissions file_submissions_max_file_size_mb_check CHECK (((max_file_size_mb >= 1) AND (max_file_size_mb <= 500)))
 constraint file_submissions file_submissions_max_files_check CHECK (((max_files >= 1) AND (max_files <= 25)))
 constraint file_submissions file_submissions_max_files_not_null NOT NULL max_files
@@ -2027,43 +1967,6 @@ BEGIN
     RETURN level;
 END
 $function$
-function CREATE OR REPLACE FUNCTION public.file_grading_entries_immutable()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF to_jsonb(NEW) - 'graded_by' IS DISTINCT FROM to_jsonb(OLD) - 'graded_by'
-       OR NEW.graded_by IS NOT NULL THEN
-        RAISE EXCEPTION 'file_grading_entries is append-only' USING ERRCODE = 'integrity_constraint_violation';
-    END IF;
-    RETURN NEW;
-END;
-$function$
-function CREATE OR REPLACE FUNCTION public.file_grading_entries_no_delete()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF EXISTS (SELECT 1 FROM file_submission_attempts WHERE id = OLD.attempt_id) THEN
-        RAISE EXCEPTION 'file_grading_entries is append-only' USING ERRCODE = 'integrity_constraint_violation';
-    END IF;
-    RETURN OLD;
-END;
-$function$
-function CREATE OR REPLACE FUNCTION public.file_grading_entries_number()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    PERFORM 1 FROM file_submission_attempts WHERE id = NEW.attempt_id FOR NO KEY UPDATE;
-    SELECT COALESCE(max(revision), 0) + 1 INTO NEW.revision
-      FROM file_grading_entries WHERE attempt_id = NEW.attempt_id;
-    RETURN NEW;
-END;
-$function$
 function CREATE OR REPLACE FUNCTION public.grading_entries_current_check()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2598,7 +2501,6 @@ index CREATE INDEX ai_grade_corrections_activity_idx ON ai.ai_grade_corrections 
 index CREATE INDEX ai_grade_corrections_course_idx ON ai.ai_grade_corrections USING btree (course_id, created_at DESC)
 index CREATE INDEX ai_grade_corrections_teacher_idx ON ai.ai_grade_corrections USING btree (teacher_id)
 index CREATE INDEX ai_grade_drafts_activity_idx ON ai.ai_grade_drafts USING btree (activity_id, status, created_at DESC)
-index CREATE INDEX ai_grade_drafts_attempt_idx ON ai.ai_grade_drafts USING btree (file_attempt_id, created_at DESC)
 index CREATE INDEX ai_grade_drafts_course_idx ON ai.ai_grade_drafts USING btree (course_id, created_at DESC)
 index CREATE INDEX ai_grade_drafts_decided_by_idx ON ai.ai_grade_drafts USING btree (decided_by)
 index CREATE INDEX ai_grade_drafts_learner_idx ON ai.ai_grade_drafts USING btree (learner_id)
@@ -2613,7 +2515,6 @@ index CREATE INDEX ai_qa_messages_thread_order_idx ON ai.ai_qa_messages USING bt
 index CREATE INDEX ai_qa_messages_user_idx ON ai.ai_qa_messages USING btree (user_id)
 index CREATE INDEX ai_remediation_sessions_activity_idx ON ai.ai_remediation_sessions USING btree (activity_id)
 index CREATE INDEX ai_remediation_sessions_analysis_idx ON ai.ai_remediation_sessions USING btree (analysis_id)
-index CREATE INDEX ai_remediation_sessions_attempt_idx ON ai.ai_remediation_sessions USING btree (file_submission_attempt_id, created_at DESC) WHERE (file_submission_attempt_id IS NOT NULL)
 index CREATE INDEX ai_remediation_sessions_run_idx ON ai.ai_remediation_sessions USING btree (run_id)
 index CREATE INDEX ai_remediation_sessions_student_activity_idx ON ai.ai_remediation_sessions USING btree (student_user_id, activity_id, status)
 index CREATE INDEX ai_remediation_sessions_student_idx ON ai.ai_remediation_sessions USING btree (student_user_id, created_at DESC)
@@ -2624,7 +2525,6 @@ index CREATE INDEX ai_runs_thread_status_idx ON ai.ai_runs USING btree (thread_i
 index CREATE INDEX ai_runs_triggered_by_idx ON ai.ai_runs USING btree (triggered_by, started_at DESC)
 index CREATE INDEX ai_student_memory_source_idx ON ai.ai_student_memory USING btree (source_type, source_id)
 index CREATE INDEX ai_student_memory_student_course_idx ON ai.ai_student_memory USING btree (student_user_id, course_id, updated_at DESC)
-index CREATE INDEX ai_submission_analyses_attempt_idx ON ai.ai_submission_analyses USING btree (file_submission_attempt_id, status, created_at DESC) WHERE (file_submission_attempt_id IS NOT NULL)
 index CREATE INDEX ai_submission_analyses_run_idx ON ai.ai_submission_analyses USING btree (run_id)
 index CREATE INDEX ai_submission_analyses_submission_idx ON ai.ai_submission_analyses USING btree (submission_id, status, created_at DESC)
 index CREATE INDEX ai_threads_activity_idx ON ai.ai_threads USING btree (activity_id)
@@ -2722,13 +2622,8 @@ index CREATE INDEX enrolment_events_course_user_idx ON learning.enrolment_events
 index CREATE INDEX enrolment_events_created_by_idx ON learning.enrolment_events USING btree (created_by) WHERE (created_by IS NOT NULL)
 index CREATE INDEX enrolment_events_user_idx ON learning.enrolment_events USING btree (user_id)
 index CREATE INDEX enrolments_user_idx ON learning.enrolments USING btree (user_id)
-index CREATE INDEX file_grading_entries_attempt_idx ON learning.file_grading_entries USING btree (attempt_id, id DESC)
-index CREATE INDEX file_submission_attempts_course_idx ON learning.file_submission_attempts USING btree (course_id, user_id)
-index CREATE INDEX file_submission_attempts_review_idx ON learning.file_submission_attempts USING btree (file_submission_id, status, submitted_at DESC)
-index CREATE INDEX file_submission_attempts_user_idx ON learning.file_submission_attempts USING btree (user_id)
 index CREATE INDEX file_submission_files_attempt_idx ON learning.file_submission_files USING btree (attempt_id, "position")
 index CREATE INDEX file_submission_files_upload_idx ON learning.file_submission_files USING btree (upload_id)
-index CREATE INDEX file_submission_overrides_user_idx ON learning.file_submission_overrides USING btree (user_id)
 index CREATE INDEX file_submissions_course_idx ON learning.file_submissions USING btree (course_id)
 index CREATE INDEX gamification_profiles_board_idx ON learning.gamification_profiles USING btree (total_xp DESC, user_id)
 index CREATE INDEX google_accounts_user_idx ON core.google_accounts USING btree (user_id)
@@ -2797,7 +2692,6 @@ index CREATE UNIQUE INDEX ai_evidence_pkey ON ai.ai_evidence USING btree (id)
 index CREATE UNIQUE INDEX ai_feature_switches_pkey ON ai.ai_feature_switches USING btree (feature)
 index CREATE UNIQUE INDEX ai_grade_corrections_draft_id_part_key_criterion_key_key ON ai.ai_grade_corrections USING btree (draft_id, part_key, criterion_key)
 index CREATE UNIQUE INDEX ai_grade_corrections_pkey ON ai.ai_grade_corrections USING btree (id)
-index CREATE UNIQUE INDEX ai_grade_drafts_live_attempt_idx ON ai.ai_grade_drafts USING btree (file_attempt_id) WHERE ((status = ANY (ARRAY['queued'::text, 'ready'::text])) AND (file_attempt_id IS NOT NULL))
 index CREATE UNIQUE INDEX ai_grade_drafts_live_submission_idx ON ai.ai_grade_drafts USING btree (submission_id) WHERE ((status = ANY (ARRAY['queued'::text, 'ready'::text])) AND (submission_id IS NOT NULL))
 index CREATE UNIQUE INDEX ai_grade_drafts_pkey ON ai.ai_grade_drafts USING btree (id)
 index CREATE UNIQUE INDEX ai_lecture_reviews_pkey ON ai.ai_lecture_reviews USING btree (id)
@@ -2886,15 +2780,8 @@ index CREATE UNIQUE INDEX discussion_reactions_pkey ON core.discussion_reactions
 index CREATE UNIQUE INDEX enrolment_events_pkey ON learning.enrolment_events USING btree (id)
 index CREATE UNIQUE INDEX enrolments_pkey ON learning.enrolments USING btree (course_id, user_id)
 index CREATE UNIQUE INDEX feature_activations_pkey ON core.feature_activations USING btree (feature)
-index CREATE UNIQUE INDEX file_grading_entries_attempt_revision_key ON learning.file_grading_entries USING btree (attempt_id, revision)
-index CREATE UNIQUE INDEX file_grading_entries_pkey ON learning.file_grading_entries USING btree (id)
-index CREATE UNIQUE INDEX file_submission_attempts_attempt_number_key ON learning.file_submission_attempts USING btree (file_submission_id, user_id, attempt_number) WHERE (NOT preview)
-index CREATE UNIQUE INDEX file_submission_attempts_id_user_key ON learning.file_submission_attempts USING btree (id, user_id)
-index CREATE UNIQUE INDEX file_submission_attempts_one_open ON learning.file_submission_attempts USING btree (file_submission_id, user_id) WHERE (status = ANY (ARRAY['draft'::text, 'returned'::text]))
-index CREATE UNIQUE INDEX file_submission_attempts_pkey ON learning.file_submission_attempts USING btree (id)
 index CREATE UNIQUE INDEX file_submission_files_attempt_id_upload_id_key ON learning.file_submission_files USING btree (attempt_id, upload_id)
 index CREATE UNIQUE INDEX file_submission_files_pkey ON learning.file_submission_files USING btree (id)
-index CREATE UNIQUE INDEX file_submission_overrides_pkey ON learning.file_submission_overrides USING btree (file_submission_id, user_id)
 index CREATE UNIQUE INDEX file_submissions_activity_id_key ON learning.file_submissions USING btree (activity_id)
 index CREATE UNIQUE INDEX file_submissions_id_course_key ON learning.file_submissions USING btree (id, course_id)
 index CREATE UNIQUE INDEX file_submissions_pkey ON learning.file_submissions USING btree (id)
@@ -3039,7 +2926,6 @@ table ai.ai_grade_drafts created_at timestamp with time zone NOT NULL DEFAULT no
 table ai.ai_grade_drafts decided_at timestamp with time zone DEFAULT -
 table ai.ai_grade_drafts decided_by uuid DEFAULT -
 table ai.ai_grade_drafts error_code text DEFAULT -
-table ai.ai_grade_drafts file_attempt_id uuid DEFAULT -
 table ai.ai_grade_drafts final_score score_points DEFAULT -
 table ai.ai_grade_drafts flags text[] NOT NULL DEFAULT '{}'::text[]
 table ai.ai_grade_drafts id uuid NOT NULL DEFAULT uuidv7()
@@ -3050,7 +2936,7 @@ table ai.ai_grade_drafts requested_by uuid DEFAULT -
 table ai.ai_grade_drafts run_id uuid DEFAULT -
 table ai.ai_grade_drafts status text NOT NULL DEFAULT -
 table ai.ai_grade_drafts subject_version bigint NOT NULL DEFAULT -
-table ai.ai_grade_drafts submission_id uuid DEFAULT -
+table ai.ai_grade_drafts submission_id uuid NOT NULL DEFAULT -
 table ai.ai_grade_drafts updated_at timestamp with time zone NOT NULL DEFAULT now()
 table ai.ai_lecture_reviews activity_id uuid DEFAULT -
 table ai.ai_lecture_reviews course_id uuid NOT NULL DEFAULT -
@@ -3077,7 +2963,6 @@ table ai.ai_qa_messages user_id uuid DEFAULT -
 table ai.ai_remediation_sessions activity_id uuid NOT NULL DEFAULT -
 table ai.ai_remediation_sessions analysis_id uuid DEFAULT -
 table ai.ai_remediation_sessions created_at timestamp with time zone NOT NULL DEFAULT now()
-table ai.ai_remediation_sessions file_submission_attempt_id uuid DEFAULT -
 table ai.ai_remediation_sessions gate_mode boolean NOT NULL DEFAULT false
 table ai.ai_remediation_sessions id uuid NOT NULL DEFAULT uuidv7()
 table ai.ai_remediation_sessions language text NOT NULL DEFAULT 'auto'::text
@@ -3087,7 +2972,7 @@ table ai.ai_remediation_sessions run_id uuid DEFAULT -
 table ai.ai_remediation_sessions score integer DEFAULT -
 table ai.ai_remediation_sessions status text NOT NULL DEFAULT 'assigned'::text
 table ai.ai_remediation_sessions student_user_id uuid NOT NULL DEFAULT -
-table ai.ai_remediation_sessions submission_id uuid DEFAULT -
+table ai.ai_remediation_sessions submission_id uuid NOT NULL DEFAULT -
 table ai.ai_remediation_sessions test jsonb NOT NULL DEFAULT '{}'::jsonb
 table ai.ai_remediation_sessions updated_at timestamp with time zone NOT NULL DEFAULT now()
 table ai.ai_runs completed_at timestamp with time zone DEFAULT -
@@ -3119,13 +3004,12 @@ table ai.ai_student_memory updated_at timestamp with time zone NOT NULL DEFAULT 
 table ai.ai_submission_analyses analysis jsonb NOT NULL DEFAULT '{}'::jsonb
 table ai.ai_submission_analyses created_at timestamp with time zone NOT NULL DEFAULT now()
 table ai.ai_submission_analyses evidence jsonb NOT NULL DEFAULT '{}'::jsonb
-table ai.ai_submission_analyses file_submission_attempt_id uuid DEFAULT -
 table ai.ai_submission_analyses gap_count integer NOT NULL DEFAULT 0
 table ai.ai_submission_analyses id uuid NOT NULL DEFAULT uuidv7()
 table ai.ai_submission_analyses language text NOT NULL DEFAULT 'auto'::text
 table ai.ai_submission_analyses run_id uuid DEFAULT -
 table ai.ai_submission_analyses status text NOT NULL DEFAULT 'complete'::text
-table ai.ai_submission_analyses submission_id uuid DEFAULT -
+table ai.ai_submission_analyses submission_id uuid NOT NULL DEFAULT -
 table ai.ai_submission_analyses triggered_by uuid DEFAULT -
 table ai.ai_threads activity_id uuid DEFAULT -
 table ai.ai_threads course_id uuid DEFAULT -
@@ -3832,36 +3716,6 @@ table learning.enrolment_events user_id uuid NOT NULL DEFAULT -
 table learning.enrolments course_id uuid NOT NULL DEFAULT -
 table learning.enrolments enrolled_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.enrolments user_id uuid NOT NULL DEFAULT -
-table learning.file_grading_entries attempt_id uuid NOT NULL DEFAULT -
-table learning.file_grading_entries created_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.file_grading_entries feedback text NOT NULL DEFAULT ''::text
-table learning.file_grading_entries final_score percent DEFAULT -
-table learning.file_grading_entries graded_by uuid DEFAULT -
-table learning.file_grading_entries id uuid NOT NULL DEFAULT uuidv7()
-table learning.file_grading_entries penalty_pct percent NOT NULL DEFAULT 0
-table learning.file_grading_entries raw_score percent DEFAULT -
-table learning.file_grading_entries revision integer NOT NULL DEFAULT -
-table learning.file_grading_entries status text NOT NULL DEFAULT -
-table learning.file_submission_attempts attempt_number integer NOT NULL DEFAULT 1
-table learning.file_submission_attempts course_id uuid NOT NULL DEFAULT -
-table learning.file_submission_attempts created_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.file_submission_attempts feedback text NOT NULL DEFAULT ''::text
-table learning.file_submission_attempts file_submission_id uuid NOT NULL DEFAULT -
-table learning.file_submission_attempts final_score percent DEFAULT -
-table learning.file_submission_attempts graded_at timestamp with time zone DEFAULT -
-table learning.file_submission_attempts graded_by uuid DEFAULT -
-table learning.file_submission_attempts id uuid NOT NULL DEFAULT uuidv7()
-table learning.file_submission_attempts is_late boolean NOT NULL DEFAULT false
-table learning.file_submission_attempts late_penalty_pct percent NOT NULL DEFAULT 0
-table learning.file_submission_attempts preview boolean NOT NULL DEFAULT false
-table learning.file_submission_attempts raw_score percent DEFAULT -
-table learning.file_submission_attempts rubric_scores jsonb NOT NULL DEFAULT '{}'::jsonb
-table learning.file_submission_attempts started_at timestamp with time zone DEFAULT -
-table learning.file_submission_attempts status text NOT NULL DEFAULT 'draft'::text
-table learning.file_submission_attempts submitted_at timestamp with time zone DEFAULT -
-table learning.file_submission_attempts updated_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.file_submission_attempts user_id uuid NOT NULL DEFAULT -
-table learning.file_submission_attempts version bigint NOT NULL DEFAULT 1
 table learning.file_submission_files attempt_id uuid NOT NULL DEFAULT -
 table learning.file_submission_files content_type text NOT NULL DEFAULT ''::text
 table learning.file_submission_files created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3872,33 +3726,14 @@ table learning.file_submission_files scan_status text NOT NULL DEFAULT 'pending'
 table learning.file_submission_files size_bytes bigint DEFAULT -
 table learning.file_submission_files storage_key text NOT NULL DEFAULT -
 table learning.file_submission_files upload_id uuid NOT NULL DEFAULT -
-table learning.file_submission_overrides created_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.file_submission_overrides due_at timestamp with time zone NOT NULL DEFAULT -
-table learning.file_submission_overrides file_submission_id uuid NOT NULL DEFAULT -
-table learning.file_submission_overrides granted_by uuid DEFAULT -
-table learning.file_submission_overrides reason text NOT NULL DEFAULT ''::text
-table learning.file_submission_overrides updated_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.file_submission_overrides user_id uuid NOT NULL DEFAULT -
 table learning.file_submissions activity_id uuid NOT NULL DEFAULT -
-table learning.file_submissions allow_late boolean NOT NULL DEFAULT true
 table learning.file_submissions allowed_mime_types text[] NOT NULL DEFAULT '{}'::text[]
-table learning.file_submissions archived_at timestamp with time zone DEFAULT -
 table learning.file_submissions course_id uuid NOT NULL DEFAULT -
 table learning.file_submissions created_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.file_submissions creator_id uuid DEFAULT -
-table learning.file_submissions due_at timestamp with time zone DEFAULT -
-table learning.file_submissions grade_release_mode text NOT NULL DEFAULT 'immediate'::text
 table learning.file_submissions id uuid NOT NULL DEFAULT uuidv7()
 table learning.file_submissions instructions text NOT NULL DEFAULT ''::text
-table learning.file_submissions late_cutoff_at timestamp with time zone DEFAULT -
-table learning.file_submissions late_penalty_max_days integer DEFAULT -
-table learning.file_submissions late_penalty_percent_per_day percent DEFAULT -
-table learning.file_submissions late_policy_kind text NOT NULL DEFAULT 'none'::text
-table learning.file_submissions lifecycle text NOT NULL DEFAULT 'draft'::text
-table learning.file_submissions max_attempts integer DEFAULT -
 table learning.file_submissions max_file_size_mb integer DEFAULT -
 table learning.file_submissions max_files integer NOT NULL DEFAULT 1
-table learning.file_submissions published_at timestamp with time zone DEFAULT -
 table learning.file_submissions rubric jsonb NOT NULL DEFAULT '{}'::jsonb
 table learning.file_submissions settings jsonb NOT NULL DEFAULT '{}'::jsonb
 table learning.file_submissions updated_at timestamp with time zone NOT NULL DEFAULT now()
@@ -4117,11 +3952,6 @@ trigger CREATE TRIGGER course_updates_touch BEFORE UPDATE ON core.course_updates
 trigger CREATE TRIGGER courses_touch BEFORE UPDATE ON core.courses FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_image_key, thumbnail_video_key ON core.courses FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_image_key', 'thumbnail_image_upload_id', 'thumbnail_video_key', 'thumbnail_video_upload_id')
 trigger CREATE TRIGGER discussion_reactions_recount AFTER INSERT OR DELETE OR UPDATE ON core.discussion_reactions FOR EACH ROW EXECUTE FUNCTION discussion_reactions_recount()
-trigger CREATE TRIGGER file_grading_entries_append_only BEFORE DELETE ON learning.file_grading_entries FOR EACH ROW EXECUTE FUNCTION file_grading_entries_no_delete()
-trigger CREATE TRIGGER file_grading_entries_immutable BEFORE UPDATE ON learning.file_grading_entries FOR EACH ROW EXECUTE FUNCTION file_grading_entries_immutable()
-trigger CREATE TRIGGER file_grading_entries_number BEFORE INSERT ON learning.file_grading_entries FOR EACH ROW EXECUTE FUNCTION file_grading_entries_number()
-trigger CREATE TRIGGER file_submission_attempts_touch BEFORE UPDATE ON learning.file_submission_attempts FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER file_submission_overrides_touch BEFORE UPDATE ON learning.file_submission_overrides FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER file_submissions_touch BEFORE UPDATE ON learning.file_submissions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER gamification_config_touch BEFORE UPDATE ON learning.gamification_config FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER gamification_profiles_touch BEFORE UPDATE ON learning.gamification_profiles FOR EACH ROW EXECUTE FUNCTION touch_row()

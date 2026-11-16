@@ -946,7 +946,7 @@ How the queue runs:
 Queue, in order:
 
 1. **Pipeline merge** (5.6 n6, n16): done as one switch release (`20261115155501_merge_file_pipeline`, production held
-   no file hand-in). Left: the contract that drops what it emptied (`just contracts-pending`).
+   no file hand-in); its contract `20261116062344_drop_file_pipeline` dropped the old tables and columns.
 2. **Settings** (5.6 n9): one typed settings row replaces `gamification_config`, `ai_feature_switches` and
    `feature_activations`.
 3. **Formal checks go**: the `jsonb_typeof(x) = 'object'` checks that state nothing else, the `_word` regex

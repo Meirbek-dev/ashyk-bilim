@@ -2314,19 +2314,6 @@ async fn a_file_task_lives_in_the_assessment_pipeline(pool: PgPool) {
     .unwrap();
     assert!(extension);
     assert_eq!(note, "sick leave");
-    for table in [
-        "file_submission_attempts",
-        "file_grading_entries",
-        "file_submission_overrides",
-    ] {
-        // SAFETY: `table` comes from the list above, never from input.
-        let rows: i64 =
-            sqlx::query_scalar(sqlx::AssertSqlSafe(format!("SELECT count(*) FROM {table}")))
-                .fetch_one(&app.pool)
-                .await
-                .unwrap();
-        assert_eq!(rows, 0, "{table} is written by nothing");
-    }
 
     // One open attempt at a time: with a newer draft open, an older hand-in cannot be returned.
     let bob = learner(&app, "bob").await;
