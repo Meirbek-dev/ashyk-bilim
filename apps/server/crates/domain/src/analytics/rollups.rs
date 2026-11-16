@@ -243,7 +243,6 @@ pub async fn run_rollup(pool: &PgPool, date: Day) -> Result<RollupCounts> {
             &RiskSnapshotWrite {
                 user_id: r.user_id,
                 course_id: r.course_id,
-                teacher_user_id: ctx.courses.get(&r.course_id).and_then(|c| c.creator_id),
                 progress_pct: r.progress_pct,
                 days_since_last_activity: r
                     .days_since_last_activity
@@ -279,7 +278,6 @@ pub async fn run_rollup(pool: &PgPool, date: Day) -> Result<RollupCounts> {
             generated_at,
             &CourseMetricsWrite {
                 course_id: row.course_id,
-                teacher_user_id: ctx.courses.get(&row.course_id).and_then(|c| c.creator_id),
                 enrolled_learners: i32_of(course_snapshots.len()),
                 active_learners_7d: i32::try_from(row.active_learners_7d).unwrap_or(i32::MAX),
                 active_learners_28d: i32_of(active_28d),

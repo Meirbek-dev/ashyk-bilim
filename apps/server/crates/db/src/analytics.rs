@@ -927,7 +927,6 @@ pub async fn insert_platform_metrics(
 #[derive(Debug, Clone)]
 pub struct CourseMetricsWrite {
     pub course_id: CourseId,
-    pub teacher_user_id: Option<UserId>,
     pub enrolled_learners: i32,
     pub active_learners_7d: i32,
     pub active_learners_28d: i32,
@@ -949,14 +948,13 @@ pub async fn insert_course_metrics(
 ) -> Result<()> {
     sqlx::query!(
         r"INSERT INTO daily_course_metrics
-              (metric_date, course_id, teacher_user_id, enrolled_learners, active_learners_7d,
+              (metric_date, course_id, enrolled_learners, active_learners_7d,
                active_learners_28d, completion_rate, avg_progress_pct, at_risk_learners,
                ungraded_submissions, certificates_issued, content_health_score,
                engagement_delta_pct, last_content_update_at, generated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-                  to_timestamp($14), to_timestamp($15))
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+                  to_timestamp($13), to_timestamp($14))
           ON CONFLICT (metric_date, course_id) DO UPDATE SET
-              teacher_user_id = EXCLUDED.teacher_user_id,
               enrolled_learners = EXCLUDED.enrolled_learners,
               active_learners_7d = EXCLUDED.active_learners_7d,
               active_learners_28d = EXCLUDED.active_learners_28d,
@@ -971,7 +969,6 @@ pub async fn insert_course_metrics(
               generated_at = EXCLUDED.generated_at",
         date as _,
         w.course_id.0,
-        w.teacher_user_id.map(|u| u.0),
         w.enrolled_learners,
         w.active_learners_7d,
         w.active_learners_28d,
@@ -1158,7 +1155,6 @@ pub async fn insert_user_course_progress(
 pub struct RiskSnapshotWrite {
     pub user_id: UserId,
     pub course_id: CourseId,
-    pub teacher_user_id: Option<UserId>,
     pub progress_pct: f64,
     pub days_since_last_activity: Option<i32>,
     pub failed_assessments: i32,
@@ -1178,14 +1174,13 @@ pub async fn insert_risk_snapshot(
 ) -> Result<()> {
     sqlx::query!(
         r"INSERT INTO learner_risk_snapshots
-              (snapshot_date, user_id, course_id, teacher_user_id, progress_pct,
+              (snapshot_date, user_id, course_id, progress_pct,
                days_since_last_activity, failed_assessments, missing_required_assessments,
                open_grading_blocks, risk_score, risk_level, reason_codes, recommended_action,
                generated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-                  to_timestamp($14))
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+                  to_timestamp($13))
           ON CONFLICT (snapshot_date, user_id, course_id) DO UPDATE SET
-              teacher_user_id = EXCLUDED.teacher_user_id,
               progress_pct = EXCLUDED.progress_pct,
               days_since_last_activity = EXCLUDED.days_since_last_activity,
               failed_assessments = EXCLUDED.failed_assessments,
@@ -1199,7 +1194,6 @@ pub async fn insert_risk_snapshot(
         date as _,
         w.user_id.0,
         w.course_id.0,
-        w.teacher_user_id.map(|u| u.0),
         w.progress_pct,
         w.days_since_last_activity,
         w.failed_assessments,

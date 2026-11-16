@@ -1040,6 +1040,14 @@ Queue, in order:
 7. **Smaller**: `assessments.access_mode` derived from the access rows; `teacher_user_id` out of the rollups
    (a course has several staff); the last login moves from `gamification_profiles` to `users`; triggers that
    fill business values (certificate names, a grade entry's points and number) move into the server, guards stay.
+   - `access_mode` from the rows: not done, it needs a decision. "Restricted, nobody chosen" is a state teachers
+     save on purpose (UX-057: the web asks first, every learner is locked out) and it has no access rows, so the
+     rows alone would read it as open to every learner. Deriving the mode means giving that state up (refusing an
+     empty list, the web's dialog goes) or keeping a marker, which is the column again. Owner's call.
+   - The rollups' teacher: switched, no migration. `daily_course_metrics.teacher_user_id` and
+     `learner_risk_snapshots.teacher_user_id` held the course's creator and nothing read them; the rollup stops
+     writing them (NULL), per-teacher numbers stay in `daily_teacher_metrics`. Left: the contract dropping both
+     columns.
 8. **Planned work, pulled forward**: readers move to `course_progress_v` now, without the four weekly zero-drift
    runs (5.6 n8 step 4); points as the record (n16) and the policy split of `assessments` (n7) follow the merge.
 9. **Names, last**: `certifications` -> `certificate_templates`, `certificate_users` -> `certificates`,

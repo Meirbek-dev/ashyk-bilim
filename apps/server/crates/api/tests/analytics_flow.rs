@@ -631,6 +631,15 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert_eq!(second, first);
     assert_eq!(table_count(&pool, "daily_course_metrics").await, 2);
     assert_eq!(table_count(&pool, "learner_risk_snapshots").await, 1);
+    // A course has several staff: its rollups name no one teacher (REWRITE 5.8 item 7).
+    let named: i64 = sqlx::query_scalar(
+        "SELECT (SELECT count(*) FROM daily_course_metrics WHERE teacher_user_id IS NOT NULL)
+              + (SELECT count(*) FROM learner_risk_snapshots WHERE teacher_user_id IS NOT NULL)",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(named, 0);
     assert_eq!(table_count(&pool, "daily_teacher_metrics").await, 3);
     let platform_row = sqlx::query_scalar::<_, i32>(
         "SELECT managed_course_count FROM daily_teacher_metrics WHERE teacher_user_id IS NULL",
