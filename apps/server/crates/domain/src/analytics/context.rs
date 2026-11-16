@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use ab_core::Result;
 use ab_core::assessments::{
-    ActivityProgressState, AssessmentKind, FileAttemptStatus, Lifecycle, SubmissionStatus,
+    ActivityProgressStatus, AssessmentKind, FileAttemptStatus, Lifecycle, SubmissionStatus,
 };
 use ab_core::id::{ActivityId, AssessmentId, CourseId, UserId, UsergroupId};
 use ab_db::analytics::{
@@ -611,8 +611,8 @@ pub fn graded_at(s: &SubmissionInfoRow) -> Option<i64> {
 pub const fn progress_completed(p: &ProgressInfoRow) -> bool {
     p.completed_at.is_some()
         || matches!(
-            p.state,
-            ActivityProgressState::Completed | ActivityProgressState::Passed
+            (p.status, p.passed),
+            (ActivityProgressStatus::Completed, _) | (ActivityProgressStatus::Released, Some(true))
         )
 }
 

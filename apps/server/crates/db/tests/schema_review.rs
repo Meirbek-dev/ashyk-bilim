@@ -94,6 +94,9 @@
 //!   collection's creator is its one `creator` staff row; an award's or a
 //!   completion's source is a uuid (or the login bonus's day), and an answer
 //!   embedding's subject is a submission.
+//! - REWRITE 5.8 item 5: a learner's progress is a status (how far) plus
+//!   `passed` (how a released grade ended); until the contract the previous
+//!   release's `state` follows both, and its writes set the status.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -2922,6 +2925,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("submissions_snapshots_frozen", "guard"),
         // Derived: a value computable from the row or its children.
         (
+            "activity_progress_status",
+            "derived; the previous release's state, a contract drops it",
+        ),
+        (
             "activities_required_from_settings",
             "derived; goes with the settings key",
         ),
@@ -3949,4 +3956,112 @@ async fn sources_are_typed_and_embeddings_name_a_submission(pool: PgPool) {
     .execute(&pool)
     .await;
     assert!(orphan.is_err(), "an embedding of no submission");
+}
+
+#[ab_testdb::test]
+async fn progress_is_a_status_and_an_outcome(pool: PgPool) {
+    use ab_core::assessments::ActivityProgressStatus;
+    use ab_core::id::{ActivityId, CourseId, UserId};
+    let w = world(&pool).await;
+    let write = ab_db::progress::ActivityProgressWrite {
+        course_id: CourseId(w.course),
+        activity_id: ActivityId(w.activity),
+        user_id: UserId(w.user),
+        status: ActivityProgressStatus::Released,
+        required: true,
+        score: Some(40.0),
+        passed: Some(false),
+        best_submission_id: None,
+        latest_submission_id: None,
+        attempt_count: 1,
+        started_at: None,
+        last_activity_at: None,
+        submitted_at: None,
+        graded_at: None,
+        completed_at: None,
+        due_at: None,
+        is_late: false,
+        teacher_action_required: false,
+        status_reason: None,
+    };
+    ab_db::progress::upsert_activity_progress(&pool, &write)
+        .await
+        .unwrap();
+    let stored = || async {
+        sqlx::query_as::<_, (String, Option<bool>, String)>(
+            "SELECT status, passed, state FROM activity_progress WHERE activity_id = $1",
+        )
+        .bind(w.activity)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    assert_eq!(
+        stored().await,
+        ("released".into(), Some(false), "failed".into())
+    );
+    let passed = ab_db::progress::ActivityProgressWrite {
+        score: Some(90.0),
+        passed: Some(true),
+        ..write
+    };
+    ab_db::progress::upsert_activity_progress(&pool, &passed)
+        .await
+        .unwrap();
+    assert_eq!(
+        stored().await,
+        ("released".into(), Some(true), "passed".into())
+    );
+    let row = ab_db::progress::get_activity_progress(&pool, ActivityId(w.activity), UserId(w.user))
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        (row.status, row.passed),
+        (ActivityProgressStatus::Released, Some(true))
+    );
+
+    // The previous release writes `state`: the status follows, on insert and on update.
+    sqlx::query("UPDATE activity_progress SET state = 'needs_grading' WHERE activity_id = $1")
+        .bind(w.activity)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        stored().await,
+        ("needs_grading".into(), Some(true), "needs_grading".into())
+    );
+    sqlx::query(
+        "UPDATE activity_progress SET state = 'failed', passed = false WHERE activity_id = $1",
+    )
+    .bind(w.activity)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        stored().await,
+        ("released".into(), Some(false), "failed".into())
+    );
+    sqlx::query("DELETE FROM activity_progress")
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO activity_progress (course_id, activity_id, user_id, state, passed)
+         VALUES ($1, $2, $3, 'passed', true)",
+    )
+    .bind(w.course)
+    .bind(w.activity)
+    .bind(w.user)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        stored().await,
+        ("released".into(), Some(true), "passed".into())
+    );
+    let bad = sqlx::query("UPDATE activity_progress SET status = 'passed'")
+        .execute(&pool)
+        .await;
+    assert!(bad.is_err(), "the outcome is not a status");
 }

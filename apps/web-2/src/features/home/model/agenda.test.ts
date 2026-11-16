@@ -17,7 +17,8 @@ const deadline = (activity_id: string, due_at_unix: number): AgendaDeadline => (
   cutoff_at_unix: null,
   due_at_unix,
   file_submission_id: null,
-  state: 'not_started',
+  passed: null,
+  status: 'not_started',
 })
 
 const work = (activity_id: string, kind: WorkKind): WorkItem => ({
@@ -94,8 +95,8 @@ describe('home model', () => {
 
 test('B-HOME-11 work not handed in, due within 48 h, shows the hours left; handed-in or far work does not', () => {
   const now = 1_000_000
-  expect(hoursLeft({ due_at_unix: now + 5 * 3600 - 60, state: 'not_started' }, now)).toBe(5)
-  expect(hoursLeft({ due_at_unix: now + 120, state: 'returned' }, now)).toBe(1)
-  expect(hoursLeft({ due_at_unix: now + 5 * 3600, state: 'submitted' }, now)).toBeNull()
-  expect(hoursLeft({ due_at_unix: now + 49 * 3600, state: 'in_progress' }, now)).toBeNull()
+  expect(hoursLeft({ due_at_unix: now + 5 * 3600 - 60, status: 'not_started' }, now)).toBe(5)
+  expect(hoursLeft({ due_at_unix: now + 120, status: 'returned' }, now)).toBe(1)
+  expect(hoursLeft({ due_at_unix: now + 5 * 3600, status: 'submitted' }, now)).toBeNull()
+  expect(hoursLeft({ due_at_unix: now + 49 * 3600, status: 'in_progress' }, now)).toBeNull()
 })

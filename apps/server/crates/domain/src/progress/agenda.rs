@@ -2,7 +2,7 @@
 //! enrolled courses, where to continue, recent results and announcements -
 //! one read instead of a request per course.
 
-use ab_core::assessments::ActivityProgressState;
+use ab_core::assessments::ActivityProgressStatus;
 use ab_core::id::{ActivityId, AssessmentId, CourseId, FileSubmissionId, UserId};
 use ab_core::{Error, FieldError, Result};
 use ab_db::work_queue::{DeadlineRow, RecentResultRow, RecentUpdateRow};
@@ -22,15 +22,20 @@ const CONTINUE_LIMIT: usize = 3;
 /// Reminders go out for work due within this window.
 pub const REMIND_WITHIN_SECS: i64 = 86_400;
 
-/// States in which the learner has nothing left to hand in.
+/// Statuses in which the learner has nothing left to hand in.
 #[must_use]
-pub const fn handed_in(state: ActivityProgressState) -> bool {
+pub const fn handed_in(status: ActivityProgressStatus) -> bool {
     !matches!(
-        state,
-        ActivityProgressState::NotStarted
-            | ActivityProgressState::InProgress
-            | ActivityProgressState::Returned
+        status,
+        ActivityProgressStatus::NotStarted
+            | ActivityProgressStatus::InProgress
+            | ActivityProgressStatus::Returned
     )
+}
+
+/// A released grade's outcome (no score reads as failed); `None` before release.
+fn released_passed(status: ActivityProgressStatus, passed: Option<bool>) -> Option<bool> {
+    (status == ActivityProgressStatus::Released).then_some(passed == Some(true))
 }
 
 /// What a recent result is.
@@ -55,7 +60,9 @@ pub struct AgendaDeadline {
     pub due_at_unix: i64,
     /// Late hand-ins close here (`cutoff` late policy); null otherwise.
     pub cutoff_at_unix: Option<i64>,
-    pub state: ActivityProgressState,
+    pub status: ActivityProgressStatus,
+    /// Set when `status` is `released`: whether the grade passed.
+    pub passed: Option<bool>,
 }
 
 /// Where to pick a course up.
@@ -126,12 +133,13 @@ fn deadline(row: DeadlineRow) -> AgendaDeadline {
         file_submission_id: row.file_submission_id,
         due_at_unix: row.due_at,
         cutoff_at_unix: row.cutoff_at,
-        state: row.state,
+        status: row.status,
+        passed: released_passed(row.status, row.passed),
     }
 }
 
 fn result(row: RecentResultRow) -> RecentResult {
-    let returned = row.state == ActivityProgressState::Returned;
+    let returned = row.status == ActivityProgressStatus::Returned;
     RecentResult {
         kind: if returned {
             ResultKind::SubmissionReturned
@@ -144,12 +152,8 @@ fn result(row: RecentResultRow) -> RecentResult {
         activity_name: row.activity_name,
         submission_id: row.submission_id,
         score: if returned { None } else { row.score },
-        // Only a verdict says pass or fail: returned work and a grade with no passing score (`Graded`) are neither.
-        passed: match row.state {
-            ActivityProgressState::Passed => Some(true),
-            ActivityProgressState::Failed => Some(false),
-            _ => None,
-        },
+        // Only a released grade says pass or fail: returned work and a grade with no score (`Graded`) are neither.
+        passed: released_passed(row.status, row.passed),
         at_unix: row.at,
     }
 }
@@ -262,7 +266,7 @@ pub async fn remind_deadlines(pool: &PgPool) -> Result<usize> {
     let rows =
         ab_db::work_queue::upcoming_deadlines(pool, None, now, now + REMIND_WITHIN_SECS).await?;
     let mut considered = 0;
-    for row in rows.into_iter().filter(|r| !handed_in(r.state)) {
+    for row in rows.into_iter().filter(|r| !handed_in(r.status)) {
         considered += 1;
         let key = format!("deadline_approaching:{}:{}", row.activity_id, row.due_at);
         let user: UserId = row.user_id;

@@ -984,6 +984,11 @@ Queue, in order:
 5. **Statuses**: `activity_progress.state` becomes a status plus `passed`; `code_runs.status` splits into the
    run's state and its verdict, and the language is its name, not Judge0's number; one soft-delete idiom (a
    timestamp, the status derived).
+   - Progress: switched in `20261116075632_activity_progress_status` (+ its index). `activity_progress.status` keeps
+     the steps (`released` for a published grade, `graded` for one with no score) and `passed` the outcome (not true
+     reads as failed); the API's `AgendaDeadline` has `status` + `passed`, the learner's outline keeps its
+     `passed` / `failed` work states. A trigger keeps the previous release's `state` equal both ways. Left: the
+     contract dropping `state`, its check and index, and `activity_progress_status`.
 6. **Language, units, hashes**: one language domain; durations in seconds; hashes as sha256 `bytea`.
 7. **Smaller**: `assessments.access_mode` derived from the access rows; `teacher_user_id` out of the rollups
    (a course has several staff); the last login moves from `gamification_profiles` to `users`; triggers that

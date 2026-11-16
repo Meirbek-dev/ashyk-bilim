@@ -39,6 +39,8 @@ constraint activity_progress activity_progress_pkey PRIMARY KEY (activity_id, us
 constraint activity_progress activity_progress_required_not_null NOT NULL required
 constraint activity_progress activity_progress_state_check CHECK ((state = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'submitted'::text, 'needs_grading'::text, 'returned'::text, 'graded'::text, 'passed'::text, 'failed'::text, 'completed'::text])))
 constraint activity_progress activity_progress_state_not_null NOT NULL state
+constraint activity_progress activity_progress_status_check CHECK ((status = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'submitted'::text, 'needs_grading'::text, 'returned'::text, 'graded'::text, 'released'::text, 'completed'::text])))
+constraint activity_progress activity_progress_status_not_null NOT NULL status
 constraint activity_progress activity_progress_teacher_action_required_not_null NOT NULL teacher_action_required
 constraint activity_progress activity_progress_updated_at_not_null NOT NULL updated_at
 constraint activity_progress activity_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
@@ -1429,6 +1431,21 @@ BEGIN
     NEW.required := (NEW.settings->>'required') IS DISTINCT FROM 'false';
     RETURN NEW;
 END $function$
+function CREATE OR REPLACE FUNCTION public.activity_progress_status()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF (TG_OP = 'INSERT' AND NEW.status IS NULL)
+       OR (TG_OP = 'UPDATE' AND NEW.state IS DISTINCT FROM OLD.state AND NEW.status IS NOT DISTINCT FROM OLD.status) THEN
+        NEW.status := CASE WHEN NEW.state IN ('passed', 'failed') THEN 'released' ELSE NEW.state END;
+    ELSE
+        NEW.state := CASE WHEN NEW.status <> 'released' THEN NEW.status
+                          WHEN NEW.passed THEN 'passed' ELSE 'failed' END;
+    END IF;
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.ai_grade_drafts_same_activity()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2532,6 +2549,7 @@ END $function$
 index CREATE INDEX activities_course_idx ON core.activities USING btree (course_id)
 index CREATE INDEX activities_search_trgm_idx ON core.activities USING gin (search_fold(name) gin_trgm_ops)
 index CREATE INDEX activity_progress_activity_state_idx ON learning.activity_progress USING btree (activity_id, state)
+index CREATE INDEX activity_progress_activity_status_idx ON learning.activity_progress USING btree (activity_id, status)
 index CREATE INDEX activity_progress_best_submission_idx ON learning.activity_progress USING btree (best_submission_id)
 index CREATE INDEX activity_progress_course_user_idx ON learning.activity_progress USING btree (course_id, user_id)
 index CREATE INDEX activity_progress_latest_submission_idx ON learning.activity_progress USING btree (latest_submission_id)
@@ -3513,6 +3531,7 @@ table learning.activity_progress required boolean NOT NULL DEFAULT true
 table learning.activity_progress score percent DEFAULT -
 table learning.activity_progress started_at timestamp with time zone DEFAULT -
 table learning.activity_progress state text NOT NULL DEFAULT 'not_started'::text
+table learning.activity_progress status text NOT NULL DEFAULT -
 table learning.activity_progress status_reason text DEFAULT -
 table learning.activity_progress submitted_at timestamp with time zone DEFAULT -
 table learning.activity_progress teacher_action_required boolean NOT NULL DEFAULT false
@@ -3979,6 +3998,7 @@ trigger CREATE CONSTRAINT TRIGGER submissions_current_grade AFTER UPDATE OF fina
 trigger CREATE TRIGGER activities_keep_assessment_type BEFORE UPDATE OF activity_type ON core.activities FOR EACH ROW WHEN ((old.activity_type IS DISTINCT FROM new.activity_type)) EXECUTE FUNCTION activities_keep_assessment_type()
 trigger CREATE TRIGGER activities_required_from_settings BEFORE INSERT OR UPDATE OF settings ON core.activities FOR EACH ROW EXECUTE FUNCTION activities_required_from_settings()
 trigger CREATE TRIGGER activities_touch BEFORE UPDATE ON core.activities FOR EACH ROW EXECUTE FUNCTION touch_row()
+trigger CREATE TRIGGER activity_progress_status BEFORE INSERT OR UPDATE ON learning.activity_progress FOR EACH ROW EXECUTE FUNCTION activity_progress_status()
 trigger CREATE TRIGGER activity_progress_touch BEFORE UPDATE ON learning.activity_progress FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER ai_course_settings_touch BEFORE UPDATE ON ai.ai_course_settings FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER ai_grade_drafts_same_activity BEFORE INSERT ON ai.ai_grade_drafts FOR EACH ROW EXECUTE FUNCTION ai_grade_drafts_same_activity()

@@ -7,7 +7,7 @@
 //! by construction. The whole queue is materialised per call (as the legacy
 //! did): it is bounded by one user's open work.
 
-use ab_core::assessments::ActivityProgressState;
+use ab_core::assessments::ActivityProgressStatus;
 use ab_core::id::{ActivityId, CourseId, FileAttemptId, SubmissionId};
 use ab_core::{Error, FieldError, Result};
 use ab_db::work_queue::{LearnerWorkRow, TeacherWorkRow};
@@ -281,8 +281,8 @@ struct LearnerSpec {
 fn learner_spec(row: &LearnerWorkRow, now: i64) -> LearnerSpec {
     let activity = &row.activity_title;
     let course = &row.course_title;
-    match row.state {
-        ActivityProgressState::Returned => LearnerSpec {
+    match row.status {
+        ActivityProgressStatus::Returned => LearnerSpec {
             id_kind: "returned",
             kind: WorkKind::ReturnedForRevision,
             status: WorkStatus::Returned,
@@ -294,7 +294,7 @@ fn learner_spec(row: &LearnerWorkRow, now: i64) -> LearnerSpec {
             created_at: Some(row.updated_at),
             allowed_actions: vec!["revise", "view_feedback"],
         },
-        ActivityProgressState::Submitted | ActivityProgressState::NeedsGrading => LearnerSpec {
+        ActivityProgressStatus::Submitted | ActivityProgressStatus::NeedsGrading => LearnerSpec {
             id_kind: "waiting",
             kind: WorkKind::WaitingForGrade,
             status: WorkStatus::NeedsGrading,
@@ -306,15 +306,15 @@ fn learner_spec(row: &LearnerWorkRow, now: i64) -> LearnerSpec {
             created_at: row.submitted_at.or(Some(row.updated_at)),
             allowed_actions: vec!["view_receipt"],
         },
-        ActivityProgressState::Passed | ActivityProgressState::Failed => LearnerSpec {
+        ActivityProgressStatus::Released => LearnerSpec {
             id_kind: "feedback",
             kind: WorkKind::FeedbackReleased,
             status: WorkStatus::Published,
             message_key: WorkMessageKey::ReviewFeedback,
-            priority: if row.state == ActivityProgressState::Failed {
-                WorkPriority::High
-            } else {
+            priority: if row.passed == Some(true) {
                 WorkPriority::Normal
+            } else {
+                WorkPriority::High
             },
             title: format!("Review feedback for {activity}"),
             description: format!("{course}: a grading decision is available."),
@@ -324,10 +324,10 @@ fn learner_spec(row: &LearnerWorkRow, now: i64) -> LearnerSpec {
         },
         // `not_started`, `graded` and `completed` never reach the queue (see
         // `list_learner_work`); `in_progress` is the open-work default.
-        ActivityProgressState::NotStarted
-        | ActivityProgressState::InProgress
-        | ActivityProgressState::Graded
-        | ActivityProgressState::Completed => {
+        ActivityProgressStatus::NotStarted
+        | ActivityProgressStatus::InProgress
+        | ActivityProgressStatus::Graded
+        | ActivityProgressStatus::Completed => {
             let overdue = row.due_at.is_some_and(|due| due < now);
             LearnerSpec {
                 id_kind: "progress",
@@ -358,10 +358,8 @@ fn learner_spec(row: &LearnerWorkRow, now: i64) -> LearnerSpec {
 const FEEDBACK_WINDOW_SECS: i64 = 14 * 86_400;
 
 fn is_stale_feedback(row: &LearnerWorkRow, now: i64) -> bool {
-    matches!(
-        row.state,
-        ActivityProgressState::Passed | ActivityProgressState::Failed
-    ) && row.graded_at.unwrap_or(row.updated_at) < now - FEEDBACK_WINDOW_SECS
+    row.status == ActivityProgressStatus::Released
+        && row.graded_at.unwrap_or(row.updated_at) < now - FEEDBACK_WINDOW_SECS
 }
 
 fn learner_item(row: &LearnerWorkRow, now: i64) -> WorkItem {
@@ -663,9 +661,10 @@ mod tests {
         }
     }
 
-    fn learner_row(state: ActivityProgressState, due_at: Option<i64>) -> LearnerWorkRow {
+    fn learner_row(status: ActivityProgressStatus, due_at: Option<i64>) -> LearnerWorkRow {
         LearnerWorkRow {
-            state,
+            status,
+            passed: None,
             course_id: CourseId::new(),
             course_title: "Course".to_owned(),
             activity_id: ActivityId::new(),
@@ -681,7 +680,7 @@ mod tests {
     #[test]
     fn learner_items_follow_the_legacy_kind_table() {
         let now = 1_000;
-        let open = learner_item(&learner_row(ActivityProgressState::InProgress, None), now);
+        let open = learner_item(&learner_row(ActivityProgressStatus::InProgress, None), now);
         assert_eq!(
             (open.kind, open.priority),
             (WorkKind::InProgress, WorkPriority::High)
@@ -689,14 +688,17 @@ mod tests {
         assert_eq!(open.created_at, Some(100), "started_at");
         assert!(open.id.starts_with("learner-progress-"));
         let late = learner_item(
-            &learner_row(ActivityProgressState::InProgress, Some(999)),
+            &learner_row(ActivityProgressStatus::InProgress, Some(999)),
             now,
         );
         assert_eq!(
             (late.kind, late.priority),
             (WorkKind::Overdue, WorkPriority::Critical)
         );
-        let waiting = learner_item(&learner_row(ActivityProgressState::NeedsGrading, None), now);
+        let waiting = learner_item(
+            &learner_row(ActivityProgressStatus::NeedsGrading, None),
+            now,
+        );
         assert_eq!(
             (waiting.kind, waiting.status, waiting.created_at),
             (
@@ -705,22 +707,30 @@ mod tests {
                 Some(200)
             )
         );
-        let returned = learner_item(&learner_row(ActivityProgressState::Returned, None), now);
+        let returned = learner_item(&learner_row(ActivityProgressStatus::Returned, None), now);
         assert_eq!(returned.priority, WorkPriority::Critical);
         assert_eq!(returned.allowed_actions, ["revise", "view_feedback"]);
-        let failed = learner_item(&learner_row(ActivityProgressState::Failed, None), now);
+        let failed = LearnerWorkRow {
+            passed: Some(false),
+            ..learner_row(ActivityProgressStatus::Released, None)
+        };
+        let failed = learner_item(&failed, now);
         assert_eq!(
             (failed.kind, failed.priority),
             (WorkKind::FeedbackReleased, WorkPriority::High)
         );
         assert_eq!(failed.created_at, Some(300), "graded_at");
-        let passed = learner_item(&learner_row(ActivityProgressState::Passed, None), now);
+        let passed = LearnerWorkRow {
+            passed: Some(true),
+            ..learner_row(ActivityProgressStatus::Released, None)
+        };
+        let passed = learner_item(&passed, now);
         assert_eq!(passed.priority, WorkPriority::Normal);
         // Released grades leave the queue after the window; open work never does.
-        let old = learner_row(ActivityProgressState::Failed, None);
+        let old = learner_row(ActivityProgressStatus::Released, None);
         assert!(!is_stale_feedback(&old, now));
         assert!(is_stale_feedback(&old, now + FEEDBACK_WINDOW_SECS + 301));
-        let open = learner_row(ActivityProgressState::InProgress, None);
+        let open = learner_row(ActivityProgressStatus::InProgress, None);
         assert!(!is_stale_feedback(&open, now + FEEDBACK_WINDOW_SECS * 10));
     }
 

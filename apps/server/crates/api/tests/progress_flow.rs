@@ -431,15 +431,16 @@ async fn assessment_submissions_project_into_progress(pool: PgPool) {
     assert_eq!(after.json()["next_action"]["id"], "review_completion");
 
     // The projection row carries the submission linkage.
-    let (state, attempts, latest): (String, i32, Option<uuid::Uuid>) = sqlx::query_as(
-        "SELECT state, attempt_count, latest_submission_id FROM activity_progress
+    let (status, passed, attempts, latest): (String, Option<bool>, i32, Option<uuid::Uuid>) =
+        sqlx::query_as(
+            "SELECT status, passed, attempt_count, latest_submission_id FROM activity_progress
          WHERE activity_id = $1",
-    )
-    .bind(uuid::Uuid::parse_str(&activity_id).unwrap())
-    .fetch_one(&app.pool)
-    .await
-    .unwrap();
-    assert_eq!(state, "passed");
+        )
+        .bind(uuid::Uuid::parse_str(&activity_id).unwrap())
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!((status.as_str(), passed), ("released", Some(true)));
     assert_eq!(attempts, 1);
     assert_eq!(latest, Some(uuid::Uuid::parse_str(&sub_id).unwrap()));
     assert_view_matches_projection(&app.pool).await;

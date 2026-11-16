@@ -47,17 +47,17 @@ export const vActivityDraftStats = v.object({
 });
 
 /**
- * Canonical per-learner activity state (legacy `ActivityProgressState`).
+ * How far a learner's work in one activity got. `released`: the grade is
+ * the learner's; whether it passed is `passed` beside it.
  */
-export const vActivityProgressState = v.picklist([
+export const vActivityProgressStatus = v.picklist([
     'not_started',
     'in_progress',
     'submitted',
     'needs_grading',
     'returned',
     'graded',
-    'passed',
-    'failed',
+    'released',
     'completed'
 ]);
 
@@ -4345,7 +4345,8 @@ export const vAgendaDeadline = v.object({
     cutoff_at_unix: v.nullable(vUnixTime),
     due_at_unix: vUnixTime,
     file_submission_id: v.nullable(vFileSubmissionId),
-    state: vActivityProgressState
+    passed: v.nullable(v.boolean()),
+    status: vActivityProgressStatus
 });
 
 export const vAnalyticsDataQuality = v.object({

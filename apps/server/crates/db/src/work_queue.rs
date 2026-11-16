@@ -7,14 +7,16 @@
 //! seconds.
 
 use ab_core::Result;
-use ab_core::assessments::ActivityProgressState;
+use ab_core::assessments::ActivityProgressStatus;
 use ab_core::id::{ActivityId, CourseId, UserId};
 use sqlx::PgPool;
 
 /// One open activity of the learner (published activities only).
 #[derive(Debug, Clone)]
 pub struct LearnerWorkRow {
-    pub state: ActivityProgressState,
+    pub status: ActivityProgressStatus,
+    /// The outcome of a `released` grade (`None`: no score).
+    pub passed: Option<bool>,
     pub course_id: CourseId,
     pub course_title: String,
     pub activity_id: ActivityId,
@@ -35,7 +37,7 @@ pub struct LearnerWorkRow {
 pub async fn list_learner_work(pool: &PgPool, user_id: UserId) -> Result<Vec<LearnerWorkRow>> {
     let rows = sqlx::query_as!(
         LearnerWorkRow,
-        r#"SELECT p.state AS "state: ActivityProgressState",
+        r#"SELECT p.status AS "status: ActivityProgressStatus", p.passed,
                   c.id AS "course_id: CourseId", c.name AS course_title,
                   a.id AS "activity_id: ActivityId", a.name AS activity_title,
                   (extract(epoch FROM p.started_at))::bigint AS "started_at?",
@@ -48,8 +50,7 @@ pub async fn list_learner_work(pool: &PgPool, user_id: UserId) -> Result<Vec<Lea
            JOIN courses c ON c.id = p.course_id
            WHERE p.user_id = $1
              AND a.published
-             AND p.state IN ('in_progress', 'submitted', 'needs_grading', 'returned',
-                             'passed', 'failed')
+             AND p.status IN ('in_progress', 'submitted', 'needs_grading', 'returned', 'released')
              AND c.archived_at IS NULL
              AND EXISTS (SELECT 1 FROM course_members r
                          WHERE r.course_id = p.course_id AND r.user_id = p.user_id)"#,
@@ -148,7 +149,7 @@ pub async fn list_teacher_grading_work(
     Ok(rows)
 }
 
-/// Rows in state `graded` (saved, unreleased) in the teacher's courses.
+/// Rows in status `graded` (saved, unreleased) in the teacher's courses.
 ///
 /// The review target is the latest submission when it is `graded`, else the
 /// newest `graded` file attempt. Same exclusions as the grading work (BUG-301).
@@ -184,7 +185,7 @@ pub async fn list_teacher_release_work(
            JOIN users u ON u.id = p.user_id
            LEFT JOIN enrolments r ON r.course_id = p.course_id AND r.user_id = p.user_id
            WHERE p.user_id <> $1
-             AND (p.state = 'graded' OR r.user_id IS NULL OR is_course_staff(p.course_id, p.user_id))
+             AND (p.status = 'graded' OR r.user_id IS NULL OR is_course_staff(p.course_id, p.user_id))
              AND c.archived_at IS NULL
              AND c.id IN (SELECT ra.course_id FROM course_staff ra
                           WHERE ra.user_id = $1 AND ra.status = 'active'
@@ -212,7 +213,8 @@ pub struct DeadlineRow {
     pub file_submission_id: Option<ab_core::id::FileSubmissionId>,
     pub due_at: i64,
     pub cutoff_at: Option<i64>,
-    pub state: ActivityProgressState,
+    pub status: ActivityProgressStatus,
+    pub passed: Option<bool>,
 }
 
 /// Every member's (or one member's) gradable work due in `(from, until]`.
@@ -268,7 +270,8 @@ pub async fn upcoming_deadlines(
                   w.file_submission_id AS "file_submission_id?: ab_core::id::FileSubmissionId",
                   (extract(epoch FROM w.due_at))::bigint AS "due_at!",
                   (extract(epoch FROM w.cutoff_at))::bigint AS "cutoff_at?",
-                  COALESCE(p.state, 'not_started') AS "state!: ActivityProgressState"
+                  COALESCE(p.status, 'not_started') AS "status!: ActivityProgressStatus",
+                  p.passed AS "passed?"
            FROM work w
            JOIN activities a ON a.id = w.activity_id AND a.published
            JOIN courses c ON c.id = w.course_id
@@ -292,13 +295,14 @@ pub struct RecentResultRow {
     pub course_name: String,
     pub activity_id: ActivityId,
     pub activity_name: String,
-    pub state: ActivityProgressState,
+    pub status: ActivityProgressStatus,
+    pub passed: Option<bool>,
     pub score: Option<f64>,
     pub submission_id: Option<ab_core::id::SubmissionId>,
     pub at: i64,
 }
 
-/// The learner's `passed` / `failed` (a released grade) and `returned`
+/// The learner's `released` (a grade, `passed` its outcome) and `returned`
 /// activities that changed since `since`, newest first.
 pub async fn recent_results(
     pool: &PgPool,
@@ -310,17 +314,17 @@ pub async fn recent_results(
         RecentResultRow,
         r#"SELECT c.id AS "course_id: CourseId", c.name AS course_name,
                   a.id AS "activity_id: ActivityId", a.name AS activity_name,
-                  p.state AS "state: ActivityProgressState", p.score::float8 AS score,
+                  p.status AS "status: ActivityProgressStatus", p.passed, p.score::float8 AS score,
                   p.latest_submission_id AS "submission_id: ab_core::id::SubmissionId",
-                  (extract(epoch FROM CASE WHEN p.state = 'returned' THEN p.updated_at
+                  (extract(epoch FROM CASE WHEN p.status = 'returned' THEN p.updated_at
                                            ELSE COALESCE(p.graded_at, p.updated_at) END
                   ))::bigint AS "at!"
            FROM activity_progress p
            JOIN activities a ON a.id = p.activity_id AND a.published
            JOIN courses c ON c.id = p.course_id AND c.archived_at IS NULL
            WHERE p.user_id = $1
-             AND p.state IN ('passed', 'failed', 'returned')
-             AND CASE WHEN p.state = 'returned' THEN p.updated_at
+             AND p.status IN ('released', 'returned')
+             AND CASE WHEN p.status = 'returned' THEN p.updated_at
                       ELSE COALESCE(p.graded_at, p.updated_at) END >= to_timestamp($2::bigint)
              AND EXISTS (SELECT 1 FROM course_members r
                          WHERE r.course_id = p.course_id AND r.user_id = p.user_id)

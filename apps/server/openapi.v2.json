@@ -296,8 +296,8 @@
         "format": "uuid",
         "type": "string"
       },
-      "ActivityProgressState": {
-        "description": "Canonical per-learner activity state (legacy `ActivityProgressState`).",
+      "ActivityProgressStatus": {
+        "description": "How far a learner's work in one activity got. `released`: the grade is\nthe learner's; whether it passed is `passed` beside it.",
         "enum": [
           "not_started",
           "in_progress",
@@ -305,8 +305,7 @@
           "needs_grading",
           "returned",
           "graded",
-          "passed",
-          "failed",
+          "released",
           "completed"
         ],
         "type": "string"
@@ -1313,8 +1312,15 @@
               }
             ]
           },
-          "state": {
-            "$ref": "#/components/schemas/ActivityProgressState"
+          "passed": {
+            "description": "Set when `status` is `released`: whether the grade passed.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ActivityProgressStatus"
           }
         },
         "required": [
@@ -1324,10 +1330,11 @@
           "activity_name",
           "activity_type",
           "due_at_unix",
-          "state",
+          "status",
           "assessment_id",
           "cutoff_at_unix",
-          "file_submission_id"
+          "file_submission_id",
+          "passed"
         ],
         "type": "object"
       },

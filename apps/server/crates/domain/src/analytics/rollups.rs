@@ -389,7 +389,7 @@ pub async fn run_rollup(pool: &PgPool, date: Day) -> Result<RollupCounts> {
 mod tests {
     use std::collections::{BTreeMap, HashSet};
 
-    use ab_core::assessments::ActivityProgressState;
+    use ab_core::assessments::ActivityProgressStatus;
     use ab_core::id::{ActivityId, ChapterId, CourseId, UserId};
     use ab_db::analytics::{
         ActivityInfoRow, CertificateInfoRow, ChapterInfoRow, CourseInfoRow, ProgressInfoRow,
@@ -413,11 +413,12 @@ mod tests {
             course_id: course,
             activity_id: activity,
             user_id: user,
-            state: if completed {
-                ActivityProgressState::Completed
+            status: if completed {
+                ActivityProgressStatus::Completed
             } else {
-                ActivityProgressState::InProgress
+                ActivityProgressStatus::InProgress
             },
+            passed: None,
             required: true,
             started_at: Some(NOW - 50 * DAY_SECS),
             last_activity_at: Some(NOW - DAY_SECS),

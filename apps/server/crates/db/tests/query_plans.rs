@@ -73,7 +73,7 @@ const CASES: &[Case] = &[
         name: "teacher release queue",
         fragments: &[
             "FROM activity_progress p",
-            "p.state = 'graded' OR r.user_id IS NULL",
+            "p.status = 'graded' OR r.user_id IS NULL",
         ],
         no_seq_scan: &["activity_progress"],
         indexes: &["activity_progress_course_user_idx"],
@@ -118,7 +118,7 @@ JOIN LATERAL (SELECT id FROM courses ORDER BY id
               OFFSET substr(u.username, 6)::int % 59 LIMIT 2) c ON true
 WHERE substr(u.username, 6)::int BETWEEN 1001 AND 2500;
 
-INSERT INTO activity_progress (course_id, activity_id, user_id, state, teacher_action_required)
+INSERT INTO activity_progress (course_id, activity_id, user_id, status, teacher_action_required)
 SELECT r.course_id, a.id, r.user_id,
        CASE WHEN a.position % 3 = 0 THEN 'completed' ELSE 'not_started' END,
        a.position = 4 AND substr(u.username, 6)::int % 10 = 0

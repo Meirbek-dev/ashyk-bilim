@@ -369,7 +369,7 @@ async fn grading_fans_out_by_role_and_feeds_the_agenda(pool: PgPool) {
     let agenda = agenda.json();
     assert_eq!(agenda["deadlines"][0]["activity_id"], activity_id.as_str());
     assert_eq!(agenda["deadlines"][0]["assessment_id"], id.as_str());
-    assert_eq!(agenda["deadlines"][0]["state"], "not_started");
+    assert_eq!(agenda["deadlines"][0]["status"], "not_started");
     assert_eq!(agenda["course_updates"][0]["title"], "Welcome");
     assert_eq!(
         app.get_as(&alice, "/api/v2/me/agenda?days=2").await.json()["deadlines"],
@@ -497,7 +497,8 @@ async fn grading_fans_out_by_role_and_feeds_the_agenda(pool: PgPool) {
         agenda["recent_results"][0]["activity_id"],
         activity_id.as_str()
     );
-    assert_eq!(agenda["deadlines"][0]["state"], "passed", "{agenda}");
+    assert_eq!(agenda["deadlines"][0]["status"], "released", "{agenda}");
+    assert_eq!(agenda["deadlines"][0]["passed"], true, "{agenda}");
     // CONTRACT-REQ-G-1: the result says pass or fail, not only «graded».
     assert_eq!(agenda["recent_results"][0]["passed"], true, "{agenda}");
 }

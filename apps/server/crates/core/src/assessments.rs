@@ -436,16 +436,16 @@ text_enum!(
 );
 
 text_enum!(
-    /// Canonical per-learner activity state (legacy `ActivityProgressState`).
-    ActivityProgressState {
+    /// How far a learner's work in one activity got. `released`: the grade is
+    /// the learner's; whether it passed is `passed` beside it.
+    ActivityProgressStatus {
         NotStarted => "not_started",
         InProgress => "in_progress",
         Submitted => "submitted",
         NeedsGrading => "needs_grading",
         Returned => "returned",
         Graded => "graded",
-        Passed => "passed",
-        Failed => "failed",
+        Released => "released",
         Completed => "completed",
     }
 );

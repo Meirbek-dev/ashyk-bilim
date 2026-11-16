@@ -6,7 +6,7 @@
 
 use std::collections::HashMap;
 
-use ab_core::assessments::{ActivityProgressState, Lifecycle};
+use ab_core::assessments::{ActivityProgressStatus, Lifecycle};
 use ab_core::id::{ActivityId, ChapterId, CourseId, UserId};
 use ab_core::{Error, Result};
 use ab_db::progress::{ActivityProgressRow, CourseProgressRow, DueOverrideRow};
@@ -51,17 +51,26 @@ pub enum WorkState {
 }
 
 impl WorkState {
-    const fn from_progress(state: Option<ActivityProgressState>) -> Self {
-        match state {
-            None | Some(ActivityProgressState::NotStarted) => Self::NotStarted,
-            Some(ActivityProgressState::InProgress) => Self::InProgress,
-            Some(ActivityProgressState::Submitted) => Self::Submitted,
-            Some(ActivityProgressState::NeedsGrading) => Self::NeedsGrading,
-            Some(ActivityProgressState::Returned) => Self::Returned,
-            Some(ActivityProgressState::Graded) => Self::GradedHidden,
-            Some(ActivityProgressState::Passed) => Self::Passed,
-            Some(ActivityProgressState::Failed) => Self::Failed,
-            Some(ActivityProgressState::Completed) => Self::Complete,
+    /// `progress`: the row's status and `passed`.
+    const fn from_progress(progress: Option<(ActivityProgressStatus, Option<bool>)>) -> Self {
+        let Some((status, passed)) = progress else {
+            return Self::NotStarted;
+        };
+        match status {
+            ActivityProgressStatus::NotStarted => Self::NotStarted,
+            ActivityProgressStatus::InProgress => Self::InProgress,
+            ActivityProgressStatus::Submitted => Self::Submitted,
+            ActivityProgressStatus::NeedsGrading => Self::NeedsGrading,
+            ActivityProgressStatus::Returned => Self::Returned,
+            ActivityProgressStatus::Graded => Self::GradedHidden,
+            ActivityProgressStatus::Released => {
+                if matches!(passed, Some(true)) {
+                    Self::Passed
+                } else {
+                    Self::Failed
+                }
+            }
+            ActivityProgressStatus::Completed => Self::Complete,
         }
     }
 
@@ -728,7 +737,7 @@ fn activity_state(
     activity: &ab_db::catalog::ActivityRow,
     progress: Option<&ActivityProgressRow>,
 ) -> ActivityState {
-    let state = WorkState::from_progress(progress.map(|p| p.state));
+    let state = WorkState::from_progress(progress.map(|p| (p.status, p.passed)));
     ActivityState {
         id: activity.id,
         title: activity.name.clone(),

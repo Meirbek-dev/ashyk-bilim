@@ -6,14 +6,14 @@ import { formatDateTime } from '#/shared/i18n/format'
 import { activityType, activityTypeMeta } from '#/shared/i18n/labels'
 
 import { hoursLeft, timeOf } from '../model/agenda'
-import { progressStates } from './labels'
+import { progressStatus } from './labels'
 import { PlayerLink } from './player-link'
 
 /** One deadline: activity type, state, the title into the player, course and time (and the late cutoff). */
 export function DeadlineItem({ deadline, nowUnix }: { deadline: AgendaDeadline; nowUnix: number }) {
   const soon = hoursLeft(deadline, nowUnix)
   const type = activityType(deadline.activity_type)
-  const state = progressStates[deadline.state]
+  const state = progressStatus(deadline.status, deadline.passed)
   const due = m.home_due_time({ time: timeOf(deadline.due_at_unix) })
   const cutoff = deadline.cutoff_at_unix ? m.home_cutoff({ date: formatDateTime(deadline.cutoff_at_unix) }) : null
   return (

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT course_id AS \"course_id: CourseId\",\n                  activity_id AS \"activity_id: ActivityId\", user_id AS \"user_id: UserId\",\n                  state AS \"state: ActivityProgressState\", required, score::float8 AS score, passed,\n                  best_submission_id AS \"best_submission_id: SubmissionId\",\n                  latest_submission_id AS \"latest_submission_id: SubmissionId\", attempt_count,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM last_activity_at))::bigint AS \"last_activity_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  (extract(epoch FROM completed_at))::bigint AS \"completed_at?\",\n                  (extract(epoch FROM due_at))::bigint AS \"due_at?\",\n                  is_late, teacher_action_required, status_reason,\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM activity_progress\n           WHERE course_id = $1 AND user_id = $2\n             AND activity_id IN (SELECT id FROM activities WHERE published)",
+  "query": "SELECT course_id AS \"course_id: CourseId\",\n                  activity_id AS \"activity_id: ActivityId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: ActivityProgressStatus\", required, score::float8 AS score, passed,\n                  best_submission_id AS \"best_submission_id: SubmissionId\",\n                  latest_submission_id AS \"latest_submission_id: SubmissionId\", attempt_count,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM last_activity_at))::bigint AS \"last_activity_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  (extract(epoch FROM completed_at))::bigint AS \"completed_at?\",\n                  (extract(epoch FROM due_at))::bigint AS \"due_at?\",\n                  is_late, teacher_action_required, status_reason,\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM activity_progress WHERE activity_id = $1 AND user_id = $2",
   "describe": {
     "columns": [
       {
@@ -38,12 +38,12 @@
       },
       {
         "ordinal": 3,
-        "name": "state: ActivityProgressState",
+        "name": "status: ActivityProgressStatus",
         "type_info": "Text",
         "origin": {
           "Table": {
             "table": "activity_progress",
-            "name": "state"
+            "name": "status"
           }
         }
       },
@@ -213,5 +213,5 @@
       null
     ]
   },
-  "hash": "73d7aa3c29aedf837651539f7da1940d8a9c9f5cac6d29accdcd3cfc03d9f6c9"
+  "hash": "9f2cda798c8cefbd7716062c5dbfb0090841c1dcf3d1fd9a1a6e15f63c2c0d3c"
 }

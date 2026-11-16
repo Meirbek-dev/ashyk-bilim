@@ -4448,7 +4448,7 @@ async fn staff_attempts_are_previews(pool: PgPool) {
     let graded = app.send(grade(&teacher, &preview, Some("1"), &body)).await;
     assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
     let projected: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM activity_progress WHERE user_id = $1 AND state <> 'not_started'",
+        "SELECT count(*) FROM activity_progress WHERE user_id = $1 AND status <> 'not_started'",
     )
     .bind(teacher.user_id.0)
     .fetch_one(&app.pool)

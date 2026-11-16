@@ -173,29 +173,30 @@ Lookup: the activity kinds (type and sub-type pairs) an activity can have; mirro
 
 Projection: a learner's state in one activity (from submissions, hand-ins and steps), rebuilt by progress-backfill.
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| course_id | uuid |  |  |
-| activity_id | uuid |  |  |
-| user_id | uuid |  |  |
-| state | text |  | `'not_started'::text` |
-| required | boolean |  | `true` |
-| score | percent | null |  |
-| passed | boolean | null |  |
-| best_submission_id | uuid | null |  |
-| latest_submission_id | uuid | null |  |
-| attempt_count | integer |  | `0` |
-| started_at | timestamp with time zone | null |  |
-| last_activity_at | timestamp with time zone | null |  |
-| submitted_at | timestamp with time zone | null |  |
-| graded_at | timestamp with time zone | null |  |
-| completed_at | timestamp with time zone | null |  |
-| due_at | timestamp with time zone | null |  |
-| is_late | boolean |  | `false` |
-| teacher_action_required | boolean |  | `false` |
-| status_reason | text | null |  |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| course_id | uuid |  |  |  |
+| activity_id | uuid |  |  |  |
+| user_id | uuid |  |  |  |
+| state | text |  | `'not_started'::text` |  |
+| required | boolean |  | `true` |  |
+| score | percent | null |  |  |
+| passed | boolean | null |  |  |
+| best_submission_id | uuid | null |  |  |
+| latest_submission_id | uuid | null |  |  |
+| attempt_count | integer |  | `0` |  |
+| started_at | timestamp with time zone | null |  |  |
+| last_activity_at | timestamp with time zone | null |  |  |
+| submitted_at | timestamp with time zone | null |  |  |
+| graded_at | timestamp with time zone | null |  |  |
+| completed_at | timestamp with time zone | null |  |  |
+| due_at | timestamp with time zone | null |  |  |
+| is_late | boolean |  | `false` |  |
+| teacher_action_required | boolean |  | `false` |  |
+| status_reason | text | null |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| updated_at | timestamp with time zone |  | `now()` |  |
+| status | text |  |  | How far the work got; `released`: the grade is the learner's, `passed` says how it ended. |
 
 - Primary key `activity_progress_pkey`: `PRIMARY KEY (activity_id, user_id)`
 - Foreign key `activity_progress_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
@@ -205,12 +206,15 @@ Projection: a learner's state in one activity (from submissions, hand-ins and st
 - Foreign key `activity_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Check `activity_progress_attempt_count_check`: `CHECK ((attempt_count >= 0))`
 - Check `activity_progress_state_check`: `CHECK ((state = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'submitted'::text, 'needs_grading'::text, 'returned'::text, 'graded'::text, 'passed'::text, 'failed'::text, 'completed'::text])))`
+- Check `activity_progress_status_check`: `CHECK ((status = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'submitted'::text, 'needs_grading'::text, 'returned'::text, 'graded'::text, 'released'::text, 'completed'::text])))`
 - Index `activity_progress_activity_state_idx`: `CREATE INDEX activity_progress_activity_state_idx ON learning.activity_progress USING btree (activity_id, state)`
+- Index `activity_progress_activity_status_idx`: `CREATE INDEX activity_progress_activity_status_idx ON learning.activity_progress USING btree (activity_id, status)`
 - Index `activity_progress_best_submission_idx`: `CREATE INDEX activity_progress_best_submission_idx ON learning.activity_progress USING btree (best_submission_id)`
 - Index `activity_progress_course_user_idx`: `CREATE INDEX activity_progress_course_user_idx ON learning.activity_progress USING btree (course_id, user_id)`
 - Index `activity_progress_latest_submission_idx`: `CREATE INDEX activity_progress_latest_submission_idx ON learning.activity_progress USING btree (latest_submission_id)`
 - Index `activity_progress_teacher_action_idx`: `CREATE INDEX activity_progress_teacher_action_idx ON learning.activity_progress USING btree (course_id) WHERE teacher_action_required`
 - Index `activity_progress_user_idx`: `CREATE INDEX activity_progress_user_idx ON learning.activity_progress USING btree (user_id)`
+- Trigger `activity_progress_status`: `CREATE TRIGGER activity_progress_status BEFORE INSERT OR UPDATE ON learning.activity_progress FOR EACH ROW EXECUTE FUNCTION activity_progress_status()`
 
 ## ai_approvals
 

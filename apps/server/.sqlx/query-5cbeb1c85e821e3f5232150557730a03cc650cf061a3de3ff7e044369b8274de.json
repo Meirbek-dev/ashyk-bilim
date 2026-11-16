@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT c.course_id AS \"course_id: CourseId\", c.progress_pct,\n                  EXISTS (SELECT 1 FROM activity_progress p\n                           WHERE p.course_id = c.course_id AND p.user_id = c.user_id\n                             AND p.state <> 'not_started') AS \"started!\"\n           FROM course_progress c WHERE c.user_id = $1 AND c.course_id = ANY($2)",
+  "query": "SELECT c.course_id AS \"course_id: CourseId\", c.progress_pct,\n                  EXISTS (SELECT 1 FROM activity_progress p\n                           WHERE p.course_id = c.course_id AND p.user_id = c.user_id\n                             AND p.status <> 'not_started') AS \"started!\"\n           FROM course_progress c WHERE c.user_id = $1 AND c.course_id = ANY($2)",
   "describe": {
     "columns": [
       {
@@ -44,5 +44,5 @@
       null
     ]
   },
-  "hash": "f77dac195cf5c618d40b8866e953b33a3a0532ee216fd6255760d46fde356d5b"
+  "hash": "5cbeb1c85e821e3f5232150557730a03cc650cf061a3de3ff7e044369b8274de"
 }

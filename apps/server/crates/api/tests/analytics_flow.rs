@@ -2334,7 +2334,7 @@ async fn completion_funnel_share_never_exceeds_100_pct(pool: PgPool) {
         .await
         .unwrap();
     sqlx::query(
-        "INSERT INTO activity_progress (course_id, activity_id, user_id, state, last_activity_at)          VALUES ($1, $2, $3, 'completed', now())",
+        "INSERT INTO activity_progress (course_id, activity_id, user_id, status, last_activity_at)          VALUES ($1, $2, $3, 'completed', now())",
     )
     .bind(course_uuid)
     .bind(uuid::Uuid::parse_str(&lesson_id).unwrap())

@@ -10,7 +10,7 @@
 
 use ab_core::Result;
 use ab_core::assessments::{
-    ActivityProgressState, AssessmentKind, FileAttemptStatus, GradingMode, Lifecycle,
+    ActivityProgressStatus, AssessmentKind, FileAttemptStatus, GradingMode, Lifecycle,
     SubmissionStatus,
 };
 use ab_core::id::{
@@ -334,7 +334,8 @@ pub struct ProgressInfoRow {
     pub course_id: CourseId,
     pub activity_id: ActivityId,
     pub user_id: UserId,
-    pub state: ActivityProgressState,
+    pub status: ActivityProgressStatus,
+    pub passed: Option<bool>,
     pub required: bool,
     pub started_at: Option<i64>,
     pub last_activity_at: Option<i64>,
@@ -351,7 +352,7 @@ pub async fn list_activity_progress(
     let rows = sqlx::query_as!(
         ProgressInfoRow,
         r#"SELECT course_id AS "course_id: CourseId", activity_id AS "activity_id: ActivityId",
-                  user_id AS "user_id: UserId", state AS "state: ActivityProgressState", required,
+                  user_id AS "user_id: UserId", status AS "status: ActivityProgressStatus", passed, required,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM last_activity_at))::bigint AS "last_activity_at?",
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",

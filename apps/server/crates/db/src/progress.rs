@@ -3,7 +3,7 @@
 //! Timestamps as epoch seconds.
 
 use ab_core::Result;
-use ab_core::assessments::ActivityProgressState;
+use ab_core::assessments::ActivityProgressStatus;
 use ab_core::id::{ActivityId, CourseId, SubmissionId, UserId};
 use sqlx::{PgConnection, PgPool};
 
@@ -24,7 +24,7 @@ pub struct ActivityProgressRow {
     pub course_id: CourseId,
     pub activity_id: ActivityId,
     pub user_id: UserId,
-    pub state: ActivityProgressState,
+    pub status: ActivityProgressStatus,
     pub required: bool,
     pub score: Option<f64>,
     pub passed: Option<bool>,
@@ -49,7 +49,7 @@ pub struct ActivityProgressWrite {
     pub course_id: CourseId,
     pub activity_id: ActivityId,
     pub user_id: UserId,
-    pub state: ActivityProgressState,
+    pub status: ActivityProgressStatus,
     pub required: bool,
     pub score: Option<f64>,
     pub passed: Option<bool>,
@@ -73,7 +73,7 @@ pub async fn upsert_activity_progress<'e>(
 ) -> Result<()> {
     sqlx::query!(
         r#"INSERT INTO activity_progress
-               (course_id, activity_id, user_id, state, required, score, passed,
+               (course_id, activity_id, user_id, status, required, score, passed,
                 best_submission_id, latest_submission_id, attempt_count, started_at,
                 last_activity_at, submitted_at, graded_at, completed_at, due_at, is_late,
                 teacher_action_required, status_reason)
@@ -81,7 +81,7 @@ pub async fn upsert_activity_progress<'e>(
                    to_timestamp($12), to_timestamp($13), to_timestamp($14), to_timestamp($15),
                    to_timestamp($16), $17, $18, $19)
            ON CONFLICT (activity_id, user_id) DO UPDATE SET
-               state = EXCLUDED.state, required = EXCLUDED.required, score = EXCLUDED.score,
+               status = EXCLUDED.status, required = EXCLUDED.required, score = EXCLUDED.score,
                passed = EXCLUDED.passed, best_submission_id = EXCLUDED.best_submission_id,
                latest_submission_id = EXCLUDED.latest_submission_id,
                attempt_count = EXCLUDED.attempt_count, started_at = EXCLUDED.started_at,
@@ -94,7 +94,7 @@ pub async fn upsert_activity_progress<'e>(
         w.course_id.0,
         w.activity_id.0,
         w.user_id.0,
-        w.state.as_str(),
+        w.status.as_str(),
         w.required,
         w.score,
         w.passed,
@@ -125,7 +125,7 @@ pub async fn get_activity_progress<'e>(
         ActivityProgressRow,
         r#"SELECT course_id AS "course_id: CourseId",
                   activity_id AS "activity_id: ActivityId", user_id AS "user_id: UserId",
-                  state AS "state: ActivityProgressState", required, score::float8 AS score, passed,
+                  status AS "status: ActivityProgressStatus", required, score::float8 AS score, passed,
                   best_submission_id AS "best_submission_id: SubmissionId",
                   latest_submission_id AS "latest_submission_id: SubmissionId", attempt_count,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
@@ -157,7 +157,7 @@ pub async fn list_course_progress_rows<'e>(
         ActivityProgressRow,
         r#"SELECT course_id AS "course_id: CourseId",
                   activity_id AS "activity_id: ActivityId", user_id AS "user_id: UserId",
-                  state AS "state: ActivityProgressState", required, score::float8 AS score, passed,
+                  status AS "status: ActivityProgressStatus", required, score::float8 AS score, passed,
                   best_submission_id AS "best_submission_id: SubmissionId",
                   latest_submission_id AS "latest_submission_id: SubmissionId", attempt_count,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
@@ -848,7 +848,7 @@ pub async fn course_progress_pcts(
         r#"SELECT c.course_id AS "course_id: CourseId", c.progress_pct,
                   EXISTS (SELECT 1 FROM activity_progress p
                            WHERE p.course_id = c.course_id AND p.user_id = c.user_id
-                             AND p.state <> 'not_started') AS "started!"
+                             AND p.status <> 'not_started') AS "started!"
            FROM course_progress c WHERE c.user_id = $1 AND c.course_id = ANY($2)"#,
         user_id.0,
         &ids

@@ -6,7 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use ab_core::assessments::ActivityProgressState;
+use ab_core::assessments::ActivityProgressStatus;
 use ab_core::id::{ActivityId, CourseId, UserId};
 
 use super::assessments::build_assessment_rows;
@@ -21,10 +21,10 @@ use super::types::{AssessmentOutlierRow, ContentBottleneckRow, Severity};
 const MAX_TIME_SECS: f64 = 6.0 * 3600.0;
 
 /// A learner who opened the activity and left it unfinished: still `in_progress`. One who handed the work in
-/// (awaiting grading, returned for revision, graded, failed) did not leave, so a test whose learners all wait for
+/// (awaiting grading, returned for revision, graded, released) did not leave, so a test whose learners all wait for
 /// the teacher is not «learners leave right after opening».
 fn left_after_open(p: &ab_db::analytics::ProgressInfoRow) -> bool {
-    p.state == ActivityProgressState::InProgress && !progress_completed(p)
+    p.status == ActivityProgressStatus::InProgress && !progress_completed(p)
 }
 
 /// Legacy `build_content_bottlenecks`.
@@ -54,7 +54,7 @@ pub fn build_content_bottlenecks(
         if !target.contains(&p.course_id) {
             continue;
         }
-        if p.state != ActivityProgressState::NotStarted {
+        if p.status != ActivityProgressStatus::NotStarted {
             started.entry(p.activity_id).or_default().insert(p.user_id);
         }
         if left_after_open(p) {
@@ -232,18 +232,19 @@ pub fn build_content_bottlenecks(
 
 #[cfg(test)]
 mod tests {
-    use ab_core::assessments::ActivityProgressState;
+    use ab_core::assessments::ActivityProgressStatus;
     use ab_core::id::{ActivityId, CourseId, UserId};
     use ab_db::analytics::ProgressInfoRow;
 
     use super::left_after_open;
 
-    fn progress(state: ActivityProgressState) -> ProgressInfoRow {
+    fn progress(status: ActivityProgressStatus) -> ProgressInfoRow {
         ProgressInfoRow {
             course_id: CourseId::new(),
             activity_id: ActivityId::new(),
             user_id: UserId::new(),
-            state,
+            status,
+            passed: None,
             required: true,
             started_at: Some(1),
             last_activity_at: Some(2),
@@ -256,16 +257,15 @@ mod tests {
     #[test]
     fn handed_in_work_is_not_leaving_after_open() {
         assert!(left_after_open(&progress(
-            ActivityProgressState::InProgress
+            ActivityProgressStatus::InProgress
         )));
         for state in [
-            ActivityProgressState::Submitted,
-            ActivityProgressState::NeedsGrading,
-            ActivityProgressState::Returned,
-            ActivityProgressState::Graded,
-            ActivityProgressState::Failed,
-            ActivityProgressState::Passed,
-            ActivityProgressState::Completed,
+            ActivityProgressStatus::Submitted,
+            ActivityProgressStatus::NeedsGrading,
+            ActivityProgressStatus::Returned,
+            ActivityProgressStatus::Graded,
+            ActivityProgressStatus::Released,
+            ActivityProgressStatus::Completed,
         ] {
             assert!(!left_after_open(&progress(state)), "{state:?}");
         }

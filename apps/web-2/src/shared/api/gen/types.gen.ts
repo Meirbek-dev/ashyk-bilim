@@ -122,9 +122,10 @@ export type ActivityDropoffRow = {
 export type ActivityId = string;
 
 /**
- * Canonical per-learner activity state (legacy `ActivityProgressState`).
+ * How far a learner's work in one activity got. `released`: the grade is
+ * the learner's; whether it passed is `passed` beside it.
  */
-export type ActivityProgressState = 'not_started' | 'in_progress' | 'submitted' | 'needs_grading' | 'returned' | 'graded' | 'passed' | 'failed' | 'completed';
+export type ActivityProgressStatus = 'not_started' | 'in_progress' | 'submitted' | 'needs_grading' | 'returned' | 'graded' | 'released' | 'completed';
 
 export type ActivityRef = {
     id: ActivityId;
@@ -478,7 +479,11 @@ export type AgendaDeadline = {
      */
     due_at_unix: UnixTime;
     file_submission_id: FileSubmissionId | null;
-    state: ActivityProgressState;
+    /**
+     * Set when `status` is `released`: whether the grade passed.
+     */
+    passed: boolean | null;
+    status: ActivityProgressStatus;
 };
 
 export type AiArtifactId = string;

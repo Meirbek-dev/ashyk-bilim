@@ -7,7 +7,7 @@
 //! explicit completions (trail steps).
 
 use ab_core::assessments::{
-    ActivityProgressState, CompletionRule, FileAttemptStatus, SubmissionStatus,
+    ActivityProgressStatus, CompletionRule, FileAttemptStatus, SubmissionStatus,
 };
 use ab_core::id::{ActivityId, AssessmentId, CourseId, FileSubmissionId, UserId};
 use ab_core::{Error, Result};
@@ -318,7 +318,7 @@ impl ProgressProjector {
             course_id: activity.course_id,
             activity_id: activity.id,
             user_id,
-            state: ActivityProgressState::NotStarted,
+            status: ActivityProgressStatus::NotStarted,
             required: existing.required,
             score: None,
             passed: None,
@@ -382,12 +382,12 @@ impl ProgressProjector {
             let was_completed =
                 ab_db::progress::get_activity_progress(&mut *tx, activity_id, user_id)
                     .await?
-                    .is_some_and(|row| row.state == ActivityProgressState::Completed);
+                    .is_some_and(|row| row.status == ActivityProgressStatus::Completed);
             ab_db::progress::upsert_activity_progress(&mut *tx, &write).await?;
             if graded {
                 ab_db::progress::sync_graded_completion(&mut tx, activity_id, user_id).await?;
             }
-            if write.state == ActivityProgressState::Completed && !was_completed {
+            if write.status == ActivityProgressStatus::Completed && !was_completed {
                 crate::analytics::events::hooks::activity_completed(
                     &mut tx,
                     course_id,
@@ -880,7 +880,7 @@ fn completed_write(
         course_id: activity.course_id,
         activity_id: activity.id,
         user_id,
-        state: ActivityProgressState::Completed,
+        status: ActivityProgressStatus::Completed,
         required: existing.is_none_or(|e| e.required),
         score: None,
         passed: None,
@@ -949,7 +949,7 @@ pub(crate) fn project_submissions(
         .filter(|s| s.grade_key().released)
         .max_by(|a, b| a.grade_key().order(b.grade_key()));
 
-    let mut state = ActivityProgressState::NotStarted;
+    let mut status = ActivityProgressStatus::NotStarted;
     let mut score = None;
     let mut passed = None;
     let mut completed_at = None;
@@ -966,27 +966,26 @@ pub(crate) fn project_submissions(
                 .flatten()
         });
         passed = score.map(|s| s >= assessment.passing_score);
-        state = match latest.status {
-            SubmissionStatus::Draft => ActivityProgressState::InProgress,
+        status = match latest.status {
+            SubmissionStatus::Draft => ActivityProgressStatus::InProgress,
             SubmissionStatus::Returned => {
                 status_reason = Some("returned_for_revision".to_owned());
-                ActivityProgressState::Returned
+                ActivityProgressStatus::Returned
             }
             // `pending` only ever means "a teacher must score this" (manual
             // mode, or an auto-graded attempt with manual items), so it needs
             // a teacher in any grading mode (DECISIONS 2026-09-13).
             SubmissionStatus::Pending => {
                 teacher_action = true;
-                ActivityProgressState::NeedsGrading
+                ActivityProgressStatus::NeedsGrading
             }
-            // A saved-but-unreleased grade stays hidden (same as file attempts):
-            // pass/fail is the learner's to see only once published.
-            SubmissionStatus::Graded => ActivityProgressState::Graded,
-            SubmissionStatus::Published => match score {
-                None => ActivityProgressState::Graded,
-                Some(s) if s >= assessment.passing_score => ActivityProgressState::Passed,
-                Some(_) => ActivityProgressState::Failed,
-            },
+            // Released: `passed` says how it ended. A saved-but-unreleased
+            // grade stays hidden (same as file attempts), and a released one
+            // with no score stays `graded` (nothing to pass or fail).
+            SubmissionStatus::Published if score.is_some() => ActivityProgressStatus::Released,
+            SubmissionStatus::Graded | SubmissionStatus::Published => {
+                ActivityProgressStatus::Graded
+            }
         };
         if completion_satisfied(assessment, latest, score) {
             completed_at = Some(
@@ -1001,7 +1000,7 @@ pub(crate) fn project_submissions(
                     | CompletionRule::Viewed
                     | CompletionRule::TeacherVerified
             ) {
-                state = ActivityProgressState::Completed;
+                status = ActivityProgressStatus::Completed;
             }
         } else if let Some(released) = submissions
             .iter()
@@ -1024,7 +1023,7 @@ pub(crate) fn project_submissions(
         course_id: activity.course_id,
         activity_id: activity.id,
         user_id,
-        state,
+        status,
         // Legacy: every submission-backed activity counts as required.
         required: true,
         score,
@@ -1087,29 +1086,24 @@ pub(crate) fn project_file_attempts(
             .and_then(|a| a.final_score)
     });
     let passed = score.map(|s| s >= FILE_SUBMISSION_PASSING_SCORE);
-    let mut state = ActivityProgressState::NotStarted;
+    let mut status = ActivityProgressStatus::NotStarted;
     let mut teacher_action = false;
     let mut completed_at = None;
     let mut status_reason = latest.map(|_| "file_submission".to_owned());
     if let Some(latest) = latest {
-        state = match latest.status {
-            FileAttemptStatus::Draft => ActivityProgressState::InProgress,
+        status = match latest.status {
+            FileAttemptStatus::Draft => ActivityProgressStatus::InProgress,
             FileAttemptStatus::Submitted => {
                 teacher_action = true;
-                ActivityProgressState::NeedsGrading
+                ActivityProgressStatus::NeedsGrading
             }
             FileAttemptStatus::Returned => {
                 status_reason = Some("returned_for_revision".to_owned());
-                ActivityProgressState::Returned
+                ActivityProgressStatus::Returned
             }
-            FileAttemptStatus::Graded => ActivityProgressState::Graded,
-            FileAttemptStatus::Published => {
-                if passed == Some(true) {
-                    ActivityProgressState::Passed
-                } else {
-                    ActivityProgressState::Failed
-                }
-            }
+            FileAttemptStatus::Graded => ActivityProgressStatus::Graded,
+            // A released hand-in with no score reads as failed (`passed` not true).
+            FileAttemptStatus::Published => ActivityProgressStatus::Released,
         };
         completed_at = released.map(|a| a.graded_at.or(a.submitted_at).unwrap_or(a.updated_at));
     }
@@ -1117,7 +1111,7 @@ pub(crate) fn project_file_attempts(
         course_id: activity.course_id,
         activity_id: activity.id,
         user_id,
-        state,
+        status,
         required: true,
         score,
         passed,
@@ -1139,8 +1133,8 @@ pub(crate) fn project_file_attempts(
 pub(crate) const fn progress_is_completed(row: &ActivityProgressRow) -> bool {
     row.completed_at.is_some()
         || matches!(
-            row.state,
-            ActivityProgressState::Completed | ActivityProgressState::Passed
+            (row.status, row.passed),
+            (ActivityProgressStatus::Completed, _) | (ActivityProgressStatus::Released, Some(true))
         )
 }
 
@@ -1163,7 +1157,7 @@ pub(crate) fn aggregate_course(
     let last_activity_at = required.iter().filter_map(|r| r.last_activity_at).max();
     let all_completed = total > 0 && completed >= total;
     // The course completion needs a time (the stored flag reads it): rows
-    // completed by state alone (legacy `passed` without a stamp) fall back
+    // completed by status alone (a released pass without a stamp) fall back
     // to the last activity.
     let completed_at = if all_completed {
         required

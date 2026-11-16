@@ -44,3 +44,5 @@ column	xp_transactions.source_id	the release after sources are read typed (20261
 trigger	xp_transactions_source_ref	the contract that drops xp_transactions.source_id	REWRITE 5.8 item 4
 column	gamification_completions.source_id	the release after sources are read typed (20261116075628): source_uuid; the contract makes (user_id, kind, source_uuid) the primary key	REWRITE 5.8 item 4
 trigger	gamification_completions_source_ref	the contract that drops gamification_completions.source_id	REWRITE 5.8 item 4
+column	activity_progress.state	the release after progress reads status + passed (20261116075632); drop activity_progress_activity_state_idx with it	REWRITE 5.8 item 5
+trigger	activity_progress_status	the contract that drops activity_progress.state	REWRITE 5.8 item 5

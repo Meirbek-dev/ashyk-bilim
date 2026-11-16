@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT course_id AS \"course_id: CourseId\", activity_id AS \"activity_id: ActivityId\",\n                  user_id AS \"user_id: UserId\", state AS \"state: ActivityProgressState\", required,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM last_activity_at))::bigint AS \"last_activity_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  (extract(epoch FROM completed_at))::bigint AS \"completed_at?\"\n           FROM activity_progress WHERE course_id = ANY($1)\n           ORDER BY created_at, activity_id, user_id",
+  "query": "SELECT course_id AS \"course_id: CourseId\", activity_id AS \"activity_id: ActivityId\",\n                  user_id AS \"user_id: UserId\", status AS \"status: ActivityProgressStatus\", passed, required,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM last_activity_at))::bigint AS \"last_activity_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  (extract(epoch FROM completed_at))::bigint AS \"completed_at?\"\n           FROM activity_progress WHERE course_id = ANY($1)\n           ORDER BY created_at, activity_id, user_id",
   "describe": {
     "columns": [
       {
@@ -38,17 +38,28 @@
       },
       {
         "ordinal": 3,
-        "name": "state: ActivityProgressState",
+        "name": "status: ActivityProgressStatus",
         "type_info": "Text",
         "origin": {
           "Table": {
             "table": "activity_progress",
-            "name": "state"
+            "name": "status"
           }
         }
       },
       {
         "ordinal": 4,
+        "name": "passed",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "activity_progress",
+            "name": "passed"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
         "name": "required",
         "type_info": "Bool",
         "origin": {
@@ -59,31 +70,31 @@
         }
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "started_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
         "name": "last_activity_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "submitted_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "graded_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "completed_at?",
         "type_info": "Int8",
         "origin": "Expression"
@@ -99,6 +110,7 @@
       false,
       false,
       false,
+      true,
       false,
       null,
       null,
@@ -107,5 +119,5 @@
       null
     ]
   },
-  "hash": "c0eec4e0ec197f1d2a1c55a630ab99cacd9e763dc377694408adbe57361ea490"
+  "hash": "0596834fb8d2d7fc854a2602b9885bff12037bd3f175581b93071af089796253"
 }
