@@ -1622,21 +1622,22 @@ A concept (skill) of a course, proposed by AI or a teacher and decided by staff.
 
 A discussion post or reply in a course (replies point to their post by parent_id); counters are kept by triggers.
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| course_id | uuid |  |  |
-| user_id | uuid | null |  |
-| parent_id | uuid | null |  |
-| kind | text |  | `'post'::text` |
-| status | text |  | `'active'::text` |
-| content | text |  |  |
-| likes_count | integer |  | `0` |
-| dislikes_count | integer |  | `0` |
-| replies_count | integer |  | `0` |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-| version | integer |  | `1` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| course_id | uuid |  |  |  |
+| user_id | uuid | null |  |  |
+| parent_id | uuid | null |  |  |
+| kind | text |  | `'post'::text` |  |
+| status | text |  | `'active'::text` |  |
+| content | text |  |  |  |
+| likes_count | integer |  | `0` |  |
+| dislikes_count | integer |  | `0` |  |
+| replies_count | integer |  | `0` |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| updated_at | timestamp with time zone |  | `now()` |  |
+| version | integer |  | `1` |  |
+| deleted_at | timestamp with time zone | null |  | A tombstone: the post was deleted while others' replies hang under it (text and author wiped). |
 
 - Primary key `course_discussions_pkey`: `PRIMARY KEY (id)`
 - Unique `course_discussions_id_course_key`: `UNIQUE (id, course_id)`
@@ -1651,6 +1652,7 @@ A discussion post or reply in a course (replies point to their post by parent_id
 - Index `course_discussions_parent_idx`: `CREATE INDEX course_discussions_parent_idx ON core.course_discussions USING btree (parent_id)`
 - Index `course_discussions_posts_keyset_idx`: `CREATE INDEX course_discussions_posts_keyset_idx ON core.course_discussions USING btree (course_id, id DESC) WHERE ((parent_id IS NULL) AND (status = 'active'::text))`
 - Index `course_discussions_replies_keyset_idx`: `CREATE INDEX course_discussions_replies_keyset_idx ON core.course_discussions USING btree (parent_id, id) WHERE (status = 'active'::text)`
+- Trigger `course_discussions_deleted_status`: `CREATE TRIGGER course_discussions_deleted_status BEFORE INSERT OR UPDATE ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION course_discussions_deleted_status()`
 - Trigger `course_discussions_recount_replies`: `CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()`
 - Trigger `course_discussions_upload_ids`: `CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF content ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION post_uploads_sync()`
 
@@ -2485,11 +2487,13 @@ One message of a conversation, by user_id. A deleted one stays as a tombstone (s
 - Check `messages_body_check`: `CHECK ((char_length(body) <= 4000))`
 - Check `messages_check`: `CHECK (((status = 'deleted'::text) = (deleted_at IS NOT NULL)))`
 - Check `messages_check1`: `CHECK (((status = 'active'::text) OR (body = ''::text)))`
+- Check `messages_deleted_is_blank`: `CHECK (((deleted_at IS NULL) OR (body = ''::text)))`
 - Check `messages_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'deleted'::text])))`
 - Index `messages_activity_idx`: `CREATE INDEX messages_activity_idx ON core.messages USING btree (activity_id)`
 - Index `messages_conversation_idx`: `CREATE INDEX messages_conversation_idx ON core.messages USING btree (conversation_id, id DESC)`
 - Index `messages_course_idx`: `CREATE INDEX messages_course_idx ON core.messages USING btree (course_id)`
 - Index `messages_user_idx`: `CREATE INDEX messages_user_idx ON core.messages USING btree (user_id, id DESC)`
+- Trigger `messages_deleted_status`: `CREATE TRIGGER messages_deleted_status BEFORE INSERT OR UPDATE ON core.messages FOR EACH ROW EXECUTE FUNCTION messages_deleted_status()`
 
 ## notification_kinds
 

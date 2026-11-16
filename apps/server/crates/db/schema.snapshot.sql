@@ -1170,6 +1170,7 @@ constraint messages messages_conversation_id_fkey FOREIGN KEY (conversation_id) 
 constraint messages messages_conversation_id_not_null NOT NULL conversation_id
 constraint messages messages_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL
 constraint messages messages_created_at_not_null NOT NULL created_at
+constraint messages messages_deleted_is_blank CHECK (((deleted_at IS NULL) OR (body = ''::text)))
 constraint messages messages_id_not_null NOT NULL id
 constraint messages messages_member_fkey FOREIGN KEY (conversation_id, user_id) REFERENCES conversation_members(conversation_id, user_id)
 constraint messages messages_pkey PRIMARY KEY (id)
@@ -1862,6 +1863,19 @@ function CREATE OR REPLACE FUNCTION public.course_creator(p_course uuid)
  LANGUAGE sql
  STABLE PARALLEL SAFE
 RETURN (SELECT s.user_id FROM course_staff s WHERE ((s.course_id = course_creator.p_course) AND (s.authorship = 'creator'::text)))
+function CREATE OR REPLACE FUNCTION public.course_discussions_deleted_status()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF NEW.deleted_at IS NOT NULL THEN
+        NEW.status := 'deleted';
+    ELSIF NEW.status = 'deleted' THEN
+        NEW.deleted_at := now();
+    END IF;
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.course_discussions_recount_replies()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2142,6 +2156,15 @@ BEGIN
     RETURN NEW;
 END;
 $function$
+function CREATE OR REPLACE FUNCTION public.messages_deleted_status()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    NEW.status := CASE WHEN NEW.deleted_at IS NULL THEN 'active' ELSE 'deleted' END;
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.percent_of_points(points numeric, max_points numeric)
  RETURNS numeric
  LANGUAGE sql
@@ -3340,6 +3363,7 @@ table core.conversations last_message_id uuid DEFAULT -
 table core.course_discussions content text NOT NULL DEFAULT -
 table core.course_discussions course_id uuid NOT NULL DEFAULT -
 table core.course_discussions created_at timestamp with time zone NOT NULL DEFAULT now()
+table core.course_discussions deleted_at timestamp with time zone DEFAULT -
 table core.course_discussions dislikes_count integer NOT NULL DEFAULT 0
 table core.course_discussions id uuid NOT NULL DEFAULT uuidv7()
 table core.course_discussions kind text NOT NULL DEFAULT 'post'::text
@@ -4052,6 +4076,7 @@ trigger CREATE TRIGGER collections_touch BEFORE UPDATE ON core.collections FOR E
 trigger CREATE TRIGGER collections_upload_ids BEFORE INSERT OR UPDATE OF cover_key ON core.collections FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('cover_key', 'cover_upload_id')
 trigger CREATE TRIGGER concept_tags_touch BEFORE UPDATE ON learning.concept_tags FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER course_concepts_touch BEFORE UPDATE ON learning.course_concepts FOR EACH ROW EXECUTE FUNCTION touch_row()
+trigger CREATE TRIGGER course_discussions_deleted_status BEFORE INSERT OR UPDATE ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION course_discussions_deleted_status()
 trigger CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()
 trigger CREATE TRIGGER course_discussions_touch BEFORE UPDATE ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION touch_row('version', 'status', 'content')
 trigger CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF content ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION post_uploads_sync()
@@ -4076,6 +4101,7 @@ trigger CREATE TRIGGER item_feedback_touch BEFORE UPDATE ON learning.item_feedba
 trigger CREATE TRIGGER item_feedback_upload_ids BEFORE INSERT OR UPDATE OF annotation_key ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('annotation_key', 'annotation_upload_id')
 trigger CREATE TRIGGER job_schedules_touch BEFORE UPDATE ON ops.job_schedules FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER jobs_touch BEFORE UPDATE ON ops.jobs FOR EACH ROW EXECUTE FUNCTION touch_row()
+trigger CREATE TRIGGER messages_deleted_status BEFORE INSERT OR UPDATE ON core.messages FOR EACH ROW EXECUTE FUNCTION messages_deleted_status()
 trigger CREATE TRIGGER platforms_touch BEFORE UPDATE ON core.platforms FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER platforms_upload_ids BEFORE INSERT OR UPDATE OF logo_key, thumbnail_key ON core.platforms FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('logo_key', 'logo_upload_id', 'thumbnail_key', 'thumbnail_upload_id')
 trigger CREATE TRIGGER roles_touch BEFORE UPDATE ON core.roles FOR EACH ROW EXECUTE FUNCTION touch_row('version')

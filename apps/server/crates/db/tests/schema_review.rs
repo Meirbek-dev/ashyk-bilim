@@ -99,7 +99,8 @@
 //!   release's `state` follows both, and its writes set the status. A code
 //!   run's verdict is its own column beside how far it got; `status` keeps
 //!   the previous release's spelling until the contract, and that release's
-//!   writes fill the verdict.
+//!   writes fill the verdict. A deletion is a timestamp (`deleted_at`): a
+//!   message's or a discussion's `deleted` status follows it.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -2957,6 +2958,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "course_discussions_recount_replies",
             "derived; reads count on read, a contract drops it",
         ),
+        (
+            "course_discussions_deleted_status",
+            "derived; the previous release's status, a contract drops it",
+        ),
         ("course_discussions_upload_ids", "derived"),
         (
             "file_submission_files_from_upload",
@@ -2978,6 +2983,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("grading_entries_number", "derived"),
         ("grading_entries_points", "derived"),
         ("item_feedback_upload_ids", "derived"),
+        (
+            "messages_deleted_status",
+            "derived; the previous release's status, a contract drops it",
+        ),
         ("platforms_upload_ids", "derived"),
         ("translations_touch_platform", "derived"),
         ("users_upload_ids", "derived"),
@@ -4199,4 +4208,87 @@ async fn a_code_run_is_a_status_and_a_verdict(pool: PgPool) {
         .execute(&pool)
         .await;
     assert!(bad.is_err(), "a state is not a verdict");
+}
+
+#[ab_testdb::test]
+async fn a_deletion_is_a_timestamp(pool: PgPool) {
+    let w = world(&pool).await;
+    let peer = user(&pool, "peer").await;
+    let conversation: Uuid =
+        sqlx::query_scalar("INSERT INTO conversations DEFAULT VALUES RETURNING id")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    sqlx::query(
+        "INSERT INTO conversation_members (conversation_id, user_id, peer_id)
+         VALUES ($1, $2, $3), ($1, $3, $2)",
+    )
+    .bind(conversation)
+    .bind(w.user)
+    .bind(peer)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let message: Uuid = sqlx::query_scalar(
+        "INSERT INTO messages (conversation_id, user_id, body, client_key)
+         VALUES ($1, $2, 'hi', uuidv7()) RETURNING id",
+    )
+    .bind(conversation)
+    .bind(w.user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let text_kept = sqlx::query("UPDATE messages SET deleted_at = now() WHERE id = $1")
+        .bind(message)
+        .execute(&pool)
+        .await;
+    assert!(text_kept.is_err(), "a deleted message keeps no text");
+    sqlx::query("UPDATE messages SET body = '', deleted_at = now() WHERE id = $1")
+        .bind(message)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let status: String = sqlx::query_scalar("SELECT status FROM messages WHERE id = $1")
+        .bind(message)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(status, "deleted", "the previous release reads the status");
+
+    let post = || async {
+        sqlx::query_scalar::<_, Uuid>(
+            "INSERT INTO course_discussions (course_id, user_id, content) VALUES ($1, $2, 'p') RETURNING id",
+        )
+        .bind(w.course)
+        .bind(w.user)
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+    };
+    let stored = |id: Uuid| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query_as::<_, (String, bool, i32)>(
+                "SELECT status, deleted_at IS NOT NULL, version FROM course_discussions WHERE id = $1",
+            )
+            .bind(id)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+        }
+    };
+    let (ours, theirs) = (post().await, post().await);
+    sqlx::query("UPDATE course_discussions SET deleted_at = now(), content = '' WHERE id = $1")
+        .bind(ours)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(stored(ours).await, ("deleted".into(), true, 2));
+    // The previous release tombstones by status.
+    sqlx::query("UPDATE course_discussions SET status = 'deleted', content = '' WHERE id = $1")
+        .bind(theirs)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(stored(theirs).await, ("deleted".into(), true, 2));
 }

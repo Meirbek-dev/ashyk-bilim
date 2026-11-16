@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "WITH target AS (SELECT conversation_id, id FROM messages WHERE id = $1),\n           near AS (\n               (SELECT m.* FROM messages m, target t\n                 WHERE m.conversation_id = t.conversation_id AND m.id <= t.id\n                 ORDER BY m.id DESC LIMIT $2::bigint + 1)\n               UNION ALL\n               (SELECT m.* FROM messages m, target t\n                 WHERE m.conversation_id = t.conversation_id AND m.id > t.id\n                 ORDER BY m.id LIMIT $2)\n           )\n           SELECT m.id AS \"id!: MessageId\", m.conversation_id AS \"conversation_id!: ConversationId\",\n                  m.user_id AS \"user_id!: UserId\", m.body AS \"body!\", (m.status = 'deleted') AS \"deleted!\",\n                  m.course_id AS \"course_id?: CourseId\",\n                  (SELECT c.name FROM courses c WHERE c.id = m.course_id) AS \"course_name?\",\n                  m.activity_id AS \"activity_id?: ActivityId\",\n                  (SELECT a.name FROM activities a WHERE a.id = m.activity_id) AS \"activity_name?\",\n                  (SELECT a.activity_type FROM activities a WHERE a.id = m.activity_id) AS \"activity_type?\",\n                  false AS \"reported!\",\n                  (extract(epoch FROM m.created_at))::bigint AS \"created_at!\"\n           FROM near m\n           ORDER BY m.id",
+  "query": "WITH target AS (SELECT conversation_id, id FROM messages WHERE id = $1),\n           near AS (\n               (SELECT m.* FROM messages m, target t\n                 WHERE m.conversation_id = t.conversation_id AND m.id <= t.id\n                 ORDER BY m.id DESC LIMIT $2::bigint + 1)\n               UNION ALL\n               (SELECT m.* FROM messages m, target t\n                 WHERE m.conversation_id = t.conversation_id AND m.id > t.id\n                 ORDER BY m.id LIMIT $2)\n           )\n           SELECT m.id AS \"id!: MessageId\", m.conversation_id AS \"conversation_id!: ConversationId\",\n                  m.user_id AS \"user_id!: UserId\", m.body AS \"body!\", (m.deleted_at IS NOT NULL) AS \"deleted!\",\n                  m.course_id AS \"course_id?: CourseId\",\n                  (SELECT c.name FROM courses c WHERE c.id = m.course_id) AS \"course_name?\",\n                  m.activity_id AS \"activity_id?: ActivityId\",\n                  (SELECT a.name FROM activities a WHERE a.id = m.activity_id) AS \"activity_name?\",\n                  (SELECT a.activity_type FROM activities a WHERE a.id = m.activity_id) AS \"activity_type?\",\n                  false AS \"reported!\",\n                  (extract(epoch FROM m.created_at))::bigint AS \"created_at!\"\n           FROM near m\n           ORDER BY m.id",
   "describe": {
     "columns": [
       {
@@ -97,5 +97,5 @@
       null
     ]
   },
-  "hash": "92e133ca8ac212484e8f5cd10a9de762598f166eb8b78ea6e17bcc8254bacb26"
+  "hash": "e300ed6a9785a20eb127bbb3bfcc21a7eae13250ed2e31a77bdb46a0343a849e"
 }

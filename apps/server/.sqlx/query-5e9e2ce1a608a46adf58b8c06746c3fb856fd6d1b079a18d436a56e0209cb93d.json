@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"n!\" FROM conversation_members cm\n           WHERE cm.user_id = $1\n             AND EXISTS (SELECT 1 FROM messages m\n                         WHERE m.conversation_id = cm.conversation_id AND m.user_id <> $1\n                           AND m.deleted_at IS NULL\n                           AND (cm.last_read_message_id IS NULL OR m.id > cm.last_read_message_id))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "5e9e2ce1a608a46adf58b8c06746c3fb856fd6d1b079a18d436a56e0209cb93d"
+}

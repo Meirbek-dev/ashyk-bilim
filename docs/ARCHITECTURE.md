@@ -372,10 +372,13 @@ One migration set for the database `ashyq`. Rules:
    lists each with its reason), `SET NULL` for an informational link, `RESTRICT` at the boundary **content -> learner
    work**: submissions and file attempts refuse the delete of their assessment, task or course, and a certificate
    refuses the delete of its template. Audit and analytics journals keep the ids of what they name with no key, so
-   they outlive it. No general soft-delete convention; archival is a domain status where the domain needs it
-   (courses, assessments). The one soft delete is a course's (`deleted_at`, always archived): reads skip it
-   (`get_course`, `course_visible`), retention purges only a course holding no learner work and the rest waits for
-   `ashyq admin purge-course` (COURSE_ARCHIVING 6.2).
+   they outlive it. Archival is a domain status where the domain needs it (courses, assessments). A soft delete
+   is a timestamp, `deleted_at`, and a status that says "deleted" is derived from it (REWRITE 5.8 item 5): a
+   course's (always archived): reads skip it (`get_course`, `course_visible`), retention purges only a course
+   holding no learner work and the rest waits for `ashyq admin purge-course` (COURSE_ARCHIVING 6.2); a message's
+   and a discussion post's tombstone (the API's `deleted` / `status = deleted` read from it; until the contract a
+   trigger keeps the previous release's `status = 'deleted'` equal). An account's `deleted_at` is an erasure
+   (anonymised), not a soft delete.
 6. Search: `search_fold` (`migrations/20260926000001_search_matches.sql`, Kazakh folding since 2026-10) and one
    word-match rule for `/search`, `courses?q=` and `collections?q=`, written as one
    `search_fold(hay) ~ search_fold($n)` predicate per word (`ab_db::search::push_terms`, so these queries are

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT m.conversation_id AS \"conversation_id!: ConversationId\", mu.name, u.mime, u.bucket, u.key\n           FROM message_uploads mu\n           JOIN messages m ON m.id = mu.message_id\n           JOIN uploads u ON u.id = mu.upload_id\n           WHERE mu.message_id = $1 AND mu.upload_id = $2 AND m.status = 'active'",
+  "query": "SELECT m.conversation_id AS \"conversation_id!: ConversationId\", mu.name, u.mime, u.bucket, u.key\n           FROM message_uploads mu\n           JOIN messages m ON m.id = mu.message_id\n           JOIN uploads u ON u.id = mu.upload_id\n           WHERE mu.message_id = $1 AND mu.upload_id = $2 AND m.deleted_at IS NULL",
   "describe": {
     "columns": [
       {
@@ -73,5 +73,5 @@
       false
     ]
   },
-  "hash": "d800d576563c66ca0eb41ffa85fbaf9bc68261021f5e18659465d149da7affb2"
+  "hash": "bd15d3858152043b9ba3fdfe854a140e35453372501f589912a72a9b5ebf8a42"
 }

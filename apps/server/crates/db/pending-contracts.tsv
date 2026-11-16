@@ -48,3 +48,7 @@ column	activity_progress.state	the release after progress reads status + passed 
 trigger	activity_progress_status	the contract that drops activity_progress.state	REWRITE 5.8 item 5
 constraint	code_runs_status_check	the release after runs are read as status + verdict (20261116075634): rewrite status to code_run_status(status, verdict), check queued/running/done/failed/degraded, drop code_run_status()	REWRITE 5.8 item 5
 trigger	code_runs_verdict	the contract that rewrites code_runs.status	REWRITE 5.8 item 5
+column	messages.status	the release after deletions are read from deleted_at (20261116075635); drop messages_check, messages_check1 and messages_status_check with it	REWRITE 5.8 item 5
+trigger	messages_deleted_status	the contract that drops messages.status	REWRITE 5.8 item 5
+constraint	course_discussions_status_check	the release after deletions are read from deleted_at (20261116075635): data-fix status 'deleted' to 'active', check active/hidden, rebuild course_discussions_posts_keyset_idx and course_discussions_replies_keyset_idx on deleted_at IS NULL	REWRITE 5.8 item 5
+trigger	course_discussions_deleted_status	the contract that narrows course_discussions_status_check	REWRITE 5.8 item 5

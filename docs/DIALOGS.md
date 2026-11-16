@@ -99,8 +99,7 @@ conversation_members (conversation_id -> conversations on delete cascade, user_i
   индексы: (peer_id)
 
 messages (id uuid pk, conversation_id -> conversations on delete cascade, user_id -> users,
-  body text check (char_length(body) <= 4000), status text check (status in ('active','deleted')),
-  deleted_at null, client_key uuid, course_id null -> courses on delete set null,
+  body text check (char_length(body) <= 4000), deleted_at null (надгробие), client_key uuid, course_id null -> courses on delete set null,
   activity_id null -> activities on delete set null, created_at,
   unique (user_id, client_key))
   индексы: (conversation_id, id desc), (user_id, id desc), (course_id), (activity_id)
@@ -116,12 +115,13 @@ message_bans (user_id pk -> users, banned_by -> users, reason text, created_at)
 ```
 
 - Счётчиков нет: число непрочитанных считается при чтении (`id > last_read_message_id AND user_id <> я AND
-  status = 'active'`) по индексу `(conversation_id, id desc)`, как счётчики обсуждений с 2026-11.
+  deleted_at IS NULL`) по индексу `(conversation_id, id desc)`, как счётчики обсуждений с 2026-11.
 - `client_key` - ключ идемпотентности отправки (REWRITE 4.5): повтор с тем же ключом возвращает сохранённое
   сообщение, общая таблица `ops.idempotency_keys` не используется.
 - `course_id` / `activity_id` - необязательный контекст («по курсу…», «по заданию…»), задаётся там, откуда начали
   писать; сервер проверяет, что активность принадлежит курсу и курс виден отправителю.
-- Удалённое сообщение - надгробие: `status = 'deleted'`, `body = ''`, строка остаётся, чтобы не рвать порядок и
+- Удалённое сообщение - надгробие: `deleted_at` задан, `body = ''` (колонка `status` - копия для предыдущего
+  релиза, её снимает контракт, REWRITE 5.8 п. 5), строка остаётся, чтобы не рвать порядок и
   указатели прочтения.
 - Гонка двух первых сообщений навстречу: нарушение `unique (user_id, peer_id)` ловится, транзакция повторяется с
   уже существующим диалогом.

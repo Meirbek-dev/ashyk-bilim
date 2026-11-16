@@ -225,7 +225,7 @@ pub async fn list_conversations(
         r#"SELECT c.id AS "id!: ConversationId", cm.peer_id AS "peer_id!: UserId",
                   c.last_message_id AS "last_message_id?: MessageId",
                   lm.user_id AS "last_user_id?: UserId", lm.body AS "last_body?",
-                  (lm.status = 'deleted') AS "last_deleted?",
+                  (lm.deleted_at IS NOT NULL) AS "last_deleted?",
                   (extract(epoch FROM lm.created_at))::bigint AS "last_created_at?",
                   (SELECT count(*) FROM message_uploads mu WHERE mu.message_id = lm.id) AS "last_files!",
                   unread.n AS "unread_count!"
@@ -234,7 +234,7 @@ pub async fn list_conversations(
            LEFT JOIN messages lm ON lm.id = c.last_message_id
            CROSS JOIN LATERAL (
                SELECT count(*) AS n FROM messages m
-               WHERE m.conversation_id = c.id AND m.user_id <> $1 AND m.status = 'active'
+               WHERE m.conversation_id = c.id AND m.user_id <> $1 AND m.deleted_at IS NULL
                  AND (cm.last_read_message_id IS NULL OR m.id > cm.last_read_message_id)
            ) AS unread
            WHERE cm.user_id = $1 AND c.last_message_id IS NOT NULL
@@ -259,7 +259,7 @@ pub async fn unread_conversations(pool: &PgPool, me: UserId) -> Result<i64> {
            WHERE cm.user_id = $1
              AND EXISTS (SELECT 1 FROM messages m
                          WHERE m.conversation_id = cm.conversation_id AND m.user_id <> $1
-                           AND m.status = 'active'
+                           AND m.deleted_at IS NULL
                            AND (cm.last_read_message_id IS NULL OR m.id > cm.last_read_message_id))"#,
         me.0
     )
@@ -297,7 +297,7 @@ pub async fn list_messages(
     let rows = sqlx::query_as!(
         MessageRow,
         r#"SELECT m.id AS "id!: MessageId", m.conversation_id AS "conversation_id!: ConversationId",
-                  m.user_id AS "user_id!: UserId", m.body AS "body!", (m.status = 'deleted') AS "deleted!",
+                  m.user_id AS "user_id!: UserId", m.body AS "body!", (m.deleted_at IS NOT NULL) AS "deleted!",
                   m.course_id AS "course_id?: CourseId",
                   (SELECT c.name FROM courses c WHERE c.id = m.course_id) AS "course_name?",
                   m.activity_id AS "activity_id?: ActivityId",
@@ -328,7 +328,7 @@ pub async fn get_message<'e>(
     let row = sqlx::query_as!(
         MessageRow,
         r#"SELECT m.id AS "id!: MessageId", m.conversation_id AS "conversation_id!: ConversationId",
-                  m.user_id AS "user_id!: UserId", m.body AS "body!", (m.status = 'deleted') AS "deleted!",
+                  m.user_id AS "user_id!: UserId", m.body AS "body!", (m.deleted_at IS NOT NULL) AS "deleted!",
                   m.course_id AS "course_id?: CourseId",
                   (SELECT c.name FROM courses c WHERE c.id = m.course_id) AS "course_name?",
                   m.activity_id AS "activity_id?: ActivityId",
@@ -511,8 +511,8 @@ pub async fn message_in(
 pub async fn tombstone(pool: &PgPool, message: MessageId, user: UserId) -> Result<bool> {
     let mut tx = pool.begin().await?;
     let n = sqlx::query!(
-        "UPDATE messages SET status = 'deleted', body = '', deleted_at = now()
-         WHERE id = $1 AND user_id = $2 AND status = 'active'",
+        "UPDATE messages SET body = '', deleted_at = now()
+         WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL",
         message.0,
         user.0
     )
@@ -642,7 +642,7 @@ pub async fn context_of(pool: &PgPool, message: MessageId, around: i64) -> Resul
                  ORDER BY m.id LIMIT $2)
            )
            SELECT m.id AS "id!: MessageId", m.conversation_id AS "conversation_id!: ConversationId",
-                  m.user_id AS "user_id!: UserId", m.body AS "body!", (m.status = 'deleted') AS "deleted!",
+                  m.user_id AS "user_id!: UserId", m.body AS "body!", (m.deleted_at IS NOT NULL) AS "deleted!",
                   m.course_id AS "course_id?: CourseId",
                   (SELECT c.name FROM courses c WHERE c.id = m.course_id) AS "course_name?",
                   m.activity_id AS "activity_id?: ActivityId",
@@ -930,7 +930,7 @@ pub async fn attachment(
            FROM message_uploads mu
            JOIN messages m ON m.id = mu.message_id
            JOIN uploads u ON u.id = mu.upload_id
-           WHERE mu.message_id = $1 AND mu.upload_id = $2 AND m.status = 'active'"#,
+           WHERE mu.message_id = $1 AND mu.upload_id = $2 AND m.deleted_at IS NULL"#,
         message.0,
         upload
     )

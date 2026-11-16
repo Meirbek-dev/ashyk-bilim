@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT c.id AS \"id!: ConversationId\", cm.peer_id AS \"peer_id!: UserId\",\n                  c.last_message_id AS \"last_message_id?: MessageId\",\n                  lm.user_id AS \"last_user_id?: UserId\", lm.body AS \"last_body?\",\n                  (lm.status = 'deleted') AS \"last_deleted?\",\n                  (extract(epoch FROM lm.created_at))::bigint AS \"last_created_at?\",\n                  (SELECT count(*) FROM message_uploads mu WHERE mu.message_id = lm.id) AS \"last_files!\",\n                  unread.n AS \"unread_count!\"\n           FROM conversation_members cm\n           JOIN conversations c ON c.id = cm.conversation_id\n           LEFT JOIN messages lm ON lm.id = c.last_message_id\n           CROSS JOIN LATERAL (\n               SELECT count(*) AS n FROM messages m\n               WHERE m.conversation_id = c.id AND m.user_id <> $1 AND m.status = 'active'\n                 AND (cm.last_read_message_id IS NULL OR m.id > cm.last_read_message_id)\n           ) AS unread\n           WHERE cm.user_id = $1 AND c.last_message_id IS NOT NULL\n             AND ($2::uuid IS NULL OR c.last_message_id < $2)\n             AND (NOT $3 OR unread.n > 0)\n           ORDER BY c.last_message_id DESC\n           LIMIT $4",
+  "query": "SELECT c.id AS \"id!: ConversationId\", cm.peer_id AS \"peer_id!: UserId\",\n                  c.last_message_id AS \"last_message_id?: MessageId\",\n                  lm.user_id AS \"last_user_id?: UserId\", lm.body AS \"last_body?\",\n                  (lm.deleted_at IS NOT NULL) AS \"last_deleted?\",\n                  (extract(epoch FROM lm.created_at))::bigint AS \"last_created_at?\",\n                  (SELECT count(*) FROM message_uploads mu WHERE mu.message_id = lm.id) AS \"last_files!\",\n                  unread.n AS \"unread_count!\"\n           FROM conversation_members cm\n           JOIN conversations c ON c.id = cm.conversation_id\n           LEFT JOIN messages lm ON lm.id = c.last_message_id\n           CROSS JOIN LATERAL (\n               SELECT count(*) AS n FROM messages m\n               WHERE m.conversation_id = c.id AND m.user_id <> $1 AND m.deleted_at IS NULL\n                 AND (cm.last_read_message_id IS NULL OR m.id > cm.last_read_message_id)\n           ) AS unread\n           WHERE cm.user_id = $1 AND c.last_message_id IS NOT NULL\n             AND ($2::uuid IS NULL OR c.last_message_id < $2)\n             AND (NOT $3 OR unread.n > 0)\n           ORDER BY c.last_message_id DESC\n           LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -103,5 +103,5 @@
       null
     ]
   },
-  "hash": "f0eb64a4566be5de8967c2c07a9b833947d38afab6f06efa7c31b0012c5ac54d"
+  "hash": "ea59cc1323af202f8083857aa63fc6b15e694343bfefdb7217afbc3b8bca598b"
 }

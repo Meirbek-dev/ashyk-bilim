@@ -1001,6 +1001,17 @@ Queue, in order:
      it), answers (`language`), frozen `assessment_versions` and `items_snapshot`, `AB__CODE__ALLOWED_LANGUAGE_IDS`,
      the API (`language_id`) and the web editor. A name in `code_runs` alone would be a second spelling; the switch
      is its own slice (a slug per language, e.g. the editor mode, read-time translation of the frozen bodies).
+   - Soft delete: switched in `20261116075635_soft_delete_timestamps`. Two tables mixed idioms: `messages` kept a
+     deletion twice (`status = 'deleted'` and `deleted_at`), `course_discussions` only as `status = 'deleted'` (a
+     tombstone). Both read and write `deleted_at` now (the discussions' backfilled from the tombstone's
+     `updated_at`); the API's `deleted` discussion status and a message's `deleted` are read from it, the
+     discussions' `status` keeps the moderation (`active`, `hidden`). Triggers keep the previous release's
+     `status = 'deleted'` equal both ways. Left: the contract dropping `messages.status` and both triggers, and
+     narrowing the discussions' status to `active` / `hidden` (keyset indexes on `deleted_at IS NULL`). Unchanged,
+     one idiom already: `courses` (`deleted_at`, `archived_at`), `users` (`deleted_at` is an anonymised erasure,
+     `disabled_at`), `certifications` (`disabled_at`); and statuses that are workflow, not deletion: assessments'
+     `archived` lifecycle (`archived_at` stays as history after unarchive), staff `inactive` membership,
+     `superseded` / `discarded` AI drafts and imports, `open` / `resolved` reports.
 6. **Language, units, hashes**: one language domain; durations in seconds; hashes as sha256 `bytea`.
 7. **Smaller**: `assessments.access_mode` derived from the access rows; `teacher_user_id` out of the rollups
    (a course has several staff); the last login moves from `gamification_profiles` to `users`; triggers that

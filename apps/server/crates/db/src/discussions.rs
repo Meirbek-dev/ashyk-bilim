@@ -42,7 +42,9 @@ pub async fn get_discussion(
         DiscussionRow,
         r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
                   d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
-                  d.content AS "content!", d.status AS "status!: DiscussionStatus", d.version AS "version!",
+                  d.content AS "content!", -- A tombstone reads as `deleted` (`deleted_at`); `status` is the moderation.
+                  CASE WHEN d.deleted_at IS NOT NULL THEN 'deleted' ELSE d.status END
+                    AS "status!: DiscussionStatus", d.version AS "version!",
                   -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,
                   -- which differs between an empty and a populated database (the .sqlx cache then drifts).
                   (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
@@ -55,7 +57,7 @@ pub async fn get_discussion(
                   (SELECT count(*)::int4 FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS "dislikes_count!",
                   (SELECT count(*)::int4 FROM course_discussions c
-                    WHERE c.parent_id = d.id AND c.status = 'active') AS "replies_count!",
+                    WHERE c.parent_id = d.id AND c.status = 'active' AND c.deleted_at IS NULL) AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
@@ -85,7 +87,9 @@ pub async fn list_posts(
         DiscussionRow,
         r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
                   d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
-                  d.content AS "content!", d.status AS "status!: DiscussionStatus", d.version AS "version!",
+                  d.content AS "content!", -- A tombstone reads as `deleted` (`deleted_at`); `status` is the moderation.
+                  CASE WHEN d.deleted_at IS NOT NULL THEN 'deleted' ELSE d.status END
+                    AS "status!: DiscussionStatus", d.version AS "version!",
                   -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,
                   -- which differs between an empty and a populated database (the .sqlx cache then drifts).
                   (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
@@ -98,16 +102,17 @@ pub async fn list_posts(
                   (SELECT count(*)::int4 FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS "dislikes_count!",
                   (SELECT count(*)::int4 FROM course_discussions c
-                    WHERE c.parent_id = d.id AND c.status = 'active') AS "replies_count!",
+                    WHERE c.parent_id = d.id AND c.status = 'active' AND c.deleted_at IS NULL) AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
            FROM course_discussions d
            WHERE d.course_id = $1 AND d.parent_id IS NULL
-             AND (d.status = 'active' OR ($5 AND d.status = 'hidden')
-                  OR (d.status = 'deleted' AND EXISTS (SELECT 1 FROM course_discussions c
-                                                       WHERE c.parent_id = d.id AND c.status = 'active')))
+             AND (d.deleted_at IS NULL AND (d.status = 'active' OR ($5 AND d.status = 'hidden'))
+                  OR (d.deleted_at IS NOT NULL
+                      AND EXISTS (SELECT 1 FROM course_discussions c
+                                  WHERE c.parent_id = d.id AND c.status = 'active' AND c.deleted_at IS NULL)))
              AND ($3::uuid IS NULL OR d.id < $3)
            ORDER BY d.id DESC
            LIMIT $4"#,
@@ -135,7 +140,9 @@ pub async fn list_replies(
         DiscussionRow,
         r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
                   d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
-                  d.content AS "content!", d.status AS "status!: DiscussionStatus", d.version AS "version!",
+                  d.content AS "content!", -- A tombstone reads as `deleted` (`deleted_at`); `status` is the moderation.
+                  CASE WHEN d.deleted_at IS NOT NULL THEN 'deleted' ELSE d.status END
+                    AS "status!: DiscussionStatus", d.version AS "version!",
                   -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,
                   -- which differs between an empty and a populated database (the .sqlx cache then drifts).
                   (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
@@ -148,14 +155,14 @@ pub async fn list_replies(
                   (SELECT count(*)::int4 FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS "dislikes_count!",
                   (SELECT count(*)::int4 FROM course_discussions c
-                    WHERE c.parent_id = d.id AND c.status = 'active') AS "replies_count!",
+                    WHERE c.parent_id = d.id AND c.status = 'active' AND c.deleted_at IS NULL) AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
            FROM course_discussions d
            WHERE d.parent_id = $1
-             AND (d.status = 'active' OR ($5 AND d.status = 'hidden'))
+             AND d.deleted_at IS NULL AND (d.status = 'active' OR ($5 AND d.status = 'hidden'))
              AND ($3::uuid IS NULL OR d.id > $3)
            ORDER BY d.id
            LIMIT $4"#,
@@ -182,7 +189,9 @@ pub async fn list_replies_for(
         DiscussionRow,
         r#"SELECT d.id AS "id!: DiscussionId", d.course_id AS "course_id!: CourseId",
                   d.user_id AS "user_id?: UserId", d.parent_id AS "parent_id?: DiscussionId",
-                  d.content AS "content!", d.status AS "status!: DiscussionStatus", d.version AS "version!",
+                  d.content AS "content!", -- A tombstone reads as `deleted` (`deleted_at`); `status` is the moderation.
+                  CASE WHEN d.deleted_at IS NOT NULL THEN 'deleted' ELSE d.status END
+                    AS "status!: DiscussionStatus", d.version AS "version!",
                   -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,
                   -- which differs between an empty and a populated database (the .sqlx cache then drifts).
                   (SELECT u.username FROM users u WHERE u.id = d.user_id) AS "username?",
@@ -195,14 +204,14 @@ pub async fn list_replies_for(
                   (SELECT count(*)::int4 FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS "dislikes_count!",
                   (SELECT count(*)::int4 FROM course_discussions c
-                    WHERE c.parent_id = d.id AND c.status = 'active') AS "replies_count!",
+                    WHERE c.parent_id = d.id AND c.status = 'active' AND c.deleted_at IS NULL) AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
            FROM course_discussions d
            WHERE d.parent_id = ANY($1)
-             AND (d.status = 'active' OR ($3 AND d.status = 'hidden'))
+             AND d.deleted_at IS NULL AND (d.status = 'active' OR ($3 AND d.status = 'hidden'))
            ORDER BY d.id"#,
         &ids,
         viewer.0,
@@ -243,7 +252,10 @@ pub async fn update_discussion<'e>(
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE course_discussions
-           SET content = COALESCE($2, content), status = COALESCE($3, status)
+           SET content = COALESCE($2, content),
+               -- `deleted` is the tombstone's timestamp, the status keeps the moderation.
+               status = CASE WHEN $3 = 'deleted' THEN status ELSE COALESCE($3, status) END,
+               deleted_at = CASE WHEN $3 = 'deleted' THEN COALESCE(deleted_at, now()) ELSE deleted_at END
            WHERE id = $1"#,
         id.0,
         content,
@@ -283,7 +295,7 @@ pub enum Deleted {
 
 /// Delete a post or reply (owner decision 2026-10-14).
 ///
-/// A post somebody else replied to becomes a tombstone: status `deleted`, its text and author
+/// A post somebody else replied to becomes a tombstone (`deleted_at`), its text and author
 /// wiped, its reactions dropped, the replies kept. Otherwise the row goes
 /// (its replies and reactions cascade); a reply that was the last one under
 /// a tombstone takes the tombstone with it. The images of every row that
@@ -316,7 +328,7 @@ pub async fn delete_discussion(
     .await?;
     let replied_by_others = sqlx::query_scalar!(
         r#"SELECT EXISTS (SELECT 1 FROM course_discussions
-                          WHERE parent_id = $1 AND status <> 'deleted'
+                          WHERE parent_id = $1 AND deleted_at IS NULL
                             AND user_id IS DISTINCT FROM $2) AS "exists!""#,
         id.0,
         row.user_id
@@ -325,7 +337,7 @@ pub async fn delete_discussion(
     .await?;
     if replied_by_others {
         sqlx::query!(
-            r#"UPDATE course_discussions SET status = 'deleted', content = '', user_id = NULL
+            r#"UPDATE course_discussions SET deleted_at = now(), content = '', user_id = NULL
                WHERE id = $1"#,
             id.0
         )
@@ -347,7 +359,7 @@ pub async fn delete_discussion(
     if let Some(parent) = row.parent_id {
         sqlx::query!(
             r#"DELETE FROM course_discussions p
-               WHERE p.id = $1 AND p.status = 'deleted'
+               WHERE p.id = $1 AND p.deleted_at IS NOT NULL
                  AND NOT EXISTS (SELECT 1 FROM course_discussions c WHERE c.parent_id = p.id)"#,
             parent
         )

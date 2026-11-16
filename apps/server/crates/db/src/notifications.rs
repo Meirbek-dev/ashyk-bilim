@@ -312,7 +312,8 @@ pub async fn thread_participants(pool: &PgPool, root: DiscussionId) -> Result<Ve
     let ids = sqlx::query_scalar!(
         r#"SELECT user_id AS "id!" FROM course_discussions WHERE id = $1
            UNION
-           SELECT user_id FROM course_discussions WHERE parent_id = $1 AND status = 'active'"#,
+           SELECT user_id FROM course_discussions
+           WHERE parent_id = $1 AND status = 'active' AND deleted_at IS NULL"#,
         root.0
     )
     .fetch_all(pool)

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT d.id AS \"id!: DiscussionId\", d.course_id AS \"course_id!: CourseId\",\n                  d.user_id AS \"user_id?: UserId\", d.parent_id AS \"parent_id?: DiscussionId\",\n                  d.content AS \"content!\", d.status AS \"status!: DiscussionStatus\", d.version AS \"version!\",\n                  -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,\n                  -- which differs between an empty and a populated database (the .sqlx cache then drifts).\n                  (SELECT u.username FROM users u WHERE u.id = d.user_id) AS \"username?\",\n                  (SELECT u.display_name FROM users u WHERE u.id = d.user_id) AS \"display_name?\",\n                  (SELECT u.avatar_key FROM users u WHERE u.id = d.user_id) AS \"avatar_key?\",\n                  -- Counted on read (schema review 2026-11-08, item 14): the stored counters stay for the\n                  -- previous release until a contract drops them.\n                  (SELECT count(*)::int4 FROM discussion_reactions r\n                    WHERE r.discussion_id = d.id AND r.reaction = 'like') AS \"likes_count!\",\n                  (SELECT count(*)::int4 FROM discussion_reactions r\n                    WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS \"dislikes_count!\",\n                  (SELECT count(*)::int4 FROM course_discussions c\n                    WHERE c.parent_id = d.id AND c.status = 'active') AS \"replies_count!\",\n                  (SELECT r.reaction FROM discussion_reactions r\n                    WHERE r.discussion_id = d.id AND r.user_id = $2) AS \"my_reaction?: ReactionKind\",\n                  (extract(epoch FROM d.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM d.updated_at))::bigint AS \"updated_at!\"\n           FROM course_discussions d\n           WHERE d.id = $1",
+  "query": "SELECT d.id AS \"id!: DiscussionId\", d.course_id AS \"course_id!: CourseId\",\n                  d.user_id AS \"user_id?: UserId\", d.parent_id AS \"parent_id?: DiscussionId\",\n                  d.content AS \"content!\", -- A tombstone reads as `deleted` (`deleted_at`); `status` is the moderation.\n                  CASE WHEN d.deleted_at IS NOT NULL THEN 'deleted' ELSE d.status END\n                    AS \"status!: DiscussionStatus\", d.version AS \"version!\",\n                  -- Scalar lookups, not a LEFT JOIN: sqlx infers a join's nullability from the plan,\n                  -- which differs between an empty and a populated database (the .sqlx cache then drifts).\n                  (SELECT u.username FROM users u WHERE u.id = d.user_id) AS \"username?\",\n                  (SELECT u.display_name FROM users u WHERE u.id = d.user_id) AS \"display_name?\",\n                  (SELECT u.avatar_key FROM users u WHERE u.id = d.user_id) AS \"avatar_key?\",\n                  -- Counted on read (schema review 2026-11-08, item 14): the stored counters stay for the\n                  -- previous release until a contract drops them.\n                  (SELECT count(*)::int4 FROM discussion_reactions r\n                    WHERE r.discussion_id = d.id AND r.reaction = 'like') AS \"likes_count!\",\n                  (SELECT count(*)::int4 FROM discussion_reactions r\n                    WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS \"dislikes_count!\",\n                  (SELECT count(*)::int4 FROM course_discussions c\n                    WHERE c.parent_id = d.id AND c.status = 'active' AND c.deleted_at IS NULL) AS \"replies_count!\",\n                  (SELECT r.reaction FROM discussion_reactions r\n                    WHERE r.discussion_id = d.id AND r.user_id = $2) AS \"my_reaction?: ReactionKind\",\n                  (extract(epoch FROM d.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM d.updated_at))::bigint AS \"updated_at!\"\n           FROM course_discussions d\n           WHERE d.parent_id = $1\n             AND d.deleted_at IS NULL AND (d.status = 'active' OR ($5 AND d.status = 'hidden'))\n             AND ($3::uuid IS NULL OR d.id > $3)\n           ORDER BY d.id\n           LIMIT $4",
   "describe": {
     "columns": [
       {
@@ -62,12 +62,7 @@
         "ordinal": 5,
         "name": "status!: DiscussionStatus",
         "type_info": "Text",
-        "origin": {
-          "Table": {
-            "table": "course_discussions",
-            "name": "status"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 6,
@@ -138,7 +133,10 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid"
+        "Uuid",
+        "Uuid",
+        "Int8",
+        "Bool"
       ]
     },
     "nullable": [
@@ -147,7 +145,7 @@
       true,
       true,
       false,
-      false,
+      null,
       false,
       null,
       null,
@@ -160,5 +158,5 @@
       null
     ]
   },
-  "hash": "9e7c685dd439e72b21b38a5cc27e641ca60064a5f0d34e174823c867dc131c34"
+  "hash": "ec3c41572adc22af5685e9baea67a6af467e3c67ee7a4e8c4e67611c259e49d0"
 }

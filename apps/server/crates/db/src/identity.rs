@@ -1026,8 +1026,8 @@ pub async fn erase_personal_data(tx: &mut sqlx::PgConnection, user_id: UserId) -
 /// send ban go.
 async fn erase_messages(tx: &mut sqlx::PgConnection, uid: uuid::Uuid) -> Result<u64> {
     let mut removed = sqlx::query!(
-        "UPDATE messages SET status = 'deleted', body = '', deleted_at = coalesce(deleted_at, now())
-         WHERE user_id = $1 AND status = 'active'",
+        "UPDATE messages SET body = '', deleted_at = now()
+         WHERE user_id = $1 AND deleted_at IS NULL",
         uid
     )
     .execute(&mut *tx)

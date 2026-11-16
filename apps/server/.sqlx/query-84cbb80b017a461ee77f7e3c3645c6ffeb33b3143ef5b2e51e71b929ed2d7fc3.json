@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT m.id AS \"id!: MessageId\", m.conversation_id AS \"conversation_id!: ConversationId\",\n                  m.user_id AS \"user_id!: UserId\", m.body AS \"body!\", (m.status = 'deleted') AS \"deleted!\",\n                  m.course_id AS \"course_id?: CourseId\",\n                  (SELECT c.name FROM courses c WHERE c.id = m.course_id) AS \"course_name?\",\n                  m.activity_id AS \"activity_id?: ActivityId\",\n                  (SELECT a.name FROM activities a WHERE a.id = m.activity_id) AS \"activity_name?\",\n                  (SELECT a.activity_type FROM activities a WHERE a.id = m.activity_id) AS \"activity_type?\",\n                  EXISTS (SELECT 1 FROM message_reports r WHERE r.message_id = m.id AND r.reported_by = $2)\n                    AS \"reported!\",\n                  (extract(epoch FROM m.created_at))::bigint AS \"created_at!\"\n           FROM messages m\n           WHERE m.conversation_id = $1 AND ($3::uuid IS NULL OR m.id < $3)\n           ORDER BY m.id DESC\n           LIMIT $4",
+  "query": "SELECT m.id AS \"id!: MessageId\", m.conversation_id AS \"conversation_id!: ConversationId\",\n                  m.user_id AS \"user_id!: UserId\", m.body AS \"body!\", (m.deleted_at IS NOT NULL) AS \"deleted!\",\n                  m.course_id AS \"course_id?: CourseId\",\n                  (SELECT c.name FROM courses c WHERE c.id = m.course_id) AS \"course_name?\",\n                  m.activity_id AS \"activity_id?: ActivityId\",\n                  (SELECT a.name FROM activities a WHERE a.id = m.activity_id) AS \"activity_name?\",\n                  (SELECT a.activity_type FROM activities a WHERE a.id = m.activity_id) AS \"activity_type?\",\n                  EXISTS (SELECT 1 FROM message_reports r WHERE r.message_id = m.id AND r.reported_by = $2)\n                    AS \"reported!\",\n                  (extract(epoch FROM m.created_at))::bigint AS \"created_at!\"\n           FROM messages m WHERE m.id = $1",
   "describe": {
     "columns": [
       {
@@ -109,9 +109,7 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid",
-        "Uuid",
-        "Int8"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -129,5 +127,5 @@
       null
     ]
   },
-  "hash": "d19538257292bfb41a52d529d21fea940c4cf4679920e4cb6eb96af6ea3c4ebf"
+  "hash": "84cbb80b017a461ee77f7e3c3645c6ffeb33b3143ef5b2e51e71b929ed2d7fc3"
 }
