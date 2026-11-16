@@ -44,7 +44,7 @@ probe() {
   check ashyq_app denied "UPDATE auth_audit_log SET event = 'x'"
   check ashyq_app denied "DELETE FROM auth_audit_log"
   check ashyq_app denied "UPDATE grading_entries SET published_at = now()"
-  check ashyq_app denied "DELETE FROM file_grading_entries"
+  check ashyq_app denied "DELETE FROM grading_entries"
   check ashyq_app denied "DELETE FROM assessment_audit_events"
   check ashyq_app denied "DELETE FROM _sqlx_migrations"
   check ashyq_app denied "TRUNCATE jobs"

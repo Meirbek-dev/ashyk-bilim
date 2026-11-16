@@ -4,7 +4,7 @@ SELECT format(
   tablename, tablename)
 FROM unnest(ARRAY[
   'users', 'courses', 'chapters', 'activities', 'assessments', 'assessment_items',
-  'submissions', 'grading_entries', 'file_submission_attempts', 'file_grading_entries',
+  'submissions', 'grading_entries', 'file_submissions', 'file_submission_files',
   'certifications', 'certificate_users', 'course_discussions', 'uploads', 'blocks',
   'roles', 'role_permissions', 'user_roles', 'usergroups', 'usergroup_members', 'usergroup_courses',
   'enrolments', 'completions', 'collections', 'collection_courses'
