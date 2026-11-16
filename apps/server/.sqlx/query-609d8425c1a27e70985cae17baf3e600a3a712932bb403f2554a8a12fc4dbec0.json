@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE platforms SET ai_features = ai_features - $1::text WHERE singleton",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "609d8425c1a27e70985cae17baf3e600a3a712932bb403f2554a8a12fc4dbec0"
+}

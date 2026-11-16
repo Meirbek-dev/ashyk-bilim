@@ -760,8 +760,7 @@ impl AiService {
         if enabled {
             ab_db::ai::clear_feature_switch(&self.pool, feature.as_str()).await?;
         } else {
-            ab_db::ai::set_feature_switch(&self.pool, feature.as_str(), false, actor.user_id)
-                .await?;
+            ab_db::ai::set_feature_switch(&self.pool, feature.as_str(), false).await?;
         }
         ab_db::identity::insert_auth_audit(
             &self.pool,

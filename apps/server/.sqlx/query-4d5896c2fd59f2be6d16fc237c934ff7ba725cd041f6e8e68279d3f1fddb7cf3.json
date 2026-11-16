@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT floor(extract(epoch FROM deadline_auto_submit_since))::bigint AS at FROM platforms WHERE singleton",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "at",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "4d5896c2fd59f2be6d16fc237c934ff7ba725cd041f6e8e68279d3f1fddb7cf3"
+}

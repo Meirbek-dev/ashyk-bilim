@@ -2578,28 +2578,34 @@ An in-app notification of an account (typed payload; course_id/activity_id are g
 
 The platform's own settings and texts (one row, singleton).
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| singleton | boolean |  | `true` |
-| name | text |  |  |
-| description | text |  | `''::text` |
-| about | text |  | `''::text` |
-| email | text |  |  |
-| label | text | null |  |
-| logo_key | text | null |  |
-| thumbnail_key | text | null |  |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-| version | integer |  | `1` |
-| logo_upload_id | uuid | null |  |
-| thumbnail_upload_id | uuid | null |  |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| singleton | boolean |  | `true` |  |
+| name | text |  |  |  |
+| description | text |  | `''::text` |  |
+| about | text |  | `''::text` |  |
+| email | text |  |  |  |
+| label | text | null |  |  |
+| logo_key | text | null |  |  |
+| thumbnail_key | text | null |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| updated_at | timestamp with time zone |  | `now()` |  |
+| version | integer |  | `1` |  |
+| logo_upload_id | uuid | null |  |  |
+| thumbnail_upload_id | uuid | null |  |  |
+| daily_xp_limit | integer | null |  | XP a learner earns per day at most; NULL = the server default. |
+| xp_rewards | jsonb |  | `'{}'::jsonb` | XP per reward kind that overrides the server defaults (GamificationRewards). |
+| ai_features | jsonb |  | `'{}'::jsonb` | AI feature switches an admin stored, {flag key: enabled}; a key not here follows the environment. |
+| deadline_auto_submit_since | timestamp with time zone | null |  | When the deadline hand-in went live here: drafts whose date passed earlier are never handed in by it. NULL = never. |
 
 - Primary key `platforms_pkey`: `PRIMARY KEY (id)`
 - Unique `platforms_singleton_key`: `UNIQUE (singleton)`
 - Foreign key `platforms_logo_upload_id_fkey`: `FOREIGN KEY (logo_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 - Foreign key `platforms_thumbnail_upload_id_fkey`: `FOREIGN KEY (thumbnail_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
+- Check `platforms_ai_features_booleans`: `CHECK (((jsonb_typeof(ai_features) = 'object'::text) AND (NOT jsonb_path_exists(ai_features, '$.*?(@.type() != "boolean")'::jsonpath))))`
 - Check `platforms_singleton_check`: `CHECK (singleton)`
+- Check `platforms_xp_rewards_object`: `CHECK ((jsonb_typeof(xp_rewards) = 'object'::text))`
 - Index `platforms_logo_upload_id_idx`: `CREATE INDEX platforms_logo_upload_id_idx ON core.platforms USING btree (logo_upload_id) WHERE (logo_upload_id IS NOT NULL)`
 - Index `platforms_thumbnail_upload_id_idx`: `CREATE INDEX platforms_thumbnail_upload_id_idx ON core.platforms USING btree (thumbnail_upload_id) WHERE (thumbnail_upload_id IS NOT NULL)`
 - Trigger `platforms_upload_ids`: `CREATE TRIGGER platforms_upload_ids BEFORE INSERT OR UPDATE OF logo_key, thumbnail_key ON core.platforms FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('logo_key', 'logo_upload_id', 'thumbnail_key', 'thumbnail_upload_id')`

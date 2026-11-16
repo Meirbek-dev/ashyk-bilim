@@ -733,7 +733,7 @@ in the order it can be done, each step a forward migration on the current schema
    field, lang, text, PK all but text)` for user-visible platform text; activity settings move into the typed
    body (5.3). Done (review 3, item 32): `translations` + the `translatable_fields` lookup hold the platform's
    kk/en `description` / `about` (`20261102011200`; the contract migration drops the `_kk` / `_en` columns).
-   Left: the typed `platform.settings`, activity settings.
+   Done (2026-11-16, 5.8 item 2): the platform settings are typed columns of `platforms`. Left: activity settings.
 10. **Users state** (item 20, rest). Done (review 3, items 28-29): `disabled_at` and `email_verified_at`
     (backfill: disabled → `coalesce(deleted_at, updated_at)`, `email_verified IS TRUE` → `created_at`), read and
     written by the server, mirrored into `status` / `email_verified` by `users_sync_state`; `status` is dropped by
@@ -947,8 +947,10 @@ Queue, in order:
 
 1. **Pipeline merge** (5.6 n6, n16): done as one switch release (`20261115155501_merge_file_pipeline`, production held
    no file hand-in); its contract `20261116062344_drop_file_pipeline` dropped the old tables and columns.
-2. **Settings** (5.6 n9): one typed settings row replaces `gamification_config`, `ai_feature_switches` and
-   `feature_activations`.
+2. **Settings** (5.6 n9): done as `20261116064418_platform_settings`. The gamification policy, the AI feature switches
+   and the instant the deadline hand-in went live are columns of the `platforms` row (`daily_xp_limit`, `xp_rewards`,
+   `ai_features`, `deadline_auto_submit_since`); who switched a feature stays in `auth_audit_log`. Left: the contract
+   that drops `gamification_config`, `ai_feature_switches` and `feature_activations`.
 3. **Formal checks go**: the `jsonb_typeof(x) = 'object'` checks that state nothing else, the `_word` regex
    checks, and the rule tests that ask for them (`jsonb_columns_state_their_shape`,
    `set_named_columns_are_constrained`). Checks that state a real shape stay.

@@ -887,13 +887,10 @@ async fn strict_due_date_counts_down_and_the_page_hands_in_at_it(pool: PgPool) {
 /// The date hand-in went live "a day ago" (its migration ran when the test
 /// database was made, after the dates these tests put in the past).
 async fn backdate_deadline_sweep(app: &TestApp) {
-    sqlx::query(
-        "UPDATE feature_activations SET activated_at = now() - interval '1 day'
-         WHERE feature = 'deadline_auto_submit'",
-    )
-    .execute(&app.pool)
-    .await
-    .unwrap();
+    sqlx::query("UPDATE platforms SET deadline_auto_submit_since = now() - interval '1 day'")
+        .execute(&app.pool)
+        .await
+        .unwrap();
 }
 
 fn unix_now() -> i64 {
@@ -1082,7 +1079,7 @@ async fn deadline_sweep_ignores_dates_before_it_went_live(pool: PgPool) {
     let sweep = || ab_domain::grading::SubmissionsService::sweep_expired_drafts(&runner, None, 10);
     let live_since = |hours: i32| {
         sqlx::query(
-            "UPDATE feature_activations SET activated_at = now() - make_interval(hours => $1)",
+            "UPDATE platforms SET deadline_auto_submit_since = now() - make_interval(hours => $1)",
         )
         .bind(hours)
         .execute(&app.pool)

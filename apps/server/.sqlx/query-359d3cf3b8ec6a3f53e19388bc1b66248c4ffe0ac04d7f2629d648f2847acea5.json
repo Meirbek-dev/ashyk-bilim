@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE gamification_config SET daily_xp_limit = $1, rewards = $2 WHERE id = 1",
+  "query": "UPDATE platforms SET daily_xp_limit = $1, xp_rewards = $2 WHERE singleton",
   "describe": {
     "columns": [],
     "parameters": {
@@ -11,5 +11,5 @@
     },
     "nullable": []
   },
-  "hash": "1017ee1509151ab6131ce0c51d9085438b0ed66220fd0aa8480bdf8c2e3ce755"
+  "hash": "359d3cf3b8ec6a3f53e19388bc1b66248c4ffe0ac04d7f2629d648f2847acea5"
 }

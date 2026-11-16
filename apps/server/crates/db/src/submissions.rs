@@ -1158,8 +1158,7 @@ pub async fn list_expired_drafts(pool: &PgPool, limit: i64) -> Result<Vec<Submis
              AND ((s.started_at IS NOT NULL AND a.time_limit_seconds IS NOT NULL
                    AND s.started_at + make_interval(secs => a.time_limit_seconds + a.grace_period_minutes * 60) <= now())
                OR (NOT s.preview AND p.due IS NOT NULL AND d.hand_in_at <= now()
-                   AND d.hand_in_at > (SELECT activated_at FROM feature_activations
-                                       WHERE feature = 'deadline_auto_submit')))
+                   AND d.hand_in_at > (SELECT deadline_auto_submit_since FROM platforms WHERE singleton)))
            ORDER BY s.started_at
            LIMIT $1"#,
         limit
@@ -1169,17 +1168,15 @@ pub async fn list_expired_drafts(pool: &PgPool, limit: i64) -> Result<Vec<Submis
     Ok(ids)
 }
 
-/// When the date hand-in went live on this database (migration
-/// `20261010000002`): drafts whose date passed earlier are never handed in
-/// by it. `None` (row gone) = no date hand-ins at all.
+/// When the date hand-in went live on this database (`platforms.deadline_auto_submit_since`): drafts whose date
+/// passed earlier are never handed in by it. `None` = no date hand-ins at all.
 pub async fn deadline_sweep_since(pool: &PgPool) -> Result<Option<i64>> {
     let at = sqlx::query_scalar!(
-        r#"SELECT floor(extract(epoch FROM activated_at))::bigint AS "at!"
-           FROM feature_activations WHERE feature = 'deadline_auto_submit'"#
+        r#"SELECT floor(extract(epoch FROM deadline_auto_submit_since))::bigint AS at FROM platforms WHERE singleton"#
     )
     .fetch_optional(pool)
     .await?;
-    Ok(at)
+    Ok(at.flatten())
 }
 
 /// Exponential backoff bookkeeping when an auto-submit fails.

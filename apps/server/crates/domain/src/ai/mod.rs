@@ -53,7 +53,7 @@ use crate::events::AiEvents;
 use crate::identity::Actor;
 use crate::identity::rate_limit::RateLimiter;
 
-/// Runtime AI feature switches (`ai_feature_switches`); a feature not in
+/// Runtime AI feature switches (`platforms.ai_features`); a feature not in
 /// the map follows the environment.
 #[derive(Debug, Clone, Default)]
 pub struct FeatureSwitches(pub std::collections::HashMap<AiFeature, bool>);
@@ -127,7 +127,7 @@ impl AiService {
     }
 
     /// The stored runtime switches (S-GAPS).
-    // ponytail: one read of a seven-row table per AI entry point, no cache
+    // ponytail: one read of the platform row per AI entry point, no cache
     // (the model call dwarfs it); add a short TTL cache if it ever shows.
     pub(crate) async fn feature_switches(&self) -> Result<FeatureSwitches> {
         Ok(FeatureSwitches(

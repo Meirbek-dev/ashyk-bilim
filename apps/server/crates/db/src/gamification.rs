@@ -450,9 +450,9 @@ pub struct ConfigRow {
 pub async fn get_config(pool: &PgPool) -> Result<ConfigRow> {
     let row = sqlx::query_as!(
         ConfigRow,
-        r#"SELECT daily_xp_limit, rewards, version,
+        r#"SELECT daily_xp_limit, xp_rewards AS rewards, version,
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM gamification_config WHERE id = 1"#
+           FROM platforms WHERE singleton"#
     )
     .fetch_one(pool)
     .await?;
@@ -465,7 +465,7 @@ pub async fn set_config(
     rewards: &serde_json::Value,
 ) -> Result<()> {
     sqlx::query!(
-        "UPDATE gamification_config SET daily_xp_limit = $1, rewards = $2 WHERE id = 1",
+        "UPDATE platforms SET daily_xp_limit = $1, xp_rewards = $2 WHERE singleton",
         daily_xp_limit,
         rewards
     )

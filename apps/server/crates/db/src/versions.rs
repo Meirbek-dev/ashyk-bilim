@@ -104,7 +104,7 @@ pub async fn current_version(pool: &PgPool, of: Versioned<'_>) -> Result<Option<
                 .await?
         }
         Versioned::GamificationConfig => {
-            sqlx::query_scalar!("SELECT version FROM gamification_config WHERE id = 1")
+            sqlx::query_scalar!("SELECT version FROM platforms WHERE singleton")
                 .fetch_optional(pool)
                 .await?
         }

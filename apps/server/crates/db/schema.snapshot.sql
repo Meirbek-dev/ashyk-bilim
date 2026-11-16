@@ -1242,6 +1242,8 @@ constraint notifications notifications_user_id_dedup_key_key UNIQUE (user_id, de
 constraint notifications notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint notifications notifications_user_id_not_null NOT NULL user_id
 constraint platforms platforms_about_not_null NOT NULL about
+constraint platforms platforms_ai_features_booleans CHECK (((jsonb_typeof(ai_features) = 'object'::text) AND (NOT jsonb_path_exists(ai_features, '$.*?(@.type() != "boolean")'::jsonpath))))
+constraint platforms platforms_ai_features_not_null NOT NULL ai_features
 constraint platforms platforms_created_at_not_null NOT NULL created_at
 constraint platforms platforms_description_not_null NOT NULL description
 constraint platforms platforms_email_not_null NOT NULL email
@@ -1255,6 +1257,8 @@ constraint platforms platforms_singleton_not_null NOT NULL singleton
 constraint platforms platforms_thumbnail_upload_id_fkey FOREIGN KEY (thumbnail_upload_id) REFERENCES uploads(id) ON DELETE SET NULL
 constraint platforms platforms_updated_at_not_null NOT NULL updated_at
 constraint platforms platforms_version_not_null NOT NULL version
+constraint platforms platforms_xp_rewards_not_null NOT NULL xp_rewards
+constraint platforms platforms_xp_rewards_object CHECK ((jsonb_typeof(xp_rewards) = 'object'::text))
 constraint post_uploads post_uploads_discussion_id_fkey FOREIGN KEY (discussion_id) REFERENCES course_discussions(id) ON DELETE CASCADE
 constraint post_uploads post_uploads_discussion_id_not_null NOT NULL discussion_id
 constraint post_uploads post_uploads_pkey PRIMARY KEY (discussion_id, upload_id)
@@ -3348,7 +3352,10 @@ table core.notifications payload jsonb NOT NULL DEFAULT -
 table core.notifications read_at timestamp with time zone DEFAULT -
 table core.notifications user_id uuid NOT NULL DEFAULT -
 table core.platforms about text NOT NULL DEFAULT ''::text
+table core.platforms ai_features jsonb NOT NULL DEFAULT '{}'::jsonb
 table core.platforms created_at timestamp with time zone NOT NULL DEFAULT now()
+table core.platforms daily_xp_limit integer DEFAULT -
+table core.platforms deadline_auto_submit_since timestamp with time zone DEFAULT -
 table core.platforms description text NOT NULL DEFAULT ''::text
 table core.platforms email text NOT NULL DEFAULT -
 table core.platforms id uuid NOT NULL DEFAULT uuidv7()
@@ -3361,6 +3368,7 @@ table core.platforms thumbnail_key text DEFAULT -
 table core.platforms thumbnail_upload_id uuid DEFAULT -
 table core.platforms updated_at timestamp with time zone NOT NULL DEFAULT now()
 table core.platforms version integer NOT NULL DEFAULT 1
+table core.platforms xp_rewards jsonb NOT NULL DEFAULT '{}'::jsonb
 table core.post_uploads discussion_id uuid NOT NULL DEFAULT -
 table core.post_uploads upload_id uuid NOT NULL DEFAULT -
 table core.role_permissions action text GENERATED split_part(permission, ':'::text, 2)

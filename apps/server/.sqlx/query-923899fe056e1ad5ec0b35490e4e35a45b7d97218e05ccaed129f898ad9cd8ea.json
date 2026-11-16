@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE platforms SET ai_features = ai_features || jsonb_build_object($1::text, $2::boolean)\n         WHERE singleton",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "923899fe056e1ad5ec0b35490e4e35a45b7d97218e05ccaed129f898ad9cd8ea"
+}

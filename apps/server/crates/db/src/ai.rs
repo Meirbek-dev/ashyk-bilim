@@ -1837,16 +1837,22 @@ pub async fn items_context(
 /// Every stored switch as `(flag key, enabled)`; a key missing here follows
 /// the environment.
 pub async fn feature_switches(pool: &PgPool) -> Result<Vec<(String, bool)>> {
-    let rows = sqlx::query!("SELECT feature, enabled FROM ai_feature_switches")
-        .fetch_all(pool)
+    let stored = sqlx::query_scalar!("SELECT ai_features FROM platforms WHERE singleton")
+        .fetch_optional(pool)
         .await?;
-    Ok(rows.into_iter().map(|r| (r.feature, r.enabled)).collect())
+    let Some(serde_json::Value::Object(map)) = stored else {
+        return Ok(Vec::new());
+    };
+    Ok(map
+        .into_iter()
+        .filter_map(|(k, v)| v.as_bool().map(|on| (k, on)))
+        .collect())
 }
 
 /// Drop one switch: the feature follows the environment again.
 pub async fn clear_feature_switch(pool: &PgPool, feature: &str) -> Result<()> {
     sqlx::query!(
-        "DELETE FROM ai_feature_switches WHERE feature = $1",
+        "UPDATE platforms SET ai_features = ai_features - $1::text WHERE singleton",
         feature
     )
     .execute(pool)
@@ -1855,19 +1861,12 @@ pub async fn clear_feature_switch(pool: &PgPool, feature: &str) -> Result<()> {
 }
 
 /// Set one switch (`feature` is the flag key).
-pub async fn set_feature_switch(
-    pool: &PgPool,
-    feature: &str,
-    enabled: bool,
-    by: UserId,
-) -> Result<()> {
+pub async fn set_feature_switch(pool: &PgPool, feature: &str, enabled: bool) -> Result<()> {
     sqlx::query!(
-        "INSERT INTO ai_feature_switches (feature, enabled, updated_by) VALUES ($1, $2, $3)
-         ON CONFLICT (feature) DO UPDATE
-             SET enabled = EXCLUDED.enabled, updated_by = EXCLUDED.updated_by, updated_at = now()",
+        "UPDATE platforms SET ai_features = ai_features || jsonb_build_object($1::text, $2::boolean)
+         WHERE singleton",
         feature,
-        enabled,
-        by.0
+        enabled
     )
     .execute(pool)
     .await?;
