@@ -91,7 +91,9 @@
 //! - REWRITE 5.8 item 4: one copy of each fact. An award's levels, a test's
 //!   `passed` and a feedback row's grader are read from their source; a
 //!   handed-in file's key, type and size are its upload's; a course's or
-//!   collection's creator is its one `creator` staff row.
+//!   collection's creator is its one `creator` staff row; an award's or a
+//!   completion's source is a uuid (or the login bonus's day), and an answer
+//!   embedding's subject is a submission.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -2955,12 +2957,20 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "discussion_reactions_recount",
             "derived; reads count on read, a contract drops it",
         ),
+        (
+            "gamification_completions_source_ref",
+            "derived; the previous release's text copy, a contract drops it",
+        ),
         ("grading_entries_number", "derived"),
         ("grading_entries_points", "derived"),
         ("item_feedback_upload_ids", "derived"),
         ("platforms_upload_ids", "derived"),
         ("translations_touch_platform", "derived"),
         ("users_upload_ids", "derived"),
+        (
+            "xp_transactions_source_ref",
+            "derived; the previous release's text copy, a contract drops it",
+        ),
         (
             "xp_transactions_levels",
             "derived; the previous release's copy, a contract drops it",
@@ -3836,4 +3846,107 @@ async fn the_creator_is_the_staff_row(pool: PgPool) {
     .execute(&pool)
     .await;
     assert!(second.is_err(), "a second creator row");
+}
+
+/// REWRITE 5.8 item 4, part 5: an award's source is a `uuid` (or the login
+/// bonus's day) and a completion's a `uuid`. The text copy the previous
+/// release keys on is filled from them (and they from it); a drifted text
+/// copy is not what is read. An answer embedding's subject is a submission.
+#[ab_testdb::test]
+async fn sources_are_typed_and_embeddings_name_a_submission(pool: PgPool) {
+    use ab_core::assessments::XpSource;
+    use ab_core::id::UserId;
+    use ab_db::gamification::NewTransaction;
+    let w = world(&pool).await;
+    let user = UserId(w.user);
+    ab_db::gamification::ensure_profile(&pool, user)
+        .await
+        .unwrap();
+    let course = w.course.to_string();
+    for (source, id) in [
+        (XpSource::CourseCompletion, course.as_str()),
+        (XpSource::LoginBonus, "20400"),
+    ] {
+        let award = NewTransaction {
+            user_id: user,
+            amount: 10,
+            source,
+            source_id: Some(id),
+            reason: None,
+            idempotency_key: None,
+        };
+        ab_db::gamification::record_award(&pool, award, None)
+            .await
+            .unwrap();
+    }
+    let stored: Vec<(Option<String>, Option<Uuid>, Option<i32>)> = sqlx::query_as(
+        "SELECT source_id, source_uuid, source_day FROM xp_transactions ORDER BY source",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        stored,
+        [
+            (Some(course.clone()), Some(w.course), None),
+            (Some("20400".to_owned()), None, Some(20400))
+        ]
+    );
+    sqlx::query("UPDATE xp_transactions SET source_id = NULL")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let found = ab_db::gamification::find_transaction(
+        &pool,
+        user,
+        XpSource::CourseCompletion,
+        Some(&course),
+        None,
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(found.source_id.as_deref(), Some(course.as_str()));
+    let refused = ab_db::gamification::find_transaction(
+        &pool,
+        user,
+        XpSource::LoginBonus,
+        Some("day-1"),
+        None,
+    )
+    .await;
+    assert!(refused.is_err(), "a day number or nothing");
+
+    assert!(
+        ab_db::gamification::record_completion(&pool, user, "course", w.course)
+            .await
+            .unwrap()
+    );
+    assert!(
+        !ab_db::gamification::record_completion(&pool, user, "course", w.course)
+            .await
+            .unwrap()
+    );
+    // The previous release writes the text: the uuid follows.
+    sqlx::query("INSERT INTO gamification_completions (user_id, kind, source_id) VALUES ($1, 'activity', $2)")
+        .bind(w.user)
+        .bind(w.activity.to_string())
+        .execute(&pool)
+        .await
+        .unwrap();
+    let typed: Vec<Option<Uuid>> =
+        sqlx::query_scalar("SELECT source_uuid FROM gamification_completions ORDER BY kind")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+    assert_eq!(typed, [Some(w.activity), Some(w.course)]);
+
+    let orphan = sqlx::query(
+        "INSERT INTO ai_work_embeddings (subject_id, part_key, activity_id, text_hash, embedding_model, embedding)
+         VALUES (uuidv7(), 'p', $1, repeat('a', 64), 'm', array_fill(0.1::real, ARRAY[1024])::vector)",
+    )
+    .bind(w.activity)
+    .execute(&pool)
+    .await;
+    assert!(orphan.is_err(), "an embedding of no submission");
 }

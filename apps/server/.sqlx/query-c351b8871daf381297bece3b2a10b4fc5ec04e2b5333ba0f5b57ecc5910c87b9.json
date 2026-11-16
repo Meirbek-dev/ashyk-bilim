@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id!: XpTransactionId\", user_id AS \"user_id!: UserId\", amount AS \"amount!\",\n                  source AS \"source!: XpSource\", source_id, reason, previous_level AS \"previous_level!\",\n                  triggered_level_up AS \"triggered_level_up!\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM xp_transactions_v\n           WHERE user_id = $1\n             AND (($4::text IS NOT NULL AND idempotency_key = $4)\n                  OR ($3::text IS NOT NULL AND source = $2 AND source_id = $3))\n           ORDER BY created_at DESC LIMIT 1",
+  "query": "SELECT id AS \"id!: XpTransactionId\", user_id AS \"user_id!: UserId\", amount AS \"amount!\",\n                  source AS \"source!: XpSource\", source_id, reason, previous_level AS \"previous_level!\",\n                  triggered_level_up AS \"triggered_level_up!\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM xp_transactions_v\n           WHERE user_id = $1\n             AND (($4::text IS NOT NULL AND idempotency_key = $4)\n                  OR (source = $2 AND (source_uuid = $3 OR source_day = $5)))\n           ORDER BY created_at DESC LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -102,8 +102,9 @@
       "Left": [
         "Uuid",
         "Text",
+        "Uuid",
         "Text",
-        "Text"
+        "Int4"
       ]
     },
     "nullable": [
@@ -118,5 +119,5 @@
       null
     ]
   },
-  "hash": "d1f0c8a5effef24812295d6cf52374e23974640496a5cb5baa2da06845443937"
+  "hash": "c351b8871daf381297bece3b2a10b4fc5ec04e2b5333ba0f5b57ecc5910c87b9"
 }

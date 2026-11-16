@@ -292,6 +292,7 @@ constraint ai_work_embeddings ai_work_embeddings_embedding_model_not_null NOT NU
 constraint ai_work_embeddings ai_work_embeddings_embedding_not_null NOT NULL embedding
 constraint ai_work_embeddings ai_work_embeddings_part_key_not_null NOT NULL part_key
 constraint ai_work_embeddings ai_work_embeddings_pkey PRIMARY KEY (subject_id, part_key)
+constraint ai_work_embeddings ai_work_embeddings_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES submissions(id) ON DELETE CASCADE
 constraint ai_work_embeddings ai_work_embeddings_subject_id_not_null NOT NULL subject_id
 constraint ai_work_embeddings ai_work_embeddings_text_hash_format CHECK ((text_hash ~ '^[0-9a-f]{64}$'::text))
 constraint ai_work_embeddings ai_work_embeddings_text_hash_not_null NOT NULL text_hash
@@ -1401,6 +1402,7 @@ CASE
     ELSE (source_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text)
 END))
 constraint xp_transactions xp_transactions_source_not_null NOT NULL source
+constraint xp_transactions xp_transactions_source_ref_kind CHECK ((((source_day IS NULL) OR (source = 'login_bonus'::text)) AND ((source_uuid IS NULL) OR (source <> 'login_bonus'::text)) AND ((source_day >= 0) AND (source_day <= 999999))))
 constraint xp_transactions xp_transactions_triggered_level_up_not_null NOT NULL triggered_level_up
 constraint xp_transactions xp_transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 constraint xp_transactions xp_transactions_user_id_not_null NOT NULL user_id
@@ -1968,6 +1970,19 @@ BEGIN
     FROM uploads u WHERE u.id = NEW.upload_id;
     RETURN NEW;
 END $function$
+function CREATE OR REPLACE FUNCTION public.gamification_completions_source_ref()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF NEW.source_uuid IS NULL THEN
+        NEW.source_uuid := NEW.source_id::uuid;
+    ELSIF NEW.source_id IS NULL THEN
+        NEW.source_id := NEW.source_uuid::text;
+    END IF;
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.grading_entries_current_check()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2497,6 +2512,23 @@ BEGIN
     NEW.triggered_level_up := xp_level(before + NEW.amount) > NEW.previous_level;
     RETURN NEW;
 END $function$
+function CREATE OR REPLACE FUNCTION public.xp_transactions_source_ref()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF NEW.source_id IS NOT NULL AND NEW.source_uuid IS NULL AND NEW.source_day IS NULL THEN
+        IF NEW.source = 'login_bonus' THEN
+            NEW.source_day := NEW.source_id::integer;
+        ELSE
+            NEW.source_uuid := NEW.source_id::uuid;
+        END IF;
+    ELSIF NEW.source_id IS NULL THEN
+        NEW.source_id := coalesce(NEW.source_uuid::text, NEW.source_day::text);
+    END IF;
+    RETURN NEW;
+END $function$
 index CREATE INDEX activities_course_idx ON core.activities USING btree (course_id)
 index CREATE INDEX activities_search_trgm_idx ON core.activities USING gin (search_fold(name) gin_trgm_ops)
 index CREATE INDEX activity_progress_activity_state_idx ON learning.activity_progress USING btree (activity_id, state)
@@ -2807,6 +2839,7 @@ index CREATE UNIQUE INDEX file_submissions_activity_id_key ON learning.file_subm
 index CREATE UNIQUE INDEX file_submissions_id_course_key ON learning.file_submissions USING btree (id, course_id)
 index CREATE UNIQUE INDEX file_submissions_pkey ON learning.file_submissions USING btree (id)
 index CREATE UNIQUE INDEX gamification_completions_pkey ON learning.gamification_completions USING btree (user_id, kind, source_id)
+index CREATE UNIQUE INDEX gamification_completions_user_kind_source_uuid_key ON learning.gamification_completions USING btree (user_id, kind, source_uuid)
 index CREATE UNIQUE INDEX gamification_config_pkey ON learning.gamification_config USING btree (id)
 index CREATE UNIQUE INDEX gamification_profiles_pkey ON learning.gamification_profiles USING btree (user_id)
 index CREATE UNIQUE INDEX google_accounts_pkey ON core.google_accounts USING btree (google_sub)
@@ -2863,6 +2896,8 @@ index CREATE UNIQUE INDEX users_zitadel_user_id_key ON core.users USING btree (z
 index CREATE UNIQUE INDEX xp_transactions_idempotency_key_key ON learning.xp_transactions USING btree (idempotency_key)
 index CREATE UNIQUE INDEX xp_transactions_pkey ON learning.xp_transactions USING btree (id)
 index CREATE UNIQUE INDEX xp_transactions_user_id_source_source_id_key ON learning.xp_transactions USING btree (user_id, source, source_id)
+index CREATE UNIQUE INDEX xp_transactions_user_source_day_key ON learning.xp_transactions USING btree (user_id, source, source_day)
+index CREATE UNIQUE INDEX xp_transactions_user_source_uuid_key ON learning.xp_transactions USING btree (user_id, source, source_uuid)
 table ai.ai_approvals action_type text NOT NULL DEFAULT -
 table ai.ai_approvals created_at timestamp with time zone NOT NULL DEFAULT now()
 table ai.ai_approvals expires_at timestamp with time zone DEFAULT -
@@ -3766,6 +3801,7 @@ table learning.file_submissions version integer NOT NULL DEFAULT 1
 table learning.gamification_completions created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.gamification_completions kind text NOT NULL DEFAULT -
 table learning.gamification_completions source_id text NOT NULL DEFAULT -
+table learning.gamification_completions source_uuid uuid DEFAULT -
 table learning.gamification_completions user_id uuid NOT NULL DEFAULT -
 table learning.gamification_config daily_xp_limit integer DEFAULT -
 table learning.gamification_config id smallint NOT NULL DEFAULT -
@@ -3893,7 +3929,9 @@ table learning.xp_transactions idempotency_key text DEFAULT -
 table learning.xp_transactions previous_level integer NOT NULL DEFAULT -
 table learning.xp_transactions reason text DEFAULT -
 table learning.xp_transactions source text NOT NULL DEFAULT -
+table learning.xp_transactions source_day integer DEFAULT -
 table learning.xp_transactions source_id text DEFAULT -
+table learning.xp_transactions source_uuid uuid DEFAULT -
 table learning.xp_transactions triggered_level_up boolean NOT NULL DEFAULT false
 table learning.xp_transactions user_id uuid NOT NULL DEFAULT -
 table ops.auth_audit_log created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3982,6 +4020,7 @@ trigger CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_i
 trigger CREATE TRIGGER discussion_reactions_recount AFTER INSERT OR DELETE OR UPDATE ON core.discussion_reactions FOR EACH ROW EXECUTE FUNCTION discussion_reactions_recount()
 trigger CREATE TRIGGER file_submission_files_from_upload BEFORE INSERT ON learning.file_submission_files FOR EACH ROW EXECUTE FUNCTION file_submission_files_from_upload()
 trigger CREATE TRIGGER file_submissions_touch BEFORE UPDATE ON learning.file_submissions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
+trigger CREATE TRIGGER gamification_completions_source_ref BEFORE INSERT ON learning.gamification_completions FOR EACH ROW EXECUTE FUNCTION gamification_completions_source_ref()
 trigger CREATE TRIGGER gamification_config_touch BEFORE UPDATE ON learning.gamification_config FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER gamification_profiles_touch BEFORE UPDATE ON learning.gamification_profiles FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER grading_entries_append_only BEFORE DELETE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_no_delete()
@@ -4008,6 +4047,7 @@ trigger CREATE TRIGGER users_sync_state BEFORE INSERT OR UPDATE ON core.users FO
 trigger CREATE TRIGGER users_touch BEFORE UPDATE ON core.users FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER users_upload_ids BEFORE INSERT OR UPDATE OF avatar_key ON core.users FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('avatar_key', 'avatar_upload_id')
 trigger CREATE TRIGGER xp_transactions_levels BEFORE INSERT ON learning.xp_transactions FOR EACH ROW EXECUTE FUNCTION xp_transactions_levels()
+trigger CREATE TRIGGER xp_transactions_source_ref BEFORE INSERT ON learning.xp_transactions FOR EACH ROW EXECUTE FUNCTION xp_transactions_source_ref()
 view core.course_progress_v  SELECT e.course_id,
     e.user_id,
     count(r.activity_id)::integer AS total_required_count,
@@ -4058,17 +4098,20 @@ view learning.xp_transactions_v  SELECT id,
     user_id,
     amount,
     source,
-    source_id,
+    COALESCE(source_uuid::text, source_day::text) AS source_id,
     reason,
     idempotency_key,
     created_at,
     xp_level(before) AS previous_level,
-    xp_level(before + amount) > xp_level(before) AS triggered_level_up
+    xp_level(before + amount) > xp_level(before) AS triggered_level_up,
+    source_uuid,
+    source_day
    FROM ( SELECT x.id,
             x.user_id,
             x.amount,
             x.source,
-            x.source_id,
+            x.source_uuid,
+            x.source_day,
             x.reason,
             x.idempotency_key,
             x.created_at,

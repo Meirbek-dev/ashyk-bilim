@@ -647,8 +647,8 @@ in the order it can be done, each step a forward migration on the current schema
    the array, which `20261103040000` (contract) drops. `assessment_items.outcome_ids`
    names no table: becomes a link table only when outcomes become rows. Kept as text by design (documented):
    `bulk_actions.target_user_ids` (audit snapshot of a past action; users are never deleted),
-   `xp_transactions.source_id` / `gamification_completions.source_id` (journal entries must outlive a deleted
-   activity or course; their key is `(source, source_id)`), `item_feedback.item_ref` (item id inside a frozen
+   the XP and completion sources (journal entries must outlive a deleted activity or course: typed `uuid` without a
+   key since 5.8 item 4, `source_uuid`), `item_feedback.item_ref` (item id inside a frozen
    `items_snapshot`, item 13 replaces it), `ai_evidence.source_ref` (AI-owned).
 4. **Upload references** (item 10). Expand done (review 2 item 18, `20261102041200`): `*_upload_id uuid
    REFERENCES uploads ON DELETE SET NULL` beside `users.avatar_key`, `courses.thumbnail_image_key` /
@@ -970,6 +970,17 @@ Queue, in order:
      the `creator` staff row (`course_creator()`, `collection_creator()`); collections now write theirs;
      `creator_id` is still written on insert for the previous release. Left: a release that stops writing
      `creator_id`, then the contract dropping it and the `*_creator_row` triggers.
+   - `gamification_completions` beside the XP journal: not done, it needs a decision. The two do not hold the same
+     fact: a completion is counted even when the daily cap refused its XP (UX-170), so the journal has no row for
+     it, and a capped completion's XP is still paid if it is completed again later. One copy means either a
+     0-XP journal row for a capped completion (`amount > 0` relaxed; that XP is then never paid) or the counters
+     read from `completions` (which forget un-marked and left activities). Owner's call.
+   - `source_id` as `uuid`: switched in `20261116075628_source_ids_as_uuids` (+ three typed unique keys):
+     `xp_transactions.source_uuid` / `source_day` (the login bonus's day number) and
+     `gamification_completions.source_uuid`; the API keeps its `source_id` string; triggers keep the text copies
+     for the previous release. `ai_work_embeddings.subject_id` references `submissions` (ON DELETE CASCADE;
+     embeddings of no submission were deleted). Left: the contract dropping the text columns and triggers
+     (the completions' primary key becomes `(user_id, kind, source_uuid)`).
 5. **Statuses**: `activity_progress.state` becomes a status plus `passed`; `code_runs.status` splits into the
    run's state and its verdict, and the language is its name, not Judge0's number; one soft-delete idiom (a
    timestamp, the status derived).

@@ -523,7 +523,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   are its `uploads` row's (`file_submission_files` stores the upload id, the display name, position and scan
   status). The stored copies stay for the previous release, filled by insert triggers, until a contract drops them
   (`just contracts-pending`). The media `*_key` columns are still the record beside their `*_upload_id`: keys from
-  before the upload table have no `uploads` row.
+  before the upload table have no `uploads` row. What an award or a completion is for is typed: `source_uuid`
+  (no key, the entry outlives its activity or course) or the login bonus's `source_day`; the API's `source_id`
+  string is rendered from them (`xp_transactions_v`).
 - **No import artefacts**: the `etl_*` tables and every `legacy_uuid` except `blocks.legacy_uuid` (lesson
   content still links blocks by it) were dropped at T+32d.
 - **One platform day in SQL too** (§16 `AB__SERVER__TIME_ZONE`; `20261102030000_platform_day.sql`,

@@ -40,3 +40,7 @@ column	courses.creator_id	the release after creators are read from the staff row
 column	collections.creator_id	the release after creators are read from the staff rows (20261116075624) and a release that stops writing it on insert (the previous release reads it)	REWRITE 5.8 item 4
 trigger	courses_creator_row	the contract that drops courses.creator_id	REWRITE 5.8 item 4
 trigger	collections_creator_row	the contract that drops collections.creator_id	REWRITE 5.8 item 4
+column	xp_transactions.source_id	the release after sources are read typed (20261116075628): source_uuid / source_day; xp_transactions_v renders the API string	REWRITE 5.8 item 4
+trigger	xp_transactions_source_ref	the contract that drops xp_transactions.source_id	REWRITE 5.8 item 4
+column	gamification_completions.source_id	the release after sources are read typed (20261116075628): source_uuid; the contract makes (user_id, kind, source_uuid) the primary key	REWRITE 5.8 item 4
+trigger	gamification_completions_source_ref	the contract that drops gamification_completions.source_id	REWRITE 5.8 item 4

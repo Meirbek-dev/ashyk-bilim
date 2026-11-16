@@ -67,6 +67,35 @@ pub async fn ensure_profile(pool: &PgPool, user_id: UserId) -> Result<ProfileRow
         .ok_or_else(|| ab_core::Error::not_found("gamification profile"))
 }
 
+/// The typed columns of an award's source: `source_uuid` (an activity,
+/// course or submission id) or, for the login bonus, `source_day` (days since
+/// 1970-01-01). The API spells both as `source_id` text (REWRITE 5.8 item 4).
+fn source_ref(
+    source: XpSource,
+    source_id: Option<&str>,
+) -> Result<(Option<uuid::Uuid>, Option<i32>)> {
+    let Some(id) = source_id else {
+        return Ok((None, None));
+    };
+    let parsed = if source == XpSource::LoginBonus {
+        id.parse::<i32>()
+            .ok()
+            .filter(|day| (0..=999_999).contains(day))
+            .map(|day| (None, Some(day)))
+    } else {
+        uuid::Uuid::parse_str(id)
+            .ok()
+            .map(|uuid| (Some(uuid), None))
+    };
+    parsed.ok_or_else(|| {
+        ab_core::Error::validation(vec![ab_core::FieldError {
+            field: "source_id".into(),
+            code: "invalid".into(),
+            message: "an award's source is an id, or a day number for the login bonus".into(),
+        }])
+    })
+}
+
 #[derive(Debug, Clone)]
 pub struct TransactionRow {
     pub id: XpTransactionId,
@@ -88,6 +117,7 @@ pub async fn find_transaction(
     source_id: Option<&str>,
     idempotency_key: Option<&str>,
 ) -> Result<Option<TransactionRow>> {
+    let (source_uuid, source_day) = source_ref(source, source_id)?;
     let row = sqlx::query_as!(
         TransactionRow,
         r#"SELECT id AS "id!: XpTransactionId", user_id AS "user_id!: UserId", amount AS "amount!",
@@ -97,12 +127,13 @@ pub async fn find_transaction(
            FROM xp_transactions_v
            WHERE user_id = $1
              AND (($4::text IS NOT NULL AND idempotency_key = $4)
-                  OR ($3::text IS NOT NULL AND source = $2 AND source_id = $3))
+                  OR (source = $2 AND (source_uuid = $3 OR source_day = $5)))
            ORDER BY created_at DESC LIMIT 1"#,
         user_id.0,
         source.as_str(),
-        source_id,
-        idempotency_key
+        source_uuid,
+        idempotency_key,
+        source_day
     )
     .fetch_optional(pool)
     .await?;
@@ -143,6 +174,7 @@ pub async fn record_award(
     new: NewTransaction<'_>,
     daily_limit: Option<i32>,
 ) -> Result<Recorded> {
+    let (source_uuid, source_day) = source_ref(new.source, new.source_id)?;
     let mut tx = pool.begin().await?;
     sqlx::query_scalar!(
         "SELECT user_id FROM gamification_profiles WHERE user_id = $1 FOR UPDATE",
@@ -159,14 +191,15 @@ pub async fn record_award(
     .await?;
     let inserted = sqlx::query_scalar!(
         r#"INSERT INTO xp_transactions
-               (user_id, amount, source, source_id, reason, idempotency_key)
-           VALUES ($1, $2, $3, $4, $5, $6)
+               (user_id, amount, source, source_uuid, source_day, reason, idempotency_key)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
            ON CONFLICT DO NOTHING
            RETURNING id AS "id: XpTransactionId""#,
         new.user_id.0,
         new.amount,
         new.source.as_str(),
-        new.source_id,
+        source_uuid,
+        source_day,
         new.reason,
         new.idempotency_key
     )
@@ -262,17 +295,18 @@ pub async fn touch_streak(
     Ok(row)
 }
 
-/// Count a first completion (`kind` = `activity` | `course`) whatever the
-/// XP award did; `false` when this completion was already counted (UX-170).
+/// Count a first completion (`kind` = `activity` | `course`, `source_id`
+/// the activity or course) whatever the XP award did; `false` when this
+/// completion was already counted (UX-170).
 pub async fn record_completion(
     pool: &PgPool,
     user_id: UserId,
     kind: &str,
-    source_id: &str,
+    source_id: uuid::Uuid,
 ) -> Result<bool> {
     let counted = sqlx::query_scalar!(
         r#"WITH ins AS (
-               INSERT INTO gamification_completions (user_id, kind, source_id)
+               INSERT INTO gamification_completions (user_id, kind, source_uuid)
                VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING kind)
            UPDATE gamification_profiles SET
                total_activities_completed = total_activities_completed

@@ -731,6 +731,7 @@ Embedding of a part of learner work (similarity, grading context).
 
 - Primary key `ai_work_embeddings_pkey`: `PRIMARY KEY (subject_id, part_key)`
 - Foreign key `ai_work_embeddings_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
+- Foreign key `ai_work_embeddings_subject_id_fkey`: `FOREIGN KEY (subject_id) REFERENCES submissions(id) ON DELETE CASCADE`
 - Check `ai_work_embeddings_text_hash_format`: `CHECK ((text_hash ~ '^[0-9a-f]{64}$'::text))`
 - Index `ai_work_embeddings_activity_idx`: `CREATE INDEX ai_work_embeddings_activity_idx ON ai.ai_work_embeddings USING btree (activity_id)`
 
@@ -2098,17 +2099,20 @@ The typed body of a file task: instructions, rubric and file caps. Its id is its
 
 Completion facts that award XP once (source kind + id per learner).
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| user_id | uuid |  |  |
-| kind | text |  |  |
-| source_id | text |  |  |
-| created_at | timestamp with time zone |  | `now()` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| user_id | uuid |  |  |  |
+| kind | text |  |  |  |
+| source_id | text |  |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| source_uuid | uuid | null |  | The completed activity or course (by `kind`); no key: the count outlives it. |
 
 - Primary key `gamification_completions_pkey`: `PRIMARY KEY (user_id, kind, source_id)`
 - Foreign key `gamification_completions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Check `gamification_completions_kind_check`: `CHECK ((kind = ANY (ARRAY['activity'::text, 'course'::text])))`
 - Check `gamification_completions_source_id_shape`: `CHECK ((source_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text))`
+- Index `gamification_completions_user_kind_source_uuid_key`: `CREATE UNIQUE INDEX gamification_completions_user_kind_source_uuid_key ON learning.gamification_completions USING btree (user_id, kind, source_uuid)`
+- Trigger `gamification_completions_source_ref`: `CREATE TRIGGER gamification_completions_source_ref BEFORE INSERT ON learning.gamification_completions FOR EACH ROW EXECUTE FUNCTION gamification_completions_source_ref()`
 
 ## gamification_config
 
@@ -2949,18 +2953,20 @@ An account. Never deleted by the app: disabled (status) or anonymised (deleted_a
 
 XP journal: every award with its source; the profile totals are derived from it.
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| user_id | uuid |  |  |
-| amount | integer |  |  |
-| source | text |  |  |
-| source_id | text | null |  |
-| reason | text | null |  |
-| previous_level | integer |  |  |
-| triggered_level_up | boolean |  | `false` |
-| idempotency_key | text | null |  |
-| created_at | timestamp with time zone |  | `now()` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| user_id | uuid |  |  |  |
+| amount | integer |  |  |  |
+| source | text |  |  |  |
+| source_id | text | null |  |  |
+| reason | text | null |  |  |
+| previous_level | integer |  |  |  |
+| triggered_level_up | boolean |  | `false` |  |
+| idempotency_key | text | null |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| source_uuid | uuid | null |  | What the award is for (activity, course, submission); no key: the entry outlives it. NULL for the login bonus. |
+| source_day | integer | null |  | The login bonus's day, days since 1970-01-01; NULL for every other source. |
 
 - Primary key `xp_transactions_pkey`: `PRIMARY KEY (id)`
 - Unique `xp_transactions_idempotency_key_key`: `UNIQUE (idempotency_key)`
@@ -2970,8 +2976,12 @@ XP journal: every award with its source; the profile totals are derived from it.
 - Check `xp_transactions_previous_level_check`: `CHECK ((previous_level >= 1))`
 - Check `xp_transactions_source_check`: `CHECK ((source = ANY (ARRAY['activity_completion'::text, 'course_completion'::text, 'login_bonus'::text, 'quiz_completion'::text, 'exam_completion'::text, 'streak_bonus'::text, 'admin_award'::text, 'code_challenge_completion'::text, 'code_challenge_perfect'::text, 'code_challenge_first_solve'::text])))`
 - Check `xp_transactions_source_id_shape`: `CHECK (((source_id IS NULL) OR CASE WHEN (source = 'login_bonus'::text) THEN (source_id ~ '^[0-9]{1,6}$'::text) ELSE (source_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text) END))`
+- Check `xp_transactions_source_ref_kind`: `CHECK ((((source_day IS NULL) OR (source = 'login_bonus'::text)) AND ((source_uuid IS NULL) OR (source <> 'login_bonus'::text)) AND ((source_day >= 0) AND (source_day <= 999999))))`
 - Index `xp_transactions_user_recent_idx`: `CREATE INDEX xp_transactions_user_recent_idx ON learning.xp_transactions USING btree (user_id, created_at DESC)`
+- Index `xp_transactions_user_source_day_key`: `CREATE UNIQUE INDEX xp_transactions_user_source_day_key ON learning.xp_transactions USING btree (user_id, source, source_day)`
+- Index `xp_transactions_user_source_uuid_key`: `CREATE UNIQUE INDEX xp_transactions_user_source_uuid_key ON learning.xp_transactions USING btree (user_id, source, source_uuid)`
 - Trigger `xp_transactions_levels`: `CREATE TRIGGER xp_transactions_levels BEFORE INSERT ON learning.xp_transactions FOR EACH ROW EXECUTE FUNCTION xp_transactions_levels()`
+- Trigger `xp_transactions_source_ref`: `CREATE TRIGGER xp_transactions_source_ref BEFORE INSERT ON learning.xp_transactions FOR EACH ROW EXECUTE FUNCTION xp_transactions_source_ref()`
 
 ## xp_transactions_v (view)
 
@@ -2989,3 +2999,5 @@ xp_transactions with previous_level and triggered_level_up computed from the XP 
 | created_at | timestamp with time zone | null |  |
 | previous_level | integer | null |  |
 | triggered_level_up | boolean | null |  |
+| source_uuid | uuid | null |  |
+| source_day | integer | null |  |

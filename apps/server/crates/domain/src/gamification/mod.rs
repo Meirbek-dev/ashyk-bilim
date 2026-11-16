@@ -572,7 +572,7 @@ pub mod hooks {
     pub async fn activity_completed(pool: &PgPool, user_id: UserId, activity_id: ActivityId) {
         let service = GamificationService::new(pool.clone());
         let id = activity_id.to_string();
-        first_completion(&service, pool, user_id, "activity", &id).await;
+        first_completion(&service, pool, user_id, "activity", activity_id.0).await;
         log_err(
             "activity_completed",
             service
@@ -592,7 +592,7 @@ pub mod hooks {
     pub async fn course_completed(pool: &PgPool, user_id: UserId, course_id: CourseId) {
         let service = GamificationService::new(pool.clone());
         let id = course_id.to_string();
-        first_completion(&service, pool, user_id, "course", &id).await;
+        first_completion(&service, pool, user_id, "course", course_id.0).await;
         log_err(
             "course_completed",
             service
@@ -614,7 +614,7 @@ pub mod hooks {
         pool: &PgPool,
         user_id: UserId,
         kind: &str,
-        id: &str,
+        id: uuid::Uuid,
     ) {
         if log_err(
             "profile",
