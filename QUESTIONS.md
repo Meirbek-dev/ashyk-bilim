@@ -60,3 +60,13 @@ Agents stopped short of these on purpose; each changes much and fixes little at 
   and `ai_work_embeddings` are empty. Proposal: `ai_work_embeddings` gets its key with the file merge (REWRITE 5.6 n6), the
   rest stays.
 - 45, morphology by `courses.language`: nothing sets the language. It needs a field in the course form. Do you want one?
+
+## Q-2026-11-16-1: a capped completion and the XP journal (REWRITE 5.8 item 4)
+
+`gamification_completions` and `xp_transactions` look like one fact twice, but are not: a completion counts even
+when the daily XP cap refused its XP (UX-170), so the journal has no row for it, and that XP is still paid if the
+activity is completed again on another day. One copy needs one of:
+(a) a 0-XP journal row for a capped completion (the XP of that completion is then never paid), or
+(b) the counters read from `completions` (an un-marked or left activity then stops counting), or
+(c) keep both tables as they are (the queue item closes as "not a duplicate").
+Until answered, both tables stay.
