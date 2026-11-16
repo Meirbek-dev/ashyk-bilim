@@ -1,0 +1,62 @@
+-- Formal checks go (REWRITE 5.8 item 3): a `jsonb_typeof(x) = 'object'` (or 'array') check that states nothing
+-- else and the `_word` regex over a free code say no more than the server's types do, and a row they once refused is a
+-- schema_skipped_checks entry, not a guarantee. Checks that state a real shape (a value list, a key set, numbers in
+-- range) stay; so do the lookup tables. The rule tests that asked for these went with them.
+SET LOCAL lock_timeout = '5s';
+
+ALTER TABLE platforms DROP CONSTRAINT IF EXISTS platforms_xp_rewards_object;
+ALTER TABLE activities DROP CONSTRAINT IF EXISTS activities_content_object;
+ALTER TABLE activities DROP CONSTRAINT IF EXISTS activities_details_object;
+ALTER TABLE activities DROP CONSTRAINT IF EXISTS activities_settings_object;
+ALTER TABLE ai_approvals DROP CONSTRAINT IF EXISTS ai_approvals_action_type_word;
+ALTER TABLE ai_approvals DROP CONSTRAINT IF EXISTS ai_approvals_payload_object;
+ALTER TABLE ai_artifacts DROP CONSTRAINT IF EXISTS ai_artifacts_content_object;
+ALTER TABLE ai_artifacts DROP CONSTRAINT IF EXISTS ai_artifacts_kind_word;
+ALTER TABLE ai_course_analyses DROP CONSTRAINT IF EXISTS ai_course_analyses_evidence_object;
+ALTER TABLE ai_course_analyses DROP CONSTRAINT IF EXISTS ai_course_analyses_report_object;
+ALTER TABLE ai_eval_results DROP CONSTRAINT IF EXISTS ai_eval_results_details_object;
+ALTER TABLE ai_events DROP CONSTRAINT IF EXISTS ai_events_event_type_word;
+ALTER TABLE ai_events DROP CONSTRAINT IF EXISTS ai_events_payload_object;
+ALTER TABLE ai_evidence DROP CONSTRAINT IF EXISTS ai_evidence_metadata_object;
+ALTER TABLE ai_evidence DROP CONSTRAINT IF EXISTS ai_evidence_source_type_word;
+ALTER TABLE ai_grade_drafts DROP CONSTRAINT IF EXISTS ai_grade_drafts_proposal_check;
+ALTER TABLE ai_lecture_reviews DROP CONSTRAINT IF EXISTS ai_lecture_reviews_suggestions_object;
+ALTER TABLE ai_qa_messages DROP CONSTRAINT IF EXISTS ai_qa_messages_citations_object;
+ALTER TABLE ai_qa_messages DROP CONSTRAINT IF EXISTS ai_qa_messages_metadata_object;
+ALTER TABLE ai_remediation_sessions DROP CONSTRAINT IF EXISTS ai_remediation_sessions_lecture_object;
+ALTER TABLE ai_remediation_sessions DROP CONSTRAINT IF EXISTS ai_remediation_sessions_test_object;
+ALTER TABLE ai_runs DROP CONSTRAINT IF EXISTS ai_runs_metadata_object;
+ALTER TABLE ai_runs DROP CONSTRAINT IF EXISTS ai_runs_safety_state_word;
+ALTER TABLE ai_student_memory DROP CONSTRAINT IF EXISTS ai_student_memory_metadata_object;
+ALTER TABLE ai_student_memory DROP CONSTRAINT IF EXISTS ai_student_memory_source_type_word;
+ALTER TABLE ai_submission_analyses DROP CONSTRAINT IF EXISTS ai_submission_analyses_analysis_object;
+ALTER TABLE ai_submission_analyses DROP CONSTRAINT IF EXISTS ai_submission_analyses_evidence_object;
+ALTER TABLE analytics_events DROP CONSTRAINT IF EXISTS analytics_events_payload_check;
+ALTER TABLE analytics_saved_views DROP CONSTRAINT IF EXISTS analytics_saved_views_query_object;
+ALTER TABLE assessment_audit_events DROP CONSTRAINT IF EXISTS assessment_audit_events_event_word;
+ALTER TABLE assessment_audit_events DROP CONSTRAINT IF EXISTS assessment_audit_events_payload_check;
+ALTER TABLE assessment_versions DROP CONSTRAINT IF EXISTS assessment_versions_items_check;
+ALTER TABLE assessment_versions DROP CONSTRAINT IF EXISTS assessment_versions_policy_check;
+ALTER TABLE auth_audit_log DROP CONSTRAINT IF EXISTS auth_audit_log_event_word;
+ALTER TABLE auth_audit_log DROP CONSTRAINT IF EXISTS auth_audit_log_metadata_check;
+ALTER TABLE blocks DROP CONSTRAINT IF EXISTS blocks_content_object;
+ALTER TABLE bulk_actions DROP CONSTRAINT IF EXISTS bulk_actions_params_object;
+ALTER TABLE certifications DROP CONSTRAINT IF EXISTS certifications_config_object;
+ALTER TABLE content_chunks DROP CONSTRAINT IF EXISTS content_chunks_anchor_check;
+ALTER TABLE file_submissions DROP CONSTRAINT IF EXISTS file_submissions_rubric_object;
+ALTER TABLE file_submissions DROP CONSTRAINT IF EXISTS file_submissions_settings_object;
+ALTER TABLE gamification_config DROP CONSTRAINT IF EXISTS gamification_config_rewards_object;
+ALTER TABLE gamification_profiles DROP CONSTRAINT IF EXISTS gamification_profiles_preferences_object;
+ALTER TABLE job_schedules DROP CONSTRAINT IF EXISTS job_schedules_kind_word;
+ALTER TABLE job_schedules DROP CONSTRAINT IF EXISTS job_schedules_payload_check;
+ALTER TABLE jobs DROP CONSTRAINT IF EXISTS jobs_kind_word;
+ALTER TABLE jobs DROP CONSTRAINT IF EXISTS jobs_payload_check;
+ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_payload_check;
+ALTER TABLE platforms DROP CONSTRAINT IF EXISTS platforms_xp_rewards_object;
+ALTER TABLE submission_violations DROP CONSTRAINT IF EXISTS submission_violations_event_check;
+ALTER TABLE submissions DROP CONSTRAINT IF EXISTS submissions_answers_check;
+ALTER TABLE teacher_interventions DROP CONSTRAINT IF EXISTS teacher_interventions_payload_object;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_profile_check;
+ALTER TABLE assessment_imports DROP CONSTRAINT IF EXISTS assessment_imports_issues_check;
+ALTER TABLE enrolment_events DROP CONSTRAINT IF EXISTS enrolment_events_completions_array;
+ALTER TABLE submissions DROP CONSTRAINT IF EXISTS submissions_violations_check;

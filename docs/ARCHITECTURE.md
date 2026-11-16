@@ -404,8 +404,8 @@ One migration set for the database `ashyq`. Rules:
 
 9. **Triggers** guard a rule or keep a derived field. A business step (issuing, reissuing, notifying) belongs in the
    code that does it, where a reader sees it; `schema_review::triggers_guard_or_derive` lists each trigger with its
-   kind and the debts. Set-named text columns carry a CHECK or a key and jsonb columns a shape CHECK, each with its own
-   rule test (`set_named_columns_are_constrained`, `jsonb_columns_state_their_shape`).
+   kind and the debts. A CHECK states a real rule (a value list, a key set, a range, a shape with keys); a check that
+   only says "an object" or "a word" is not written: the server's types say it (REWRITE 5.8 item 3).
 
 ### Schema guarantees (2026-11-07 schema review)
 

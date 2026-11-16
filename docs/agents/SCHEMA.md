@@ -150,11 +150,8 @@ A lesson step inside a chapter: page, video, document, quiz, exam, code challeng
 - Foreign key `activities_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `activities_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `activities_kind_fkey`: `FOREIGN KEY (activity_type, activity_sub_type) REFERENCES activity_kinds(kind, sub_kind) ON UPDATE CASCADE`
-- Check `activities_content_object`: `CHECK ((jsonb_typeof(content) = 'object'::text))`
-- Check `activities_details_object`: `CHECK ((jsonb_typeof(details) = 'object'::text))`
 - Check `activities_name_check`: `CHECK ((char_length(name) <= 500))`
 - Check `activities_position_check`: `CHECK (("position" >= 1))`
-- Check `activities_settings_object`: `CHECK ((jsonb_typeof(settings) = 'object'::text))`
 - Index `activities_course_idx`: `CREATE INDEX activities_course_idx ON core.activities USING btree (course_id)`
 - Index `activities_search_trgm_idx`: `CREATE INDEX activities_search_trgm_idx ON core.activities USING gin (search_fold(name) gin_trgm_ops)`
 - Trigger `activities_keep_assessment_type`: `CREATE TRIGGER activities_keep_assessment_type BEFORE UPDATE OF activity_type ON core.activities FOR EACH ROW WHEN ((old.activity_type IS DISTINCT FROM new.activity_type)) EXECUTE FUNCTION activities_keep_assessment_type()`
@@ -235,8 +232,6 @@ A staff approval an AI action waits for.
 - Foreign key `ai_approvals_requested_by_fkey`: `FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `ai_approvals_resolved_by_fkey`: `FOREIGN KEY (resolved_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `ai_approvals_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE`
-- Check `ai_approvals_action_type_word`: `CHECK ((action_type ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
-- Check `ai_approvals_payload_object`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
 - Check `ai_approvals_status_check`: `CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'denied'::text, 'expired'::text])))`
 - Index `ai_approvals_run_idx`: `CREATE INDEX ai_approvals_run_idx ON ai.ai_approvals USING btree (run_id)`
 - Index `ai_approvals_status_idx`: `CREATE INDEX ai_approvals_status_idx ON ai.ai_approvals USING btree (status, expires_at)`
@@ -256,8 +251,6 @@ An output an AI run produced.
 
 - Primary key `ai_artifacts_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_artifacts_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE`
-- Check `ai_artifacts_content_object`: `CHECK ((jsonb_typeof(content) = 'object'::text))`
-- Check `ai_artifacts_kind_word`: `CHECK ((kind ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
 - Index `ai_artifacts_run_kind_idx`: `CREATE INDEX ai_artifacts_run_kind_idx ON ai.ai_artifacts USING btree (run_id, kind, created_at)`
 
 ## ai_course_analyses
@@ -284,10 +277,8 @@ An AI review of a whole course.
 - Foreign key `ai_course_analyses_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_course_analyses_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
 - Check `ai_course_analyses_content_hash_format`: `CHECK ((content_hash ~ '^[0-9a-f]{64}$'::text))`
-- Check `ai_course_analyses_evidence_object`: `CHECK ((jsonb_typeof(evidence) = 'object'::text))`
 - Check `ai_course_analyses_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
 - Check `ai_course_analyses_public_score_check`: `CHECK (((public_score >= 0) AND (public_score <= 100)))`
-- Check `ai_course_analyses_report_object`: `CHECK ((jsonb_typeof(report) = 'object'::text))`
 - Check `ai_course_analyses_status_check`: `CHECK ((status = ANY (ARRAY['draft'::text, 'needs_human_review'::text, 'published'::text])))`
 - Index `ai_course_analyses_course_status_idx`: `CREATE INDEX ai_course_analyses_course_status_idx ON ai.ai_course_analyses USING btree (course_id, status, created_at DESC)`
 - Index `ai_course_analyses_run_idx`: `CREATE INDEX ai_course_analyses_run_idx ON ai.ai_course_analyses USING btree (run_id)`
@@ -325,7 +316,6 @@ Outcome of an AI evaluation fixture run (ashyq admin ai-eval).
 
 - Primary key `ai_eval_results_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_eval_results_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
-- Check `ai_eval_results_details_object`: `CHECK ((jsonb_typeof(details) = 'object'::text))`
 - Check `ai_eval_results_score_check`: `CHECK (((score IS NULL) OR ((score >= (0)::double precision) AND (score <= (1)::double precision))))`
 - Index `ai_eval_results_dataset_idx`: `CREATE INDEX ai_eval_results_dataset_idx ON ai.ai_eval_results USING btree (dataset, created_at DESC)`
 - Index `ai_eval_results_run_idx`: `CREATE INDEX ai_eval_results_run_idx ON ai.ai_eval_results USING btree (run_id)`
@@ -346,8 +336,6 @@ Streamed events of an AI run (pruned 180 days after the run finished).
 - Primary key `ai_events_pkey`: `PRIMARY KEY (id)`
 - Unique `ai_events_run_id_sequence_key`: `UNIQUE (run_id, sequence)`
 - Foreign key `ai_events_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE`
-- Check `ai_events_event_type_word`: `CHECK ((event_type ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
-- Check `ai_events_payload_object`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
 - Check `ai_events_sequence_check`: `CHECK ((sequence >= 1))`
 - Index `ai_events_created_brin`: `CREATE INDEX ai_events_created_brin ON ai.ai_events USING brin (created_at)`
 
@@ -372,9 +360,7 @@ A source an AI artifact cites (course chunk, submission part).
 - Primary key `ai_evidence_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_evidence_artifact_id_fkey`: `FOREIGN KEY (artifact_id) REFERENCES ai_artifacts(id) ON DELETE SET NULL`
 - Foreign key `ai_evidence_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE`
-- Check `ai_evidence_metadata_object`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
 - Check `ai_evidence_score_check`: `CHECK (((score IS NULL) OR ((score >= (0)::double precision) AND (score <= (1)::double precision))))`
-- Check `ai_evidence_source_type_word`: `CHECK ((source_type ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
 - Index `ai_evidence_artifact_idx`: `CREATE INDEX ai_evidence_artifact_idx ON ai.ai_evidence USING btree (artifact_id)`
 - Index `ai_evidence_run_idx`: `CREATE INDEX ai_evidence_run_idx ON ai.ai_evidence USING btree (run_id, source_type, created_at)`
 
@@ -468,7 +454,6 @@ An AI-proposed grade for an attempt, for a teacher to accept or correct.
 - Check `ai_grade_drafts_agreement_check`: `CHECK ((agreement = ANY (ARRAY['exact'::text, 'adjusted'::text])))`
 - Check `ai_grade_drafts_check1`: `CHECK (((status = 'applied'::text) = (agreement IS NOT NULL)))`
 - Check `ai_grade_drafts_confidence_check`: `CHECK (((confidence IS NULL) OR ((confidence >= (0)::double precision) AND (confidence <= (1)::double precision))))`
-- Check `ai_grade_drafts_proposal_check`: `CHECK ((jsonb_typeof(proposal) = 'object'::text))`
 - Check `ai_grade_drafts_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'ready'::text, 'applied'::text, 'discarded'::text, 'superseded'::text, 'failed'::text])))`
 - Index `ai_grade_drafts_activity_idx`: `CREATE INDEX ai_grade_drafts_activity_idx ON ai.ai_grade_drafts USING btree (activity_id, status, created_at DESC)`
 - Index `ai_grade_drafts_course_idx`: `CREATE INDEX ai_grade_drafts_course_idx ON ai.ai_grade_drafts USING btree (course_id, created_at DESC)`
@@ -506,7 +491,6 @@ AI suggestions for one lesson activity.
 - Check `ai_lecture_reviews_dismissed_suggestion_ids_check`: `CHECK (text_list_ok(dismissed_suggestion_ids, 500, 200))`
 - Check `ai_lecture_reviews_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
 - Check `ai_lecture_reviews_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'superseded'::text])))`
-- Check `ai_lecture_reviews_suggestions_object`: `CHECK ((jsonb_typeof(suggestions) = 'object'::text))`
 - Index `ai_lecture_reviews_activity_status_idx`: `CREATE INDEX ai_lecture_reviews_activity_status_idx ON ai.ai_lecture_reviews USING btree (activity_id, status, created_at DESC)`
 - Index `ai_lecture_reviews_course_status_idx`: `CREATE INDEX ai_lecture_reviews_course_status_idx ON ai.ai_lecture_reviews USING btree (course_id, status, created_at DESC)`
 - Index `ai_lecture_reviews_run_idx`: `CREATE INDEX ai_lecture_reviews_run_idx ON ai.ai_lecture_reviews USING btree (run_id)`
@@ -533,9 +517,7 @@ A message in an AI thread, with citations into course material.
 - Foreign key `ai_qa_messages_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_qa_messages_thread_id_fkey`: `FOREIGN KEY (thread_id) REFERENCES ai_threads(id) ON DELETE CASCADE`
 - Foreign key `ai_qa_messages_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
-- Check `ai_qa_messages_citations_object`: `CHECK ((jsonb_typeof(citations) = 'object'::text))`
 - Check `ai_qa_messages_confidence_check`: `CHECK (((confidence IS NULL) OR (confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))))`
-- Check `ai_qa_messages_metadata_object`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
 - Check `ai_qa_messages_role_check`: `CHECK ((role = ANY (ARRAY['user'::text, 'assistant'::text])))`
 - Index `ai_qa_messages_course_user_idx`: `CREATE INDEX ai_qa_messages_course_user_idx ON ai.ai_qa_messages USING btree (course_id, user_id, created_at DESC)`
 - Index `ai_qa_messages_thread_order_idx`: `CREATE INDEX ai_qa_messages_thread_order_idx ON ai.ai_qa_messages USING btree (thread_id, created_at, id)`
@@ -571,10 +553,8 @@ Remediation (lecture + test) generated from a submission analysis.
 - Foreign key `ai_remediation_sessions_student_user_id_fkey`: `FOREIGN KEY (student_user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Foreign key `ai_remediation_sessions_submission_id_fkey`: `FOREIGN KEY (submission_id, student_user_id) REFERENCES submissions(id, user_id) ON DELETE CASCADE`
 - Check `ai_remediation_sessions_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
-- Check `ai_remediation_sessions_lecture_object`: `CHECK ((jsonb_typeof(lecture) = 'object'::text))`
 - Check `ai_remediation_sessions_score_check`: `CHECK (((score IS NULL) OR ((score >= 0) AND (score <= 100))))`
 - Check `ai_remediation_sessions_status_check`: `CHECK ((status = ANY (ARRAY['assigned'::text, 'in_progress'::text, 'passed'::text, 'failed'::text])))`
-- Check `ai_remediation_sessions_test_object`: `CHECK ((jsonb_typeof(test) = 'object'::text))`
 - Index `ai_remediation_sessions_active_gate_uidx`: `CREATE UNIQUE INDEX ai_remediation_sessions_active_gate_uidx ON ai.ai_remediation_sessions USING btree (student_user_id, activity_id) WHERE (gate_mode AND (status = ANY (ARRAY['assigned'::text, 'in_progress'::text, 'failed'::text])))`
 - Index `ai_remediation_sessions_activity_idx`: `CREATE INDEX ai_remediation_sessions_activity_idx ON ai.ai_remediation_sessions USING btree (activity_id)`
 - Index `ai_remediation_sessions_analysis_idx`: `CREATE INDEX ai_remediation_sessions_analysis_idx ON ai.ai_remediation_sessions USING btree (analysis_id)`
@@ -613,9 +593,7 @@ One AI job (grading draft, analysis, review, answer): model, tokens, cost, statu
 - Check `ai_runs_finished_at_check`: `CHECK (((status <> ALL (ARRAY['succeeded'::text, 'failed'::text, 'aborted'::text])) OR (completed_at IS NOT NULL)))`
 - Check `ai_runs_input_tokens_check`: `CHECK (((input_tokens IS NULL) OR (input_tokens >= 0)))`
 - Check `ai_runs_kind_check`: `CHECK ((kind = ANY (ARRAY['course_analysis'::text, 'submission_analysis'::text, 'remediation'::text, 'study_companion'::text, 'lecture_review'::text, 'course_qa'::text, 'concept_mapping'::text, 'grade_draft'::text])))`
-- Check `ai_runs_metadata_object`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
 - Check `ai_runs_output_tokens_check`: `CHECK (((output_tokens IS NULL) OR (output_tokens >= 0)))`
-- Check `ai_runs_safety_state_word`: `CHECK ((safety_state ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
 - Check `ai_runs_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'succeeded'::text, 'failed'::text, 'aborted'::text])))`
 - Index `ai_runs_started_idx`: `CREATE INDEX ai_runs_started_idx ON ai.ai_runs USING btree (started_at DESC, id DESC)`
 - Index `ai_runs_status_idx`: `CREATE INDEX ai_runs_status_idx ON ai.ai_runs USING btree (status, started_at DESC)`
@@ -643,8 +621,6 @@ Notes the AI tutor keeps about a learner in a course.
 - Foreign key `ai_student_memory_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_student_memory_student_user_id_fkey`: `FOREIGN KEY (student_user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Check `ai_student_memory_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
-- Check `ai_student_memory_metadata_object`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
-- Check `ai_student_memory_source_type_word`: `CHECK ((source_type ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
 - Index `ai_student_memory_source_idx`: `CREATE INDEX ai_student_memory_source_idx ON ai.ai_student_memory USING btree (source_type, source_id)`
 - Index `ai_student_memory_student_course_idx`: `CREATE INDEX ai_student_memory_student_course_idx ON ai.ai_student_memory USING btree (student_user_id, course_id, updated_at DESC)`
 
@@ -669,8 +645,6 @@ AI gap analysis of one attempt (a submission or a file hand-in).
 - Foreign key `ai_submission_analyses_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_submission_analyses_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE`
 - Foreign key `ai_submission_analyses_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
-- Check `ai_submission_analyses_analysis_object`: `CHECK ((jsonb_typeof(analysis) = 'object'::text))`
-- Check `ai_submission_analyses_evidence_object`: `CHECK ((jsonb_typeof(evidence) = 'object'::text))`
 - Check `ai_submission_analyses_gap_count_check`: `CHECK ((gap_count >= 0))`
 - Check `ai_submission_analyses_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
 - Check `ai_submission_analyses_status_check`: `CHECK ((status = ANY (ARRAY['complete'::text, 'failed'::text, 'superseded'::text])))`
@@ -779,7 +753,6 @@ Domain events for analytics (submissions, grades, completions, views), partition
 
 - Primary key `analytics_events_pkey`: `PRIMARY KEY (id, occurred_at)`
 - Check `analytics_events_event_type_check`: `CHECK ((event_type = ANY (ARRAY['submission.submitted'::text, 'submission.graded'::text, 'submission.published'::text, 'submission.returned'::text, 'activity.completed'::text, 'discussion.posted'::text, 'login'::text])))`
-- Check `analytics_events_payload_check`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
 - Index `analytics_events_activity_idx`: `CREATE INDEX analytics_events_activity_idx ON ONLY analytics.analytics_events USING btree (activity_id)`
 - Index `analytics_events_assessment_idx`: `CREATE INDEX analytics_events_assessment_idx ON ONLY analytics.analytics_events USING btree (assessment_id)`
 - Index `analytics_events_course_time_idx`: `CREATE INDEX analytics_events_course_time_idx ON ONLY analytics.analytics_events USING btree (course_id, occurred_at DESC)`
@@ -805,7 +778,6 @@ A teacher's saved analytics filter.
 - Unique `analytics_saved_views_teacher_user_id_view_type_name_key`: `UNIQUE (teacher_user_id, view_type, name)`
 - Foreign key `analytics_saved_views_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Check `analytics_saved_views_name_check`: `CHECK (((char_length(name) >= 1) AND (char_length(name) <= 200)))`
-- Check `analytics_saved_views_query_object`: `CHECK ((jsonb_typeof(query) = 'object'::text))`
 - Check `analytics_saved_views_view_type_check`: `CHECK (((char_length(view_type) >= 1) AND (char_length(view_type) <= 50)))`
 
 ## assessment_access_usergroups
@@ -853,8 +825,6 @@ History of staff actions on an assessment.
 
 - Primary key `assessment_audit_events_pkey`: `PRIMARY KEY (id)`
 - Foreign key `assessment_audit_events_actor_id_fkey`: `FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL`
-- Check `assessment_audit_events_event_word`: `CHECK ((event ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
-- Check `assessment_audit_events_payload_check`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
 - Index `assessment_audit_events_idx`: `CREATE INDEX assessment_audit_events_idx ON learning.assessment_audit_events USING btree (assessment_id, created_at DESC)`
 
 ## assessment_imports
@@ -889,7 +859,6 @@ An uploaded DOT test spreadsheet: parse result (plan, issues) until committed in
 - Foreign key `assessment_imports_result_assessment_id_fkey`: `FOREIGN KEY (result_assessment_id, course_id) REFERENCES assessments(id, course_id) ON DELETE SET NULL (result_assessment_id)`
 - Foreign key `assessment_imports_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 - Check `assessment_imports_file_name_check`: `CHECK (((length(file_name) >= 1) AND (length(file_name) <= 255)))`
-- Check `assessment_imports_issues_check`: `CHECK ((jsonb_typeof(issues) = 'array'::text))`
 - Check `assessment_imports_issues_truncated_check`: `CHECK ((issues_truncated >= 0))`
 - Check `assessment_imports_parsed_shape`: `CHECK (((parsed IS NULL) OR ((jsonb_typeof(parsed) = 'object'::text) AND (jsonb_typeof((parsed -> 'items'::text)) = 'array'::text) AND (jsonb_typeof((parsed -> 'settings'::text)) = 'object'::text))))`
 - Check `assessment_imports_status_check`: `CHECK ((status = ANY (ARRAY['parsing'::text, 'ready'::text, 'invalid'::text, 'committed'::text, 'discarded'::text, 'failed'::text])))`
@@ -1018,10 +987,8 @@ Frozen policy + items of an assessment as handed in (content-addressed, numbered
 - Unique `assessment_versions_assessment_id_number_key`: `UNIQUE (assessment_id, number)`
 - Foreign key `assessment_versions_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
 - Check `assessment_versions_content_hash_format`: `CHECK ((content_hash ~ '^[0-9a-f]{32}$'::text))`
-- Check `assessment_versions_items_check`: `CHECK ((jsonb_typeof(items) = 'object'::text))`
 - Check `assessment_versions_max_points_check`: `CHECK ((max_points >= (0)::numeric))`
 - Check `assessment_versions_number_check`: `CHECK ((number >= 1))`
-- Check `assessment_versions_policy_check`: `CHECK ((jsonb_typeof(policy) = 'object'::text))`
 - Index `assessment_versions_id_assessment_key`: `CREATE UNIQUE INDEX assessment_versions_id_assessment_key ON learning.assessment_versions USING btree (id, assessment_id)`
 - Trigger `assessment_versions_frozen`: `CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()`
 - Trigger `assessment_versions_points`: `CREATE TRIGGER assessment_versions_points BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_points()`
@@ -1126,8 +1093,6 @@ Security events of accounts (logins, failures, erasure). Retention 365 days.
 
 - Primary key `auth_audit_log_pkey`: `PRIMARY KEY (id)`
 - Foreign key `auth_audit_log_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
-- Check `auth_audit_log_event_word`: `CHECK ((event ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
-- Check `auth_audit_log_metadata_check`: `CHECK ((jsonb_typeof(metadata) = 'object'::text))`
 - Index `auth_audit_log_created_brin`: `CREATE INDEX auth_audit_log_created_brin ON ops.auth_audit_log USING brin (created_at)`
 - Index `auth_audit_log_event_idx`: `CREATE INDEX auth_audit_log_event_idx ON ops.auth_audit_log USING btree (event, created_at DESC)`
 - Index `auth_audit_log_user_idx`: `CREATE INDEX auth_audit_log_user_idx ON ops.auth_audit_log USING btree (user_id, created_at DESC)`
@@ -1165,7 +1130,6 @@ A content block of a page activity (files, embeds), linked from the editor docum
 - Unique `blocks_legacy_uuid_key`: `UNIQUE (legacy_uuid)`
 - Foreign key `blocks_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
 - Check `blocks_block_type_check`: `CHECK ((block_type = ANY (ARRAY['video'::text, 'pdf'::text, 'image'::text, 'custom'::text])))`
-- Check `blocks_content_object`: `CHECK ((jsonb_typeof(content) = 'object'::text))`
 - Index `blocks_activity_idx`: `CREATE INDEX blocks_activity_idx ON core.blocks USING btree (activity_id)`
 - Trigger `blocks_upload_ids`: `CREATE TRIGGER blocks_upload_ids AFTER INSERT OR UPDATE OF content, claimed ON core.blocks FOR EACH ROW EXECUTE FUNCTION block_uploads_sync()`
 
@@ -1190,7 +1154,6 @@ A bulk operation a teacher ran on the learners of an assessment, its targets and
 - Primary key `bulk_actions_pkey`: `PRIMARY KEY (id)`
 - Foreign key `bulk_actions_performed_by_fkey`: `FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL`
 - Check `bulk_actions_action_type_check`: `CHECK ((action_type = ANY (ARRAY['extend_deadline'::text, 'release_grades'::text, 'return_all'::text, 'override_score'::text, 'batch_grade'::text])))`
-- Check `bulk_actions_params_object`: `CHECK ((jsonb_typeof(params) = 'object'::text))`
 - Check `bulk_actions_status_check`: `CHECK ((status = ANY (ARRAY['pending'::text, 'running'::text, 'completed'::text, 'failed'::text])))`
 - Index `bulk_actions_assessment_idx`: `CREATE INDEX bulk_actions_assessment_idx ON learning.bulk_actions USING btree (assessment_id, status)`
 
@@ -1238,7 +1201,6 @@ The certificate a course issues on completion: layout and rules (config); disabl
 
 - Primary key `certifications_pkey`: `PRIMARY KEY (id)`
 - Foreign key `certifications_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL`
-- Check `certifications_config_object`: `CHECK ((jsonb_typeof(config) = 'object'::text))`
 - Index `certifications_course_idx`: `CREATE INDEX certifications_course_idx ON learning.certifications USING btree (course_id)`
 - Index `certifications_one_live_per_course`: `CREATE UNIQUE INDEX certifications_one_live_per_course ON learning.certifications USING btree (course_id) WHERE (disabled_at IS NULL)`
 
@@ -1535,7 +1497,6 @@ A searchable chunk of course material with its embedding (course material search
 - Unique `content_chunks_source_type_source_id_ordinal_key`: `UNIQUE (source_type, source_id, ordinal)`
 - Foreign key `content_chunks_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE`
 - Foreign key `content_chunks_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Check `content_chunks_anchor_check`: `CHECK ((jsonb_typeof(anchor) = 'object'::text))`
 - Check `content_chunks_audience_check`: `CHECK ((audience = ANY (ARRAY['learner'::text, 'staff'::text])))`
 - Check `content_chunks_body_check`: `CHECK (((char_length(body) >= 1) AND (char_length(body) <= 4000)))`
 - Check `content_chunks_check`: `CHECK (((embedding IS NULL) = (embedding_model IS NULL)))`
@@ -2037,7 +1998,6 @@ One join or leave of a course, appended by enrol/unenrol. Survives the course; e
 - Primary key `enrolment_events_pkey`: `PRIMARY KEY (id)`
 - Foreign key `enrolment_events_created_by_fkey`: `FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `enrolment_events_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
-- Check `enrolment_events_completions_array`: `CHECK ((jsonb_typeof(completions) = 'array'::text))`
 - Check `enrolment_events_event_check`: `CHECK ((event = ANY (ARRAY['joined'::text, 'left'::text])))`
 - Check `enrolment_events_source_check`: `CHECK ((source = ANY (ARRAY['self'::text, 'staff'::text, 'backfill'::text])))`
 - Index `enrolment_events_course_user_idx`: `CREATE INDEX enrolment_events_course_user_idx ON learning.enrolment_events USING btree (course_id, user_id, created_at)`
@@ -2125,8 +2085,6 @@ The typed body of a file task: instructions, rubric and file caps. Its id is its
 - Check `file_submissions_instructions_check`: `CHECK ((char_length(instructions) <= 50000))`
 - Check `file_submissions_max_file_size_mb_check`: `CHECK (((max_file_size_mb >= 1) AND (max_file_size_mb <= 500)))`
 - Check `file_submissions_max_files_check`: `CHECK (((max_files >= 1) AND (max_files <= 25)))`
-- Check `file_submissions_rubric_object`: `CHECK ((jsonb_typeof(rubric) = 'object'::text))`
-- Check `file_submissions_settings_object`: `CHECK ((jsonb_typeof(settings) = 'object'::text))`
 - Index `file_submissions_course_idx`: `CREATE INDEX file_submissions_course_idx ON learning.file_submissions USING btree (course_id)`
 
 ## gamification_completions
@@ -2159,7 +2117,6 @@ XP rules: daily cap and rewards (versioned single row).
 
 - Primary key `gamification_config_pkey`: `PRIMARY KEY (id)`
 - Check `gamification_config_id_check`: `CHECK ((id = 1))`
-- Check `gamification_config_rewards_object`: `CHECK ((jsonb_typeof(rewards) = 'object'::text))`
 
 ## gamification_profiles
 
@@ -2190,7 +2147,6 @@ A learner's XP total, level and streaks (reconciled weekly from xp_transactions)
 - Check `gamification_profiles_login_streak_check`: `CHECK ((login_streak >= 0))`
 - Check `gamification_profiles_longest_learning_streak_check`: `CHECK ((longest_learning_streak >= 0))`
 - Check `gamification_profiles_longest_login_streak_check`: `CHECK ((longest_login_streak >= 0))`
-- Check `gamification_profiles_preferences_object`: `CHECK ((jsonb_typeof(preferences) = 'object'::text))`
 - Check `gamification_profiles_total_activities_completed_check`: `CHECK ((total_activities_completed >= 0))`
 - Check `gamification_profiles_total_courses_completed_check`: `CHECK ((total_courses_completed >= 0))`
 - Check `gamification_profiles_total_xp_check`: `CHECK ((total_xp >= 0))`
@@ -2318,8 +2274,6 @@ Periodic jobs: kind, interval and next run, driven by the worker's cron leader.
 
 - Primary key `job_schedules_pkey`: `PRIMARY KEY (kind)`
 - Check `job_schedules_interval_seconds_check`: `CHECK ((interval_seconds > 0))`
-- Check `job_schedules_kind_word`: `CHECK ((kind ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
-- Check `job_schedules_payload_check`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
 
 ## jobs
 
@@ -2344,8 +2298,6 @@ Background job queue (transactional, SKIP LOCKED); succeeded and failed rows are
 | updated_at | timestamp with time zone |  | `now()` |
 
 - Primary key `jobs_pkey`: `PRIMARY KEY (id)`
-- Check `jobs_kind_word`: `CHECK ((kind ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))`
-- Check `jobs_payload_check`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
 - Check `jobs_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'succeeded'::text, 'failed'::text, 'dead'::text])))`
 - Index `jobs_claim_idx`: `CREATE INDEX jobs_claim_idx ON ops.jobs USING btree (priority DESC, run_at) WHERE (status = 'queued'::text)`
 - Index `jobs_dedupe_live_idx`: `CREATE UNIQUE INDEX jobs_dedupe_live_idx ON ops.jobs USING btree (dedupe_key) WHERE ((dedupe_key IS NOT NULL) AND (status = ANY (ARRAY['queued'::text, 'running'::text])))`
@@ -2566,7 +2518,6 @@ An in-app notification of an account (typed payload; course_id/activity_id are g
 - Foreign key `notifications_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `notifications_kind_fkey`: `FOREIGN KEY (kind) REFERENCES notification_kinds(kind) ON UPDATE CASCADE`
 - Foreign key `notifications_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
-- Check `notifications_payload_check`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
 - Index `notifications_activity_idx`: `CREATE INDEX notifications_activity_idx ON core.notifications USING btree (activity_id)`
 - Index `notifications_course_idx`: `CREATE INDEX notifications_course_idx ON core.notifications USING btree (course_id)`
 - Index `notifications_created_idx`: `CREATE INDEX notifications_created_idx ON core.notifications USING btree (created_at)`
@@ -2605,7 +2556,6 @@ The platform's own settings and texts (one row, singleton).
 - Foreign key `platforms_thumbnail_upload_id_fkey`: `FOREIGN KEY (thumbnail_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 - Check `platforms_ai_features_booleans`: `CHECK (((jsonb_typeof(ai_features) = 'object'::text) AND (NOT jsonb_path_exists(ai_features, '$.*?(@.type() != "boolean")'::jsonpath))))`
 - Check `platforms_singleton_check`: `CHECK (singleton)`
-- Check `platforms_xp_rewards_object`: `CHECK ((jsonb_typeof(xp_rewards) = 'object'::text))`
 - Index `platforms_logo_upload_id_idx`: `CREATE INDEX platforms_logo_upload_id_idx ON core.platforms USING btree (logo_upload_id) WHERE (logo_upload_id IS NOT NULL)`
 - Index `platforms_thumbnail_upload_id_idx`: `CREATE INDEX platforms_thumbnail_upload_id_idx ON core.platforms USING btree (thumbnail_upload_id) WHERE (thumbnail_upload_id IS NOT NULL)`
 - Trigger `platforms_upload_ids`: `CREATE TRIGGER platforms_upload_ids BEFORE INSERT OR UPDATE OF logo_key, thumbnail_key ON core.platforms FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('logo_key', 'logo_upload_id', 'thumbnail_key', 'thumbnail_upload_id')`
@@ -2688,7 +2638,6 @@ One anti-cheat event of an attempt, appended as it is reported. Evidence: the ap
 
 - Primary key `submission_violations_pkey`: `PRIMARY KEY (id)`
 - Foreign key `submission_violations_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE`
-- Check `submission_violations_event_check`: `CHECK ((jsonb_typeof(event) = 'object'::text))`
 - Index `submission_violations_submission_idx`: `CREATE INDEX submission_violations_submission_idx ON learning.submission_violations USING btree (submission_id, created_at)`
 
 ## submissions
@@ -2737,7 +2686,6 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 - Foreign key `submissions_assessment_version_fkey`: `FOREIGN KEY (assessment_version_id, assessment_id) REFERENCES assessment_versions(id, assessment_id)`
 - Foreign key `submissions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE RESTRICT`
 - Foreign key `submissions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
-- Check `submissions_answers_check`: `CHECK ((jsonb_typeof(answers) = 'object'::text))`
 - Check `submissions_attempt_number_check`: `CHECK ((attempt_number >= 1))`
 - Check `submissions_auto_breakdown_check`: `CHECK (((auto_breakdown IS NULL) OR (jsonb_typeof(auto_breakdown) = 'object'::text)))`
 - Check `submissions_auto_submit_reason_check`: `CHECK (((auto_submit_reason IS NULL) OR (auto_submit_reason = ANY (ARRAY['time_expired'::text, 'integrity_violation'::text, 'deadline_passed'::text, 'late_cutoff_passed'::text]))))`
@@ -2750,7 +2698,6 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 - Check `submissions_status_check`: `CHECK ((status = ANY (ARRAY['draft'::text, 'submitted'::text, 'graded'::text, 'released'::text, 'returned'::text])))`
 - Check `submissions_submitted_at_check`: `CHECK (((status = 'draft'::text) OR (submitted_at IS NOT NULL)))`
 - Check `submissions_violation_count_check`: `CHECK ((violation_count >= 0))`
-- Check `submissions_violations_check`: `CHECK ((jsonb_typeof(violations) = 'array'::text))`
 - Index `submissions_assessment_version_idx`: `CREATE INDEX submissions_assessment_version_idx ON learning.submissions USING btree (assessment_version_id)`
 - Index `submissions_attempt_number_key`: `CREATE UNIQUE INDEX submissions_attempt_number_key ON learning.submissions USING btree (assessment_id, user_id, attempt_number) WHERE (NOT preview)`
 - Index `submissions_course_user_idx`: `CREATE INDEX submissions_course_user_idx ON learning.submissions USING btree (course_id, user_id)`
@@ -2792,7 +2739,6 @@ An action a teacher logged for an at-risk learner and its outcome.
 - Check `teacher_interventions_notes_check`: `CHECK ((char_length(notes) <= 4000))`
 - Check `teacher_interventions_outcome_check`: `CHECK ((char_length(outcome) <= 2000))`
 - Check `teacher_interventions_outcome_code_check`: `CHECK ((outcome_code = ANY (ARRAY['improved'::text, 'no_change'::text, 'worsened'::text, 'no_response'::text])))`
-- Check `teacher_interventions_payload_object`: `CHECK ((jsonb_typeof(payload) = 'object'::text))`
 - Check `teacher_interventions_status_check`: `CHECK ((status = ANY (ARRAY['planned'::text, 'completed'::text, 'resolved'::text])))`
 - Index `teacher_interventions_course_idx`: `CREATE INDEX teacher_interventions_course_idx ON learning.teacher_interventions USING btree (course_id)`
 - Index `teacher_interventions_learner_idx`: `CREATE INDEX teacher_interventions_learner_idx ON learning.teacher_interventions USING btree (user_id, course_id)`
@@ -2983,7 +2929,6 @@ An account. Never deleted by the app: disabled (status) or anonymised (deleted_a
 - Check `users_deleted_disabled_at_check`: `CHECK (((deleted_at IS NULL) OR (disabled_at IS NOT NULL)))`
 - Check `users_locale_check`: `CHECK ((locale = ANY (ARRAY['ru'::text, 'kk'::text, 'en'::text])))`
 - Check `users_organization_check`: `CHECK ((char_length(organization) <= 200))`
-- Check `users_profile_check`: `CHECK ((jsonb_typeof(profile) = 'object'::text))`
 - Index `users_avatar_upload_id_idx`: `CREATE INDEX users_avatar_upload_id_idx ON core.users USING btree (avatar_upload_id) WHERE (avatar_upload_id IS NOT NULL)`
 - Index `users_display_name_trgm_idx`: `CREATE INDEX users_display_name_trgm_idx ON core.users USING gin (search_fold(display_name) gin_trgm_ops)`
 - Index `users_email_lower_key`: `CREATE UNIQUE INDEX users_email_lower_key ON core.users USING btree (lower(email))`

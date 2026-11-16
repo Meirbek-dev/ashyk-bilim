@@ -255,8 +255,7 @@ remember:
   `position >= 1`, so a reorder renumbers in one transaction without duplicates;
 - scores are `numeric` with explicit bounds that also exclude `'NaN'` (it passes
   `>= 0`), percentages are `0..100`;
-- `jsonb` bodies and snapshots carry `check (jsonb_typeof(x) = 'object')`; Rust does the
-  detailed validation;
+- `jsonb` bodies and snapshots are typed in Rust; a CHECK on one states a real shape, never "an object" alone (5.8 item 3);
 - a status implies its timestamps (`status <> 'in_progress'` needs `submitted_at`).
 
 ### 5.1 Identity
@@ -951,9 +950,9 @@ Queue, in order:
    and the instant the deadline hand-in went live are columns of the `platforms` row (`daily_xp_limit`, `xp_rewards`,
    `ai_features`, `deadline_auto_submit_since`); who switched a feature stays in `auth_audit_log`. Left: the contract
    that drops `gamification_config`, `ai_feature_switches` and `feature_activations`.
-3. **Formal checks go**: the `jsonb_typeof(x) = 'object'` checks that state nothing else, the `_word` regex
-   checks, and the rule tests that ask for them (`jsonb_columns_state_their_shape`,
-   `set_named_columns_are_constrained`). Checks that state a real shape stay.
+3. **Formal checks go**: done as `20261116071046_drop_formal_checks` (43 `jsonb_typeof(x) = 'object'` and 3 `= 'array'` checks, 10 `_word`
+   regex checks, the rule tests `jsonb_columns_state_their_shape` and `set_named_columns_are_constrained`). Checks that
+   state a real shape stay.
 4. **One copy of each fact**: derived columns (`updated_at` on frozen rows, `item_feedback.graded_by`,
    `xp_transactions.previous_level` / `triggered_level_up`, `code_run_cases.passed`); `*_key` beside
    `*_upload_id` and the `uploads` copies in `file_submission_files`; the creator in `courses` /

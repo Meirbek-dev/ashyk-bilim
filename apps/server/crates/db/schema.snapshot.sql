@@ -3,13 +3,11 @@ constraint activities activities_activity_type_not_null NOT NULL activity_type
 constraint activities activities_chapter_id_fkey FOREIGN KEY (chapter_id, course_id) REFERENCES chapters(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE
 constraint activities activities_chapter_id_not_null NOT NULL chapter_id
 constraint activities activities_content_not_null NOT NULL content
-constraint activities activities_content_object CHECK ((jsonb_typeof(content) = 'object'::text))
 constraint activities activities_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint activities activities_course_id_not_null NOT NULL course_id
 constraint activities activities_created_at_not_null NOT NULL created_at
 constraint activities activities_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL
 constraint activities activities_details_not_null NOT NULL details
-constraint activities activities_details_object CHECK ((jsonb_typeof(details) = 'object'::text))
 constraint activities activities_id_course_key UNIQUE (id, course_id)
 constraint activities activities_id_not_null NOT NULL id
 constraint activities activities_kind_fkey FOREIGN KEY (activity_type, activity_sub_type) REFERENCES activity_kinds(kind, sub_kind) ON UPDATE CASCADE
@@ -22,7 +20,6 @@ constraint activities activities_position_not_null NOT NULL "position"
 constraint activities activities_published_not_null NOT NULL published
 constraint activities activities_required_not_null NOT NULL required
 constraint activities activities_settings_not_null NOT NULL settings
-constraint activities activities_settings_object CHECK ((jsonb_typeof(settings) = 'object'::text))
 constraint activities activities_updated_at_not_null NOT NULL updated_at
 constraint activities activities_version_not_null NOT NULL version
 constraint activity_kinds activity_kinds_kind_not_null NOT NULL kind
@@ -47,11 +44,9 @@ constraint activity_progress activity_progress_updated_at_not_null NOT NULL upda
 constraint activity_progress activity_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 constraint activity_progress activity_progress_user_id_not_null NOT NULL user_id
 constraint ai_approvals ai_approvals_action_type_not_null NOT NULL action_type
-constraint ai_approvals ai_approvals_action_type_word CHECK ((action_type ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))
 constraint ai_approvals ai_approvals_created_at_not_null NOT NULL created_at
 constraint ai_approvals ai_approvals_id_not_null NOT NULL id
 constraint ai_approvals ai_approvals_payload_not_null NOT NULL payload
-constraint ai_approvals ai_approvals_payload_object CHECK ((jsonb_typeof(payload) = 'object'::text))
 constraint ai_approvals ai_approvals_pkey PRIMARY KEY (id)
 constraint ai_approvals ai_approvals_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL
 constraint ai_approvals ai_approvals_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES users(id) ON DELETE SET NULL
@@ -60,12 +55,10 @@ constraint ai_approvals ai_approvals_run_id_not_null NOT NULL run_id
 constraint ai_approvals ai_approvals_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'denied'::text, 'expired'::text])))
 constraint ai_approvals ai_approvals_status_not_null NOT NULL status
 constraint ai_artifacts ai_artifacts_content_not_null NOT NULL content
-constraint ai_artifacts ai_artifacts_content_object CHECK ((jsonb_typeof(content) = 'object'::text))
 constraint ai_artifacts ai_artifacts_created_at_not_null NOT NULL created_at
 constraint ai_artifacts ai_artifacts_final_not_null NOT NULL final
 constraint ai_artifacts ai_artifacts_id_not_null NOT NULL id
 constraint ai_artifacts ai_artifacts_kind_not_null NOT NULL kind
-constraint ai_artifacts ai_artifacts_kind_word CHECK ((kind ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))
 constraint ai_artifacts ai_artifacts_pkey PRIMARY KEY (id)
 constraint ai_artifacts ai_artifacts_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE
 constraint ai_artifacts ai_artifacts_run_id_not_null NOT NULL run_id
@@ -74,7 +67,6 @@ constraint ai_course_analyses ai_course_analyses_course_id_fkey FOREIGN KEY (cou
 constraint ai_course_analyses ai_course_analyses_course_id_not_null NOT NULL course_id
 constraint ai_course_analyses ai_course_analyses_created_at_not_null NOT NULL created_at
 constraint ai_course_analyses ai_course_analyses_evidence_not_null NOT NULL evidence
-constraint ai_course_analyses ai_course_analyses_evidence_object CHECK ((jsonb_typeof(evidence) = 'object'::text))
 constraint ai_course_analyses ai_course_analyses_id_not_null NOT NULL id
 constraint ai_course_analyses ai_course_analyses_language_not_null NOT NULL language
 constraint ai_course_analyses ai_course_analyses_language_tag CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))
@@ -82,7 +74,6 @@ constraint ai_course_analyses ai_course_analyses_pkey PRIMARY KEY (id)
 constraint ai_course_analyses ai_course_analyses_public_score_check CHECK (((public_score >= 0) AND (public_score <= 100)))
 constraint ai_course_analyses ai_course_analyses_public_score_not_null NOT NULL public_score
 constraint ai_course_analyses ai_course_analyses_report_not_null NOT NULL report
-constraint ai_course_analyses ai_course_analyses_report_object CHECK ((jsonb_typeof(report) = 'object'::text))
 constraint ai_course_analyses ai_course_analyses_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL
 constraint ai_course_analyses ai_course_analyses_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'needs_human_review'::text, 'published'::text])))
 constraint ai_course_analyses ai_course_analyses_status_not_null NOT NULL status
@@ -96,7 +87,6 @@ constraint ai_course_settings ai_course_settings_updated_at_not_null NOT NULL up
 constraint ai_eval_results ai_eval_results_created_at_not_null NOT NULL created_at
 constraint ai_eval_results ai_eval_results_dataset_not_null NOT NULL dataset
 constraint ai_eval_results ai_eval_results_details_not_null NOT NULL details
-constraint ai_eval_results ai_eval_results_details_object CHECK ((jsonb_typeof(details) = 'object'::text))
 constraint ai_eval_results ai_eval_results_evaluator_not_null NOT NULL evaluator
 constraint ai_eval_results ai_eval_results_id_not_null NOT NULL id
 constraint ai_eval_results ai_eval_results_pkey PRIMARY KEY (id)
@@ -104,10 +94,8 @@ constraint ai_eval_results ai_eval_results_run_id_fkey FOREIGN KEY (run_id) REFE
 constraint ai_eval_results ai_eval_results_score_check CHECK (((score IS NULL) OR ((score >= (0)::double precision) AND (score <= (1)::double precision))))
 constraint ai_events ai_events_created_at_not_null NOT NULL created_at
 constraint ai_events ai_events_event_type_not_null NOT NULL event_type
-constraint ai_events ai_events_event_type_word CHECK ((event_type ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))
 constraint ai_events ai_events_id_not_null NOT NULL id
 constraint ai_events ai_events_payload_not_null NOT NULL payload
-constraint ai_events ai_events_payload_object CHECK ((jsonb_typeof(payload) = 'object'::text))
 constraint ai_events ai_events_pkey PRIMARY KEY (id)
 constraint ai_events ai_events_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE
 constraint ai_events ai_events_run_id_not_null NOT NULL run_id
@@ -121,13 +109,11 @@ constraint ai_evidence ai_evidence_excerpt_not_null NOT NULL excerpt
 constraint ai_evidence ai_evidence_id_not_null NOT NULL id
 constraint ai_evidence ai_evidence_label_not_null NOT NULL label
 constraint ai_evidence ai_evidence_metadata_not_null NOT NULL metadata
-constraint ai_evidence ai_evidence_metadata_object CHECK ((jsonb_typeof(metadata) = 'object'::text))
 constraint ai_evidence ai_evidence_pkey PRIMARY KEY (id)
 constraint ai_evidence ai_evidence_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE
 constraint ai_evidence ai_evidence_run_id_not_null NOT NULL run_id
 constraint ai_evidence ai_evidence_score_check CHECK (((score IS NULL) OR ((score >= (0)::double precision) AND (score <= (1)::double precision))))
 constraint ai_evidence ai_evidence_source_type_not_null NOT NULL source_type
-constraint ai_evidence ai_evidence_source_type_word CHECK ((source_type ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))
 constraint ai_feature_switches ai_feature_switches_enabled_not_null NOT NULL enabled
 constraint ai_feature_switches ai_feature_switches_feature_check CHECK ((feature = ANY (ARRAY['course_analysis_enabled'::text, 'submission_analysis_enabled'::text, 'remediation_enabled'::text, 'course_qa_enabled'::text, 'study_companion_enabled'::text, 'lecture_authoring_enabled'::text, 'semantic_memory_enabled'::text, 'semantic_search_enabled'::text, 'concept_graph_enabled'::text, 'grading_assistant_enabled'::text])))
 constraint ai_feature_switches ai_feature_switches_feature_not_null NOT NULL feature
@@ -171,7 +157,6 @@ constraint ai_grade_drafts ai_grade_drafts_id_not_null NOT NULL id
 constraint ai_grade_drafts ai_grade_drafts_learner_id_fkey FOREIGN KEY (learner_id) REFERENCES users(id) ON DELETE CASCADE
 constraint ai_grade_drafts ai_grade_drafts_learner_id_not_null NOT NULL learner_id
 constraint ai_grade_drafts ai_grade_drafts_pkey PRIMARY KEY (id)
-constraint ai_grade_drafts ai_grade_drafts_proposal_check CHECK ((jsonb_typeof(proposal) = 'object'::text))
 constraint ai_grade_drafts ai_grade_drafts_proposal_not_null NOT NULL proposal
 constraint ai_grade_drafts ai_grade_drafts_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL
 constraint ai_grade_drafts ai_grade_drafts_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL
@@ -195,10 +180,8 @@ constraint ai_lecture_reviews ai_lecture_reviews_run_id_fkey FOREIGN KEY (run_id
 constraint ai_lecture_reviews ai_lecture_reviews_status_check CHECK ((status = ANY (ARRAY['active'::text, 'superseded'::text])))
 constraint ai_lecture_reviews ai_lecture_reviews_status_not_null NOT NULL status
 constraint ai_lecture_reviews ai_lecture_reviews_suggestions_not_null NOT NULL suggestions
-constraint ai_lecture_reviews ai_lecture_reviews_suggestions_object CHECK ((jsonb_typeof(suggestions) = 'object'::text))
 constraint ai_lecture_reviews ai_lecture_reviews_triggered_by_fkey FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL
 constraint ai_qa_messages ai_qa_messages_citations_not_null NOT NULL citations
-constraint ai_qa_messages ai_qa_messages_citations_object CHECK ((jsonb_typeof(citations) = 'object'::text))
 constraint ai_qa_messages ai_qa_messages_confidence_check CHECK (((confidence IS NULL) OR (confidence = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))))
 constraint ai_qa_messages ai_qa_messages_content_not_null NOT NULL content
 constraint ai_qa_messages ai_qa_messages_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
@@ -206,7 +189,6 @@ constraint ai_qa_messages ai_qa_messages_course_id_not_null NOT NULL course_id
 constraint ai_qa_messages ai_qa_messages_created_at_not_null NOT NULL created_at
 constraint ai_qa_messages ai_qa_messages_id_not_null NOT NULL id
 constraint ai_qa_messages ai_qa_messages_metadata_not_null NOT NULL metadata
-constraint ai_qa_messages ai_qa_messages_metadata_object CHECK ((jsonb_typeof(metadata) = 'object'::text))
 constraint ai_qa_messages ai_qa_messages_pkey PRIMARY KEY (id)
 constraint ai_qa_messages ai_qa_messages_role_check CHECK ((role = ANY (ARRAY['user'::text, 'assistant'::text])))
 constraint ai_qa_messages ai_qa_messages_role_not_null NOT NULL role
@@ -222,7 +204,6 @@ constraint ai_remediation_sessions ai_remediation_sessions_id_not_null NOT NULL 
 constraint ai_remediation_sessions ai_remediation_sessions_language_not_null NOT NULL language
 constraint ai_remediation_sessions ai_remediation_sessions_language_tag CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))
 constraint ai_remediation_sessions ai_remediation_sessions_lecture_not_null NOT NULL lecture
-constraint ai_remediation_sessions ai_remediation_sessions_lecture_object CHECK ((jsonb_typeof(lecture) = 'object'::text))
 constraint ai_remediation_sessions ai_remediation_sessions_pkey PRIMARY KEY (id)
 constraint ai_remediation_sessions ai_remediation_sessions_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL
 constraint ai_remediation_sessions ai_remediation_sessions_score_check CHECK (((score IS NULL) OR ((score >= 0) AND (score <= 100))))
@@ -233,7 +214,6 @@ constraint ai_remediation_sessions ai_remediation_sessions_student_user_id_not_n
 constraint ai_remediation_sessions ai_remediation_sessions_submission_id_fkey FOREIGN KEY (submission_id, student_user_id) REFERENCES submissions(id, user_id) ON DELETE CASCADE
 constraint ai_remediation_sessions ai_remediation_sessions_submission_id_not_null NOT NULL submission_id
 constraint ai_remediation_sessions ai_remediation_sessions_test_not_null NOT NULL test
-constraint ai_remediation_sessions ai_remediation_sessions_test_object CHECK ((jsonb_typeof(test) = 'object'::text))
 constraint ai_remediation_sessions ai_remediation_sessions_updated_at_not_null NOT NULL updated_at
 constraint ai_runs ai_runs_created_at_not_null NOT NULL created_at
 constraint ai_runs ai_runs_duration_ms_check CHECK (((duration_ms IS NULL) OR (duration_ms >= 0)))
@@ -243,10 +223,8 @@ constraint ai_runs ai_runs_input_tokens_check CHECK (((input_tokens IS NULL) OR 
 constraint ai_runs ai_runs_kind_check CHECK ((kind = ANY (ARRAY['course_analysis'::text, 'submission_analysis'::text, 'remediation'::text, 'study_companion'::text, 'lecture_review'::text, 'course_qa'::text, 'concept_mapping'::text, 'grade_draft'::text])))
 constraint ai_runs ai_runs_kind_not_null NOT NULL kind
 constraint ai_runs ai_runs_metadata_not_null NOT NULL metadata
-constraint ai_runs ai_runs_metadata_object CHECK ((jsonb_typeof(metadata) = 'object'::text))
 constraint ai_runs ai_runs_output_tokens_check CHECK (((output_tokens IS NULL) OR (output_tokens >= 0)))
 constraint ai_runs ai_runs_pkey PRIMARY KEY (id)
-constraint ai_runs ai_runs_safety_state_word CHECK ((safety_state ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))
 constraint ai_runs ai_runs_status_check CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'succeeded'::text, 'failed'::text, 'aborted'::text])))
 constraint ai_runs ai_runs_status_not_null NOT NULL status
 constraint ai_runs ai_runs_thread_id_fkey FOREIGN KEY (thread_id) REFERENCES ai_threads(id) ON DELETE CASCADE
@@ -258,19 +236,15 @@ constraint ai_student_memory ai_student_memory_language_not_null NOT NULL langua
 constraint ai_student_memory ai_student_memory_language_tag CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))
 constraint ai_student_memory ai_student_memory_memory_text_not_null NOT NULL memory_text
 constraint ai_student_memory ai_student_memory_metadata_not_null NOT NULL metadata
-constraint ai_student_memory ai_student_memory_metadata_object CHECK ((jsonb_typeof(metadata) = 'object'::text))
 constraint ai_student_memory ai_student_memory_pkey PRIMARY KEY (id)
 constraint ai_student_memory ai_student_memory_source_id_not_null NOT NULL source_id
 constraint ai_student_memory ai_student_memory_source_type_not_null NOT NULL source_type
-constraint ai_student_memory ai_student_memory_source_type_word CHECK ((source_type ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))
 constraint ai_student_memory ai_student_memory_student_user_id_fkey FOREIGN KEY (student_user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint ai_student_memory ai_student_memory_student_user_id_not_null NOT NULL student_user_id
 constraint ai_student_memory ai_student_memory_updated_at_not_null NOT NULL updated_at
 constraint ai_submission_analyses ai_submission_analyses_analysis_not_null NOT NULL analysis
-constraint ai_submission_analyses ai_submission_analyses_analysis_object CHECK ((jsonb_typeof(analysis) = 'object'::text))
 constraint ai_submission_analyses ai_submission_analyses_created_at_not_null NOT NULL created_at
 constraint ai_submission_analyses ai_submission_analyses_evidence_not_null NOT NULL evidence
-constraint ai_submission_analyses ai_submission_analyses_evidence_object CHECK ((jsonb_typeof(evidence) = 'object'::text))
 constraint ai_submission_analyses ai_submission_analyses_gap_count_check CHECK ((gap_count >= 0))
 constraint ai_submission_analyses ai_submission_analyses_gap_count_not_null NOT NULL gap_count
 constraint ai_submission_analyses ai_submission_analyses_id_not_null NOT NULL id
@@ -326,7 +300,6 @@ constraint analytics_events analytics_events_event_type_check CHECK ((event_type
 constraint analytics_events analytics_events_event_type_not_null NOT NULL event_type
 constraint analytics_events analytics_events_id_not_null NOT NULL id
 constraint analytics_events analytics_events_occurred_at_not_null NOT NULL occurred_at
-constraint analytics_events analytics_events_payload_check CHECK ((jsonb_typeof(payload) = 'object'::text))
 constraint analytics_events analytics_events_payload_not_null NOT NULL payload
 constraint analytics_events analytics_events_pkey PRIMARY KEY (id, occurred_at)
 constraint analytics_saved_views analytics_saved_views_created_at_not_null NOT NULL created_at
@@ -335,7 +308,6 @@ constraint analytics_saved_views analytics_saved_views_name_check CHECK (((char_
 constraint analytics_saved_views analytics_saved_views_name_not_null NOT NULL name
 constraint analytics_saved_views analytics_saved_views_pkey PRIMARY KEY (id)
 constraint analytics_saved_views analytics_saved_views_query_not_null NOT NULL query
-constraint analytics_saved_views analytics_saved_views_query_object CHECK ((jsonb_typeof(query) = 'object'::text))
 constraint analytics_saved_views analytics_saved_views_teacher_user_id_fkey FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint analytics_saved_views analytics_saved_views_teacher_user_id_not_null NOT NULL teacher_user_id
 constraint analytics_saved_views analytics_saved_views_teacher_user_id_view_type_name_key UNIQUE (teacher_user_id, view_type, name)
@@ -358,9 +330,7 @@ constraint assessment_audit_events assessment_audit_events_actor_id_fkey FOREIGN
 constraint assessment_audit_events assessment_audit_events_assessment_id_not_null NOT NULL assessment_id
 constraint assessment_audit_events assessment_audit_events_created_at_not_null NOT NULL created_at
 constraint assessment_audit_events assessment_audit_events_event_not_null NOT NULL event
-constraint assessment_audit_events assessment_audit_events_event_word CHECK ((event ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))
 constraint assessment_audit_events assessment_audit_events_id_not_null NOT NULL id
-constraint assessment_audit_events assessment_audit_events_payload_check CHECK ((jsonb_typeof(payload) = 'object'::text))
 constraint assessment_audit_events assessment_audit_events_payload_not_null NOT NULL payload
 constraint assessment_audit_events assessment_audit_events_pkey PRIMARY KEY (id)
 constraint assessment_imports assessment_imports_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
@@ -372,7 +342,6 @@ constraint assessment_imports assessment_imports_file_name_check CHECK (((length
 constraint assessment_imports assessment_imports_file_name_not_null NOT NULL file_name
 constraint assessment_imports assessment_imports_id_not_null NOT NULL id
 constraint assessment_imports assessment_imports_image_upload_ids_not_null NOT NULL image_upload_ids
-constraint assessment_imports assessment_imports_issues_check CHECK ((jsonb_typeof(issues) = 'array'::text))
 constraint assessment_imports assessment_imports_issues_not_null NOT NULL issues
 constraint assessment_imports assessment_imports_issues_truncated_check CHECK ((issues_truncated >= 0))
 constraint assessment_imports assessment_imports_issues_truncated_not_null NOT NULL issues_truncated
@@ -443,14 +412,12 @@ constraint assessment_versions assessment_versions_content_hash_format CHECK ((c
 constraint assessment_versions assessment_versions_content_hash_not_null NOT NULL content_hash
 constraint assessment_versions assessment_versions_created_at_not_null NOT NULL created_at
 constraint assessment_versions assessment_versions_id_not_null NOT NULL id
-constraint assessment_versions assessment_versions_items_check CHECK ((jsonb_typeof(items) = 'object'::text))
 constraint assessment_versions assessment_versions_items_not_null NOT NULL items
 constraint assessment_versions assessment_versions_max_points_check CHECK ((max_points >= (0)::numeric))
 constraint assessment_versions assessment_versions_max_points_not_null NOT NULL max_points
 constraint assessment_versions assessment_versions_number_check CHECK ((number >= 1))
 constraint assessment_versions assessment_versions_number_not_null NOT NULL number
 constraint assessment_versions assessment_versions_pkey PRIMARY KEY (id)
-constraint assessment_versions assessment_versions_policy_check CHECK ((jsonb_typeof(policy) = 'object'::text))
 constraint assessment_versions assessment_versions_policy_not_null NOT NULL policy
 constraint assessments assessments_access_mode_check CHECK ((access_mode = ANY (ARRAY['all_course_learners'::text, 'restricted'::text])))
 constraint assessments assessments_access_mode_not_null NOT NULL access_mode
@@ -515,9 +482,7 @@ constraint assessments assessments_violation_threshold_not_null NOT NULL violati
 constraint assessments assessments_weight_not_null NOT NULL weight
 constraint auth_audit_log auth_audit_log_created_at_not_null NOT NULL created_at
 constraint auth_audit_log auth_audit_log_event_not_null NOT NULL event
-constraint auth_audit_log auth_audit_log_event_word CHECK ((event ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))
 constraint auth_audit_log auth_audit_log_id_not_null NOT NULL id
-constraint auth_audit_log auth_audit_log_metadata_check CHECK ((jsonb_typeof(metadata) = 'object'::text))
 constraint auth_audit_log auth_audit_log_metadata_not_null NOT NULL metadata
 constraint auth_audit_log auth_audit_log_pkey PRIMARY KEY (id)
 constraint auth_audit_log auth_audit_log_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -532,7 +497,6 @@ constraint blocks blocks_block_type_check CHECK ((block_type = ANY (ARRAY['video
 constraint blocks blocks_block_type_not_null NOT NULL block_type
 constraint blocks blocks_claimed_not_null NOT NULL claimed
 constraint blocks blocks_content_not_null NOT NULL content
-constraint blocks blocks_content_object CHECK ((jsonb_typeof(content) = 'object'::text))
 constraint blocks blocks_created_at_not_null NOT NULL created_at
 constraint blocks blocks_id_not_null NOT NULL id
 constraint blocks blocks_legacy_uuid_key UNIQUE (legacy_uuid)
@@ -546,7 +510,6 @@ constraint bulk_actions bulk_actions_created_at_not_null NOT NULL created_at
 constraint bulk_actions bulk_actions_error_log_not_null NOT NULL error_log
 constraint bulk_actions bulk_actions_id_not_null NOT NULL id
 constraint bulk_actions bulk_actions_params_not_null NOT NULL params
-constraint bulk_actions bulk_actions_params_object CHECK ((jsonb_typeof(params) = 'object'::text))
 constraint bulk_actions bulk_actions_performed_by_fkey FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL
 constraint bulk_actions bulk_actions_pkey PRIMARY KEY (id)
 constraint bulk_actions bulk_actions_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'running'::text, 'completed'::text, 'failed'::text])))
@@ -568,7 +531,6 @@ constraint certificate_users certificate_users_user_id_not_null NOT NULL user_id
 constraint certificate_users certificate_users_verify_code_key UNIQUE (verify_code)
 constraint certificate_users certificate_users_verify_code_not_null NOT NULL verify_code
 constraint certifications certifications_config_not_null NOT NULL config
-constraint certifications certifications_config_object CHECK ((jsonb_typeof(config) = 'object'::text))
 constraint certifications certifications_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL
 constraint certifications certifications_created_at_not_null NOT NULL created_at
 constraint certifications certifications_id_not_null NOT NULL id
@@ -714,7 +676,6 @@ constraint concept_tags concept_tags_updated_at_not_null NOT NULL updated_at
 constraint concept_tags concept_tags_weight_check CHECK (((weight > (0)::double precision) AND (weight <= (1)::double precision)))
 constraint concept_tags concept_tags_weight_not_null NOT NULL weight
 constraint content_chunks content_chunks_activity_id_fkey FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE
-constraint content_chunks content_chunks_anchor_check CHECK ((jsonb_typeof(anchor) = 'object'::text))
 constraint content_chunks content_chunks_anchor_not_null NOT NULL anchor
 constraint content_chunks content_chunks_audience_check CHECK ((audience = ANY (ARRAY['learner'::text, 'staff'::text])))
 constraint content_chunks content_chunks_audience_not_null NOT NULL audience
@@ -962,7 +923,6 @@ constraint discussion_reactions discussion_reactions_reaction_check CHECK ((reac
 constraint discussion_reactions discussion_reactions_reaction_not_null NOT NULL reaction
 constraint discussion_reactions discussion_reactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint discussion_reactions discussion_reactions_user_id_not_null NOT NULL user_id
-constraint enrolment_events enrolment_events_completions_array CHECK ((jsonb_typeof(completions) = 'array'::text))
 constraint enrolment_events enrolment_events_course_id_not_null NOT NULL course_id
 constraint enrolment_events enrolment_events_created_at_not_null NOT NULL created_at
 constraint enrolment_events enrolment_events_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
@@ -1016,9 +976,7 @@ constraint file_submissions file_submissions_max_files_check CHECK (((max_files 
 constraint file_submissions file_submissions_max_files_not_null NOT NULL max_files
 constraint file_submissions file_submissions_pkey PRIMARY KEY (id)
 constraint file_submissions file_submissions_rubric_not_null NOT NULL rubric
-constraint file_submissions file_submissions_rubric_object CHECK ((jsonb_typeof(rubric) = 'object'::text))
 constraint file_submissions file_submissions_settings_not_null NOT NULL settings
-constraint file_submissions file_submissions_settings_object CHECK ((jsonb_typeof(settings) = 'object'::text))
 constraint file_submissions file_submissions_updated_at_not_null NOT NULL updated_at
 constraint file_submissions file_submissions_version_not_null NOT NULL version
 constraint gamification_completions gamification_completions_created_at_not_null NOT NULL created_at
@@ -1033,7 +991,6 @@ constraint gamification_config gamification_config_id_check CHECK ((id = 1))
 constraint gamification_config gamification_config_id_not_null NOT NULL id
 constraint gamification_config gamification_config_pkey PRIMARY KEY (id)
 constraint gamification_config gamification_config_rewards_not_null NOT NULL rewards
-constraint gamification_config gamification_config_rewards_object CHECK ((jsonb_typeof(rewards) = 'object'::text))
 constraint gamification_config gamification_config_updated_at_not_null NOT NULL updated_at
 constraint gamification_config gamification_config_version_not_null NOT NULL version
 constraint gamification_profiles gamification_profiles_created_at_not_null NOT NULL created_at
@@ -1049,7 +1006,6 @@ constraint gamification_profiles gamification_profiles_longest_login_streak_chec
 constraint gamification_profiles gamification_profiles_longest_login_streak_not_null NOT NULL longest_login_streak
 constraint gamification_profiles gamification_profiles_pkey PRIMARY KEY (user_id)
 constraint gamification_profiles gamification_profiles_preferences_not_null NOT NULL preferences
-constraint gamification_profiles gamification_profiles_preferences_object CHECK ((jsonb_typeof(preferences) = 'object'::text))
 constraint gamification_profiles gamification_profiles_total_activities_completed_check CHECK ((total_activities_completed >= 0))
 constraint gamification_profiles gamification_profiles_total_activities_completed_not_null NOT NULL total_activities_completed
 constraint gamification_profiles gamification_profiles_total_courses_completed_check CHECK ((total_courses_completed >= 0))
@@ -1113,9 +1069,7 @@ constraint job_schedules job_schedules_enabled_not_null NOT NULL enabled
 constraint job_schedules job_schedules_interval_seconds_check CHECK ((interval_seconds > 0))
 constraint job_schedules job_schedules_interval_seconds_not_null NOT NULL interval_seconds
 constraint job_schedules job_schedules_kind_not_null NOT NULL kind
-constraint job_schedules job_schedules_kind_word CHECK ((kind ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))
 constraint job_schedules job_schedules_next_run_at_not_null NOT NULL next_run_at
-constraint job_schedules job_schedules_payload_check CHECK ((jsonb_typeof(payload) = 'object'::text))
 constraint job_schedules job_schedules_payload_not_null NOT NULL payload
 constraint job_schedules job_schedules_pkey PRIMARY KEY (kind)
 constraint job_schedules job_schedules_updated_at_not_null NOT NULL updated_at
@@ -1123,9 +1077,7 @@ constraint jobs jobs_attempts_not_null NOT NULL attempts
 constraint jobs jobs_created_at_not_null NOT NULL created_at
 constraint jobs jobs_id_not_null NOT NULL id
 constraint jobs jobs_kind_not_null NOT NULL kind
-constraint jobs jobs_kind_word CHECK ((kind ~ '^[A-Za-z][A-Za-z0-9_.:-]*$'::text))
 constraint jobs jobs_max_attempts_not_null NOT NULL max_attempts
-constraint jobs jobs_payload_check CHECK ((jsonb_typeof(payload) = 'object'::text))
 constraint jobs jobs_payload_not_null NOT NULL payload
 constraint jobs jobs_pkey PRIMARY KEY (id)
 constraint jobs jobs_priority_not_null NOT NULL priority
@@ -1235,7 +1187,6 @@ constraint notifications notifications_created_at_not_null NOT NULL created_at
 constraint notifications notifications_id_not_null NOT NULL id
 constraint notifications notifications_kind_fkey FOREIGN KEY (kind) REFERENCES notification_kinds(kind) ON UPDATE CASCADE
 constraint notifications notifications_kind_not_null NOT NULL kind
-constraint notifications notifications_payload_check CHECK ((jsonb_typeof(payload) = 'object'::text))
 constraint notifications notifications_payload_not_null NOT NULL payload
 constraint notifications notifications_pkey PRIMARY KEY (id)
 constraint notifications notifications_user_id_dedup_key_key UNIQUE (user_id, dedup_key)
@@ -1258,7 +1209,6 @@ constraint platforms platforms_thumbnail_upload_id_fkey FOREIGN KEY (thumbnail_u
 constraint platforms platforms_updated_at_not_null NOT NULL updated_at
 constraint platforms platforms_version_not_null NOT NULL version
 constraint platforms platforms_xp_rewards_not_null NOT NULL xp_rewards
-constraint platforms platforms_xp_rewards_object CHECK ((jsonb_typeof(xp_rewards) = 'object'::text))
 constraint post_uploads post_uploads_discussion_id_fkey FOREIGN KEY (discussion_id) REFERENCES course_discussions(id) ON DELETE CASCADE
 constraint post_uploads post_uploads_discussion_id_not_null NOT NULL discussion_id
 constraint post_uploads post_uploads_pkey PRIMARY KEY (discussion_id, upload_id)
@@ -1286,13 +1236,11 @@ constraint schema_skipped_checks schema_skipped_checks_pkey PRIMARY KEY (name)
 constraint schema_skipped_checks schema_skipped_checks_skipped_at_not_null NOT NULL skipped_at
 constraint schema_skipped_checks schema_skipped_checks_table_name_not_null NOT NULL table_name
 constraint submission_violations submission_violations_created_at_not_null NOT NULL created_at
-constraint submission_violations submission_violations_event_check CHECK ((jsonb_typeof(event) = 'object'::text))
 constraint submission_violations submission_violations_event_not_null NOT NULL event
 constraint submission_violations submission_violations_id_not_null NOT NULL id
 constraint submission_violations submission_violations_pkey PRIMARY KEY (id)
 constraint submission_violations submission_violations_submission_id_fkey FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE
 constraint submission_violations submission_violations_submission_id_not_null NOT NULL submission_id
-constraint submissions submissions_answers_check CHECK ((jsonb_typeof(answers) = 'object'::text))
 constraint submissions submissions_answers_not_null NOT NULL answers
 constraint submissions submissions_assessment_id_fkey FOREIGN KEY (assessment_id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE RESTRICT
 constraint submissions submissions_assessment_id_not_null NOT NULL assessment_id
@@ -1329,7 +1277,6 @@ constraint submissions submissions_user_id_not_null NOT NULL user_id
 constraint submissions submissions_version_not_null NOT NULL version
 constraint submissions submissions_violation_count_check CHECK ((violation_count >= 0))
 constraint submissions submissions_violation_count_not_null NOT NULL violation_count
-constraint submissions submissions_violations_check CHECK ((jsonb_typeof(violations) = 'array'::text))
 constraint submissions submissions_violations_not_null NOT NULL violations
 constraint teacher_interventions teacher_interventions_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint teacher_interventions teacher_interventions_course_id_not_null NOT NULL course_id
@@ -1341,7 +1288,6 @@ constraint teacher_interventions teacher_interventions_notes_check CHECK ((char_
 constraint teacher_interventions teacher_interventions_outcome_check CHECK ((char_length(outcome) <= 2000))
 constraint teacher_interventions teacher_interventions_outcome_code_check CHECK ((outcome_code = ANY (ARRAY['improved'::text, 'no_change'::text, 'worsened'::text, 'no_response'::text])))
 constraint teacher_interventions teacher_interventions_payload_not_null NOT NULL payload
-constraint teacher_interventions teacher_interventions_payload_object CHECK ((jsonb_typeof(payload) = 'object'::text))
 constraint teacher_interventions teacher_interventions_pkey PRIMARY KEY (id)
 constraint teacher_interventions teacher_interventions_status_check CHECK ((status = ANY (ARRAY['planned'::text, 'completed'::text, 'resolved'::text])))
 constraint teacher_interventions teacher_interventions_status_not_null NOT NULL status
@@ -1433,7 +1379,6 @@ constraint users users_locale_not_null NOT NULL locale
 constraint users users_organization_check CHECK ((char_length(organization) <= 200))
 constraint users users_organization_not_null NOT NULL organization
 constraint users users_pkey PRIMARY KEY (id)
-constraint users users_profile_check CHECK ((jsonb_typeof(profile) = 'object'::text))
 constraint users users_profile_not_null NOT NULL profile
 constraint users users_profile_version_not_null NOT NULL profile_version
 constraint users users_rbac_version_not_null NOT NULL rbac_version

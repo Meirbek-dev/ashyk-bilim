@@ -596,8 +596,6 @@ async fn integrity_checks_exist_and_bite(pool: PgPool) {
          VALUES ($1, $2, $3, 7, 'submitted')",
         "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number, final_score)
          VALUES ($1, $2, $3, 8, 100.5)",
-        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number, answers)
-         VALUES ($1, $2, $3, 9, '[]')",
     ] {
         let refused = sqlx::query(bad)
             .bind(w.assessment)
@@ -2391,23 +2389,6 @@ async fn one_touch_trigger_keeps_updated_at_and_version(pool: PgPool) {
     assert_eq!(old, None, "the pair is gone");
 }
 
-/// Production skipped `auth_audit_log_metadata_check` over the JSON-null metadata of imported events; the
-/// repair (`auth_audit_metadata_object`) stores the default `{}` for them, and the check holds.
-#[ab_testdb::test]
-async fn audit_metadata_is_an_object(pool: PgPool) {
-    let refused =
-        sqlx::query("INSERT INTO auth_audit_log (event, metadata) VALUES ('logout', 'null')")
-            .execute(&pool)
-            .await
-            .unwrap_err();
-    assert!(
-        refused
-            .to_string()
-            .contains("auth_audit_log_metadata_check"),
-        "{refused}"
-    );
-}
-
 #[ab_testdb::test]
 async fn scores_are_exact_numerics_behind_domains(pool: PgPool) {
     let columns: Vec<(String, String, String)> = sqlx::query_as(
@@ -2983,46 +2964,6 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         found, listed,
         "classify the trigger here (guard or derived), or drop the stale line"
     );
-}
-
-/// A column named for a closed or machine-owned set has a CHECK or a key (schema review 40).
-#[ab_testdb::test]
-async fn set_named_columns_are_constrained(pool: PgPool) {
-    let open: Vec<String> = sqlx::query_scalar(
-        "SELECT k.relname || '.' || a.attname
-           FROM pg_attribute a JOIN pg_class k ON k.oid = a.attrelid
-           WHERE k.relkind IN ('r', 'p') AND NOT k.relispartition AND a.attnum > 0 AND NOT a.attisdropped
-             AND k.relnamespace::regnamespace::name = ANY (app_schemas())
-             AND a.atttypid = 'text'::regtype
-             AND a.attname ~ '^(status|state|kind|type|event|event_type|language|lifecycle|role|purpose|verdict|source|mode|.*_(status|kind|type|mode|state))$'
-             AND NOT EXISTS (SELECT FROM pg_constraint d WHERE d.conrelid = k.oid AND a.attnum = ANY (d.conkey)
-                             AND d.contype IN ('c', 'f', 'p'))
-           ORDER BY 1",
-    )
-    .fetch_all(&pool)
-    .await
-    .unwrap();
-    assert_eq!(open, Vec::<String>::new());
-}
-
-/// Every jsonb column has a shape check, unless it stores a foreign document whole.
-#[ab_testdb::test]
-async fn jsonb_columns_state_their_shape(pool: PgPool) {
-    let open: Vec<String> = sqlx::query_scalar(
-        "SELECT k.relname || '.' || a.attname
-           FROM pg_attribute a JOIN pg_class k ON k.oid = a.attrelid
-           WHERE k.relkind IN ('r', 'p') AND NOT k.relispartition AND a.attnum > 0 AND NOT a.attisdropped
-             AND k.relnamespace::regnamespace::name = ANY (app_schemas())
-             AND a.atttypid = 'jsonb'::regtype
-             AND (k.relname, a.attname) <> ('idempotency_keys', 'response')
-             AND NOT EXISTS (SELECT FROM pg_constraint d WHERE d.conrelid = k.oid AND a.attnum = ANY (d.conkey)
-                             AND d.contype = 'c')
-           ORDER BY 1",
-    )
-    .fetch_all(&pool)
-    .await
-    .unwrap();
-    assert_eq!(open, Vec::<String>::new());
 }
 
 /// A leave deletes the membership, not the record that it existed (schema review 30); a violation is kept beyond
