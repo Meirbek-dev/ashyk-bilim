@@ -282,7 +282,7 @@ An AI review of a whole course.
 - Foreign key `ai_course_analyses_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_course_analyses_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
 - Check `ai_course_analyses_content_hash_format`: `CHECK ((content_hash ~ '^[0-9a-f]{64}$'::text))`
-- Check `ai_course_analyses_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
+- Check `ai_course_analyses_language_check`: `CHECK (((language = 'auto'::text) OR ((language)::language_code IS NOT NULL)))`
 - Check `ai_course_analyses_public_score_check`: `CHECK (((public_score >= 0) AND (public_score <= 100)))`
 - Check `ai_course_analyses_status_check`: `CHECK ((status = ANY (ARRAY['draft'::text, 'needs_human_review'::text, 'published'::text])))`
 - Index `ai_course_analyses_course_status_idx`: `CREATE INDEX ai_course_analyses_course_status_idx ON ai.ai_course_analyses USING btree (course_id, status, created_at DESC)`
@@ -494,7 +494,7 @@ AI suggestions for one lesson activity.
 - Foreign key `ai_lecture_reviews_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_lecture_reviews_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
 - Check `ai_lecture_reviews_dismissed_suggestion_ids_check`: `CHECK (text_list_ok(dismissed_suggestion_ids, 500, 200))`
-- Check `ai_lecture_reviews_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
+- Check `ai_lecture_reviews_language_check`: `CHECK (((language = 'auto'::text) OR ((language)::language_code IS NOT NULL)))`
 - Check `ai_lecture_reviews_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'superseded'::text])))`
 - Index `ai_lecture_reviews_activity_status_idx`: `CREATE INDEX ai_lecture_reviews_activity_status_idx ON ai.ai_lecture_reviews USING btree (activity_id, status, created_at DESC)`
 - Index `ai_lecture_reviews_course_status_idx`: `CREATE INDEX ai_lecture_reviews_course_status_idx ON ai.ai_lecture_reviews USING btree (course_id, status, created_at DESC)`
@@ -557,7 +557,7 @@ Remediation (lecture + test) generated from a submission analysis.
 - Foreign key `ai_remediation_sessions_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_remediation_sessions_student_user_id_fkey`: `FOREIGN KEY (student_user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Foreign key `ai_remediation_sessions_submission_id_fkey`: `FOREIGN KEY (submission_id, student_user_id) REFERENCES submissions(id, user_id) ON DELETE CASCADE`
-- Check `ai_remediation_sessions_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
+- Check `ai_remediation_sessions_language_check`: `CHECK (((language = 'auto'::text) OR ((language)::language_code IS NOT NULL)))`
 - Check `ai_remediation_sessions_score_check`: `CHECK (((score IS NULL) OR ((score >= 0) AND (score <= 100))))`
 - Check `ai_remediation_sessions_status_check`: `CHECK ((status = ANY (ARRAY['assigned'::text, 'in_progress'::text, 'passed'::text, 'failed'::text])))`
 - Index `ai_remediation_sessions_active_gate_uidx`: `CREATE UNIQUE INDEX ai_remediation_sessions_active_gate_uidx ON ai.ai_remediation_sessions USING btree (student_user_id, activity_id) WHERE (gate_mode AND (status = ANY (ARRAY['assigned'::text, 'in_progress'::text, 'failed'::text])))`
@@ -625,7 +625,7 @@ Notes the AI tutor keeps about a learner in a course.
 - Primary key `ai_student_memory_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_student_memory_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_student_memory_student_user_id_fkey`: `FOREIGN KEY (student_user_id) REFERENCES users(id) ON DELETE CASCADE`
-- Check `ai_student_memory_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
+- Check `ai_student_memory_language_check`: `CHECK (((language = 'auto'::text) OR ((language)::language_code IS NOT NULL)))`
 - Index `ai_student_memory_source_idx`: `CREATE INDEX ai_student_memory_source_idx ON ai.ai_student_memory USING btree (source_type, source_id)`
 - Index `ai_student_memory_student_course_idx`: `CREATE INDEX ai_student_memory_student_course_idx ON ai.ai_student_memory USING btree (student_user_id, course_id, updated_at DESC)`
 
@@ -651,7 +651,7 @@ AI gap analysis of one attempt (a submission or a file hand-in).
 - Foreign key `ai_submission_analyses_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE`
 - Foreign key `ai_submission_analyses_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
 - Check `ai_submission_analyses_gap_count_check`: `CHECK ((gap_count >= 0))`
-- Check `ai_submission_analyses_language_tag`: `CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))`
+- Check `ai_submission_analyses_language_check`: `CHECK (((language = 'auto'::text) OR ((language)::language_code IS NOT NULL)))`
 - Check `ai_submission_analyses_status_check`: `CHECK ((status = ANY (ARRAY['complete'::text, 'failed'::text, 'superseded'::text])))`
 - Index `ai_submission_analyses_run_idx`: `CREATE INDEX ai_submission_analyses_run_idx ON ai.ai_submission_analyses USING btree (run_id)`
 - Index `ai_submission_analyses_submission_idx`: `CREATE INDEX ai_submission_analyses_submission_idx ON ai.ai_submission_analyses USING btree (submission_id, status, created_at DESC)`
@@ -1796,7 +1796,7 @@ A course: catalog card, visibility (public), lifecycle (archived_at) and setting
 | thumbnail_video_upload_id | uuid | null |  |  |
 | deleted_at | timestamp with time zone | null |  |  |
 | deleted_by | uuid | null |  |  |
-| language | text |  | `'ru'::text` | The language the course is taught in. |
+| language | language_code |  | `'ru'::text` | The language the course is taught in. |
 | guest_access | boolean |  | `false` | Lessons of the public course open in the player without sign-in or enrolment (graded work does not). |
 
 - Primary key `courses_pkey`: `PRIMARY KEY (id)`
@@ -1809,7 +1809,6 @@ A course: catalog card, visibility (public), lifecycle (archived_at) and setting
 - Check `courses_deleted_by_check`: `CHECK (((deleted_by IS NULL) OR (deleted_at IS NOT NULL)))`
 - Check `courses_deleted_is_archived`: `CHECK (((deleted_at IS NULL) OR (archived_at IS NOT NULL)))`
 - Check `courses_description_check`: `CHECK ((char_length(description) <= 5000))`
-- Check `courses_language_check`: `CHECK ((language = ANY (ARRAY['ru'::text, 'kk'::text, 'en'::text])))`
 - Check `courses_learnings_check`: `CHECK (course_learnings_ok(learnings))`
 - Check `courses_name_check`: `CHECK ((char_length(name) <= 500))`
 - Check `courses_tags_check`: `CHECK (text_list_ok(tags, 20, 64))`
@@ -2803,14 +2802,13 @@ Text of a translatable field in another language (translatable_fields); no row =
 | entity | text |  |  |
 | entity_id | uuid |  |  |
 | field | text |  |  |
-| lang | text |  |  |
+| lang | language_code |  |  |
 | text | text |  |  |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
 
 - Primary key `translations_pkey`: `PRIMARY KEY (entity, entity_id, field, lang)`
 - Foreign key `translations_entity_field_fkey`: `FOREIGN KEY (entity, field) REFERENCES translatable_fields(entity, field)`
-- Check `translations_lang_check`: `CHECK ((lang = ANY (ARRAY['ru'::text, 'kk'::text, 'en'::text])))`
 - Check `translations_text_check`: `CHECK ((text <> ''::text))`
 - Trigger `translations_touch_platform`: `CREATE TRIGGER translations_touch_platform AFTER INSERT OR DELETE OR UPDATE ON core.translations FOR EACH ROW EXECUTE FUNCTION translations_touch_platform()`
 
@@ -2930,7 +2928,7 @@ An account. Never deleted by the app: disabled (status) or anonymised (deleted_a
 | display_name | text |  | `''::text` |  |
 | bio | text |  | `''::text` |  |
 | avatar_key | text | null |  |  |
-| locale | text |  | `'ru'::text` |  |
+| locale | language_code |  | `'ru'::text` |  |
 | rbac_version | bigint |  | `1` |  |
 | created_at | timestamp with time zone |  | `now()` |  |
 | updated_at | timestamp with time zone |  | `now()` |  |
@@ -2950,7 +2948,6 @@ An account. Never deleted by the app: disabled (status) or anonymised (deleted_a
 - Check `users_bio_check`: `CHECK ((char_length(bio) <= 2000))`
 - Check `users_deleted_anonymised_check`: `CHECK (((deleted_at IS NULL) OR ((username ~~ 'deleted-%'::text) AND (email = (username \|\| '@deleted.invalid'::text)) AND (display_name = ''::text) AND (bio = ''::text) AND (organization = ''::text) AND (avatar_key IS NULL))))`
 - Check `users_deleted_disabled_at_check`: `CHECK (((deleted_at IS NULL) OR (disabled_at IS NOT NULL)))`
-- Check `users_locale_check`: `CHECK ((locale = ANY (ARRAY['ru'::text, 'kk'::text, 'en'::text])))`
 - Check `users_organization_check`: `CHECK ((char_length(organization) <= 200))`
 - Index `users_avatar_upload_id_idx`: `CREATE INDEX users_avatar_upload_id_idx ON core.users USING btree (avatar_upload_id) WHERE (avatar_upload_id IS NOT NULL)`
 - Index `users_display_name_trgm_idx`: `CREATE INDEX users_display_name_trgm_idx ON core.users USING gin (search_fold(display_name) gin_trgm_ops)`

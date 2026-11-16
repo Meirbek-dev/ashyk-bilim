@@ -26,15 +26,10 @@ fn default_language() -> String {
     "auto".into()
 }
 
-/// `auto` or one of the platform languages (`ru`, `kk`, `en`, with or
-/// without a region tag) - see `ai::prompts::resolve_locale`.
+/// `auto` or one of the platform languages (`ru`, `kk`, `en`: the database's
+/// `language_code`, no region tag).
 fn known_language(value: &str) -> garde::Result {
-    let lang = value
-        .split('-')
-        .next()
-        .unwrap_or_default()
-        .to_ascii_lowercase();
-    if matches!(lang.as_str(), "auto" | "ru" | "kk" | "en") {
+    if matches!(value, "auto" | "ru" | "kk" | "en") {
         Ok(())
     } else {
         Err(garde::Error::new(format!(

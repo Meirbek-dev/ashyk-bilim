@@ -70,8 +70,8 @@ constraint ai_course_analyses ai_course_analyses_course_id_not_null NOT NULL cou
 constraint ai_course_analyses ai_course_analyses_created_at_not_null NOT NULL created_at
 constraint ai_course_analyses ai_course_analyses_evidence_not_null NOT NULL evidence
 constraint ai_course_analyses ai_course_analyses_id_not_null NOT NULL id
+constraint ai_course_analyses ai_course_analyses_language_check CHECK (((language = 'auto'::text) OR ((language)::language_code IS NOT NULL)))
 constraint ai_course_analyses ai_course_analyses_language_not_null NOT NULL language
-constraint ai_course_analyses ai_course_analyses_language_tag CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))
 constraint ai_course_analyses ai_course_analyses_pkey PRIMARY KEY (id)
 constraint ai_course_analyses ai_course_analyses_public_score_check CHECK (((public_score >= 0) AND (public_score <= 100)))
 constraint ai_course_analyses ai_course_analyses_public_score_not_null NOT NULL public_score
@@ -175,8 +175,8 @@ constraint ai_lecture_reviews ai_lecture_reviews_created_at_not_null NOT NULL cr
 constraint ai_lecture_reviews ai_lecture_reviews_dismissed_suggestion_ids_check CHECK (text_list_ok(dismissed_suggestion_ids, 500, 200))
 constraint ai_lecture_reviews ai_lecture_reviews_dismissed_suggestion_ids_not_null NOT NULL dismissed_suggestion_ids
 constraint ai_lecture_reviews ai_lecture_reviews_id_not_null NOT NULL id
+constraint ai_lecture_reviews ai_lecture_reviews_language_check CHECK (((language = 'auto'::text) OR ((language)::language_code IS NOT NULL)))
 constraint ai_lecture_reviews ai_lecture_reviews_language_not_null NOT NULL language
-constraint ai_lecture_reviews ai_lecture_reviews_language_tag CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))
 constraint ai_lecture_reviews ai_lecture_reviews_pkey PRIMARY KEY (id)
 constraint ai_lecture_reviews ai_lecture_reviews_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL
 constraint ai_lecture_reviews ai_lecture_reviews_status_check CHECK ((status = ANY (ARRAY['active'::text, 'superseded'::text])))
@@ -203,8 +203,8 @@ constraint ai_remediation_sessions ai_remediation_sessions_analysis_id_fkey FORE
 constraint ai_remediation_sessions ai_remediation_sessions_created_at_not_null NOT NULL created_at
 constraint ai_remediation_sessions ai_remediation_sessions_gate_mode_not_null NOT NULL gate_mode
 constraint ai_remediation_sessions ai_remediation_sessions_id_not_null NOT NULL id
+constraint ai_remediation_sessions ai_remediation_sessions_language_check CHECK (((language = 'auto'::text) OR ((language)::language_code IS NOT NULL)))
 constraint ai_remediation_sessions ai_remediation_sessions_language_not_null NOT NULL language
-constraint ai_remediation_sessions ai_remediation_sessions_language_tag CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))
 constraint ai_remediation_sessions ai_remediation_sessions_lecture_not_null NOT NULL lecture
 constraint ai_remediation_sessions ai_remediation_sessions_pkey PRIMARY KEY (id)
 constraint ai_remediation_sessions ai_remediation_sessions_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL
@@ -234,8 +234,8 @@ constraint ai_runs ai_runs_triggered_by_fkey FOREIGN KEY (triggered_by) REFERENC
 constraint ai_student_memory ai_student_memory_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint ai_student_memory ai_student_memory_created_at_not_null NOT NULL created_at
 constraint ai_student_memory ai_student_memory_id_not_null NOT NULL id
+constraint ai_student_memory ai_student_memory_language_check CHECK (((language = 'auto'::text) OR ((language)::language_code IS NOT NULL)))
 constraint ai_student_memory ai_student_memory_language_not_null NOT NULL language
-constraint ai_student_memory ai_student_memory_language_tag CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))
 constraint ai_student_memory ai_student_memory_memory_text_not_null NOT NULL memory_text
 constraint ai_student_memory ai_student_memory_metadata_not_null NOT NULL metadata
 constraint ai_student_memory ai_student_memory_pkey PRIMARY KEY (id)
@@ -250,8 +250,8 @@ constraint ai_submission_analyses ai_submission_analyses_evidence_not_null NOT N
 constraint ai_submission_analyses ai_submission_analyses_gap_count_check CHECK ((gap_count >= 0))
 constraint ai_submission_analyses ai_submission_analyses_gap_count_not_null NOT NULL gap_count
 constraint ai_submission_analyses ai_submission_analyses_id_not_null NOT NULL id
+constraint ai_submission_analyses ai_submission_analyses_language_check CHECK (((language = 'auto'::text) OR ((language)::language_code IS NOT NULL)))
 constraint ai_submission_analyses ai_submission_analyses_language_not_null NOT NULL language
-constraint ai_submission_analyses ai_submission_analyses_language_tag CHECK ((language ~ '^[a-z]{2,8}(-[A-Za-z0-9]+)*$'::text))
 constraint ai_submission_analyses ai_submission_analyses_pkey PRIMARY KEY (id)
 constraint ai_submission_analyses ai_submission_analyses_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL
 constraint ai_submission_analyses ai_submission_analyses_status_check CHECK ((status = ANY (ARRAY['complete'::text, 'failed'::text, 'superseded'::text])))
@@ -830,7 +830,6 @@ constraint courses courses_description_check CHECK ((char_length(description) <=
 constraint courses courses_description_not_null NOT NULL description
 constraint courses courses_guest_access_not_null NOT NULL guest_access
 constraint courses courses_id_not_null NOT NULL id
-constraint courses courses_language_check CHECK ((language = ANY (ARRAY['ru'::text, 'kk'::text, 'en'::text])))
 constraint courses courses_language_not_null NOT NULL language
 constraint courses courses_learnings_check CHECK (course_learnings_ok(learnings))
 constraint courses courses_learnings_not_null NOT NULL learnings
@@ -1318,7 +1317,6 @@ constraint translations translations_entity_field_fkey FOREIGN KEY (entity, fiel
 constraint translations translations_entity_id_not_null NOT NULL entity_id
 constraint translations translations_entity_not_null NOT NULL entity
 constraint translations translations_field_not_null NOT NULL field
-constraint translations translations_lang_check CHECK ((lang = ANY (ARRAY['ru'::text, 'kk'::text, 'en'::text])))
 constraint translations translations_lang_not_null NOT NULL lang
 constraint translations translations_pkey PRIMARY KEY (entity, entity_id, field, lang)
 constraint translations translations_text_check CHECK ((text <> ''::text))
@@ -1380,7 +1378,6 @@ constraint users users_deleted_disabled_at_check CHECK (((deleted_at IS NULL) OR
 constraint users users_display_name_not_null NOT NULL display_name
 constraint users users_email_not_null NOT NULL email
 constraint users users_id_not_null NOT NULL id
-constraint users users_locale_check CHECK ((locale = ANY (ARRAY['ru'::text, 'kk'::text, 'en'::text])))
 constraint users users_locale_not_null NOT NULL locale
 constraint users users_organization_check CHECK ((char_length(organization) <= 200))
 constraint users users_organization_not_null NOT NULL organization
@@ -3403,7 +3400,7 @@ table core.courses deleted_by uuid DEFAULT -
 table core.courses description text NOT NULL DEFAULT ''::text
 table core.courses guest_access boolean NOT NULL DEFAULT false
 table core.courses id uuid NOT NULL DEFAULT uuidv7()
-table core.courses language text NOT NULL DEFAULT 'ru'::text
+table core.courses language language_code NOT NULL DEFAULT 'ru'::text
 table core.courses learnings jsonb NOT NULL DEFAULT '[]'::jsonb
 table core.courses name text NOT NULL DEFAULT -
 table core.courses open_to_contributors boolean NOT NULL DEFAULT false
@@ -3509,7 +3506,7 @@ table core.translations created_at timestamp with time zone NOT NULL DEFAULT now
 table core.translations entity text NOT NULL DEFAULT -
 table core.translations entity_id uuid NOT NULL DEFAULT -
 table core.translations field text NOT NULL DEFAULT -
-table core.translations lang text NOT NULL DEFAULT -
+table core.translations lang language_code NOT NULL DEFAULT -
 table core.translations text text NOT NULL DEFAULT -
 table core.translations updated_at timestamp with time zone NOT NULL DEFAULT now()
 table core.upload_purposes purpose text NOT NULL DEFAULT -
@@ -3552,7 +3549,7 @@ table core.users email text NOT NULL DEFAULT -
 table core.users email_verified boolean DEFAULT -
 table core.users email_verified_at timestamp with time zone DEFAULT -
 table core.users id uuid NOT NULL DEFAULT uuidv7()
-table core.users locale text NOT NULL DEFAULT 'ru'::text
+table core.users locale language_code NOT NULL DEFAULT 'ru'::text
 table core.users organization text NOT NULL DEFAULT ''::text
 table core.users profile jsonb NOT NULL DEFAULT '{"sections": []}'::jsonb
 table core.users profile_version integer NOT NULL DEFAULT 0

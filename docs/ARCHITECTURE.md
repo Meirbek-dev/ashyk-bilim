@@ -567,7 +567,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   the platform aggregate is `daily_platform_metrics (metric_date)`. `daily_teacher_metrics` keeps its surrogate key
   and a NULL-teacher copy of that aggregate only for the previous release; a contract makes `(metric_date,
   teacher_user_id)` its key (`just contracts-pending`).
-- **`users.locale` is the short tag** (`ru|kk|en`, D-03); the API still renders and accepts the region form.
+- **A stored language is the `language_code` domain** (`ru|kk|en`: `users.locale` (D-03; the API still renders
+  and accepts the region form), `courses.language`, `translations.lang`); an AI answer's `language` is `auto` or
+  one of them (REWRITE 5.8 item 6).
 - **Embeddings are `halfvec(1024)`** (`content_chunks`, `ai_work_embeddings`); the HNSW index is partial per
   embedding model (a new model gets its own index in a migration), and the nearest-chunk query sets
   `hnsw.iterative_scan` and `plan_cache_mode = force_custom_plan` so its model's index applies.

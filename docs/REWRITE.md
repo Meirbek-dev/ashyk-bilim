@@ -1013,6 +1013,12 @@ Queue, in order:
      `archived` lifecycle (`archived_at` stays as history after unarchive), staff `inactive` membership,
      `superseded` / `discarded` AI drafts and imports, `open` / `resolved` reports.
 6. **Language, units, hashes**: one language domain; durations in seconds; hashes as sha256 `bytea`.
+   - Language: done as `20261116075636_language_domain`, nothing left for a contract. `users.locale`,
+     `courses.language` and `translations.lang` are the domain `language_code` (`ru`, `kk`, `en`; a domain over
+     text, so the previous release reads and writes them unchanged). The five AI tables' `language` (what an answer
+     is asked in) is `auto` or a `language_code`, no region tag: old rows lost the region, the API takes the bare
+     code only (the web sends nothing else). The previous release still accepts a region tag, which the new check
+     refuses (no client sends one).
 7. **Smaller**: `assessments.access_mode` derived from the access rows; `teacher_user_id` out of the rollups
    (a course has several staff); the last login moves from `gamification_profiles` to `users`; triggers that
    fill business values (certificate names, a grade entry's points and number) move into the server, guards stay.

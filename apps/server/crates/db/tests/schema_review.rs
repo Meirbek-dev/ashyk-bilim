@@ -101,6 +101,9 @@
 //!   the previous release's spelling until the contract, and that release's
 //!   writes fill the verdict. A deletion is a timestamp (`deleted_at`): a
 //!   message's or a discussion's `deleted` status follows it.
+//! - REWRITE 5.8 item 6: a stored human language is the `language_code`
+//!   domain (`ru`, `kk`, `en`); an AI answer's language is `auto` or one of
+//!   them, no region tag.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -4291,4 +4294,63 @@ async fn a_deletion_is_a_timestamp(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(stored(theirs).await, ("deleted".into(), true, 2));
+}
+
+#[ab_testdb::test]
+async fn one_language_domain(pool: PgPool) {
+    let columns: Vec<(String, String, Option<String>)> = sqlx::query_as(
+        "SELECT c.table_name::text, c.column_name::text, c.domain_name::text
+         FROM information_schema.columns c
+         JOIN information_schema.tables t USING (table_schema, table_name)
+         WHERE t.table_type = 'BASE TABLE' AND c.table_schema::name = ANY (app_schemas() || 'public'::name)
+           AND c.column_name IN ('locale', 'language', 'lang')
+         ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    let ai = [
+        "ai_course_analyses",
+        "ai_lecture_reviews",
+        "ai_remediation_sessions",
+        "ai_student_memory",
+        "ai_submission_analyses",
+    ];
+    for (table, column, domain) in &columns {
+        if ai.contains(&table.as_str()) {
+            let check: String = sqlx::query_scalar(
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = $1",
+            )
+            .bind(format!("{table}_language_check"))
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+            assert!(check.contains("language_code"), "{table}: {check}");
+        } else {
+            assert_eq!(domain.as_deref(), Some("language_code"), "{table}.{column}");
+        }
+    }
+    assert_eq!(columns.len(), 8, "{columns:?}");
+
+    let w = world(&pool).await;
+    let analysis = |language: &'static str| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query(
+                "INSERT INTO ai_course_analyses (course_id, language, public_score) VALUES ($1, $2, 50)",
+            )
+            .bind(w.course)
+            .bind(language)
+            .execute(&pool)
+            .await
+        }
+    };
+    analysis("auto").await.unwrap();
+    analysis("kk").await.unwrap();
+    assert!(analysis("ru-RU").await.is_err(), "no region tag");
+    let locale = sqlx::query("UPDATE users SET locale = 'de' WHERE id = $1")
+        .bind(w.user)
+        .execute(&pool)
+        .await;
+    assert!(locale.is_err(), "not a platform language");
 }
