@@ -49,8 +49,8 @@ pub struct TrailRun {
     /// Published activities in the course.
     pub course_total_steps: i64,
     /// The learner's course progress percent, the value `learner-state`'s
-    /// `progress.progress_pct` reports; `null` until the progress
-    /// projection has a row for the course (UX-250).
+    /// `progress.progress_pct` reports (UX-250); `null` only when no
+    /// progress is known for the run.
     pub progress_pct: Option<f64>,
     pub steps: Vec<TrailStep>,
     /// The real state (`status` is always `in_progress`, legacy):

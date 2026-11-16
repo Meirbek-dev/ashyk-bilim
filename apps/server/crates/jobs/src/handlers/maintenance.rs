@@ -14,8 +14,8 @@
 //! logged; a steady non-zero count is a projector bug to look into. Then
 //! `completion_drift`: completions and completed projection rows that
 //! disagree, and `view_drift`: members whose `course_progress_v` row differs
-//! from the stored `course_progress` (REWRITE 5.6 n8 waits for a month of
-//! zeros of both before readers move to the view).
+//! from the stored `course_progress`, which only the projector and the
+//! previous release still read (REWRITE 5.8 item 8).
 
 use ab_core::Result;
 use ab_core::config::RetentionConfig;

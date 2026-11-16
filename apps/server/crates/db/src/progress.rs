@@ -324,7 +324,8 @@ pub async fn list_assessment_weights<'e>(
 // ── Course progress ─────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
-/// Keyed by `(course_id, user_id)` (REWRITE 5.6 n12).
+/// A member's `course_progress_v` row (REWRITE 5.8 item 8): computed from
+/// enrolments, completions and `activity_progress`, not the stored rollup.
 pub struct CourseProgressRow {
     pub course_id: CourseId,
     pub user_id: UserId,
@@ -338,7 +339,6 @@ pub struct CourseProgressRow {
     pub last_activity_at: Option<i64>,
     pub completed_at: Option<i64>,
     pub certificate_eligible: bool,
-    pub updated_at: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -396,6 +396,26 @@ pub async fn upsert_course_progress<'e>(
     Ok(())
 }
 
+/// Whether the stored rollup says the member completed the course: the
+/// projector's own state, read before it rewrites the row to notice the
+/// transition (readers use [`get_course_progress`]).
+pub async fn stored_course_completed<'e>(
+    db: impl sqlx::PgExecutor<'e>,
+    course_id: CourseId,
+    user_id: UserId,
+) -> Result<bool> {
+    Ok(sqlx::query_scalar!(
+        "SELECT certificate_eligible FROM course_progress WHERE course_id = $1 AND user_id = $2",
+        course_id.0,
+        user_id.0
+    )
+    .fetch_optional(db)
+    .await?
+    .unwrap_or(false))
+}
+
+/// The member's progress; `None` for anyone without an enrolment (a leaver)
+/// and the course's staff.
 pub async fn get_course_progress<'e>(
     db: impl sqlx::PgExecutor<'e>,
     course_id: CourseId,
@@ -403,16 +423,17 @@ pub async fn get_course_progress<'e>(
 ) -> Result<Option<CourseProgressRow>> {
     let row = sqlx::query_as!(
         CourseProgressRow,
-        r#"SELECT course_id AS "course_id: CourseId",
-                  user_id AS "user_id: UserId", completed_required_count, total_required_count,
-                  progress_pct, grade_average::float8 AS grade_average,
-                  weighted_grade_average::float8 AS weighted_grade_average, missing_required_count,
-                  needs_grading_count,
+        r#"SELECT course_id AS "course_id!: CourseId", user_id AS "user_id!: UserId",
+                  completed_required_count AS "completed_required_count!",
+                  total_required_count AS "total_required_count!", progress_pct AS "progress_pct!",
+                  grade_average::float8 AS grade_average,
+                  weighted_grade_average::float8 AS weighted_grade_average,
+                  missing_required_count AS "missing_required_count!",
+                  needs_grading_count AS "needs_grading_count!",
                   (extract(epoch FROM last_activity_at))::bigint AS "last_activity_at?",
                   (extract(epoch FROM completed_at))::bigint AS "completed_at?",
-                  certificate_eligible,
-                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM course_progress WHERE course_id = $1 AND user_id = $2"#,
+                  certificate_eligible AS "certificate_eligible!"
+           FROM course_progress_v WHERE course_id = $1 AND user_id = $2"#,
         course_id.0,
         user_id.0
     )
@@ -804,11 +825,12 @@ pub async fn completion_drift(pool: &PgPool) -> Result<i64> {
 /// How many members' `course_progress_v` row disagrees with their stored
 /// `course_progress` row (or has none).
 ///
-/// Compares the counts, percent, certificate flag and `completed_at` within
-/// a second: the projector stores whole seconds, and a lesson mark stamps
+/// Compares the counts, percent, certificate flag, `completed_at` and the
+/// last activity within a second, the grade averages within 0.01 (the
+/// projector rounds a float): the projector stores whole seconds, and a lesson mark stamps
 /// its row from the server's clock just after the completion's `now()`. `maintenance:reconcile` logs it after
-/// the re-projection; a month of zeros lets readers move to the view
-/// (REWRITE 5.6 n8 step 4).
+/// the re-projection while the projector still writes the table readers left
+/// (REWRITE 5.8 item 8).
 pub async fn course_progress_view_drift(pool: &PgPool) -> Result<i64> {
     let drift = sqlx::query_scalar!(
         r#"SELECT count(*) AS "drift!"
@@ -819,14 +841,22 @@ pub async fn course_progress_view_drift(pool: &PgPool) -> Result<i64> {
                  IS DISTINCT FROM
                  (v.total_required_count, v.completed_required_count, v.progress_pct,
                   v.certificate_eligible, v.completed_at IS NULL)
-              OR abs(extract(epoch FROM p.completed_at - v.completed_at)) >= 1"#
+              OR abs(extract(epoch FROM p.completed_at - v.completed_at)) >= 1
+              OR (p.missing_required_count, p.needs_grading_count, p.last_activity_at IS NULL,
+                  p.grade_average IS NULL, p.weighted_grade_average IS NULL)
+                 IS DISTINCT FROM
+                 (v.missing_required_count, v.needs_grading_count, v.last_activity_at IS NULL,
+                  v.grade_average IS NULL, v.weighted_grade_average IS NULL)
+              OR abs(extract(epoch FROM p.last_activity_at - v.last_activity_at)) >= 1
+              OR abs(p.grade_average - v.grade_average) > 0.01
+              OR abs(p.weighted_grade_average - v.weighted_grade_average) > 0.01"#
     )
     .fetch_one(pool)
     .await?;
     Ok(drift)
 }
 
-/// One learner's `course_progress.progress_pct` per course, in one query.
+/// One learner's `course_progress_v.progress_pct` per course, in one query.
 ///
 /// UX-250: the trail run carries what `learner-state` shows. `started`: any
 /// activity of the course is past `not_started` for them (work handed in, a
@@ -845,11 +875,11 @@ pub async fn course_progress_pcts(
     let ids: Vec<uuid::Uuid> = course_ids.iter().map(|c| c.0).collect();
     let rows = sqlx::query_as!(
         CourseProgressPctRow,
-        r#"SELECT c.course_id AS "course_id: CourseId", c.progress_pct,
+        r#"SELECT c.course_id AS "course_id!: CourseId", c.progress_pct AS "progress_pct!",
                   EXISTS (SELECT 1 FROM activity_progress p
                            WHERE p.course_id = c.course_id AND p.user_id = c.user_id
                              AND p.status <> 'not_started') AS "started!"
-           FROM course_progress c WHERE c.user_id = $1 AND c.course_id = ANY($2)"#,
+           FROM course_progress_v c WHERE c.user_id = $1 AND c.course_id = ANY($2)"#,
         user_id.0,
         &ids
     )
@@ -879,7 +909,7 @@ pub async fn member_progress(
                   coalesce(cp.progress_pct, 0) AS "progress_pct!",
                   (extract(epoch FROM cp.completed_at))::bigint AS "completed_at?"
            FROM course_members e
-           LEFT JOIN course_progress cp ON cp.course_id = e.course_id AND cp.user_id = e.user_id
+           LEFT JOIN course_progress_v cp ON cp.course_id = e.course_id AND cp.user_id = e.user_id
            WHERE e.user_id = $1 AND e.course_id = ANY($2)"#,
         user_id.0,
         &ids
@@ -987,7 +1017,7 @@ pub async fn list_course_learners(
                   (extract(epoch FROM e.enrolled_at) * 1000000)::bigint AS "enrolled_at_us!"
            FROM course_members e
            JOIN users u ON u.id = e.user_id
-           LEFT JOIN course_progress cp ON cp.course_id = e.course_id AND cp.user_id = e.user_id
+           LEFT JOIN course_progress_v cp ON cp.course_id = e.course_id AND cp.user_id = e.user_id
            WHERE e.course_id = $1
              AND ($2::bigint IS NULL
                   OR (e.enrolled_at, e.user_id)

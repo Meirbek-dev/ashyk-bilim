@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"drift!\"\n           FROM course_progress_v v\n           LEFT JOIN course_progress p ON p.course_id = v.course_id AND p.user_id = v.user_id\n           WHERE (p.total_required_count, p.completed_required_count, p.progress_pct,\n                  p.certificate_eligible, p.completed_at IS NULL)\n                 IS DISTINCT FROM\n                 (v.total_required_count, v.completed_required_count, v.progress_pct,\n                  v.certificate_eligible, v.completed_at IS NULL)\n              OR abs(extract(epoch FROM p.completed_at - v.completed_at)) >= 1\n              OR (p.missing_required_count, p.needs_grading_count, p.last_activity_at IS NULL,\n                  p.grade_average IS NULL, p.weighted_grade_average IS NULL)\n                 IS DISTINCT FROM\n                 (v.missing_required_count, v.needs_grading_count, v.last_activity_at IS NULL,\n                  v.grade_average IS NULL, v.weighted_grade_average IS NULL)\n              OR abs(extract(epoch FROM p.last_activity_at - v.last_activity_at)) >= 1\n              OR abs(p.grade_average - v.grade_average) > 0.01\n              OR abs(p.weighted_grade_average - v.weighted_grade_average) > 0.01",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "drift!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "aba633246cc5b6657d6bbc5de8ceb5704ef12d293b93570ac2a8c16cdffc242b"
+}

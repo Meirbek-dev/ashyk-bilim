@@ -14,9 +14,7 @@ use ab_core::{Error, Result};
 use ab_db::assessments::AssessmentRow;
 use ab_db::catalog::ActivityRow;
 use ab_db::file_submissions::AttemptRow;
-use ab_db::progress::{
-    ActivityProgressRow, ActivityProgressWrite, CourseProgressRow, CourseProgressWrite,
-};
+use ab_db::progress::{ActivityProgressRow, ActivityProgressWrite, CourseProgressWrite};
 use ab_db::submissions::SubmissionRow;
 use sqlx::{PgConnection, PgPool};
 
@@ -289,12 +287,8 @@ impl ProgressProjector {
             user_id,
         )
         .await?;
-        let (course, newly_completed) = self
-            .recalculate_course_on(conn, activity.course_id, user_id)
-            .await?;
-        Ok(AfterCommit {
-            course_completed: course_completed(&course, newly_completed),
-        })
+        self.recalculate_course_on(conn, activity.course_id, user_id)
+            .await
     }
 
     /// Undo an explicit completion: the `completions` row and its projection
@@ -336,12 +330,8 @@ impl ProgressProjector {
             status_reason: None,
         };
         ab_db::progress::upsert_activity_progress(&mut *conn, &write).await?;
-        let (course, newly_completed) = self
-            .recalculate_course_on(conn, activity.course_id, user_id)
-            .await?;
-        Ok(AfterCommit {
-            course_completed: course_completed(&course, newly_completed),
-        })
+        self.recalculate_course_on(conn, activity.course_id, user_id)
+            .await
     }
 
     /// Assessment and file-submission activities complete through their
@@ -405,10 +395,10 @@ impl ProgressProjector {
                 .await?;
             hooks = hooks.and(rejoin);
         } else {
-            let (course, newly_completed) = self
-                .recalculate_course_on(&mut tx, course_id, user_id)
-                .await?;
-            hooks.course_completed = course_completed(&course, newly_completed);
+            hooks = hooks.and(
+                self.recalculate_course_on(&mut tx, course_id, user_id)
+                    .await?,
+            );
         }
         tx.commit().await?;
         hooks.fire(&self.pool).await;
@@ -424,21 +414,21 @@ impl ProgressProjector {
     }
 
     /// [`Self::recalculate_course`] on the caller's connection, so a trail
-    /// mark / leave commits the aggregate with its step (BUG-221). The flag
-    /// says this recalculation completed the course: only that transition
-    /// pays the `course_completed` hook, never a re-read of an old
-    /// completion (a GET, a repair, an ETL-migrated learner). Touches
-    /// nothing but `conn`: the `course_completed` hook is the caller's, after
+    /// mark / leave commits the aggregate with its step (BUG-221). The hook
+    /// is set when this recalculation completed the course: only that
+    /// transition pays `course_completed`, never a re-read of an old
+    /// completion (a GET, a repair, an ETL-migrated learner). The transition
+    /// is the stored rollup's, which the projector alone still reads (REWRITE
+    /// 5.8 item 8). Touches nothing but `conn`: the hook is the caller's, after
     /// commit (BUG-235).
     pub async fn recalculate_course_on(
         &self,
         conn: &mut PgConnection,
         course_id: CourseId,
         user_id: UserId,
-    ) -> Result<(CourseProgressRow, bool)> {
-        let was_completed = ab_db::progress::get_course_progress(&mut *conn, course_id, user_id)
-            .await?
-            .is_some_and(|p| p.certificate_eligible);
+    ) -> Result<AfterCommit> {
+        let was_completed =
+            ab_db::progress::stored_course_completed(&mut *conn, course_id, user_id).await?;
         ab_db::progress::ensure_course_rows(&mut *conn, course_id, user_id).await?;
         ab_db::progress::refresh_required(&mut *conn, course_id, user_id).await?;
         let mut rows =
@@ -464,11 +454,10 @@ impl ProgressProjector {
         if write.certificate_eligible {
             crate::certifications::issue_for_completion(&mut *conn, course_id, user_id).await?;
         }
-        let row = ab_db::progress::get_course_progress(&mut *conn, course_id, user_id)
-            .await?
-            .ok_or_else(|| Error::not_found("course progress"))?;
-        let newly_completed = row.certificate_eligible && !was_completed;
-        Ok((row, newly_completed))
+        Ok(AfterCommit {
+            course_completed: (write.certificate_eligible && !was_completed)
+                .then_some((user_id, course_id)),
+        })
     }
 
     /// Re-aggregate every member of a course (trail run; BUG-268) - after an activity is
@@ -799,14 +788,8 @@ impl ProgressProjector {
                 rows += 1;
             }
         }
-        let (aggregate, newly_completed) =
-            self.recalculate_course_on(conn, course_id, user_id).await?;
-        Ok((
-            rows,
-            AfterCommit {
-                course_completed: course_completed(&aggregate, newly_completed),
-            },
-        ))
+        let after = self.recalculate_course_on(conn, course_id, user_id).await?;
+        Ok((rows, after))
     }
 }
 
@@ -855,17 +838,6 @@ async fn projection_for(
         project_submissions(activity, user_id, &assessment, &submissions),
         true,
     )))
-}
-
-const fn course_completed(
-    course: &CourseProgressRow,
-    newly_completed: bool,
-) -> Option<(UserId, CourseId)> {
-    if newly_completed {
-        Some((course.user_id, course.course_id))
-    } else {
-        None
-    }
 }
 
 /// The explicit-completion row of a non-submission activity, completed at `at`.

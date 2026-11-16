@@ -32,7 +32,7 @@ Every table, column, key and foreign key with the table's purpose: `docs/agents/
 | lesson media                      | `activities.content->>'filename'` (video, PDF), `blocks.content` (page blocks)       |
 | role, permission                  | `user_roles` -> `roles` (`slug`); permissions in `role_permissions`                 |
 | group                             | `usergroups`, `usergroup_members`, `usergroup_courses`                               |
-| course progress                   | `course_progress` (`progress_pct`, `completed_at`)                                   |
+| course progress                   | `course_progress_v` (`progress_pct`, `completed_at`); `course_progress` is the stored copy the server no longer reads |
 | personal message ("Диалоги")      | `conversations` (`last_message_id`), `conversation_members` (`user_id`, `peer_id`, `last_read_message_id`), `messages` (`deleted_at` a tombstone, context `course_id` / `activity_id`); files `message_uploads` (`upload_id` -> `uploads`, purpose `message-attachment`; a bulk send names one upload from each copy); a `message_sent` intervention from analytics has `payload.message_id`; reports `message_reports`, bans `message_bans`. The text (`messages.body`, file names, report and ban free text) is not readable as `ashyq_ro` |
 
 A learner sees an activity when it is `published` and, for a file task, its `file_submissions.lifecycle` is

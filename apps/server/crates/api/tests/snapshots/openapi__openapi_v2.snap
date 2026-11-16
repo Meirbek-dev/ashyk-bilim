@@ -21774,7 +21774,7 @@ expression: json
             ]
           },
           "progress_pct": {
-            "description": "The learner's course progress percent, the value `learner-state`'s\n`progress.progress_pct` reports; `null` until the progress\nprojection has a row for the course (UX-250).",
+            "description": "The learner's course progress percent, the value `learner-state`'s\n`progress.progress_pct` reports (UX-250); `null` only when no\nprogress is known for the run.",
             "format": "double",
             "type": [
               "number",

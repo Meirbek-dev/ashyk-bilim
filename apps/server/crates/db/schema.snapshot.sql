@@ -4316,12 +4316,24 @@ view core.course_progress_v  SELECT e.course_id,
         CASE
             WHEN count(r.activity_id) > 0 AND count(r.completed_at) = count(r.activity_id) THEN max(r.completed_at)
             ELSE NULL::timestamp with time zone
-        END AS completed_at
+        END AS completed_at,
+    (count(r.activity_id) - count(r.completed_at))::integer AS missing_required_count,
+    count(*) FILTER (WHERE r.teacher_action_required)::integer AS needs_grading_count,
+    max(r.last_activity_at) AS last_activity_at,
+    round(avg(r.score::numeric), 2) AS grade_average,
+    round(sum(r.score::numeric * r.weight) FILTER (WHERE r.weight > 0::numeric) / NULLIF(sum(r.weight) FILTER (WHERE r.weight > 0::numeric AND r.score IS NOT NULL), 0::numeric), 2) AS weighted_grade_average
    FROM enrolments e
      LEFT JOIN LATERAL ( SELECT a.id AS activity_id,
-            c.completed_at
+            c.completed_at,
+            p.score,
+            p.teacher_action_required,
+            p.last_activity_at,
+            COALESCE((( SELECT s.weight
+                   FROM assessments s
+                  WHERE s.activity_id = a.id))::numeric, 1::numeric) AS weight
            FROM activities a
              LEFT JOIN completions c ON c.activity_id = a.id AND c.user_id = e.user_id
+             LEFT JOIN activity_progress p ON p.activity_id = a.id AND p.user_id = e.user_id
           WHERE a.course_id = e.course_id AND a.published AND (a.activity_type = 'file_submission'::text OR (EXISTS ( SELECT 1
                    FROM assessments s
                   WHERE s.activity_id = a.id)) OR a.required) AND NOT (EXISTS ( SELECT 1

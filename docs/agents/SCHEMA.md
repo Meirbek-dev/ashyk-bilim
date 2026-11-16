@@ -1729,6 +1729,11 @@ A member's course completion computed from enrolments, published activities and 
 | progress_pct | double precision | null |  |
 | certificate_eligible | boolean | null |  |
 | completed_at | timestamp with time zone | null |  |
+| missing_required_count | integer | null |  |
+| needs_grading_count | integer | null |  |
+| last_activity_at | timestamp with time zone | null |  |
+| grade_average | numeric | null |  |
+| weighted_grade_average | numeric | null |  |
 
 ## course_staff
 

@@ -1,59 +1,59 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT course_id AS \"course_id: CourseId\",\n                  user_id AS \"user_id: UserId\", completed_required_count, total_required_count,\n                  progress_pct, grade_average::float8 AS grade_average,\n                  weighted_grade_average::float8 AS weighted_grade_average, missing_required_count,\n                  needs_grading_count,\n                  (extract(epoch FROM last_activity_at))::bigint AS \"last_activity_at?\",\n                  (extract(epoch FROM completed_at))::bigint AS \"completed_at?\",\n                  certificate_eligible,\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM course_progress WHERE course_id = $1 AND user_id = $2",
+  "query": "SELECT course_id AS \"course_id!: CourseId\", user_id AS \"user_id!: UserId\",\n                  completed_required_count AS \"completed_required_count!\",\n                  total_required_count AS \"total_required_count!\", progress_pct AS \"progress_pct!\",\n                  grade_average::float8 AS grade_average,\n                  weighted_grade_average::float8 AS weighted_grade_average,\n                  missing_required_count AS \"missing_required_count!\",\n                  needs_grading_count AS \"needs_grading_count!\",\n                  (extract(epoch FROM last_activity_at))::bigint AS \"last_activity_at?\",\n                  (extract(epoch FROM completed_at))::bigint AS \"completed_at?\",\n                  certificate_eligible AS \"certificate_eligible!\"\n           FROM course_progress_v WHERE course_id = $1 AND user_id = $2",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "course_id: CourseId",
+        "name": "course_id!: CourseId",
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "course_progress",
+            "table": "course_progress_v",
             "name": "course_id"
           }
         }
       },
       {
         "ordinal": 1,
-        "name": "user_id: UserId",
+        "name": "user_id!: UserId",
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "course_progress",
+            "table": "course_progress_v",
             "name": "user_id"
           }
         }
       },
       {
         "ordinal": 2,
-        "name": "completed_required_count",
+        "name": "completed_required_count!",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "course_progress",
+            "table": "course_progress_v",
             "name": "completed_required_count"
           }
         }
       },
       {
         "ordinal": 3,
-        "name": "total_required_count",
+        "name": "total_required_count!",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "course_progress",
+            "table": "course_progress_v",
             "name": "total_required_count"
           }
         }
       },
       {
         "ordinal": 4,
-        "name": "progress_pct",
+        "name": "progress_pct!",
         "type_info": "Float8",
         "origin": {
           "Table": {
-            "table": "course_progress",
+            "table": "course_progress_v",
             "name": "progress_pct"
           }
         }
@@ -72,22 +72,22 @@
       },
       {
         "ordinal": 7,
-        "name": "missing_required_count",
+        "name": "missing_required_count!",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "course_progress",
+            "table": "course_progress_v",
             "name": "missing_required_count"
           }
         }
       },
       {
         "ordinal": 8,
-        "name": "needs_grading_count",
+        "name": "needs_grading_count!",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "course_progress",
+            "table": "course_progress_v",
             "name": "needs_grading_count"
           }
         }
@@ -106,20 +106,14 @@
       },
       {
         "ordinal": 11,
-        "name": "certificate_eligible",
+        "name": "certificate_eligible!",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "course_progress",
+            "table": "course_progress_v",
             "name": "certificate_eligible"
           }
         }
-      },
-      {
-        "ordinal": 12,
-        "name": "updated_at!",
-        "type_info": "Int8",
-        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -129,20 +123,19 @@
       ]
     },
     "nullable": [
-      false,
-      false,
-      false,
-      false,
-      false,
+      true,
+      true,
+      true,
+      true,
+      true,
       null,
       null,
-      false,
-      false,
+      true,
+      true,
       null,
       null,
-      false,
-      null
+      true
     ]
   },
-  "hash": "f1acd83f1f2e2be54b1ecf8962d987775ec0f692a00874bc8d63554ab3ff3ece"
+  "hash": "be1b9db458820f1d035a6e469b6f78f28f788dadaa677618908d458c3ed57bb0"
 }

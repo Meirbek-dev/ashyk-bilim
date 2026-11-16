@@ -46,15 +46,31 @@ async fn a_certificate_keeps_what_it_was_issued_with(pool: PgPool) {
     .fetch_one(&pool)
     .await
     .unwrap();
+    // The grade is course_progress_v's weighted average: 80 weighing 1, 90 weighing 3 (the plain one is 85).
     sqlx::query(
-        "INSERT INTO course_progress (course_id, user_id, grade_average, weighted_grade_average)
-         VALUES ($1, $2, 80, 86.5)",
+        "WITH ch AS (INSERT INTO chapters (course_id, name) VALUES ($1, 'Intro') RETURNING id),
+              a AS (INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type,
+                                            position, published)
+                    SELECT ch.id, $1, 'Quiz ' || n, 'dynamic', 'dynamic_page', n, true
+                    FROM ch, generate_series(1, 2) n RETURNING id, position),
+              s AS (INSERT INTO assessments (activity_id, course_id, grading_mode, grade_release_mode,
+                                             completion_rule, weight)
+                    SELECT a.id, $1, 'auto', 'immediate', 'submitted', CASE a.position WHEN 1 THEN 1 ELSE 3 END
+                    FROM a RETURNING activity_id)
+         INSERT INTO activity_progress (course_id, activity_id, user_id, status, score)
+         SELECT $1, a.id, $2, 'released', CASE a.position WHEN 1 THEN 80 ELSE 90 END FROM a",
     )
     .bind(course)
     .bind(learner)
     .execute(&pool)
     .await
     .unwrap();
+    sqlx::query("INSERT INTO enrolments (course_id, user_id) VALUES ($1, $2)")
+        .bind(course)
+        .bind(learner)
+        .execute(&pool)
+        .await
+        .unwrap();
     assert!(
         issue_certificate(
             &pool,
@@ -76,7 +92,7 @@ async fn a_certificate_keeps_what_it_was_issued_with(pool: PgPool) {
     assert_eq!(issued.certificate_name, "Algebra I");
     // A non-string `certificate_instructor` is ignored, as the server reads it: the creator signs.
     assert_eq!(issued.instructor_name.as_deref(), Some("Aigerim Teacher"));
-    assert_eq!(issued.score, Some(86.5));
+    assert_eq!(issued.score, Some(87.5));
     assert_eq!(issued.reissued_at, None);
 
     // The course moves on; the certificate does not.
@@ -92,7 +108,7 @@ async fn a_certificate_keeps_what_it_was_issued_with(pool: PgPool) {
     .execute(&pool)
     .await
     .unwrap();
-    sqlx::query("UPDATE course_progress SET weighted_grade_average = 40 WHERE user_id = $1")
+    sqlx::query("UPDATE activity_progress SET score = 40 WHERE user_id = $1")
         .bind(learner)
         .execute(&pool)
         .await
@@ -113,7 +129,7 @@ async fn a_certificate_keeps_what_it_was_issued_with(pool: PgPool) {
             kept.instructor_name.as_deref(),
             kept.score
         ),
-        ("Algebra", "Algebra I", Some("Aigerim Teacher"), Some(86.5))
+        ("Algebra", "Algebra I", Some("Aigerim Teacher"), Some(87.5))
     );
 
     // The holder's name follows the person: a rename re-issues.

@@ -217,7 +217,7 @@ fn courses_list_query(
     let viewer = filter.viewer.map(|v| v.0);
     let by_name = filter.sort == "name";
     // UX-274: the viewer's in-progress courses (0 < progress_pct < 100 on an
-    // enrolment) first, then by `course_progress.progress_pct`, then newest
+    // enrolment) first, then by `course_progress_v.progress_pct`, then newest
     // update - one keyset over the whole catalog, not a per-page re-sort.
     let by_progress = !by_name && filter.sort == "progress";
     let mut qb = QueryBuilder::<Postgres>::new(prefix);
@@ -226,8 +226,7 @@ fn courses_list_query(
             "WITH pct AS (
                  SELECT cp.course_id, cp.progress_pct,
                         cp.progress_pct > 0 AND cp.progress_pct < 100 AS in_progress
-                 FROM course_progress cp
-                 JOIN enrolments tr ON tr.user_id = cp.user_id AND tr.course_id = cp.course_id
+                 FROM course_progress_v cp
                  WHERE cp.user_id = ",
         )
         .push_bind(viewer)
@@ -550,7 +549,7 @@ pub async fn course_archive_preview(
               WHERE tr.course_id = $1)
                  AS "learners_enrolled!",
              (SELECT count(*) FROM course_members tr
-              LEFT JOIN course_progress cp ON cp.course_id = tr.course_id AND cp.user_id = tr.user_id
+              LEFT JOIN course_progress_v cp ON cp.course_id = tr.course_id AND cp.user_id = tr.user_id
               WHERE tr.course_id = $1
                 AND coalesce(cp.progress_pct, 0) < 100)
                  AS "learners_in_progress!",

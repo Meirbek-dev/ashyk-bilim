@@ -2336,12 +2336,14 @@ async fn completion_funnel_share_never_exceeds_100_pct(pool: PgPool) {
         enrol(&pool, &course_id, who.user_id, 100.0).await;
         learners.push(who);
     }
-    // Eligibility is derived: every required activity done, completion stamped.
-    sqlx::query("UPDATE course_progress SET completed_at = now() WHERE course_id = $1")
-        .bind(course_uuid)
-        .execute(&pool)
-        .await
-        .unwrap();
+    // Eligibility is course_progress_v's: every required activity has a completion.
+    sqlx::query(
+        "INSERT INTO completions (activity_id, user_id) SELECT $1, user_id FROM enrolments",
+    )
+    .bind(uuid::Uuid::parse_str(&lesson_id).unwrap())
+    .execute(&pool)
+    .await
+    .unwrap();
     sqlx::query(
         "INSERT INTO activity_progress (course_id, activity_id, user_id, status, last_activity_at)          VALUES ($1, $2, $3, 'completed', now())",
     )

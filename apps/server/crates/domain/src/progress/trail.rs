@@ -32,8 +32,8 @@ pub struct TrailRun {
     pub course: Course,
     /// Published activities in the course.
     pub course_total_steps: i64,
-    /// The learner's `course_progress` percent - what `learner-state`
-    /// reports - or `None` before the projection wrote a row (UX-250).
+    /// The learner's `course_progress_v` percent - what `learner-state`
+    /// reports (UX-250); every member has one.
     pub progress_pct: Option<f64>,
     /// Some activity is past `not_started` (handed-in work waiting for a grade).
     pub has_work: bool,
@@ -455,9 +455,11 @@ impl TrailService {
         }
         // BUG-276: an all-quiz course un-marks nothing; the aggregate still
         // drops the leaver's completion.
-        self.projector
-            .recalculate_course_on(&mut tx, course_id, user_id)
-            .await?;
+        hooks = hooks.and(
+            self.projector
+                .recalculate_course_on(&mut tx, course_id, user_id)
+                .await?,
+        );
         tx.commit().await?;
         hooks.fire(&self.pool).await;
         // BUG-306: the dropped overrides settle lateness like a delete.

@@ -385,10 +385,12 @@ pub async fn list_course_progress(
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
         CourseProgressInfoRow,
-        r#"SELECT course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
-                  completed_required_count, total_required_count, progress_pct, certificate_eligible,
+        r#"SELECT course_id AS "course_id!: CourseId", user_id AS "user_id!: UserId",
+                  completed_required_count AS "completed_required_count!",
+                  total_required_count AS "total_required_count!", progress_pct AS "progress_pct!",
+                  certificate_eligible AS "certificate_eligible!",
                   (extract(epoch FROM last_activity_at))::bigint AS "last_activity_at?"
-           FROM course_progress WHERE course_id = ANY($1) ORDER BY created_at, course_id, user_id"#,
+           FROM course_progress_v WHERE course_id = ANY($1) ORDER BY course_id, user_id"#,
         &ids
     )
     .fetch_all(pool)

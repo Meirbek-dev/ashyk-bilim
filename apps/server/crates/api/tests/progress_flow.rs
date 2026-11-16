@@ -2328,15 +2328,19 @@ async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
     assert_view_matches_projection(&pool).await;
 }
 
-/// UX-250 edges: a run with no `course_progress` row (a migrated run before
-/// the backfill) reports `progress_pct: null`, not a guessed 0; the batch
-/// query takes an empty id list (a trail whose runs are all hidden).
+/// REWRITE 5.8 item 8: readers take a member's progress from
+/// `course_progress_v` (enrolments, completions, `activity_progress`), not
+/// the stored rollup the projector still writes for the previous release:
+/// with the rollup wiped, the trail, learner-state and the roster show the
+/// completed lesson. The batch query takes an empty id list (a trail whose
+/// runs are all hidden).
 #[ab_testdb::test]
-async fn trail_progress_pct_is_null_without_a_projection_row(pool: PgPool) {
+async fn progress_readers_read_the_view_not_the_rollup(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
     let (course_id, chapter_id) = public_course(&app, &teacher, "No projection").await;
-    lesson(&app, &teacher, &chapter_id, "Intro").await;
+    let intro = lesson(&app, &teacher, &chapter_id, "Intro").await;
+    lesson(&app, &teacher, &chapter_id, "Outro").await;
     let alice = learner(&app, "alice").await;
     let added = app
         .post_as(
@@ -2346,6 +2350,14 @@ async fn trail_progress_pct_is_null_without_a_projection_row(pool: PgPool) {
         )
         .await;
     assert_eq!(added.status, StatusCode::OK, "{}", added.text());
+    let marked = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/trail/activities/{intro}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
     sqlx::query("DELETE FROM course_progress WHERE user_id = $1")
         .bind(alice.user_id.0)
         .execute(&app.pool)
@@ -2354,7 +2366,21 @@ async fn trail_progress_pct_is_null_without_a_projection_row(pool: PgPool) {
     let trail = app.get_as(&alice, "/api/v2/trail").await;
     assert_eq!(trail.status, StatusCode::OK, "{}", trail.text());
     assert_eq!(trail.json()["runs"][0]["course"]["id"], course_id.as_str());
-    assert!(trail.json()["runs"][0]["progress_pct"].is_null());
+    assert_eq!(trail.json()["runs"][0]["progress_pct"], 50.0);
+    let roster = app
+        .get_as(&teacher, &format!("/api/v2/courses/{course_id}/learners"))
+        .await;
+    assert_eq!(roster.status, StatusCode::OK, "{}", roster.text());
+    assert_eq!(roster.json()["items"][0]["progress_pct"], 50.0);
+    let state = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/learner-state"),
+        )
+        .await
+        .json();
+    assert_eq!(state["progress"]["progress_pct"], 50.0);
+    assert_eq!(state["progress"]["missing_required_count"], 1);
 
     let none = ab_db::progress::course_progress_pcts(&app.pool, alice.user_id, &[])
         .await

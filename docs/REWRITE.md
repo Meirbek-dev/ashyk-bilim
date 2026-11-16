@@ -715,11 +715,9 @@ in the order it can be done, each step a forward migration on the current schema
       `maintenance:reconcile` logs its `view_drift`. Its `required` rule is the seed rule (graded always,
       lessons by `activities.required`, minus restricted assessments); since step 3 the projection puts its rows
       on the same rule at every recalculation, which removed the one known source of drift.
-      When `changed`, `completion_drift` and `view_drift` are zero for a month (four weekly runs), move
-      every reader to the view in one release (`course_progress_pcts`, learner-state, analytics context and
-      rollups, certificate eligibility, the work queue) while the projector still writes the table; compare
-      both in `maintenance:reconcile` for that release. The view reads no score column, so it never blocks
-      an `ALTER COLUMN ... TYPE` on `activity_progress.score`.
+      Done 2026-11-16 without the month of zero drift (owner's decision, 5.8 item 8): every reader takes the
+      view (`20261116075642`), which now also reads `activity_progress` (score, needs-grading, last activity),
+      while the projector still writes the table; `maintenance:reconcile` compares both.
    5. Then the projector stops writing `course_progress`; a contract drops the table and renames the view
       to `course_progress`. `activity_progress` stays a table (score, attempts, lateness are its own facts
       until 5.6 n6 folds submissions into `attempts`).
@@ -1063,6 +1061,14 @@ Queue, in order:
      with `users_reissue_certificates`.
 8. **Planned work, pulled forward**: readers move to `course_progress_v` now, without the four weekly zero-drift
    runs (5.6 n8 step 4); points as the record (n16) and the policy split of `assessments` (n7) follow the merge.
+   - Progress: switched in `20261116075642_course_progress_readers`. The view gained what readers still took from
+     the stored table (missing and needs-grading counts, the last activity, the grade averages weighted by
+     `assessments.weight`), and every reader moved to it: learner-state, the trail, the roster, the catalog's
+     progress sort, the archive preview, analytics, the certificate's eligibility and grade. The projector still
+     writes `course_progress` for the previous release and reads it only to notice a completion (the hook pays
+     once); `view_drift` compares the new columns too. Left (5.6 n8 step 5): a release that stops writing the table,
+     with the completion transition read from something else (the certificate or the analytics event), then the
+     contract dropping it and renaming the view.
 9. **Names, last**: `certifications` -> `certificate_templates`, `certificate_users` -> `certificates`,
    `course_discussions` -> `discussion_posts`, and the column renames of 5.6 n15, in the API too.
 

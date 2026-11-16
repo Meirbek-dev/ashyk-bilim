@@ -7609,8 +7609,8 @@ export type TrailRun = {
     next_activity_id: ActivityId | null;
     /**
      * The learner's course progress percent, the value `learner-state`'s
-     * `progress.progress_pct` reports; `null` until the progress
-     * projection has a row for the course (UX-250).
+     * `progress.progress_pct` reports (UX-250); `null` only when no
+     * progress is known for the run.
      */
     progress_pct: number | null;
     status: TrailRunStatus;
