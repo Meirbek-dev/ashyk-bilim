@@ -70,7 +70,8 @@ pub async fn current_version(pool: &PgPool, of: Versioned<'_>) -> Result<Option<
                 .fetch_optional(pool)
                 .await?
         }
-        Versioned::Platform => {
+        // The gamification policy is a part of the platform row.
+        Versioned::Platform | Versioned::GamificationConfig => {
             sqlx::query_scalar!("SELECT version FROM platforms WHERE singleton")
                 .fetch_optional(pool)
                 .await?
@@ -100,11 +101,6 @@ pub async fn current_version(pool: &PgPool, of: Versioned<'_>) -> Result<Option<
         }
         Versioned::FileSubmission(id) => {
             sqlx::query_scalar!("SELECT version FROM file_submissions WHERE id = $1", id.0)
-                .fetch_optional(pool)
-                .await?
-        }
-        Versioned::GamificationConfig => {
-            sqlx::query_scalar!("SELECT version FROM platforms WHERE singleton")
                 .fetch_optional(pool)
                 .await?
         }
