@@ -60,14 +60,14 @@ function expected(leaf: Leaf, role: Role, seed: Seed): Outcome {
     return seed.collectionActions[role].includes('update') ? 'renders' : 'forbidden'
   }
   // The player, the course summary, the file hand-in, the attempt and the code challenge: the enrolled learner and the
-  // course's staff previewing it (the loader reads the learner state).
+  // course's staff previewing it (the loader reads the learner state). The player sits in `_open`: the seeded course is
+  // not open without sign-in (`guest_access`), so its loader sends a guest to sign in like the `_authed` guard.
   const learnerOnly = [
-    '$activityId',
-    'complete',
-    '$activityId_/submission',
-    '$activityId_/attempt',
-    '$activityId_/code',
-  ].map(tail => `/_authed/learn/$courseId/${tail}`)
+    '/_open/learn/$courseId/$activityId',
+    ...['complete', '$activityId_/submission', '$activityId_/attempt', '$activityId_/code'].map(
+      tail => `/_authed/learn/$courseId/${tail}`,
+    ),
+  ]
   if (learnerOnly.includes(leaf.id)) {
     return seed.opensPlayer[role] ? 'renders' : 'forbidden'
   }
@@ -80,7 +80,7 @@ const leaves = leafRoutes()
 
 test('the matrix covers the whole route tree of spec 5.3', () => {
   expect(leaves.length).toBeGreaterThan(50)
-  expect(new Set(leaves.map(leaf => leaf.group))).toEqual(new Set(['_public', '_guest', '_authed', '$']))
+  expect(new Set(leaves.map(leaf => leaf.group))).toEqual(new Set(['_public', '_guest', '_authed', '_open', '$']))
 })
 
 for (const role of ROLES) {
