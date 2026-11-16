@@ -9,6 +9,16 @@
 -- tasks are mapped and nothing mirrors the old tables.
 SET LOCAL lock_timeout = '5s';
 
+-- Nothing below carries a hand-in over: a database that has one stops here instead of losing it.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM file_submission_attempts) OR EXISTS (SELECT 1 FROM file_grading_entries)
+       OR EXISTS (SELECT 1 FROM file_submission_overrides) OR EXISTS (SELECT 1 FROM file_submission_files) THEN
+        RAISE EXCEPTION 'file hand-ins exist; this migration maps file tasks only (REWRITE 5.8 item 1)';
+    END IF;
+END
+$$;
+
 -- A file task takes up to 50 attempts (files/submissions.rs); the server keeps each kind's own limit.
 ALTER TABLE assessments DROP CONSTRAINT IF EXISTS assessments_max_attempts_cap;
 SELECT schema_try_check('assessments', 'assessments_max_attempts_cap', 'max_attempts IS NULL OR max_attempts <= 50');
@@ -29,8 +39,7 @@ SELECT f.id, f.activity_id, f.course_id, f.lifecycle,
        f.late_policy_kind, f.late_penalty_percent_per_day, f.late_penalty_max_days, f.late_cutoff_at,
        f.max_attempts, f.grade_release_mode, 'manual', 'graded', 60, true,
        f.creator_id, f.created_at, f.updated_at
-FROM file_submissions f
-ON CONFLICT DO NOTHING;
+FROM file_submissions f;
 
 -- The extension row belongs to its assessment (file_submissions is empty of orphans after the insert above).
 SELECT schema_try_fk('file_submissions', 'file_submissions_assessment_fkey',

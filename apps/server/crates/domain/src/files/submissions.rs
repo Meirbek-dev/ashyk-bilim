@@ -17,7 +17,8 @@ use ab_core::assessments::{
     FileAttemptStatus, FileSubmissionLifecycle, GradeReleaseMode, LatePolicyKind, SubmissionStatus,
 };
 use ab_core::id::{
-    ActivityId, ChapterId, FileAttemptFileId, FileAttemptId, FileSubmissionId, UserId, UsergroupId,
+    ActivityId, AssessmentId, ChapterId, FileAttemptFileId, FileAttemptId, FileSubmissionId,
+    UserId, UsergroupId,
 };
 use ab_core::permission::{Action, Scope};
 use ab_core::{Error, ErrorCode, FieldError, Result};
@@ -1135,8 +1136,11 @@ impl FileSubmissionsService {
             let number = i32::try_from(completed)
                 .unwrap_or(i32::MAX)
                 .saturating_add(1);
+            // A return of this learner's work waits here (`grade`): one open attempt, which no index says.
+            let mut tx = self.pool.begin().await?;
+            ab_db::submissions::lock_attempts(&mut tx, AssessmentId(row.id.0), user_id).await?;
             let id = ab_db::file_submissions::insert_attempt(
-                &self.pool,
+                &mut *tx,
                 row.id,
                 row.course_id,
                 user_id,
@@ -1144,6 +1148,7 @@ impl FileSubmissionsService {
                 preview,
             )
             .await?;
+            tx.commit().await?;
             if let Some(id) = id {
                 return ab_db::file_submissions::get_attempt(&self.pool, id)
                     .await?
@@ -1572,8 +1577,19 @@ impl FileSubmissionsService {
     }
 
     /// A returned hand-in is the learner's open attempt and they have one at a time (`insert_attempt` asks
-    /// the same from its side): returning `attempt` while another one is open is a 409.
-    async fn require_sole_open(&self, attempt: &AttemptRow) -> Result<()> {
+    /// the same from its side): returning `attempt` while another one is open is a 409. Both hold
+    /// `lock_attempts` to their commit, so neither reads the other half-done.
+    async fn require_sole_open(
+        &self,
+        tx: &mut sqlx::PgConnection,
+        attempt: &AttemptRow,
+    ) -> Result<()> {
+        ab_db::submissions::lock_attempts(
+            tx,
+            AssessmentId(attempt.file_submission_id.0),
+            attempt.user_id,
+        )
+        .await?;
         let open = ab_db::file_submissions::open_attempt(
             &self.pool,
             attempt.file_submission_id,
@@ -1631,9 +1647,6 @@ impl FileSubmissionsService {
                 format!("cannot move a published attempt to {status}"),
             )]));
         }
-        if status == FileAttemptStatus::Returned {
-            self.require_sole_open(&attempt).await?;
-        }
         if status != FileAttemptStatus::Returned && input.final_score.is_none() {
             return Err(Error::validation(vec![field(
                 "final_score",
@@ -1664,6 +1677,9 @@ impl FileSubmissionsService {
             graded_by: actor.user_id,
         };
         let mut tx = self.pool.begin().await?;
+        if status == FileAttemptStatus::Returned {
+            self.require_sole_open(&mut tx, &attempt).await?;
+        }
         if !ab_db::file_submissions::grade_attempt(&mut *tx, id, expected_version, write).await? {
             drop(tx);
             let latest = ab_db::file_submissions::get_attempt(&self.pool, id)
