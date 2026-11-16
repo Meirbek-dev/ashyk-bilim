@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT r.user_id AS \"user_id: UserId\", a.course_id AS \"course_id: CourseId\",\n                  a.activity_id AS \"activity_id: ActivityId\", r.item_id,\n                  (r.purpose = 'visible' AND r.total > 0\n                   AND r.status IN ('accepted', 'wrong_answer', 'compile_error', 'runtime_error', 'time_limit')\n                   AND NOT is_course_staff(a.course_id, r.user_id)) AS \"counts!\",\n                  r.passed, r.total,\n                  extract(epoch FROM COALESCE(r.finished_at, r.created_at))::bigint AS \"observed_at!\"\n           FROM code_runs r JOIN assessments a ON a.id = r.assessment_id\n           WHERE r.id = $1",
+  "query": "SELECT r.user_id AS \"user_id: UserId\", a.course_id AS \"course_id: CourseId\",\n                  a.activity_id AS \"activity_id: ActivityId\", r.item_id,\n                  (r.purpose = 'visible' AND r.total > 0\n                   AND r.verdict IN ('accepted', 'wrong_answer', 'compile_error', 'runtime_error', 'time_limit')\n                   AND NOT is_course_staff(a.course_id, r.user_id)) AS \"counts!\",\n                  r.passed, r.total,\n                  extract(epoch FROM COALESCE(r.finished_at, r.created_at))::bigint AS \"observed_at!\"\n           FROM code_runs r JOIN assessments a ON a.id = r.assessment_id\n           WHERE r.id = $1",
   "describe": {
     "columns": [
       {
@@ -98,5 +98,5 @@
       null
     ]
   },
-  "hash": "6045c688636dcc0edd375861200ce63dd89cea9fcec98b64c3c1715894c1ffda"
+  "hash": "c124864430ca6136048583516af67ace06e9f9a989128d76a2117f59c2fd2333"
 }

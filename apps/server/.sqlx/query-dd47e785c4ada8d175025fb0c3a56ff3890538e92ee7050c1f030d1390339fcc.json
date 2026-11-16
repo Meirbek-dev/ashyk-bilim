@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CodeRunId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  item_id AS \"item_id: AssessmentItemId\",\n                  submission_id AS \"submission_id: SubmissionId\", user_id AS \"user_id: UserId\",\n                  purpose AS \"purpose: CodeRunPurpose\", status AS \"status: CodeRunStatus\",\n                  language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,\n                  score::float8 AS \"score?\", compile_output, error_message,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM finished_at))::bigint AS \"finished_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM code_runs\n           WHERE user_id = $1 AND item_id = $2 AND purpose = $3 AND idempotency_key = $4",
+  "query": "SELECT id AS \"id: CodeRunId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  item_id AS \"item_id: AssessmentItemId\",\n                  submission_id AS \"submission_id: SubmissionId\", user_id AS \"user_id: UserId\",\n                  purpose AS \"purpose: CodeRunPurpose\",\n                  code_run_status(status, verdict) AS \"status!: CodeRunStatus\",\n                  verdict AS \"verdict: RunVerdict\", language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,\n                  score::float8 AS \"score?\", compile_output, error_message,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM finished_at))::bigint AS \"finished_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM code_runs\n           WHERE submission_id = $1 AND item_id = $2 AND purpose = 'final'\n           ORDER BY id DESC LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -71,17 +71,23 @@
       },
       {
         "ordinal": 6,
-        "name": "status: CodeRunStatus",
+        "name": "status!: CodeRunStatus",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "verdict: RunVerdict",
         "type_info": "Text",
         "origin": {
           "Table": {
             "table": "code_runs",
-            "name": "status"
+            "name": "verdict"
           }
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
         "name": "language_id",
         "type_info": "Int4",
         "origin": {
@@ -92,7 +98,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 9,
         "name": "source_sha256",
         "type_info": "Text",
         "origin": {
@@ -103,7 +109,7 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "stdin_sha256",
         "type_info": "Text",
         "origin": {
@@ -114,7 +120,7 @@
         }
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "idempotency_key",
         "type_info": "Text",
         "origin": {
@@ -125,7 +131,7 @@
         }
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "passed",
         "type_info": "Int4",
         "origin": {
@@ -136,7 +142,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "total",
         "type_info": "Int4",
         "origin": {
@@ -147,13 +153,13 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "score?",
         "type_info": "Float8",
         "origin": "Expression"
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "compile_output",
         "type_info": "Text",
         "origin": {
@@ -164,7 +170,7 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "error_message",
         "type_info": "Text",
         "origin": {
@@ -175,19 +181,19 @@
         }
       },
       {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "started_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "finished_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -196,9 +202,7 @@
     "parameters": {
       "Left": [
         "Uuid",
-        "Uuid",
-        "Text",
-        "Text"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -208,7 +212,8 @@
       true,
       false,
       false,
-      false,
+      null,
+      true,
       false,
       false,
       true,
@@ -223,5 +228,5 @@
       null
     ]
   },
-  "hash": "81cf25965e4f0620c2c72f7f8c1e8bbe370fe6299b79810524effa96c7f226be"
+  "hash": "dd47e785c4ada8d175025fb0c3a56ff3890538e92ee7050c1f030d1390339fcc"
 }

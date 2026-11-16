@@ -989,6 +989,18 @@ Queue, in order:
      reads as failed); the API's `AgendaDeadline` has `status` + `passed`, the learner's outline keeps its
      `passed` / `failed` work states. A trigger keeps the previous release's `state` equal both ways. Left: the
      contract dropping `state`, its check and index, and `activity_progress_status`.
+   - Code runs: switched in `20261116075634_code_run_verdict`. `code_runs.verdict` holds how an executed run ended
+     (`internal_error` only when tests ran); the run's status is `queued` / `running` / `done` / `failed` (never
+     executed: rejected, abandoned, not stored) / `degraded`, read through `code_run_status(status, verdict)` because
+     the stored `status` keeps the previous release's spelling (the verdict, `internal_error` for a failed run).
+     The API's `CodeRun` has `status` + `verdict`; a reference check's `status` is the verdict, else the run's
+     status. `code_runs_verdict` fills the verdict from the previous release's writes. Left: the contract that
+     rewrites `status` to the run's state, narrows its check and drops the trigger and the function.
+   - The language as its name: not done, bigger than it looks. Judge0's numeric id is the platform's language key
+     everywhere, not only in `code_runs`: item bodies (`languages`, `starter_code` / `reference_solutions` keyed by
+     it), answers (`language`), frozen `assessment_versions` and `items_snapshot`, `AB__CODE__ALLOWED_LANGUAGE_IDS`,
+     the API (`language_id`) and the web editor. A name in `code_runs` alone would be a second spelling; the switch
+     is its own slice (a slug per language, e.g. the editor mode, read-time translation of the frozen bodies).
 6. **Language, units, hashes**: one language domain; durations in seconds; hashes as sha256 `bytea`.
 7. **Smaller**: `assessments.access_mode` derived from the access rows; `teacher_user_id` out of the rollups
    (a course has several staff); the last login moves from `gamification_profiles` to `users`; triggers that

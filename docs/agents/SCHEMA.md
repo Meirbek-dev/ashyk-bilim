@@ -1275,27 +1275,28 @@ The result of one test case of a code run.
 
 A run of learner code in the go-judge runner: a practice run or the graded run of a submission.
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| assessment_id | uuid |  |  |
-| item_id | uuid |  |  |
-| submission_id | uuid | null |  |
-| user_id | uuid |  |  |
-| purpose | text |  |  |
-| status | text |  | `'queued'::text` |
-| language_id | integer |  |  |
-| source_sha256 | text |  |  |
-| stdin_sha256 | text | null |  |
-| idempotency_key | text | null |  |
-| passed | integer |  | `0` |
-| total | integer |  | `0` |
-| score | percent | null |  |
-| compile_output | text | null |  |
-| error_message | text | null |  |
-| started_at | timestamp with time zone | null |  |
-| finished_at | timestamp with time zone | null |  |
-| created_at | timestamp with time zone |  | `now()` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| assessment_id | uuid |  |  |  |
+| item_id | uuid |  |  |  |
+| submission_id | uuid | null |  |  |
+| user_id | uuid |  |  |  |
+| purpose | text |  |  |  |
+| status | text |  | `'queued'::text` |  |
+| language_id | integer |  |  |  |
+| source_sha256 | text |  |  |  |
+| stdin_sha256 | text | null |  |  |
+| idempotency_key | text | null |  |  |
+| passed | integer |  | `0` |  |
+| total | integer |  | `0` |  |
+| score | percent | null |  |  |
+| compile_output | text | null |  |  |
+| error_message | text | null |  |  |
+| started_at | timestamp with time zone | null |  |  |
+| finished_at | timestamp with time zone | null |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| verdict | text | null |  | How an executed run ended (the first failing test's verdict, else accepted); NULL while it runs or when it never ran. |
 
 - Primary key `code_runs_pkey`: `PRIMARY KEY (id)`
 - Unique `code_runs_user_id_item_id_purpose_idempotency_key_key`: `UNIQUE (user_id, item_id, purpose, idempotency_key)`
@@ -1309,10 +1310,13 @@ A run of learner code in the go-judge runner: a practice run or the graded run o
 - Check `code_runs_source_sha256_format`: `CHECK ((source_sha256 ~ '^[0-9a-f]{64}$'::text))`
 - Check `code_runs_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text, 'degraded'::text])))`
 - Check `code_runs_stdin_sha256_format`: `CHECK ((stdin_sha256 ~ '^[0-9a-f]{64}$'::text))`
+- Check `code_runs_verdict_check`: `CHECK ((verdict = ANY (ARRAY['accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text])))`
+- Check `code_runs_verdict_when_done`: `CHECK (((verdict IS NULL) OR (status <> ALL (ARRAY['queued'::text, 'running'::text, 'degraded'::text]))))`
 - Index `code_runs_assessment_user_idx`: `CREATE INDEX code_runs_assessment_user_idx ON learning.code_runs USING btree (assessment_id, user_id)`
 - Index `code_runs_created_brin`: `CREATE INDEX code_runs_created_brin ON learning.code_runs USING brin (created_at)`
 - Index `code_runs_item_idx`: `CREATE INDEX code_runs_item_idx ON learning.code_runs USING btree (item_id, user_id, created_at DESC)`
 - Index `code_runs_submission_idx`: `CREATE INDEX code_runs_submission_idx ON learning.code_runs USING btree (submission_id)`
+- Trigger `code_runs_verdict`: `CREATE TRIGGER code_runs_verdict BEFORE INSERT OR UPDATE OF status ON learning.code_runs FOR EACH ROW EXECUTE FUNCTION code_runs_verdict()`
 
 ## collection_courses
 

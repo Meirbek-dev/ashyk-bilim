@@ -2,10 +2,12 @@ import { Clock, PencilLine, Undo2, type LucideIcon } from 'lucide-react'
 
 import { m } from '#/paraglide/messages'
 import type {
+  CodeRun,
   CodeRunStatus,
   Difficulty,
   DisabledReason,
   LanguageInfo,
+  RunVerdict,
   SubmissionStatus,
 } from '#/shared/api/gen/types.gen'
 import type { StatusTone } from '#/shared/components/status-badge'
@@ -17,36 +19,48 @@ import type { CaseVerdict } from '../model/verdict'
 type Status = { label: () => string; tone: StatusTone; icon?: LucideIcon }
 
 /** A run's verdict (B-COD-07): the server's enum, never its text. */
-export const runStatus = {
-  queued: { label: m.code_status_queued, tone: 'neutral' },
-  running: { label: m.code_status_running, tone: 'neutral' },
+const runVerdicts = {
   accepted: { label: m.code_status_accepted, tone: 'success' },
   wrong_answer: { label: m.code_status_wrong_answer, tone: 'destructive' },
   compile_error: { label: m.code_status_compile_error, tone: 'destructive' },
   runtime_error: { label: m.code_status_runtime_error, tone: 'destructive' },
   time_limit: { label: m.code_status_time_limit, tone: 'destructive' },
   internal_error: { label: m.code_status_internal_error, tone: 'warning' },
+} satisfies Record<RunVerdict, Status>
+
+/** How far a run got; `done` shows its verdict instead. */
+const runStatuses = {
+  queued: { label: m.code_status_queued, tone: 'neutral' },
+  running: { label: m.code_status_running, tone: 'neutral' },
+  done: runVerdicts.internal_error,
+  failed: runVerdicts.internal_error,
   degraded: { label: m.code_status_degraded, tone: 'warning' },
 } satisfies Record<CodeRunStatus, Status>
 
-const isRunStatus = (status: string): status is CodeRunStatus => Object.hasOwn(runStatus, status)
+const isVerdict = (status: string): status is RunVerdict => Object.hasOwn(runVerdicts, status)
+const isRunStatus = (status: string): status is CodeRunStatus => Object.hasOwn(runStatuses, status)
 
-/** A reference check's `status` (a string in the contract): a run status, or why the language did not run. */
+/** A run's label: its verdict once it ran, else how far it got. */
+export const runStatus = (run: Pick<CodeRun, 'status' | 'verdict'>): Status =>
+  run.verdict ? runVerdicts[run.verdict] : runStatuses[run.status]
+
+/** A reference check's `status` (a string in the contract): the verdict, the run's status, or why it did not run. */
 export function referenceStatus(status: string): Status {
   if (status === 'missing_solution') return { label: m.code_check_missing, tone: 'warning' }
   if (status === 'language_not_allowed') return { label: m.code_check_not_allowed, tone: 'warning' }
-  return isRunStatus(status) ? runStatus[status] : runStatus.internal_error
+  if (isVerdict(status)) return runVerdicts[status]
+  return isRunStatus(status) ? runStatuses[status] : runVerdicts.internal_error
 }
 
 /** One test's verdict (B-COD-08), from the verdict code (Judge0's status ids). */
 export const caseStatus = {
-  accepted: runStatus.accepted,
-  wrong_answer: runStatus.wrong_answer,
-  time_limit: runStatus.time_limit,
-  compile_error: runStatus.compile_error,
-  runtime_error: runStatus.runtime_error,
-  internal_error: runStatus.internal_error,
-  pending: runStatus.running,
+  accepted: runVerdicts.accepted,
+  wrong_answer: runVerdicts.wrong_answer,
+  time_limit: runVerdicts.time_limit,
+  compile_error: runVerdicts.compile_error,
+  runtime_error: runVerdicts.runtime_error,
+  internal_error: runVerdicts.internal_error,
+  pending: runStatuses.running,
 } satisfies Record<CaseVerdict, Status>
 
 export const attemptStatus = {

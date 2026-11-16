@@ -642,7 +642,11 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **Code-run verdicts are the platform's own** (`code_run_cases.verdict`, `TestVerdict`: accepted, wrong_answer,
   time_limit, memory_limit, output_limit, compile_error, runtime_error, internal_error). The API's case
   `status_id` is derived from it (`legacy_status_id`, Judge0's numbers the web maps); the stored
-  Judge0 `status_id` / `judge0_token` are gone (contract `20261103020300`).
+  Judge0 `status_id` / `judge0_token` are gone (contract `20261103020300`). A run has a status (`queued`,
+  `running`, `done`, `failed`: never executed, `degraded`: runner unavailable) and, when done, a `verdict` (the
+  first failing test's, memory and output limits as `runtime_error`; `RunVerdict`). Until the contract the stored
+  `code_runs.status` keeps the previous spelling (the verdict, `internal_error` for a failed run) and
+  `code_run_status(status, verdict)` reads the status (REWRITE 5.8 item 5).
 
 ### SQLx usage
 

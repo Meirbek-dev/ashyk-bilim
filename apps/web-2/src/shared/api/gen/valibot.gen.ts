@@ -747,15 +747,16 @@ export const vCodeRunPurpose = v.picklist([
     'reference_check'
 ]);
 
+/**
+ * How far a code run got. `done`: it executed, `verdict` says how it
+ * ended; `failed`: it never executed (rejected, abandoned, results not
+ * stored); `degraded`: the runner was unavailable (retryable).
+ */
 export const vCodeRunStatus = v.picklist([
     'queued',
     'running',
-    'accepted',
-    'wrong_answer',
-    'compile_error',
-    'runtime_error',
-    'time_limit',
-    'internal_error',
+    'done',
+    'failed',
     'degraded'
 ]);
 
@@ -3154,8 +3155,8 @@ export const vRecommendedAction = v.picklist([
 ]);
 
 /**
- * A reference check's per-language outcome: the run status, or why
- * nothing ran.
+ * A reference check's per-language outcome: the run's verdict, the run's
+ * status when it has none (`failed`, `degraded`), or why nothing ran.
  */
 export const vReferenceCheckStatus = v.picklist([
     'queued',
@@ -3166,6 +3167,7 @@ export const vReferenceCheckStatus = v.picklist([
     'runtime_error',
     'time_limit',
     'internal_error',
+    'failed',
     'degraded',
     'missing_solution',
     'language_not_allowed'
@@ -3533,6 +3535,19 @@ export const vRunStreamRequest = v.strictObject({
     threadId: v.pipe(v.string(), v.minLength(1), v.maxLength(200)),
     tools: v.optional(v.array(vAgUiTool))
 });
+
+/**
+ * How an executed code run ended: its first failing test's verdict
+ * (memory and output limits count as runtime errors), else `accepted`.
+ */
+export const vRunVerdict = v.picklist([
+    'accepted',
+    'wrong_answer',
+    'compile_error',
+    'runtime_error',
+    'time_limit',
+    'internal_error'
+]);
 
 /**
  * Partial answers; items not mentioned keep their current answer.
@@ -4441,7 +4456,8 @@ export const vCodeRun = v.object({
     score: v.nullable(v.number()),
     status: vCodeRunStatus,
     submission_id: v.nullable(vSubmissionId),
-    total: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
+    total: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    verdict: v.nullable(vRunVerdict)
 });
 
 export const vCourseListProgress = v.object({

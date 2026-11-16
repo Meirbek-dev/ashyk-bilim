@@ -12,7 +12,7 @@ use std::time::Duration;
 
 use ab_core::assessments::{
     AssessmentKind, AutoSubmitReason, CodeRunStatus, GradeReleaseMode, ItemKind, ReviewVisibility,
-    SubmissionStatus,
+    RunVerdict, SubmissionStatus,
 };
 use ab_core::id::{AssessmentId, SubmissionId};
 use ab_core::{Error, ErrorCode, Result};
@@ -1337,7 +1337,10 @@ impl SubmissionsService {
         };
         let cases: Vec<CaseOutcome> = match outcome {
             FinalRun::Ran(run) => {
-                if run.status == CodeRunStatus::InternalError {
+                // The runner rejected the program or could not judge a test.
+                if run.status == CodeRunStatus::Failed
+                    || run.verdict == Some(RunVerdict::InternalError)
+                {
                     if lenient {
                         return Ok(manual_review());
                     }
@@ -1348,7 +1351,7 @@ impl SubmissionsService {
                         serde_json::json!({ "is_retryable": false, "item_id": item.id }),
                     ));
                 }
-                if run.status == CodeRunStatus::CompileError && !lenient {
+                if run.verdict == Some(RunVerdict::CompileError) && !lenient {
                     return Err(Error::app_with_details(
                         ErrorCode::CompileError,
                         "source code does not compile",

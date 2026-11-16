@@ -334,16 +334,28 @@ text_enum!(
 );
 
 text_enum!(
+    /// How far a code run got. `done`: it executed, `verdict` says how it
+    /// ended; `failed`: it never executed (rejected, abandoned, results not
+    /// stored); `degraded`: the runner was unavailable (retryable).
     CodeRunStatus {
         Queued => "queued",
         Running => "running",
+        Done => "done",
+        Failed => "failed",
+        Degraded => "degraded",
+    }
+);
+
+text_enum!(
+    /// How an executed code run ended: its first failing test's verdict
+    /// (memory and output limits count as runtime errors), else `accepted`.
+    RunVerdict {
         Accepted => "accepted",
         WrongAnswer => "wrong_answer",
         CompileError => "compile_error",
         RuntimeError => "runtime_error",
         TimeLimit => "time_limit",
         InternalError => "internal_error",
-        Degraded => "degraded",
     }
 );
 
@@ -379,18 +391,16 @@ impl TestVerdict {
         }
     }
 
-    /// The run-level status this outcome rolls up to.
+    /// The run-level verdict this outcome rolls up to.
     #[must_use]
-    pub const fn run_status(self) -> CodeRunStatus {
+    pub const fn run_verdict(self) -> RunVerdict {
         match self {
-            Self::Accepted => CodeRunStatus::Accepted,
-            Self::WrongAnswer => CodeRunStatus::WrongAnswer,
-            Self::TimeLimit => CodeRunStatus::TimeLimit,
-            Self::CompileError => CodeRunStatus::CompileError,
-            Self::RuntimeError | Self::MemoryLimit | Self::OutputLimit => {
-                CodeRunStatus::RuntimeError
-            }
-            Self::InternalError => CodeRunStatus::InternalError,
+            Self::Accepted => RunVerdict::Accepted,
+            Self::WrongAnswer => RunVerdict::WrongAnswer,
+            Self::TimeLimit => RunVerdict::TimeLimit,
+            Self::CompileError => RunVerdict::CompileError,
+            Self::RuntimeError | Self::MemoryLimit | Self::OutputLimit => RunVerdict::RuntimeError,
+            Self::InternalError => RunVerdict::InternalError,
         }
     }
 }

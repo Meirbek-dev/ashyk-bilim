@@ -4,7 +4,7 @@
 use ab_core::Result;
 use ab_core::assessments::{
     AnnotationType, AutoSubmitReason, BulkActionStatus, BulkActionType, CodeRunPurpose,
-    CodeRunStatus, SubmissionStatus, TestVerdict,
+    CodeRunStatus, RunVerdict, SubmissionStatus, TestVerdict,
 };
 use ab_core::id::{
     ActivityId, AssessmentId, AssessmentItemId, AssessmentVersionId, BulkActionId, CodeRunId,
@@ -1425,6 +1425,8 @@ pub struct CodeRunRow {
     pub user_id: UserId,
     pub purpose: CodeRunPurpose,
     pub status: CodeRunStatus,
+    /// How an executed (`done`) run ended.
+    pub verdict: Option<RunVerdict>,
     pub language_id: i32,
     pub source_sha256: String,
     pub stdin_sha256: Option<String>,
@@ -1478,21 +1480,55 @@ pub async fn insert_code_run(pool: &PgPool, r: NewCodeRun<'_>) -> Result<Option<
     Ok(id)
 }
 
+/// How a run finished: it executed (with its verdict), or it did not.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RunEnd {
+    Done(RunVerdict),
+    /// Never executed: rejected, abandoned, results not stored.
+    Failed,
+    /// The runner was unavailable.
+    Degraded,
+}
+
+impl RunEnd {
+    #[must_use]
+    pub const fn status(self) -> CodeRunStatus {
+        match self {
+            Self::Done(_) => CodeRunStatus::Done,
+            Self::Failed => CodeRunStatus::Failed,
+            Self::Degraded => CodeRunStatus::Degraded,
+        }
+    }
+
+    #[must_use]
+    pub const fn verdict(self) -> Option<RunVerdict> {
+        match self {
+            Self::Done(verdict) => Some(verdict),
+            Self::Failed | Self::Degraded => None,
+        }
+    }
+}
+
+/// The stored `status` keeps the previous release's spelling until the contract (the verdict, `internal_error` for
+/// a failed run).
 pub async fn finish_code_run(
     pool: &PgPool,
     id: CodeRunId,
-    status: CodeRunStatus,
+    end: RunEnd,
     passed: i32,
     score: Option<f64>,
     compile_output: Option<&str>,
     error_message: Option<&str>,
 ) -> Result<()> {
     sqlx::query!(
-        r#"UPDATE code_runs SET status = $2, passed = $3, score = $4::float8, compile_output = $5,
-               error_message = $6, finished_at = now()
+        r#"UPDATE code_runs
+           SET status = CASE WHEN $3::text IS NOT NULL THEN $3 WHEN $2 = 'failed' THEN 'internal_error' ELSE $2 END,
+               verdict = $3, passed = $4, score = $5::float8, compile_output = $6,
+               error_message = $7, finished_at = now()
            WHERE id = $1"#,
         id.0,
-        status.as_str(),
+        end.status().as_str(),
+        end.verdict().map(RunVerdict::as_str),
         passed,
         score,
         compile_output,
@@ -1509,8 +1545,9 @@ pub async fn get_code_run(pool: &PgPool, id: CodeRunId) -> Result<Option<CodeRun
         r#"SELECT id AS "id: CodeRunId", assessment_id AS "assessment_id: AssessmentId",
                   item_id AS "item_id: AssessmentItemId",
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
-                  purpose AS "purpose: CodeRunPurpose", status AS "status: CodeRunStatus",
-                  language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,
+                  purpose AS "purpose: CodeRunPurpose",
+                  code_run_status(status, verdict) AS "status!: CodeRunStatus",
+                  verdict AS "verdict: RunVerdict", language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,
                   score::float8 AS "score?", compile_output, error_message,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM finished_at))::bigint AS "finished_at?",
@@ -1536,8 +1573,9 @@ pub async fn find_idempotent_run(
         r#"SELECT id AS "id: CodeRunId", assessment_id AS "assessment_id: AssessmentId",
                   item_id AS "item_id: AssessmentItemId",
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
-                  purpose AS "purpose: CodeRunPurpose", status AS "status: CodeRunStatus",
-                  language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,
+                  purpose AS "purpose: CodeRunPurpose",
+                  code_run_status(status, verdict) AS "status!: CodeRunStatus",
+                  verdict AS "verdict: RunVerdict", language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,
                   score::float8 AS "score?", compile_output, error_message,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM finished_at))::bigint AS "finished_at?",
@@ -1576,8 +1614,9 @@ pub async fn latest_final_run(
         r#"SELECT id AS "id: CodeRunId", assessment_id AS "assessment_id: AssessmentId",
                   item_id AS "item_id: AssessmentItemId",
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
-                  purpose AS "purpose: CodeRunPurpose", status AS "status: CodeRunStatus",
-                  language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,
+                  purpose AS "purpose: CodeRunPurpose",
+                  code_run_status(status, verdict) AS "status!: CodeRunStatus",
+                  verdict AS "verdict: RunVerdict", language_id, source_sha256, stdin_sha256, idempotency_key, passed, total,
                   score::float8 AS "score?", compile_output, error_message,
                   (extract(epoch FROM started_at))::bigint AS "started_at?",
                   (extract(epoch FROM finished_at))::bigint AS "finished_at?",
@@ -1595,14 +1634,14 @@ pub async fn latest_final_run(
 
 /// Delete the final runs that never executed and that a retry replaced.
 ///
-/// Such a run is `degraded` / `internal_error` with no cases, and a later final run of the same submission and
+/// Such a run is `degraded` / `failed` with no cases, and a later final run of the same submission and
 /// item exists: the retry released its key (`clear_idempotency_key`) and [`latest_final_run`] never picks it.
 /// The legacy runner retried one preview hand-in every 30 s for two weeks
 /// (2026-07/08): 41 156 such rows. Counted by [`count_superseded_failed_final_runs`].
 pub async fn delete_superseded_failed_final_runs(pool: &PgPool) -> Result<u64> {
     let done = sqlx::query!(
         r#"DELETE FROM code_runs r
-           WHERE r.purpose = 'final' AND r.status IN ('degraded', 'internal_error')
+           WHERE r.purpose = 'final' AND code_run_status(r.status, r.verdict) IN ('degraded', 'failed')
              AND r.idempotency_key IS NULL AND r.submission_id IS NOT NULL
              AND NOT EXISTS (SELECT 1 FROM code_run_cases c WHERE c.run_id = r.id)
              AND EXISTS (SELECT 1 FROM code_runs n
@@ -1618,7 +1657,7 @@ pub async fn delete_superseded_failed_final_runs(pool: &PgPool) -> Result<u64> {
 pub async fn count_superseded_failed_final_runs(pool: &PgPool) -> Result<i64> {
     let n = sqlx::query_scalar!(
         r#"SELECT count(*) AS "n!" FROM code_runs r
-           WHERE r.purpose = 'final' AND r.status IN ('degraded', 'internal_error')
+           WHERE r.purpose = 'final' AND code_run_status(r.status, r.verdict) IN ('degraded', 'failed')
              AND r.idempotency_key IS NULL AND r.submission_id IS NOT NULL
              AND NOT EXISTS (SELECT 1 FROM code_run_cases c WHERE c.run_id = r.id)
              AND EXISTS (SELECT 1 FROM code_runs n

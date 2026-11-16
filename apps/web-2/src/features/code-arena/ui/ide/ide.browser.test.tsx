@@ -54,7 +54,8 @@ const run = (patch: Partial<CodeRun>): CodeRun => ({
   purpose: 'custom',
   replayed: false,
   score: null,
-  status: 'accepted',
+  status: 'done',
+  verdict: 'accepted',
   submission_id: null,
   ...patch,
 })
@@ -132,7 +133,7 @@ describe('B-COD-29 B-COD-30 B-COD-31 the workspace', () => {
   test('B-COD-31 a wrong answer marks the line where the output departs from the expected one', async () => {
     const wrong = run({
       purpose: 'visible',
-      status: 'wrong_answer',
+      verdict: 'wrong_answer',
       cases: [result({ test_id: 't1', passed: false, status_id: 4, stdin: '1 2', expected: '3\n4', actual: '3\n5' })],
     })
     const screen = await renderInRouter(<RunView run={wrong} title={m.code_run_title()} />)

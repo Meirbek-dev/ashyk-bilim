@@ -1665,13 +1665,19 @@ export type CodeRun = {
     status: CodeRunStatus;
     submission_id: SubmissionId | null;
     total: number;
+    verdict: RunVerdict | null;
 };
 
 export type CodeRunId = string;
 
 export type CodeRunPurpose = 'custom' | 'visible' | 'final' | 'reference_check';
 
-export type CodeRunStatus = 'queued' | 'running' | 'accepted' | 'wrong_answer' | 'compile_error' | 'runtime_error' | 'time_limit' | 'internal_error' | 'degraded';
+/**
+ * How far a code run got. `done`: it executed, `verdict` says how it
+ * ended; `failed`: it never executed (rejected, abandoned, results not
+ * stored); `degraded`: the runner was unavailable (retryable).
+ */
+export type CodeRunStatus = 'queued' | 'running' | 'done' | 'failed' | 'degraded';
 
 /**
  * `GET /code/runner`: the runner state and, when configured, the
@@ -6193,8 +6199,8 @@ export type ReferenceCheck = {
     passed: number;
     score: number | null;
     /**
-     * Run status, or `missing_solution` / `language_not_allowed` when
-     * nothing ran.
+     * The run's verdict, else its status, or `missing_solution` /
+     * `language_not_allowed` when nothing ran.
      */
     status: ReferenceCheckStatus;
     total: number;
@@ -6205,10 +6211,10 @@ export type ReferenceCheckResponse = {
 };
 
 /**
- * A reference check's per-language outcome: the run status, or why
- * nothing ran.
+ * A reference check's per-language outcome: the run's verdict, the run's
+ * status when it has none (`failed`, `degraded`), or why nothing ran.
  */
-export type ReferenceCheckStatus = 'queued' | 'running' | 'accepted' | 'wrong_answer' | 'compile_error' | 'runtime_error' | 'time_limit' | 'internal_error' | 'degraded' | 'missing_solution' | 'language_not_allowed';
+export type ReferenceCheckStatus = 'queued' | 'running' | 'accepted' | 'wrong_answer' | 'compile_error' | 'runtime_error' | 'time_limit' | 'internal_error' | 'failed' | 'degraded' | 'missing_solution' | 'language_not_allowed';
 
 /**
  * Self-registration (DECISIONS 2026-09-12). No `Debug` - carries a password.
@@ -6729,6 +6735,12 @@ export type RunStreamRequest = {
      */
     tools?: Array<AgUiTool>;
 };
+
+/**
+ * How an executed code run ended: its first failing test's verdict
+ * (memory and output limits count as runtime errors), else `accepted`.
+ */
+export type RunVerdict = 'accepted' | 'wrong_answer' | 'compile_error' | 'runtime_error' | 'time_limit' | 'internal_error';
 
 /**
  * Partial answers; items not mentioned keep their current answer.

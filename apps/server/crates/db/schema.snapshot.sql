@@ -594,6 +594,8 @@ constraint code_runs code_runs_total_not_null NOT NULL total
 constraint code_runs code_runs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 constraint code_runs code_runs_user_id_item_id_purpose_idempotency_key_key UNIQUE (user_id, item_id, purpose, idempotency_key)
 constraint code_runs code_runs_user_id_not_null NOT NULL user_id
+constraint code_runs code_runs_verdict_check CHECK ((verdict = ANY (ARRAY['accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text])))
+constraint code_runs code_runs_verdict_when_done CHECK (((verdict IS NULL) OR (status <> ALL (ARRAY['queued'::text, 'running'::text, 'degraded'::text]))))
 constraint collection_courses collection_courses_collection_id_fkey FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
 constraint collection_courses collection_courses_collection_id_not_null NOT NULL collection_id
 constraint collection_courses collection_courses_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
@@ -1803,6 +1805,26 @@ AS $function$
 BEGIN
     NEW.passed := NEW.verdict = 'accepted'
         OR EXISTS (SELECT 1 FROM code_runs r WHERE r.id = NEW.run_id AND r.purpose = 'custom');
+    RETURN NEW;
+END $function$
+function CREATE OR REPLACE FUNCTION public.code_run_status(status text, verdict text)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+RETURN CASE WHEN ((verdict IS NOT NULL) OR (status = 'done'::text)) THEN 'done'::text WHEN (status = ANY (ARRAY['internal_error'::text, 'failed'::text])) THEN 'failed'::text ELSE status END
+function CREATE OR REPLACE FUNCTION public.code_runs_verdict()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF NEW.verdict IS NULL THEN
+        IF NEW.status IN ('accepted', 'wrong_answer', 'compile_error', 'runtime_error', 'time_limit') THEN
+            NEW.verdict := NEW.status;
+        ELSIF NEW.status = 'internal_error' AND EXISTS (SELECT 1 FROM code_run_cases c WHERE c.run_id = NEW.id) THEN
+            NEW.verdict := 'internal_error';
+        END IF;
+    END IF;
     RETURN NEW;
 END $function$
 function CREATE OR REPLACE FUNCTION public.collection_creator(p_collection uuid)
@@ -3723,6 +3745,7 @@ table learning.code_runs stdin_sha256 text DEFAULT -
 table learning.code_runs submission_id uuid DEFAULT -
 table learning.code_runs total integer NOT NULL DEFAULT 0
 table learning.code_runs user_id uuid NOT NULL DEFAULT -
+table learning.code_runs verdict text DEFAULT -
 table learning.completions activity_id uuid NOT NULL DEFAULT -
 table learning.completions completed_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.completions user_id uuid NOT NULL DEFAULT -
@@ -4022,6 +4045,7 @@ trigger CREATE TRIGGER certifications_touch BEFORE UPDATE ON learning.certificat
 trigger CREATE TRIGGER chapters_touch BEFORE UPDATE ON core.chapters FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER chapters_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_key ON core.chapters FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_key', 'thumbnail_upload_id')
 trigger CREATE TRIGGER code_run_cases_passed BEFORE INSERT ON learning.code_run_cases FOR EACH ROW EXECUTE FUNCTION code_run_cases_passed()
+trigger CREATE TRIGGER code_runs_verdict BEFORE INSERT OR UPDATE OF status ON learning.code_runs FOR EACH ROW EXECUTE FUNCTION code_runs_verdict()
 trigger CREATE TRIGGER collection_staff_touch BEFORE UPDATE ON core.collection_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER collections_creator_row AFTER INSERT ON core.collections FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION collections_creator_row()
 trigger CREATE TRIGGER collections_touch BEFORE UPDATE ON core.collections FOR EACH ROW EXECUTE FUNCTION touch_row()

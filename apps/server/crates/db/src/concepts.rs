@@ -759,7 +759,7 @@ pub async fn code_run_fact(pool: &PgPool, id: uuid::Uuid) -> Result<Option<CodeR
         r#"SELECT r.user_id AS "user_id: UserId", a.course_id AS "course_id: CourseId",
                   a.activity_id AS "activity_id: ActivityId", r.item_id,
                   (r.purpose = 'visible' AND r.total > 0
-                   AND r.status IN ('accepted', 'wrong_answer', 'compile_error', 'runtime_error', 'time_limit')
+                   AND r.verdict IN ('accepted', 'wrong_answer', 'compile_error', 'runtime_error', 'time_limit')
                    AND NOT is_course_staff(a.course_id, r.user_id)) AS "counts!",
                   r.passed, r.total,
                   extract(epoch FROM COALESCE(r.finished_at, r.created_at))::bigint AS "observed_at!"

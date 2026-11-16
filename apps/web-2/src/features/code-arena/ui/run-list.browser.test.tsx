@@ -25,7 +25,8 @@ const run = (n: number): CodeRun => ({
   purpose: 'visible',
   replayed: false,
   score: null,
-  status: 'accepted',
+  status: 'done',
+  verdict: 'accepted',
   submission_id: null,
 })
 

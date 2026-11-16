@@ -34,7 +34,7 @@ export function RunList({ itemId, selected }: { itemId: string; selected: string
           two lines, the date with its link over the verdict. */}
       <ul className="grid divide-y border-y text-sm @2xl:grid-cols-[max-content_max-content_minmax(max-content,1fr)_max-content]">
         {shown.map(run => {
-          const status = runStatus[run.status]
+          const status = runStatus(run)
           const open = run.id === selected
           const when = formatDateTime(run.created_at_unix)
           return (

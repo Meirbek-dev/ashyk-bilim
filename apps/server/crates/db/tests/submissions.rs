@@ -4,7 +4,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::assessments::{
-    AutoSubmitReason, CodeRunPurpose, CodeRunStatus, SubmissionStatus, TestVerdict,
+    AutoSubmitReason, CodeRunPurpose, RunVerdict, SubmissionStatus, TestVerdict,
 };
 use ab_core::id::{AssessmentId, AssessmentItemId, CodeRunId, CourseId, SubmissionId, UserId};
 use ab_db::submissions::{self, NewCodeRun, NewGradingEntry, SubmitOutcome};
@@ -326,7 +326,7 @@ async fn code_run(
     pool: &PgPool,
     w: (UserId, AssessmentId, AssessmentItemId, SubmissionId),
     purpose: CodeRunPurpose,
-    status: CodeRunStatus,
+    end: submissions::RunEnd,
     key: &str,
     cleared: bool,
 ) -> CodeRunId {
@@ -349,7 +349,7 @@ async fn code_run(
     .await
     .unwrap()
     .expect("a fresh key");
-    submissions::finish_code_run(pool, id, status, 0, None, None, Some("runner down"))
+    submissions::finish_code_run(pool, id, end, 0, None, None, Some("runner down"))
         .await
         .unwrap();
     if cleared {
@@ -363,7 +363,8 @@ async fn code_run(
 #[ab_testdb::test]
 async fn superseded_failed_final_runs_are_pruned(pool: PgPool) {
     use CodeRunPurpose::{Final, Visible};
-    use CodeRunStatus::{Accepted, Degraded, InternalError};
+    use submissions::RunEnd::{Degraded as DEGRADED, Failed as FAILED};
+    const ACCEPTED: submissions::RunEnd = submissions::RunEnd::Done(RunVerdict::Accepted);
     let (user, course, assessment) = seed(&pool).await;
     let item: uuid::Uuid = sqlx::query_scalar(
         "INSERT INTO assessment_items (assessment_id, kind, position, body)
@@ -380,10 +381,10 @@ async fn superseded_failed_final_runs_are_pruned(pool: PgPool) {
         .unwrap();
     let w = (user, assessment, item, draft);
 
-    let practice = code_run(&pool, w, Visible, Degraded, "v", true).await;
-    let gone_1 = code_run(&pool, w, Final, Degraded, "f1", true).await;
-    let gone_2 = code_run(&pool, w, Final, InternalError, "f2", true).await;
-    let with_cases = code_run(&pool, w, Final, InternalError, "f3", true).await;
+    let practice = code_run(&pool, w, Visible, DEGRADED, "v", true).await;
+    let gone_1 = code_run(&pool, w, Final, DEGRADED, "f1", true).await;
+    let gone_2 = code_run(&pool, w, Final, FAILED, "f2", true).await;
+    let with_cases = code_run(&pool, w, Final, FAILED, "f3", true).await;
     submissions::insert_code_run_cases(
         &pool,
         with_cases,
@@ -408,8 +409,8 @@ async fn superseded_failed_final_runs_are_pruned(pool: PgPool) {
     )
     .await
     .unwrap();
-    let keyed = code_run(&pool, w, Final, Degraded, "f4", false).await;
-    let latest = code_run(&pool, w, Final, Accepted, "f5", false).await;
+    let keyed = code_run(&pool, w, Final, DEGRADED, "f4", false).await;
+    let latest = code_run(&pool, w, Final, ACCEPTED, "f5", false).await;
     // The newest final run stays even when it failed: nothing replaced it.
     let other_item: uuid::Uuid = sqlx::query_scalar(
         "INSERT INTO assessment_items (assessment_id, kind, position, body)
@@ -423,7 +424,7 @@ async fn superseded_failed_final_runs_are_pruned(pool: PgPool) {
         &pool,
         (user, assessment, AssessmentItemId(other_item), draft),
         Final,
-        Degraded,
+        DEGRADED,
         "o1",
         true,
     )

@@ -29,7 +29,7 @@ test('B-COD-21 B-COD-22 the own runs open their verdicts; a graded attempt shows
     ...runOf(made, randomUUID()),
     purpose: 'final' as const,
     submission_id: graded.id,
-    status: 'accepted' as const,
+    verdict: 'accepted' as const,
     passed: 2,
   }
   await page.route(`**/api/v2/assessments/${made.assessment.id}/submissions/me`, route =>

@@ -182,7 +182,10 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
         .await;
     assert_eq!(first.status, StatusCode::CREATED, "{}", first.text());
     let body = first.json();
-    assert_eq!(body["status"], "accepted");
+    assert_eq!(
+        (&body["status"], &body["verdict"]),
+        (&"done".into(), &"accepted".into())
+    );
     assert_eq!(body["purpose"], "visible");
     assert_eq!(body["passed"], 1);
     assert_eq!(body["total"], 1);
@@ -232,7 +235,7 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
         .await;
     assert_eq!(custom.status, StatusCode::CREATED, "{}", custom.text());
     assert_eq!(custom.json()["purpose"], "custom");
-    assert_eq!(custom.json()["status"], "accepted");
+    assert_eq!(custom.json()["verdict"], "accepted");
     assert!(custom.json()["score"].is_null());
     assert_eq!(custom.json()["cases"][0]["test_id"], "custom");
     assert_eq!(custom.json()["cases"][0]["actual"], "25");
@@ -283,7 +286,7 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
         ))
         .await;
     assert_eq!(broken.status, StatusCode::CREATED, "{}", broken.text());
-    assert_eq!(broken.json()["status"], "compile_error");
+    assert_eq!(broken.json()["verdict"], "compile_error");
     assert_eq!(
         broken.json()["compile_output"],
         "SyntaxError: invalid syntax"
@@ -569,6 +572,7 @@ async fn degraded_runner_and_languages(pool: PgPool) {
         .get_as(&alice, &format!("/api/v2/code-runs/{run_id}"))
         .await;
     assert_eq!(recorded.json()["status"], "degraded");
+    assert!(recorded.json()["verdict"].is_null());
     assert_eq!(recorded.json()["error_message"], "code runner unavailable");
 
     // BUG-381: an on-time hand-in is never lost to the runner - it lands
@@ -672,7 +676,7 @@ async fn nul_bytes_in_output_are_stored_not_fatal(pool: PgPool) {
         ))
         .await;
     assert_eq!(ran.status, StatusCode::CREATED, "{}", ran.text());
-    assert_eq!(ran.json()["status"], "wrong_answer");
+    assert_eq!(ran.json()["verdict"], "wrong_answer");
     assert_eq!(ran.json()["cases"][0]["actual"], "4\u{FFFD}");
 
     let draft = app
@@ -715,7 +719,13 @@ async fn in_flight_run_keys_answer_409_until_abandoned(pool: PgPool) {
     let first = app.send(run(&alice, &item_id, Some("k"), &body)).await;
     assert_eq!(first.status, StatusCode::CREATED, "{}", first.text());
     let run_id = uuid::Uuid::parse_str(first.json()["id"].as_str().unwrap()).unwrap();
-    sqlx::query("UPDATE code_runs SET status = 'running' WHERE id = $1")
+    // Still executing: no verdict and no cases yet.
+    sqlx::query("UPDATE code_runs SET status = 'running', verdict = NULL WHERE id = $1")
+        .bind(run_id)
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM code_run_cases WHERE run_id = $1")
         .bind(run_id)
         .execute(&app.pool)
         .await
@@ -733,12 +743,18 @@ async fn in_flight_run_keys_answer_409_until_abandoned(pool: PgPool) {
     let retried = app.send(run(&alice, &item_id, Some("k"), &body)).await;
     assert_eq!(retried.status, StatusCode::CREATED, "{}", retried.text());
     assert_ne!(retried.json()["id"], first.json()["id"]);
-    let old: String = sqlx::query_scalar("SELECT status FROM code_runs WHERE id = $1")
-        .bind(run_id)
-        .fetch_one(&app.pool)
-        .await
-        .unwrap();
-    assert_eq!(old, "internal_error");
+    let old: (String, String, Option<String>) = sqlx::query_as(
+        "SELECT code_run_status(status, verdict), status, verdict FROM code_runs WHERE id = $1",
+    )
+    .bind(run_id)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        old,
+        ("failed".into(), "internal_error".into(), None),
+        "the previous release reads internal_error"
+    );
 }
 
 /// A learner's draft on `id` holding one code answer; returns its id.

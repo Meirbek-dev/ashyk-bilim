@@ -4893,6 +4893,17 @@ expression: json
           "total": {
             "format": "int32",
             "type": "integer"
+          },
+          "verdict": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RunVerdict",
+                "description": "How a `done` run ended; `null` while it runs or when it never ran."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -4911,7 +4922,8 @@ expression: json
           "error_message",
           "finished_at_unix",
           "score",
-          "submission_id"
+          "submission_id",
+          "verdict"
         ],
         "type": "object"
       },
@@ -4929,15 +4941,12 @@ expression: json
         "type": "string"
       },
       "CodeRunStatus": {
+        "description": "How far a code run got. `done`: it executed, `verdict` says how it\nended; `failed`: it never executed (rejected, abandoned, results not\nstored); `degraded`: the runner was unavailable (retryable).",
         "enum": [
           "queued",
           "running",
-          "accepted",
-          "wrong_answer",
-          "compile_error",
-          "runtime_error",
-          "time_limit",
-          "internal_error",
+          "done",
+          "failed",
           "degraded"
         ],
         "type": "string"
@@ -17497,7 +17506,7 @@ expression: json
           },
           "status": {
             "$ref": "#/components/schemas/ReferenceCheckStatus",
-            "description": "Run status, or `missing_solution` / `language_not_allowed` when\nnothing ran."
+            "description": "The run's verdict, else its status, or `missing_solution` /\n`language_not_allowed` when nothing ran."
           },
           "total": {
             "format": "int32",
@@ -17532,7 +17541,7 @@ expression: json
         "type": "object"
       },
       "ReferenceCheckStatus": {
-        "description": "A reference check's per-language outcome: the run status, or why\nnothing ran.",
+        "description": "A reference check's per-language outcome: the run's verdict, the run's\nstatus when it has none (`failed`, `degraded`), or why nothing ran.",
         "enum": [
           "queued",
           "running",
@@ -17542,6 +17551,7 @@ expression: json
           "runtime_error",
           "time_limit",
           "internal_error",
+          "failed",
           "degraded",
           "missing_solution",
           "language_not_allowed"
@@ -19056,6 +19066,18 @@ expression: json
           "runId"
         ],
         "type": "object"
+      },
+      "RunVerdict": {
+        "description": "How an executed code run ended: its first failing test's verdict\n(memory and output limits count as runtime errors), else `accepted`.",
+        "enum": [
+          "accepted",
+          "wrong_answer",
+          "compile_error",
+          "runtime_error",
+          "time_limit",
+          "internal_error"
+        ],
+        "type": "string"
       },
       "SaveDraftRequest": {
         "additionalProperties": false,

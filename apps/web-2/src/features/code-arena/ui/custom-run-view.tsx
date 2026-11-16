@@ -22,7 +22,7 @@ export function CustomRunView({ run }: { run: CodeRun }) {
           {m.code_custom_title()}
         </h2>
         <span className="text-sm">
-          <Verdict status={run.status === 'accepted' ? ran : runStatus[run.status]} />
+          <Verdict status={run.verdict === 'accepted' ? ran : runStatus(run)} />
         </span>
         {result ? <Usage result={result} /> : null}
       </div>

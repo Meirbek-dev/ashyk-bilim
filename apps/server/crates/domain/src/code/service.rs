@@ -4,7 +4,7 @@
 
 use std::time::Duration;
 
-use ab_core::assessments::{CodeRunPurpose, CodeRunStatus, ItemKind};
+use ab_core::assessments::{CodeRunPurpose, ItemKind, RunVerdict};
 use ab_core::id::{AssessmentId, AssessmentItemId, CodeRunId, SubmissionId};
 use ab_core::{Error, ErrorCode, Result};
 use serde::Serialize;
@@ -47,8 +47,8 @@ pub struct LanguageInfo {
     pub monaco_language: &'static str,
 }
 
-/// A reference check's per-language outcome: the run status, or why
-/// nothing ran.
+/// A reference check's per-language outcome: the run's verdict, the run's
+/// status when it has none (`failed`, `degraded`), or why nothing ran.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ReferenceCheckStatus {
@@ -60,6 +60,7 @@ pub enum ReferenceCheckStatus {
     RuntimeError,
     TimeLimit,
     InternalError,
+    Failed,
     Degraded,
     MissingSolution,
     LanguageNotAllowed,
@@ -71,8 +72,8 @@ pub struct ReferenceCheck {
     pub language_id: i32,
     /// Every test passed.
     pub ok: bool,
-    /// Run status, or `missing_solution` / `language_not_allowed` when
-    /// nothing ran.
+    /// The run's verdict, else its status, or `missing_solution` /
+    /// `language_not_allowed` when nothing ran.
     #[schema(value_type = ReferenceCheckStatus)]
     pub status: String,
     pub passed: i32,
@@ -415,8 +416,11 @@ impl CodeRunsService {
                 .await?;
             out.push(ReferenceCheck {
                 language_id,
-                ok: run.status == CodeRunStatus::Accepted,
-                status: run.status.as_str().to_owned(),
+                ok: run.verdict == Some(RunVerdict::Accepted),
+                status: run
+                    .verdict
+                    .map_or_else(|| run.status.as_str(), RunVerdict::as_str)
+                    .to_owned(),
                 passed: run.passed,
                 total: run.total,
                 score: run.score,

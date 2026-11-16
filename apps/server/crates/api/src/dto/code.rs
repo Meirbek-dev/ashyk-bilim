@@ -1,7 +1,7 @@
 //! Code execution DTOs: run requests/results, the reference check, the
 //! language list.
 
-use ab_core::assessments::{CodeRunPurpose, CodeRunStatus};
+use ab_core::assessments::{CodeRunPurpose, CodeRunStatus, RunVerdict};
 use ab_core::id::{AssessmentId, AssessmentItemId, CodeRunId, SubmissionId};
 use ab_domain::code::{CaseResult, CodeRun as DomainRun};
 use serde::{Deserialize, Serialize};
@@ -56,6 +56,8 @@ pub struct CodeRun {
     pub submission_id: Option<SubmissionId>,
     pub purpose: CodeRunPurpose,
     pub status: CodeRunStatus,
+    /// How a `done` run ended; `null` while it runs or when it never ran.
+    pub verdict: Option<RunVerdict>,
     pub language_id: i32,
     pub passed: i32,
     pub total: i32,
@@ -79,6 +81,7 @@ impl From<DomainRun> for CodeRun {
             submission_id: r.submission_id,
             purpose: r.purpose,
             status: r.status,
+            verdict: r.verdict,
             language_id: r.language_id,
             passed: r.passed,
             total: r.total,

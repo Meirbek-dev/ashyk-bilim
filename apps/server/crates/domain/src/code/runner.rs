@@ -5,16 +5,16 @@
 //! Compared to the legacy: hidden-test data is stored in full and masked
 //! on the way out (the legacy nulled it in the DB too, so teachers could
 //! not see what a learner's code printed); a run that the runner rejected is
-//! `internal_error` rather than `degraded`, because retrying it is useless.
+//! `failed` rather than `degraded`, because retrying it is useless.
 
 use std::sync::Arc;
 
 use ab_clients::gojudge::{Batch, GoJudgeClient, Outcome, RunnerError};
-use ab_core::assessments::{CodeRunPurpose, CodeRunStatus, TestVerdict};
+use ab_core::assessments::{CodeRunPurpose, CodeRunStatus, RunVerdict, TestVerdict};
 use ab_core::config::RunnerLimits;
 use ab_core::id::{AssessmentId, AssessmentItemId, CodeRunId, SubmissionId, UserId};
 use ab_core::{Error, ErrorCode, Result};
-use ab_db::submissions::{CodeRunCaseRow, CodeRunRow, NewCodeRun};
+use ab_db::submissions::{CodeRunCaseRow, CodeRunRow, NewCodeRun, RunEnd};
 use serde::Serialize;
 use sqlx::PgPool;
 use utoipa::ToSchema;
@@ -61,6 +61,8 @@ pub struct CodeRun {
     pub user_id: UserId,
     pub purpose: CodeRunPurpose,
     pub status: CodeRunStatus,
+    /// How a `done` run ended; `None` before or without execution.
+    pub verdict: Option<RunVerdict>,
     pub language_id: i32,
     pub passed: i32,
     pub total: i32,
@@ -329,7 +331,7 @@ impl CodeRunner {
                     if let Err(again) = ab_db::submissions::finish_code_run(
                         &self.pool,
                         run_id,
-                        CodeRunStatus::InternalError,
+                        RunEnd::Failed,
                         0,
                         None,
                         None,
@@ -344,8 +346,8 @@ impl CodeRunner {
             }
             Err(err) => {
                 let status = match &err {
-                    RunnerError::Unavailable(_) | RunnerError::Busy(_) => CodeRunStatus::Degraded,
-                    RunnerError::Rejected(_) => CodeRunStatus::InternalError,
+                    RunnerError::Unavailable(_) | RunnerError::Busy(_) => RunEnd::Degraded,
+                    RunnerError::Rejected(_) => RunEnd::Failed,
                 };
                 // UX-291: the upstream detail goes to the log, not the user.
                 tracing::warn!(%run_id, %err, ?status, "code run did not execute");
@@ -371,7 +373,7 @@ impl CodeRunner {
         ab_db::submissions::finish_code_run(
             &self.pool,
             run_id,
-            graded.status,
+            RunEnd::Done(graded.verdict),
             graded.passed,
             graded.score,
             graded.compile_output.as_deref(),
@@ -416,8 +418,8 @@ impl CodeRunner {
             ));
         }
         if matches!(
-            existing.status,
-            CodeRunStatus::Accepted | CodeRunStatus::WrongAnswer
+            existing.verdict,
+            Some(RunVerdict::Accepted | RunVerdict::WrongAnswer)
         ) {
             return Ok(Some(self.with_cases(existing, true).await?));
         }
@@ -432,7 +434,7 @@ impl CodeRunner {
             ab_db::submissions::finish_code_run(
                 &self.pool,
                 existing.id,
-                CodeRunStatus::InternalError,
+                RunEnd::Failed,
                 0,
                 None,
                 None,
@@ -479,7 +481,7 @@ fn now_unix() -> i64 {
 
 struct Graded {
     rows: Vec<CodeRunCaseRow>,
-    status: CodeRunStatus,
+    verdict: RunVerdict,
     passed: i32,
     score: Option<f64>,
     compile_output: Option<String>,
@@ -494,7 +496,7 @@ fn grade_cases(
 ) -> Graded {
     let mut rows = Vec::with_capacity(tests.len());
     let mut passed = 0;
-    let mut overall = CodeRunStatus::Accepted;
+    let mut overall = RunVerdict::Accepted;
     let mut compile_output = None;
     for (position, (test, result)) in tests.iter().zip(results).enumerate() {
         let mut verdict = result.verdict;
@@ -517,9 +519,9 @@ fn grade_cases(
         if scored && case_passed {
             passed += 1;
         }
-        let case_status = verdict.run_status();
-        if case_status != CodeRunStatus::Accepted && overall == CodeRunStatus::Accepted {
-            overall = case_status;
+        let case_verdict = verdict.run_verdict();
+        if case_verdict != RunVerdict::Accepted && overall == RunVerdict::Accepted {
+            overall = case_verdict;
         }
         let compile = truncate(result.compile_output.as_deref(), max_output_bytes);
         if compile_output.is_none() {
@@ -552,12 +554,12 @@ fn grade_cases(
     } else {
         None
     };
-    if scored && passed < total && overall == CodeRunStatus::Accepted {
-        overall = CodeRunStatus::WrongAnswer;
+    if scored && passed < total && overall == RunVerdict::Accepted {
+        overall = RunVerdict::WrongAnswer;
     }
     Graded {
         rows,
-        status: overall,
+        verdict: overall,
         passed: if scored { passed } else { 0 },
         score,
         compile_output,
@@ -584,6 +586,7 @@ fn build(row: CodeRunRow, cases: Vec<CodeRunCaseRow>, replayed: bool) -> CodeRun
         user_id: row.user_id,
         purpose: row.purpose,
         status: row.status,
+        verdict: row.verdict,
         language_id: row.language_id,
         passed: row.passed,
         total: row.total,
@@ -667,7 +670,7 @@ mod tests {
         ];
         let graded = grade_cases(&tests, &results, true, 100);
         assert_eq!(graded.passed, 1);
-        assert_eq!(graded.status, CodeRunStatus::WrongAnswer);
+        assert_eq!(graded.verdict, RunVerdict::WrongAnswer);
         assert_eq!(graded.score, Some(40.0));
         assert_eq!(graded.rows[1].verdict, TestVerdict::WrongAnswer);
         assert_eq!(graded.rows[1].status_description, "Wrong Answer");
@@ -685,7 +688,7 @@ mod tests {
             result(TestVerdict::TimeLimit, None),
         ];
         let graded = grade_cases(&tests, &results, true, 100);
-        assert_eq!(graded.status, CodeRunStatus::CompileError);
+        assert_eq!(graded.verdict, RunVerdict::CompileError);
         assert_eq!(graded.score, Some(0.0));
 
         let custom = grade_cases(
@@ -694,7 +697,7 @@ mod tests {
             false,
             100,
         );
-        assert_eq!(custom.status, CodeRunStatus::Accepted);
+        assert_eq!(custom.verdict, RunVerdict::Accepted);
         assert_eq!(custom.passed, 0);
         assert_eq!(custom.score, None);
         assert!(custom.rows[0].passed);

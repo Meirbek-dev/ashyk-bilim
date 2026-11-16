@@ -46,3 +46,5 @@ column	gamification_completions.source_id	the release after sources are read typ
 trigger	gamification_completions_source_ref	the contract that drops gamification_completions.source_id	REWRITE 5.8 item 4
 column	activity_progress.state	the release after progress reads status + passed (20261116075632); drop activity_progress_activity_state_idx with it	REWRITE 5.8 item 5
 trigger	activity_progress_status	the contract that drops activity_progress.state	REWRITE 5.8 item 5
+constraint	code_runs_status_check	the release after runs are read as status + verdict (20261116075634): rewrite status to code_run_status(status, verdict), check queued/running/done/failed/degraded, drop code_run_status()	REWRITE 5.8 item 5
+trigger	code_runs_verdict	the contract that rewrites code_runs.status	REWRITE 5.8 item 5

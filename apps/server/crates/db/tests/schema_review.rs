@@ -96,7 +96,10 @@
 //!   embedding's subject is a submission.
 //! - REWRITE 5.8 item 5: a learner's progress is a status (how far) plus
 //!   `passed` (how a released grade ended); until the contract the previous
-//!   release's `state` follows both, and its writes set the status.
+//!   release's `state` follows both, and its writes set the status. A code
+//!   run's verdict is its own column beside how far it got; `status` keeps
+//!   the previous release's spelling until the contract, and that release's
+//!   writes fill the verdict.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -2938,6 +2941,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("blocks_upload_ids", "derived"),
         ("chapters_upload_ids", "derived"),
         (
+            "code_runs_verdict",
+            "derived; the previous release's spelling, a contract drops it",
+        ),
+        (
             "code_run_cases_passed",
             "derived; the previous release's copy, a contract drops it",
         ),
@@ -4064,4 +4071,132 @@ async fn progress_is_a_status_and_an_outcome(pool: PgPool) {
         .execute(&pool)
         .await;
     assert!(bad.is_err(), "the outcome is not a status");
+}
+
+#[ab_testdb::test]
+async fn a_code_run_is_a_status_and_a_verdict(pool: PgPool) {
+    use ab_core::assessments::{CodeRunPurpose, CodeRunStatus, RunVerdict};
+    use ab_core::id::{AssessmentId, AssessmentItemId, CodeRunId, UserId};
+    use ab_db::submissions::RunEnd;
+    let w = world(&pool).await;
+    let item: Uuid = sqlx::query_scalar(
+        "INSERT INTO assessment_items (assessment_id, kind, position, body)
+         VALUES ($1, 'code', 1, '{\"kind\": \"code\"}') RETURNING id",
+    )
+    .bind(w.assessment)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let new_run = |key: &'static str| {
+        let pool = pool.clone();
+        async move {
+            ab_db::submissions::insert_code_run(
+                &pool,
+                ab_db::submissions::NewCodeRun {
+                    assessment_id: AssessmentId(w.assessment),
+                    item_id: AssessmentItemId(item),
+                    submission_id: None,
+                    user_id: UserId(w.user),
+                    purpose: CodeRunPurpose::Visible,
+                    language_id: 71,
+                    source_sha256: &"a".repeat(64),
+                    stdin_sha256: None,
+                    idempotency_key: Some(key),
+                    total: 1,
+                },
+            )
+            .await
+            .unwrap()
+            .unwrap()
+        }
+    };
+    let stored = |id: CodeRunId| {
+        let pool = pool.clone();
+        async move {
+            sqlx::query_as::<_, (String, Option<String>, String)>(
+                "SELECT status, verdict, code_run_status(status, verdict) FROM code_runs WHERE id = $1",
+            )
+            .bind(id.0)
+            .fetch_one(&pool)
+            .await
+            .unwrap()
+        }
+    };
+    let ran = new_run("a").await;
+    assert_eq!(
+        stored(ran).await,
+        ("running".into(), None, "running".into())
+    );
+    ab_db::submissions::finish_code_run(
+        &pool,
+        ran,
+        RunEnd::Done(RunVerdict::WrongAnswer),
+        0,
+        None,
+        None,
+        None,
+    )
+    .await
+    .unwrap();
+    // The previous release reads the verdict from `status`.
+    assert_eq!(
+        stored(ran).await,
+        (
+            "wrong_answer".into(),
+            Some("wrong_answer".into()),
+            "done".into()
+        )
+    );
+    let row = ab_db::submissions::get_code_run(&pool, ran)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        (row.status, row.verdict),
+        (CodeRunStatus::Done, Some(RunVerdict::WrongAnswer))
+    );
+    let never = new_run("b").await;
+    ab_db::submissions::finish_code_run(
+        &pool,
+        never,
+        RunEnd::Failed,
+        0,
+        None,
+        None,
+        Some("rejected"),
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        stored(never).await,
+        ("internal_error".into(), None, "failed".into())
+    );
+
+    // The previous release writes a verdict into `status`; `internal_error` is one only when tests ran.
+    let old = new_run("c").await;
+    sqlx::query("UPDATE code_runs SET status = 'time_limit', finished_at = now() WHERE id = $1")
+        .bind(old.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+    assert_eq!(stored(old).await.1.as_deref(), Some("time_limit"));
+    let judged = new_run("d").await;
+    sqlx::query("INSERT INTO code_run_cases (run_id, position, test_id, verdict) VALUES ($1, 0, 't', 'internal_error')")
+        .bind(judged.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "UPDATE code_runs SET status = 'internal_error', finished_at = now() WHERE id = $1",
+    )
+    .bind(judged.0)
+    .execute(&pool)
+    .await
+    .unwrap();
+    assert_eq!(stored(judged).await.2, "done");
+    let bad = sqlx::query("UPDATE code_runs SET verdict = 'degraded' WHERE id = $1")
+        .bind(never.0)
+        .execute(&pool)
+        .await;
+    assert!(bad.is_err(), "a state is not a verdict");
 }

@@ -1,34 +1,33 @@
 import * as v from 'valibot'
 import { m } from '#/paraglide/messages'
-import type { CodeRunStatus } from '#/shared/api/gen/types.gen'
+import type { RunVerdict } from '#/shared/api/gen/types.gen'
 import type { MadeCourse } from '../fixtures/learning'
 import { expect, region, ru, start, SUM, test, typeCode, type Made } from './code-arena-fixture'
 
 test.describe.configure({ timeout: 90_000 })
 const arena = (course: MadeCourse, made: Made) => '/learn/' + course.id + '/' + made.activityId + '/code'
 
-const realVerdicts: { name: string; source: string; language?: number; status: CodeRunStatus; label: () => string }[] =
-  [
-    {
-      name: 'wrong answer',
-      source: 'print(0)',
-      status: 'wrong_answer',
-      label: () => m.code_status_wrong_answer({}, ru),
-    },
-    {
-      name: 'compilation error',
-      source: 'int main( {',
-      language: 54,
-      status: 'compile_error',
-      label: () => m.code_status_compile_error({}, ru),
-    },
-    {
-      name: 'time limit',
-      source: 'while True: pass',
-      status: 'time_limit',
-      label: () => m.code_status_time_limit({}, ru),
-    },
-  ]
+const realVerdicts: { name: string; source: string; language?: number; verdict: RunVerdict; label: () => string }[] = [
+  {
+    name: 'wrong answer',
+    source: 'print(0)',
+    verdict: 'wrong_answer',
+    label: () => m.code_status_wrong_answer({}, ru),
+  },
+  {
+    name: 'compilation error',
+    source: 'int main( {',
+    language: 54,
+    verdict: 'compile_error',
+    label: () => m.code_status_compile_error({}, ru),
+  },
+  {
+    name: 'time limit',
+    source: 'while True: pass',
+    verdict: 'time_limit',
+    label: () => m.code_status_time_limit({}, ru),
+  },
+]
 
 for (const verdict of realVerdicts) {
   test(`@runner a real ${verdict.name} is persisted and survives a reload`, async ({
@@ -62,9 +61,9 @@ for (const verdict of realVerdicts) {
       .poll(async () => {
         const stored = await page.request.get(`/api/v2/code-runs/${run.id}`)
         expect(stored.ok()).toBe(true)
-        return v.parse(v.object({ status: v.string() }), await stored.json()).status
+        return v.parse(v.object({ verdict: v.string() }), await stored.json()).verdict
       })
-      .toBe(verdict.status)
+      .toBe(verdict.verdict)
     await page.reload()
     await expect(
       region(page, m.code_run_title({}, ru)).getByText(verdict.label(), { exact: true }).first(),

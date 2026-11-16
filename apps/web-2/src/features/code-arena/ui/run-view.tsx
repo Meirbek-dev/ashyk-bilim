@@ -17,7 +17,7 @@ type RunViewProps = { run: CodeRun; title: string; level?: 2 | 3 }
 export function RunView({ run, title, level = 2 }: RunViewProps) {
   const id = useId()
   const Heading = level === 2 ? 'h2' : 'h3'
-  const status = runStatus[run.status]
+  const status = runStatus(run)
   return (
     <section aria-labelledby={id} className="flex min-w-0 flex-col gap-4">
       {/* The verdict leads: tests passed as a ring, the verdict word beside it. */}
