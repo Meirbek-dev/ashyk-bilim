@@ -655,7 +655,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `running`, `done`, `failed`: never executed, `degraded`: runner unavailable) and, when done, a `verdict` (the
   first failing test's, memory and output limits as `runtime_error`; `RunVerdict`). The server writes and
   reads the status; `20261116075657` rewrote the rows that spelled it as the verdict (`internal_error` for a failed
-  run), and `code_run_status(status, verdict)` stays a release for the previous server (REWRITE 5.8 item 5).
+  run; REWRITE 5.8 item 5).
 
 ### SQLx usage
 

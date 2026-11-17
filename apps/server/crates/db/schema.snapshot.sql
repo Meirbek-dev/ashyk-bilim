@@ -1736,11 +1736,6 @@ function CREATE OR REPLACE FUNCTION public.certification_text(config jsonb, key 
 AS $function$
     SELECT NULLIF(btrim(CASE jsonb_typeof(config -> key) WHEN 'string' THEN config ->> key END), '')
 $function$
-function CREATE OR REPLACE FUNCTION public.code_run_status(status text, verdict text)
- RETURNS text
- LANGUAGE sql
- IMMUTABLE PARALLEL SAFE
-RETURN CASE WHEN ((verdict IS NOT NULL) OR (status = 'done'::text)) THEN 'done'::text WHEN (status = ANY (ARRAY['internal_error'::text, 'failed'::text])) THEN 'failed'::text ELSE status END
 function CREATE OR REPLACE FUNCTION public.collection_creator(p_collection uuid)
  RETURNS uuid
  LANGUAGE sql

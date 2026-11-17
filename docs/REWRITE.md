@@ -1002,8 +1002,7 @@ Queue, in order:
      check take both spellings) and dropped `code_runs_verdict` (the switch release writes every verdict itself).
      The second contract `20261116075657_code_runs_status_contract` rewrote the old spelling to
      `code_run_status(status, verdict)`, narrowed the check to the five states and lets only a `done` run have a
-     verdict; the server reads `status` directly. Left: dropping `code_run_status()`, which the release before
-     reads through (on the rewritten rows it returns `status`), in the next contract.
+     verdict; the server reads `status` directly. `20261116075658_drop_code_run_status` dropped the function.
    - The language as its name: not done, bigger than it looks. Judge0's numeric id is the platform's language key
      everywhere, not only in `code_runs`: item bodies (`languages`, `starter_code` / `reference_solutions` keyed by
      it), answers (`language`), frozen `assessment_versions` and `items_snapshot`, `AB__CODE__ALLOWED_LANGUAGE_IDS`,

@@ -4044,8 +4044,8 @@ async fn a_code_run_is_a_status_and_a_verdict(pool: PgPool) {
     let stored = |id: CodeRunId| {
         let pool = pool.clone();
         async move {
-            sqlx::query_as::<_, (String, Option<String>, String)>(
-                "SELECT status, verdict, code_run_status(status, verdict) FROM code_runs WHERE id = $1",
+            sqlx::query_as::<_, (String, Option<String>)>(
+                "SELECT status, verdict FROM code_runs WHERE id = $1",
             )
             .bind(id.0)
             .fetch_one(&pool)
@@ -4054,10 +4054,7 @@ async fn a_code_run_is_a_status_and_a_verdict(pool: PgPool) {
         }
     };
     let ran = new_run("a").await;
-    assert_eq!(
-        stored(ran).await,
-        ("running".into(), None, "running".into())
-    );
+    assert_eq!(stored(ran).await, ("running".into(), None));
     ab_db::submissions::finish_code_run(
         &pool,
         ran,
@@ -4071,7 +4068,7 @@ async fn a_code_run_is_a_status_and_a_verdict(pool: PgPool) {
     .unwrap();
     assert_eq!(
         stored(ran).await,
-        ("done".into(), Some("wrong_answer".into()), "done".into())
+        ("done".into(), Some("wrong_answer".into()))
     );
     let row = ab_db::submissions::get_code_run(&pool, ran)
         .await
@@ -4093,10 +4090,7 @@ async fn a_code_run_is_a_status_and_a_verdict(pool: PgPool) {
     )
     .await
     .unwrap();
-    assert_eq!(
-        stored(never).await,
-        ("failed".into(), None, "failed".into())
-    );
+    assert_eq!(stored(never).await, ("failed".into(), None));
 
     // The verdict spelling of `status` is gone (20261116075657), and only a run that executed has a verdict.
     for (status, verdict) in [
@@ -4113,7 +4107,7 @@ async fn a_code_run_is_a_status_and_a_verdict(pool: PgPool) {
             .await;
         assert!(bad.is_err(), "{status} / {verdict:?} is refused");
     }
-    // `code_run_status()` stays for the previous release, which reads through it: every state reads as itself.
+    // A run that never executed may sit in any state without a verdict.
     for status in ["queued", "running", "degraded"] {
         sqlx::query("UPDATE code_runs SET status = $2, verdict = NULL WHERE id = $1")
             .bind(never.0)
@@ -4121,7 +4115,7 @@ async fn a_code_run_is_a_status_and_a_verdict(pool: PgPool) {
             .execute(&pool)
             .await
             .unwrap();
-        assert_eq!(stored(never).await, (status.into(), None, status.into()));
+        assert_eq!(stored(never).await, (status.into(), None));
     }
     let bad = sqlx::query("UPDATE code_runs SET verdict = 'degraded' WHERE id = $1")
         .bind(never.0)
