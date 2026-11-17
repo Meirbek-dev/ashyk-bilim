@@ -1525,8 +1525,8 @@ impl RunEnd {
     }
 }
 
-/// The stored `status` keeps the previous release's spelling until the contract (the verdict, `internal_error` for
-/// a failed run).
+/// The stored `status` is the run's state (`done`, `failed`, `degraded`); rows the previous release wrote spell it as the
+/// verdict until the next contract rewrites them, so readers go through `code_run_status()`.
 pub async fn finish_code_run(
     pool: &PgPool,
     id: CodeRunId,
@@ -1538,8 +1538,7 @@ pub async fn finish_code_run(
 ) -> Result<()> {
     sqlx::query!(
         r#"UPDATE code_runs
-           SET status = CASE WHEN $3::text IS NOT NULL THEN $3 WHEN $2 = 'failed' THEN 'internal_error' ELSE $2 END,
-               verdict = $3, passed = $4, score = $5::float8, compile_output = $6,
+           SET status = $2, verdict = $3, passed = $4, score = $5::float8, compile_output = $6,
                error_message = $7, finished_at = now()
            WHERE id = $1"#,
         id.0,
@@ -1702,8 +1701,7 @@ pub struct CodeRunCaseRow {
     pub is_visible: bool,
     pub verdict: TestVerdict,
     pub status_description: String,
-    /// Read as "accepted, or a custom-input run" (`list_code_run_cases`);
-    /// never written: the stored column is the previous release's.
+    /// Computed on read: "accepted, or a custom-input run" (`list_code_run_cases`), not stored.
     pub passed: bool,
     pub stdout: Option<String>,
     pub stderr: Option<String>,

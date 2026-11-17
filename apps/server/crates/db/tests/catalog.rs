@@ -356,8 +356,8 @@ async fn seed_user(pool: &PgPool, name: &str) -> uuid::Uuid {
 
 async fn seed_code_runs(pool: &PgPool, item: uuid::Uuid, user: uuid::Uuid, runs: i32) {
     sqlx::query(
-        "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, source_sha256, finished_at)
-         SELECT i.assessment_id, i.id, $2, 'custom', 'accepted', 71, md5(g::text) || md5(g::text), now()
+        "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, code_sha256, finished_at)
+         SELECT i.assessment_id, i.id, $2, 'custom', 'done', 71, sha256(convert_to(g::text, 'UTF8')), now()
            FROM assessment_items i CROSS JOIN generate_series(1, $3) g WHERE i.id = $1",
     )
     .bind(item)
@@ -384,8 +384,7 @@ async fn only_a_learners_code_run_is_learner_work(pool: PgPool) {
     let teacher = seed_user(&pool, "teacher").await;
     let learner = seed_user(&pool, "learner").await;
     sqlx::query(
-        "WITH c AS (UPDATE courses SET creator_id = $2 WHERE id = $1)
-         INSERT INTO course_staff (course_id, user_id, authorship, status)
+        "INSERT INTO course_staff (course_id, user_id, authorship, status)
          VALUES ($1, $2, 'creator', 'active')",
     )
     .bind(course)

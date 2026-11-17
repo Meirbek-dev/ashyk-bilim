@@ -33,11 +33,11 @@ pub async fn insert_collection(
     course_ids: &[CourseId],
 ) -> Result<CollectionId> {
     let id = sqlx::query_scalar!(
-        r#"WITH collection AS (INSERT INTO collections (name, description, public, creator_id)
-                               VALUES ($1, $2, $3, $4)
-                               RETURNING id, creator_id),
+        r#"WITH collection AS (INSERT INTO collections (name, description, public)
+                               VALUES ($1, $2, $3)
+                               RETURNING id),
                 staff AS (INSERT INTO collection_staff (collection_id, user_id, authorship, status)
-                          SELECT id, creator_id, 'creator', 'active' FROM collection
+                          SELECT id, $4::uuid, 'creator', 'active' FROM collection
                           ON CONFLICT DO NOTHING)
            SELECT id AS "id!" FROM collection"#,
         name,

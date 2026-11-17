@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH collection AS (INSERT INTO collections (name, description, public)\n                               VALUES ($1, $2, $3)\n                               RETURNING id),\n                staff AS (INSERT INTO collection_staff (collection_id, user_id, authorship, status)\n                          SELECT id, $4::uuid, 'creator', 'active' FROM collection\n                          ON CONFLICT DO NOTHING)\n           SELECT id AS \"id!\" FROM collection",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "collections",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Bool",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "17eb9da9fe81c1eba23151d4d3ee00bfe8155a06a34ab5469d48aecce8618754"
+}

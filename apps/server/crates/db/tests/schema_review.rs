@@ -94,24 +94,19 @@
 //!   collection's creator is its one `creator` staff row; an award's or a
 //!   completion's source is a uuid (or the login bonus's day), and an answer
 //!   embedding's subject is a submission.
-//! - REWRITE 5.8 item 5: a learner's progress is a status (how far) plus
-//!   `passed` (how a released grade ended); until the contract the previous
-//!   release's `state` follows both, and its writes set the status. A code
-//!   run's verdict is its own column beside how far it got; `status` keeps
-//!   the previous release's spelling until the contract, and that release's
-//!   writes fill the verdict. A deletion is a timestamp (`deleted_at`): a
-//!   message's or a discussion's `deleted` status follows it.
+//! - REWRITE 5.8 item 5: a learner's progress is a status (how far, `not_started`
+//!   by default) plus `passed` (how a released grade ended). A code run's
+//!   verdict is its own column beside how far it got; the server stores the
+//!   run's state, and the previous release's spelling (the verdict in
+//!   `status`) still reads as the same state. A deletion is a timestamp
+//!   (`deleted_at`): a message's or a discussion's `deleted` status is read
+//!   from it, a post's stored status is its moderation.
 //! - REWRITE 5.8 item 6: a stored human language is the `language_code`
 //!   domain (`ru`, `kk`, `en`); an AI answer's language is `auto` or one of
-//!   them, no region tag. A stored duration is whole seconds
-//!   (`*_seconds`); until the contract the previous release's minutes,
-//!   hours and `ai_runs.duration_ms` follow, and its writes set the seconds.
-//!   A hash is a sha256 `bytea` of 32 bytes; until the contract the
-//!   previous release's hex copies follow both ways.
-//! - REWRITE 5.8 item 7: the last login is `users.last_login_at`; until the
-//!   contract the gamification profile's copy follows both ways. The server
-//!   numbers a grade entry and sets its points; the triggers fill only what
-//!   the previous release leaves unset.
+//!   them, no region tag. A stored duration is whole seconds (`*_seconds`,
+//!   no grace period by default). A hash is a sha256 `bytea` of 32 bytes.
+//! - REWRITE 5.8 item 7: the server numbers a grade entry and sets its
+//!   points.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::{assessments::NotificationType, config::RetentionConfig};
@@ -346,8 +341,8 @@ async fn retention_sweeps_old_logs_and_keeps_learner_work(pool: PgPool) {
     for purpose in ["custom", "final"] {
         let run: Uuid = sqlx::query_scalar(
             "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id,
-                                    source_sha256, compile_output, created_at, finished_at)
-             VALUES ($1, $2, $3, $4, 'accepted', 71, repeat('a', 64), 'warning', now() - interval '200 days',
+                                    code_sha256, compile_output, created_at, finished_at)
+             VALUES ($1, $2, $3, $4, 'done', 71, sha256('a'), 'warning', now() - interval '200 days',
                      now() - interval '200 days')
              RETURNING id",
         )
@@ -359,8 +354,8 @@ async fn retention_sweeps_old_logs_and_keeps_learner_work(pool: PgPool) {
         .await
         .unwrap();
         sqlx::query(
-            "INSERT INTO code_run_cases (run_id, position, test_id, verdict, passed, stdout, stderr)
-             VALUES ($1, 1, 't1', 'accepted', true, 'out', 'err')",
+            "INSERT INTO code_run_cases (run_id, position, test_id, verdict, stdout, stderr)
+             VALUES ($1, 1, 't1', 'accepted', 'out', 'err')",
         )
         .bind(run)
         .execute(&pool)
@@ -381,7 +376,7 @@ async fn retention_sweeps_old_logs_and_keeps_learner_work(pool: PgPool) {
         .unwrap();
     assert_eq!(jobs, ["t:dead", "t:new", "t:queued"]);
     let outputs: Vec<(String, Option<String>, Option<String>, bool)> = sqlx::query_as(
-        "SELECT r.purpose, r.compile_output, c.stdout, c.passed
+        "SELECT r.purpose, r.compile_output, c.stdout, c.verdict = 'accepted'
          FROM code_runs r JOIN code_run_cases c ON c.run_id = r.id ORDER BY r.purpose",
     )
     .fetch_all(&pool)
@@ -710,7 +705,7 @@ async fn gamification_totals_are_reconciled_from_the_journals(pool: PgPool) {
         .await
         .unwrap();
         sqlx::query(
-            "INSERT INTO gamification_completions (user_id, kind, source_id) VALUES ($1, 'activity', uuidv7()::text)",
+            "INSERT INTO gamification_completions (user_id, kind, source_uuid) VALUES ($1, 'activity', uuidv7())",
         )
         .bind(id)
         .execute(&pool)
@@ -719,7 +714,7 @@ async fn gamification_totals_are_reconciled_from_the_journals(pool: PgPool) {
     }
     for (id, amount) in [(drifted, 100), (drifted, 50), (sound, 150)] {
         sqlx::query(
-            "INSERT INTO xp_transactions (user_id, amount, source, source_id, previous_level)              VALUES ($1, $2, 'admin_award', uuidv7()::text, 1)",
+            "INSERT INTO xp_transactions (user_id, amount, source, source_uuid) VALUES ($1, $2, 'admin_award', uuidv7())",
         )
         .bind(id)
         .bind(amount)
@@ -761,8 +756,8 @@ async fn grade_journals_guard_the_whole_row(pool: PgPool) {
     let w = world(&pool).await;
     let submission = submission(&pool, &w, 1, false).await.unwrap();
     let entry: Uuid = sqlx::query_scalar(
-        "WITH e AS (INSERT INTO grading_entries (submission_id, raw_score, final_score)
-                    VALUES ($1, 80, 80) RETURNING id, submission_id, effective_breakdown),
+        "WITH e AS (INSERT INTO grading_entries (submission_id, revision, raw_score, final_score)
+                    VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 80, 80) RETURNING id, submission_id, effective_breakdown),
               current AS (UPDATE submissions s SET final_score = 80
                           FROM e WHERE s.id = e.submission_id)
          SELECT id FROM e",
@@ -789,8 +784,8 @@ async fn erasing_a_grader_keeps_the_journal(pool: PgPool) {
     let grader = user(&pool, "grader").await;
     let submission = submission(&pool, &w, 1, false).await.unwrap();
     let entry: Uuid = sqlx::query_scalar(
-        "WITH e AS (INSERT INTO grading_entries (submission_id, graded_by, raw_score, final_score)
-                    VALUES ($1, $2, 80, 80) RETURNING id, submission_id, effective_breakdown),
+        "WITH e AS (INSERT INTO grading_entries (submission_id, revision, graded_by, raw_score, final_score)
+                    VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), $2, 80, 80) RETURNING id, submission_id, effective_breakdown),
               current AS (UPDATE submissions s SET final_score = 80
                           FROM e WHERE s.id = e.submission_id)
          SELECT id FROM e",
@@ -1637,8 +1632,8 @@ async fn a_code_run_case_stores_the_platforms_verdict(pool: PgPool) {
     .unwrap();
     let run: Uuid = sqlx::query_scalar(
         "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id,
-                                source_sha256, finished_at)
-         VALUES ($1, $2, $3, 'visible', 'runtime_error', 71, repeat('a', 64), now()) RETURNING id",
+                                code_sha256, finished_at)
+         VALUES ($1, $2, $3, 'visible', 'done', 71, sha256('a'), now()) RETURNING id",
     )
     .bind(w.assessment)
     .bind(item)
@@ -1755,8 +1750,8 @@ async fn the_current_grade_is_the_latest_journal_entry(pool: PgPool) {
         .await
         .unwrap();
     let entry =
-        "INSERT INTO grading_entries (submission_id, raw_score, final_score, effective_breakdown)
-                 VALUES ($1, 80, $2, '{\"feedback\": \"ok\"}')";
+        "INSERT INTO grading_entries (submission_id, revision, raw_score, final_score, effective_breakdown)
+                 VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 80, $2, '{\"feedback\": \"ok\"}')";
     let refused = sqlx::query(entry).bind(sub).bind(80.0).execute(&pool).await;
     assert!(
         refused.is_err(),
@@ -1972,36 +1967,6 @@ async fn a_grade_entry_keeps_its_points(pool: PgPool) {
         (1, 3.0, 3.0, 1.0),
         "round(33.33 * 3 / 100, 2) = 1.00"
     );
-    // The previous release inserts without them: the triggers fill only what it leaves unset.
-    let mut tx = pool.begin().await.unwrap();
-    sqlx::query(
-        "INSERT INTO grading_entries (submission_id, raw_score, final_score) VALUES ($1, 100, 66.67)",
-    )
-    .bind(sub)
-    .execute(&mut *tx)
-    .await
-    .unwrap();
-    sqlx::query(
-        "INSERT INTO grading_entries (submission_id, revision, raw_score, final_score,
-                                      max_points, raw_points, final_points)
-         VALUES ($1, 7, 100, 50, 4, 4, 2)",
-    )
-    .bind(sub)
-    .execute(&mut *tx)
-    .await
-    .unwrap();
-    sqlx::query("UPDATE submissions SET final_score = 50 WHERE id = $1")
-        .bind(sub)
-        .execute(&mut *tx)
-        .await
-        .unwrap();
-    tx.commit().await.unwrap();
-    assert_eq!(entry(2).await, (2, 3.0, 3.0, 2.0));
-    assert_eq!(
-        entry(7).await,
-        (7, 4.0, 4.0, 2.0),
-        "a writer's own values stay"
-    );
 
     // Round trip: within 0.5 / max_points percentage points.
     for (percent, max_points) in [(33.33, 3.0), (66.67, 3.0), (12.34, 7.0), (99.99, 1.0)] {
@@ -2040,14 +2005,29 @@ async fn a_grade_entry_keeps_its_points(pool: PgPool) {
     .await
     .unwrap();
     let mut tx = pool.begin().await.unwrap();
-    let none: Option<f64> = sqlx::query_scalar(
-        "INSERT INTO grading_entries (submission_id, raw_score, final_score, effective_breakdown)
-         VALUES ($1, 80, 80, '{}') RETURNING final_points::float8",
+    let written = ab_db::submissions::insert_grading_entry(
+        &mut tx,
+        ab_db::submissions::NewGradingEntry {
+            submission_id: ab_core::id::SubmissionId(legacy),
+            graded_by: None,
+            raw_score: 80.0,
+            penalty_pct: 0.0,
+            final_score: Some(80.0),
+            raw_breakdown: &breakdown,
+            effective_breakdown: &breakdown,
+            overall_feedback: "",
+            published: false,
+            returned: false,
+        },
     )
-    .bind(legacy)
-    .fetch_one(&mut *tx)
     .await
     .unwrap();
+    let none: Option<f64> =
+        sqlx::query_scalar("SELECT final_points::float8 FROM grading_entries WHERE id = $1")
+            .bind(written.0)
+            .fetch_one(&mut *tx)
+            .await
+            .unwrap();
     assert_eq!(none, None);
     tx.rollback().await.unwrap();
 }
@@ -2116,8 +2096,8 @@ async fn the_breakdown_is_read_from_the_journal(pool: PgPool) {
     let graded = serde_json::json!({ "items": [], "feedback": "ok" });
     let mut tx = pool.begin().await.unwrap();
     sqlx::query(
-        "INSERT INTO grading_entries (submission_id, raw_score, final_score, raw_breakdown, effective_breakdown)
-         VALUES ($1, 70, 70, $2, $3)",
+        "INSERT INTO grading_entries (submission_id, revision, raw_score, final_score, raw_breakdown, effective_breakdown)
+         VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 70, 70, $2, $3)",
     )
     .bind(draft)
     .bind(&auto)
@@ -2625,8 +2605,8 @@ async fn a_row_cannot_point_at_someone_elses_work(pool: PgPool) {
     .unwrap();
     // The same rows with the right owner go in, so what refuses the ones below is the key.
     sqlx::query(
-        "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status, language_id, source_sha256)
-         VALUES ($1, $2, $3, $4, 'custom', 'queued', 71, repeat('a', 64))",
+        "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status, language_id, code_sha256)
+         VALUES ($1, $2, $3, $4, 'custom', 'queued', 71, sha256('a'))",
     )
     .bind(w.assessment)
     .bind(own_item)
@@ -2661,8 +2641,8 @@ async fn a_row_cannot_point_at_someone_elses_work(pool: PgPool) {
         (
             "a code run of an item of another assessment",
             sqlx::query(
-                "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, source_sha256)
-                 VALUES ($1, $2, $3, 'custom', 'queued', 71, repeat('a', 64))",
+                "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, code_sha256)
+                 VALUES ($1, $2, $3, 'custom', 'queued', 71, sha256('a'))",
             )
             .bind(w.assessment)
             .bind(foreign_item)
@@ -2673,8 +2653,8 @@ async fn a_row_cannot_point_at_someone_elses_work(pool: PgPool) {
         (
             "a code run on another learner's submission",
             sqlx::query(
-                "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status, language_id, source_sha256)
-                 VALUES ($1, $2, $3, $4, 'custom', 'queued', 71, repeat('a', 64))",
+                "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status, language_id, code_sha256)
+                 VALUES ($1, $2, $3, $4, 'custom', 'queued', 71, sha256('a'))",
             )
             .bind(w.assessment)
             .bind(own_item)
@@ -2721,8 +2701,8 @@ async fn item_feedback_belongs_to_its_entry_and_is_frozen(pool: PgPool) {
     let first = submission(&pool, &w, 1, false).await.unwrap();
     let second = submission(&pool, &w, 2, false).await.unwrap();
     let entry: Uuid = sqlx::query_scalar(
-        "WITH e AS (INSERT INTO grading_entries (submission_id, raw_score, final_score)
-                    VALUES ($1, 80, 80) RETURNING id, submission_id),
+        "WITH e AS (INSERT INTO grading_entries (submission_id, revision, raw_score, final_score)
+                    VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 80, 80) RETURNING id, submission_id),
               current AS (UPDATE submissions s SET final_score = 80
                           FROM e WHERE s.id = e.submission_id)
          SELECT id FROM e",
@@ -2748,32 +2728,44 @@ async fn item_feedback_belongs_to_its_entry_and_is_frozen(pool: PgPool) {
         .execute(&pool)
         .await;
     assert!(edited.is_err(), "a score edit after the entry was written");
-    // Erasing the grader still clears the name.
-    sqlx::query("UPDATE item_feedback SET graded_by = NULL WHERE grading_entry_id = $1")
-        .bind(entry)
-        .execute(&pool)
-        .await
-        .unwrap();
 }
 
 #[ab_testdb::test]
 async fn the_journal_numbers_entries_per_attempt(pool: PgPool) {
     let w = world(&pool).await;
     let attempt = submission(&pool, &w, 1, false).await.unwrap();
+    let breakdown = serde_json::json!({});
     let mut numbers = vec![];
-    for score in [70, 80, 90] {
+    for score in [70.0, 80.0, 90.0] {
+        let mut tx = pool.begin().await.unwrap();
+        let entry = ab_db::submissions::insert_grading_entry(
+            &mut tx,
+            ab_db::submissions::NewGradingEntry {
+                submission_id: ab_core::id::SubmissionId(attempt),
+                graded_by: None,
+                raw_score: score,
+                penalty_pct: 0.0,
+                final_score: Some(score),
+                raw_breakdown: &breakdown,
+                effective_breakdown: &breakdown,
+                overall_feedback: "",
+                published: false,
+                returned: false,
+            },
+        )
+        .await
+        .unwrap();
         let revision: i32 = sqlx::query_scalar(
-            "WITH e AS (INSERT INTO grading_entries (submission_id, raw_score, final_score)
-                        VALUES ($1, $2::numeric, $2::numeric) RETURNING submission_id, final_score, revision),
-                  current AS (UPDATE submissions s SET final_score = e.final_score
-                              FROM e WHERE s.id = e.submission_id)
-             SELECT revision FROM e",
+            "WITH current AS (UPDATE submissions SET final_score = $2::numeric WHERE id = $1)
+             SELECT revision FROM grading_entries WHERE id = $3",
         )
         .bind(attempt)
         .bind(score)
-        .fetch_one(&pool)
+        .bind(entry.0)
+        .fetch_one(&mut *tx)
         .await
         .unwrap();
+        tx.commit().await.unwrap();
         numbers.push(revision);
     }
     assert_eq!(numbers, [1, 2, 3]);
@@ -2795,9 +2787,9 @@ async fn a_finished_code_run_says_when_and_counts_add_up(pool: PgPool) {
         let (assessment, user) = (w.assessment, w.user);
         async move {
             sqlx::query(
-                "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, source_sha256,
+                "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, code_sha256,
                                         passed, total, finished_at)
-                 VALUES ($1, $2, $3, 'custom', $4, 71, repeat('a', 64), $5, $6, CASE WHEN $7 THEN now() END)",
+                 VALUES ($1, $2, $3, 'custom', $4, 71, sha256('a'), $5, $6, CASE WHEN $7 THEN now() END)",
             )
             .bind(assessment)
             .bind(item)
@@ -2811,15 +2803,12 @@ async fn a_finished_code_run_says_when_and_counts_add_up(pool: PgPool) {
         }
     };
     insert("queued", false, 0, 0).await.unwrap();
+    assert!(insert("done", false, 1, 1).await.is_err(), "no finish time");
     assert!(
-        insert("accepted", false, 1, 1).await.is_err(),
-        "no finish time"
-    );
-    assert!(
-        insert("accepted", true, 2, 1).await.is_err(),
+        insert("done", true, 2, 1).await.is_err(),
         "more passed than ran"
     );
-    insert("accepted", true, 1, 1).await.unwrap();
+    insert("done", true, 1, 1).await.unwrap();
 }
 
 /// Schema review 2026-11-07: content deletes never reach what a learner handed in.
@@ -2996,183 +2985,42 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("submissions_snapshots_frozen", "guard"),
         // Derived: a value computable from the row or its children.
         (
-            "activity_progress_status",
-            "derived; the previous release's state, a contract drops it",
-        ),
-        (
-            "ai_course_analyses_sha256",
-            "derived; the previous release's hex copy, a contract drops it",
-        ),
-        (
-            "ai_work_embeddings_sha256",
-            "derived; the previous release's hex copy, a contract drops it",
-        ),
-        (
-            "ai_runs_duration",
-            "derived; the previous release's duration_ms, a contract drops it",
-        ),
-        (
             "activities_required_from_settings",
             "derived; goes with the settings key",
         ),
-        (
-            "assessment_items_estimate",
-            "derived; the previous release's minutes, a contract drops it",
-        ),
         ("assessment_items_upload_ids", "derived"),
-        (
-            "assessments_grace_period",
-            "derived; the previous release's minutes, a contract drops it",
-        ),
         ("assessment_versions_points", "derived"),
         ("assessment_versions_upload_ids", "derived"),
         ("blocks_upload_ids", "derived"),
         ("chapters_upload_ids", "derived"),
         (
-            "code_runs_verdict",
-            "derived; the previous release's spelling, a contract drops it",
-        ),
-        (
-            "code_runs_sha256",
-            "derived; the previous release's hex copies, a contract drops it",
-        ),
-        (
-            "code_run_cases_passed",
-            "derived; the previous release's copy, a contract drops it",
-        ),
-        (
             "collections_creator_row",
-            "derived; the previous release's writes, a contract drops it",
+            "derived; writers that name only creator_id, a contract drops it",
         ),
         ("collections_upload_ids", "derived"),
         (
             "course_discussions_recount_replies",
             "derived; reads count on read, a contract drops it",
         ),
-        (
-            "course_discussions_deleted_status",
-            "derived; the previous release's status, a contract drops it",
-        ),
         ("course_discussions_upload_ids", "derived"),
-        (
-            "file_submission_files_from_upload",
-            "derived; the previous release's copy, a contract drops it",
-        ),
         (
             "courses_creator_row",
             "derived; writers that name only creator_id, a contract drops it",
         ),
         ("courses_upload_ids", "derived"),
         (
-            "daily_assessment_metrics_latency",
-            "derived; the previous release's hours, a contract drops it",
-        ),
-        (
             "discussion_reactions_recount",
             "derived; reads count on read, a contract drops it",
         ),
-        (
-            "gamification_completions_source_ref",
-            "derived; the previous release's text copy, a contract drops it",
-        ),
-        (
-            "gamification_profiles_last_login",
-            "derived; the previous release's writes, a contract drops it",
-        ),
-        (
-            "grading_entries_number",
-            "derived; fills the previous release's inserts, a contract drops it",
-        ),
-        (
-            "grading_entries_points",
-            "derived; fills the previous release's inserts, a contract drops it",
-        ),
-        (
-            "idempotency_keys_sha256",
-            "derived; the previous release's hex copy, a contract drops it",
-        ),
         ("item_feedback_upload_ids", "derived"),
-        (
-            "messages_deleted_status",
-            "derived; the previous release's status, a contract drops it",
-        ),
         ("platforms_upload_ids", "derived"),
-        (
-            "users_last_login",
-            "derived; the previous release's copy, a contract drops it",
-        ),
         ("translations_touch_platform", "derived"),
         ("users_upload_ids", "derived"),
-        (
-            "xp_transactions_source_ref",
-            "derived; the previous release's text copy, a contract drops it",
-        ),
-        (
-            "xp_transactions_levels",
-            "derived; the previous release's copy, a contract drops it",
-        ),
         // Business steps, known debts: move to the code that issues and renames. The renaming writers re-issue
         // themselves since 2026-11-08 (`certificates::renaming_writers_reissue_without_the_trigger`): a contract
         // a release later drops `users_reissue_certificates`.
         ("users_reissue_certificates", "debt"),
         ("users_sync_state", "debt"),
-        // The previous release's column names (REWRITE 5.8 item 9): `renamed_columns()` keeps each pair equal.
-        (
-            "activities_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
-        (
-            "analytics_events_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
-        (
-            "analytics_saved_views_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
-        (
-            "assessment_audit_events_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
-        (
-            "assessments_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
-        (
-            "blocks_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
-        (
-            "bulk_actions_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
-        (
-            "chapters_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
-        (
-            "course_updates_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
-        (
-            "courses_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
-        (
-            "daily_teacher_metrics_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
-        (
-            "item_feedback_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
-        (
-            "teacher_interventions_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
-        (
-            "usergroups_aliases",
-            "derived; the previous release's names, a contract drops it",
-        ),
     ];
     let found: Vec<String> = sqlx::query_scalar(
         "SELECT DISTINCT t.tgname::text FROM pg_trigger t
@@ -3363,8 +3211,7 @@ async fn has_course_role_reads_the_roster(pool: PgPool) {
 }
 
 /// A hash column refuses what no hash function writes (schema review 38):
-/// a sha256 of 32 bytes (REWRITE 5.8 item 6); the hex copies the previous
-/// release reads keep their format check until the contract.
+/// a sha256 of 32 bytes (REWRITE 5.8 item 6), no hex text.
 #[ab_testdb::test]
 async fn hashes_say_what_they_hold(pool: PgPool) {
     let columns: Vec<(String, String, String)> = sqlx::query_as(
@@ -3378,22 +3225,9 @@ async fn hashes_say_what_they_hold(pool: PgPool) {
     .fetch_all(&pool)
     .await
     .unwrap();
-    let hex = [
-        ("ai_course_analyses", "content_hash"),
-        ("ai_work_embeddings", "text_hash"),
-        ("assessment_versions", "content_hash"),
-        ("code_runs", "source_sha256"),
-        ("code_runs", "stdin_sha256"),
-        ("idempotency_keys", "request_hash"),
-    ];
-    let mut text = Vec::new();
     for (table, column, ty) in &columns {
-        let (name, length) = if ty == "bytea" {
-            (format!("{table}_{column}_check"), "octet_length")
-        } else {
-            text.push((table.as_str(), column.as_str()));
-            (format!("{table}_{column}_format"), "~")
-        };
+        assert_eq!(ty, "bytea", "{table}.{column}");
+        let name = format!("{table}_{column}_check");
         let check: String = sqlx::query_scalar(
             "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = $1",
         )
@@ -3401,10 +3235,9 @@ async fn hashes_say_what_they_hold(pool: PgPool) {
         .fetch_one(&pool)
         .await
         .unwrap_or_else(|e| panic!("{name}: {e}"));
-        assert!(check.contains(length), "{name}: {check}");
+        assert!(check.contains("octet_length"), "{name}: {check}");
     }
-    assert_eq!(text, hex, "only the previous release's hex copies are text");
-    assert_eq!(columns.len(), 13, "{columns:?}");
+    assert_eq!(columns.len(), 7, "{columns:?}");
     let score: String = sqlx::query_scalar(
         "SELECT format_type(atttypid, atttypmod) FROM pg_attribute
          WHERE attrelid = 'certificates'::regclass AND attname = 'score'",
@@ -3460,7 +3293,7 @@ async fn pending_contracts_name_live_objects(pool: PgPool) {
 async fn award_sources_are_ids_or_days(pool: PgPool) {
     let w = world(&pool).await;
     let skipped: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM schema_skipped_checks WHERE name LIKE '%source_id_shape'
+        "SELECT count(*) FROM schema_skipped_checks WHERE name = 'xp_transactions_source_ref_kind'
             OR name IN ('assessment_items_tags_check', 'assessment_items_outcome_ids_check',
                         'ai_lecture_reviews_dismissed_suggestion_ids_check')",
     )
@@ -3470,19 +3303,19 @@ async fn award_sources_are_ids_or_days(pool: PgPool) {
     assert_eq!(skipped, 0);
     let cases = [
         (
-            "INSERT INTO xp_transactions (user_id, amount, source, source_id, previous_level)
-             VALUES ($1, 10, 'course_completion', $2, 1)",
+            "INSERT INTO xp_transactions (user_id, amount, source, source_uuid)
+             VALUES ($1, 10, 'course_completion', $2::uuid)",
             "0193f3a0-0000-7000-8000-000000000001",
             "course-1",
         ),
         (
-            "INSERT INTO xp_transactions (user_id, amount, source, source_id, previous_level)
-             VALUES ($1, 10, 'login_bonus', $2, 1)",
+            "INSERT INTO xp_transactions (user_id, amount, source, source_day)
+             VALUES ($1, 10, 'login_bonus', $2::integer)",
             "20400",
             "2026-11-08",
         ),
         (
-            "INSERT INTO gamification_completions (user_id, kind, source_id) VALUES ($1, 'activity', $2)",
+            "INSERT INTO gamification_completions (user_id, kind, source_uuid) VALUES ($1, 'activity', $2::uuid)",
             "0193f3a0-0000-7000-8000-000000000002",
             "a",
         ),
@@ -3591,17 +3424,17 @@ async fn a_frozen_version_keeps_its_pictures(pool: PgPool) {
 #[ab_testdb::test]
 async fn assessment_shapes_hold_at_the_database(pool: PgPool) {
     let w = world(&pool).await;
-    // A version's hash is derived, whatever the writer sends.
-    let hash: (String, String) = sqlx::query_as(
-        "INSERT INTO assessment_versions (assessment_id, number, items, policy, content_hash)
-         VALUES ($1, 1, '{\"items\": []}', '{}', repeat('0', 32))
-         RETURNING content_hash, assessment_content_hash(items, policy)",
+    // A version's hash is derived (a generated column): the writer sends none.
+    let derived: bool = sqlx::query_scalar(
+        "INSERT INTO assessment_versions (assessment_id, number, items, policy)
+         VALUES ($1, 1, '{\"items\": []}', '{}')
+         RETURNING content_sha256 = assessment_content_sha256(items, policy)",
     )
     .bind(w.assessment)
     .fetch_one(&pool)
     .await
     .unwrap();
-    assert_eq!(hash.0, hash.1);
+    assert!(derived);
 
     let kindless = sqlx::query(
         "INSERT INTO assessment_items (assessment_id, kind, body) VALUES ($1, 'code', '{}')",
@@ -3792,7 +3625,7 @@ async fn a_file_task_is_an_assessment(pool: PgPool) {
     assert_eq!(parent, "submissions");
 
     let entry: Uuid = sqlx::query_scalar(
-        "INSERT INTO grading_entries (submission_id, raw_score, returned) VALUES ($1, 0, true)
+        "INSERT INTO grading_entries (submission_id, revision, raw_score, returned) VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 0, true)
          RETURNING id",
     )
     .bind(hand_in)
@@ -3817,9 +3650,8 @@ async fn a_file_task_is_an_assessment(pool: PgPool) {
 }
 
 /// REWRITE 5.8 item 4, part 1: a value that follows from another column is
-/// read from it. The stored copies (kept by triggers for the previous
-/// release) are set wrong by hand; the readers answer from the XP journal,
-/// the run's purpose and verdict, and the grade entry.
+/// read from it (the stored copies are gone): the readers answer from the XP
+/// journal, the run's purpose and verdict, and the grade entry.
 #[ab_testdb::test]
 async fn derived_values_are_read_from_their_source(pool: PgPool) {
     use ab_core::id::{CodeRunId, SubmissionId, UserId};
@@ -3843,18 +3675,6 @@ async fn derived_values_are_read_from_their_source(pool: PgPool) {
             .unwrap();
         assert!(matches!(recorded, Recorded::New(_)), "{recorded:?}");
     }
-    // The trigger stored what the view computes; then the copy drifts.
-    let stored: Vec<(i32, bool)> = sqlx::query_as(
-        "SELECT previous_level, triggered_level_up FROM xp_transactions ORDER BY created_at",
-    )
-    .fetch_all(&pool)
-    .await
-    .unwrap();
-    assert_eq!(stored, [(1, false), (1, true)]);
-    sqlx::query("UPDATE xp_transactions SET previous_level = 9, triggered_level_up = NOT triggered_level_up")
-        .execute(&pool)
-        .await
-        .unwrap();
     let journal = ab_db::gamification::recent_transactions(&pool, user, 10)
         .await
         .unwrap();
@@ -3878,9 +3698,9 @@ async fn derived_values_are_read_from_their_source(pool: PgPool) {
         ("custom", "runtime_error", true),
     ] {
         let run: Uuid = sqlx::query_scalar(
-            "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, source_sha256,
+            "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, code_sha256,
                                     finished_at)
-             VALUES ($1, $2, $3, $4, 'accepted', 71, repeat('a', 64), now()) RETURNING id",
+             VALUES ($1, $2, $3, $4, 'done', 71, sha256('a'), now()) RETURNING id",
         )
         .bind(w.assessment)
         .bind(item)
@@ -3889,18 +3709,9 @@ async fn derived_values_are_read_from_their_source(pool: PgPool) {
         .fetch_one(&pool)
         .await
         .unwrap();
-        let stored: bool = sqlx::query_scalar(
-            "INSERT INTO code_run_cases (run_id, position, test_id, verdict) VALUES ($1, 0, 't', $2)
-             RETURNING passed",
-        )
-        .bind(run)
-        .bind(verdict)
-        .fetch_one(&pool)
-        .await
-        .unwrap();
-        assert_eq!(stored, passed, "{purpose}");
-        sqlx::query("UPDATE code_run_cases SET passed = NOT passed WHERE run_id = $1")
+        sqlx::query("INSERT INTO code_run_cases (run_id, position, test_id, verdict) VALUES ($1, 0, 't', $2)")
             .bind(run)
+            .bind(verdict)
             .execute(&pool)
             .await
             .unwrap();
@@ -3913,7 +3724,7 @@ async fn derived_values_are_read_from_their_source(pool: PgPool) {
     // A feedback row's grader is its entry's.
     let hand_in = submission(&pool, &w, 1, false).await.unwrap();
     let entry: Uuid = sqlx::query_scalar(
-        "INSERT INTO grading_entries (submission_id, raw_score, graded_by) VALUES ($1, 0, $2) RETURNING id",
+        "INSERT INTO grading_entries (submission_id, revision, raw_score, graded_by) VALUES ($1, 1, 0, $2) RETURNING id",
     )
     .bind(hand_in)
     .bind(w.user)
@@ -3936,19 +3747,14 @@ async fn derived_values_are_read_from_their_source(pool: PgPool) {
     )
     .await
     .unwrap();
-    let stored: Option<Uuid> = sqlx::query_scalar("SELECT graded_by FROM item_feedback")
-        .fetch_one(&pool)
-        .await
-        .unwrap();
-    assert_eq!(stored, None, "the row keeps no grader of its own");
     let feedback = ab_db::submissions::list_item_feedback(&pool, SubmissionId(hand_in), false)
         .await
         .unwrap();
     assert_eq!(feedback[0].graded_by, Some(user));
 }
 
-/// REWRITE 5.8 item 4, part 2: a handed-in file is its upload. The row's own
-/// copies (filled for the previous release) drift; reads follow `uploads`.
+/// REWRITE 5.8 item 4, part 2: a handed-in file is its upload: its key, type
+/// and size are read from `uploads`.
 #[ab_testdb::test]
 async fn a_handed_in_file_reads_its_upload(pool: PgPool) {
     use ab_core::id::FileAttemptId;
@@ -3971,23 +3777,6 @@ async fn a_handed_in_file_reads_its_upload(pool: PgPool) {
     ab_db::file_submissions::replace_files(&mut conn, FileAttemptId(hand_in), &[file])
         .await
         .unwrap();
-    let stored: (String, String, Option<i64>) =
-        sqlx::query_as("SELECT storage_key, content_type, size_bytes FROM file_submission_files")
-            .fetch_one(&pool)
-            .await
-            .unwrap();
-    assert_eq!(
-        stored,
-        (
-            "k/essay.pdf".to_owned(),
-            "application/pdf".to_owned(),
-            Some(42)
-        )
-    );
-    sqlx::query("UPDATE file_submission_files SET storage_key = 'stale', content_type = 'text/plain', size_bytes = 1")
-        .execute(&pool)
-        .await
-        .unwrap();
     let files = ab_db::file_submissions::list_files(&pool, FileAttemptId(hand_in))
         .await
         .unwrap();
@@ -4005,8 +3794,8 @@ async fn a_handed_in_file_reads_its_upload(pool: PgPool) {
 }
 
 /// REWRITE 5.8 item 4, part 3: the creator of a course or a collection is its
-/// staff row with authorship `creator`, one per target. `creator_id` is still
-/// written for the previous release; a drifted copy is not what is read.
+/// staff row with authorship `creator`, one per target. The server no longer
+/// writes `creator_id` (the next contract drops it).
 #[ab_testdb::test]
 async fn the_creator_is_the_staff_row(pool: PgPool) {
     use ab_core::id::UserId;
@@ -4021,15 +3810,13 @@ async fn the_creator_is_the_staff_row(pool: PgPool) {
             .await
             .unwrap();
     tx.commit().await.unwrap();
-    sqlx::query("UPDATE courses SET creator_id = $1")
-        .bind(other)
-        .execute(&pool)
-        .await
-        .unwrap();
-    sqlx::query("UPDATE collections SET creator_id = NULL")
-        .execute(&pool)
-        .await
-        .unwrap();
+    let written: (Option<Uuid>, Option<Uuid>) = sqlx::query_as(
+        "SELECT (SELECT creator_id FROM courses), (SELECT creator_id FROM collections)",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(written, (None, None));
     let read = ab_db::catalog::get_course(&pool, course)
         .await
         .unwrap()
@@ -4041,7 +3828,7 @@ async fn the_creator_is_the_staff_row(pool: PgPool) {
         .unwrap();
     assert_eq!(read.creator_id, Some(UserId(owner)));
 
-    // A writer that names only creator_id (the previous release's collections) gets the row.
+    // SQL that names only creator_id (tests, psql) gets the row until the contract.
     let old: Uuid = sqlx::query_scalar(
         "INSERT INTO collections (name, creator_id) VALUES ('old', $1) RETURNING id",
     )
@@ -4068,9 +3855,9 @@ async fn the_creator_is_the_staff_row(pool: PgPool) {
 }
 
 /// REWRITE 5.8 item 4, part 5: an award's source is a `uuid` (or the login
-/// bonus's day) and a completion's a `uuid`. The text copy the previous
-/// release keys on is filled from them (and they from it); a drifted text
-/// copy is not what is read. An answer embedding's subject is a submission.
+/// bonus's day) and a completion's a `uuid` (its primary key is
+/// `(user_id, kind, source_uuid)`). An answer embedding's subject is a
+/// submission.
 #[ab_testdb::test]
 async fn sources_are_typed_and_embeddings_name_a_submission(pool: PgPool) {
     use ab_core::assessments::XpSource;
@@ -4098,23 +3885,12 @@ async fn sources_are_typed_and_embeddings_name_a_submission(pool: PgPool) {
             .await
             .unwrap();
     }
-    let stored: Vec<(Option<String>, Option<Uuid>, Option<i32>)> = sqlx::query_as(
-        "SELECT source_id, source_uuid, source_day FROM xp_transactions ORDER BY source",
-    )
-    .fetch_all(&pool)
-    .await
-    .unwrap();
-    assert_eq!(
-        stored,
-        [
-            (Some(course.clone()), Some(w.course), None),
-            (Some("20400".to_owned()), None, Some(20400))
-        ]
-    );
-    sqlx::query("UPDATE xp_transactions SET source_id = NULL")
-        .execute(&pool)
-        .await
-        .unwrap();
+    let stored: Vec<(Option<Uuid>, Option<i32>)> =
+        sqlx::query_as("SELECT source_uuid, source_day FROM xp_transactions ORDER BY source")
+            .fetch_all(&pool)
+            .await
+            .unwrap();
+    assert_eq!(stored, [(Some(w.course), None), (None, Some(20400))]);
     let found = ab_db::gamification::find_transaction(
         &pool,
         user,
@@ -4146,13 +3922,18 @@ async fn sources_are_typed_and_embeddings_name_a_submission(pool: PgPool) {
             .await
             .unwrap()
     );
-    // The previous release writes the text: the uuid follows.
-    sqlx::query("INSERT INTO gamification_completions (user_id, kind, source_id) VALUES ($1, 'activity', $2)")
-        .bind(w.user)
-        .bind(w.activity.to_string())
-        .execute(&pool)
-        .await
-        .unwrap();
+    assert!(
+        ab_db::gamification::record_completion(&pool, user, "activity", w.activity)
+            .await
+            .unwrap()
+    );
+    let key: String = sqlx::query_scalar(
+        "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'gamification_completions_pkey'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(key, "PRIMARY KEY (user_id, kind, source_uuid)");
     let typed: Vec<Option<Uuid>> =
         sqlx::query_scalar("SELECT source_uuid FROM gamification_completions ORDER BY kind")
             .fetch_all(&pool)
@@ -4161,8 +3942,8 @@ async fn sources_are_typed_and_embeddings_name_a_submission(pool: PgPool) {
     assert_eq!(typed, [Some(w.activity), Some(w.course)]);
 
     let orphan = sqlx::query(
-        "INSERT INTO ai_work_embeddings (subject_id, part_key, activity_id, text_hash, embedding_model, embedding)
-         VALUES (uuidv7(), 'p', $1, repeat('a', 64), 'm', array_fill(0.1::real, ARRAY[1024])::vector)",
+        "INSERT INTO ai_work_embeddings (subject_id, part_key, activity_id, text_sha256, embedding_model, embedding)
+         VALUES (uuidv7(), 'p', $1, sha256('a'), 'm', array_fill(0.1::real, ARRAY[1024])::vector)",
     )
     .bind(w.activity)
     .execute(&pool)
@@ -4200,18 +3981,15 @@ async fn progress_is_a_status_and_an_outcome(pool: PgPool) {
         .await
         .unwrap();
     let stored = || async {
-        sqlx::query_as::<_, (String, Option<bool>, String)>(
-            "SELECT status, passed, state FROM activity_progress WHERE activity_id = $1",
+        sqlx::query_as::<_, (String, Option<bool>)>(
+            "SELECT status, passed FROM activity_progress WHERE activity_id = $1",
         )
         .bind(w.activity)
         .fetch_one(&pool)
         .await
         .unwrap()
     };
-    assert_eq!(
-        stored().await,
-        ("released".into(), Some(false), "failed".into())
-    );
+    assert_eq!(stored().await, ("released".into(), Some(false)));
     let passed = ab_db::progress::ActivityProgressWrite {
         score: Some(90.0),
         passed: Some(true),
@@ -4220,10 +3998,7 @@ async fn progress_is_a_status_and_an_outcome(pool: PgPool) {
     ab_db::progress::upsert_activity_progress(&pool, &passed)
         .await
         .unwrap();
-    assert_eq!(
-        stored().await,
-        ("released".into(), Some(true), "passed".into())
-    );
+    assert_eq!(stored().await, ("released".into(), Some(true)));
     let row = ab_db::progress::get_activity_progress(&pool, ActivityId(w.activity), UserId(w.user))
         .await
         .unwrap()
@@ -4233,34 +4008,13 @@ async fn progress_is_a_status_and_an_outcome(pool: PgPool) {
         (ActivityProgressStatus::Released, Some(true))
     );
 
-    // The previous release writes `state`: the status follows, on insert and on update.
-    sqlx::query("UPDATE activity_progress SET state = 'needs_grading' WHERE activity_id = $1")
-        .bind(w.activity)
-        .execute(&pool)
-        .await
-        .unwrap();
-    assert_eq!(
-        stored().await,
-        ("needs_grading".into(), Some(true), "needs_grading".into())
-    );
-    sqlx::query(
-        "UPDATE activity_progress SET state = 'failed', passed = false WHERE activity_id = $1",
-    )
-    .bind(w.activity)
-    .execute(&pool)
-    .await
-    .unwrap();
-    assert_eq!(
-        stored().await,
-        ("released".into(), Some(false), "failed".into())
-    );
+    // A row nobody gave a status starts not started.
     sqlx::query("DELETE FROM activity_progress")
         .execute(&pool)
         .await
         .unwrap();
     sqlx::query(
-        "INSERT INTO activity_progress (course_id, activity_id, user_id, state, passed)
-         VALUES ($1, $2, $3, 'passed', true)",
+        "INSERT INTO activity_progress (course_id, activity_id, user_id) VALUES ($1, $2, $3)",
     )
     .bind(w.course)
     .bind(w.activity)
@@ -4268,10 +4022,7 @@ async fn progress_is_a_status_and_an_outcome(pool: PgPool) {
     .execute(&pool)
     .await
     .unwrap();
-    assert_eq!(
-        stored().await,
-        ("released".into(), Some(true), "passed".into())
-    );
+    assert_eq!(stored().await, ("not_started".into(), None));
     let bad = sqlx::query("UPDATE activity_progress SET status = 'passed'")
         .execute(&pool)
         .await;
@@ -4343,14 +4094,9 @@ async fn a_code_run_is_a_status_and_a_verdict(pool: PgPool) {
     )
     .await
     .unwrap();
-    // The previous release reads the verdict from `status`.
     assert_eq!(
         stored(ran).await,
-        (
-            "wrong_answer".into(),
-            Some("wrong_answer".into()),
-            "done".into()
-        )
+        ("done".into(), Some("wrong_answer".into()), "done".into())
     );
     let row = ab_db::submissions::get_code_run(&pool, ran)
         .await
@@ -4374,31 +4120,27 @@ async fn a_code_run_is_a_status_and_a_verdict(pool: PgPool) {
     .unwrap();
     assert_eq!(
         stored(never).await,
-        ("internal_error".into(), None, "failed".into())
+        ("failed".into(), None, "failed".into())
     );
 
-    // The previous release writes a verdict into `status`; `internal_error` is one only when tests ran.
+    // The previous release wrote the verdict into `status` (`internal_error` for a run that never executed): its
+    // rows read as the same state until the next contract rewrites them.
     let old = new_run("c").await;
-    sqlx::query("UPDATE code_runs SET status = 'time_limit', finished_at = now() WHERE id = $1")
+    sqlx::query("UPDATE code_runs SET status = 'time_limit', verdict = 'time_limit', finished_at = now() WHERE id = $1")
         .bind(old.0)
         .execute(&pool)
         .await
         .unwrap();
-    assert_eq!(stored(old).await.1.as_deref(), Some("time_limit"));
-    let judged = new_run("d").await;
-    sqlx::query("INSERT INTO code_run_cases (run_id, position, test_id, verdict) VALUES ($1, 0, 't', 'internal_error')")
-        .bind(judged.0)
-        .execute(&pool)
-        .await
-        .unwrap();
+    assert_eq!(stored(old).await.2, "done");
+    let failed = new_run("d").await;
     sqlx::query(
         "UPDATE code_runs SET status = 'internal_error', finished_at = now() WHERE id = $1",
     )
-    .bind(judged.0)
+    .bind(failed.0)
     .execute(&pool)
     .await
     .unwrap();
-    assert_eq!(stored(judged).await.2, "done");
+    assert_eq!(stored(failed).await.2, "failed");
     let bad = sqlx::query("UPDATE code_runs SET verdict = 'degraded' WHERE id = $1")
         .bind(never.0)
         .execute(&pool)
@@ -4444,12 +4186,6 @@ async fn a_deletion_is_a_timestamp(pool: PgPool) {
         .execute(&pool)
         .await
         .unwrap();
-    let status: String = sqlx::query_scalar("SELECT status FROM messages WHERE id = $1")
-        .bind(message)
-        .fetch_one(&pool)
-        .await
-        .unwrap();
-    assert_eq!(status, "deleted", "the previous release reads the status");
 
     let post = || async {
         sqlx::query_scalar::<_, Uuid>(
@@ -4479,14 +4215,13 @@ async fn a_deletion_is_a_timestamp(pool: PgPool) {
         .execute(&pool)
         .await
         .unwrap();
-    assert_eq!(stored(ours).await, ("deleted".into(), true, 2));
-    // The previous release tombstones by status.
-    sqlx::query("UPDATE discussion_posts SET status = 'deleted', content = '' WHERE id = $1")
+    // The status keeps the moderation: a deletion is the timestamp alone.
+    assert_eq!(stored(ours).await, ("active".into(), true, 2));
+    let by_status = sqlx::query("UPDATE discussion_posts SET status = 'deleted' WHERE id = $1")
         .bind(theirs)
         .execute(&pool)
-        .await
-        .unwrap();
-    assert_eq!(stored(theirs).await, ("deleted".into(), true, 2));
+        .await;
+    assert!(by_status.is_err(), "deleted is not a moderation status");
 }
 
 #[ab_testdb::test]
@@ -4550,14 +4285,7 @@ async fn one_language_domain(pool: PgPool) {
 
 #[ab_testdb::test]
 async fn durations_are_seconds(pool: PgPool) {
-    // What the contract drops (pending-contracts.tsv); nothing else is stored in another unit.
-    let previous = [
-        "ai_runs.duration_ms",
-        "assessment_items.estimated_minutes",
-        "assessments.grace_period_minutes",
-        "daily_assessment_metrics.grading_latency_hours_p50",
-        "daily_assessment_metrics.grading_latency_hours_p90",
-    ];
+    // Nothing is stored in another unit.
     let other: Vec<String> = sqlx::query_scalar(
         "SELECT c.table_name || '.' || c.column_name
          FROM information_schema.columns c
@@ -4569,57 +4297,17 @@ async fn durations_are_seconds(pool: PgPool) {
     .fetch_all(&pool)
     .await
     .unwrap();
-    assert_eq!(other, previous);
+    assert_eq!(other, Vec::<String>::new());
 
+    // An insert that names no grace period has none.
     let w = world(&pool).await;
-    let grace: (i32, i32) = sqlx::query_as(
-        "UPDATE assessments SET grace_period_seconds = 300 WHERE id = $1
-         RETURNING grace_period_seconds, grace_period_minutes",
-    )
-    .bind(w.assessment)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert_eq!(grace, (300, 5));
-    let grace: (i32, i32) = sqlx::query_as(
-        "UPDATE assessments SET grace_period_minutes = 2 WHERE id = $1
-         RETURNING grace_period_seconds, grace_period_minutes",
-    )
-    .bind(w.assessment)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert_eq!(grace, (120, 2), "the previous release writes minutes");
-
-    let estimate: (Option<i32>, Option<i32>) = sqlx::query_as(
-        "INSERT INTO assessment_items (assessment_id, kind, position, body, estimated_minutes)
-         VALUES ($1, 'code', 1, '{\"kind\": \"code\"}', 3) RETURNING estimated_seconds, estimated_minutes",
-    )
-    .bind(w.assessment)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert_eq!(estimate, (Some(180), Some(3)));
-
-    let run: Uuid = sqlx::query_scalar(
-        "INSERT INTO ai_runs (kind, status, started_at) VALUES ('course_qa', 'running', now()) RETURNING id",
-    )
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    let duration: Option<i32> = sqlx::query_scalar(
-        "UPDATE ai_runs SET status = 'succeeded', completed_at = started_at + interval '1.5 seconds'
-         WHERE id = $1 RETURNING duration_ms",
-    )
-    .bind(run)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert_eq!(
-        duration,
-        Some(1500),
-        "the previous release reads duration_ms"
-    );
+    let grace: i32 =
+        sqlx::query_scalar("SELECT grace_period_seconds FROM assessments WHERE id = $1")
+            .bind(w.assessment)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(grace, 0);
 }
 
 #[ab_testdb::test]
@@ -4629,8 +4317,8 @@ async fn a_hash_is_32_bytes(pool: PgPool) {
     let stored = |key: &'static str| {
         let pool = pool.clone();
         async move {
-            sqlx::query_as::<_, (String, Vec<u8>)>(
-                "SELECT request_hash, request_sha256 FROM idempotency_keys WHERE key = $1",
+            sqlx::query_scalar::<_, Vec<u8>>(
+                "SELECT request_sha256 FROM idempotency_keys WHERE key = $1",
             )
             .bind(key)
             .fetch_one(&pool)
@@ -4647,18 +4335,7 @@ async fn a_hash_is_32_bytes(pool: PgPool) {
     .execute(&pool)
     .await
     .unwrap();
-    assert_eq!(stored("ours").await, (hex.clone(), vec![0xab; 32]));
-    // The previous release writes the hex copy.
-    sqlx::query(
-        "INSERT INTO idempotency_keys (user_id, key, request_hash, status_code, response)
-         VALUES ($1, 'theirs', $2, 0, 'null')",
-    )
-    .bind(w.user)
-    .bind(&hex)
-    .execute(&pool)
-    .await
-    .unwrap();
-    assert_eq!(stored("theirs").await, (hex, vec![0xab; 32]));
+    assert_eq!(stored("ours").await, vec![0xab; 32]);
     let short = sqlx::query(
         "INSERT INTO idempotency_keys (user_id, key, request_sha256, status_code, response)
          VALUES ($1, 'short', '\x00', 0, 'null')",
@@ -4677,51 +4354,4 @@ async fn a_hash_is_32_bytes(pool: PgPool) {
     .await
     .unwrap();
     assert!(same, "a version's hash is the sha256 of its pair");
-}
-
-#[ab_testdb::test]
-async fn the_last_login_is_the_users(pool: PgPool) {
-    let w = world(&pool).await;
-    sqlx::query("INSERT INTO gamification_profiles (user_id) VALUES ($1)")
-        .bind(w.user)
-        .execute(&pool)
-        .await
-        .unwrap();
-    let both = || async {
-        sqlx::query_as::<_, (bool, bool)>(
-            "SELECT u.last_login_at = '2026-11-01 10:00+05', g.last_login_at = '2026-11-01 10:00+05'
-             FROM users u JOIN gamification_profiles g ON g.user_id = u.id WHERE u.id = $1",
-        )
-        .bind(w.user)
-        .fetch_one(&pool)
-        .await
-        .unwrap()
-    };
-    sqlx::query("UPDATE users SET last_login_at = '2026-11-01 10:00+05' WHERE id = $1")
-        .bind(w.user)
-        .execute(&pool)
-        .await
-        .unwrap();
-    assert_eq!(
-        both().await,
-        (true, true),
-        "the previous release reads the profile's copy"
-    );
-    sqlx::query("UPDATE users SET last_login_at = NULL WHERE id = $1")
-        .bind(w.user)
-        .execute(&pool)
-        .await
-        .unwrap();
-    sqlx::query(
-        "UPDATE gamification_profiles SET last_login_at = '2026-11-01 10:00+05' WHERE user_id = $1",
-    )
-    .bind(w.user)
-    .execute(&pool)
-    .await
-    .unwrap();
-    assert_eq!(
-        both().await,
-        (true, true),
-        "the previous release writes the profile's copy"
-    );
 }

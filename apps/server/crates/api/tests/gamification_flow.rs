@@ -512,7 +512,7 @@ async fn the_platform_day_starts_at_almaty_midnight(pool: PgPool) {
     sqlx::query(
         "UPDATE xp_transactions SET created_at = platform_day_start(platform_date(now()))
                                                  - interval '1 minute'
-         WHERE user_id = $1 AND source_id = '00000000-0000-7000-8000-00000000000a'",
+         WHERE user_id = $1 AND source_uuid = '00000000-0000-7000-8000-00000000000a'",
     )
     .bind(user.0)
     .execute(&pool)

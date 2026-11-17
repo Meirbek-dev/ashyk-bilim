@@ -3726,7 +3726,7 @@ async fn publish_grades_racing_a_leave_pays_the_leaver_nothing(pool: PgPool) {
     let paid = async |who: &MintedSession| {
         sqlx::query_as::<_, (i64, i64)>(
             "SELECT (SELECT count(*) FROM activity_progress
-                     WHERE user_id = $1 AND state IN ('passed', 'completed')),
+                     WHERE user_id = $1 AND (status = 'completed' OR (status = 'released' AND passed))),
                     (SELECT count(*) FROM xp_transactions
                      WHERE user_id = $1 AND source = 'quiz_completion')",
         )

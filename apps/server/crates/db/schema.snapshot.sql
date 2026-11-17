@@ -37,8 +37,6 @@ constraint activity_progress activity_progress_is_late_not_null NOT NULL is_late
 constraint activity_progress activity_progress_latest_submission_id_fkey FOREIGN KEY (latest_submission_id, user_id) REFERENCES submissions(id, user_id) ON DELETE SET NULL (latest_submission_id)
 constraint activity_progress activity_progress_pkey PRIMARY KEY (activity_id, user_id)
 constraint activity_progress activity_progress_required_not_null NOT NULL required
-constraint activity_progress activity_progress_state_check CHECK ((state = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'submitted'::text, 'needs_grading'::text, 'returned'::text, 'graded'::text, 'passed'::text, 'failed'::text, 'completed'::text])))
-constraint activity_progress activity_progress_state_not_null NOT NULL state
 constraint activity_progress activity_progress_status_check CHECK ((status = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'submitted'::text, 'needs_grading'::text, 'returned'::text, 'graded'::text, 'released'::text, 'completed'::text])))
 constraint activity_progress activity_progress_status_not_null NOT NULL status
 constraint activity_progress activity_progress_teacher_action_required_not_null NOT NULL teacher_action_required
@@ -64,7 +62,6 @@ constraint ai_artifacts ai_artifacts_kind_not_null NOT NULL kind
 constraint ai_artifacts ai_artifacts_pkey PRIMARY KEY (id)
 constraint ai_artifacts ai_artifacts_run_id_fkey FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE CASCADE
 constraint ai_artifacts ai_artifacts_run_id_not_null NOT NULL run_id
-constraint ai_course_analyses ai_course_analyses_content_hash_format CHECK ((content_hash ~ '^[0-9a-f]{64}$'::text))
 constraint ai_course_analyses ai_course_analyses_content_sha256_check CHECK ((octet_length(content_sha256) = 32))
 constraint ai_course_analyses ai_course_analyses_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint ai_course_analyses ai_course_analyses_course_id_not_null NOT NULL course_id
@@ -117,12 +114,6 @@ constraint ai_evidence ai_evidence_run_id_fkey FOREIGN KEY (run_id) REFERENCES a
 constraint ai_evidence ai_evidence_run_id_not_null NOT NULL run_id
 constraint ai_evidence ai_evidence_score_check CHECK (((score IS NULL) OR ((score >= (0)::double precision) AND (score <= (1)::double precision))))
 constraint ai_evidence ai_evidence_source_type_not_null NOT NULL source_type
-constraint ai_feature_switches ai_feature_switches_enabled_not_null NOT NULL enabled
-constraint ai_feature_switches ai_feature_switches_feature_check CHECK ((feature = ANY (ARRAY['course_analysis_enabled'::text, 'submission_analysis_enabled'::text, 'remediation_enabled'::text, 'course_qa_enabled'::text, 'study_companion_enabled'::text, 'lecture_authoring_enabled'::text, 'semantic_memory_enabled'::text, 'semantic_search_enabled'::text, 'concept_graph_enabled'::text, 'grading_assistant_enabled'::text])))
-constraint ai_feature_switches ai_feature_switches_feature_not_null NOT NULL feature
-constraint ai_feature_switches ai_feature_switches_pkey PRIMARY KEY (feature)
-constraint ai_feature_switches ai_feature_switches_updated_at_not_null NOT NULL updated_at
-constraint ai_feature_switches ai_feature_switches_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
 constraint ai_grade_corrections ai_grade_corrections_activity_id_fkey FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON DELETE CASCADE
 constraint ai_grade_corrections ai_grade_corrections_activity_id_not_null NOT NULL activity_id
 constraint ai_grade_corrections ai_grade_corrections_ai_score_not_null NOT NULL ai_score
@@ -219,7 +210,6 @@ constraint ai_remediation_sessions ai_remediation_sessions_submission_id_not_nul
 constraint ai_remediation_sessions ai_remediation_sessions_test_not_null NOT NULL test
 constraint ai_remediation_sessions ai_remediation_sessions_updated_at_not_null NOT NULL updated_at
 constraint ai_runs ai_runs_created_at_not_null NOT NULL created_at
-constraint ai_runs ai_runs_duration_ms_check CHECK (((duration_ms IS NULL) OR (duration_ms >= 0)))
 constraint ai_runs ai_runs_finished_at_check CHECK (((status <> ALL (ARRAY['succeeded'::text, 'failed'::text, 'aborted'::text])) OR (completed_at IS NOT NULL)))
 constraint ai_runs ai_runs_id_not_null NOT NULL id
 constraint ai_runs ai_runs_input_tokens_check CHECK (((input_tokens IS NULL) OR (input_tokens >= 0)))
@@ -297,8 +287,6 @@ constraint ai_work_embeddings ai_work_embeddings_part_key_not_null NOT NULL part
 constraint ai_work_embeddings ai_work_embeddings_pkey PRIMARY KEY (subject_id, part_key)
 constraint ai_work_embeddings ai_work_embeddings_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES submissions(id) ON DELETE CASCADE
 constraint ai_work_embeddings ai_work_embeddings_subject_id_not_null NOT NULL subject_id
-constraint ai_work_embeddings ai_work_embeddings_text_hash_format CHECK ((text_hash ~ '^[0-9a-f]{64}$'::text))
-constraint ai_work_embeddings ai_work_embeddings_text_hash_not_null NOT NULL text_hash
 constraint ai_work_embeddings ai_work_embeddings_text_sha256_check CHECK ((octet_length(text_sha256) = 32))
 constraint ai_work_embeddings ai_work_embeddings_text_sha256_not_null NOT NULL text_sha256
 constraint analytics_events analytics_events_created_at_not_null NOT NULL created_at
@@ -372,7 +360,6 @@ constraint assessment_items assessment_items_body_not_null NOT NULL body
 constraint assessment_items assessment_items_created_at_not_null NOT NULL created_at
 constraint assessment_items assessment_items_difficulty_check CHECK (((difficulty IS NULL) OR (difficulty = ANY (ARRAY['easy'::text, 'medium'::text, 'hard'::text]))))
 constraint assessment_items assessment_items_draw_group_check CHECK (((draw_group IS NULL) OR ((length(draw_group) >= 1) AND (length(draw_group) <= 32))))
-constraint assessment_items assessment_items_estimated_minutes_check CHECK (((estimated_minutes IS NULL) OR (estimated_minutes >= 0)))
 constraint assessment_items assessment_items_estimated_seconds_check CHECK ((estimated_seconds >= 0))
 constraint assessment_items assessment_items_id_assessment_key UNIQUE (id, assessment_id)
 constraint assessment_items assessment_items_id_not_null NOT NULL id
@@ -412,12 +399,9 @@ constraint assessment_version_uploads assessment_version_uploads_upload_id_fkey 
 constraint assessment_version_uploads assessment_version_uploads_upload_id_not_null NOT NULL upload_id
 constraint assessment_version_uploads assessment_version_uploads_version_id_fkey FOREIGN KEY (version_id) REFERENCES assessment_versions(id) ON DELETE CASCADE
 constraint assessment_version_uploads assessment_version_uploads_version_id_not_null NOT NULL version_id
-constraint assessment_versions assessment_versions_assessment_id_content_hash_key UNIQUE (assessment_id, content_hash)
 constraint assessment_versions assessment_versions_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE
 constraint assessment_versions assessment_versions_assessment_id_not_null NOT NULL assessment_id
 constraint assessment_versions assessment_versions_assessment_id_number_key UNIQUE (assessment_id, number)
-constraint assessment_versions assessment_versions_content_hash_format CHECK ((content_hash ~ '^[0-9a-f]{32}$'::text))
-constraint assessment_versions assessment_versions_content_hash_not_null NOT NULL content_hash
 constraint assessment_versions assessment_versions_content_sha256_check CHECK ((octet_length(content_sha256) = 32))
 constraint assessment_versions assessment_versions_content_sha256_not_null NOT NULL content_sha256
 constraint assessment_versions assessment_versions_created_at_not_null NOT NULL created_at
@@ -452,8 +436,6 @@ constraint assessments assessments_draw_count_check CHECK (((draw_count IS NULL)
 constraint assessments assessments_draw_strata_check CHECK (((draw_strata IS NULL) OR (jsonb_typeof(draw_strata) = 'array'::text)))
 constraint assessments assessments_draw_strata_shape CHECK (((draw_strata IS NULL) OR draw_strata_ok(draw_strata)))
 constraint assessments assessments_fullscreen_required_not_null NOT NULL fullscreen_required
-constraint assessments assessments_grace_period_minutes_check CHECK ((grace_period_minutes >= 0))
-constraint assessments assessments_grace_period_minutes_not_null NOT NULL grace_period_minutes
 constraint assessments assessments_grace_period_seconds_check CHECK ((grace_period_seconds >= 0))
 constraint assessments assessments_grace_period_seconds_not_null NOT NULL grace_period_seconds
 constraint assessments assessments_grade_release_mode_check CHECK ((grade_release_mode = ANY (ARRAY['immediate'::text, 'batch'::text])))
@@ -544,7 +526,6 @@ constraint certificates certificate_users_created_at_not_null NOT NULL created_a
 constraint certificates certificate_users_holder_name_not_null NOT NULL holder_name
 constraint certificates certificate_users_id_not_null NOT NULL id
 constraint certificates certificate_users_pkey PRIMARY KEY (id)
-constraint certificates certificate_users_updated_at_not_null NOT NULL updated_at
 constraint certificates certificate_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 constraint certificates certificate_users_user_id_not_null NOT NULL user_id
 constraint certificates certificate_users_verify_code_key UNIQUE (verify_code)
@@ -569,7 +550,6 @@ constraint chapters chapters_version_not_null NOT NULL version
 constraint code_run_cases code_run_cases_description_not_null NOT NULL description
 constraint code_run_cases code_run_cases_id_not_null NOT NULL id
 constraint code_run_cases code_run_cases_is_visible_not_null NOT NULL is_visible
-constraint code_run_cases code_run_cases_passed_not_null NOT NULL passed
 constraint code_run_cases code_run_cases_pkey PRIMARY KEY (id)
 constraint code_run_cases code_run_cases_position_not_null NOT NULL "position"
 constraint code_run_cases code_run_cases_run_id_fkey FOREIGN KEY (run_id) REFERENCES code_runs(id) ON DELETE CASCADE
@@ -596,11 +576,8 @@ constraint code_runs code_runs_passed_not_null NOT NULL passed
 constraint code_runs code_runs_pkey PRIMARY KEY (id)
 constraint code_runs code_runs_purpose_check CHECK ((purpose = ANY (ARRAY['custom'::text, 'visible'::text, 'final'::text, 'reference_check'::text])))
 constraint code_runs code_runs_purpose_not_null NOT NULL purpose
-constraint code_runs code_runs_source_sha256_format CHECK ((source_sha256 ~ '^[0-9a-f]{64}$'::text))
-constraint code_runs code_runs_source_sha256_not_null NOT NULL source_sha256
-constraint code_runs code_runs_status_check CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text, 'degraded'::text])))
+constraint code_runs code_runs_status_check CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'done'::text, 'failed'::text, 'degraded'::text, 'accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text])))
 constraint code_runs code_runs_status_not_null NOT NULL status
-constraint code_runs code_runs_stdin_sha256_format CHECK ((stdin_sha256 ~ '^[0-9a-f]{64}$'::text))
 constraint code_runs code_runs_submission_id_fkey FOREIGN KEY (submission_id, user_id) REFERENCES submissions(id, user_id) ON DELETE SET NULL (submission_id)
 constraint code_runs code_runs_total_not_null NOT NULL total
 constraint code_runs code_runs_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
@@ -870,7 +847,6 @@ constraint daily_course_metrics daily_course_metrics_enrolled_learners_not_null 
 constraint daily_course_metrics daily_course_metrics_generated_at_not_null NOT NULL generated_at
 constraint daily_course_metrics daily_course_metrics_metric_date_not_null NOT NULL metric_date
 constraint daily_course_metrics daily_course_metrics_pkey PRIMARY KEY (metric_date, course_id)
-constraint daily_course_metrics daily_course_metrics_teacher_user_id_fkey FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE SET NULL
 constraint daily_course_metrics daily_course_metrics_ungraded_submissions_not_null NOT NULL ungraded_submissions
 constraint daily_platform_metrics daily_platform_metrics_active_learners_28d_not_null NOT NULL active_learners_28d
 constraint daily_platform_metrics daily_platform_metrics_active_learners_7d_not_null NOT NULL active_learners_7d
@@ -926,7 +902,7 @@ constraint discussion_posts course_discussions_parent_id_fkey FOREIGN KEY (paren
 constraint discussion_posts course_discussions_pkey PRIMARY KEY (id)
 constraint discussion_posts course_discussions_replies_count_not_null NOT NULL replies_count
 constraint discussion_posts course_discussions_reply_parent_check CHECK (((kind = 'reply'::text) = (parent_id IS NOT NULL)))
-constraint discussion_posts course_discussions_status_check CHECK ((status = ANY (ARRAY['active'::text, 'hidden'::text, 'deleted'::text])))
+constraint discussion_posts course_discussions_status_check CHECK ((status = ANY (ARRAY['active'::text, 'hidden'::text])))
 constraint discussion_posts course_discussions_status_not_null NOT NULL status
 constraint discussion_posts course_discussions_updated_at_not_null NOT NULL updated_at
 constraint discussion_posts course_discussions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -956,15 +932,9 @@ constraint enrolments enrolments_enrolled_at_not_null NOT NULL enrolled_at
 constraint enrolments enrolments_pkey PRIMARY KEY (course_id, user_id)
 constraint enrolments enrolments_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 constraint enrolments enrolments_user_id_not_null NOT NULL user_id
-constraint feature_activations feature_activations_activated_at_not_null NOT NULL activated_at
-constraint feature_activations feature_activations_feature_check CHECK ((feature = 'deadline_auto_submit'::text))
-constraint feature_activations feature_activations_feature_not_null NOT NULL feature
-constraint feature_activations feature_activations_pkey PRIMARY KEY (feature)
 constraint file_submission_files file_submission_files_attempt_id_fkey FOREIGN KEY (attempt_id) REFERENCES submissions(id) ON DELETE CASCADE
 constraint file_submission_files file_submission_files_attempt_id_not_null NOT NULL attempt_id
 constraint file_submission_files file_submission_files_attempt_id_upload_id_key UNIQUE (attempt_id, upload_id)
-constraint file_submission_files file_submission_files_content_type_mime CHECK ((content_type ~ '^[A-Za-z0-9.+-]+/[A-Za-z0-9.+-]+'::text))
-constraint file_submission_files file_submission_files_content_type_not_null NOT NULL content_type
 constraint file_submission_files file_submission_files_created_at_not_null NOT NULL created_at
 constraint file_submission_files file_submission_files_display_name_not_null NOT NULL display_name
 constraint file_submission_files file_submission_files_id_not_null NOT NULL id
@@ -972,7 +942,6 @@ constraint file_submission_files file_submission_files_pkey PRIMARY KEY (id)
 constraint file_submission_files file_submission_files_position_not_null NOT NULL "position"
 constraint file_submission_files file_submission_files_scan_status_check CHECK ((scan_status = ANY (ARRAY['pending'::text, 'clean'::text, 'flagged'::text, 'error'::text])))
 constraint file_submission_files file_submission_files_scan_status_not_null NOT NULL scan_status
-constraint file_submission_files file_submission_files_storage_key_not_null NOT NULL storage_key
 constraint file_submission_files file_submission_files_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE RESTRICT
 constraint file_submission_files file_submission_files_upload_id_not_null NOT NULL upload_id
 constraint file_submissions file_submissions_activity_id_fkey FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE
@@ -998,17 +967,10 @@ constraint file_submissions file_submissions_version_not_null NOT NULL version
 constraint gamification_completions gamification_completions_created_at_not_null NOT NULL created_at
 constraint gamification_completions gamification_completions_kind_check CHECK ((kind = ANY (ARRAY['activity'::text, 'course'::text])))
 constraint gamification_completions gamification_completions_kind_not_null NOT NULL kind
-constraint gamification_completions gamification_completions_pkey PRIMARY KEY (user_id, kind, source_id)
-constraint gamification_completions gamification_completions_source_id_not_null NOT NULL source_id
-constraint gamification_completions gamification_completions_source_id_shape CHECK ((source_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text))
+constraint gamification_completions gamification_completions_pkey PRIMARY KEY (user_id, kind, source_uuid)
+constraint gamification_completions gamification_completions_source_uuid_not_null NOT NULL source_uuid
 constraint gamification_completions gamification_completions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 constraint gamification_completions gamification_completions_user_id_not_null NOT NULL user_id
-constraint gamification_config gamification_config_id_check CHECK ((id = 1))
-constraint gamification_config gamification_config_id_not_null NOT NULL id
-constraint gamification_config gamification_config_pkey PRIMARY KEY (id)
-constraint gamification_config gamification_config_rewards_not_null NOT NULL rewards
-constraint gamification_config gamification_config_updated_at_not_null NOT NULL updated_at
-constraint gamification_config gamification_config_version_not_null NOT NULL version
 constraint gamification_profiles gamification_profiles_created_at_not_null NOT NULL created_at
 constraint gamification_profiles gamification_profiles_learning_streak_check CHECK ((learning_streak >= 0))
 constraint gamification_profiles gamification_profiles_learning_streak_not_null NOT NULL learning_streak
@@ -1058,8 +1020,6 @@ constraint idempotency_keys idempotency_keys_created_at_not_null NOT NULL create
 constraint idempotency_keys idempotency_keys_key_check CHECK ((char_length(key) <= 200))
 constraint idempotency_keys idempotency_keys_key_not_null NOT NULL key
 constraint idempotency_keys idempotency_keys_pkey PRIMARY KEY (user_id, key)
-constraint idempotency_keys idempotency_keys_request_hash_format CHECK ((request_hash ~ '^[0-9a-f]{64}$'::text))
-constraint idempotency_keys idempotency_keys_request_hash_not_null NOT NULL request_hash
 constraint idempotency_keys idempotency_keys_request_sha256_check CHECK ((octet_length(request_sha256) = 32))
 constraint idempotency_keys idempotency_keys_request_sha256_not_null NOT NULL request_sha256
 constraint idempotency_keys idempotency_keys_response_not_null NOT NULL response
@@ -1073,7 +1033,6 @@ constraint item_feedback item_feedback_comment_not_null NOT NULL comment
 constraint item_feedback item_feedback_created_at_not_null NOT NULL created_at
 constraint item_feedback item_feedback_entry_item_key UNIQUE (grading_entry_id, item_ref)
 constraint item_feedback item_feedback_entry_submission_fkey FOREIGN KEY (grading_entry_id, submission_id) REFERENCES grading_entries(id, submission_id) ON DELETE CASCADE
-constraint item_feedback item_feedback_graded_by_fkey FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL
 constraint item_feedback item_feedback_grading_entry_id_not_null NOT NULL grading_entry_id
 constraint item_feedback item_feedback_id_not_null NOT NULL id
 constraint item_feedback item_feedback_item_id_fkey FOREIGN KEY (item_id) REFERENCES assessment_items(id) ON DELETE SET NULL
@@ -1081,7 +1040,6 @@ constraint item_feedback item_feedback_item_ref_not_null NOT NULL item_ref
 constraint item_feedback item_feedback_pkey PRIMARY KEY (id)
 constraint item_feedback item_feedback_submission_id_fkey FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE
 constraint item_feedback item_feedback_submission_id_not_null NOT NULL submission_id
-constraint item_feedback item_feedback_updated_at_not_null NOT NULL updated_at
 constraint job_schedules job_schedules_created_at_not_null NOT NULL created_at
 constraint job_schedules job_schedules_enabled_not_null NOT NULL enabled
 constraint job_schedules job_schedules_interval_seconds_check CHECK ((interval_seconds > 0))
@@ -1116,7 +1074,6 @@ constraint learner_risk_snapshots learner_risk_snapshots_risk_level_check CHECK 
 constraint learner_risk_snapshots learner_risk_snapshots_risk_level_not_null NOT NULL risk_level
 constraint learner_risk_snapshots learner_risk_snapshots_risk_score_not_null NOT NULL risk_score
 constraint learner_risk_snapshots learner_risk_snapshots_snapshot_date_not_null NOT NULL snapshot_date
-constraint learner_risk_snapshots learner_risk_snapshots_teacher_user_id_fkey FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE SET NULL
 constraint learner_risk_snapshots learner_risk_snapshots_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint learner_risk_snapshots learner_risk_snapshots_user_id_not_null NOT NULL user_id
 constraint mastery_evidence mastery_evidence_concept_id_fkey FOREIGN KEY (concept_id, course_id) REFERENCES course_concepts(id, course_id) ON DELETE CASCADE
@@ -1176,8 +1133,6 @@ constraint message_uploads message_uploads_upload_id_not_null NOT NULL upload_id
 constraint messages messages_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE SET NULL
 constraint messages messages_body_check CHECK ((char_length(body) <= 4000))
 constraint messages messages_body_not_null NOT NULL body
-constraint messages messages_check CHECK (((status = 'deleted'::text) = (deleted_at IS NOT NULL)))
-constraint messages messages_check1 CHECK (((status = 'active'::text) OR (body = ''::text)))
 constraint messages messages_client_key_not_null NOT NULL client_key
 constraint messages messages_conversation_id_fkey FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
 constraint messages messages_conversation_id_not_null NOT NULL conversation_id
@@ -1187,8 +1142,6 @@ constraint messages messages_deleted_is_blank CHECK (((deleted_at IS NULL) OR (b
 constraint messages messages_id_not_null NOT NULL id
 constraint messages messages_member_fkey FOREIGN KEY (conversation_id, user_id) REFERENCES conversation_members(conversation_id, user_id)
 constraint messages messages_pkey PRIMARY KEY (id)
-constraint messages messages_status_check CHECK ((status = ANY (ARRAY['active'::text, 'deleted'::text])))
-constraint messages messages_status_not_null NOT NULL status
 constraint messages messages_user_id_client_key_key UNIQUE (user_id, client_key)
 constraint messages messages_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id)
 constraint messages messages_user_id_not_null NOT NULL user_id
@@ -1409,20 +1362,11 @@ constraint xp_transactions xp_transactions_created_at_not_null NOT NULL created_
 constraint xp_transactions xp_transactions_id_not_null NOT NULL id
 constraint xp_transactions xp_transactions_idempotency_key_key UNIQUE (idempotency_key)
 constraint xp_transactions xp_transactions_pkey PRIMARY KEY (id)
-constraint xp_transactions xp_transactions_previous_level_check CHECK ((previous_level >= 1))
-constraint xp_transactions xp_transactions_previous_level_not_null NOT NULL previous_level
 constraint xp_transactions xp_transactions_source_check CHECK ((source = ANY (ARRAY['activity_completion'::text, 'course_completion'::text, 'login_bonus'::text, 'quiz_completion'::text, 'exam_completion'::text, 'streak_bonus'::text, 'admin_award'::text, 'code_challenge_completion'::text, 'code_challenge_perfect'::text, 'code_challenge_first_solve'::text])))
-constraint xp_transactions xp_transactions_source_id_shape CHECK (((source_id IS NULL) OR
-CASE
-    WHEN (source = 'login_bonus'::text) THEN (source_id ~ '^[0-9]{1,6}$'::text)
-    ELSE (source_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text)
-END))
 constraint xp_transactions xp_transactions_source_not_null NOT NULL source
 constraint xp_transactions xp_transactions_source_ref_kind CHECK ((((source_day IS NULL) OR (source = 'login_bonus'::text)) AND ((source_uuid IS NULL) OR (source <> 'login_bonus'::text)) AND ((source_day >= 0) AND (source_day <= 999999))))
-constraint xp_transactions xp_transactions_triggered_level_up_not_null NOT NULL triggered_level_up
 constraint xp_transactions xp_transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
 constraint xp_transactions xp_transactions_user_id_not_null NOT NULL user_id
-constraint xp_transactions xp_transactions_user_id_source_source_id_key UNIQUE (user_id, source, source_id)
 function CREATE OR REPLACE FUNCTION public.activities_keep_assessment_type()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1445,36 +1389,6 @@ BEGIN
     NEW.required := (NEW.settings->>'required') IS DISTINCT FROM 'false';
     RETURN NEW;
 END $function$
-function CREATE OR REPLACE FUNCTION public.activity_progress_status()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF (TG_OP = 'INSERT' AND NEW.status IS NULL)
-       OR (TG_OP = 'UPDATE' AND NEW.state IS DISTINCT FROM OLD.state AND NEW.status IS NOT DISTINCT FROM OLD.status) THEN
-        NEW.status := CASE WHEN NEW.state IN ('passed', 'failed') THEN 'released' ELSE NEW.state END;
-    ELSE
-        NEW.state := CASE WHEN NEW.status <> 'released' THEN NEW.status
-                          WHEN NEW.passed THEN 'passed' ELSE 'failed' END;
-    END IF;
-    RETURN NEW;
-END $function$
-function CREATE OR REPLACE FUNCTION public.ai_course_analyses_sha256()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF (TG_OP = 'INSERT' AND NEW.content_sha256 IS NULL)
-       OR (TG_OP = 'UPDATE' AND NEW.content_hash IS DISTINCT FROM OLD.content_hash
-           AND NEW.content_sha256 IS NOT DISTINCT FROM OLD.content_sha256) THEN
-        NEW.content_sha256 := decode(NEW.content_hash, 'hex');
-    ELSE
-        NEW.content_hash := encode(NEW.content_sha256, 'hex');
-    END IF;
-    RETURN NEW;
-END $function$
 function CREATE OR REPLACE FUNCTION public.ai_grade_drafts_same_activity()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1489,30 +1403,6 @@ BEGIN
     RETURN NEW;
 END;
 $function$
-function CREATE OR REPLACE FUNCTION public.ai_runs_duration()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    NEW.duration_ms := (extract(epoch FROM NEW.completed_at - NEW.started_at) * 1000)::integer;
-    RETURN NEW;
-END $function$
-function CREATE OR REPLACE FUNCTION public.ai_work_embeddings_sha256()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF (TG_OP = 'INSERT' AND NEW.text_sha256 IS NULL)
-       OR (TG_OP = 'UPDATE' AND NEW.text_hash IS DISTINCT FROM OLD.text_hash
-           AND NEW.text_sha256 IS NOT DISTINCT FROM OLD.text_sha256) THEN
-        NEW.text_sha256 := decode(NEW.text_hash, 'hex');
-    ELSE
-        NEW.text_hash := encode(NEW.text_sha256, 'hex');
-    END IF;
-    RETURN NEW;
-END $function$
 function CREATE OR REPLACE FUNCTION public.analytics_events_drop_partitions(before timestamp with time zone)
  RETURNS integer
  LANGUAGE plpgsql
@@ -1750,11 +1640,6 @@ BEGIN
     END LOOP;
 END
 $function$
-function CREATE OR REPLACE FUNCTION public.assessment_content_hash(items jsonb, policy jsonb)
- RETURNS text
- LANGUAGE sql
- IMMUTABLE
-AS $function$ SELECT md5(items::text || '|' || policy::text) $function$
 function CREATE OR REPLACE FUNCTION public.assessment_content_sha256(items jsonb, policy jsonb)
  RETURNS bytea
  LANGUAGE sql
@@ -1779,21 +1664,6 @@ BEGIN
     WHERE jsonb_typeof(ref.value) = 'string'
     ON CONFLICT DO NOTHING;
     RETURN NULL;
-END $function$
-function CREATE OR REPLACE FUNCTION public.assessment_items_estimate()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF (TG_OP = 'INSERT' AND NEW.estimated_seconds IS NULL)
-       OR (TG_OP = 'UPDATE' AND NEW.estimated_minutes IS DISTINCT FROM OLD.estimated_minutes
-           AND NEW.estimated_seconds IS NOT DISTINCT FROM OLD.estimated_seconds) THEN
-        NEW.estimated_seconds := NEW.estimated_minutes * 60;
-    ELSE
-        NEW.estimated_minutes := NEW.estimated_seconds / 60;
-    END IF;
-    RETURN NEW;
 END $function$
 function CREATE OR REPLACE FUNCTION public.assessment_version_uploads_sync()
  RETURNS trigger
@@ -1825,25 +1695,9 @@ function CREATE OR REPLACE FUNCTION public.assessment_versions_points()
 AS $function$
 BEGIN
     NEW.max_points := snapshot_max_points(NEW.items);
-    NEW.content_hash := assessment_content_hash(NEW.items, NEW.policy);
     RETURN NEW;
 END;
 $function$
-function CREATE OR REPLACE FUNCTION public.assessments_grace_period()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF (TG_OP = 'INSERT' AND NEW.grace_period_seconds IS NULL)
-       OR (TG_OP = 'UPDATE' AND NEW.grace_period_minutes IS DISTINCT FROM OLD.grace_period_minutes
-           AND NEW.grace_period_seconds IS NOT DISTINCT FROM OLD.grace_period_seconds) THEN
-        NEW.grace_period_seconds := NEW.grace_period_minutes * 60;
-    ELSE
-        NEW.grace_period_minutes := NEW.grace_period_seconds / 60;
-    END IF;
-    RETURN NEW;
-END $function$
 function CREATE OR REPLACE FUNCTION public.block_uploads_sync()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1870,8 +1724,7 @@ function CREATE OR REPLACE FUNCTION public.certificate_users_frozen()
  SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
 AS $function$
 BEGIN
-    IF to_jsonb(NEW) - 'holder_name' - 'reissued_at' - 'updated_at'
-       IS DISTINCT FROM to_jsonb(OLD) - 'holder_name' - 'reissued_at' - 'updated_at' THEN
+    IF to_jsonb(NEW) - 'holder_name' - 'reissued_at' IS DISTINCT FROM to_jsonb(OLD) - 'holder_name' - 'reissued_at' THEN
         RAISE EXCEPTION 'certificates state what was issued: only the holder name is re-issued'
             USING ERRCODE = 'integrity_constraint_violation';
     END IF;
@@ -1885,58 +1738,11 @@ function CREATE OR REPLACE FUNCTION public.certification_text(config jsonb, key 
 AS $function$
     SELECT NULLIF(btrim(CASE jsonb_typeof(config -> key) WHEN 'string' THEN config ->> key END), '')
 $function$
-function CREATE OR REPLACE FUNCTION public.code_run_cases_passed()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    NEW.passed := NEW.verdict = 'accepted'
-        OR EXISTS (SELECT 1 FROM code_runs r WHERE r.id = NEW.run_id AND r.purpose = 'custom');
-    RETURN NEW;
-END $function$
 function CREATE OR REPLACE FUNCTION public.code_run_status(status text, verdict text)
  RETURNS text
  LANGUAGE sql
  IMMUTABLE PARALLEL SAFE
 RETURN CASE WHEN ((verdict IS NOT NULL) OR (status = 'done'::text)) THEN 'done'::text WHEN (status = ANY (ARRAY['internal_error'::text, 'failed'::text])) THEN 'failed'::text ELSE status END
-function CREATE OR REPLACE FUNCTION public.code_runs_sha256()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF (TG_OP = 'INSERT' AND NEW.code_sha256 IS NULL)
-       OR (TG_OP = 'UPDATE' AND NEW.source_sha256 IS DISTINCT FROM OLD.source_sha256
-           AND NEW.code_sha256 IS NOT DISTINCT FROM OLD.code_sha256) THEN
-        NEW.code_sha256 := decode(NEW.source_sha256, 'hex');
-    ELSE
-        NEW.source_sha256 := encode(NEW.code_sha256, 'hex');
-    END IF;
-    IF (TG_OP = 'INSERT' AND NEW.input_sha256 IS NULL)
-       OR (TG_OP = 'UPDATE' AND NEW.stdin_sha256 IS DISTINCT FROM OLD.stdin_sha256
-           AND NEW.input_sha256 IS NOT DISTINCT FROM OLD.input_sha256) THEN
-        NEW.input_sha256 := decode(NEW.stdin_sha256, 'hex');
-    ELSE
-        NEW.stdin_sha256 := encode(NEW.input_sha256, 'hex');
-    END IF;
-    RETURN NEW;
-END $function$
-function CREATE OR REPLACE FUNCTION public.code_runs_verdict()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF NEW.verdict IS NULL THEN
-        IF NEW.status IN ('accepted', 'wrong_answer', 'compile_error', 'runtime_error', 'time_limit') THEN
-            NEW.verdict := NEW.status;
-        ELSIF NEW.status = 'internal_error' AND EXISTS (SELECT 1 FROM code_run_cases c WHERE c.run_id = NEW.id) THEN
-            NEW.verdict := 'internal_error';
-        END IF;
-    END IF;
-    RETURN NEW;
-END $function$
 function CREATE OR REPLACE FUNCTION public.collection_creator(p_collection uuid)
  RETURNS uuid
  LANGUAGE sql
@@ -1972,30 +1778,17 @@ function CREATE OR REPLACE FUNCTION public.course_creator(p_course uuid)
  LANGUAGE sql
  STABLE PARALLEL SAFE
 RETURN (SELECT s.user_id FROM course_staff s WHERE ((s.course_id = course_creator.p_course) AND (s.authorship = 'creator'::text)))
-function CREATE OR REPLACE FUNCTION public.course_discussions_deleted_status()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF NEW.deleted_at IS NOT NULL THEN
-        NEW.status := 'deleted';
-    ELSIF NEW.status = 'deleted' THEN
-        NEW.deleted_at := now();
-    END IF;
-    RETURN NEW;
-END $function$
 function CREATE OR REPLACE FUNCTION public.course_discussions_recount_replies()
  RETURNS trigger
  LANGUAGE plpgsql
  SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
 AS $function$
 BEGIN
-    IF TG_OP <> 'INSERT' AND OLD.parent_id IS NOT NULL AND OLD.status = 'active' THEN
+    IF TG_OP <> 'INSERT' AND OLD.parent_id IS NOT NULL AND OLD.status = 'active' AND OLD.deleted_at IS NULL THEN
         UPDATE discussion_posts SET replies_count = replies_count - 1
         WHERE id = OLD.parent_id;
     END IF;
-    IF TG_OP <> 'DELETE' AND NEW.parent_id IS NOT NULL AND NEW.status = 'active' THEN
+    IF TG_OP <> 'DELETE' AND NEW.parent_id IS NOT NULL AND NEW.status = 'active' AND NEW.deleted_at IS NULL THEN
         UPDATE discussion_posts SET replies_count = replies_count + 1
         WHERE id = NEW.parent_id;
     END IF;
@@ -2054,26 +1847,6 @@ BEGIN
     VALUES (NEW.id, NEW.creator_id, 'creator', 'active')
     ON CONFLICT DO NOTHING;
     RETURN NULL;
-END $function$
-function CREATE OR REPLACE FUNCTION public.daily_assessment_metrics_latency()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF (TG_OP = 'INSERT' AND NEW.grading_latency_seconds_p50 IS NULL AND NEW.grading_latency_seconds_p90 IS NULL)
-       OR (TG_OP = 'UPDATE'
-           AND (NEW.grading_latency_hours_p50, NEW.grading_latency_hours_p90)
-               IS DISTINCT FROM (OLD.grading_latency_hours_p50, OLD.grading_latency_hours_p90)
-           AND (NEW.grading_latency_seconds_p50, NEW.grading_latency_seconds_p90)
-               IS NOT DISTINCT FROM (OLD.grading_latency_seconds_p50, OLD.grading_latency_seconds_p90)) THEN
-        NEW.grading_latency_seconds_p50 := round(NEW.grading_latency_hours_p50 * 3600);
-        NEW.grading_latency_seconds_p90 := round(NEW.grading_latency_hours_p90 * 3600);
-    ELSE
-        NEW.grading_latency_hours_p50 := NEW.grading_latency_seconds_p50 / 3600.0;
-        NEW.grading_latency_hours_p90 := NEW.grading_latency_seconds_p90 / 3600.0;
-    END IF;
-    RETURN NEW;
 END $function$
 function CREATE OR REPLACE FUNCTION public.discussion_image_keys(content text)
  RETURNS SETOF text
@@ -2142,39 +1915,6 @@ BEGIN
     RETURN level;
 END
 $function$
-function CREATE OR REPLACE FUNCTION public.file_submission_files_from_upload()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    SELECT u.key, u.mime, u.size_bytes INTO NEW.storage_key, NEW.content_type, NEW.size_bytes
-    FROM uploads u WHERE u.id = NEW.upload_id;
-    RETURN NEW;
-END $function$
-function CREATE OR REPLACE FUNCTION public.gamification_completions_source_ref()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF NEW.source_uuid IS NULL THEN
-        NEW.source_uuid := NEW.source_id::uuid;
-    ELSIF NEW.source_id IS NULL THEN
-        NEW.source_id := NEW.source_uuid::text;
-    END IF;
-    RETURN NEW;
-END $function$
-function CREATE OR REPLACE FUNCTION public.gamification_profiles_last_login()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    UPDATE users SET last_login_at = NEW.last_login_at
-     WHERE id = NEW.user_id AND last_login_at IS DISTINCT FROM NEW.last_login_at;
-    RETURN NULL;
-END $function$
 function CREATE OR REPLACE FUNCTION public.grading_entries_current_check()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2211,35 +1951,6 @@ BEGIN
     RETURN OLD;
 END;
 $function$
-function CREATE OR REPLACE FUNCTION public.grading_entries_number()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF NEW.revision IS NULL THEN
-        -- Two graders saving at once take turns on the submission, so the second reads the first's number.
-        PERFORM 1 FROM submissions WHERE id = NEW.submission_id FOR NO KEY UPDATE;
-        SELECT COALESCE(max(revision), 0) + 1 INTO NEW.revision
-          FROM grading_entries WHERE submission_id = NEW.submission_id;
-    END IF;
-    RETURN NEW;
-END $function$
-function CREATE OR REPLACE FUNCTION public.grading_entries_points()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF NEW.max_points IS NULL THEN
-        SELECT v.max_points INTO NEW.max_points
-          FROM submissions s JOIN assessment_versions v ON v.id = s.assessment_version_id
-         WHERE s.id = NEW.submission_id;
-        NEW.raw_points := points_of_percent(NEW.raw_score::numeric, NEW.max_points);
-        NEW.final_points := points_of_percent(NEW.final_score::numeric, NEW.max_points);
-    END IF;
-    RETURN NEW;
-END $function$
 function CREATE OR REPLACE FUNCTION public.has_course_role(p_course uuid, p_user uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -2249,21 +1960,6 @@ AS $function$
                    WHERE cs.course_id = p_course AND cs.user_id = p_user
                      AND cs.status = 'active' AND cs.authorship <> 'reporter')
 $function$
-function CREATE OR REPLACE FUNCTION public.idempotency_keys_sha256()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF (TG_OP = 'INSERT' AND NEW.request_sha256 IS NULL)
-       OR (TG_OP = 'UPDATE' AND NEW.request_hash IS DISTINCT FROM OLD.request_hash
-           AND NEW.request_sha256 IS NOT DISTINCT FROM OLD.request_sha256) THEN
-        NEW.request_sha256 := decode(NEW.request_hash, 'hex');
-    ELSE
-        NEW.request_hash := encode(NEW.request_sha256, 'hex');
-    END IF;
-    RETURN NEW;
-END $function$
 function CREATE OR REPLACE FUNCTION public.inet_or_null(p text)
  RETURNS inet
  LANGUAGE plpgsql
@@ -2300,11 +1996,9 @@ function CREATE OR REPLACE FUNCTION public.item_feedback_frozen()
  SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
 AS $function$
 DECLARE
-    -- What erasure and deletes may clear: the grader, the item and the annotation's upload.
-    cleared constant text[] := ARRAY['graded_by', 'item_id', 'annotation_upload_id', 'updated_at'];
+    cleared constant text[] := ARRAY['item_id', 'annotation_upload_id'];
 BEGIN
     IF (to_jsonb(NEW) - cleared) IS DISTINCT FROM (to_jsonb(OLD) - cleared)
-       OR (NEW.graded_by IS DISTINCT FROM OLD.graded_by AND NEW.graded_by IS NOT NULL)
        OR (NEW.item_id IS DISTINCT FROM OLD.item_id AND NEW.item_id IS NOT NULL) THEN
         RAISE EXCEPTION 'item_feedback rows are part of their grade entry: append a new entry'
             USING ERRCODE = 'integrity_constraint_violation';
@@ -2312,15 +2006,6 @@ BEGIN
     RETURN NEW;
 END;
 $function$
-function CREATE OR REPLACE FUNCTION public.messages_deleted_status()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    NEW.status := CASE WHEN NEW.deleted_at IS NULL THEN 'active' ELSE 'deleted' END;
-    RETURN NEW;
-END $function$
 function CREATE OR REPLACE FUNCTION public.percent_of_points(points numeric, max_points numeric)
  RETURNS numeric
  LANGUAGE sql
@@ -2441,35 +2126,6 @@ AS $function$
         RETURNING 1)
     SELECT count(*) FROM gone
 $function$
-function CREATE OR REPLACE FUNCTION public.renamed_columns()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-DECLARE
-    n jsonb := to_jsonb(NEW);
-    o jsonb := CASE WHEN TG_OP = 'UPDATE' THEN to_jsonb(OLD) END;
-    d jsonb := '{}';
-    old_name text;
-    new_name text;
-BEGIN
-    FOR i IN 0 .. TG_NARGS / 2 - 1 LOOP
-        old_name := TG_ARGV[2 * i];
-        new_name := TG_ARGV[2 * i + 1];
-        IF TG_OP = 'INSERT' THEN
-            IF jsonb_typeof(n -> old_name) <> 'null' THEN
-                d := d || jsonb_build_object(new_name, n -> old_name);
-            ELSE
-                d := d || jsonb_build_object(old_name, n -> new_name);
-            END IF;
-        ELSIF n -> new_name IS DISTINCT FROM o -> new_name THEN
-            d := d || jsonb_build_object(old_name, n -> new_name);
-        ELSIF n -> old_name IS DISTINCT FROM o -> old_name THEN
-            d := d || jsonb_build_object(new_name, n -> old_name);
-        END IF;
-    END LOOP;
-    RETURN jsonb_populate_record(NEW, d);
-END $function$
 function CREATE OR REPLACE FUNCTION public.schema_try_check(p_table regclass, p_name text, p_expr text)
  RETURNS boolean
  LANGUAGE plpgsql
@@ -2699,16 +2355,6 @@ AS $function$
         OR EXISTS (SELECT 1 FROM assessment_imports WHERE upload_id = p_upload)
         OR EXISTS (SELECT 1 FROM assessment_imports WHERE image_upload_ids @> ARRAY[p_upload])
 $function$
-function CREATE OR REPLACE FUNCTION public.users_last_login()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    UPDATE gamification_profiles SET last_login_at = NEW.last_login_at
-     WHERE user_id = NEW.id AND last_login_at IS DISTINCT FROM NEW.last_login_at;
-    RETURN NULL;
-END $function$
 function CREATE OR REPLACE FUNCTION public.users_reissue_certificates()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -2756,39 +2402,8 @@ function CREATE OR REPLACE FUNCTION public.xp_level(total bigint)
  LANGUAGE sql
  IMMUTABLE PARALLEL SAFE
 RETURN LEAST(100, GREATEST(1, ((floor(((('-1'::integer)::numeric + sqrt(((1)::numeric + (0.08 * (GREATEST(total, (0)::bigint))::numeric)))) / (2)::numeric)))::integer + 1)))
-function CREATE OR REPLACE FUNCTION public.xp_transactions_levels()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-DECLARE
-    before bigint;
-BEGIN
-    SELECT coalesce(sum(x.amount), 0) INTO before FROM xp_transactions x WHERE x.user_id = NEW.user_id;
-    NEW.previous_level := xp_level(before);
-    NEW.triggered_level_up := xp_level(before + NEW.amount) > NEW.previous_level;
-    RETURN NEW;
-END $function$
-function CREATE OR REPLACE FUNCTION public.xp_transactions_source_ref()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    IF NEW.source_id IS NOT NULL AND NEW.source_uuid IS NULL AND NEW.source_day IS NULL THEN
-        IF NEW.source = 'login_bonus' THEN
-            NEW.source_day := NEW.source_id::integer;
-        ELSE
-            NEW.source_uuid := NEW.source_id::uuid;
-        END IF;
-    ELSIF NEW.source_id IS NULL THEN
-        NEW.source_id := coalesce(NEW.source_uuid::text, NEW.source_day::text);
-    END IF;
-    RETURN NEW;
-END $function$
 index CREATE INDEX activities_course_idx ON core.activities USING btree (course_id)
 index CREATE INDEX activities_search_trgm_idx ON core.activities USING gin (search_fold(name) gin_trgm_ops)
-index CREATE INDEX activity_progress_activity_state_idx ON learning.activity_progress USING btree (activity_id, state)
 index CREATE INDEX activity_progress_activity_status_idx ON learning.activity_progress USING btree (activity_id, status)
 index CREATE INDEX activity_progress_best_submission_idx ON learning.activity_progress USING btree (best_submission_id)
 index CREATE INDEX activity_progress_course_user_idx ON learning.activity_progress USING btree (course_id, user_id)
@@ -2904,8 +2519,6 @@ index CREATE INDEX course_concepts_decided_by_idx ON learning.course_concepts US
 index CREATE INDEX course_concepts_run_idx ON learning.course_concepts USING btree (run_id)
 index CREATE INDEX course_discussions_course_idx ON core.discussion_posts USING btree (course_id, created_at DESC)
 index CREATE INDEX course_discussions_parent_idx ON core.discussion_posts USING btree (parent_id)
-index CREATE INDEX course_discussions_posts_keyset_idx ON core.discussion_posts USING btree (course_id, id DESC) WHERE ((parent_id IS NULL) AND (status = 'active'::text))
-index CREATE INDEX course_discussions_replies_keyset_idx ON core.discussion_posts USING btree (parent_id, id) WHERE (status = 'active'::text)
 index CREATE INDEX course_progress_user_idx ON learning.course_progress USING btree (user_id)
 index CREATE INDEX course_staff_user_idx ON core.course_staff USING btree (user_id, course_id)
 index CREATE INDEX course_update_activities_activity_idx ON core.course_update_activities USING btree (activity_id)
@@ -2926,6 +2539,8 @@ index CREATE INDEX daily_teacher_metrics_date_brin ON analytics.daily_teacher_me
 index CREATE INDEX daily_teacher_metrics_teacher_idx ON analytics.daily_teacher_metrics USING btree (teacher_id)
 index CREATE INDEX daily_user_course_progress_course_idx ON analytics.daily_user_course_progress USING btree (course_id, metric_date DESC)
 index CREATE INDEX daily_user_course_progress_user_idx ON analytics.daily_user_course_progress USING btree (user_id)
+index CREATE INDEX discussion_posts_keyset_idx ON core.discussion_posts USING btree (course_id, id DESC) WHERE ((parent_id IS NULL) AND (deleted_at IS NULL))
+index CREATE INDEX discussion_posts_replies_keyset_idx ON core.discussion_posts USING btree (parent_id, id) WHERE (deleted_at IS NULL)
 index CREATE INDEX discussion_reactions_user_idx ON core.discussion_reactions USING btree (user_id)
 index CREATE INDEX enrolment_events_course_user_idx ON learning.enrolment_events USING btree (course_id, user_id, created_at)
 index CREATE INDEX enrolment_events_created_by_idx ON learning.enrolment_events USING btree (created_by) WHERE (created_by IS NOT NULL)
@@ -2998,7 +2613,6 @@ index CREATE UNIQUE INDEX ai_eval_results_pkey ON ai.ai_eval_results USING btree
 index CREATE UNIQUE INDEX ai_events_pkey ON ai.ai_events USING btree (id)
 index CREATE UNIQUE INDEX ai_events_run_id_sequence_key ON ai.ai_events USING btree (run_id, sequence)
 index CREATE UNIQUE INDEX ai_evidence_pkey ON ai.ai_evidence USING btree (id)
-index CREATE UNIQUE INDEX ai_feature_switches_pkey ON ai.ai_feature_switches USING btree (feature)
 index CREATE UNIQUE INDEX ai_grade_corrections_draft_id_part_key_criterion_key_key ON ai.ai_grade_corrections USING btree (draft_id, part_key, criterion_key)
 index CREATE UNIQUE INDEX ai_grade_corrections_pkey ON ai.ai_grade_corrections USING btree (id)
 index CREATE UNIQUE INDEX ai_grade_drafts_live_submission_idx ON ai.ai_grade_drafts USING btree (submission_id) WHERE ((status = ANY (ARRAY['queued'::text, 'ready'::text])) AND (submission_id IS NOT NULL))
@@ -3017,7 +2631,6 @@ index CREATE UNIQUE INDEX ai_token_reservations_pkey ON ai.ai_token_reservations
 index CREATE UNIQUE INDEX ai_work_embeddings_pkey ON ai.ai_work_embeddings USING btree (subject_id, part_key)
 index CREATE UNIQUE INDEX analytics_events_pkey ON ONLY analytics.analytics_events USING btree (id, occurred_at)
 index CREATE UNIQUE INDEX analytics_saved_views_pkey ON analytics.analytics_saved_views USING btree (id)
-index CREATE UNIQUE INDEX analytics_saved_views_previous_key ON analytics.analytics_saved_views USING btree (teacher_user_id, view_type, name)
 index CREATE UNIQUE INDEX analytics_saved_views_teacher_user_id_view_type_name_key ON analytics.analytics_saved_views USING btree (user_id, kind, name)
 index CREATE UNIQUE INDEX assessment_access_usergroups_pkey ON learning.assessment_access_usergroups USING btree (assessment_id, usergroup_id)
 index CREATE UNIQUE INDEX assessment_access_users_pkey ON learning.assessment_access_users USING btree (assessment_id, user_id)
@@ -3030,7 +2643,6 @@ index CREATE UNIQUE INDEX assessment_items_position_key ON learning.assessment_i
 index CREATE UNIQUE INDEX assessment_overrides_assessment_id_user_id_key ON learning.assessment_overrides USING btree (assessment_id, user_id)
 index CREATE UNIQUE INDEX assessment_overrides_pkey ON learning.assessment_overrides USING btree (id)
 index CREATE UNIQUE INDEX assessment_version_uploads_pkey ON learning.assessment_version_uploads USING btree (version_id, upload_id)
-index CREATE UNIQUE INDEX assessment_versions_assessment_id_content_hash_key ON learning.assessment_versions USING btree (assessment_id, content_hash)
 index CREATE UNIQUE INDEX assessment_versions_assessment_id_number_key ON learning.assessment_versions USING btree (assessment_id, number)
 index CREATE UNIQUE INDEX assessment_versions_content_sha256_key ON learning.assessment_versions USING btree (assessment_id, content_sha256)
 index CREATE UNIQUE INDEX assessment_versions_id_assessment_key ON learning.assessment_versions USING btree (id, assessment_id)
@@ -3088,20 +2700,16 @@ index CREATE UNIQUE INDEX daily_course_metrics_pkey ON analytics.daily_course_me
 index CREATE UNIQUE INDEX daily_platform_metrics_pkey ON analytics.daily_platform_metrics USING btree (metric_date)
 index CREATE UNIQUE INDEX daily_teacher_metrics_metric_date_teacher_user_id_key ON analytics.daily_teacher_metrics USING btree (metric_date, teacher_id) NULLS NOT DISTINCT
 index CREATE UNIQUE INDEX daily_teacher_metrics_pkey ON analytics.daily_teacher_metrics USING btree (id)
-index CREATE UNIQUE INDEX daily_teacher_metrics_previous_key ON analytics.daily_teacher_metrics USING btree (metric_date, teacher_user_id) NULLS NOT DISTINCT
 index CREATE UNIQUE INDEX daily_user_course_progress_pkey ON analytics.daily_user_course_progress USING btree (metric_date, user_id, course_id)
 index CREATE UNIQUE INDEX discussion_reactions_pkey ON core.discussion_reactions USING btree (discussion_id, user_id)
 index CREATE UNIQUE INDEX enrolment_events_pkey ON learning.enrolment_events USING btree (id)
 index CREATE UNIQUE INDEX enrolments_pkey ON learning.enrolments USING btree (course_id, user_id)
-index CREATE UNIQUE INDEX feature_activations_pkey ON core.feature_activations USING btree (feature)
 index CREATE UNIQUE INDEX file_submission_files_attempt_id_upload_id_key ON learning.file_submission_files USING btree (attempt_id, upload_id)
 index CREATE UNIQUE INDEX file_submission_files_pkey ON learning.file_submission_files USING btree (id)
 index CREATE UNIQUE INDEX file_submissions_activity_id_key ON learning.file_submissions USING btree (activity_id)
 index CREATE UNIQUE INDEX file_submissions_id_course_key ON learning.file_submissions USING btree (id, course_id)
 index CREATE UNIQUE INDEX file_submissions_pkey ON learning.file_submissions USING btree (id)
-index CREATE UNIQUE INDEX gamification_completions_pkey ON learning.gamification_completions USING btree (user_id, kind, source_id)
-index CREATE UNIQUE INDEX gamification_completions_user_kind_source_uuid_key ON learning.gamification_completions USING btree (user_id, kind, source_uuid)
-index CREATE UNIQUE INDEX gamification_config_pkey ON learning.gamification_config USING btree (id)
+index CREATE UNIQUE INDEX gamification_completions_pkey ON learning.gamification_completions USING btree (user_id, kind, source_uuid)
 index CREATE UNIQUE INDEX gamification_profiles_pkey ON learning.gamification_profiles USING btree (user_id)
 index CREATE UNIQUE INDEX google_accounts_pkey ON core.google_accounts USING btree (google_sub)
 index CREATE UNIQUE INDEX grading_entries_id_submission_key ON learning.grading_entries USING btree (id, submission_id)
@@ -3156,7 +2764,6 @@ index CREATE UNIQUE INDEX users_username_lower_key ON core.users USING btree (lo
 index CREATE UNIQUE INDEX users_zitadel_user_id_key ON core.users USING btree (zitadel_user_id)
 index CREATE UNIQUE INDEX xp_transactions_idempotency_key_key ON learning.xp_transactions USING btree (idempotency_key)
 index CREATE UNIQUE INDEX xp_transactions_pkey ON learning.xp_transactions USING btree (id)
-index CREATE UNIQUE INDEX xp_transactions_user_id_source_source_id_key ON learning.xp_transactions USING btree (user_id, source, source_id)
 index CREATE UNIQUE INDEX xp_transactions_user_source_day_key ON learning.xp_transactions USING btree (user_id, source, source_day)
 index CREATE UNIQUE INDEX xp_transactions_user_source_uuid_key ON learning.xp_transactions USING btree (user_id, source, source_uuid)
 table ai.ai_approvals action_type text NOT NULL DEFAULT -
@@ -3175,7 +2782,6 @@ table ai.ai_artifacts final boolean NOT NULL DEFAULT false
 table ai.ai_artifacts id uuid NOT NULL DEFAULT uuidv7()
 table ai.ai_artifacts kind text NOT NULL DEFAULT -
 table ai.ai_artifacts run_id uuid NOT NULL DEFAULT -
-table ai.ai_course_analyses content_hash text DEFAULT -
 table ai.ai_course_analyses content_sha256 bytea DEFAULT -
 table ai.ai_course_analyses course_id uuid NOT NULL DEFAULT -
 table ai.ai_course_analyses created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3217,10 +2823,6 @@ table ai.ai_evidence run_id uuid NOT NULL DEFAULT -
 table ai.ai_evidence score double precision DEFAULT -
 table ai.ai_evidence source_ref text DEFAULT -
 table ai.ai_evidence source_type text NOT NULL DEFAULT -
-table ai.ai_feature_switches enabled boolean NOT NULL DEFAULT -
-table ai.ai_feature_switches feature text NOT NULL DEFAULT -
-table ai.ai_feature_switches updated_at timestamp with time zone NOT NULL DEFAULT now()
-table ai.ai_feature_switches updated_by uuid DEFAULT -
 table ai.ai_grade_corrections activity_id uuid NOT NULL DEFAULT -
 table ai.ai_grade_corrections ai_score score_points NOT NULL DEFAULT -
 table ai.ai_grade_corrections course_id uuid NOT NULL DEFAULT -
@@ -3296,7 +2898,6 @@ table ai.ai_remediation_sessions updated_at timestamp with time zone NOT NULL DE
 table ai.ai_runs completed_at timestamp with time zone DEFAULT -
 table ai.ai_runs cost_estimate numeric(12,6) DEFAULT -
 table ai.ai_runs created_at timestamp with time zone NOT NULL DEFAULT now()
-table ai.ai_runs duration_ms integer DEFAULT -
 table ai.ai_runs error_code text DEFAULT -
 table ai.ai_runs id uuid NOT NULL DEFAULT uuidv7()
 table ai.ai_runs input_tokens integer DEFAULT -
@@ -3354,7 +2955,6 @@ table ai.ai_work_embeddings embedding halfvec(1024) NOT NULL DEFAULT -
 table ai.ai_work_embeddings embedding_model text NOT NULL DEFAULT -
 table ai.ai_work_embeddings part_key text NOT NULL DEFAULT -
 table ai.ai_work_embeddings subject_id uuid NOT NULL DEFAULT -
-table ai.ai_work_embeddings text_hash text NOT NULL DEFAULT -
 table ai.ai_work_embeddings text_sha256 bytea NOT NULL DEFAULT -
 table ai.content_chunks activity_id uuid DEFAULT -
 table ai.content_chunks anchor jsonb NOT NULL DEFAULT '{}'::jsonb
@@ -3381,12 +2981,10 @@ table ai.content_index_state source_id uuid NOT NULL DEFAULT -
 table ai.content_index_state source_type text NOT NULL DEFAULT -
 table ai.content_index_state source_version bigint NOT NULL DEFAULT -
 table analytics.analytics_events activity_id uuid DEFAULT -
-table analytics.analytics_events actor_id uuid DEFAULT -
 table analytics.analytics_events assessment_id uuid DEFAULT -
 table analytics.analytics_events course_id uuid DEFAULT -
 table analytics.analytics_events created_at timestamp with time zone NOT NULL DEFAULT now()
 table analytics.analytics_events event text NOT NULL DEFAULT -
-table analytics.analytics_events event_type text DEFAULT -
 table analytics.analytics_events id uuid NOT NULL DEFAULT uuidv7()
 table analytics.analytics_events occurred_at timestamp with time zone NOT NULL DEFAULT now()
 table analytics.analytics_events payload jsonb NOT NULL DEFAULT '{}'::jsonb
@@ -3398,10 +2996,8 @@ table analytics.analytics_saved_views id uuid NOT NULL DEFAULT uuidv7()
 table analytics.analytics_saved_views kind text NOT NULL DEFAULT 'overview'::text
 table analytics.analytics_saved_views name text NOT NULL DEFAULT -
 table analytics.analytics_saved_views query jsonb NOT NULL DEFAULT '{}'::jsonb
-table analytics.analytics_saved_views teacher_user_id uuid DEFAULT -
 table analytics.analytics_saved_views updated_at timestamp with time zone NOT NULL DEFAULT now()
 table analytics.analytics_saved_views user_id uuid NOT NULL DEFAULT -
-table analytics.analytics_saved_views view_type text DEFAULT -
 table analytics.daily_assessment_metrics activity_id uuid DEFAULT -
 table analytics.daily_assessment_metrics assessment_id uuid NOT NULL DEFAULT -
 table analytics.daily_assessment_metrics assessment_kind text NOT NULL DEFAULT -
@@ -3412,8 +3008,6 @@ table analytics.daily_assessment_metrics course_id uuid NOT NULL DEFAULT -
 table analytics.daily_assessment_metrics difficulty_score double precision DEFAULT -
 table analytics.daily_assessment_metrics eligible_learners integer NOT NULL DEFAULT 0
 table analytics.daily_assessment_metrics generated_at timestamp with time zone NOT NULL DEFAULT now()
-table analytics.daily_assessment_metrics grading_latency_hours_p50 double precision DEFAULT -
-table analytics.daily_assessment_metrics grading_latency_hours_p90 double precision DEFAULT -
 table analytics.daily_assessment_metrics grading_latency_seconds_p50 integer DEFAULT -
 table analytics.daily_assessment_metrics grading_latency_seconds_p90 integer DEFAULT -
 table analytics.daily_assessment_metrics median_score double precision DEFAULT -
@@ -3443,7 +3037,6 @@ table analytics.daily_course_metrics enrolled_learners integer NOT NULL DEFAULT 
 table analytics.daily_course_metrics generated_at timestamp with time zone NOT NULL DEFAULT now()
 table analytics.daily_course_metrics last_content_update_at timestamp with time zone DEFAULT -
 table analytics.daily_course_metrics metric_date date NOT NULL DEFAULT -
-table analytics.daily_course_metrics teacher_user_id uuid DEFAULT -
 table analytics.daily_course_metrics ungraded_submissions integer NOT NULL DEFAULT 0
 table analytics.daily_platform_metrics active_learners_28d integer NOT NULL DEFAULT 0
 table analytics.daily_platform_metrics active_learners_7d integer NOT NULL DEFAULT 0
@@ -3472,7 +3065,6 @@ table analytics.daily_teacher_metrics managed_course_count integer NOT NULL DEFA
 table analytics.daily_teacher_metrics metric_date date NOT NULL DEFAULT -
 table analytics.daily_teacher_metrics returning_learners_28d integer NOT NULL DEFAULT 0
 table analytics.daily_teacher_metrics teacher_id uuid DEFAULT -
-table analytics.daily_teacher_metrics teacher_user_id uuid DEFAULT -
 table analytics.daily_teacher_metrics ungraded_submissions integer NOT NULL DEFAULT 0
 table analytics.daily_user_course_progress completed_steps integer NOT NULL DEFAULT 0
 table analytics.daily_user_course_progress course_id uuid NOT NULL DEFAULT -
@@ -3496,16 +3088,12 @@ table analytics.learner_risk_snapshots recommended_action text DEFAULT -
 table analytics.learner_risk_snapshots risk_level text NOT NULL DEFAULT -
 table analytics.learner_risk_snapshots risk_score double precision NOT NULL DEFAULT 0
 table analytics.learner_risk_snapshots snapshot_date date NOT NULL DEFAULT -
-table analytics.learner_risk_snapshots teacher_user_id uuid DEFAULT -
 table analytics.learner_risk_snapshots user_id uuid NOT NULL DEFAULT -
-table core.activities activity_sub_type text DEFAULT -
-table core.activities activity_type text DEFAULT -
 table core.activities chapter_id uuid NOT NULL DEFAULT -
 table core.activities content jsonb NOT NULL DEFAULT '{}'::jsonb
 table core.activities course_id uuid NOT NULL DEFAULT -
 table core.activities created_at timestamp with time zone NOT NULL DEFAULT now()
 table core.activities created_by uuid DEFAULT -
-table core.activities creator_id uuid DEFAULT -
 table core.activities details jsonb NOT NULL DEFAULT '{}'::jsonb
 table core.activities id uuid NOT NULL DEFAULT uuidv7()
 table core.activities kind text NOT NULL DEFAULT -
@@ -3522,7 +3110,6 @@ table core.activity_kinds sub_kind text NOT NULL DEFAULT -
 table core.block_uploads block_id uuid NOT NULL DEFAULT -
 table core.block_uploads upload_id uuid NOT NULL DEFAULT -
 table core.blocks activity_id uuid NOT NULL DEFAULT -
-table core.blocks block_type text DEFAULT -
 table core.blocks claimed boolean NOT NULL DEFAULT true
 table core.blocks content jsonb NOT NULL DEFAULT '{}'::jsonb
 table core.blocks created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3533,7 +3120,6 @@ table core.blocks updated_at timestamp with time zone NOT NULL DEFAULT now()
 table core.chapters course_id uuid NOT NULL DEFAULT -
 table core.chapters created_at timestamp with time zone NOT NULL DEFAULT now()
 table core.chapters created_by uuid DEFAULT -
-table core.chapters creator_id uuid DEFAULT -
 table core.chapters description text NOT NULL DEFAULT ''::text
 table core.chapters id uuid NOT NULL DEFAULT uuidv7()
 table core.chapters name text NOT NULL DEFAULT -
@@ -3582,7 +3168,6 @@ table core.course_staff version integer NOT NULL DEFAULT 1
 table core.course_update_activities activity_id uuid NOT NULL DEFAULT -
 table core.course_update_activities position integer NOT NULL DEFAULT -
 table core.course_update_activities update_id uuid NOT NULL DEFAULT -
-table core.course_updates author_id uuid DEFAULT -
 table core.course_updates content text NOT NULL DEFAULT -
 table core.course_updates course_id uuid NOT NULL DEFAULT -
 table core.course_updates created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3611,7 +3196,6 @@ table core.courses tags text[] NOT NULL DEFAULT '{}'::text[]
 table core.courses thumbnail_image_key text DEFAULT -
 table core.courses thumbnail_image_upload_id uuid DEFAULT -
 table core.courses thumbnail_kind text NOT NULL DEFAULT 'image'::text
-table core.courses thumbnail_type text DEFAULT -
 table core.courses thumbnail_video_key text DEFAULT -
 table core.courses thumbnail_video_upload_id uuid DEFAULT -
 table core.courses updated_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3634,8 +3218,6 @@ table core.discussion_reactions created_at timestamp with time zone NOT NULL DEF
 table core.discussion_reactions discussion_id uuid NOT NULL DEFAULT -
 table core.discussion_reactions reaction text NOT NULL DEFAULT -
 table core.discussion_reactions user_id uuid NOT NULL DEFAULT -
-table core.feature_activations activated_at timestamp with time zone NOT NULL DEFAULT now()
-table core.feature_activations feature text NOT NULL DEFAULT -
 table core.google_accounts created_at timestamp with time zone NOT NULL DEFAULT now()
 table core.google_accounts email text NOT NULL DEFAULT -
 table core.google_accounts google_sub text NOT NULL DEFAULT -
@@ -3666,7 +3248,6 @@ table core.messages course_id uuid DEFAULT -
 table core.messages created_at timestamp with time zone NOT NULL DEFAULT now()
 table core.messages deleted_at timestamp with time zone DEFAULT -
 table core.messages id uuid NOT NULL DEFAULT uuidv7()
-table core.messages status text NOT NULL DEFAULT 'active'::text
 table core.messages user_id uuid NOT NULL DEFAULT -
 table core.notification_kinds kind text NOT NULL DEFAULT -
 table core.notification_opt_outs created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3750,7 +3331,6 @@ table core.usergroup_members user_id uuid NOT NULL DEFAULT -
 table core.usergroup_members usergroup_id uuid NOT NULL DEFAULT -
 table core.usergroups created_at timestamp with time zone NOT NULL DEFAULT now()
 table core.usergroups created_by uuid DEFAULT -
-table core.usergroups creator_id uuid DEFAULT -
 table core.usergroups description text NOT NULL DEFAULT ''::text
 table core.usergroups id uuid NOT NULL DEFAULT uuidv7()
 table core.usergroups name text NOT NULL DEFAULT -
@@ -3792,8 +3372,7 @@ table learning.activity_progress passed boolean DEFAULT -
 table learning.activity_progress required boolean NOT NULL DEFAULT true
 table learning.activity_progress score percent DEFAULT -
 table learning.activity_progress started_at timestamp with time zone DEFAULT -
-table learning.activity_progress state text NOT NULL DEFAULT 'not_started'::text
-table learning.activity_progress status text NOT NULL DEFAULT -
+table learning.activity_progress status text NOT NULL DEFAULT 'not_started'::text
 table learning.activity_progress status_reason text DEFAULT -
 table learning.activity_progress submitted_at timestamp with time zone DEFAULT -
 table learning.activity_progress teacher_action_required boolean NOT NULL DEFAULT false
@@ -3805,7 +3384,6 @@ table learning.assessment_access_usergroups usergroup_id uuid NOT NULL DEFAULT -
 table learning.assessment_access_users assessment_id uuid NOT NULL DEFAULT -
 table learning.assessment_access_users created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.assessment_access_users user_id uuid NOT NULL DEFAULT -
-table learning.assessment_audit_events actor_id uuid DEFAULT -
 table learning.assessment_audit_events assessment_id uuid NOT NULL DEFAULT -
 table learning.assessment_audit_events created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.assessment_audit_events event text NOT NULL DEFAULT -
@@ -3838,7 +3416,6 @@ table learning.assessment_items body jsonb NOT NULL DEFAULT '{}'::jsonb
 table learning.assessment_items created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.assessment_items difficulty text DEFAULT -
 table learning.assessment_items draw_group text DEFAULT -
-table learning.assessment_items estimated_minutes integer DEFAULT -
 table learning.assessment_items estimated_seconds integer DEFAULT -
 table learning.assessment_items id uuid NOT NULL DEFAULT uuidv7()
 table learning.assessment_items kind text NOT NULL DEFAULT -
@@ -3867,7 +3444,6 @@ table learning.assessment_overrides waive_late_penalty boolean NOT NULL DEFAULT 
 table learning.assessment_version_uploads upload_id uuid NOT NULL DEFAULT -
 table learning.assessment_version_uploads version_id uuid NOT NULL DEFAULT -
 table learning.assessment_versions assessment_id uuid NOT NULL DEFAULT -
-table learning.assessment_versions content_hash text NOT NULL DEFAULT -
 table learning.assessment_versions content_sha256 bytea NOT NULL GENERATED assessment_content_sha256(items, policy)
 table learning.assessment_versions created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.assessment_versions id uuid NOT NULL DEFAULT uuidv7()
@@ -3886,25 +3462,21 @@ table learning.assessments copy_paste_protection boolean NOT NULL DEFAULT false
 table learning.assessments course_id uuid NOT NULL DEFAULT -
 table learning.assessments created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.assessments created_by uuid DEFAULT -
-table learning.assessments creator_id uuid DEFAULT -
 table learning.assessments description text NOT NULL DEFAULT ''::text
 table learning.assessments devtools_detection boolean NOT NULL DEFAULT false
 table learning.assessments draw_count integer DEFAULT -
 table learning.assessments draw_strata jsonb DEFAULT -
 table learning.assessments due_at timestamp with time zone DEFAULT -
 table learning.assessments fullscreen_required boolean NOT NULL DEFAULT false
-table learning.assessments grace_period_minutes integer NOT NULL DEFAULT 0
-table learning.assessments grace_period_seconds integer NOT NULL DEFAULT -
+table learning.assessments grace_period_seconds integer NOT NULL DEFAULT 0
 table learning.assessments grade_release_mode text NOT NULL DEFAULT -
 table learning.assessments grading_kind text NOT NULL DEFAULT 'percentage'::text
 table learning.assessments grading_mode text NOT NULL DEFAULT -
-table learning.assessments grading_type text DEFAULT -
 table learning.assessments id uuid NOT NULL DEFAULT uuidv7()
 table learning.assessments late_cutoff_at timestamp with time zone DEFAULT -
 table learning.assessments late_penalty_max_days integer DEFAULT -
 table learning.assessments late_penalty_percent_per_day percent DEFAULT -
 table learning.assessments late_policy_kind text NOT NULL DEFAULT 'none'::text
-table learning.assessments lifecycle text DEFAULT -
 table learning.assessments max_attempts integer DEFAULT -
 table learning.assessments negative_marking_percent percent NOT NULL DEFAULT 0
 table learning.assessments partial_credit boolean NOT NULL DEFAULT true
@@ -3924,7 +3496,6 @@ table learning.assessments updated_at timestamp with time zone NOT NULL DEFAULT 
 table learning.assessments version integer NOT NULL DEFAULT 1
 table learning.assessments violation_threshold integer NOT NULL DEFAULT 3
 table learning.assessments weight score_weight NOT NULL DEFAULT 1.0
-table learning.bulk_actions action_type text DEFAULT -
 table learning.bulk_actions affected_count integer NOT NULL DEFAULT 0
 table learning.bulk_actions assessment_id uuid NOT NULL DEFAULT -
 table learning.bulk_actions completed_at timestamp with time zone DEFAULT -
@@ -3953,7 +3524,6 @@ table learning.certificates instructor_name text DEFAULT -
 table learning.certificates reissued_at timestamp with time zone DEFAULT -
 table learning.certificates score percent DEFAULT -
 table learning.certificates template_id uuid NOT NULL DEFAULT -
-table learning.certificates updated_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.certificates user_id uuid NOT NULL DEFAULT -
 table learning.certificates verify_code text NOT NULL DEFAULT -
 table learning.code_run_cases compile_output text DEFAULT -
@@ -3963,7 +3533,6 @@ table learning.code_run_cases id uuid NOT NULL DEFAULT uuidv7()
 table learning.code_run_cases is_visible boolean NOT NULL DEFAULT true
 table learning.code_run_cases memory_kb integer DEFAULT -
 table learning.code_run_cases message text DEFAULT -
-table learning.code_run_cases passed boolean NOT NULL DEFAULT false
 table learning.code_run_cases position integer NOT NULL DEFAULT -
 table learning.code_run_cases run_id uuid NOT NULL DEFAULT -
 table learning.code_run_cases status_description text NOT NULL DEFAULT ''::text
@@ -3988,10 +3557,8 @@ table learning.code_runs language_id integer NOT NULL DEFAULT -
 table learning.code_runs passed integer NOT NULL DEFAULT 0
 table learning.code_runs purpose text NOT NULL DEFAULT -
 table learning.code_runs score percent DEFAULT -
-table learning.code_runs source_sha256 text NOT NULL DEFAULT -
 table learning.code_runs started_at timestamp with time zone DEFAULT -
 table learning.code_runs status text NOT NULL DEFAULT 'queued'::text
-table learning.code_runs stdin_sha256 text DEFAULT -
 table learning.code_runs submission_id uuid DEFAULT -
 table learning.code_runs total integer NOT NULL DEFAULT 0
 table learning.code_runs user_id uuid NOT NULL DEFAULT -
@@ -4069,14 +3636,11 @@ table learning.enrolments course_id uuid NOT NULL DEFAULT -
 table learning.enrolments enrolled_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.enrolments user_id uuid NOT NULL DEFAULT -
 table learning.file_submission_files attempt_id uuid NOT NULL DEFAULT -
-table learning.file_submission_files content_type text NOT NULL DEFAULT ''::text
 table learning.file_submission_files created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.file_submission_files display_name text NOT NULL DEFAULT ''::text
 table learning.file_submission_files id uuid NOT NULL DEFAULT uuidv7()
 table learning.file_submission_files position integer NOT NULL DEFAULT 0
 table learning.file_submission_files scan_status text NOT NULL DEFAULT 'pending'::text
-table learning.file_submission_files size_bytes bigint DEFAULT -
-table learning.file_submission_files storage_key text NOT NULL DEFAULT -
 table learning.file_submission_files upload_id uuid NOT NULL DEFAULT -
 table learning.file_submissions activity_id uuid NOT NULL DEFAULT -
 table learning.file_submissions allowed_mime_types text[] NOT NULL DEFAULT '{}'::text[]
@@ -4092,17 +3656,10 @@ table learning.file_submissions updated_at timestamp with time zone NOT NULL DEF
 table learning.file_submissions version integer NOT NULL DEFAULT 1
 table learning.gamification_completions created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.gamification_completions kind text NOT NULL DEFAULT -
-table learning.gamification_completions source_id text NOT NULL DEFAULT -
-table learning.gamification_completions source_uuid uuid DEFAULT -
+table learning.gamification_completions source_uuid uuid NOT NULL DEFAULT -
 table learning.gamification_completions user_id uuid NOT NULL DEFAULT -
-table learning.gamification_config daily_xp_limit integer DEFAULT -
-table learning.gamification_config id smallint NOT NULL DEFAULT -
-table learning.gamification_config rewards jsonb NOT NULL DEFAULT '{}'::jsonb
-table learning.gamification_config updated_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.gamification_config version integer NOT NULL DEFAULT 1
 table learning.gamification_profiles created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.gamification_profiles last_learning_at timestamp with time zone DEFAULT -
-table learning.gamification_profiles last_login_at timestamp with time zone DEFAULT -
 table learning.gamification_profiles last_xp_award_at timestamp with time zone DEFAULT -
 table learning.gamification_profiles learning_streak integer NOT NULL DEFAULT 0
 table learning.gamification_profiles level integer NOT NULL DEFAULT 1
@@ -4132,11 +3689,9 @@ table learning.grading_entries returned boolean NOT NULL DEFAULT false
 table learning.grading_entries revision integer NOT NULL DEFAULT -
 table learning.grading_entries submission_id uuid NOT NULL DEFAULT -
 table learning.item_feedback annotation_key text DEFAULT -
-table learning.item_feedback annotation_type text DEFAULT -
 table learning.item_feedback annotation_upload_id uuid DEFAULT -
 table learning.item_feedback comment text NOT NULL DEFAULT ''::text
 table learning.item_feedback created_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.item_feedback graded_by uuid DEFAULT -
 table learning.item_feedback grading_entry_id uuid NOT NULL DEFAULT -
 table learning.item_feedback id uuid NOT NULL DEFAULT uuidv7()
 table learning.item_feedback item_id uuid DEFAULT -
@@ -4145,7 +3700,6 @@ table learning.item_feedback kind text NOT NULL DEFAULT 'text'::text
 table learning.item_feedback max_score score_points DEFAULT -
 table learning.item_feedback score score_points DEFAULT -
 table learning.item_feedback submission_id uuid NOT NULL DEFAULT -
-table learning.item_feedback updated_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.mastery_evidence concept_id uuid NOT NULL DEFAULT -
 table learning.mastery_evidence course_id uuid NOT NULL DEFAULT -
 table learning.mastery_evidence created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -4199,7 +3753,6 @@ table learning.teacher_interventions course_id uuid NOT NULL DEFAULT -
 table learning.teacher_interventions created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.teacher_interventions created_by uuid NOT NULL DEFAULT -
 table learning.teacher_interventions id uuid NOT NULL DEFAULT uuidv7()
-table learning.teacher_interventions intervention_type text DEFAULT -
 table learning.teacher_interventions kind text NOT NULL DEFAULT -
 table learning.teacher_interventions notes text DEFAULT -
 table learning.teacher_interventions outcome text DEFAULT -
@@ -4209,7 +3762,6 @@ table learning.teacher_interventions resolved_at timestamp with time zone DEFAUL
 table learning.teacher_interventions risk_score_after double precision DEFAULT -
 table learning.teacher_interventions risk_score_before double precision DEFAULT -
 table learning.teacher_interventions status text NOT NULL DEFAULT 'planned'::text
-table learning.teacher_interventions teacher_user_id uuid DEFAULT -
 table learning.teacher_interventions updated_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.teacher_interventions user_id uuid NOT NULL DEFAULT -
 table learning.teacher_interventions version integer NOT NULL DEFAULT 1
@@ -4221,13 +3773,10 @@ table learning.xp_transactions amount integer NOT NULL DEFAULT -
 table learning.xp_transactions created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.xp_transactions id uuid NOT NULL DEFAULT uuidv7()
 table learning.xp_transactions idempotency_key text DEFAULT -
-table learning.xp_transactions previous_level integer NOT NULL DEFAULT -
 table learning.xp_transactions reason text DEFAULT -
 table learning.xp_transactions source text NOT NULL DEFAULT -
 table learning.xp_transactions source_day integer DEFAULT -
-table learning.xp_transactions source_id text DEFAULT -
 table learning.xp_transactions source_uuid uuid DEFAULT -
-table learning.xp_transactions triggered_level_up boolean NOT NULL DEFAULT false
 table learning.xp_transactions user_id uuid NOT NULL DEFAULT -
 table ops.auth_audit_log created_at timestamp with time zone NOT NULL DEFAULT now()
 table ops.auth_audit_log event text NOT NULL DEFAULT -
@@ -4238,7 +3787,6 @@ table ops.auth_audit_log user_agent text DEFAULT -
 table ops.auth_audit_log user_id uuid DEFAULT -
 table ops.idempotency_keys created_at timestamp with time zone NOT NULL DEFAULT now()
 table ops.idempotency_keys key text NOT NULL DEFAULT -
-table ops.idempotency_keys request_hash text NOT NULL DEFAULT -
 table ops.idempotency_keys request_sha256 bytea NOT NULL DEFAULT -
 table ops.idempotency_keys response jsonb NOT NULL DEFAULT -
 table ops.idempotency_keys status_code integer NOT NULL DEFAULT -
@@ -4272,121 +3820,68 @@ table ops.schema_skipped_checks skipped_at timestamp with time zone NOT NULL DEF
 table ops.schema_skipped_checks table_name text NOT NULL DEFAULT -
 trigger CREATE CONSTRAINT TRIGGER grading_entries_current AFTER INSERT ON learning.grading_entries DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION grading_entries_current_check()
 trigger CREATE CONSTRAINT TRIGGER submissions_current_grade AFTER UPDATE OF final_score ON learning.submissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.final_score)::numeric IS DISTINCT FROM (new.final_score)::numeric)) EXECUTE FUNCTION submissions_current_grade_check()
-trigger CREATE TRIGGER activities_aliases BEFORE INSERT OR UPDATE ON core.activities FOR EACH ROW EXECUTE FUNCTION renamed_columns('creator_id', 'created_by', 'activity_type', 'kind', 'activity_sub_type', 'sub_kind')
-trigger CREATE TRIGGER activities_keep_assessment_type BEFORE UPDATE OF kind, activity_type ON core.activities FOR EACH ROW WHEN ((old.kind IS DISTINCT FROM new.kind)) EXECUTE FUNCTION activities_keep_assessment_type()
+trigger CREATE TRIGGER activities_keep_assessment_type BEFORE UPDATE OF kind ON core.activities FOR EACH ROW WHEN ((old.kind IS DISTINCT FROM new.kind)) EXECUTE FUNCTION activities_keep_assessment_type()
 trigger CREATE TRIGGER activities_required_from_settings BEFORE INSERT OR UPDATE OF settings ON core.activities FOR EACH ROW EXECUTE FUNCTION activities_required_from_settings()
 trigger CREATE TRIGGER activities_touch BEFORE UPDATE ON core.activities FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER activity_progress_status BEFORE INSERT OR UPDATE ON learning.activity_progress FOR EACH ROW EXECUTE FUNCTION activity_progress_status()
 trigger CREATE TRIGGER activity_progress_touch BEFORE UPDATE ON learning.activity_progress FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER ai_course_analyses_sha256 BEFORE INSERT OR UPDATE ON ai.ai_course_analyses FOR EACH ROW EXECUTE FUNCTION ai_course_analyses_sha256()
 trigger CREATE TRIGGER ai_course_settings_touch BEFORE UPDATE ON ai.ai_course_settings FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER ai_grade_drafts_same_activity BEFORE INSERT ON ai.ai_grade_drafts FOR EACH ROW EXECUTE FUNCTION ai_grade_drafts_same_activity()
 trigger CREATE TRIGGER ai_grade_drafts_touch BEFORE UPDATE ON ai.ai_grade_drafts FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER ai_remediation_sessions_touch BEFORE UPDATE ON ai.ai_remediation_sessions FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER ai_runs_duration BEFORE INSERT OR UPDATE OF completed_at, started_at ON ai.ai_runs FOR EACH ROW EXECUTE FUNCTION ai_runs_duration()
 trigger CREATE TRIGGER ai_student_memory_touch BEFORE UPDATE ON ai.ai_student_memory FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER ai_threads_touch BEFORE UPDATE ON ai.ai_threads FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER ai_work_embeddings_sha256 BEFORE INSERT OR UPDATE ON ai.ai_work_embeddings FOR EACH ROW EXECUTE FUNCTION ai_work_embeddings_sha256()
-trigger CREATE TRIGGER analytics_events_aliases BEFORE INSERT OR UPDATE ON analytics.analytics_events FOR EACH ROW EXECUTE FUNCTION renamed_columns('actor_id', 'performed_by', 'event_type', 'event')
-trigger CREATE TRIGGER analytics_saved_views_aliases BEFORE INSERT OR UPDATE ON analytics.analytics_saved_views FOR EACH ROW EXECUTE FUNCTION renamed_columns('teacher_user_id', 'user_id', 'view_type', 'kind')
 trigger CREATE TRIGGER analytics_saved_views_touch BEFORE UPDATE ON analytics.analytics_saved_views FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER assessment_audit_events_aliases BEFORE INSERT OR UPDATE ON learning.assessment_audit_events FOR EACH ROW EXECUTE FUNCTION renamed_columns('actor_id', 'performed_by')
-trigger CREATE TRIGGER assessment_items_estimate BEFORE INSERT OR UPDATE ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_items_estimate()
 trigger CREATE TRIGGER assessment_items_touch BEFORE UPDATE ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER assessment_items_upload_ids AFTER INSERT OR UPDATE OF body ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_item_uploads_sync()
 trigger CREATE TRIGGER assessment_overrides_touch BEFORE UPDATE ON learning.assessment_overrides FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()
 trigger CREATE TRIGGER assessment_versions_points BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_points()
 trigger CREATE TRIGGER assessment_versions_upload_ids AFTER INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_version_uploads_sync()
-trigger CREATE TRIGGER assessments_aliases BEFORE INSERT OR UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION renamed_columns('creator_id', 'created_by', 'grading_type', 'grading_kind', 'lifecycle', 'status')
-trigger CREATE TRIGGER assessments_grace_period BEFORE INSERT OR UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION assessments_grace_period()
 trigger CREATE TRIGGER assessments_touch BEFORE UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION touch_row('version')
-trigger CREATE TRIGGER blocks_aliases BEFORE INSERT OR UPDATE ON core.blocks FOR EACH ROW EXECUTE FUNCTION renamed_columns('block_type', 'kind')
 trigger CREATE TRIGGER blocks_touch BEFORE UPDATE ON core.blocks FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER blocks_upload_ids AFTER INSERT OR UPDATE OF content, claimed ON core.blocks FOR EACH ROW EXECUTE FUNCTION block_uploads_sync()
-trigger CREATE TRIGGER bulk_actions_aliases BEFORE INSERT OR UPDATE ON learning.bulk_actions FOR EACH ROW EXECUTE FUNCTION renamed_columns('action_type', 'kind')
 trigger CREATE TRIGGER certificate_users_frozen BEFORE UPDATE ON learning.certificates FOR EACH ROW EXECUTE FUNCTION certificate_users_frozen()
-trigger CREATE TRIGGER certificate_users_touch BEFORE UPDATE ON learning.certificates FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER certifications_touch BEFORE UPDATE ON learning.certificate_templates FOR EACH ROW EXECUTE FUNCTION touch_row('version')
-trigger CREATE TRIGGER chapters_aliases BEFORE INSERT OR UPDATE ON core.chapters FOR EACH ROW EXECUTE FUNCTION renamed_columns('creator_id', 'created_by')
 trigger CREATE TRIGGER chapters_touch BEFORE UPDATE ON core.chapters FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER chapters_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_key ON core.chapters FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_key', 'thumbnail_upload_id')
-trigger CREATE TRIGGER code_run_cases_passed BEFORE INSERT ON learning.code_run_cases FOR EACH ROW EXECUTE FUNCTION code_run_cases_passed()
-trigger CREATE TRIGGER code_runs_sha256 BEFORE INSERT OR UPDATE ON learning.code_runs FOR EACH ROW EXECUTE FUNCTION code_runs_sha256()
-trigger CREATE TRIGGER code_runs_verdict BEFORE INSERT OR UPDATE OF status ON learning.code_runs FOR EACH ROW EXECUTE FUNCTION code_runs_verdict()
 trigger CREATE TRIGGER collection_staff_touch BEFORE UPDATE ON core.collection_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER collections_creator_row AFTER INSERT ON core.collections FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION collections_creator_row()
 trigger CREATE TRIGGER collections_touch BEFORE UPDATE ON core.collections FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER collections_upload_ids BEFORE INSERT OR UPDATE OF cover_key ON core.collections FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('cover_key', 'cover_upload_id')
 trigger CREATE TRIGGER concept_tags_touch BEFORE UPDATE ON learning.concept_tags FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER course_concepts_touch BEFORE UPDATE ON learning.course_concepts FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER course_discussions_deleted_status BEFORE INSERT OR UPDATE ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION course_discussions_deleted_status()
-trigger CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()
+trigger CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id, deleted_at ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()
 trigger CREATE TRIGGER course_discussions_touch BEFORE UPDATE ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION touch_row('version', 'status', 'content')
 trigger CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF content ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION post_uploads_sync()
 trigger CREATE TRIGGER course_progress_touch BEFORE UPDATE ON learning.course_progress FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER course_staff_touch BEFORE UPDATE ON core.course_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
-trigger CREATE TRIGGER course_updates_aliases BEFORE INSERT OR UPDATE ON core.course_updates FOR EACH ROW EXECUTE FUNCTION renamed_columns('author_id', 'created_by')
 trigger CREATE TRIGGER course_updates_touch BEFORE UPDATE ON core.course_updates FOR EACH ROW EXECUTE FUNCTION touch_row('version')
-trigger CREATE TRIGGER courses_aliases BEFORE INSERT OR UPDATE ON core.courses FOR EACH ROW EXECUTE FUNCTION renamed_columns('thumbnail_type', 'thumbnail_kind')
 trigger CREATE TRIGGER courses_creator_row AFTER INSERT ON core.courses FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION courses_creator_row()
 trigger CREATE TRIGGER courses_touch BEFORE UPDATE ON core.courses FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_image_key, thumbnail_video_key ON core.courses FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_image_key', 'thumbnail_image_upload_id', 'thumbnail_video_key', 'thumbnail_video_upload_id')
-trigger CREATE TRIGGER daily_assessment_metrics_latency BEFORE INSERT OR UPDATE ON analytics.daily_assessment_metrics FOR EACH ROW EXECUTE FUNCTION daily_assessment_metrics_latency()
-trigger CREATE TRIGGER daily_teacher_metrics_aliases BEFORE INSERT OR UPDATE ON analytics.daily_teacher_metrics FOR EACH ROW EXECUTE FUNCTION renamed_columns('teacher_user_id', 'teacher_id')
 trigger CREATE TRIGGER discussion_reactions_recount AFTER INSERT OR DELETE OR UPDATE ON core.discussion_reactions FOR EACH ROW EXECUTE FUNCTION discussion_reactions_recount()
-trigger CREATE TRIGGER file_submission_files_from_upload BEFORE INSERT ON learning.file_submission_files FOR EACH ROW EXECUTE FUNCTION file_submission_files_from_upload()
 trigger CREATE TRIGGER file_submissions_touch BEFORE UPDATE ON learning.file_submissions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
-trigger CREATE TRIGGER gamification_completions_source_ref BEFORE INSERT ON learning.gamification_completions FOR EACH ROW EXECUTE FUNCTION gamification_completions_source_ref()
-trigger CREATE TRIGGER gamification_config_touch BEFORE UPDATE ON learning.gamification_config FOR EACH ROW EXECUTE FUNCTION touch_row('version')
-trigger CREATE TRIGGER gamification_profiles_last_login AFTER UPDATE OF last_login_at ON learning.gamification_profiles FOR EACH ROW WHEN ((new.last_login_at IS DISTINCT FROM old.last_login_at)) EXECUTE FUNCTION gamification_profiles_last_login()
 trigger CREATE TRIGGER gamification_profiles_touch BEFORE UPDATE ON learning.gamification_profiles FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER grading_entries_append_only BEFORE DELETE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_no_delete()
 trigger CREATE TRIGGER grading_entries_immutable BEFORE UPDATE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_guard()
-trigger CREATE TRIGGER grading_entries_number BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_number()
-trigger CREATE TRIGGER grading_entries_points BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_points()
-trigger CREATE TRIGGER idempotency_keys_sha256 BEFORE INSERT OR UPDATE ON ops.idempotency_keys FOR EACH ROW EXECUTE FUNCTION idempotency_keys_sha256()
-trigger CREATE TRIGGER item_feedback_aliases BEFORE INSERT OR UPDATE ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION renamed_columns('annotation_type', 'kind')
 trigger CREATE TRIGGER item_feedback_frozen BEFORE UPDATE ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION item_feedback_frozen()
-trigger CREATE TRIGGER item_feedback_touch BEFORE UPDATE ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER item_feedback_upload_ids BEFORE INSERT OR UPDATE OF annotation_key ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('annotation_key', 'annotation_upload_id')
 trigger CREATE TRIGGER job_schedules_touch BEFORE UPDATE ON ops.job_schedules FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER jobs_touch BEFORE UPDATE ON ops.jobs FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER messages_deleted_status BEFORE INSERT OR UPDATE ON core.messages FOR EACH ROW EXECUTE FUNCTION messages_deleted_status()
 trigger CREATE TRIGGER platforms_touch BEFORE UPDATE ON core.platforms FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER platforms_upload_ids BEFORE INSERT OR UPDATE OF logo_key, thumbnail_key ON core.platforms FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('logo_key', 'logo_upload_id', 'thumbnail_key', 'thumbnail_upload_id')
 trigger CREATE TRIGGER roles_touch BEFORE UPDATE ON core.roles FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id, selected_item_ids ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()
 trigger CREATE TRIGGER submissions_touch BEFORE UPDATE ON learning.submissions FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER teacher_interventions_aliases BEFORE INSERT OR UPDATE ON learning.teacher_interventions FOR EACH ROW EXECUTE FUNCTION renamed_columns('teacher_user_id', 'created_by', 'intervention_type', 'kind')
 trigger CREATE TRIGGER teacher_interventions_touch BEFORE UPDATE ON learning.teacher_interventions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER translations_touch BEFORE UPDATE ON core.translations FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER translations_touch_platform AFTER INSERT OR DELETE OR UPDATE ON core.translations FOR EACH ROW EXECUTE FUNCTION translations_touch_platform()
 trigger CREATE TRIGGER uploads_touch BEFORE UPDATE ON core.uploads FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER usergroups_aliases BEFORE INSERT OR UPDATE ON core.usergroups FOR EACH ROW EXECUTE FUNCTION renamed_columns('creator_id', 'created_by')
 trigger CREATE TRIGGER usergroups_touch BEFORE UPDATE ON core.usergroups FOR EACH ROW EXECUTE FUNCTION touch_row('version')
-trigger CREATE TRIGGER users_last_login AFTER UPDATE OF last_login_at ON core.users FOR EACH ROW WHEN ((new.last_login_at IS DISTINCT FROM old.last_login_at)) EXECUTE FUNCTION users_last_login()
 trigger CREATE TRIGGER users_reissue_certificates AFTER UPDATE OF display_name ON core.users FOR EACH ROW WHEN ((old.display_name IS DISTINCT FROM new.display_name)) EXECUTE FUNCTION users_reissue_certificates()
 trigger CREATE TRIGGER users_sync_state BEFORE INSERT OR UPDATE ON core.users FOR EACH ROW EXECUTE FUNCTION users_sync_state()
 trigger CREATE TRIGGER users_touch BEFORE UPDATE ON core.users FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER users_upload_ids BEFORE INSERT OR UPDATE OF avatar_key ON core.users FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('avatar_key', 'avatar_upload_id')
-trigger CREATE TRIGGER xp_transactions_levels BEFORE INSERT ON learning.xp_transactions FOR EACH ROW EXECUTE FUNCTION xp_transactions_levels()
-trigger CREATE TRIGGER xp_transactions_source_ref BEFORE INSERT ON learning.xp_transactions FOR EACH ROW EXECUTE FUNCTION xp_transactions_source_ref()
-view core.course_discussions  SELECT id,
-    course_id,
-    user_id,
-    parent_id,
-    kind,
-    status,
-    content,
-    likes_count,
-    dislikes_count,
-    replies_count,
-    created_at,
-    updated_at,
-    version,
-    deleted_at
-   FROM discussion_posts;
 view core.course_progress_v  SELECT e.course_id,
     e.user_id,
     count(r.activity_id)::integer AS total_required_count,
@@ -4429,28 +3924,6 @@ view core.course_progress_v  SELECT e.course_id,
                           WHERE g.assessment_id = s.id AND m.user_id = e.user_id))))) r ON true
   WHERE NOT is_course_staff(e.course_id, e.user_id)
   GROUP BY e.course_id, e.user_id;
-view learning.certificate_users  SELECT id,
-    user_id,
-    verify_code,
-    created_at,
-    updated_at,
-    template_id AS certification_id,
-    course_id,
-    holder_name,
-    course_name,
-    certificate_name,
-    score,
-    instructor_name,
-    reissued_at
-   FROM certificates;
-view learning.certifications  SELECT id,
-    course_id,
-    config,
-    created_at,
-    updated_at,
-    version,
-    disabled_at
-   FROM certificate_templates;
 view learning.course_members  SELECT course_id,
     user_id,
     enrolled_at

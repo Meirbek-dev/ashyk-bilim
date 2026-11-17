@@ -752,8 +752,8 @@ async fn in_flight_run_keys_answer_409_until_abandoned(pool: PgPool) {
     .unwrap();
     assert_eq!(
         old,
-        ("failed".into(), "internal_error".into(), None),
-        "the previous release reads internal_error"
+        ("failed".into(), "failed".into(), None),
+        "the stored status is the run's state"
     );
 }
 
@@ -856,10 +856,10 @@ async fn timer_sweep_finalizes_every_code_outcome(pool: PgPool) {
     let frank_sub = code_draft(&app, &frank, &id, &item_id, 71, SQUARE).await;
     sqlx::query(
         "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status,
-                                language_id, source_sha256, idempotency_key, total, started_at)
+                                language_id, code_sha256, idempotency_key, total, started_at)
          SELECT s.assessment_id, $2, s.id, s.user_id, 'final', 'running', 71, x.h,
-                'final:' || s.id || ':' || $2::text || ':71:' || x.h, 2, now()
-         FROM submissions s, (SELECT encode(sha256(convert_to($3, 'UTF8')), 'hex') AS h) x
+                'final:' || s.id || ':' || $2::text || ':71:' || encode(x.h, 'hex'), 2, now()
+         FROM submissions s, (SELECT sha256(convert_to($3, 'UTF8')) AS h) x
          WHERE s.id = $1",
     )
     .bind(uuid::Uuid::parse_str(&frank_sub).unwrap())

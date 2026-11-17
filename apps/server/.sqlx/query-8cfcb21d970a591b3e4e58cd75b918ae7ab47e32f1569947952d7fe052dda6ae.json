@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH course AS (\n               INSERT INTO courses (name, description, about, learnings, tags, thumbnail_kind,\n                                    thumbnail_image_key, thumbnail_video_key)\n               SELECT $2, description, about, learnings, tags, thumbnail_kind,\n                      thumbnail_image_key, thumbnail_video_key\n               FROM courses WHERE id = $1\n               RETURNING id),\n           roster AS (INSERT INTO course_staff (course_id, user_id, authorship, status)\n                      SELECT id, $3::uuid, 'creator', 'active' FROM course)\n           SELECT id AS \"id!\" FROM course",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "courses",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8cfcb21d970a591b3e4e58cd75b918ae7ab47e32f1569947952d7fe052dda6ae"
+}

@@ -52,7 +52,6 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("ai_approvals", "resolved_by", ACTOR),
     ("ai_course_analyses", "triggered_by", ACTOR),
     ("ai_course_settings", "enabled_by", ACTOR),
-    ("ai_feature_switches", "updated_by", ACTOR),
     ("ai_grade_corrections", "teacher_id", ACTOR),
     ("ai_grade_drafts", "decided_by", ACTOR),
     ("ai_grade_drafts", "learner_id", ERASED),
@@ -88,7 +87,6 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("courses", "archived_by", ACTOR),
     ("courses", "creator_id", ACTOR),
     ("courses", "deleted_by", ACTOR),
-    ("daily_course_metrics", "teacher_user_id", SETTING),
     ("daily_teacher_metrics", "teacher_id", SETTING),
     ("daily_user_course_progress", "user_id", ERASED),
     ("discussion_reactions", "user_id", SETTING),
@@ -100,9 +98,7 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("google_accounts", "user_id", GOOGLE),
     ("grading_entries", "graded_by", ACTOR),
     ("idempotency_keys", "user_id", ERASED),
-    ("item_feedback", "graded_by", ACTOR),
     ("trail_legacy_marks", "user_id", RECORD),
-    ("learner_risk_snapshots", "teacher_user_id", SETTING),
     ("learner_risk_snapshots", "user_id", ERASED),
     ("mastery_evidence", "user_id", ERASED),
     ("notification_opt_outs", "user_id", SETTING),
@@ -225,8 +221,8 @@ async fn erasure_removes_derived_data_and_keeps_the_grade(pool: PgPool) {
     .await
     .unwrap();
     sqlx::query(
-        "WITH e AS (INSERT INTO grading_entries (submission_id, raw_score, final_score)
-                    VALUES ($1, 90, 90) RETURNING submission_id, effective_breakdown)
+        "WITH e AS (INSERT INTO grading_entries (submission_id, revision, raw_score, final_score)
+                    VALUES ($1, 1, 90, 90) RETURNING submission_id, effective_breakdown)
          UPDATE submissions s SET final_score = 90
          FROM e WHERE s.id = e.submission_id",
     )
@@ -253,8 +249,8 @@ async fn erasure_removes_derived_data_and_keeps_the_grade(pool: PgPool) {
     .await
     .unwrap();
     sqlx::query(
-        "INSERT INTO ai_work_embeddings (subject_id, part_key, activity_id, text_hash, embedding_model, embedding)
-         VALUES ($1, 'p', $2, repeat('a', 64), 'm', array_fill(0.1::real, ARRAY[1024])::vector)",
+        "INSERT INTO ai_work_embeddings (subject_id, part_key, activity_id, text_sha256, embedding_model, embedding)
+         VALUES ($1, 'p', $2, sha256('a'), 'm', array_fill(0.1::real, ARRAY[1024])::vector)",
     )
     .bind(submission)
     .bind(activity)

@@ -29,7 +29,6 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ("ai_approvals", "requested_by", "users", ACTOR),
     ("ai_approvals", "resolved_by", "users", ACTOR),
     ("ai_course_analyses", "triggered_by", "users", ACTOR),
-    ("ai_feature_switches", "updated_by", "users", ACTOR),
     ("ai_lecture_reviews", "triggered_by", "users", ACTOR),
     ("ai_student_memory", "course_id", "courses", AI_OWNED),
     ("ai_submission_analyses", "triggered_by", "users", ACTOR),
@@ -44,10 +43,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ("courses", "archived_by", "users", ACTOR),
     ("courses", "creator_id", "users", ACTOR),
     ("courses", "deleted_by", "users", ACTOR),
-    ("daily_course_metrics", "teacher_user_id", "users", ACTOR),
     ("grading_entries", "graded_by", "users", ACTOR),
-    ("item_feedback", "graded_by", "users", ACTOR),
-    ("learner_risk_snapshots", "teacher_user_id", "users", ACTOR),
     (
         "notification_opt_outs",
         "kind",

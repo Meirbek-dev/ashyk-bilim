@@ -79,11 +79,11 @@ pub async fn insert_course(
     creator_id: UserId,
 ) -> Result<CourseId> {
     let id = sqlx::query_scalar!(
-        r#"WITH course AS (INSERT INTO courses (name, description, about, tags, creator_id)
-                           VALUES ($1, $2, $3, $4, $5)
-                           RETURNING id, creator_id),
+        r#"WITH course AS (INSERT INTO courses (name, description, about, tags)
+                           VALUES ($1, $2, $3, $4)
+                           RETURNING id),
                 roster AS (INSERT INTO course_staff (course_id, user_id, authorship, status)
-                           SELECT id, creator_id, 'creator', 'active' FROM course)
+                           SELECT id, $5::uuid, 'creator', 'active' FROM course)
            SELECT id AS "id!" FROM course"#,
         name,
         description,

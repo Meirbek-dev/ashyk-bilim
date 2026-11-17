@@ -631,15 +631,6 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert_eq!(second, first);
     assert_eq!(table_count(&pool, "daily_course_metrics").await, 2);
     assert_eq!(table_count(&pool, "learner_risk_snapshots").await, 1);
-    // A course has several staff: its rollups name no one teacher (REWRITE 5.8 item 7).
-    let named: i64 = sqlx::query_scalar(
-        "SELECT (SELECT count(*) FROM daily_course_metrics WHERE teacher_user_id IS NOT NULL)
-              + (SELECT count(*) FROM learner_risk_snapshots WHERE teacher_user_id IS NOT NULL)",
-    )
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert_eq!(named, 0);
     assert_eq!(table_count(&pool, "daily_teacher_metrics").await, 3);
     let platform_row = sqlx::query_scalar::<_, i32>(
         "SELECT managed_course_count FROM daily_teacher_metrics WHERE teacher_id IS NULL",
@@ -2596,8 +2587,10 @@ async fn data_quality_counts_excluded_attempts_and_audit_skips_previews(pool: Pg
     grade_and_publish(&app, &teacher, &quiz_id, &learner_sub, &essay_id).await;
     // The submission's current grade follows its journal (one statement: checked at commit).
     sqlx::query(
-        "WITH e AS (INSERT INTO grading_entries (submission_id, raw_score, final_score, published_at)
-                    VALUES ($1::uuid, 0, 0, now()) RETURNING submission_id, effective_breakdown)
+        "WITH e AS (INSERT INTO grading_entries (submission_id, revision, raw_score, final_score, published_at)
+                    SELECT $1::uuid, coalesce(max(g.revision), 0) + 1, 0, 0, now()
+                    FROM grading_entries g WHERE g.submission_id = $1::uuid
+                    RETURNING submission_id, effective_breakdown)
          UPDATE submissions s SET final_score = 0
          FROM e WHERE s.id = e.submission_id",
     )

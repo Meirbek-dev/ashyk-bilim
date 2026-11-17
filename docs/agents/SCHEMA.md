@@ -15,7 +15,6 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`ai.ai_eval_results`](#ai_eval_results): Outcome of an AI evaluation fixture run (ashyq admin ai-eval)
 - [`ai.ai_events`](#ai_events): Streamed events of an AI run (pruned 180 days after the run finished)
 - [`ai.ai_evidence`](#ai_evidence): A source an AI artifact cites (course chunk, submission part)
-- [`ai.ai_feature_switches`](#ai_feature_switches): Platform switches of AI features
 - [`ai.ai_grade_corrections`](#ai_grade_corrections): A teacher's correction of an AI grade draft (calibration data)
 - [`ai.ai_grade_drafts`](#ai_grade_drafts): An AI-proposed grade for an attempt, for a teacher to accept or correct
 - [`ai.ai_lecture_reviews`](#ai_lecture_reviews): AI suggestions for one lesson activity
@@ -45,9 +44,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`core.blocks`](#blocks): A content block of a page activity (files, embeds), linked from the editor document by legacy_uuid
 - [`learning.bulk_actions`](#bulk_actions): A bulk operation a teacher ran on the learners of an assessment, its targets and outcome
 - [`learning.certificate_templates`](#certificate_templates): The certificate a course issues on completion: layout and rules (config); disabled_at stops issuing
-- [`learning.certificate_users`](#certificate_users): The previous release's name of certificates; a contract drops it
 - [`learning.certificates`](#certificates): A certificate issued to a learner, verifiable by verify_code
-- [`learning.certifications`](#certifications): The previous release's name of certificate_templates; a contract drops it
 - [`core.chapters`](#chapters): A chapter of a course; position orders chapters within the course
 - [`learning.code_run_cases`](#code_run_cases): The result of one test case of a code run
 - [`learning.code_runs`](#code_runs): A run of learner code in the go-judge runner: a practice run or the graded run of a submission
@@ -63,7 +60,6 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`core.conversation_members`](#conversation_members): The two sides of a conversation, one row each: user_id reads it with peer_id; (user_id, peer_id) is unique, so a pair has one conversation
 - [`core.conversations`](#conversations): A personal conversation of two people (kind direct); created with its first message
 - [`learning.course_concepts`](#course_concepts): A concept (skill) of a course, proposed by AI or a teacher and decided by staff
-- [`core.course_discussions`](#course_discussions): The previous release's name of discussion_posts; a contract drops it
 - [`learning.course_members`](#course_members): Learners of a course: enrolments without its staff, whose stale rows stay in enrolments
 - [`learning.course_progress`](#course_progress): Projection: a learner's totals in a course (counts, percentage, grade averages, completion)
 - [`core.course_progress_v`](#course_progress_v): A member's course completion computed from enrolments, published activities and completions; compared with the course_progress projection by maintenance:reconcile until it replaces it (REWRITE 5.6 n8)
@@ -81,11 +77,9 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`core.discussion_reactions`](#discussion_reactions): A like or dislike of a discussion post by an account
 - [`learning.enrolment_events`](#enrolment_events): One join or leave of a course, appended by enrol/unenrol
 - [`learning.enrolments`](#enrolments): Course membership (a learner joined or was enrolled)
-- [`core.feature_activations`](#feature_activations): When a feature switch was first turned on (one row per feature)
 - [`learning.file_submission_files`](#file_submission_files): A file of a file-task hand-in (points at its upload)
 - [`learning.file_submissions`](#file_submissions): The typed body of a file task: instructions, rubric and file caps
 - [`learning.gamification_completions`](#gamification_completions): Completion facts that award XP once (source kind + id per learner)
-- [`learning.gamification_config`](#gamification_config): XP rules: daily cap and rewards (versioned single row)
 - [`learning.gamification_profiles`](#gamification_profiles): A learner's XP total, level and streaks (reconciled weekly from xp_transactions)
 - [`core.google_accounts`](#google_accounts): A Google identity linked to an account (google_sub), for Google sign-in
 - [`learning.grading_entries`](#grading_entries): Grade journal of submissions: one row per grading; append-only except published_at (trigger-guarded)
@@ -146,9 +140,6 @@ A lesson step inside a chapter: page, video, document, quiz, exam, code challeng
 | updated_at | timestamp with time zone |  | `now()` |  |
 | version | integer |  | `1` |  |
 | required | boolean |  | `true` | A lesson counts toward course completion (settings.required, kept by a trigger); graded activities always count. |
-| creator_id | uuid | null |  |  |
-| activity_type | text | null |  |  |
-| activity_sub_type | text | null |  |  |
 
 - Primary key `activities_pkey`: `PRIMARY KEY (id)`
 - Unique `activities_id_course_key`: `UNIQUE (id, course_id)`
@@ -161,8 +152,7 @@ A lesson step inside a chapter: page, video, document, quiz, exam, code challeng
 - Check `activities_position_check`: `CHECK (("position" >= 1))`
 - Index `activities_course_idx`: `CREATE INDEX activities_course_idx ON core.activities USING btree (course_id)`
 - Index `activities_search_trgm_idx`: `CREATE INDEX activities_search_trgm_idx ON core.activities USING gin (search_fold(name) gin_trgm_ops)`
-- Trigger `activities_aliases`: `CREATE TRIGGER activities_aliases BEFORE INSERT OR UPDATE ON core.activities FOR EACH ROW EXECUTE FUNCTION renamed_columns('creator_id', 'created_by', 'activity_type', 'kind', 'activity_sub_type', 'sub_kind')`
-- Trigger `activities_keep_assessment_type`: `CREATE TRIGGER activities_keep_assessment_type BEFORE UPDATE OF kind, activity_type ON core.activities FOR EACH ROW WHEN ((old.kind IS DISTINCT FROM new.kind)) EXECUTE FUNCTION activities_keep_assessment_type()`
+- Trigger `activities_keep_assessment_type`: `CREATE TRIGGER activities_keep_assessment_type BEFORE UPDATE OF kind ON core.activities FOR EACH ROW WHEN ((old.kind IS DISTINCT FROM new.kind)) EXECUTE FUNCTION activities_keep_assessment_type()`
 - Trigger `activities_required_from_settings`: `CREATE TRIGGER activities_required_from_settings BEFORE INSERT OR UPDATE OF settings ON core.activities FOR EACH ROW EXECUTE FUNCTION activities_required_from_settings()`
 
 ## activity_kinds
@@ -185,7 +175,6 @@ Projection: a learner's state in one activity (from submissions, hand-ins and st
 | course_id | uuid |  |  |  |
 | activity_id | uuid |  |  |  |
 | user_id | uuid |  |  |  |
-| state | text |  | `'not_started'::text` |  |
 | required | boolean |  | `true` |  |
 | score | percent | null |  |  |
 | passed | boolean | null |  |  |
@@ -203,7 +192,7 @@ Projection: a learner's state in one activity (from submissions, hand-ins and st
 | status_reason | text | null |  |  |
 | created_at | timestamp with time zone |  | `now()` |  |
 | updated_at | timestamp with time zone |  | `now()` |  |
-| status | text |  |  | How far the work got; `released`: the grade is the learner's, `passed` says how it ended. |
+| status | text |  | `'not_started'::text` | How far the work got; `released`: the grade is the learner's, `passed` says how it ended. |
 
 - Primary key `activity_progress_pkey`: `PRIMARY KEY (activity_id, user_id)`
 - Foreign key `activity_progress_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
@@ -212,16 +201,13 @@ Projection: a learner's state in one activity (from submissions, hand-ins and st
 - Foreign key `activity_progress_latest_submission_id_fkey`: `FOREIGN KEY (latest_submission_id, user_id) REFERENCES submissions(id, user_id) ON DELETE SET NULL (latest_submission_id)`
 - Foreign key `activity_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Check `activity_progress_attempt_count_check`: `CHECK ((attempt_count >= 0))`
-- Check `activity_progress_state_check`: `CHECK ((state = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'submitted'::text, 'needs_grading'::text, 'returned'::text, 'graded'::text, 'passed'::text, 'failed'::text, 'completed'::text])))`
 - Check `activity_progress_status_check`: `CHECK ((status = ANY (ARRAY['not_started'::text, 'in_progress'::text, 'submitted'::text, 'needs_grading'::text, 'returned'::text, 'graded'::text, 'released'::text, 'completed'::text])))`
-- Index `activity_progress_activity_state_idx`: `CREATE INDEX activity_progress_activity_state_idx ON learning.activity_progress USING btree (activity_id, state)`
 - Index `activity_progress_activity_status_idx`: `CREATE INDEX activity_progress_activity_status_idx ON learning.activity_progress USING btree (activity_id, status)`
 - Index `activity_progress_best_submission_idx`: `CREATE INDEX activity_progress_best_submission_idx ON learning.activity_progress USING btree (best_submission_id)`
 - Index `activity_progress_course_user_idx`: `CREATE INDEX activity_progress_course_user_idx ON learning.activity_progress USING btree (course_id, user_id)`
 - Index `activity_progress_latest_submission_idx`: `CREATE INDEX activity_progress_latest_submission_idx ON learning.activity_progress USING btree (latest_submission_id)`
 - Index `activity_progress_teacher_action_idx`: `CREATE INDEX activity_progress_teacher_action_idx ON learning.activity_progress USING btree (course_id) WHERE teacher_action_required`
 - Index `activity_progress_user_idx`: `CREATE INDEX activity_progress_user_idx ON learning.activity_progress USING btree (user_id)`
-- Trigger `activity_progress_status`: `CREATE TRIGGER activity_progress_status BEFORE INSERT OR UPDATE ON learning.activity_progress FOR EACH ROW EXECUTE FUNCTION activity_progress_status()`
 
 ## ai_approvals
 
@@ -280,7 +266,6 @@ An AI review of a whole course.
 | public_score | integer |  |  |
 | report | jsonb |  | `'{}'::jsonb` |
 | evidence | jsonb |  | `'{}'::jsonb` |
-| content_hash | text | null |  |
 | created_at | timestamp with time zone |  | `now()` |
 | published_at | timestamp with time zone | null |  |
 | content_sha256 | bytea | null |  |
@@ -289,14 +274,12 @@ An AI review of a whole course.
 - Foreign key `ai_course_analyses_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `ai_course_analyses_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES ai_runs(id) ON DELETE SET NULL`
 - Foreign key `ai_course_analyses_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
-- Check `ai_course_analyses_content_hash_format`: `CHECK ((content_hash ~ '^[0-9a-f]{64}$'::text))`
 - Check `ai_course_analyses_content_sha256_check`: `CHECK ((octet_length(content_sha256) = 32))`
 - Check `ai_course_analyses_language_check`: `CHECK (((language = 'auto'::text) OR ((language)::language_code IS NOT NULL)))`
 - Check `ai_course_analyses_public_score_check`: `CHECK (((public_score >= 0) AND (public_score <= 100)))`
 - Check `ai_course_analyses_status_check`: `CHECK ((status = ANY (ARRAY['draft'::text, 'needs_human_review'::text, 'published'::text])))`
 - Index `ai_course_analyses_course_status_idx`: `CREATE INDEX ai_course_analyses_course_status_idx ON ai.ai_course_analyses USING btree (course_id, status, created_at DESC)`
 - Index `ai_course_analyses_run_idx`: `CREATE INDEX ai_course_analyses_run_idx ON ai.ai_course_analyses USING btree (run_id)`
-- Trigger `ai_course_analyses_sha256`: `CREATE TRIGGER ai_course_analyses_sha256 BEFORE INSERT OR UPDATE ON ai.ai_course_analyses FOR EACH ROW EXECUTE FUNCTION ai_course_analyses_sha256()`
 
 ## ai_course_settings
 
@@ -378,21 +361,6 @@ A source an AI artifact cites (course chunk, submission part).
 - Check `ai_evidence_score_check`: `CHECK (((score IS NULL) OR ((score >= (0)::double precision) AND (score <= (1)::double precision))))`
 - Index `ai_evidence_artifact_idx`: `CREATE INDEX ai_evidence_artifact_idx ON ai.ai_evidence USING btree (artifact_id)`
 - Index `ai_evidence_run_idx`: `CREATE INDEX ai_evidence_run_idx ON ai.ai_evidence USING btree (run_id, source_type, created_at)`
-
-## ai_feature_switches
-
-Platform switches of AI features.
-
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| feature | text |  |  |
-| enabled | boolean |  |  |
-| updated_by | uuid | null |  |
-| updated_at | timestamp with time zone |  | `now()` |
-
-- Primary key `ai_feature_switches_pkey`: `PRIMARY KEY (feature)`
-- Foreign key `ai_feature_switches_updated_by_fkey`: `FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL`
-- Check `ai_feature_switches_feature_check`: `CHECK ((feature = ANY (ARRAY['course_analysis_enabled'::text, 'submission_analysis_enabled'::text, 'remediation_enabled'::text, 'course_qa_enabled'::text, 'study_companion_enabled'::text, 'lecture_authoring_enabled'::text, 'semantic_memory_enabled'::text, 'semantic_search_enabled'::text, 'concept_graph_enabled'::text, 'grading_assistant_enabled'::text])))`
 
 ## ai_grade_corrections
 
@@ -590,7 +558,6 @@ One AI job (grading draft, analysis, review, answer): model, tokens, cost, statu
 | status | text |  | `'queued'::text` |
 | triggered_by | uuid | null |  |
 | model_name | text | null |  |
-| duration_ms | integer | null |  |
 | input_tokens | integer | null |  |
 | output_tokens | integer | null |  |
 | cost_estimate | numeric(12,6) | null |  |
@@ -604,7 +571,6 @@ One AI job (grading draft, analysis, review, answer): model, tokens, cost, statu
 - Primary key `ai_runs_pkey`: `PRIMARY KEY (id)`
 - Foreign key `ai_runs_thread_id_fkey`: `FOREIGN KEY (thread_id) REFERENCES ai_threads(id) ON DELETE CASCADE`
 - Foreign key `ai_runs_triggered_by_fkey`: `FOREIGN KEY (triggered_by) REFERENCES users(id) ON DELETE SET NULL`
-- Check `ai_runs_duration_ms_check`: `CHECK (((duration_ms IS NULL) OR (duration_ms >= 0)))`
 - Check `ai_runs_finished_at_check`: `CHECK (((status <> ALL (ARRAY['succeeded'::text, 'failed'::text, 'aborted'::text])) OR (completed_at IS NOT NULL)))`
 - Check `ai_runs_input_tokens_check`: `CHECK (((input_tokens IS NULL) OR (input_tokens >= 0)))`
 - Check `ai_runs_kind_check`: `CHECK ((kind = ANY (ARRAY['course_analysis'::text, 'submission_analysis'::text, 'remediation'::text, 'study_companion'::text, 'lecture_review'::text, 'course_qa'::text, 'concept_mapping'::text, 'grade_draft'::text])))`
@@ -614,7 +580,6 @@ One AI job (grading draft, analysis, review, answer): model, tokens, cost, statu
 - Index `ai_runs_status_idx`: `CREATE INDEX ai_runs_status_idx ON ai.ai_runs USING btree (status, started_at DESC)`
 - Index `ai_runs_thread_status_idx`: `CREATE INDEX ai_runs_thread_status_idx ON ai.ai_runs USING btree (thread_id, status, started_at DESC)`
 - Index `ai_runs_triggered_by_idx`: `CREATE INDEX ai_runs_triggered_by_idx ON ai.ai_runs USING btree (triggered_by, started_at DESC)`
-- Trigger `ai_runs_duration`: `CREATE TRIGGER ai_runs_duration BEFORE INSERT OR UPDATE OF completed_at, started_at ON ai.ai_runs FOR EACH ROW EXECUTE FUNCTION ai_runs_duration()`
 
 ## ai_student_memory
 
@@ -739,7 +704,6 @@ Embedding of a part of learner work (similarity, grading context).
 | subject_id | uuid |  |  |
 | part_key | text |  |  |
 | activity_id | uuid |  |  |
-| text_hash | text |  |  |
 | embedding_model | text |  |  |
 | embedding | halfvec(1024) |  |  |
 | created_at | timestamp with time zone |  | `now()` |
@@ -748,10 +712,8 @@ Embedding of a part of learner work (similarity, grading context).
 - Primary key `ai_work_embeddings_pkey`: `PRIMARY KEY (subject_id, part_key)`
 - Foreign key `ai_work_embeddings_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
 - Foreign key `ai_work_embeddings_subject_id_fkey`: `FOREIGN KEY (subject_id) REFERENCES submissions(id) ON DELETE CASCADE`
-- Check `ai_work_embeddings_text_hash_format`: `CHECK ((text_hash ~ '^[0-9a-f]{64}$'::text))`
 - Check `ai_work_embeddings_text_sha256_check`: `CHECK ((octet_length(text_sha256) = 32))`
 - Index `ai_work_embeddings_activity_idx`: `CREATE INDEX ai_work_embeddings_activity_idx ON ai.ai_work_embeddings USING btree (activity_id)`
-- Trigger `ai_work_embeddings_sha256`: `CREATE TRIGGER ai_work_embeddings_sha256 BEFORE INSERT OR UPDATE ON ai.ai_work_embeddings FOR EACH ROW EXECUTE FUNCTION ai_work_embeddings_sha256()`
 
 ## analytics_events (partitioned)
 
@@ -770,8 +732,6 @@ Domain events for analytics (submissions, grades, completions, views), partition
 | payload | jsonb |  | `'{}'::jsonb` |
 | occurred_at | timestamp with time zone |  | `now()` |
 | created_at | timestamp with time zone |  | `now()` |
-| actor_id | uuid | null |  |
-| event_type | text | null |  |
 
 - Primary key `analytics_events_pkey`: `PRIMARY KEY (id, occurred_at)`
 - Check `analytics_events_event_type_check`: `CHECK ((event = ANY (ARRAY['submission.submitted'::text, 'submission.graded'::text, 'submission.published'::text, 'submission.returned'::text, 'activity.completed'::text, 'discussion.posted'::text, 'login'::text])))`
@@ -781,7 +741,6 @@ Domain events for analytics (submissions, grades, completions, views), partition
 - Index `analytics_events_occurred_brin`: `CREATE INDEX analytics_events_occurred_brin ON ONLY analytics.analytics_events USING brin (occurred_at)`
 - Index `analytics_events_submission_idx`: `CREATE INDEX analytics_events_submission_idx ON ONLY analytics.analytics_events USING btree (submission_id)`
 - Index `analytics_events_user_time_idx`: `CREATE INDEX analytics_events_user_time_idx ON ONLY analytics.analytics_events USING btree (user_id, occurred_at DESC)`
-- Trigger `analytics_events_aliases`: `CREATE TRIGGER analytics_events_aliases BEFORE INSERT OR UPDATE ON analytics.analytics_events FOR EACH ROW EXECUTE FUNCTION renamed_columns('actor_id', 'performed_by', 'event_type', 'event')`
 
 ## analytics_saved_views
 
@@ -796,16 +755,12 @@ A teacher's saved analytics filter.
 | query | jsonb |  | `'{}'::jsonb` |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
-| teacher_user_id | uuid | null |  |
-| view_type | text | null |  |
 
 - Primary key `analytics_saved_views_pkey`: `PRIMARY KEY (id)`
 - Unique `analytics_saved_views_teacher_user_id_view_type_name_key`: `UNIQUE (user_id, kind, name)`
 - Foreign key `analytics_saved_views_teacher_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Check `analytics_saved_views_name_check`: `CHECK (((char_length(name) >= 1) AND (char_length(name) <= 200)))`
 - Check `analytics_saved_views_view_type_check`: `CHECK (((char_length(kind) >= 1) AND (char_length(kind) <= 50)))`
-- Index `analytics_saved_views_previous_key`: `CREATE UNIQUE INDEX analytics_saved_views_previous_key ON analytics.analytics_saved_views USING btree (teacher_user_id, view_type, name)`
-- Trigger `analytics_saved_views_aliases`: `CREATE TRIGGER analytics_saved_views_aliases BEFORE INSERT OR UPDATE ON analytics.analytics_saved_views FOR EACH ROW EXECUTE FUNCTION renamed_columns('teacher_user_id', 'user_id', 'view_type', 'kind')`
 
 ## assessment_access_usergroups
 
@@ -849,12 +804,10 @@ History of staff actions on an assessment.
 | event | text |  |  |
 | payload | jsonb |  | `'{}'::jsonb` |
 | created_at | timestamp with time zone |  | `now()` |
-| actor_id | uuid | null |  |
 
 - Primary key `assessment_audit_events_pkey`: `PRIMARY KEY (id)`
 - Foreign key `assessment_audit_events_actor_id_fkey`: `FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL`
 - Index `assessment_audit_events_idx`: `CREATE INDEX assessment_audit_events_idx ON learning.assessment_audit_events USING btree (assessment_id, created_at DESC)`
-- Trigger `assessment_audit_events_aliases`: `CREATE TRIGGER assessment_audit_events_aliases BEFORE INSERT OR UPDATE ON learning.assessment_audit_events FOR EACH ROW EXECUTE FUNCTION renamed_columns('actor_id', 'performed_by')`
 
 ## assessment_imports
 
@@ -930,7 +883,6 @@ A question or task of an assessment (typed body by kind), ordered by position, m
 | difficulty | text | null |  |  |
 | tags | text[] |  | `'{}'::text[]` |  |
 | outcome_ids | text[] |  | `'{}'::text[]` |  |
-| estimated_minutes | integer | null |  |  |
 | created_at | timestamp with time zone |  | `now()` |  |
 | updated_at | timestamp with time zone |  | `now()` |  |
 | draw_group | text | null |  | Draw quota group (a DOT level such as 1 or 101); NULL: none. |
@@ -946,7 +898,6 @@ A question or task of an assessment (typed body by kind), ordered by position, m
 - Check `assessment_items_body_kind_set`: `CHECK (((body ->> 'kind'::text) IS NOT NULL))`
 - Check `assessment_items_difficulty_check`: `CHECK (((difficulty IS NULL) OR (difficulty = ANY (ARRAY['easy'::text, 'medium'::text, 'hard'::text]))))`
 - Check `assessment_items_draw_group_check`: `CHECK (((draw_group IS NULL) OR ((length(draw_group) >= 1) AND (length(draw_group) <= 32))))`
-- Check `assessment_items_estimated_minutes_check`: `CHECK (((estimated_minutes IS NULL) OR (estimated_minutes >= 0)))`
 - Check `assessment_items_estimated_seconds_check`: `CHECK ((estimated_seconds >= 0))`
 - Check `assessment_items_kind_check`: `CHECK ((kind = ANY (ARRAY['choice'::text, 'open_text'::text, 'form'::text, 'code'::text, 'matching'::text])))`
 - Check `assessment_items_outcome_ids_check`: `CHECK (text_list_ok(outcome_ids, 50, 64))`
@@ -954,7 +905,6 @@ A question or task of an assessment (typed body by kind), ordered by position, m
 - Check `assessment_items_source_file_check`: `CHECK (((source_file IS NULL) OR ((length(source_file) >= 1) AND (length(source_file) <= 255))))`
 - Check `assessment_items_source_row_check`: `CHECK (((source_row IS NULL) OR (source_row >= 1)))`
 - Check `assessment_items_tags_check`: `CHECK (text_list_ok(tags, 50, 64))`
-- Trigger `assessment_items_estimate`: `CREATE TRIGGER assessment_items_estimate BEFORE INSERT OR UPDATE ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_items_estimate()`
 - Trigger `assessment_items_upload_ids`: `CREATE TRIGGER assessment_items_upload_ids AFTER INSERT OR UPDATE OF body ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_item_uploads_sync()`
 
 ## assessment_overrides
@@ -1011,16 +961,13 @@ Frozen policy + items of an assessment as handed in (content-addressed, numbered
 | number | integer |  |  |
 | items | jsonb |  |  |
 | policy | jsonb |  |  |
-| content_hash | text |  |  |
 | max_points | numeric(10,2) |  |  |
 | created_at | timestamp with time zone |  | `now()` |
 | content_sha256 | bytea |  | generated: `assessment_content_sha256(items, policy)` |
 
 - Primary key `assessment_versions_pkey`: `PRIMARY KEY (id)`
-- Unique `assessment_versions_assessment_id_content_hash_key`: `UNIQUE (assessment_id, content_hash)`
 - Unique `assessment_versions_assessment_id_number_key`: `UNIQUE (assessment_id, number)`
 - Foreign key `assessment_versions_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
-- Check `assessment_versions_content_hash_format`: `CHECK ((content_hash ~ '^[0-9a-f]{32}$'::text))`
 - Check `assessment_versions_content_sha256_check`: `CHECK ((octet_length(content_sha256) = 32))`
 - Check `assessment_versions_max_points_check`: `CHECK ((max_points >= (0)::numeric))`
 - Check `assessment_versions_number_check`: `CHECK ((number >= 1))`
@@ -1066,7 +1013,6 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 | randomize_options | boolean |  | `false` |  |
 | partial_credit | boolean |  | `true` |  |
 | negative_marking_percent | percent |  | `0` |  |
-| grace_period_minutes | integer |  | `0` |  |
 | copy_paste_protection | boolean |  | `false` |  |
 | tab_switch_detection | boolean |  | `false` |  |
 | devtools_detection | boolean |  | `false` |  |
@@ -1081,10 +1027,7 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 | version | integer |  | `1` |  |
 | draw_count | integer | null |  | Questions drawn at random for each attempt; NULL: every question. |
 | draw_strata | jsonb | null |  | Draw quotas `[{group, count}]` taken first from items with that `draw_group`; NULL: none. |
-| grace_period_seconds | integer |  |  | How long after the time limit a timed attempt is still accepted. |
-| creator_id | uuid | null |  |  |
-| grading_type | text | null |  |  |
-| lifecycle | text | null |  |  |
+| grace_period_seconds | integer |  | `0` | How long after the time limit a timed attempt is still accepted. |
 
 - Primary key `assessments_pkey`: `PRIMARY KEY (id)`
 - Unique `assessments_activity_id_key`: `UNIQUE (activity_id)`
@@ -1099,7 +1042,6 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Check `assessments_draw_count_check`: `CHECK (((draw_count IS NULL) OR ((draw_count >= 1) AND (draw_count <= 200))))`
 - Check `assessments_draw_strata_check`: `CHECK (((draw_strata IS NULL) OR (jsonb_typeof(draw_strata) = 'array'::text)))`
 - Check `assessments_draw_strata_shape`: `CHECK (((draw_strata IS NULL) OR draw_strata_ok(draw_strata)))`
-- Check `assessments_grace_period_minutes_check`: `CHECK ((grace_period_minutes >= 0))`
 - Check `assessments_grace_period_seconds_check`: `CHECK ((grace_period_seconds >= 0))`
 - Check `assessments_grade_release_mode_check`: `CHECK ((grade_release_mode = ANY (ARRAY['immediate'::text, 'batch'::text])))`
 - Check `assessments_grading_mode_check`: `CHECK ((grading_mode = ANY (ARRAY['auto'::text, 'manual'::text, 'auto_then_manual'::text])))`
@@ -1117,8 +1059,6 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Check `assessments_violation_threshold_check`: `CHECK ((violation_threshold >= 1))`
 - Index `assessments_course_idx`: `CREATE INDEX assessments_course_idx ON learning.assessments USING btree (course_id)`
 - Index `assessments_due_publish_idx`: `CREATE INDEX assessments_due_publish_idx ON learning.assessments USING btree (scheduled_at) WHERE (status = 'scheduled'::text)`
-- Trigger `assessments_aliases`: `CREATE TRIGGER assessments_aliases BEFORE INSERT OR UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION renamed_columns('creator_id', 'created_by', 'grading_type', 'grading_kind', 'lifecycle', 'status')`
-- Trigger `assessments_grace_period`: `CREATE TRIGGER assessments_grace_period BEFORE INSERT OR UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION assessments_grace_period()`
 
 ## auth_audit_log
 
@@ -1168,14 +1108,12 @@ A content block of a page activity (files, embeds), linked from the editor docum
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
 | claimed | boolean |  | `true` |
-| block_type | text | null |  |
 
 - Primary key `blocks_pkey`: `PRIMARY KEY (id)`
 - Unique `blocks_legacy_uuid_key`: `UNIQUE (legacy_uuid)`
 - Foreign key `blocks_activity_id_fkey`: `FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE`
 - Check `blocks_block_type_check`: `CHECK ((kind = ANY (ARRAY['video'::text, 'pdf'::text, 'image'::text, 'custom'::text])))`
 - Index `blocks_activity_idx`: `CREATE INDEX blocks_activity_idx ON core.blocks USING btree (activity_id)`
-- Trigger `blocks_aliases`: `CREATE TRIGGER blocks_aliases BEFORE INSERT OR UPDATE ON core.blocks FOR EACH ROW EXECUTE FUNCTION renamed_columns('block_type', 'kind')`
 - Trigger `blocks_upload_ids`: `CREATE TRIGGER blocks_upload_ids AFTER INSERT OR UPDATE OF content, claimed ON core.blocks FOR EACH ROW EXECUTE FUNCTION block_uploads_sync()`
 
 ## bulk_actions
@@ -1195,14 +1133,12 @@ A bulk operation a teacher ran on the learners of an assessment, its targets and
 | error_log | text |  | `''::text` |
 | created_at | timestamp with time zone |  | `now()` |
 | completed_at | timestamp with time zone | null |  |
-| action_type | text | null |  |
 
 - Primary key `bulk_actions_pkey`: `PRIMARY KEY (id)`
 - Foreign key `bulk_actions_performed_by_fkey`: `FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL`
 - Check `bulk_actions_action_type_check`: `CHECK ((kind = ANY (ARRAY['extend_deadline'::text, 'release_grades'::text, 'return_all'::text, 'override_score'::text, 'batch_grade'::text])))`
 - Check `bulk_actions_status_check`: `CHECK ((status = ANY (ARRAY['pending'::text, 'running'::text, 'completed'::text, 'failed'::text])))`
 - Index `bulk_actions_assessment_idx`: `CREATE INDEX bulk_actions_assessment_idx ON learning.bulk_actions USING btree (assessment_id, status)`
-- Trigger `bulk_actions_aliases`: `CREATE TRIGGER bulk_actions_aliases BEFORE INSERT OR UPDATE ON learning.bulk_actions FOR EACH ROW EXECUTE FUNCTION renamed_columns('action_type', 'kind')`
 
 ## certificate_templates
 
@@ -1223,26 +1159,6 @@ The certificate a course issues on completion: layout and rules (config); disabl
 - Index `certifications_course_idx`: `CREATE INDEX certifications_course_idx ON learning.certificate_templates USING btree (course_id)`
 - Index `certifications_one_live_per_course`: `CREATE UNIQUE INDEX certifications_one_live_per_course ON learning.certificate_templates USING btree (course_id) WHERE (disabled_at IS NULL)`
 
-## certificate_users (view)
-
-The previous release's name of certificates; a contract drops it.
-
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid | null |  |
-| user_id | uuid | null |  |
-| verify_code | text | null |  |
-| created_at | timestamp with time zone | null |  |
-| updated_at | timestamp with time zone | null |  |
-| certification_id | uuid | null |  |
-| course_id | uuid | null |  |
-| holder_name | text | null |  |
-| course_name | text | null |  |
-| certificate_name | text | null |  |
-| score | percent | null |  |
-| instructor_name | text | null |  |
-| reissued_at | timestamp with time zone | null |  |
-
 ## certificates
 
 A certificate issued to a learner, verifiable by verify_code. Survives the account's anonymisation.
@@ -1254,7 +1170,6 @@ A certificate issued to a learner, verifiable by verify_code. Survives the accou
 | user_id | uuid |  |  |  |
 | verify_code | text |  |  |  |
 | created_at | timestamp with time zone |  | `now()` |  |
-| updated_at | timestamp with time zone |  | `now()` |  |
 | holder_name | text |  |  |  |
 | course_name | text |  |  |  |
 | certificate_name | text |  |  |  |
@@ -1270,20 +1185,6 @@ A certificate issued to a learner, verifiable by verify_code. Survives the accou
 - Foreign key `certificate_users_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Index `certificate_users_user_idx`: `CREATE INDEX certificate_users_user_idx ON learning.certificates USING btree (user_id)`
 - Trigger `certificate_users_frozen`: `CREATE TRIGGER certificate_users_frozen BEFORE UPDATE ON learning.certificates FOR EACH ROW EXECUTE FUNCTION certificate_users_frozen()`
-
-## certifications (view)
-
-The previous release's name of certificate_templates; a contract drops it.
-
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid | null |  |
-| course_id | uuid | null |  |
-| config | jsonb | null |  |
-| created_at | timestamp with time zone | null |  |
-| updated_at | timestamp with time zone | null |  |
-| version | integer | null |  |
-| disabled_at | timestamp with time zone | null |  |
 
 ## chapters
 
@@ -1302,7 +1203,6 @@ A chapter of a course; position orders chapters within the course.
 | updated_at | timestamp with time zone |  | `now()` |
 | version | integer |  | `1` |
 | thumbnail_upload_id | uuid | null |  |
-| creator_id | uuid | null |  |
 
 - Primary key `chapters_pkey`: `PRIMARY KEY (id)`
 - Unique `chapters_id_course_key`: `UNIQUE (id, course_id)`
@@ -1314,7 +1214,6 @@ A chapter of a course; position orders chapters within the course.
 - Check `chapters_name_check`: `CHECK ((char_length(name) <= 500))`
 - Check `chapters_position_check`: `CHECK (("position" >= 1))`
 - Index `chapters_thumbnail_upload_id_idx`: `CREATE INDEX chapters_thumbnail_upload_id_idx ON core.chapters USING btree (thumbnail_upload_id) WHERE (thumbnail_upload_id IS NOT NULL)`
-- Trigger `chapters_aliases`: `CREATE TRIGGER chapters_aliases BEFORE INSERT OR UPDATE ON core.chapters FOR EACH ROW EXECUTE FUNCTION renamed_columns('creator_id', 'created_by')`
 - Trigger `chapters_upload_ids`: `CREATE TRIGGER chapters_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_key ON core.chapters FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_key', 'thumbnail_upload_id')`
 
 ## code_run_cases
@@ -1333,7 +1232,6 @@ The result of one test case of a code run.
 | weight | score_weight |  | `1` |
 | is_visible | boolean |  | `true` |
 | status_description | text |  | `''::text` |
-| passed | boolean |  | `false` |
 | stdout | text | null |  |
 | stderr | text | null |  |
 | compile_output | text | null |  |
@@ -1346,7 +1244,6 @@ The result of one test case of a code run.
 - Unique `code_run_cases_run_position_key`: `UNIQUE (run_id, "position")`
 - Foreign key `code_run_cases_run_id_fkey`: `FOREIGN KEY (run_id) REFERENCES code_runs(id) ON DELETE CASCADE`
 - Check `code_run_cases_verdict_check`: `CHECK ((verdict = ANY (ARRAY['accepted'::text, 'wrong_answer'::text, 'time_limit'::text, 'memory_limit'::text, 'output_limit'::text, 'compile_error'::text, 'runtime_error'::text, 'internal_error'::text])))`
-- Trigger `code_run_cases_passed`: `CREATE TRIGGER code_run_cases_passed BEFORE INSERT ON learning.code_run_cases FOR EACH ROW EXECUTE FUNCTION code_run_cases_passed()`
 
 ## code_runs
 
@@ -1362,8 +1259,6 @@ A run of learner code in the go-judge runner: a practice run or the graded run o
 | purpose | text |  |  |  |
 | status | text |  | `'queued'::text` |  |
 | language_id | integer |  |  |  |
-| source_sha256 | text |  |  |  |
-| stdin_sha256 | text | null |  |  |
 | idempotency_key | text | null |  |  |
 | passed | integer |  | `0` |  |
 | total | integer |  | `0` |  |
@@ -1388,17 +1283,13 @@ A run of learner code in the go-judge runner: a practice run or the graded run o
 - Check `code_runs_finished_check`: `CHECK (((status = ANY (ARRAY['queued'::text, 'running'::text])) OR (finished_at IS NOT NULL)))`
 - Check `code_runs_input_sha256_check`: `CHECK ((octet_length(input_sha256) = 32))`
 - Check `code_runs_purpose_check`: `CHECK ((purpose = ANY (ARRAY['custom'::text, 'visible'::text, 'final'::text, 'reference_check'::text])))`
-- Check `code_runs_source_sha256_format`: `CHECK ((source_sha256 ~ '^[0-9a-f]{64}$'::text))`
-- Check `code_runs_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text, 'degraded'::text])))`
-- Check `code_runs_stdin_sha256_format`: `CHECK ((stdin_sha256 ~ '^[0-9a-f]{64}$'::text))`
+- Check `code_runs_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'done'::text, 'failed'::text, 'degraded'::text, 'accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text])))`
 - Check `code_runs_verdict_check`: `CHECK ((verdict = ANY (ARRAY['accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text])))`
 - Check `code_runs_verdict_when_done`: `CHECK (((verdict IS NULL) OR (status <> ALL (ARRAY['queued'::text, 'running'::text, 'degraded'::text]))))`
 - Index `code_runs_assessment_user_idx`: `CREATE INDEX code_runs_assessment_user_idx ON learning.code_runs USING btree (assessment_id, user_id)`
 - Index `code_runs_created_brin`: `CREATE INDEX code_runs_created_brin ON learning.code_runs USING brin (created_at)`
 - Index `code_runs_item_idx`: `CREATE INDEX code_runs_item_idx ON learning.code_runs USING btree (item_id, user_id, created_at DESC)`
 - Index `code_runs_submission_idx`: `CREATE INDEX code_runs_submission_idx ON learning.code_runs USING btree (submission_id)`
-- Trigger `code_runs_sha256`: `CREATE TRIGGER code_runs_sha256 BEFORE INSERT OR UPDATE ON learning.code_runs FOR EACH ROW EXECUTE FUNCTION code_runs_sha256()`
-- Trigger `code_runs_verdict`: `CREATE TRIGGER code_runs_verdict BEFORE INSERT OR UPDATE OF status ON learning.code_runs FOR EACH ROW EXECUTE FUNCTION code_runs_verdict()`
 
 ## collection_courses
 
@@ -1700,27 +1591,6 @@ A concept (skill) of a course, proposed by AI or a teacher and decided by staff.
 - Index `course_concepts_decided_by_idx`: `CREATE INDEX course_concepts_decided_by_idx ON learning.course_concepts USING btree (decided_by)`
 - Index `course_concepts_run_idx`: `CREATE INDEX course_concepts_run_idx ON learning.course_concepts USING btree (run_id)`
 
-## course_discussions (view)
-
-The previous release's name of discussion_posts; a contract drops it.
-
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid | null |  |
-| course_id | uuid | null |  |
-| user_id | uuid | null |  |
-| parent_id | uuid | null |  |
-| kind | text | null |  |
-| status | text | null |  |
-| content | text | null |  |
-| likes_count | integer | null |  |
-| dislikes_count | integer | null |  |
-| replies_count | integer | null |  |
-| created_at | timestamp with time zone | null |  |
-| updated_at | timestamp with time zone | null |  |
-| version | integer | null |  |
-| deleted_at | timestamp with time zone | null |  |
-
 ## course_members (view)
 
 Learners of a course: enrolments without its staff, whose stale rows stay in enrolments.
@@ -1830,7 +1700,6 @@ An announcement a teacher posts in a course.
 | updated_at | timestamp with time zone |  | `now()` |
 | version | integer |  | `1` |
 | created_by | uuid | null |  |
-| author_id | uuid | null |  |
 
 - Primary key `course_updates_pkey`: `PRIMARY KEY (id)`
 - Foreign key `course_updates_author_id_fkey`: `FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL`
@@ -1838,7 +1707,6 @@ An announcement a teacher posts in a course.
 - Check `course_updates_content_check`: `CHECK ((char_length(content) <= 50000))`
 - Check `course_updates_title_check`: `CHECK ((char_length(title) <= 500))`
 - Index `course_updates_course_idx`: `CREATE INDEX course_updates_course_idx ON core.course_updates USING btree (course_id, created_at DESC)`
-- Trigger `course_updates_aliases`: `CREATE TRIGGER course_updates_aliases BEFORE INSERT OR UPDATE ON core.course_updates FOR EACH ROW EXECUTE FUNCTION renamed_columns('author_id', 'created_by')`
 
 ## courses
 
@@ -1870,7 +1738,6 @@ A course: catalog card, visibility (public), lifecycle (archived_at) and setting
 | deleted_by | uuid | null |  |  |
 | language | language_code |  | `'ru'::text` | The language the course is taught in. |
 | guest_access | boolean |  | `false` | Lessons of the public course open in the player without sign-in or enrolment (graded work does not). |
-| thumbnail_type | text | null |  |  |
 
 - Primary key `courses_pkey`: `PRIMARY KEY (id)`
 - Foreign key `courses_archived_by_fkey`: `FOREIGN KEY (archived_by) REFERENCES users(id) ON DELETE SET NULL`
@@ -1891,7 +1758,6 @@ A course: catalog card, visibility (public), lifecycle (archived_at) and setting
 - Index `courses_search_trgm_idx`: `CREATE INDEX courses_search_trgm_idx ON core.courses USING gin (search_fold(((((name \|\| ' '::text) \|\| description) \|\| ' '::text) \|\| COALESCE(about, ''::text))) gin_trgm_ops)`
 - Index `courses_thumbnail_image_upload_id_idx`: `CREATE INDEX courses_thumbnail_image_upload_id_idx ON core.courses USING btree (thumbnail_image_upload_id) WHERE (thumbnail_image_upload_id IS NOT NULL)`
 - Index `courses_thumbnail_video_upload_id_idx`: `CREATE INDEX courses_thumbnail_video_upload_id_idx ON core.courses USING btree (thumbnail_video_upload_id) WHERE (thumbnail_video_upload_id IS NOT NULL)`
-- Trigger `courses_aliases`: `CREATE TRIGGER courses_aliases BEFORE INSERT OR UPDATE ON core.courses FOR EACH ROW EXECUTE FUNCTION renamed_columns('thumbnail_type', 'thumbnail_kind')`
 - Trigger `courses_creator_row`: `CREATE TRIGGER courses_creator_row AFTER INSERT ON core.courses FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION courses_creator_row()`
 - Trigger `courses_upload_ids`: `CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_image_key, thumbnail_video_key ON core.courses FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_image_key', 'thumbnail_image_upload_id', 'thumbnail_video_key', 'thumbnail_video_upload_id')`
 
@@ -1914,8 +1780,6 @@ Daily rollup per assessment: submission, pass and score figures.
 | median_score | double precision | null |  |
 | avg_score | double precision | null |  |
 | avg_attempts | double precision | null |  |
-| grading_latency_hours_p50 | double precision | null |  |
-| grading_latency_hours_p90 | double precision | null |  |
 | difficulty_score | double precision | null |  |
 | generated_at | timestamp with time zone |  | `now()` |
 | grading_latency_seconds_p50 | integer | null |  |
@@ -1929,7 +1793,6 @@ Daily rollup per assessment: submission, pass and score figures.
 - Index `daily_assessment_metrics_activity_idx`: `CREATE INDEX daily_assessment_metrics_activity_idx ON analytics.daily_assessment_metrics USING btree (activity_id)`
 - Index `daily_assessment_metrics_assessment_idx`: `CREATE INDEX daily_assessment_metrics_assessment_idx ON analytics.daily_assessment_metrics USING btree (assessment_id)`
 - Index `daily_assessment_metrics_course_idx`: `CREATE INDEX daily_assessment_metrics_course_idx ON analytics.daily_assessment_metrics USING btree (course_id, metric_date DESC)`
-- Trigger `daily_assessment_metrics_latency`: `CREATE TRIGGER daily_assessment_metrics_latency BEFORE INSERT OR UPDATE ON analytics.daily_assessment_metrics FOR EACH ROW EXECUTE FUNCTION daily_assessment_metrics_latency()`
 
 ## daily_course_engagement
 
@@ -1963,7 +1826,6 @@ Daily rollup per course: enrolment, activity, completion, risk, grading backlog.
 | --- | --- | --- | --- |
 | metric_date | date |  |  |
 | course_id | uuid |  |  |
-| teacher_user_id | uuid | null |  |
 | enrolled_learners | integer |  | `0` |
 | active_learners_7d | integer |  | `0` |
 | active_learners_28d | integer |  | `0` |
@@ -1979,7 +1841,6 @@ Daily rollup per course: enrolment, activity, completion, risk, grading backlog.
 
 - Primary key `daily_course_metrics_pkey`: `PRIMARY KEY (metric_date, course_id)`
 - Foreign key `daily_course_metrics_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `daily_course_metrics_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE SET NULL`
 - Index `daily_course_metrics_course_idx`: `CREATE INDEX daily_course_metrics_course_idx ON analytics.daily_course_metrics USING btree (course_id, metric_date DESC)`
 
 ## daily_platform_metrics
@@ -2025,15 +1886,12 @@ Daily rollup per teacher (or platform-wide when teacher_user_id is NULL).
 | courses_with_negative_engagement | integer |  | `0` |
 | certificates_issued_28d | integer |  | `0` |
 | generated_at | timestamp with time zone |  | `now()` |
-| teacher_user_id | uuid | null |  |
 
 - Primary key `daily_teacher_metrics_pkey`: `PRIMARY KEY (id)`
 - Unique `daily_teacher_metrics_metric_date_teacher_user_id_key`: `UNIQUE NULLS NOT DISTINCT (metric_date, teacher_id)`
 - Foreign key `daily_teacher_metrics_teacher_user_id_fkey`: `FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE`
 - Index `daily_teacher_metrics_date_brin`: `CREATE INDEX daily_teacher_metrics_date_brin ON analytics.daily_teacher_metrics USING brin (metric_date)`
-- Index `daily_teacher_metrics_previous_key`: `CREATE UNIQUE INDEX daily_teacher_metrics_previous_key ON analytics.daily_teacher_metrics USING btree (metric_date, teacher_user_id) NULLS NOT DISTINCT`
 - Index `daily_teacher_metrics_teacher_idx`: `CREATE INDEX daily_teacher_metrics_teacher_idx ON analytics.daily_teacher_metrics USING btree (teacher_id)`
-- Trigger `daily_teacher_metrics_aliases`: `CREATE TRIGGER daily_teacher_metrics_aliases BEFORE INSERT OR UPDATE ON analytics.daily_teacher_metrics FOR EACH ROW EXECUTE FUNCTION renamed_columns('teacher_user_id', 'teacher_id')`
 
 ## daily_user_course_progress
 
@@ -2087,13 +1945,12 @@ A discussion post or reply in a course (replies point to their post by parent_id
 - Check `course_discussions_content_check`: `CHECK ((char_length(content) <= 20000))`
 - Check `course_discussions_kind_check`: `CHECK ((kind = ANY (ARRAY['post'::text, 'reply'::text])))`
 - Check `course_discussions_reply_parent_check`: `CHECK (((kind = 'reply'::text) = (parent_id IS NOT NULL)))`
-- Check `course_discussions_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'hidden'::text, 'deleted'::text])))`
+- Check `course_discussions_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'hidden'::text])))`
 - Index `course_discussions_course_idx`: `CREATE INDEX course_discussions_course_idx ON core.discussion_posts USING btree (course_id, created_at DESC)`
 - Index `course_discussions_parent_idx`: `CREATE INDEX course_discussions_parent_idx ON core.discussion_posts USING btree (parent_id)`
-- Index `course_discussions_posts_keyset_idx`: `CREATE INDEX course_discussions_posts_keyset_idx ON core.discussion_posts USING btree (course_id, id DESC) WHERE ((parent_id IS NULL) AND (status = 'active'::text))`
-- Index `course_discussions_replies_keyset_idx`: `CREATE INDEX course_discussions_replies_keyset_idx ON core.discussion_posts USING btree (parent_id, id) WHERE (status = 'active'::text)`
-- Trigger `course_discussions_deleted_status`: `CREATE TRIGGER course_discussions_deleted_status BEFORE INSERT OR UPDATE ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION course_discussions_deleted_status()`
-- Trigger `course_discussions_recount_replies`: `CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()`
+- Index `discussion_posts_keyset_idx`: `CREATE INDEX discussion_posts_keyset_idx ON core.discussion_posts USING btree (course_id, id DESC) WHERE ((parent_id IS NULL) AND (deleted_at IS NULL))`
+- Index `discussion_posts_replies_keyset_idx`: `CREATE INDEX discussion_posts_replies_keyset_idx ON core.discussion_posts USING btree (parent_id, id) WHERE (deleted_at IS NULL)`
+- Trigger `course_discussions_recount_replies`: `CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id, deleted_at ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()`
 - Trigger `course_discussions_upload_ids`: `CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF content ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION post_uploads_sync()`
 
 ## discussion_reactions
@@ -2153,18 +2010,6 @@ Course membership (a learner joined or was enrolled). The course's staff are nev
 - Foreign key `enrolments_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Index `enrolments_user_idx`: `CREATE INDEX enrolments_user_idx ON learning.enrolments USING btree (user_id)`
 
-## feature_activations
-
-When a feature switch was first turned on (one row per feature).
-
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| feature | text |  |  |
-| activated_at | timestamp with time zone |  | `now()` |
-
-- Primary key `feature_activations_pkey`: `PRIMARY KEY (feature)`
-- Check `feature_activations_feature_check`: `CHECK ((feature = 'deadline_auto_submit'::text))`
-
 ## file_submission_files
 
 A file of a file-task hand-in (points at its upload).
@@ -2175,9 +2020,6 @@ A file of a file-task hand-in (points at its upload).
 | attempt_id | uuid |  |  |
 | upload_id | uuid |  |  |
 | display_name | text |  | `''::text` |
-| content_type | text |  | `''::text` |
-| size_bytes | bigint | null |  |
-| storage_key | text |  |  |
 | position | integer |  | `0` |
 | scan_status | text |  | `'pending'::text` |
 | created_at | timestamp with time zone |  | `now()` |
@@ -2186,11 +2028,9 @@ A file of a file-task hand-in (points at its upload).
 - Unique `file_submission_files_attempt_id_upload_id_key`: `UNIQUE (attempt_id, upload_id)`
 - Foreign key `file_submission_files_attempt_id_fkey`: `FOREIGN KEY (attempt_id) REFERENCES submissions(id) ON DELETE CASCADE`
 - Foreign key `file_submission_files_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE RESTRICT`
-- Check `file_submission_files_content_type_mime`: `CHECK ((content_type ~ '^[A-Za-z0-9.+-]+/[A-Za-z0-9.+-]+'::text))`
 - Check `file_submission_files_scan_status_check`: `CHECK ((scan_status = ANY (ARRAY['pending'::text, 'clean'::text, 'flagged'::text, 'error'::text])))`
 - Index `file_submission_files_attempt_idx`: `CREATE INDEX file_submission_files_attempt_idx ON learning.file_submission_files USING btree (attempt_id, "position")`
 - Index `file_submission_files_upload_idx`: `CREATE INDEX file_submission_files_upload_idx ON learning.file_submission_files USING btree (upload_id)`
-- Trigger `file_submission_files_from_upload`: `CREATE TRIGGER file_submission_files_from_upload BEFORE INSERT ON learning.file_submission_files FOR EACH ROW EXECUTE FUNCTION file_submission_files_from_upload()`
 
 ## file_submissions
 
@@ -2230,31 +2070,12 @@ Completion facts that award XP once (source kind + id per learner).
 | --- | --- | --- | --- | --- |
 | user_id | uuid |  |  |  |
 | kind | text |  |  |  |
-| source_id | text |  |  |  |
 | created_at | timestamp with time zone |  | `now()` |  |
-| source_uuid | uuid | null |  | The completed activity or course (by `kind`); no key: the count outlives it. |
+| source_uuid | uuid |  |  | The completed activity or course (by `kind`); no key: the count outlives it. |
 
-- Primary key `gamification_completions_pkey`: `PRIMARY KEY (user_id, kind, source_id)`
+- Primary key `gamification_completions_pkey`: `PRIMARY KEY (user_id, kind, source_uuid)`
 - Foreign key `gamification_completions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Check `gamification_completions_kind_check`: `CHECK ((kind = ANY (ARRAY['activity'::text, 'course'::text])))`
-- Check `gamification_completions_source_id_shape`: `CHECK ((source_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text))`
-- Index `gamification_completions_user_kind_source_uuid_key`: `CREATE UNIQUE INDEX gamification_completions_user_kind_source_uuid_key ON learning.gamification_completions USING btree (user_id, kind, source_uuid)`
-- Trigger `gamification_completions_source_ref`: `CREATE TRIGGER gamification_completions_source_ref BEFORE INSERT ON learning.gamification_completions FOR EACH ROW EXECUTE FUNCTION gamification_completions_source_ref()`
-
-## gamification_config
-
-XP rules: daily cap and rewards (versioned single row).
-
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | smallint |  |  |
-| daily_xp_limit | integer | null |  |
-| rewards | jsonb |  | `'{}'::jsonb` |
-| updated_at | timestamp with time zone |  | `now()` |
-| version | integer |  | `1` |
-
-- Primary key `gamification_config_pkey`: `PRIMARY KEY (id)`
-- Check `gamification_config_id_check`: `CHECK ((id = 1))`
 
 ## gamification_profiles
 
@@ -2272,7 +2093,6 @@ A learner's XP total, level and streaks (reconciled weekly from xp_transactions)
 | total_activities_completed | integer |  | `0` |
 | total_courses_completed | integer |  | `0` |
 | last_xp_award_at | timestamp with time zone | null |  |
-| last_login_at | timestamp with time zone | null |  |
 | last_learning_at | timestamp with time zone | null |  |
 | preferences | jsonb |  | `'{}'::jsonb` |
 | created_at | timestamp with time zone |  | `now()` |
@@ -2289,7 +2109,6 @@ A learner's XP total, level and streaks (reconciled weekly from xp_transactions)
 - Check `gamification_profiles_total_courses_completed_check`: `CHECK ((total_courses_completed >= 0))`
 - Check `gamification_profiles_total_xp_check`: `CHECK ((total_xp >= 0))`
 - Index `gamification_profiles_board_idx`: `CREATE INDEX gamification_profiles_board_idx ON learning.gamification_profiles USING btree (total_xp DESC, user_id)`
-- Trigger `gamification_profiles_last_login`: `CREATE TRIGGER gamification_profiles_last_login AFTER UPDATE OF last_login_at ON learning.gamification_profiles FOR EACH ROW WHEN ((new.last_login_at IS DISTINCT FROM old.last_login_at)) EXECUTE FUNCTION gamification_profiles_last_login()`
 
 ## google_accounts
 
@@ -2339,8 +2158,6 @@ Grade journal of submissions: one row per grading; append-only except published_
 - Trigger `grading_entries_append_only`: `CREATE TRIGGER grading_entries_append_only BEFORE DELETE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_no_delete()`
 - Trigger `grading_entries_current`: `CREATE CONSTRAINT TRIGGER grading_entries_current AFTER INSERT ON learning.grading_entries DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION grading_entries_current_check()`
 - Trigger `grading_entries_immutable`: `CREATE TRIGGER grading_entries_immutable BEFORE UPDATE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_guard()`
-- Trigger `grading_entries_number`: `CREATE TRIGGER grading_entries_number BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_number()`
-- Trigger `grading_entries_points`: `CREATE TRIGGER grading_entries_points BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_points()`
 
 ## idempotency_keys
 
@@ -2350,7 +2167,6 @@ Stored responses of mutating requests sent with an Idempotency-Key, replayed on 
 | --- | --- | --- | --- |
 | user_id | uuid |  |  |
 | key | text |  |  |
-| request_hash | text |  |  |
 | status_code | integer |  |  |
 | response | jsonb |  |  |
 | created_at | timestamp with time zone |  | `now()` |
@@ -2359,10 +2175,8 @@ Stored responses of mutating requests sent with an Idempotency-Key, replayed on 
 - Primary key `idempotency_keys_pkey`: `PRIMARY KEY (user_id, key)`
 - Foreign key `idempotency_keys_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Check `idempotency_keys_key_check`: `CHECK ((char_length(key) <= 200))`
-- Check `idempotency_keys_request_hash_format`: `CHECK ((request_hash ~ '^[0-9a-f]{64}$'::text))`
 - Check `idempotency_keys_request_sha256_check`: `CHECK ((octet_length(request_sha256) = 32))`
 - Index `idempotency_keys_sweep_idx`: `CREATE INDEX idempotency_keys_sweep_idx ON ops.idempotency_keys USING btree (created_at)`
-- Trigger `idempotency_keys_sha256`: `CREATE TRIGGER idempotency_keys_sha256 BEFORE INSERT OR UPDATE ON ops.idempotency_keys FOR EACH ROW EXECUTE FUNCTION idempotency_keys_sha256()`
 
 ## item_feedback
 
@@ -2380,24 +2194,19 @@ A grader's comment, score or annotation on one item of a graded submission.
 | max_score | score_points | null |  |
 | kind | text |  | `'text'::text` |
 | annotation_key | text | null |  |
-| graded_by | uuid | null |  |
 | created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
 | annotation_upload_id | uuid | null |  |
-| annotation_type | text | null |  |
 
 - Primary key `item_feedback_pkey`: `PRIMARY KEY (id)`
 - Unique `item_feedback_entry_item_key`: `UNIQUE (grading_entry_id, item_ref)`
 - Foreign key `item_feedback_annotation_upload_id_fkey`: `FOREIGN KEY (annotation_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 - Foreign key `item_feedback_entry_submission_fkey`: `FOREIGN KEY (grading_entry_id, submission_id) REFERENCES grading_entries(id, submission_id) ON DELETE CASCADE`
-- Foreign key `item_feedback_graded_by_fkey`: `FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `item_feedback_item_id_fkey`: `FOREIGN KEY (item_id) REFERENCES assessment_items(id) ON DELETE SET NULL`
 - Foreign key `item_feedback_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE`
 - Check `item_feedback_annotation_type_check`: `CHECK ((kind = ANY (ARRAY['text'::text, 'highlight'::text, 'audio'::text])))`
 - Index `item_feedback_annotation_upload_id_idx`: `CREATE INDEX item_feedback_annotation_upload_id_idx ON learning.item_feedback USING btree (annotation_upload_id) WHERE (annotation_upload_id IS NOT NULL)`
 - Index `item_feedback_item_idx`: `CREATE INDEX item_feedback_item_idx ON learning.item_feedback USING btree (item_id)`
 - Index `item_feedback_submission_item_idx`: `CREATE INDEX item_feedback_submission_item_idx ON learning.item_feedback USING btree (submission_id, item_ref)`
-- Trigger `item_feedback_aliases`: `CREATE TRIGGER item_feedback_aliases BEFORE INSERT OR UPDATE ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION renamed_columns('annotation_type', 'kind')`
 - Trigger `item_feedback_frozen`: `CREATE TRIGGER item_feedback_frozen BEFORE UPDATE ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION item_feedback_frozen()`
 - Trigger `item_feedback_upload_ids`: `CREATE TRIGGER item_feedback_upload_ids BEFORE INSERT OR UPDATE OF annotation_key ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('annotation_key', 'annotation_upload_id')`
 
@@ -2456,7 +2265,6 @@ Daily risk score of a learner in a course, with reasons and a recommended action
 | snapshot_date | date |  |  |
 | user_id | uuid |  |  |
 | course_id | uuid |  |  |
-| teacher_user_id | uuid | null |  |
 | progress_pct | double precision |  | `0` |
 | days_since_last_activity | integer | null |  |
 | failed_assessments | integer |  | `0` |
@@ -2470,7 +2278,6 @@ Daily risk score of a learner in a course, with reasons and a recommended action
 
 - Primary key `learner_risk_snapshots_pkey`: `PRIMARY KEY (snapshot_date, user_id, course_id)`
 - Foreign key `learner_risk_snapshots_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `learner_risk_snapshots_teacher_user_id_fkey`: `FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `learner_risk_snapshots_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Check `learner_risk_snapshots_risk_level_check`: `CHECK ((risk_level = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text])))`
 - Index `learner_risk_snapshots_pair_idx`: `CREATE INDEX learner_risk_snapshots_pair_idx ON analytics.learner_risk_snapshots USING btree (course_id, user_id, snapshot_date DESC)`
@@ -2593,7 +2400,6 @@ One message of a conversation, by user_id. A deleted one stays as a tombstone (s
 | conversation_id | uuid |  |  |
 | user_id | uuid |  |  |
 | body | text |  |  |
-| status | text |  | `'active'::text` |
 | deleted_at | timestamp with time zone | null |  |
 | client_key | uuid |  |  |
 | course_id | uuid | null |  |
@@ -2608,15 +2414,11 @@ One message of a conversation, by user_id. A deleted one stays as a tombstone (s
 - Foreign key `messages_member_fkey`: `FOREIGN KEY (conversation_id, user_id) REFERENCES conversation_members(conversation_id, user_id)`
 - Foreign key `messages_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id)`
 - Check `messages_body_check`: `CHECK ((char_length(body) <= 4000))`
-- Check `messages_check`: `CHECK (((status = 'deleted'::text) = (deleted_at IS NOT NULL)))`
-- Check `messages_check1`: `CHECK (((status = 'active'::text) OR (body = ''::text)))`
 - Check `messages_deleted_is_blank`: `CHECK (((deleted_at IS NULL) OR (body = ''::text)))`
-- Check `messages_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'deleted'::text])))`
 - Index `messages_activity_idx`: `CREATE INDEX messages_activity_idx ON core.messages USING btree (activity_id)`
 - Index `messages_conversation_idx`: `CREATE INDEX messages_conversation_idx ON core.messages USING btree (conversation_id, id DESC)`
 - Index `messages_course_idx`: `CREATE INDEX messages_course_idx ON core.messages USING btree (course_id)`
 - Index `messages_user_idx`: `CREATE INDEX messages_user_idx ON core.messages USING btree (user_id, id DESC)`
-- Trigger `messages_deleted_status`: `CREATE TRIGGER messages_deleted_status BEFORE INSERT OR UPDATE ON core.messages FOR EACH ROW EXECUTE FUNCTION messages_deleted_status()`
 
 ## notification_kinds
 
@@ -2876,8 +2678,6 @@ An action a teacher logged for an at-risk learner and its outcome.
 | resolved_at | timestamp with time zone | null |  |
 | outcome_code | text | null |  |
 | version | integer |  | `1` |
-| teacher_user_id | uuid | null |  |
-| intervention_type | text | null |  |
 
 - Primary key `teacher_interventions_pkey`: `PRIMARY KEY (id)`
 - Foreign key `teacher_interventions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
@@ -2891,7 +2691,6 @@ An action a teacher logged for an at-risk learner and its outcome.
 - Index `teacher_interventions_course_idx`: `CREATE INDEX teacher_interventions_course_idx ON learning.teacher_interventions USING btree (course_id)`
 - Index `teacher_interventions_learner_idx`: `CREATE INDEX teacher_interventions_learner_idx ON learning.teacher_interventions USING btree (user_id, course_id)`
 - Index `teacher_interventions_teacher_idx`: `CREATE INDEX teacher_interventions_teacher_idx ON learning.teacher_interventions USING btree (created_by, course_id, created_at DESC)`
-- Trigger `teacher_interventions_aliases`: `CREATE TRIGGER teacher_interventions_aliases BEFORE INSERT OR UPDATE ON learning.teacher_interventions FOR EACH ROW EXECUTE FUNCTION renamed_columns('teacher_user_id', 'created_by', 'intervention_type', 'kind')`
 
 ## trail_legacy_marks
 
@@ -3036,13 +2835,11 @@ A named group of learners a teacher assigns courses or assessments to.
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
 | version | integer |  | `1` |
-| creator_id | uuid | null |  |
 
 - Primary key `usergroups_pkey`: `PRIMARY KEY (id)`
 - Foreign key `usergroups_creator_id_fkey`: `FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL`
 - Check `usergroups_description_check`: `CHECK ((char_length(description) <= 5000))`
 - Check `usergroups_name_check`: `CHECK ((char_length(name) <= 500))`
-- Trigger `usergroups_aliases`: `CREATE TRIGGER usergroups_aliases BEFORE INSERT OR UPDATE ON core.usergroups FOR EACH ROW EXECUTE FUNCTION renamed_columns('creator_id', 'created_by')`
 
 ## users
 
@@ -3084,7 +2881,6 @@ An account. Never deleted by the app: disabled (status) or anonymised (deleted_a
 - Index `users_email_lower_key`: `CREATE UNIQUE INDEX users_email_lower_key ON core.users USING btree (lower(email))`
 - Index `users_username_lower_key`: `CREATE UNIQUE INDEX users_username_lower_key ON core.users USING btree (lower(username))`
 - Index `users_username_trgm_idx`: `CREATE INDEX users_username_trgm_idx ON core.users USING gin (search_fold(username) gin_trgm_ops)`
-- Trigger `users_last_login`: `CREATE TRIGGER users_last_login AFTER UPDATE OF last_login_at ON core.users FOR EACH ROW WHEN ((new.last_login_at IS DISTINCT FROM old.last_login_at)) EXECUTE FUNCTION users_last_login()`
 - Trigger `users_reissue_certificates`: `CREATE TRIGGER users_reissue_certificates AFTER UPDATE OF display_name ON core.users FOR EACH ROW WHEN ((old.display_name IS DISTINCT FROM new.display_name)) EXECUTE FUNCTION users_reissue_certificates()`
 - Trigger `users_sync_state`: `CREATE TRIGGER users_sync_state BEFORE INSERT OR UPDATE ON core.users FOR EACH ROW EXECUTE FUNCTION users_sync_state()`
 - Trigger `users_upload_ids`: `CREATE TRIGGER users_upload_ids BEFORE INSERT OR UPDATE OF avatar_key ON core.users FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('avatar_key', 'avatar_upload_id')`
@@ -3099,10 +2895,7 @@ XP journal: every award with its source; the profile totals are derived from it.
 | user_id | uuid |  |  |  |
 | amount | integer |  |  |  |
 | source | text |  |  |  |
-| source_id | text | null |  |  |
 | reason | text | null |  |  |
-| previous_level | integer |  |  |  |
-| triggered_level_up | boolean |  | `false` |  |
 | idempotency_key | text | null |  |  |
 | created_at | timestamp with time zone |  | `now()` |  |
 | source_uuid | uuid | null |  | What the award is for (activity, course, submission); no key: the entry outlives it. NULL for the login bonus. |
@@ -3110,18 +2903,13 @@ XP journal: every award with its source; the profile totals are derived from it.
 
 - Primary key `xp_transactions_pkey`: `PRIMARY KEY (id)`
 - Unique `xp_transactions_idempotency_key_key`: `UNIQUE (idempotency_key)`
-- Unique `xp_transactions_user_id_source_source_id_key`: `UNIQUE (user_id, source, source_id)`
 - Foreign key `xp_transactions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Check `xp_transactions_amount_check`: `CHECK ((amount > 0))`
-- Check `xp_transactions_previous_level_check`: `CHECK ((previous_level >= 1))`
 - Check `xp_transactions_source_check`: `CHECK ((source = ANY (ARRAY['activity_completion'::text, 'course_completion'::text, 'login_bonus'::text, 'quiz_completion'::text, 'exam_completion'::text, 'streak_bonus'::text, 'admin_award'::text, 'code_challenge_completion'::text, 'code_challenge_perfect'::text, 'code_challenge_first_solve'::text])))`
-- Check `xp_transactions_source_id_shape`: `CHECK (((source_id IS NULL) OR CASE WHEN (source = 'login_bonus'::text) THEN (source_id ~ '^[0-9]{1,6}$'::text) ELSE (source_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'::text) END))`
 - Check `xp_transactions_source_ref_kind`: `CHECK ((((source_day IS NULL) OR (source = 'login_bonus'::text)) AND ((source_uuid IS NULL) OR (source <> 'login_bonus'::text)) AND ((source_day >= 0) AND (source_day <= 999999))))`
 - Index `xp_transactions_user_recent_idx`: `CREATE INDEX xp_transactions_user_recent_idx ON learning.xp_transactions USING btree (user_id, created_at DESC)`
 - Index `xp_transactions_user_source_day_key`: `CREATE UNIQUE INDEX xp_transactions_user_source_day_key ON learning.xp_transactions USING btree (user_id, source, source_day)`
 - Index `xp_transactions_user_source_uuid_key`: `CREATE UNIQUE INDEX xp_transactions_user_source_uuid_key ON learning.xp_transactions USING btree (user_id, source, source_uuid)`
-- Trigger `xp_transactions_levels`: `CREATE TRIGGER xp_transactions_levels BEFORE INSERT ON learning.xp_transactions FOR EACH ROW EXECUTE FUNCTION xp_transactions_levels()`
-- Trigger `xp_transactions_source_ref`: `CREATE TRIGGER xp_transactions_source_ref BEFORE INSERT ON learning.xp_transactions FOR EACH ROW EXECUTE FUNCTION xp_transactions_source_ref()`
 
 ## xp_transactions_v (view)
 

@@ -1055,8 +1055,7 @@ pub async fn find_assistant_reply(
 /// The work an analysis or remediation is about.
 ///
 /// Both kinds are `submissions` rows and are stored in `submission_id`; a read tells a file hand-in by
-/// its task (`submission_is_file_hand_in`). The `file_submission_attempt_id` column stays empty until
-/// its contract (pending-contracts.tsv).
+/// its task (`submission_is_file_hand_in`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AiSubject {
     Submission(SubmissionId),
