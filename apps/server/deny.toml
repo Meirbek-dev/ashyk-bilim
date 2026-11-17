@@ -9,6 +9,10 @@ ignore = [
   # through pdf-extract, which reads submitted PDFs for AI pre-grading inside catch_unwind on a blocking
   # thread (domain files/text.rs); drop pdf-extract or move to a fontations-based lopdf to clear it.
   { id = "RUSTSEC-2026-0192", reason = "ttf-parser via pdf-extract; see the comment above" },
+  # Unmaintained (chronotope/chrono#1768), no known vulnerability, no maintained release: both reach us only
+  # through object_store (S3 storage client). Clear them when object_store moves to jiff or time.
+  { id = "RUSTSEC-2026-0543", reason = "chrono via object_store; see the comment above" },
+  { id = "RUSTSEC-2026-0542", reason = "humantime via object_store; see the comment above" },
 ]
 
 [licenses]
