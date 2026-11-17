@@ -974,11 +974,9 @@ Queue, in order:
      contract release stopped writing `creator_id` (the release before it wrote it on insert); the second contract
      `20261116075656_drop_creator_ids` dropped `courses` / `collections.creator_id` and the `*_creator_row`
      triggers.
-   - `gamification_completions` beside the XP journal: not done, it needs a decision. The two do not hold the same
+   - `gamification_completions` beside the XP journal: kept, by decision (2026-11-18). The two do not hold the same
      fact: a completion is counted even when the daily cap refused its XP (UX-170), so the journal has no row for
-     it, and a capped completion's XP is still paid if it is completed again later. One copy means either a
-     0-XP journal row for a capped completion (`amount > 0` relaxed; that XP is then never paid) or the counters
-     read from `completions` (which forget un-marked and left activities). Owner's call.
+     it, and a capped completion's XP is still paid if it is completed again later.
    - `source_id` as `uuid`: switched in `20261116075628_source_ids_as_uuids` (+ three typed unique keys):
      `xp_transactions.source_uuid` / `source_day` (the login bonus's day number) and
      `gamification_completions.source_uuid`; the API keeps its `source_id` string. `ai_work_embeddings.subject_id`
@@ -1003,7 +1001,7 @@ Queue, in order:
      The second contract `20261116075657_code_runs_status_contract` rewrote the old spelling to
      `code_run_status(status, verdict)`, narrowed the check to the five states and lets only a `done` run have a
      verdict; the server reads `status` directly. `20261116075658_drop_code_run_status` dropped the function.
-   - The language as its name: not done, bigger than it looks. Judge0's numeric id is the platform's language key
+   - The language as its name: not done here, bigger than it looks (queued as item 10, 2026-11-18). Judge0's numeric id is the platform's language key
      everywhere, not only in `code_runs`: item bodies (`languages`, `starter_code` / `reference_solutions` keyed by
      it), answers (`language`), frozen `assessment_versions` and `items_snapshot`, `AB__CODE__ALLOWED_LANGUAGE_IDS`,
      the API (`language_id`) and the web editor. A name in `code_runs` alone would be a second spelling; the switch
@@ -1049,8 +1047,7 @@ Queue, in order:
    fill business values (certificate names, a grade entry's points and number) move into the server, guards stay.
    - `access_mode` from the rows: not done, it needs a decision. "Restricted, nobody chosen" is a state teachers
      save on purpose (UX-057: the web asks first, every learner is locked out) and it has no access rows, so the
-     rows alone would read it as open to every learner. Deriving the mode means giving that state up (refusing an
-     empty list, the web's dialog goes) or keeping a marker, which is the column again. Owner's call.
+     rows alone would read it as open to every learner. Kept, by decision (2026-11-18): the column is that marker.
    - The rollups' teacher: switched, no migration. `daily_course_metrics.teacher_user_id` and
      `learner_risk_snapshots.teacher_user_id` held the course's creator and nothing read them; the rollup stops
      writing them (NULL), per-teacher numbers stay in `daily_teacher_metrics`. Its contract
@@ -1082,7 +1079,7 @@ Queue, in order:
      reads as new and fires `course_completed`, which pays the XP and counts the completion of a learner whose
      journal has none, such as a migrated one), and `maintenance:reconcile` loses its drift and fingerprint over
      the table. It waits for its own slice.
-   - Points as the record (n16): not done, bigger than one slice. What one release could carry is in already: the
+   - Points as the record (n16): not done here, bigger than one slice (queued as item 10, 2026-11-18). What one release could carry is in already: the
      server writes each entry's points (item 7). The rest moves every grade the platform stores and shows. The
      grader does not count the version's points: an item scores its `max_score` share of 100 (`item_points`, the
      property tests' "shares sum to 100"), and the breakdown's `score` / `max_score` that the API, the web's grading
@@ -1095,7 +1092,7 @@ Queue, in order:
      responses on it, or `submissions.final_score` and its entry disagree. Its own slice: points through the
      grader and the breakdown (the API's shares stay or become points, decided with it), the writers returning
      the recorded percentage, then the contract (a table rewrite).
-   - The policy split (n7): not done, bigger than one slice and not only a move. A version exists only from the
+   - The policy split (n7): not done here, bigger than one slice and not only a move (queued as item 10, 2026-11-18). A version exists only from the
      first hand-in (`assessment_versions::ensure` at submit), so a draft or not yet taken assessment has no version
      to hold its policy, and the studio edits the columns. The version's `policy` is a hand-in snapshot of nine
      fields with the learner's effective values (an override's due date and attempts), not the assessment's
@@ -1152,6 +1149,21 @@ Queue, in order:
        `source_sha256` / `stdin_sha256` went with item 6's contract).
      - Constraint and index names keep the old column names (a name nobody reads; renaming them is a lock per
        object).
+10. **After the queue** (owner decisions 2026-11-18), in this order, each a switch release and its contract:
+    - *Course completion*: `enrolments.completed_at`, backfilled from `course_progress.completed_at`, set once by
+      the projector (the completion signal: a past completion never pays again); the contract drops `course_progress`.
+      A completion stays when a course later gains a required activity, as today.
+    - *Code language by name*: short slugs (`python`, `cpp`, `java`, ...; the runner image fixes the version) replace
+      Judge0's ids everywhere; one data-fix rewrites stored and frozen bodies; the API's `language_id` becomes
+      `language`; `AB__CODE__ALLOWED_LANGUAGES` replaces `AB__CODE__ALLOWED_LANGUAGE_IDS` (the old name read for one
+      release, the production env changed by the agent).
+    - *Points as the record* (n16): the grader, the breakdown and AI drafts work in the version's points, the
+      percentage shown beside; the percentage is derived (two decimals, half away from zero). Old grades take the
+      shift of at most `0.5 / max_points`; `passed` is recomputed both ways, silently; certificates and XP stay.
+    - *Policy in versions* (n7): every save writes a version (drafts too); `assessments` keeps identity, status
+      and `current_version_id`; a draft's staleness reads a separate items hash. Old versions are rebuilt to the
+      new shape: the assessment's policy apart from `assessment_overrides`; a value no override explains is taken as
+      the assessment's policy at that time.
 
 ## 6. Auth
 

@@ -60,22 +60,3 @@ Agents stopped short of these on purpose; each changes much and fixes little at 
   and `ai_work_embeddings` are empty. Proposal: `ai_work_embeddings` gets its key with the file merge (REWRITE 5.6 n6), the
   rest stays.
 - 45, morphology by `courses.language`: nothing sets the language. It needs a field in the course form. Do you want one?
-
-## Q-2026-11-16-1: a capped completion and the XP journal (REWRITE 5.8 item 4)
-
-`gamification_completions` and `xp_transactions` look like one fact twice, but are not: a completion counts even
-when the daily XP cap refused its XP (UX-170), so the journal has no row for it, and that XP is still paid if the
-activity is completed again on another day. One copy needs one of:
-(a) a 0-XP journal row for a capped completion (the XP of that completion is then never paid), or
-(b) the counters read from `completions` (an un-marked or left activity then stops counting), or
-(c) keep both tables as they are (the queue item closes as "not a duplicate").
-Until answered, both tables stay.
-
-## Q-2026-11-16-2: a restricted assessment with nobody chosen (REWRITE 5.8 item 7)
-
-`assessments.access_mode` cannot simply be read from the access rows: teachers save "restricted, nobody chosen" on
-purpose (UX-057, web asks again and every learner loses access), and such an assessment has no access rows, so a
-mode derived from them would open it to everyone. One of:
-(a) drop that state: an empty list is refused and web stops offering it, then the mode is derived, or
-(b) keep `access_mode` as the marker it is (the queue item closes as "not derived").
-Until answered, the column stays.
