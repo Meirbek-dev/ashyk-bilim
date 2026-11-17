@@ -584,8 +584,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
 - **Staff per target**: `course_staff (course_id, user_id)` and `collection_staff (collection_id, user_id)`
   replaced `resource_authors` (one table, course XOR collection; dropped by `20261103040100`). The creator is the
   target's one `authorship = 'creator'` row (unique partial index; `course_creator()` / `collection_creator()`),
-  written with the course or collection; `creator_id` is neither written nor read and goes with the next contract
-  (REWRITE 5.8 item 4).
+  written with the course or collection; the `creator_id` columns are gone (`20261116075656`, REWRITE 5.8
+  item 4).
 - **A course update links activities by key** (`course_update_activities`, cascading from both sides), not by
   an unchecked uuid array.
 - **Audit IPs are `inet`** (`auth_audit_log.ip_address`): a forwarded value that is not an address is stored as
@@ -653,9 +653,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `status_id` is derived from it (`legacy_status_id`, Judge0's numbers the web maps); the stored
   Judge0 `status_id` / `judge0_token` are gone (contract `20261103020300`). A run has a status (`queued`,
   `running`, `done`, `failed`: never executed, `degraded`: runner unavailable) and, when done, a `verdict` (the
-  first failing test's, memory and output limits as `runtime_error`; `RunVerdict`). The server writes the
-  status; rows of the release before it spell the stored `code_runs.status` as the verdict (`internal_error` for a failed run) until
-  the next contract rewrites them, so `code_run_status(status, verdict)` reads the status (REWRITE 5.8 item 5).
+  first failing test's, memory and output limits as `runtime_error`; `RunVerdict`). The server writes and
+  reads the status; `20261116075657` rewrote the rows that spelled it as the verdict (`internal_error` for a failed
+  run), and `code_run_status(status, verdict)` stays a release for the previous server (REWRITE 5.8 item 5).
 
 ### SQLx usage
 

@@ -971,9 +971,9 @@ Queue, in order:
      (HEAD for the size and type) and is run in production; then readers move to the join and writers to the id.
    - The creator: switched in `20261116075624_creator_is_a_staff_row` (+ the two one-creator indexes). Readers take
      the `creator` staff row (`course_creator()`, `collection_creator()`); collections now write theirs. The 5.8
-     contract release stopped writing `creator_id` (the release before it wrote it on insert). Left: the next
-     contract dropping `creator_id` and the `*_creator_row` triggers (until then SQL that names only `creator_id`,
-     tests and psql, still gets the creator row).
+     contract release stopped writing `creator_id` (the release before it wrote it on insert); the second contract
+     `20261116075656_drop_creator_ids` dropped `courses` / `collections.creator_id` and the `*_creator_row`
+     triggers.
    - `gamification_completions` beside the XP journal: not done, it needs a decision. The two do not hold the same
      fact: a completion is counted even when the daily cap refused its XP (UX-170), so the journal has no row for
      it, and a capped completion's XP is still paid if it is completed again later. One copy means either a
@@ -1000,8 +1000,10 @@ Queue, in order:
      run). The API's `CodeRun` has `status` + `verdict`; a reference check's `status` is the verdict, else the run's
      status. The 5.8 contract release writes the run's state (`20261116075650_code_runs_status_states` lets the
      check take both spellings) and dropped `code_runs_verdict` (the switch release writes every verdict itself).
-     Left: the next contract rewriting the old spelling to `code_run_status(status, verdict)` and narrowing the
-     check to the five states, then `code_run_status()` a release after the server reads `status` directly.
+     The second contract `20261116075657_code_runs_status_contract` rewrote the old spelling to
+     `code_run_status(status, verdict)`, narrowed the check to the five states and lets only a `done` run have a
+     verdict; the server reads `status` directly. Left: dropping `code_run_status()`, which the release before
+     reads through (on the rewritten rows it returns `status`), in the next contract.
    - The language as its name: not done, bigger than it looks. Judge0's numeric id is the platform's language key
      everywhere, not only in `code_runs`: item bodies (`languages`, `starter_code` / `reference_solutions` keyed by
      it), answers (`language`), frozen `assessment_versions` and `items_snapshot`, `AB__CODE__ALLOWED_LANGUAGE_IDS`,
@@ -1074,8 +1076,13 @@ Queue, in order:
      progress sort, the archive preview, analytics, the certificate's eligibility and grade. The projector still
      writes `course_progress` for the previous release and reads it only to notice a completion (the hook pays
      once); `view_drift` compares the new columns too. Left (5.6 n8 step 5): a release that stops writing the table,
-     with the completion transition read from something else (the certificate or the analytics event), then the
-     contract dropping it and renaming the view.
+     with the completion transition read from something else, then the contract dropping it and renaming the
+     view. Not a small change: nothing else records every course completion. A certificate exists only for a
+     course with a template, no analytics event marks one, and `gamification_completions` holds only those the
+     hook counted, so the release needs a new completion record, backfilled from `course_progress.completed_at` (else every past completion
+     reads as new and fires `course_completed`, which pays the XP and counts the completion of a learner whose
+     journal has none, such as a migrated one), and `maintenance:reconcile` loses its drift and fingerprint over
+     the table. It waits for its own slice.
    - Points as the record (n16): not done, bigger than one slice. What one release could carry is in already: the
      server writes each entry's points (item 7). The rest moves every grade the platform stores and shows. The
      grader does not count the version's points: an item scores its `max_score` share of 100 (`item_points`, the
@@ -1134,7 +1141,7 @@ Queue, in order:
      with them), the fourteen `*_aliases` triggers and `renamed_columns()`; `activities_keep_assessment_type` fires
      on `kind` alone.
    - Skipped, with the reason:
-     - `courses` / `collections.creator_id`: item 4's next contract drops them (`course_staff` /
+     - `courses` / `collections.creator_id`: item 4's second contract dropped them (`course_staff` /
        `collection_staff` hold the creator); `file_submissions.lifecycle` / `creator_id` and `assessments.title` are
        gone already (review 3); `activity_progress.state` became `status` in item 5.
      - `daily_course_metrics` / `learner_risk_snapshots.teacher_user_id`: item 7's contract dropped them.
