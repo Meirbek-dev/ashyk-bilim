@@ -83,7 +83,7 @@ probe() {
   check ashyq_ro denied "SELECT overall_feedback FROM grading_entries"
   check ashyq_ro denied "SELECT memory_text FROM ai_student_memory"
   # Personal messages (docs/DIALOGS.md 7): who wrote to whom and when stays readable, never the text.
-  check ashyq_ro ok "SELECT id, conversation_id, user_id, status, created_at FROM messages"
+  check ashyq_ro ok "SELECT id, conversation_id, user_id, deleted_at, created_at FROM messages"
   check ashyq_ro denied "SELECT body FROM messages"
   check ashyq_ro denied "SELECT body_snapshot FROM message_reports"
   check ashyq_ro denied "SELECT reason FROM message_reports"
