@@ -238,7 +238,7 @@ test('B-CST-37 the certificate template is previewed as the server PDF', async (
     .locator(`iframe[title="${m.studio_certificate_preview_title({}, ru)}"]`)
     .or(page.getByRole('link', { name: m.ui_pdf_open({}, ru) }))
   const src = (await preview.getAttribute('src')) ?? (await preview.getAttribute('href'))
-  expect(src).toMatch(/^\/api\/v2\/certifications\/[^/]+\/preview\.pdf\?lang=ru$/)
+  expect(src).toMatch(/^\/api\/v2\/certificate-templates\/[^/]+\/preview\.pdf\?lang=ru$/)
   const pdf = await page.request.get(src ?? '')
   expect(pdf.status()).toBe(200)
   expect(pdf.headers()['content-type']).toBe('application/pdf')
