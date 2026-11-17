@@ -798,8 +798,8 @@ in the order it can be done, each step a forward migration on the current schema
       assessment_items, course_updates, ai_threads (authored text).
     Order: the AI tables with their AI work; the rest after the lane merges of review 3 settle (several of
     these tables change shape there: submissions/file tasks, resource_authors, progress).
-    Status: switched in 5.8 item 9 (renamed in place, the old name a compatibility column; what it skipped and
-    why is there). Left: the AI tables, and the contract dropping the old names.
+    Status: done in 5.8 item 9 (renamed in place; its contract dropped the old names; what it skipped and why
+    is there). Left: the AI tables.
 16. **Grading records** (schema review 2, items 1-10; ARCHITECTURE §8 has what landed: own code-run
     verdicts, score domains and numeric scores, snapshot and current-grade guarantees, assessment
     versions). Left, in order:
@@ -950,8 +950,9 @@ Queue, in order:
    no file hand-in); its contract `20261116062344_drop_file_pipeline` dropped the old tables and columns.
 2. **Settings** (5.6 n9): done as `20261116064418_platform_settings`. The gamification policy, the AI feature switches
    and the instant the deadline hand-in went live are columns of the `platforms` row (`daily_xp_limit`, `xp_rewards`,
-   `ai_features`, `deadline_auto_submit_since`); who switched a feature stays in `auth_audit_log`. Left: the contract
-   that drops `gamification_config`, `ai_feature_switches` and `feature_activations`.
+   `ai_features`, `deadline_auto_submit_since`); who switched a feature stays in `auth_audit_log`. Its contract
+   `20261116075647_drop_settings_tables` dropped `gamification_config`, `ai_feature_switches` and
+   `feature_activations`.
 3. **Formal checks go**: done as `20261116071046_drop_formal_checks` (43 `jsonb_typeof(x) = 'object'` and 3 `= 'array'` checks, 10 `_word`
    regex checks, the rule tests `jsonb_columns_state_their_shape` and `set_named_columns_are_constrained`). Checks that
    state a real shape stay.
@@ -961,17 +962,18 @@ Queue, in order:
    `collections` and in their staff table; `gamification_completions` beside the XP journal; `source_id` as
    `uuid`, and a key for `ai_work_embeddings.subject_id` once the merge gives it one target.
    - Derived columns: switched in `20261116072922_derived_columns` (readers compute them, `xp_transactions_v`;
-     insert triggers keep the stored copies for the previous release). Left: the contract dropping the columns
-     and triggers.
+     insert triggers kept the stored copies for the previous release). Their contract
+     `20261116075649_drop_derived_copies` dropped the columns and triggers.
    - `file_submission_files` copies of the upload: switched in `20261116074602_file_files_read_uploads` (reads
-     join `uploads`; a trigger fills the copies for the previous release). Left: their contract. The media
+     join `uploads`); the same contract (`20261116075649`) dropped the copies and their trigger. The media
      `*_key` columns wait: keys from before the upload table have no `uploads` row (their `*_upload_id` is NULL),
      so the join would lose those pictures. First an `ashyq admin` command that gives every such key its row
      (HEAD for the size and type) and is run in production; then readers move to the join and writers to the id.
    - The creator: switched in `20261116075624_creator_is_a_staff_row` (+ the two one-creator indexes). Readers take
-     the `creator` staff row (`course_creator()`, `collection_creator()`); collections now write theirs;
-     `creator_id` is still written on insert for the previous release. Left: a release that stops writing
-     `creator_id`, then the contract dropping it and the `*_creator_row` triggers.
+     the `creator` staff row (`course_creator()`, `collection_creator()`); collections now write theirs. The 5.8
+     contract release stopped writing `creator_id` (the release before it wrote it on insert). Left: the next
+     contract dropping `creator_id` and the `*_creator_row` triggers (until then SQL that names only `creator_id`,
+     tests and psql, still gets the creator row).
    - `gamification_completions` beside the XP journal: not done, it needs a decision. The two do not hold the same
      fact: a completion is counted even when the daily cap refused its XP (UX-170), so the journal has no row for
      it, and a capped completion's XP is still paid if it is completed again later. One copy means either a
@@ -979,25 +981,27 @@ Queue, in order:
      read from `completions` (which forget un-marked and left activities). Owner's call.
    - `source_id` as `uuid`: switched in `20261116075628_source_ids_as_uuids` (+ three typed unique keys):
      `xp_transactions.source_uuid` / `source_day` (the login bonus's day number) and
-     `gamification_completions.source_uuid`; the API keeps its `source_id` string; triggers keep the text copies
-     for the previous release. `ai_work_embeddings.subject_id` references `submissions` (ON DELETE CASCADE;
-     embeddings of no submission were deleted). Left: the contract dropping the text columns and triggers
-     (the completions' primary key becomes `(user_id, kind, source_uuid)`).
+     `gamification_completions.source_uuid`; the API keeps its `source_id` string. `ai_work_embeddings.subject_id`
+     references `submissions` (ON DELETE CASCADE; embeddings of no submission were deleted). The contract
+     (`20261116075649`) dropped the text columns and their triggers; `(user_id, kind, source_uuid)` is the
+     completions' primary key.
 5. **Statuses**: `activity_progress.state` becomes a status plus `passed`; `code_runs.status` splits into the
    run's state and its verdict, and the language is its name, not Judge0's number; one soft-delete idiom (a
    timestamp, the status derived).
    - Progress: switched in `20261116075632_activity_progress_status` (+ its index). `activity_progress.status` keeps
      the steps (`released` for a published grade, `graded` for one with no score) and `passed` the outcome (not true
      reads as failed); the API's `AgendaDeadline` has `status` + `passed`, the learner's outline keeps its
-     `passed` / `failed` work states. A trigger keeps the previous release's `state` equal both ways. Left: the
-     contract dropping `state`, its check and index, and `activity_progress_status`.
+     `passed` / `failed` work states. Its contract `20261116075653_drop_status_copies` dropped `state`, its check
+     and index, and `activity_progress_status`; `status` defaults to `not_started`.
    - Code runs: switched in `20261116075634_code_run_verdict`. `code_runs.verdict` holds how an executed run ended
      (`internal_error` only when tests ran); the run's status is `queued` / `running` / `done` / `failed` (never
-     executed: rejected, abandoned, not stored) / `degraded`, read through `code_run_status(status, verdict)` because
-     the stored `status` keeps the previous release's spelling (the verdict, `internal_error` for a failed run).
-     The API's `CodeRun` has `status` + `verdict`; a reference check's `status` is the verdict, else the run's
-     status. `code_runs_verdict` fills the verdict from the previous release's writes. Left: the contract that
-     rewrites `status` to the run's state, narrows its check and drops the trigger and the function.
+     executed: rejected, abandoned, not stored) / `degraded`, read through `code_run_status(status, verdict)`
+     because rows of the switch release spell the stored `status` as the verdict (`internal_error` for a failed
+     run). The API's `CodeRun` has `status` + `verdict`; a reference check's `status` is the verdict, else the run's
+     status. The 5.8 contract release writes the run's state (`20261116075650_code_runs_status_states` lets the
+     check take both spellings) and dropped `code_runs_verdict` (the switch release writes every verdict itself).
+     Left: the next contract rewriting the old spelling to `code_run_status(status, verdict)` and narrowing the
+     check to the five states, then `code_run_status()` a release after the server reads `status` directly.
    - The language as its name: not done, bigger than it looks. Judge0's numeric id is the platform's language key
      everywhere, not only in `code_runs`: item bodies (`languages`, `starter_code` / `reference_solutions` keyed by
      it), answers (`language`), frozen `assessment_versions` and `items_snapshot`, `AB__CODE__ALLOWED_LANGUAGE_IDS`,
@@ -1007,9 +1011,10 @@ Queue, in order:
      deletion twice (`status = 'deleted'` and `deleted_at`), `course_discussions` only as `status = 'deleted'` (a
      tombstone). Both read and write `deleted_at` now (the discussions' backfilled from the tombstone's
      `updated_at`); the API's `deleted` discussion status and a message's `deleted` are read from it, the
-     discussions' `status` keeps the moderation (`active`, `hidden`). Triggers keep the previous release's
-     `status = 'deleted'` equal both ways. Left: the contract dropping `messages.status` and both triggers, and
-     narrowing the discussions' status to `active` / `hidden` (keyset indexes on `deleted_at IS NULL`). Unchanged,
+     discussions' `status` keeps the moderation (`active`, `hidden`). The contract (`20261116075653`) dropped
+     `messages.status` and the two triggers that kept `status = 'deleted'` for the previous release, and narrowed
+     the discussions' status to `active` / `hidden` (a tombstone's `deleted` became `active`); their keyset indexes
+     are on `deleted_at IS NULL` (`20261116075651`, `20261116075652`). Unchanged,
      one idiom already: `courses` (`deleted_at`, `archived_at`), `users` (`deleted_at` is an anonymised erasure,
      `disabled_at`), `certifications` (`disabled_at`); and statuses that are workflow, not deletion: assessments'
      `archived` lifecycle (`archived_at` stays as history after unarchive), staff `inactive` membership,
@@ -1025,20 +1030,19 @@ Queue, in order:
      `assessment_items.estimated_seconds` and `daily_assessment_metrics.grading_latency_seconds_p50` / `_p90`
      (whole seconds, backfilled) are what the server reads and writes; the API keeps `grace_period_minutes`,
      `estimated_minutes` and `grading_latency_hours_*` (teachers enter minutes). `ai_runs.duration_ms` repeated
-     `completed_at - started_at`: readers compute it, the API keeps `duration_ms`. Triggers keep the previous
-     release's columns equal both ways (`ai_runs_duration` derives the old one). Left: the contract dropping
-     the minutes, hours and `duration_ms` columns, their checks and the four triggers. Unchanged:
+     `completed_at - started_at`: readers compute it, the API keeps `duration_ms`. Its contract
+     `20261116075654_drop_unit_and_hash_copies` dropped the minutes, hours and `duration_ms` columns, their checks
+     and the four triggers; `grace_period_seconds` defaults to 0 (inserts that name no grace period). Unchanged:
      `time_limit_seconds`, `submissions.duration_seconds`, `job_schedules.interval_seconds` are seconds already,
      `code_run_cases.time_seconds` is a measured fraction of a second, `late_penalty_max_days` counts the days a
      per-day penalty applies (the policy's unit, not a duration).
    - Hashes: switched in `20261116075638_hashes_as_bytes` (+ the unique key on the version's sha256). Each hex
-     sha256 got a `bytea` of 32 bytes the server reads and writes: `code_runs.code_sha256` / `input_sha256` (the
-     names `source_sha256` / `stdin_sha256` are the hex copies), `idempotency_keys.request_sha256`,
-     `ai_work_embeddings.text_sha256`, `ai_course_analyses.content_sha256` (the API keeps the hex
-     `content_hash`). `assessment_versions.content_hash` was md5: `content_sha256` is the sha256 of the pair, a
-     generated column the server finds versions by. `assessment_imports.file_sha256` was `bytea` already and got
-     its length check. Triggers keep the previous release's hex copies equal both ways. Left: the contract
-     dropping the hex columns, their format checks and triggers, the md5 key and `assessment_content_hash()`.
+     sha256 got a `bytea` of 32 bytes the server reads and writes: `code_runs.code_sha256` / `input_sha256`,
+     `idempotency_keys.request_sha256`, `ai_work_embeddings.text_sha256`, `ai_course_analyses.content_sha256` (the
+     API keeps the hex `content_hash`). `assessment_versions.content_hash` was md5: `content_sha256` is the sha256
+     of the pair, a generated column the server finds versions by. `assessment_imports.file_sha256` was `bytea`
+     already and got its length check. The contract (`20261116075654`) dropped the hex columns, their format checks
+     and triggers, the md5 key and `assessment_content_hash()`.
 7. **Smaller**: `assessments.access_mode` derived from the access rows; `teacher_user_id` out of the rollups
    (a course has several staff); the last login moves from `gamification_profiles` to `users`; triggers that
    fill business values (certificate names, a grade entry's points and number) move into the server, guards stay.
@@ -1048,21 +1052,20 @@ Queue, in order:
      empty list, the web's dialog goes) or keeping a marker, which is the column again. Owner's call.
    - The rollups' teacher: switched, no migration. `daily_course_metrics.teacher_user_id` and
      `learner_risk_snapshots.teacher_user_id` held the course's creator and nothing read them; the rollup stops
-     writing them (NULL), per-teacher numbers stay in `daily_teacher_metrics`. Left: the contract dropping both
-     columns.
+     writing them (NULL), per-teacher numbers stay in `daily_teacher_metrics`. Its contract
+     `20261116075655_drop_smaller_copies` dropped both columns.
    - The last login: switched in `20261116075640_users_last_login`. `users.last_login_at` (backfilled) is set by
      every sign-in and the login streak counts from it; the streak stays in `gamification_profiles`, the API keeps
-     the profile's `last_login_at_unix`. Triggers on both tables keep the previous release's
-     `gamification_profiles.last_login_at` equal both ways. Left: the contract dropping that column and
-     `users_last_login` / `gamification_profiles_last_login`.
+     the profile's `last_login_at_unix`. The contract (`20261116075655`) dropped
+     `gamification_profiles.last_login_at` and the triggers that kept it equal (`users_last_login`,
+     `gamification_profiles_last_login`).
    - Business values: switched in `20261116075641_grade_entry_values`. The server writes a grade entry's
      `revision` (the highest plus one, under the submission's row lock) and its `max_points` / `raw_points` /
-     `final_points` (`points_of_percent` of the stored percentage and the attempt's version);
-     `grading_entries_number` and `grading_entries_points` now fill only what an insert leaves unset (the previous
-     release's). The certificate names moved earlier: an issue writes them (the insert trigger went in
-     `20261107999950`) and the renaming writers re-issue (3ba18e76); `users_reissue_certificates` waits for its
-     contract. The guards stay. Left: the contract dropping the two grade triggers and their functions, together
-     with `users_reissue_certificates`.
+     `final_points` (`points_of_percent` of the stored percentage and the attempt's version); the contract
+     (`20261116075655`) dropped `grading_entries_number` and `grading_entries_points`, which filled the release
+     before. The certificate names moved earlier: an issue writes them (the insert trigger went in
+     `20261107999950`) and the renaming writers re-issue (3ba18e76). The guards stay. Left:
+     `users_reissue_certificates`, which waits for its own row (pending-contracts.tsv).
 8. **Planned work, pulled forward**: readers move to `course_progress_v` now, without the four weekly zero-drift
    runs (5.6 n8 step 4); points as the record (n16) and the policy split of `assessments` (n7) follow the merge.
    - Progress: switched in `20261116075642_course_progress_readers`. The view gained what readers still took from
@@ -1107,8 +1110,8 @@ Queue, in order:
      `template_id` / `template`; the web's routes are unchanged. Kept: the template config's stored keys
      (`certification_name`, `certification_type`) and the idempotency scope `certification` (stored values; a
      rename would rewrite rows for nothing), and `discussion_reactions` / `post_uploads.discussion_id` (a key named
-     after the table; its rename would be a second compatibility column for no reader). Left: the contract
-     dropping the three views.
+     after the table; its rename would be a second compatibility column for no reader). Their contract
+     `20261116075648_drop_old_names` dropped the three views.
    - Columns: switched in `20261116075644_rename_columns`, with `20261116075645` / `20261116075646` (the previous
      release's upsert keys). Each column is renamed in place (constraints, indexes and keys follow it) and its old
      name comes back as a plain column, backfilled; `renamed_columns()`, as each table's `<table>_aliases` trigger,
@@ -1127,21 +1130,20 @@ Queue, in order:
      `created_by`, an activity's, block's, bulk action's, intervention's and saved view's `kind`, an audit event's
      `performed_by`, a saved view's `user_id`, an intervention's `created_by`); the
      endpoint `POST /assessments/{id}/lifecycle`, the `Lifecycle` type and the stored `lifecycle-transition` audit
-     event keep the concept's name. Left: the contract dropping the old columns (their twin keys with them), the
-     fourteen `*_aliases` triggers and `renamed_columns()`; it first recreates `activities_keep_assessment_type`
-     as `BEFORE UPDATE OF kind`.
+     event keep the concept's name. The same contract (`20261116075648`) dropped the old columns (their twin keys
+     with them), the fourteen `*_aliases` triggers and `renamed_columns()`; `activities_keep_assessment_type` fires
+     on `kind` alone.
    - Skipped, with the reason:
-     - `courses` / `collections.creator_id`: item 4's contract drops them (`course_staff` / `resource_authors`
-       hold the creator); `file_submissions.lifecycle` / `creator_id` and `assessments.title` are gone already
-       (review 3); `activity_progress.state` became `status` in item 5.
-     - `daily_course_metrics` / `learner_risk_snapshots.teacher_user_id`: item 7's contract drops them.
+     - `courses` / `collections.creator_id`: item 4's next contract drops them (`course_staff` /
+       `collection_staff` hold the creator); `file_submissions.lifecycle` / `creator_id` and `assessments.title` are
+       gone already (review 3); `activity_progress.state` became `status` in item 5.
+     - `daily_course_metrics` / `learner_risk_snapshots.teacher_user_id`: item 7's contract dropped them.
      - The AI tables (`student_user_id`, `ai_grade_drafts.learner_id`, `ai_grade_corrections.teacher_id`,
        `ai_approvals.action_type`, `ai_events.event_type`, `source_type`): n15 puts them with the AI work, and
        `source_type` is also the vocabulary of the model's citation schema and of the stored citations, which a
        column rename alone would split.
-     - `code_runs.code_sha256` / `input_sha256` keep their names: the plain names `source_sha256` /
-       `stdin_sha256` hold the hex copies item 6 keeps for the previous release, so taking them needs that
-       contract first, and the current names say what is hashed.
+     - `code_runs.code_sha256` / `input_sha256` keep their names: they say what is hashed (the hex copies
+       `source_sha256` / `stdin_sha256` went with item 6's contract).
      - Constraint and index names keep the old column names (a name nobody reads; renaming them is a lock per
        object).
 
