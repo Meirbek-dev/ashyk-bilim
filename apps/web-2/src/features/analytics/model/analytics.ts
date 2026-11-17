@@ -24,11 +24,11 @@ export function trendOf(card: Pick<MetricCard, 'direction' | 'is_higher_better'>
 export const pageCount = (total: number, pageSize: number): number => Math.max(1, Math.ceil(total / pageSize))
 
 /**
- * A saved view's tab and filters. `query` and `view_type` are free-form in the contract (SPEC: waits for the server),
+ * A saved view's tab and filters. `query` and `kind` are free-form in the contract (SPEC: waits for the server),
  * so both are read back through the URL schemas: anything unknown becomes the default.
  */
-export function viewTarget(view: Pick<SavedView, 'view_type' | 'query'>): { tab: Tab; filters: Filters } {
-  const tab = v.is(v.picklist(TABS), view.view_type) ? view.view_type : 'overview'
+export function viewTarget(view: Pick<SavedView, 'kind' | 'query'>): { tab: Tab; filters: Filters } {
+  const tab = v.is(v.picklist(TABS), view.kind) ? view.kind : 'overview'
   return { tab, filters: v.parse(filtersSchema, view.query) }
 }
 

@@ -696,10 +696,10 @@ export const vChapterId = v.pipe(v.string(), v.uuid());
 export const vActivityDropoffRow = v.object({
     activity_id: vActivityId,
     activity_name: v.string(),
-    activity_type: v.string(),
     chapter_id: vChapterId,
     current_step_completions: v.pipe(v.number(), v.integer()),
     dropoff_pct: v.number(),
+    kind: v.string(),
     previous_step_completions: v.pipe(v.number(), v.integer())
 });
 
@@ -980,15 +980,15 @@ export const vCourseDeletionPreview = v.object({
 export const vCourseId = v.pipe(v.string(), v.uuid());
 
 export const vActivity = v.object({
-    activity_sub_type: vActivitySubType,
-    activity_type: vActivityType,
     allowed_actions: v.array(vActivityAction),
     chapter_id: vChapterId,
     course_id: vCourseId,
     id: vActivityId,
+    kind: vActivityType,
     name: v.string(),
     position: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     published: v.boolean(),
+    sub_kind: vActivitySubType,
     version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
 
@@ -1018,9 +1018,9 @@ export const vChapter = v.object({
 export const vContinueLearning = v.object({
     activity_id: vActivityId,
     activity_name: v.string(),
-    activity_type: vActivityType,
     course_id: vCourseId,
     course_name: v.string(),
+    kind: vActivityType,
     progress_pct: v.nullable(v.number()),
     started: v.boolean(),
     thumbnail_key: v.nullable(v.string())
@@ -1116,14 +1116,14 @@ export const vCoursesSection = v.strictObject({
 });
 
 export const vCreateActivityRequest = v.strictObject({
-    activity_sub_type: vActivitySubType,
-    activity_type: vActivityType,
-    name: v.pipe(v.string(), v.minLength(1), v.maxLength(500))
+    kind: vActivityType,
+    name: v.pipe(v.string(), v.minLength(1), v.maxLength(500)),
+    sub_kind: vActivitySubType
 });
 
 export const vCreateBlockRequest = v.strictObject({
-    block_type: vBlockType,
     file_name: v.optional(v.pipe(v.string(), v.maxLength(500))),
+    kind: vBlockType,
     upload_id: v.pipe(v.string(), v.uuid())
 });
 
@@ -2192,9 +2192,9 @@ export const vFeedbackParams = v.object({
  */
 export const vLessonHit = v.object({
     activity_id: vActivityId,
-    activity_type: vActivityType,
     course_id: vCourseId,
     course_name: v.string(),
+    kind: vActivityType,
     title: v.string()
 });
 
@@ -2457,9 +2457,9 @@ export const vMessageAction = v.picklist(['delete', 'report']);
 export const vMessageContext = v.object({
     activity_id: v.nullable(vActivityId),
     activity_name: v.nullable(v.string()),
-    activity_type: v.nullable(vActivityType),
     course_id: vCourseId,
-    course_name: v.nullable(v.string())
+    course_name: v.nullable(v.string()),
+    kind: v.nullable(vActivityType)
 });
 
 export const vMessageId = v.pipe(v.string(), v.uuid());
@@ -3573,9 +3573,9 @@ export const vSavedQuery = v.object({});
  * Save (or overwrite by name + type) a dashboard view.
  */
 export const vSaveViewRequest = v.strictObject({
+    kind: v.optional(v.pipe(v.string(), v.maxLength(50))),
     name: v.pipe(v.string(), v.maxLength(200)),
-    query: v.optional(vSavedQuery),
-    view_type: v.optional(v.pipe(v.string(), v.maxLength(50)))
+    query: v.optional(vSavedQuery)
 });
 
 /**
@@ -3702,7 +3702,6 @@ export const vAnomalyItem = v.object({
 export const vContentBottleneckRow = v.object({
     activity_id: vActivityId,
     activity_name: v.string(),
-    activity_type: v.string(),
     avg_time_seconds: v.nullable(v.number()),
     completed_learners: v.pipe(v.number(), v.integer()),
     completion_rate: v.nullable(v.number()),
@@ -3710,6 +3709,7 @@ export const vContentBottleneckRow = v.object({
     course_name: v.string(),
     exit_count: v.pipe(v.number(), v.integer()),
     failed_assessments: v.pipe(v.number(), v.integer()),
+    kind: v.string(),
     note: v.string(),
     severity: vSeverity,
     signal: vContentBottleneckSignal,
@@ -4353,13 +4353,13 @@ export const vAgendaCourseUpdate = v.object({
 export const vAgendaDeadline = v.object({
     activity_id: vActivityId,
     activity_name: v.string(),
-    activity_type: v.string(),
     assessment_id: v.nullable(vAssessmentId),
     course_id: vCourseId,
     course_name: v.string(),
     cutoff_at_unix: v.nullable(vUnixTime),
     due_at_unix: vUnixTime,
     file_submission_id: v.nullable(vFileSubmissionId),
+    kind: v.string(),
     passed: v.nullable(v.boolean()),
     status: vActivityProgressStatus
 });
@@ -4420,10 +4420,10 @@ export const vAttachmentDownload = v.object({
 
 export const vBlock = v.object({
     activity_id: vActivityId,
-    block_type: v.string(),
     content: vBlockContent,
     created_at_unix: vUnixTime,
-    id: vBlockId
+    id: vBlockId,
+    kind: v.string()
 });
 
 export const vCertificateTemplate = v.object({
@@ -4734,9 +4734,9 @@ export const vAttemptState = v.object({
     draft_id: v.nullable(vSubmissionId),
     effective: vEffectivePolicy,
     is_teacher_preview: v.boolean(),
-    lifecycle: vLifecycle,
     opens_at_unix: v.nullable(vUnixTime),
-    revision_requested: v.boolean()
+    revision_requested: v.boolean(),
+    status: vLifecycle
 });
 
 export const vLifecycleRequest = v.strictObject({
@@ -4792,7 +4792,7 @@ export const vPolicy = v.strictObject({
 export const vCreateAssessmentRequest = v.strictObject({
     chapter_id: vChapterId,
     description: v.optional(v.pipe(v.string(), v.maxLength(20000))),
-    grading_type: v.optional(vGradingType),
+    grading_kind: v.optional(vGradingType),
     kind: vAssessmentKind,
     policy: v.optional(vPolicy),
     title: v.pipe(v.string(), v.minLength(1), v.maxLength(500)),
@@ -5021,18 +5021,18 @@ export const vUnreadCount = v.object({
 });
 
 export const vUpdateActivityRequest = v.strictObject({
-    activity_sub_type: v.optional(vActivitySubType),
-    activity_type: v.optional(vActivityType),
     content: v.optional(vActivityContent),
     details: v.optional(vActivityDetails),
+    kind: v.optional(vActivityType),
     name: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(500))),
     published: v.optional(v.boolean()),
-    settings: v.optional(vActivitySettings)
+    settings: v.optional(vActivitySettings),
+    sub_kind: v.optional(vActivitySubType)
 });
 
 export const vUpdateAssessmentRequest = v.strictObject({
     description: v.optional(v.pipe(v.string(), v.maxLength(20000))),
-    grading_type: v.optional(vGradingType),
+    grading_kind: v.optional(vGradingType),
     title: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(500))),
     weight: v.optional(v.pipe(v.number(), v.minValue(0), v.maxValue(100)))
 });
@@ -5235,17 +5235,17 @@ export const vAssessment = v.object({
     content_version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     course_id: vCourseId,
     created_at_unix: vUnixTime,
-    creator_id: v.nullable(vUserId),
+    created_by: v.nullable(vUserId),
     description: v.string(),
     edit_lock: v.nullable(vEditLock),
-    grading_type: vGradingType,
+    grading_kind: vGradingType,
     id: vAssessmentId,
     kind: vAssessmentKind,
-    lifecycle: vLifecycle,
     policy: vPolicy,
     policy_version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     published_at_unix: v.nullable(vUnixTime),
     scheduled_at_unix: v.nullable(vUnixTime),
+    status: vLifecycle,
     title: v.string(),
     updated_at_unix: vUnixTime,
     version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
@@ -5284,22 +5284,22 @@ export const vAssessmentLearnerRow = v.object({
 });
 
 export const vAuditEvent = v.object({
-    actor_id: v.nullable(vUserId),
     actor_name: v.nullable(v.string()),
     created_at_unix: vUnixTime,
     event: vAuditEventKind,
     id: v.pipe(v.string(), v.uuid()),
-    payload: vAuditPayload
+    payload: vAuditPayload,
+    performed_by: v.nullable(vUserId)
 });
 
 export const vBulkAction = v.object({
-    action_type: vBulkActionType,
     affected_count: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     assessment_id: vAssessmentId,
     completed_at_unix: v.nullable(vUnixTime),
     created_at_unix: vUnixTime,
     error_log: v.string(),
     id: vBulkActionId,
+    kind: vBulkActionType,
     params: vBulkActionParams,
     performed_by: v.nullable(vUserId),
     status: vBulkActionStatus,
@@ -5555,7 +5555,7 @@ export const vCourseUpdatePage = v.object({
  */
 export const vCreateInterventionRequest = v.strictObject({
     course_id: vCourseId,
-    intervention_type: vInterventionType,
+    kind: vInterventionType,
     notes: v.optional(v.pipe(v.string(), v.maxLength(4000))),
     outcome: v.optional(v.pipe(v.string(), v.maxLength(2000))),
     outcome_code: v.optional(vInterventionOutcome),
@@ -5773,8 +5773,9 @@ export const vIntervention = v.object({
     allowed_actions: v.array(vInterventionAction),
     course_id: vCourseId,
     created_at_unix: vUnixTime,
+    created_by: vUserId,
     id: vInterventionId,
-    intervention_type: vInterventionType,
+    kind: vInterventionType,
     notes: v.nullable(v.string()),
     outcome: v.nullable(v.string()),
     outcome_code: v.nullable(vInterventionOutcome),
@@ -5783,7 +5784,6 @@ export const vIntervention = v.object({
     risk_score_after: v.nullable(v.number()),
     risk_score_before: v.nullable(v.number()),
     status: vInterventionStatus,
-    teacher_user_id: vUserId,
     updated_at_unix: vUnixTime,
     user_id: vUserId,
     version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
@@ -6239,11 +6239,11 @@ export const vAdminRunDetail = v.object({
 export const vSavedView = v.object({
     created_at_unix: vUnixTime,
     id: vSavedViewId,
+    kind: v.string(),
     name: v.string(),
     query: vSavedQuery,
-    teacher_user_id: vUserId,
     updated_at_unix: vUnixTime,
-    view_type: v.string()
+    user_id: vUserId
 });
 
 export const vSavedViewList = v.object({
@@ -6489,7 +6489,6 @@ export const vFileSubmission = v.object({
     id: vFileSubmissionId,
     instructions: v.string(),
     late_policy: vLatePolicy,
-    lifecycle: vFileSubmissionLifecycle,
     max_attempts: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     max_file_size_mb: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     max_files: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
@@ -6497,6 +6496,7 @@ export const vFileSubmission = v.object({
     published_at_unix: v.nullable(vUnixTime),
     rubric: vFileRubric,
     settings: vFileSubmissionSettings,
+    status: vFileSubmissionLifecycle,
     title: v.string(),
     updated_at_unix: vUnixTime,
     version: v.optional(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
@@ -6674,7 +6674,7 @@ export const vUsergroup = v.object({
     allowed_actions: v.array(vUsergroupAction),
     can_write: v.boolean(),
     created_at_unix: vUnixTime,
-    creator_id: v.nullable(vUserId),
+    created_by: v.nullable(vUserId),
     description: v.string(),
     id: vUsergroupId,
     member_count: v.pipe(v.number(), v.integer()),
@@ -6954,7 +6954,6 @@ export const vWorkState = v.picklist([
 ]);
 
 export const vActivityState = v.object({
-    activity_type: vActivityType,
     allowed_actions: v.array(v.string()),
     available: v.boolean(),
     blocked_reason: v.nullable(vBlockedReason),
@@ -6962,6 +6961,7 @@ export const vActivityState = v.object({
     due_at_unix: v.nullable(vUnixTime),
     id: vActivityId,
     is_late: v.boolean(),
+    kind: vActivityType,
     opens_at_unix: v.nullable(vUnixTime),
     passed: v.nullable(v.boolean()),
     required: v.boolean(),

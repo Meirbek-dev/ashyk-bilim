@@ -89,7 +89,7 @@ pub async fn insert_file_submission<'e>(
                INSERT INTO assessments
                    (activity_id, course_id, due_at, allow_late, late_policy_kind,
                     late_penalty_percent_per_day, late_penalty_max_days, late_cutoff_at,
-                    max_attempts, grade_release_mode, creator_id,
+                    max_attempts, grade_release_mode, created_by,
                     grading_mode, completion_rule, passing_score, required)
                VALUES ($1, $2, to_timestamp($8), $9, $10, $11::float8, $12, to_timestamp($13),
                        $14, $15, $17, 'manual', 'graded', 60, true)
@@ -136,10 +136,10 @@ pub async fn get_file_submission<'e>(
                   a.late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", a.late_penalty_max_days,
                   (extract(epoch FROM a.late_cutoff_at))::bigint AS "late_cutoff_at?",
                   a.max_attempts, a.grade_release_mode AS "grade_release_mode: GradeReleaseMode",
-                  a.lifecycle AS "lifecycle: FileSubmissionLifecycle",
+                  a.status AS "lifecycle: FileSubmissionLifecycle",
                   (extract(epoch FROM a.published_at))::bigint AS "published_at?",
                   (extract(epoch FROM a.archived_at))::bigint AS "archived_at?",
-                  f.settings, a.creator_id AS "creator_id: UserId", f.version,
+                  f.settings, a.created_by AS "creator_id: UserId", f.version,
                   (extract(epoch FROM f.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM f.updated_at))::bigint AS "updated_at!"
            FROM file_submissions f JOIN assessments a ON a.id = f.id WHERE f.id = $1"#,
@@ -164,10 +164,10 @@ pub async fn get_file_submission_by_activity<'e>(
                   a.late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", a.late_penalty_max_days,
                   (extract(epoch FROM a.late_cutoff_at))::bigint AS "late_cutoff_at?",
                   a.max_attempts, a.grade_release_mode AS "grade_release_mode: GradeReleaseMode",
-                  a.lifecycle AS "lifecycle: FileSubmissionLifecycle",
+                  a.status AS "lifecycle: FileSubmissionLifecycle",
                   (extract(epoch FROM a.published_at))::bigint AS "published_at?",
                   (extract(epoch FROM a.archived_at))::bigint AS "archived_at?",
-                  f.settings, a.creator_id AS "creator_id: UserId", f.version,
+                  f.settings, a.created_by AS "creator_id: UserId", f.version,
                   (extract(epoch FROM f.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM f.updated_at))::bigint AS "updated_at!"
            FROM file_submissions f JOIN assessments a ON a.id = f.id WHERE f.activity_id = $1"#,
@@ -266,7 +266,7 @@ pub async fn set_file_submission_lifecycle<'e>(
         r#"WITH old AS (SELECT version FROM assessments WHERE id = $1),
            a AS (
                UPDATE assessments SET
-                   lifecycle = $2,
+                   status = $2,
                    published_at = CASE WHEN $2 = 'published' THEN COALESCE(published_at, now())
                                        ELSE published_at END,
                    archived_at = CASE WHEN $2 = 'archived' THEN now() ELSE NULL END

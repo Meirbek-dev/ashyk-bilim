@@ -143,7 +143,7 @@ async function loadSeed(baseUrl: string): Promise<Seed> {
     return data.enrolled || data.permissions.denial_reason === 'staff_preview'
   }
   const activityOf = (kind: 'quiz' | 'code_challenge' | 'file_submission') => {
-    const found = activities.find(item => item.activity_type === kind)
+    const found = activities.find(item => item.kind === kind)
     if (!found) throw new Error(`the seed course has no ${kind}`)
     return found.id
   }

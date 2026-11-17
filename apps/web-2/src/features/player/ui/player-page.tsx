@@ -52,7 +52,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
       <PlayerNotFound />
     )
   const { entry, prev, next } = found
-  const lesson = activityKind(entry.activity_type) === 'lesson'
+  const lesson = activityKind(entry.kind) === 'lesson'
   const primary = playerAction(state, entry)
   const continuesTo = primary?.kind === 'continue' ? primary.activityId : null
   const open = openView(state)
@@ -73,7 +73,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
       contentsSheet={{ open: contentsOpen, onOpenChange: setContentsOpen }}
       aside={aside}
       // A document or a video uses the column's full width (a PDF in 65ch opened at 38 %, B-PLY-10).
-      wide={(entry.activity_type === 'document' || entry.activity_type === 'video') && !entry.blocked_reason}
+      wide={(entry.kind === 'document' || entry.kind === 'video') && !entry.blocked_reason}
     >
       <article className="flex flex-col gap-gutter @3xl:gap-10">
         {/* Staff see the lesson as learners do, without a mark (B-PLY-01); the work pages say it the same way. Both
@@ -81,7 +81,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
         {lesson && staffPreview(state) ? <PreviewNote lesson /> : null}
         {courseArchived(state) ? <ArchivedNote /> : null}
         {open ? <OpenViewNote courseId={courseId} /> : null}
-        <ActivityHeader key={`${entry.id}:header`} type={entry.activity_type} title={entry.title} />
+        <ActivityHeader key={`${entry.id}:header`} type={entry.kind} title={entry.title} />
         {entry.blocked_reason ? (
           <EmptyState>
             {entry.opens_at_unix

@@ -25,7 +25,7 @@ const state = (patch: Partial<AttemptState>): AttemptState => ({
     waive_late_penalty: false,
   },
   is_teacher_preview: false,
-  lifecycle: 'published',
+  status: 'published',
   opens_at_unix: null,
   revision_requested: false,
   ...patch,

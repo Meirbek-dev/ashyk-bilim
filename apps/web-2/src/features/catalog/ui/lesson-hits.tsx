@@ -12,7 +12,7 @@ export function LessonHits({ lessons }: { lessons: readonly LessonHit[] }) {
   return (
     <DataList variant="rows" items={lessons} getKey={lesson => lesson.activity_id}>
       {lesson => {
-        const type = activityTypeMeta[lesson.activity_type]
+        const type = activityTypeMeta[lesson.kind]
         const Icon = type.icon
         return (
           <div className="flex items-start gap-3">

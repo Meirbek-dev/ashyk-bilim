@@ -44,7 +44,7 @@ test("the other person's message: its context link, «Пожаловаться»
     course_name: 'Algebra',
     activity_id: null,
     activity_name: null,
-    activity_type: null,
+    kind: null,
   }
   const screen = await render([message(1, PEER, { context, allowed_actions: ['report'] })])
   await expect.element(screen.getByText(m.conversations_new_divider())).toBeVisible()

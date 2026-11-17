@@ -271,13 +271,7 @@ pub async fn create_activity(
         move || async move {
             let activity = state
                 .curriculum
-                .add_activity(
-                    &actor,
-                    id,
-                    &request.name,
-                    &request.activity_type,
-                    &request.activity_sub_type,
-                )
+                .add_activity(&actor, id, &request.name, &request.kind, &request.sub_kind)
                 .await?;
             // Created behind the curriculum write gate: editable.
             Ok((StatusCode::CREATED, Activity::new(activity, true, false)))
@@ -311,7 +305,7 @@ pub async fn get_activity(
 }
 
 /// Partial update: name, publish state, content/details/settings, or the
-/// type pair (both `activity_type` and `activity_sub_type` together).
+/// type pair (both `kind` and `sub_kind` together).
 ///
 /// A `content` write (the editor autosave) requires `If-Match: "<version>"`;
 /// other fields honour it when sent. A stale version is 412
@@ -355,11 +349,11 @@ pub async fn update_activity(
         }])
         .into());
     }
-    if request.activity_type.is_some() != request.activity_sub_type.is_some() {
+    if request.kind.is_some() != request.sub_kind.is_some() {
         return Err(Error::validation(vec![FieldError {
-            field: "activity_type".into(),
+            field: "kind".into(),
             code: "incomplete-pair".into(),
-            message: "activity_type and activity_sub_type change together".into(),
+            message: "kind and sub_kind change together".into(),
         }])
         .into());
     }
@@ -369,10 +363,7 @@ pub async fn update_activity(
         let changes = ActivityChanges {
             name: request.name.as_deref(),
             published: request.published,
-            type_pair: request
-                .activity_type
-                .as_deref()
-                .zip(request.activity_sub_type.as_deref()),
+            type_pair: request.kind.as_deref().zip(request.sub_kind.as_deref()),
             content: request.content.as_ref(),
             details: request.details.as_ref(),
             settings: request.settings.as_ref(),
@@ -506,7 +497,7 @@ pub async fn create_block(
                 .add_block(
                     &actor,
                     id,
-                    &request.block_type,
+                    &request.kind,
                     request.upload_id,
                     request.file_name.as_deref(),
                 )

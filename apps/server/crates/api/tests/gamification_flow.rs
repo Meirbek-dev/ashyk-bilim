@@ -57,8 +57,8 @@ async fn course_with_lessons(app: &TestApp, teacher: &MintedSession) -> (String,
             .post_as(
                 teacher,
                 &format!("/api/v2/chapters/{chapter_id}/activities"),
-                &serde_json::json!({ "name": name, "activity_type": "dynamic",
-                                      "activity_sub_type": "dynamic_page" }),
+                &serde_json::json!({ "name": name, "kind": "dynamic",
+                                      "sub_kind": "dynamic_page" }),
             )
             .await;
         let id = activity.json()["id"].as_str().unwrap().to_owned();

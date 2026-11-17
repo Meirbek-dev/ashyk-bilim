@@ -215,12 +215,12 @@ pub struct Assessment {
     pub kind: AssessmentKind,
     pub title: String,
     pub description: String,
-    pub lifecycle: Lifecycle,
+    pub status: Lifecycle,
     pub scheduled_at_unix: Option<i64>,
     pub published_at_unix: Option<i64>,
     pub archived_at_unix: Option<i64>,
     pub weight: f64,
-    pub grading_type: GradingType,
+    pub grading_kind: GradingType,
     pub content_version: i32,
     pub policy_version: i32,
     /// Optimistic lock over the whole assessment (any change bumps it):
@@ -228,7 +228,7 @@ pub struct Assessment {
     pub version: i32,
     pub policy: Policy,
     pub access_mode: AccessMode,
-    pub creator_id: Option<UserId>,
+    pub created_by: Option<UserId>,
     /// What the caller may do to this assessment now.
     pub allowed_actions: Vec<service::AssessmentAction>,
     /// Why details, policy and items are read-only now (`null`: editable).
@@ -276,18 +276,18 @@ impl Assessment {
             kind: a.kind,
             title: a.title,
             description: a.description,
-            lifecycle: a.lifecycle,
+            status: a.lifecycle,
             scheduled_at_unix: a.scheduled_at,
             published_at_unix: a.published_at,
             archived_at_unix: a.archived_at,
             weight: a.weight,
-            grading_type: a.grading_type,
+            grading_kind: a.grading_kind,
             content_version: a.content_version,
             policy_version: a.policy_version,
             version: a.version,
             policy,
             access_mode: a.access_mode,
-            creator_id: a.creator_id,
+            created_by: a.creator_id,
             created_at_unix: a.created_at,
             updated_at_unix: a.updated_at,
         }
@@ -424,7 +424,7 @@ pub struct CreateAssessmentRequest {
     #[schema(minimum = 0.0, maximum = 100.0)]
     pub weight: Option<f64>,
     #[garde(skip)]
-    pub grading_type: Option<GradingType>,
+    pub grading_kind: Option<GradingType>,
     /// Omit to start from the kind's preset.
     #[garde(dive)]
     pub policy: Option<Policy>,
@@ -444,7 +444,7 @@ pub struct UpdateAssessmentRequest {
     #[schema(minimum = 0.0, maximum = 100.0)]
     pub weight: Option<f64>,
     #[garde(skip)]
-    pub grading_type: Option<GradingType>,
+    pub grading_kind: Option<GradingType>,
 }
 
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
@@ -508,7 +508,7 @@ pub struct ReorderItemsRequest {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AuditEvent {
     pub id: uuid::Uuid,
-    pub actor_id: Option<UserId>,
+    pub performed_by: Option<UserId>,
     /// The actor's display name (`null`: the scheduler, or a deleted user).
     pub actor_name: Option<String>,
     #[schema(value_type = ab_core::assessments::AuditEventKind)]
@@ -522,7 +522,7 @@ impl From<service::AuditEvent> for AuditEvent {
     fn from(e: service::AuditEvent) -> Self {
         Self {
             id: e.id,
-            actor_id: e.actor_id,
+            performed_by: e.actor_id,
             actor_name: e.actor_name,
             event: e.event,
             payload: e.payload,
@@ -723,7 +723,7 @@ pub struct EffectivePolicy {
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AttemptState {
-    pub lifecycle: Lifecycle,
+    pub status: Lifecycle,
     pub opens_at_unix: Option<i64>,
     pub is_teacher_preview: bool,
     pub effective: EffectivePolicy,
@@ -748,7 +748,7 @@ impl From<ab_domain::assessments::access::AttemptState> for AttemptState {
             draft_id: s.draft_id,
             attempts_used: s.attempts_used,
             attempts_remaining: s.attempts_remaining,
-            lifecycle: s.lifecycle,
+            status: s.lifecycle,
             opens_at_unix: s.opens_at,
             is_teacher_preview: s.is_teacher_preview,
             effective: EffectivePolicy {

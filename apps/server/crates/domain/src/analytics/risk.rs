@@ -447,7 +447,7 @@ pub async fn enrich_risk_rows(
         if let Some(list) = by_pair.get(&key) {
             row.intervention_count = i64::try_from(list.len()).unwrap_or(i64::MAX);
             if let Some(latest) = list.first() {
-                row.last_intervention_type = Some(latest.intervention_type.clone());
+                row.last_intervention_type = Some(latest.kind.clone());
                 row.last_intervention_at_unix = Some(latest.created_at);
                 row.last_intervention_outcome.clone_from(&latest.outcome);
             }

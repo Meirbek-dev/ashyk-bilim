@@ -114,7 +114,7 @@ pub struct CreateInterventionRequest {
     /// `meeting_scheduled` or `learner_recovered`.
     #[garde(length(min = 1, max = 50))]
     #[schema(value_type = ab_domain::analytics::InterventionType)]
-    pub intervention_type: String,
+    pub kind: String,
     /// `planned`, `completed` or `resolved`.
     #[serde(default = "default_status")]
     #[schema(value_type = ab_domain::analytics::InterventionStatus)]
@@ -152,7 +152,7 @@ pub struct SaveViewRequest {
     #[serde(default = "default_view_type")]
     #[garde(length(max = 50))]
     #[schema(max_length = 50)]
-    pub view_type: String,
+    pub kind: String,
     /// The saved filter state (an object of at most 16 KiB serialized, UX-148).
     #[serde(default = "empty_object")]
     #[garde(custom(json_object_16k))]

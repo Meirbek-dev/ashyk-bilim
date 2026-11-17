@@ -43,7 +43,7 @@ const test = base.extend<{ completeActivity: (course: MadeCourse, extra: Extra) 
       const { data: created } = await createActivity({
         client: api,
         path: { chapter_id: chapterId },
-        body: { name, activity_type: type, activity_sub_type: subType },
+        body: { name, kind: type, sub_kind: subType },
         headers,
         throwOnError: true,
       })

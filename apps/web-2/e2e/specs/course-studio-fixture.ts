@@ -61,8 +61,8 @@ export const test = base.extend<{ studio: Studio }>({
             path: { chapter_id: chapter.data.id },
             body: {
               name: page.name ?? `Страница ${at + 1}.${index + 1}`,
-              activity_type: 'dynamic',
-              activity_sub_type: 'dynamic_page',
+              kind: 'dynamic',
+              sub_kind: 'dynamic_page',
             },
             headers,
             throwOnError: true,

@@ -43,7 +43,7 @@ export const getActivity = <ThrowOnError extends boolean = false>(options: Optio
 
 /**
  * Partial update: name, publish state, content/details/settings, or the
- * type pair (both `activity_type` and `activity_sub_type` together).
+ * type pair (both `kind` and `sub_kind` together).
  *
  * A `content` write (the editor autosave) requires `If-Match: "<version>"`;
  * other fields honour it when sent. A stale version is 412

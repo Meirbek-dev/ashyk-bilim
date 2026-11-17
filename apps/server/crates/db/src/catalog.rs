@@ -560,7 +560,7 @@ pub async fn course_archive_preview(
               WHERE s.course_id = $1 AND NOT s.preview AND s.status = 'draft')
                  AS "open_attempts!",
              (SELECT count(*) FROM assessments a
-              WHERE a.course_id = $1 AND a.lifecycle = 'scheduled')
+              WHERE a.course_id = $1 AND a.status = 'scheduled')
                  AS "scheduled_assessments!""#,
         id.0
     )
@@ -596,7 +596,7 @@ pub async fn course_learner_work<'e>(
 ) -> Result<CourseLearnerWork> {
     let row = sqlx::query!(
         r#"WITH work AS (
-               SELECT u.user_id, a.activity_type <> 'file_submission' AS quiz FROM activities a
+               SELECT u.user_id, a.kind <> 'file_submission' AS quiz FROM activities a
                JOIN assessments s ON s.activity_id = a.id
                JOIN submissions u ON u.assessment_id = s.id
                WHERE a.course_id = $1 AND NOT u.preview
@@ -938,7 +938,7 @@ pub async fn sync_block_claims(
                WHERE a.id = $1
                UNION
                SELECT b.id::text FROM blocks b JOIN activities a ON a.id = b.activity_id
-               WHERE a.id = $1 AND a.activity_type <> 'dynamic'
+               WHERE a.id = $1 AND a.kind <> 'dynamic'
                  AND b.content->>'file_key' = a.content->>'filename'
            )
            UPDATE blocks b SET claimed = NOT b.claimed
@@ -1003,7 +1003,7 @@ pub async fn insert_chapter(
     creator_id: UserId,
 ) -> Result<ChapterId> {
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO chapters (course_id, name, description, creator_id, position)
+        r#"INSERT INTO chapters (course_id, name, description, created_by, position)
            VALUES ($1, $2, $3, $4,
                    (SELECT COALESCE(MAX(position), 0) + 1 FROM chapters WHERE course_id = $1))
            RETURNING id"#,
@@ -1198,8 +1198,8 @@ pub struct ActivityRow {
     pub chapter_id: ChapterId,
     pub course_id: CourseId,
     pub name: String,
-    pub activity_type: String,
-    pub activity_sub_type: String,
+    pub kind: String,
+    pub sub_kind: String,
     pub published: bool,
     pub position: i32,
     /// Bumped by every content/details/settings write; the editor's `If-Match`.
@@ -1211,21 +1211,21 @@ pub async fn insert_activity<'e>(
     chapter_id: ChapterId,
     course_id: CourseId,
     name: &str,
-    activity_type: &str,
-    activity_sub_type: &str,
+    kind: &str,
+    sub_kind: &str,
     creator_id: UserId,
 ) -> Result<ActivityId> {
     let id = sqlx::query_scalar!(
         r#"INSERT INTO activities
-               (chapter_id, course_id, name, activity_type, activity_sub_type, creator_id, position)
+               (chapter_id, course_id, name, kind, sub_kind, created_by, position)
            VALUES ($1, $2, $3, $4, $5, $6,
                    (SELECT COALESCE(MAX(position), 0) + 1 FROM activities WHERE chapter_id = $1))
            RETURNING id"#,
         chapter_id.0,
         course_id.0,
         name,
-        activity_type,
-        activity_sub_type,
+        kind,
+        sub_kind,
         creator_id.0
     )
     .fetch_one(db)
@@ -1241,7 +1241,7 @@ pub async fn get_activity<'e>(
         ActivityRow,
         r#"SELECT id AS "id: ActivityId", chapter_id AS "chapter_id: ChapterId",
                   course_id AS "course_id: CourseId", name,
-                  activity_type, activity_sub_type, published, position, version
+                  kind, sub_kind, published, position, version
            FROM activities WHERE id = $1"#,
         id.0
     )
@@ -1258,7 +1258,7 @@ pub async fn list_activities<'e>(
         ActivityRow,
         r#"SELECT id AS "id: ActivityId", chapter_id AS "chapter_id: ChapterId",
                   course_id AS "course_id: CourseId", name,
-                  activity_type, activity_sub_type, published, position, version
+                  kind, sub_kind, published, position, version
            FROM activities WHERE course_id = $1
            ORDER BY chapter_id, position, id"#,
         course_id.0
@@ -1287,7 +1287,7 @@ pub async fn list_chapter_activity_ids(
 pub struct ActivityWrite<'a> {
     pub name: Option<&'a str>,
     pub published: Option<bool>,
-    /// `(activity_type, activity_sub_type)` - they change together; the DB CHECK enforces the pair.
+    /// `(kind, sub_kind)` - they change together; the DB CHECK enforces the pair.
     pub type_pair: Option<(&'a str, &'a str)>,
     pub content: Option<&'a serde_json::Value>,
     pub details: Option<&'a serde_json::Value>,
@@ -1309,7 +1309,7 @@ pub async fn update_activity(
     id: ActivityId,
     write: ActivityWrite<'_>,
 ) -> Result<bool> {
-    let (activity_type, activity_sub_type) = write.type_pair.unzip();
+    let (kind, sub_kind) = write.type_pair.unzip();
     let updated = sqlx::query!(
         r#"UPDATE activities SET
                name = COALESCE($2, name),
@@ -1317,15 +1317,15 @@ pub async fn update_activity(
                content = COALESCE($4, content),
                details = COALESCE($5, details),
                settings = COALESCE($6, settings),
-               activity_type = COALESCE($8, activity_type),
-               activity_sub_type = COALESCE($9, activity_sub_type),
+               kind = COALESCE($8, kind),
+               sub_kind = COALESCE($9, sub_kind),
                version = version + 1
            WHERE id = $1 AND ($7::int IS NULL OR version = $7)
-             AND (name, published, content, details, settings, activity_type, activity_sub_type)
+             AND (name, published, content, details, settings, kind, sub_kind)
                  IS DISTINCT FROM
                  (COALESCE($2, name), COALESCE($3, published), COALESCE($4, content),
                   COALESCE($5, details), COALESCE($6, settings),
-                  COALESCE($8, activity_type), COALESCE($9, activity_sub_type))"#,
+                  COALESCE($8, kind), COALESCE($9, sub_kind))"#,
         id.0,
         write.name,
         write.published,
@@ -1333,8 +1333,8 @@ pub async fn update_activity(
         write.details,
         write.settings,
         write.expected_version,
-        activity_type,
-        activity_sub_type
+        kind,
+        sub_kind
     )
     .execute(&mut *conn)
     .await?;
@@ -1443,7 +1443,7 @@ pub async fn renumber_activities(
 pub struct BlockRow {
     pub id: BlockId,
     pub activity_id: ActivityId,
-    pub block_type: String,
+    pub kind: String,
     pub content: serde_json::Value,
     pub created_at: i64,
 }
@@ -1451,15 +1451,15 @@ pub struct BlockRow {
 pub async fn insert_block<'e>(
     db: impl sqlx::PgExecutor<'e>,
     activity_id: ActivityId,
-    block_type: &str,
+    kind: &str,
     content: &serde_json::Value,
 ) -> Result<BlockId> {
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO blocks (activity_id, block_type, content)
+        r#"INSERT INTO blocks (activity_id, kind, content)
            VALUES ($1, $2, $3)
            RETURNING id"#,
         activity_id.0,
-        block_type,
+        kind,
         content
     )
     .fetch_one(db)
@@ -1471,7 +1471,7 @@ pub async fn get_block(pool: &PgPool, id: BlockId) -> Result<Option<BlockRow>> {
     let row = sqlx::query_as!(
         BlockRow,
         r#"SELECT id AS "id: BlockId", activity_id AS "activity_id: ActivityId",
-                  block_type, content,
+                  kind, content,
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM blocks WHERE id = $1"#,
         id.0
@@ -1485,7 +1485,7 @@ pub async fn list_blocks(pool: &PgPool, activity_id: ActivityId) -> Result<Vec<B
     let rows = sqlx::query_as!(
         BlockRow,
         r#"SELECT id AS "id: BlockId", activity_id AS "activity_id: ActivityId",
-                  block_type, content,
+                  kind, content,
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
            FROM blocks WHERE activity_id = $1 ORDER BY id"#,
         activity_id.0
@@ -1518,7 +1518,7 @@ pub async fn insert_course_update(
     author_id: UserId,
 ) -> Result<CourseUpdateId> {
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO course_updates (course_id, title, content, author_id)
+        r#"INSERT INTO course_updates (course_id, title, content, created_by)
            VALUES ($1, $2, $3, $4)
            RETURNING id"#,
         course_id.0,
@@ -1539,9 +1539,9 @@ pub async fn get_course_update(
         CourseUpdateRow,
         r#"SELECT cu.id AS "id!: CourseUpdateId", cu.course_id AS "course_id!: CourseId",
                   cu.title AS "title!", cu.content AS "content!", cu.version AS "version!",
-                  cu.author_id AS "author_id?: UserId",
+                  cu.created_by AS "author_id?: UserId",
                   -- Scalar lookup, not a LEFT JOIN: join nullability follows the plan (.sqlx drift).
-                  (SELECT u.display_name FROM users u WHERE u.id = cu.author_id) AS "author_name?",
+                  (SELECT u.display_name FROM users u WHERE u.id = cu.created_by) AS "author_name?",
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
            FROM course_updates cu WHERE cu.id = $1"#,
@@ -1561,9 +1561,9 @@ pub async fn list_course_updates(
         CourseUpdateRow,
         r#"SELECT cu.id AS "id!: CourseUpdateId", cu.course_id AS "course_id!: CourseId",
                   cu.title AS "title!", cu.content AS "content!", cu.version AS "version!",
-                  cu.author_id AS "author_id?: UserId",
+                  cu.created_by AS "author_id?: UserId",
                   -- Scalar lookup, not a LEFT JOIN: join nullability follows the plan (.sqlx drift).
-                  (SELECT u.display_name FROM users u WHERE u.id = cu.author_id) AS "author_name?",
+                  (SELECT u.display_name FROM users u WHERE u.id = cu.created_by) AS "author_name?",
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM cu.updated_at))::bigint AS "updated_at!"
            FROM course_updates cu WHERE cu.course_id = $1

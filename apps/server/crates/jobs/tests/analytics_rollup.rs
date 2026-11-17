@@ -14,7 +14,7 @@ async fn count(pool: &PgPool, sql: &'static str) -> i64 {
 async fn rollup_prunes_rows_past_the_retention_windows(pool: PgPool) {
     // Events: 401 days is out, 399 days stays.
     sqlx::query(
-        "INSERT INTO analytics_events (event_type, occurred_at)
+        "INSERT INTO analytics_events (event, occurred_at)
          VALUES ('login', now() - interval '401 days'), ('login', now() - interval '399 days')",
     )
     .execute(&pool)

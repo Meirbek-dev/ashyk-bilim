@@ -278,12 +278,10 @@ async fn erasure_and_retention_let_the_files_go(pool: PgPool) {
 }
 
 async fn interventions(pool: &PgPool) -> Vec<(Uuid, String, Value)> {
-    sqlx::query_as(
-        "SELECT user_id, intervention_type, payload FROM teacher_interventions ORDER BY user_id",
-    )
-    .fetch_all(pool)
-    .await
-    .unwrap()
+    sqlx::query_as("SELECT user_id, kind, payload FROM teacher_interventions ORDER BY user_id")
+        .fetch_all(pool)
+        .await
+        .unwrap()
 }
 
 #[ab_testdb::test]

@@ -11,7 +11,7 @@ type PublishingSectionProps = { courseId: string; activityId: string; title: str
 
 /** "Publishing": the state, the server's readiness and the lifecycle actions the caller may take. */
 export function PublishingSection({ courseId, activityId, title, assessment }: PublishingSectionProps) {
-  const badge = lifecycleBadges[assessment.lifecycle]
+  const badge = lifecycleBadges[assessment.status]
   return (
     <section aria-labelledby="publishing-title" className="flex max-w-prose flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -20,7 +20,7 @@ export function PublishingSection({ courseId, activityId, title, assessment }: P
           <h2 id="publishing-title" className="text-xl font-semibold">
             {m.assessments_nav_publishing()}
           </h2>
-          <span className={`text-sm ${assessment.lifecycle === 'draft' ? 'text-warning' : 'text-muted-foreground'}`}>
+          <span className={`text-sm ${assessment.status === 'draft' ? 'text-warning' : 'text-muted-foreground'}`}>
             {badge.label()}
           </span>
           {assessment.scheduled_at_unix ? (

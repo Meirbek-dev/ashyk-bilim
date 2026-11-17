@@ -1,16 +1,16 @@
-constraint activities activities_activity_sub_type_not_null NOT NULL activity_sub_type
-constraint activities activities_activity_type_not_null NOT NULL activity_type
+constraint activities activities_activity_sub_type_not_null NOT NULL sub_kind
+constraint activities activities_activity_type_not_null NOT NULL kind
 constraint activities activities_chapter_id_fkey FOREIGN KEY (chapter_id, course_id) REFERENCES chapters(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE
 constraint activities activities_chapter_id_not_null NOT NULL chapter_id
 constraint activities activities_content_not_null NOT NULL content
 constraint activities activities_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint activities activities_course_id_not_null NOT NULL course_id
 constraint activities activities_created_at_not_null NOT NULL created_at
-constraint activities activities_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL
+constraint activities activities_creator_id_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 constraint activities activities_details_not_null NOT NULL details
 constraint activities activities_id_course_key UNIQUE (id, course_id)
 constraint activities activities_id_not_null NOT NULL id
-constraint activities activities_kind_fkey FOREIGN KEY (activity_type, activity_sub_type) REFERENCES activity_kinds(kind, sub_kind) ON UPDATE CASCADE
+constraint activities activities_kind_fkey FOREIGN KEY (kind, sub_kind) REFERENCES activity_kinds(kind, sub_kind) ON UPDATE CASCADE
 constraint activities activities_name_check CHECK ((char_length(name) <= 500))
 constraint activities activities_name_not_null NOT NULL name
 constraint activities activities_pkey PRIMARY KEY (id)
@@ -302,8 +302,8 @@ constraint ai_work_embeddings ai_work_embeddings_text_hash_not_null NOT NULL tex
 constraint ai_work_embeddings ai_work_embeddings_text_sha256_check CHECK ((octet_length(text_sha256) = 32))
 constraint ai_work_embeddings ai_work_embeddings_text_sha256_not_null NOT NULL text_sha256
 constraint analytics_events analytics_events_created_at_not_null NOT NULL created_at
-constraint analytics_events analytics_events_event_type_check CHECK ((event_type = ANY (ARRAY['submission.submitted'::text, 'submission.graded'::text, 'submission.published'::text, 'submission.returned'::text, 'activity.completed'::text, 'discussion.posted'::text, 'login'::text])))
-constraint analytics_events analytics_events_event_type_not_null NOT NULL event_type
+constraint analytics_events analytics_events_event_type_check CHECK ((event = ANY (ARRAY['submission.submitted'::text, 'submission.graded'::text, 'submission.published'::text, 'submission.returned'::text, 'activity.completed'::text, 'discussion.posted'::text, 'login'::text])))
+constraint analytics_events analytics_events_event_type_not_null NOT NULL event
 constraint analytics_events analytics_events_id_not_null NOT NULL id
 constraint analytics_events analytics_events_occurred_at_not_null NOT NULL occurred_at
 constraint analytics_events analytics_events_payload_not_null NOT NULL payload
@@ -314,12 +314,12 @@ constraint analytics_saved_views analytics_saved_views_name_check CHECK (((char_
 constraint analytics_saved_views analytics_saved_views_name_not_null NOT NULL name
 constraint analytics_saved_views analytics_saved_views_pkey PRIMARY KEY (id)
 constraint analytics_saved_views analytics_saved_views_query_not_null NOT NULL query
-constraint analytics_saved_views analytics_saved_views_teacher_user_id_fkey FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE CASCADE
-constraint analytics_saved_views analytics_saved_views_teacher_user_id_not_null NOT NULL teacher_user_id
-constraint analytics_saved_views analytics_saved_views_teacher_user_id_view_type_name_key UNIQUE (teacher_user_id, view_type, name)
+constraint analytics_saved_views analytics_saved_views_teacher_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+constraint analytics_saved_views analytics_saved_views_teacher_user_id_not_null NOT NULL user_id
+constraint analytics_saved_views analytics_saved_views_teacher_user_id_view_type_name_key UNIQUE (user_id, kind, name)
 constraint analytics_saved_views analytics_saved_views_updated_at_not_null NOT NULL updated_at
-constraint analytics_saved_views analytics_saved_views_view_type_check CHECK (((char_length(view_type) >= 1) AND (char_length(view_type) <= 50)))
-constraint analytics_saved_views analytics_saved_views_view_type_not_null NOT NULL view_type
+constraint analytics_saved_views analytics_saved_views_view_type_check CHECK (((char_length(kind) >= 1) AND (char_length(kind) <= 50)))
+constraint analytics_saved_views analytics_saved_views_view_type_not_null NOT NULL kind
 constraint assessment_access_usergroups assessment_access_usergroups_assessment_id_fkey FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE
 constraint assessment_access_usergroups assessment_access_usergroups_assessment_id_not_null NOT NULL assessment_id
 constraint assessment_access_usergroups assessment_access_usergroups_created_at_not_null NOT NULL created_at
@@ -332,7 +332,7 @@ constraint assessment_access_users assessment_access_users_created_at_not_null N
 constraint assessment_access_users assessment_access_users_pkey PRIMARY KEY (assessment_id, user_id)
 constraint assessment_access_users assessment_access_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint assessment_access_users assessment_access_users_user_id_not_null NOT NULL user_id
-constraint assessment_audit_events assessment_audit_events_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL
+constraint assessment_audit_events assessment_audit_events_actor_id_fkey FOREIGN KEY (performed_by) REFERENCES users(id) ON DELETE SET NULL
 constraint assessment_audit_events assessment_audit_events_assessment_id_not_null NOT NULL assessment_id
 constraint assessment_audit_events assessment_audit_events_created_at_not_null NOT NULL created_at
 constraint assessment_audit_events assessment_audit_events_event_not_null NOT NULL event
@@ -435,7 +435,7 @@ constraint assessments assessments_activity_id_fkey FOREIGN KEY (activity_id, co
 constraint assessments assessments_activity_id_key UNIQUE (activity_id)
 constraint assessments assessments_activity_id_not_null NOT NULL activity_id
 constraint assessments assessments_allow_late_not_null NOT NULL allow_late
-constraint assessments assessments_archived_at_check CHECK (((lifecycle <> 'archived'::text) OR (archived_at IS NOT NULL)))
+constraint assessments assessments_archived_at_check CHECK (((status <> 'archived'::text) OR (archived_at IS NOT NULL)))
 constraint assessments assessments_attempt_penalty_percent_not_null NOT NULL attempt_penalty_percent
 constraint assessments assessments_completion_rule_check CHECK ((completion_rule = ANY (ARRAY['viewed'::text, 'submitted'::text, 'graded'::text, 'passed'::text, 'teacher_verified'::text])))
 constraint assessments assessments_completion_rule_not_null NOT NULL completion_rule
@@ -444,7 +444,7 @@ constraint assessments assessments_copy_paste_protection_not_null NOT NULL copy_
 constraint assessments assessments_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint assessments assessments_course_id_not_null NOT NULL course_id
 constraint assessments assessments_created_at_not_null NOT NULL created_at
-constraint assessments assessments_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL
+constraint assessments assessments_creator_id_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 constraint assessments assessments_description_check CHECK ((char_length(description) <= 20000))
 constraint assessments assessments_description_not_null NOT NULL description
 constraint assessments assessments_devtools_detection_not_null NOT NULL devtools_detection
@@ -460,16 +460,16 @@ constraint assessments assessments_grade_release_mode_check CHECK ((grade_releas
 constraint assessments assessments_grade_release_mode_not_null NOT NULL grade_release_mode
 constraint assessments assessments_grading_mode_check CHECK ((grading_mode = ANY (ARRAY['auto'::text, 'manual'::text, 'auto_then_manual'::text])))
 constraint assessments assessments_grading_mode_not_null NOT NULL grading_mode
-constraint assessments assessments_grading_type_check CHECK ((grading_type = ANY (ARRAY['numeric'::text, 'percentage'::text])))
-constraint assessments assessments_grading_type_not_null NOT NULL grading_type
+constraint assessments assessments_grading_type_check CHECK ((grading_kind = ANY (ARRAY['numeric'::text, 'percentage'::text])))
+constraint assessments assessments_grading_type_not_null NOT NULL grading_kind
 constraint assessments assessments_id_course_key UNIQUE (id, course_id)
 constraint assessments assessments_id_not_null NOT NULL id
 constraint assessments assessments_late_penalty_max_days_check CHECK (((late_penalty_max_days IS NULL) OR (late_penalty_max_days >= 1)))
 constraint assessments assessments_late_policy_kind_check CHECK ((late_policy_kind = ANY (ARRAY['none'::text, 'penalty'::text, 'cutoff'::text])))
 constraint assessments assessments_late_policy_kind_not_null NOT NULL late_policy_kind
 constraint assessments assessments_late_policy_shape CHECK ((((late_policy_kind = 'none'::text) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'penalty'::text) AND (late_penalty_percent_per_day IS NOT NULL) AND (late_penalty_max_days IS NOT NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'cutoff'::text) AND (late_cutoff_at IS NOT NULL) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL))))
-constraint assessments assessments_lifecycle_check CHECK ((lifecycle = ANY (ARRAY['draft'::text, 'scheduled'::text, 'published'::text, 'archived'::text])))
-constraint assessments assessments_lifecycle_not_null NOT NULL lifecycle
+constraint assessments assessments_lifecycle_check CHECK ((status = ANY (ARRAY['draft'::text, 'scheduled'::text, 'published'::text, 'archived'::text])))
+constraint assessments assessments_lifecycle_not_null NOT NULL status
 constraint assessments assessments_max_attempts_cap CHECK (((max_attempts IS NULL) OR (max_attempts <= 50)))
 constraint assessments assessments_max_attempts_check CHECK (((max_attempts IS NULL) OR (max_attempts >= 1)))
 constraint assessments assessments_negative_marking_percent_not_null NOT NULL negative_marking_percent
@@ -477,14 +477,14 @@ constraint assessments assessments_partial_credit_not_null NOT NULL partial_cred
 constraint assessments assessments_passing_score_not_null NOT NULL passing_score
 constraint assessments assessments_pkey PRIMARY KEY (id)
 constraint assessments assessments_policy_version_not_null NOT NULL policy_version
-constraint assessments assessments_published_at_check CHECK (((lifecycle <> 'published'::text) OR (published_at IS NOT NULL)))
+constraint assessments assessments_published_at_check CHECK (((status <> 'published'::text) OR (published_at IS NOT NULL)))
 constraint assessments assessments_randomize_options_not_null NOT NULL randomize_options
 constraint assessments assessments_randomize_questions_not_null NOT NULL randomize_questions
 constraint assessments assessments_required_not_null NOT NULL required
 constraint assessments assessments_review_visibility_check CHECK ((review_visibility = ANY (ARRAY['none'::text, 'score_only'::text, 'full'::text])))
 constraint assessments assessments_review_visibility_not_null NOT NULL review_visibility
 constraint assessments assessments_right_click_disabled_not_null NOT NULL right_click_disabled
-constraint assessments assessments_scheduled_needs_time CHECK (((lifecycle <> 'scheduled'::text) OR (scheduled_at IS NOT NULL)))
+constraint assessments assessments_scheduled_needs_time CHECK (((status <> 'scheduled'::text) OR (scheduled_at IS NOT NULL)))
 constraint assessments assessments_tab_switch_detection_not_null NOT NULL tab_switch_detection
 constraint assessments assessments_time_limit_seconds_check CHECK (((time_limit_seconds IS NULL) OR (time_limit_seconds >= 1)))
 constraint assessments assessments_updated_at_not_null NOT NULL updated_at
@@ -505,8 +505,8 @@ constraint block_uploads block_uploads_upload_id_fkey FOREIGN KEY (upload_id) RE
 constraint block_uploads block_uploads_upload_id_not_null NOT NULL upload_id
 constraint blocks blocks_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE
 constraint blocks blocks_activity_id_not_null NOT NULL activity_id
-constraint blocks blocks_block_type_check CHECK ((block_type = ANY (ARRAY['video'::text, 'pdf'::text, 'image'::text, 'custom'::text])))
-constraint blocks blocks_block_type_not_null NOT NULL block_type
+constraint blocks blocks_block_type_check CHECK ((kind = ANY (ARRAY['video'::text, 'pdf'::text, 'image'::text, 'custom'::text])))
+constraint blocks blocks_block_type_not_null NOT NULL kind
 constraint blocks blocks_claimed_not_null NOT NULL claimed
 constraint blocks blocks_content_not_null NOT NULL content
 constraint blocks blocks_created_at_not_null NOT NULL created_at
@@ -514,8 +514,8 @@ constraint blocks blocks_id_not_null NOT NULL id
 constraint blocks blocks_legacy_uuid_key UNIQUE (legacy_uuid)
 constraint blocks blocks_pkey PRIMARY KEY (id)
 constraint blocks blocks_updated_at_not_null NOT NULL updated_at
-constraint bulk_actions bulk_actions_action_type_check CHECK ((action_type = ANY (ARRAY['extend_deadline'::text, 'release_grades'::text, 'return_all'::text, 'override_score'::text, 'batch_grade'::text])))
-constraint bulk_actions bulk_actions_action_type_not_null NOT NULL action_type
+constraint bulk_actions bulk_actions_action_type_check CHECK ((kind = ANY (ARRAY['extend_deadline'::text, 'release_grades'::text, 'return_all'::text, 'override_score'::text, 'batch_grade'::text])))
+constraint bulk_actions bulk_actions_action_type_not_null NOT NULL kind
 constraint bulk_actions bulk_actions_affected_count_not_null NOT NULL affected_count
 constraint bulk_actions bulk_actions_assessment_id_not_null NOT NULL assessment_id
 constraint bulk_actions bulk_actions_created_at_not_null NOT NULL created_at
@@ -552,7 +552,7 @@ constraint certificates certificate_users_verify_code_not_null NOT NULL verify_c
 constraint chapters chapters_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint chapters chapters_course_id_not_null NOT NULL course_id
 constraint chapters chapters_created_at_not_null NOT NULL created_at
-constraint chapters chapters_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL
+constraint chapters chapters_creator_id_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 constraint chapters chapters_description_check CHECK ((char_length(description) <= 5000))
 constraint chapters chapters_description_not_null NOT NULL description
 constraint chapters chapters_id_course_key UNIQUE (id, course_id)
@@ -797,7 +797,7 @@ constraint course_update_activities course_update_activities_position_check CHEC
 constraint course_update_activities course_update_activities_position_not_null NOT NULL "position"
 constraint course_update_activities course_update_activities_update_id_fkey FOREIGN KEY (update_id) REFERENCES course_updates(id) ON DELETE CASCADE
 constraint course_update_activities course_update_activities_update_id_not_null NOT NULL update_id
-constraint course_updates course_updates_author_id_fkey FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL
+constraint course_updates course_updates_author_id_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 constraint course_updates course_updates_content_check CHECK ((char_length(content) <= 50000))
 constraint course_updates course_updates_content_not_null NOT NULL content
 constraint course_updates course_updates_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
@@ -833,8 +833,8 @@ constraint courses courses_public_not_null NOT NULL public
 constraint courses courses_tags_check CHECK (text_list_ok(tags, 20, 64))
 constraint courses courses_tags_not_null NOT NULL tags
 constraint courses courses_thumbnail_image_upload_id_fkey FOREIGN KEY (thumbnail_image_upload_id) REFERENCES uploads(id) ON DELETE SET NULL
-constraint courses courses_thumbnail_type_check CHECK ((thumbnail_type = ANY (ARRAY['image'::text, 'video'::text, 'both'::text])))
-constraint courses courses_thumbnail_type_not_null NOT NULL thumbnail_type
+constraint courses courses_thumbnail_type_check CHECK ((thumbnail_kind = ANY (ARRAY['image'::text, 'video'::text, 'both'::text])))
+constraint courses courses_thumbnail_type_not_null NOT NULL thumbnail_kind
 constraint courses courses_thumbnail_video_upload_id_fkey FOREIGN KEY (thumbnail_video_upload_id) REFERENCES uploads(id) ON DELETE SET NULL
 constraint courses courses_updated_at_not_null NOT NULL updated_at
 constraint courses courses_version_not_null NOT NULL version
@@ -894,10 +894,10 @@ constraint daily_teacher_metrics daily_teacher_metrics_generated_at_not_null NOT
 constraint daily_teacher_metrics daily_teacher_metrics_id_not_null NOT NULL id
 constraint daily_teacher_metrics daily_teacher_metrics_managed_course_count_not_null NOT NULL managed_course_count
 constraint daily_teacher_metrics daily_teacher_metrics_metric_date_not_null NOT NULL metric_date
-constraint daily_teacher_metrics daily_teacher_metrics_metric_date_teacher_user_id_key UNIQUE NULLS NOT DISTINCT (metric_date, teacher_user_id)
+constraint daily_teacher_metrics daily_teacher_metrics_metric_date_teacher_user_id_key UNIQUE NULLS NOT DISTINCT (metric_date, teacher_id)
 constraint daily_teacher_metrics daily_teacher_metrics_pkey PRIMARY KEY (id)
 constraint daily_teacher_metrics daily_teacher_metrics_returning_learners_28d_not_null NOT NULL returning_learners_28d
-constraint daily_teacher_metrics daily_teacher_metrics_teacher_user_id_fkey FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE CASCADE
+constraint daily_teacher_metrics daily_teacher_metrics_teacher_user_id_fkey FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE
 constraint daily_teacher_metrics daily_teacher_metrics_ungraded_submissions_not_null NOT NULL ungraded_submissions
 constraint daily_user_course_progress daily_user_course_progress_completed_steps_not_null NOT NULL completed_steps
 constraint daily_user_course_progress daily_user_course_progress_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
@@ -1066,8 +1066,8 @@ constraint idempotency_keys idempotency_keys_response_not_null NOT NULL response
 constraint idempotency_keys idempotency_keys_status_code_not_null NOT NULL status_code
 constraint idempotency_keys idempotency_keys_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint idempotency_keys idempotency_keys_user_id_not_null NOT NULL user_id
-constraint item_feedback item_feedback_annotation_type_check CHECK ((annotation_type = ANY (ARRAY['text'::text, 'highlight'::text, 'audio'::text])))
-constraint item_feedback item_feedback_annotation_type_not_null NOT NULL annotation_type
+constraint item_feedback item_feedback_annotation_type_check CHECK ((kind = ANY (ARRAY['text'::text, 'highlight'::text, 'audio'::text])))
+constraint item_feedback item_feedback_annotation_type_not_null NOT NULL kind
 constraint item_feedback item_feedback_annotation_upload_id_fkey FOREIGN KEY (annotation_upload_id) REFERENCES uploads(id) ON DELETE SET NULL
 constraint item_feedback item_feedback_comment_not_null NOT NULL comment
 constraint item_feedback item_feedback_created_at_not_null NOT NULL created_at
@@ -1301,8 +1301,8 @@ constraint teacher_interventions teacher_interventions_course_id_fkey FOREIGN KE
 constraint teacher_interventions teacher_interventions_course_id_not_null NOT NULL course_id
 constraint teacher_interventions teacher_interventions_created_at_not_null NOT NULL created_at
 constraint teacher_interventions teacher_interventions_id_not_null NOT NULL id
-constraint teacher_interventions teacher_interventions_intervention_type_check CHECK ((intervention_type = ANY (ARRAY['message_sent'::text, 'submission_graded'::text, 'extension_granted'::text, 'meeting_scheduled'::text, 'learner_recovered'::text])))
-constraint teacher_interventions teacher_interventions_intervention_type_not_null NOT NULL intervention_type
+constraint teacher_interventions teacher_interventions_intervention_type_check CHECK ((kind = ANY (ARRAY['message_sent'::text, 'submission_graded'::text, 'extension_granted'::text, 'meeting_scheduled'::text, 'learner_recovered'::text])))
+constraint teacher_interventions teacher_interventions_intervention_type_not_null NOT NULL kind
 constraint teacher_interventions teacher_interventions_notes_check CHECK ((char_length(notes) <= 4000))
 constraint teacher_interventions teacher_interventions_outcome_check CHECK ((char_length(outcome) <= 2000))
 constraint teacher_interventions teacher_interventions_outcome_code_check CHECK ((outcome_code = ANY (ARRAY['improved'::text, 'no_change'::text, 'worsened'::text, 'no_response'::text])))
@@ -1310,8 +1310,8 @@ constraint teacher_interventions teacher_interventions_payload_not_null NOT NULL
 constraint teacher_interventions teacher_interventions_pkey PRIMARY KEY (id)
 constraint teacher_interventions teacher_interventions_status_check CHECK ((status = ANY (ARRAY['planned'::text, 'completed'::text, 'resolved'::text])))
 constraint teacher_interventions teacher_interventions_status_not_null NOT NULL status
-constraint teacher_interventions teacher_interventions_teacher_user_id_fkey FOREIGN KEY (teacher_user_id) REFERENCES users(id) ON DELETE CASCADE
-constraint teacher_interventions teacher_interventions_teacher_user_id_not_null NOT NULL teacher_user_id
+constraint teacher_interventions teacher_interventions_teacher_user_id_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+constraint teacher_interventions teacher_interventions_teacher_user_id_not_null NOT NULL created_by
 constraint teacher_interventions teacher_interventions_updated_at_not_null NOT NULL updated_at
 constraint teacher_interventions teacher_interventions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint teacher_interventions teacher_interventions_user_id_not_null NOT NULL user_id
@@ -1374,7 +1374,7 @@ constraint usergroup_members usergroup_members_user_id_not_null NOT NULL user_id
 constraint usergroup_members usergroup_members_usergroup_id_fkey FOREIGN KEY (usergroup_id) REFERENCES usergroups(id) ON DELETE CASCADE
 constraint usergroup_members usergroup_members_usergroup_id_not_null NOT NULL usergroup_id
 constraint usergroups usergroups_created_at_not_null NOT NULL created_at
-constraint usergroups usergroups_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL
+constraint usergroups usergroups_creator_id_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 constraint usergroups usergroups_description_check CHECK ((char_length(description) <= 5000))
 constraint usergroups usergroups_description_not_null NOT NULL description
 constraint usergroups usergroups_id_not_null NOT NULL id
@@ -2441,6 +2441,35 @@ AS $function$
         RETURNING 1)
     SELECT count(*) FROM gone
 $function$
+function CREATE OR REPLACE FUNCTION public.renamed_columns()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+DECLARE
+    n jsonb := to_jsonb(NEW);
+    o jsonb := CASE WHEN TG_OP = 'UPDATE' THEN to_jsonb(OLD) END;
+    d jsonb := '{}';
+    old_name text;
+    new_name text;
+BEGIN
+    FOR i IN 0 .. TG_NARGS / 2 - 1 LOOP
+        old_name := TG_ARGV[2 * i];
+        new_name := TG_ARGV[2 * i + 1];
+        IF TG_OP = 'INSERT' THEN
+            IF jsonb_typeof(n -> old_name) <> 'null' THEN
+                d := d || jsonb_build_object(new_name, n -> old_name);
+            ELSE
+                d := d || jsonb_build_object(old_name, n -> new_name);
+            END IF;
+        ELSIF n -> new_name IS DISTINCT FROM o -> new_name THEN
+            d := d || jsonb_build_object(old_name, n -> new_name);
+        ELSIF n -> old_name IS DISTINCT FROM o -> old_name THEN
+            d := d || jsonb_build_object(new_name, n -> old_name);
+        END IF;
+    END LOOP;
+    RETURN jsonb_populate_record(NEW, d);
+END $function$
 function CREATE OR REPLACE FUNCTION public.schema_try_check(p_table regclass, p_name text, p_expr text)
  RETURNS boolean
  LANGUAGE plpgsql
@@ -2833,7 +2862,7 @@ index CREATE INDEX assessment_item_uploads_upload_idx ON learning.assessment_ite
 index CREATE INDEX assessment_overrides_user_idx ON learning.assessment_overrides USING btree (user_id)
 index CREATE INDEX assessment_version_uploads_upload_idx ON learning.assessment_version_uploads USING btree (upload_id)
 index CREATE INDEX assessments_course_idx ON learning.assessments USING btree (course_id)
-index CREATE INDEX assessments_due_publish_idx ON learning.assessments USING btree (scheduled_at) WHERE (lifecycle = 'scheduled'::text)
+index CREATE INDEX assessments_due_publish_idx ON learning.assessments USING btree (scheduled_at) WHERE (status = 'scheduled'::text)
 index CREATE INDEX auth_audit_log_created_brin ON ops.auth_audit_log USING brin (created_at)
 index CREATE INDEX auth_audit_log_event_idx ON ops.auth_audit_log USING btree (event, created_at DESC)
 index CREATE INDEX auth_audit_log_user_idx ON ops.auth_audit_log USING btree (user_id, created_at DESC)
@@ -2894,7 +2923,7 @@ index CREATE INDEX daily_course_engagement_chapter_idx ON analytics.daily_course
 index CREATE INDEX daily_course_engagement_course_idx ON analytics.daily_course_engagement USING btree (course_id, metric_date DESC)
 index CREATE INDEX daily_course_metrics_course_idx ON analytics.daily_course_metrics USING btree (course_id, metric_date DESC)
 index CREATE INDEX daily_teacher_metrics_date_brin ON analytics.daily_teacher_metrics USING brin (metric_date)
-index CREATE INDEX daily_teacher_metrics_teacher_idx ON analytics.daily_teacher_metrics USING btree (teacher_user_id)
+index CREATE INDEX daily_teacher_metrics_teacher_idx ON analytics.daily_teacher_metrics USING btree (teacher_id)
 index CREATE INDEX daily_user_course_progress_course_idx ON analytics.daily_user_course_progress USING btree (course_id, metric_date DESC)
 index CREATE INDEX daily_user_course_progress_user_idx ON analytics.daily_user_course_progress USING btree (user_id)
 index CREATE INDEX discussion_reactions_user_idx ON core.discussion_reactions USING btree (user_id)
@@ -2945,7 +2974,7 @@ index CREATE INDEX submissions_timer_idx ON learning.submissions USING btree (st
 index CREATE INDEX submissions_user_idx ON learning.submissions USING btree (user_id)
 index CREATE INDEX teacher_interventions_course_idx ON learning.teacher_interventions USING btree (course_id)
 index CREATE INDEX teacher_interventions_learner_idx ON learning.teacher_interventions USING btree (user_id, course_id)
-index CREATE INDEX teacher_interventions_teacher_idx ON learning.teacher_interventions USING btree (teacher_user_id, course_id, created_at DESC)
+index CREATE INDEX teacher_interventions_teacher_idx ON learning.teacher_interventions USING btree (created_by, course_id, created_at DESC)
 index CREATE INDEX trail_legacy_marks_user_idx ON learning.trail_legacy_marks USING btree (user_id)
 index CREATE INDEX uploads_owner_idx ON core.uploads USING btree (created_by, created_at DESC)
 index CREATE INDEX uploads_reaper_idx ON core.uploads USING btree (expires_at) WHERE (expires_at IS NOT NULL)
@@ -2988,7 +3017,8 @@ index CREATE UNIQUE INDEX ai_token_reservations_pkey ON ai.ai_token_reservations
 index CREATE UNIQUE INDEX ai_work_embeddings_pkey ON ai.ai_work_embeddings USING btree (subject_id, part_key)
 index CREATE UNIQUE INDEX analytics_events_pkey ON ONLY analytics.analytics_events USING btree (id, occurred_at)
 index CREATE UNIQUE INDEX analytics_saved_views_pkey ON analytics.analytics_saved_views USING btree (id)
-index CREATE UNIQUE INDEX analytics_saved_views_teacher_user_id_view_type_name_key ON analytics.analytics_saved_views USING btree (teacher_user_id, view_type, name)
+index CREATE UNIQUE INDEX analytics_saved_views_previous_key ON analytics.analytics_saved_views USING btree (teacher_user_id, view_type, name)
+index CREATE UNIQUE INDEX analytics_saved_views_teacher_user_id_view_type_name_key ON analytics.analytics_saved_views USING btree (user_id, kind, name)
 index CREATE UNIQUE INDEX assessment_access_usergroups_pkey ON learning.assessment_access_usergroups USING btree (assessment_id, usergroup_id)
 index CREATE UNIQUE INDEX assessment_access_users_pkey ON learning.assessment_access_users USING btree (assessment_id, user_id)
 index CREATE UNIQUE INDEX assessment_audit_events_pkey ON learning.assessment_audit_events USING btree (id)
@@ -3056,8 +3086,9 @@ index CREATE UNIQUE INDEX daily_assessment_metrics_pkey ON analytics.daily_asses
 index CREATE UNIQUE INDEX daily_course_engagement_pkey ON analytics.daily_course_engagement USING btree (metric_date, activity_id)
 index CREATE UNIQUE INDEX daily_course_metrics_pkey ON analytics.daily_course_metrics USING btree (metric_date, course_id)
 index CREATE UNIQUE INDEX daily_platform_metrics_pkey ON analytics.daily_platform_metrics USING btree (metric_date)
-index CREATE UNIQUE INDEX daily_teacher_metrics_metric_date_teacher_user_id_key ON analytics.daily_teacher_metrics USING btree (metric_date, teacher_user_id) NULLS NOT DISTINCT
+index CREATE UNIQUE INDEX daily_teacher_metrics_metric_date_teacher_user_id_key ON analytics.daily_teacher_metrics USING btree (metric_date, teacher_id) NULLS NOT DISTINCT
 index CREATE UNIQUE INDEX daily_teacher_metrics_pkey ON analytics.daily_teacher_metrics USING btree (id)
+index CREATE UNIQUE INDEX daily_teacher_metrics_previous_key ON analytics.daily_teacher_metrics USING btree (metric_date, teacher_user_id) NULLS NOT DISTINCT
 index CREATE UNIQUE INDEX daily_user_course_progress_pkey ON analytics.daily_user_course_progress USING btree (metric_date, user_id, course_id)
 index CREATE UNIQUE INDEX discussion_reactions_pkey ON core.discussion_reactions USING btree (discussion_id, user_id)
 index CREATE UNIQUE INDEX enrolment_events_pkey ON learning.enrolment_events USING btree (id)
@@ -3354,19 +3385,23 @@ table analytics.analytics_events actor_id uuid DEFAULT -
 table analytics.analytics_events assessment_id uuid DEFAULT -
 table analytics.analytics_events course_id uuid DEFAULT -
 table analytics.analytics_events created_at timestamp with time zone NOT NULL DEFAULT now()
-table analytics.analytics_events event_type text NOT NULL DEFAULT -
+table analytics.analytics_events event text NOT NULL DEFAULT -
+table analytics.analytics_events event_type text DEFAULT -
 table analytics.analytics_events id uuid NOT NULL DEFAULT uuidv7()
 table analytics.analytics_events occurred_at timestamp with time zone NOT NULL DEFAULT now()
 table analytics.analytics_events payload jsonb NOT NULL DEFAULT '{}'::jsonb
+table analytics.analytics_events performed_by uuid DEFAULT -
 table analytics.analytics_events submission_id uuid DEFAULT -
 table analytics.analytics_events user_id uuid DEFAULT -
 table analytics.analytics_saved_views created_at timestamp with time zone NOT NULL DEFAULT now()
 table analytics.analytics_saved_views id uuid NOT NULL DEFAULT uuidv7()
+table analytics.analytics_saved_views kind text NOT NULL DEFAULT 'overview'::text
 table analytics.analytics_saved_views name text NOT NULL DEFAULT -
 table analytics.analytics_saved_views query jsonb NOT NULL DEFAULT '{}'::jsonb
-table analytics.analytics_saved_views teacher_user_id uuid NOT NULL DEFAULT -
+table analytics.analytics_saved_views teacher_user_id uuid DEFAULT -
 table analytics.analytics_saved_views updated_at timestamp with time zone NOT NULL DEFAULT now()
-table analytics.analytics_saved_views view_type text NOT NULL DEFAULT 'overview'::text
+table analytics.analytics_saved_views user_id uuid NOT NULL DEFAULT -
+table analytics.analytics_saved_views view_type text DEFAULT -
 table analytics.daily_assessment_metrics activity_id uuid DEFAULT -
 table analytics.daily_assessment_metrics assessment_id uuid NOT NULL DEFAULT -
 table analytics.daily_assessment_metrics assessment_kind text NOT NULL DEFAULT -
@@ -3436,6 +3471,7 @@ table analytics.daily_teacher_metrics id uuid NOT NULL DEFAULT uuidv7()
 table analytics.daily_teacher_metrics managed_course_count integer NOT NULL DEFAULT 0
 table analytics.daily_teacher_metrics metric_date date NOT NULL DEFAULT -
 table analytics.daily_teacher_metrics returning_learners_28d integer NOT NULL DEFAULT 0
+table analytics.daily_teacher_metrics teacher_id uuid DEFAULT -
 table analytics.daily_teacher_metrics teacher_user_id uuid DEFAULT -
 table analytics.daily_teacher_metrics ungraded_submissions integer NOT NULL DEFAULT 0
 table analytics.daily_user_course_progress completed_steps integer NOT NULL DEFAULT 0
@@ -3462,20 +3498,23 @@ table analytics.learner_risk_snapshots risk_score double precision NOT NULL DEFA
 table analytics.learner_risk_snapshots snapshot_date date NOT NULL DEFAULT -
 table analytics.learner_risk_snapshots teacher_user_id uuid DEFAULT -
 table analytics.learner_risk_snapshots user_id uuid NOT NULL DEFAULT -
-table core.activities activity_sub_type text NOT NULL DEFAULT -
-table core.activities activity_type text NOT NULL DEFAULT -
+table core.activities activity_sub_type text DEFAULT -
+table core.activities activity_type text DEFAULT -
 table core.activities chapter_id uuid NOT NULL DEFAULT -
 table core.activities content jsonb NOT NULL DEFAULT '{}'::jsonb
 table core.activities course_id uuid NOT NULL DEFAULT -
 table core.activities created_at timestamp with time zone NOT NULL DEFAULT now()
+table core.activities created_by uuid DEFAULT -
 table core.activities creator_id uuid DEFAULT -
 table core.activities details jsonb NOT NULL DEFAULT '{}'::jsonb
 table core.activities id uuid NOT NULL DEFAULT uuidv7()
+table core.activities kind text NOT NULL DEFAULT -
 table core.activities name text NOT NULL DEFAULT -
 table core.activities position integer NOT NULL DEFAULT 1
 table core.activities published boolean NOT NULL DEFAULT false
 table core.activities required boolean NOT NULL DEFAULT true
 table core.activities settings jsonb NOT NULL DEFAULT '{}'::jsonb
+table core.activities sub_kind text NOT NULL DEFAULT -
 table core.activities updated_at timestamp with time zone NOT NULL DEFAULT now()
 table core.activities version integer NOT NULL DEFAULT 1
 table core.activity_kinds kind text NOT NULL DEFAULT -
@@ -3483,15 +3522,17 @@ table core.activity_kinds sub_kind text NOT NULL DEFAULT -
 table core.block_uploads block_id uuid NOT NULL DEFAULT -
 table core.block_uploads upload_id uuid NOT NULL DEFAULT -
 table core.blocks activity_id uuid NOT NULL DEFAULT -
-table core.blocks block_type text NOT NULL DEFAULT -
+table core.blocks block_type text DEFAULT -
 table core.blocks claimed boolean NOT NULL DEFAULT true
 table core.blocks content jsonb NOT NULL DEFAULT '{}'::jsonb
 table core.blocks created_at timestamp with time zone NOT NULL DEFAULT now()
 table core.blocks id uuid NOT NULL DEFAULT uuidv7()
+table core.blocks kind text NOT NULL DEFAULT -
 table core.blocks legacy_uuid text DEFAULT -
 table core.blocks updated_at timestamp with time zone NOT NULL DEFAULT now()
 table core.chapters course_id uuid NOT NULL DEFAULT -
 table core.chapters created_at timestamp with time zone NOT NULL DEFAULT now()
+table core.chapters created_by uuid DEFAULT -
 table core.chapters creator_id uuid DEFAULT -
 table core.chapters description text NOT NULL DEFAULT ''::text
 table core.chapters id uuid NOT NULL DEFAULT uuidv7()
@@ -3545,6 +3586,7 @@ table core.course_updates author_id uuid DEFAULT -
 table core.course_updates content text NOT NULL DEFAULT -
 table core.course_updates course_id uuid NOT NULL DEFAULT -
 table core.course_updates created_at timestamp with time zone NOT NULL DEFAULT now()
+table core.course_updates created_by uuid DEFAULT -
 table core.course_updates id uuid NOT NULL DEFAULT uuidv7()
 table core.course_updates title text NOT NULL DEFAULT -
 table core.course_updates updated_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3568,7 +3610,8 @@ table core.courses public boolean NOT NULL DEFAULT false
 table core.courses tags text[] NOT NULL DEFAULT '{}'::text[]
 table core.courses thumbnail_image_key text DEFAULT -
 table core.courses thumbnail_image_upload_id uuid DEFAULT -
-table core.courses thumbnail_type text NOT NULL DEFAULT 'image'::text
+table core.courses thumbnail_kind text NOT NULL DEFAULT 'image'::text
+table core.courses thumbnail_type text DEFAULT -
 table core.courses thumbnail_video_key text DEFAULT -
 table core.courses thumbnail_video_upload_id uuid DEFAULT -
 table core.courses updated_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3706,6 +3749,7 @@ table core.usergroup_members created_at timestamp with time zone NOT NULL DEFAUL
 table core.usergroup_members user_id uuid NOT NULL DEFAULT -
 table core.usergroup_members usergroup_id uuid NOT NULL DEFAULT -
 table core.usergroups created_at timestamp with time zone NOT NULL DEFAULT now()
+table core.usergroups created_by uuid DEFAULT -
 table core.usergroups creator_id uuid DEFAULT -
 table core.usergroups description text NOT NULL DEFAULT ''::text
 table core.usergroups id uuid NOT NULL DEFAULT uuidv7()
@@ -3767,6 +3811,7 @@ table learning.assessment_audit_events created_at timestamp with time zone NOT N
 table learning.assessment_audit_events event text NOT NULL DEFAULT -
 table learning.assessment_audit_events id uuid NOT NULL DEFAULT uuidv7()
 table learning.assessment_audit_events payload jsonb NOT NULL DEFAULT '{}'::jsonb
+table learning.assessment_audit_events performed_by uuid DEFAULT -
 table learning.assessment_imports committed_at timestamp with time zone DEFAULT -
 table learning.assessment_imports course_id uuid NOT NULL DEFAULT -
 table learning.assessment_imports created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3840,6 +3885,7 @@ table learning.assessments content_version integer NOT NULL DEFAULT 1
 table learning.assessments copy_paste_protection boolean NOT NULL DEFAULT false
 table learning.assessments course_id uuid NOT NULL DEFAULT -
 table learning.assessments created_at timestamp with time zone NOT NULL DEFAULT now()
+table learning.assessments created_by uuid DEFAULT -
 table learning.assessments creator_id uuid DEFAULT -
 table learning.assessments description text NOT NULL DEFAULT ''::text
 table learning.assessments devtools_detection boolean NOT NULL DEFAULT false
@@ -3850,14 +3896,15 @@ table learning.assessments fullscreen_required boolean NOT NULL DEFAULT false
 table learning.assessments grace_period_minutes integer NOT NULL DEFAULT 0
 table learning.assessments grace_period_seconds integer NOT NULL DEFAULT -
 table learning.assessments grade_release_mode text NOT NULL DEFAULT -
+table learning.assessments grading_kind text NOT NULL DEFAULT 'percentage'::text
 table learning.assessments grading_mode text NOT NULL DEFAULT -
-table learning.assessments grading_type text NOT NULL DEFAULT 'percentage'::text
+table learning.assessments grading_type text DEFAULT -
 table learning.assessments id uuid NOT NULL DEFAULT uuidv7()
 table learning.assessments late_cutoff_at timestamp with time zone DEFAULT -
 table learning.assessments late_penalty_max_days integer DEFAULT -
 table learning.assessments late_penalty_percent_per_day percent DEFAULT -
 table learning.assessments late_policy_kind text NOT NULL DEFAULT 'none'::text
-table learning.assessments lifecycle text NOT NULL DEFAULT 'draft'::text
+table learning.assessments lifecycle text DEFAULT -
 table learning.assessments max_attempts integer DEFAULT -
 table learning.assessments negative_marking_percent percent NOT NULL DEFAULT 0
 table learning.assessments partial_credit boolean NOT NULL DEFAULT true
@@ -3870,19 +3917,21 @@ table learning.assessments required boolean NOT NULL DEFAULT false
 table learning.assessments review_visibility text NOT NULL DEFAULT 'score_only'::text
 table learning.assessments right_click_disabled boolean NOT NULL DEFAULT false
 table learning.assessments scheduled_at timestamp with time zone DEFAULT -
+table learning.assessments status text NOT NULL DEFAULT 'draft'::text
 table learning.assessments tab_switch_detection boolean NOT NULL DEFAULT false
 table learning.assessments time_limit_seconds integer DEFAULT -
 table learning.assessments updated_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.assessments version integer NOT NULL DEFAULT 1
 table learning.assessments violation_threshold integer NOT NULL DEFAULT 3
 table learning.assessments weight score_weight NOT NULL DEFAULT 1.0
-table learning.bulk_actions action_type text NOT NULL DEFAULT -
+table learning.bulk_actions action_type text DEFAULT -
 table learning.bulk_actions affected_count integer NOT NULL DEFAULT 0
 table learning.bulk_actions assessment_id uuid NOT NULL DEFAULT -
 table learning.bulk_actions completed_at timestamp with time zone DEFAULT -
 table learning.bulk_actions created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.bulk_actions error_log text NOT NULL DEFAULT ''::text
 table learning.bulk_actions id uuid NOT NULL DEFAULT uuidv7()
+table learning.bulk_actions kind text NOT NULL DEFAULT -
 table learning.bulk_actions params jsonb NOT NULL DEFAULT '{}'::jsonb
 table learning.bulk_actions performed_by uuid DEFAULT -
 table learning.bulk_actions status text NOT NULL DEFAULT 'pending'::text
@@ -4083,7 +4132,7 @@ table learning.grading_entries returned boolean NOT NULL DEFAULT false
 table learning.grading_entries revision integer NOT NULL DEFAULT -
 table learning.grading_entries submission_id uuid NOT NULL DEFAULT -
 table learning.item_feedback annotation_key text DEFAULT -
-table learning.item_feedback annotation_type text NOT NULL DEFAULT 'text'::text
+table learning.item_feedback annotation_type text DEFAULT -
 table learning.item_feedback annotation_upload_id uuid DEFAULT -
 table learning.item_feedback comment text NOT NULL DEFAULT ''::text
 table learning.item_feedback created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -4092,6 +4141,7 @@ table learning.item_feedback grading_entry_id uuid NOT NULL DEFAULT -
 table learning.item_feedback id uuid NOT NULL DEFAULT uuidv7()
 table learning.item_feedback item_id uuid DEFAULT -
 table learning.item_feedback item_ref text NOT NULL DEFAULT -
+table learning.item_feedback kind text NOT NULL DEFAULT 'text'::text
 table learning.item_feedback max_score score_points DEFAULT -
 table learning.item_feedback score score_points DEFAULT -
 table learning.item_feedback submission_id uuid NOT NULL DEFAULT -
@@ -4147,8 +4197,10 @@ table learning.submissions violation_count integer NOT NULL DEFAULT 0
 table learning.submissions violations jsonb NOT NULL DEFAULT '[]'::jsonb
 table learning.teacher_interventions course_id uuid NOT NULL DEFAULT -
 table learning.teacher_interventions created_at timestamp with time zone NOT NULL DEFAULT now()
+table learning.teacher_interventions created_by uuid NOT NULL DEFAULT -
 table learning.teacher_interventions id uuid NOT NULL DEFAULT uuidv7()
-table learning.teacher_interventions intervention_type text NOT NULL DEFAULT -
+table learning.teacher_interventions intervention_type text DEFAULT -
+table learning.teacher_interventions kind text NOT NULL DEFAULT -
 table learning.teacher_interventions notes text DEFAULT -
 table learning.teacher_interventions outcome text DEFAULT -
 table learning.teacher_interventions outcome_code text DEFAULT -
@@ -4157,7 +4209,7 @@ table learning.teacher_interventions resolved_at timestamp with time zone DEFAUL
 table learning.teacher_interventions risk_score_after double precision DEFAULT -
 table learning.teacher_interventions risk_score_before double precision DEFAULT -
 table learning.teacher_interventions status text NOT NULL DEFAULT 'planned'::text
-table learning.teacher_interventions teacher_user_id uuid NOT NULL DEFAULT -
+table learning.teacher_interventions teacher_user_id uuid DEFAULT -
 table learning.teacher_interventions updated_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.teacher_interventions user_id uuid NOT NULL DEFAULT -
 table learning.teacher_interventions version integer NOT NULL DEFAULT 1
@@ -4220,7 +4272,8 @@ table ops.schema_skipped_checks skipped_at timestamp with time zone NOT NULL DEF
 table ops.schema_skipped_checks table_name text NOT NULL DEFAULT -
 trigger CREATE CONSTRAINT TRIGGER grading_entries_current AFTER INSERT ON learning.grading_entries DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION grading_entries_current_check()
 trigger CREATE CONSTRAINT TRIGGER submissions_current_grade AFTER UPDATE OF final_score ON learning.submissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.final_score)::numeric IS DISTINCT FROM (new.final_score)::numeric)) EXECUTE FUNCTION submissions_current_grade_check()
-trigger CREATE TRIGGER activities_keep_assessment_type BEFORE UPDATE OF activity_type ON core.activities FOR EACH ROW WHEN ((old.activity_type IS DISTINCT FROM new.activity_type)) EXECUTE FUNCTION activities_keep_assessment_type()
+trigger CREATE TRIGGER activities_aliases BEFORE INSERT OR UPDATE ON core.activities FOR EACH ROW EXECUTE FUNCTION renamed_columns('creator_id', 'created_by', 'activity_type', 'kind', 'activity_sub_type', 'sub_kind')
+trigger CREATE TRIGGER activities_keep_assessment_type BEFORE UPDATE OF kind, activity_type ON core.activities FOR EACH ROW WHEN ((old.kind IS DISTINCT FROM new.kind)) EXECUTE FUNCTION activities_keep_assessment_type()
 trigger CREATE TRIGGER activities_required_from_settings BEFORE INSERT OR UPDATE OF settings ON core.activities FOR EACH ROW EXECUTE FUNCTION activities_required_from_settings()
 trigger CREATE TRIGGER activities_touch BEFORE UPDATE ON core.activities FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER activity_progress_status BEFORE INSERT OR UPDATE ON learning.activity_progress FOR EACH ROW EXECUTE FUNCTION activity_progress_status()
@@ -4234,7 +4287,10 @@ trigger CREATE TRIGGER ai_runs_duration BEFORE INSERT OR UPDATE OF completed_at,
 trigger CREATE TRIGGER ai_student_memory_touch BEFORE UPDATE ON ai.ai_student_memory FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER ai_threads_touch BEFORE UPDATE ON ai.ai_threads FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER ai_work_embeddings_sha256 BEFORE INSERT OR UPDATE ON ai.ai_work_embeddings FOR EACH ROW EXECUTE FUNCTION ai_work_embeddings_sha256()
+trigger CREATE TRIGGER analytics_events_aliases BEFORE INSERT OR UPDATE ON analytics.analytics_events FOR EACH ROW EXECUTE FUNCTION renamed_columns('actor_id', 'performed_by', 'event_type', 'event')
+trigger CREATE TRIGGER analytics_saved_views_aliases BEFORE INSERT OR UPDATE ON analytics.analytics_saved_views FOR EACH ROW EXECUTE FUNCTION renamed_columns('teacher_user_id', 'user_id', 'view_type', 'kind')
 trigger CREATE TRIGGER analytics_saved_views_touch BEFORE UPDATE ON analytics.analytics_saved_views FOR EACH ROW EXECUTE FUNCTION touch_row()
+trigger CREATE TRIGGER assessment_audit_events_aliases BEFORE INSERT OR UPDATE ON learning.assessment_audit_events FOR EACH ROW EXECUTE FUNCTION renamed_columns('actor_id', 'performed_by')
 trigger CREATE TRIGGER assessment_items_estimate BEFORE INSERT OR UPDATE ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_items_estimate()
 trigger CREATE TRIGGER assessment_items_touch BEFORE UPDATE ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER assessment_items_upload_ids AFTER INSERT OR UPDATE OF body ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_item_uploads_sync()
@@ -4242,13 +4298,17 @@ trigger CREATE TRIGGER assessment_overrides_touch BEFORE UPDATE ON learning.asse
 trigger CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()
 trigger CREATE TRIGGER assessment_versions_points BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_points()
 trigger CREATE TRIGGER assessment_versions_upload_ids AFTER INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_version_uploads_sync()
+trigger CREATE TRIGGER assessments_aliases BEFORE INSERT OR UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION renamed_columns('creator_id', 'created_by', 'grading_type', 'grading_kind', 'lifecycle', 'status')
 trigger CREATE TRIGGER assessments_grace_period BEFORE INSERT OR UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION assessments_grace_period()
 trigger CREATE TRIGGER assessments_touch BEFORE UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION touch_row('version')
+trigger CREATE TRIGGER blocks_aliases BEFORE INSERT OR UPDATE ON core.blocks FOR EACH ROW EXECUTE FUNCTION renamed_columns('block_type', 'kind')
 trigger CREATE TRIGGER blocks_touch BEFORE UPDATE ON core.blocks FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER blocks_upload_ids AFTER INSERT OR UPDATE OF content, claimed ON core.blocks FOR EACH ROW EXECUTE FUNCTION block_uploads_sync()
+trigger CREATE TRIGGER bulk_actions_aliases BEFORE INSERT OR UPDATE ON learning.bulk_actions FOR EACH ROW EXECUTE FUNCTION renamed_columns('action_type', 'kind')
 trigger CREATE TRIGGER certificate_users_frozen BEFORE UPDATE ON learning.certificates FOR EACH ROW EXECUTE FUNCTION certificate_users_frozen()
 trigger CREATE TRIGGER certificate_users_touch BEFORE UPDATE ON learning.certificates FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER certifications_touch BEFORE UPDATE ON learning.certificate_templates FOR EACH ROW EXECUTE FUNCTION touch_row('version')
+trigger CREATE TRIGGER chapters_aliases BEFORE INSERT OR UPDATE ON core.chapters FOR EACH ROW EXECUTE FUNCTION renamed_columns('creator_id', 'created_by')
 trigger CREATE TRIGGER chapters_touch BEFORE UPDATE ON core.chapters FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER chapters_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_key ON core.chapters FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_key', 'thumbnail_upload_id')
 trigger CREATE TRIGGER code_run_cases_passed BEFORE INSERT ON learning.code_run_cases FOR EACH ROW EXECUTE FUNCTION code_run_cases_passed()
@@ -4266,11 +4326,14 @@ trigger CREATE TRIGGER course_discussions_touch BEFORE UPDATE ON core.discussion
 trigger CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF content ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION post_uploads_sync()
 trigger CREATE TRIGGER course_progress_touch BEFORE UPDATE ON learning.course_progress FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER course_staff_touch BEFORE UPDATE ON core.course_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
+trigger CREATE TRIGGER course_updates_aliases BEFORE INSERT OR UPDATE ON core.course_updates FOR EACH ROW EXECUTE FUNCTION renamed_columns('author_id', 'created_by')
 trigger CREATE TRIGGER course_updates_touch BEFORE UPDATE ON core.course_updates FOR EACH ROW EXECUTE FUNCTION touch_row('version')
+trigger CREATE TRIGGER courses_aliases BEFORE INSERT OR UPDATE ON core.courses FOR EACH ROW EXECUTE FUNCTION renamed_columns('thumbnail_type', 'thumbnail_kind')
 trigger CREATE TRIGGER courses_creator_row AFTER INSERT ON core.courses FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION courses_creator_row()
 trigger CREATE TRIGGER courses_touch BEFORE UPDATE ON core.courses FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_image_key, thumbnail_video_key ON core.courses FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_image_key', 'thumbnail_image_upload_id', 'thumbnail_video_key', 'thumbnail_video_upload_id')
 trigger CREATE TRIGGER daily_assessment_metrics_latency BEFORE INSERT OR UPDATE ON analytics.daily_assessment_metrics FOR EACH ROW EXECUTE FUNCTION daily_assessment_metrics_latency()
+trigger CREATE TRIGGER daily_teacher_metrics_aliases BEFORE INSERT OR UPDATE ON analytics.daily_teacher_metrics FOR EACH ROW EXECUTE FUNCTION renamed_columns('teacher_user_id', 'teacher_id')
 trigger CREATE TRIGGER discussion_reactions_recount AFTER INSERT OR DELETE OR UPDATE ON core.discussion_reactions FOR EACH ROW EXECUTE FUNCTION discussion_reactions_recount()
 trigger CREATE TRIGGER file_submission_files_from_upload BEFORE INSERT ON learning.file_submission_files FOR EACH ROW EXECUTE FUNCTION file_submission_files_from_upload()
 trigger CREATE TRIGGER file_submissions_touch BEFORE UPDATE ON learning.file_submissions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
@@ -4283,6 +4346,7 @@ trigger CREATE TRIGGER grading_entries_immutable BEFORE UPDATE ON learning.gradi
 trigger CREATE TRIGGER grading_entries_number BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_number()
 trigger CREATE TRIGGER grading_entries_points BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_points()
 trigger CREATE TRIGGER idempotency_keys_sha256 BEFORE INSERT OR UPDATE ON ops.idempotency_keys FOR EACH ROW EXECUTE FUNCTION idempotency_keys_sha256()
+trigger CREATE TRIGGER item_feedback_aliases BEFORE INSERT OR UPDATE ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION renamed_columns('annotation_type', 'kind')
 trigger CREATE TRIGGER item_feedback_frozen BEFORE UPDATE ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION item_feedback_frozen()
 trigger CREATE TRIGGER item_feedback_touch BEFORE UPDATE ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER item_feedback_upload_ids BEFORE INSERT OR UPDATE OF annotation_key ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('annotation_key', 'annotation_upload_id')
@@ -4294,10 +4358,12 @@ trigger CREATE TRIGGER platforms_upload_ids BEFORE INSERT OR UPDATE OF logo_key,
 trigger CREATE TRIGGER roles_touch BEFORE UPDATE ON core.roles FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id, selected_item_ids ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()
 trigger CREATE TRIGGER submissions_touch BEFORE UPDATE ON learning.submissions FOR EACH ROW EXECUTE FUNCTION touch_row()
+trigger CREATE TRIGGER teacher_interventions_aliases BEFORE INSERT OR UPDATE ON learning.teacher_interventions FOR EACH ROW EXECUTE FUNCTION renamed_columns('teacher_user_id', 'created_by', 'intervention_type', 'kind')
 trigger CREATE TRIGGER teacher_interventions_touch BEFORE UPDATE ON learning.teacher_interventions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER translations_touch BEFORE UPDATE ON core.translations FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER translations_touch_platform AFTER INSERT OR DELETE OR UPDATE ON core.translations FOR EACH ROW EXECUTE FUNCTION translations_touch_platform()
 trigger CREATE TRIGGER uploads_touch BEFORE UPDATE ON core.uploads FOR EACH ROW EXECUTE FUNCTION touch_row()
+trigger CREATE TRIGGER usergroups_aliases BEFORE INSERT OR UPDATE ON core.usergroups FOR EACH ROW EXECUTE FUNCTION renamed_columns('creator_id', 'created_by')
 trigger CREATE TRIGGER usergroups_touch BEFORE UPDATE ON core.usergroups FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER users_last_login AFTER UPDATE OF last_login_at ON core.users FOR EACH ROW WHEN ((new.last_login_at IS DISTINCT FROM old.last_login_at)) EXECUTE FUNCTION users_last_login()
 trigger CREATE TRIGGER users_reissue_certificates AFTER UPDATE OF display_name ON core.users FOR EACH ROW WHEN ((old.display_name IS DISTINCT FROM new.display_name)) EXECUTE FUNCTION users_reissue_certificates()
@@ -4351,7 +4417,7 @@ view core.course_progress_v  SELECT e.course_id,
            FROM activities a
              LEFT JOIN completions c ON c.activity_id = a.id AND c.user_id = e.user_id
              LEFT JOIN activity_progress p ON p.activity_id = a.id AND p.user_id = e.user_id
-          WHERE a.course_id = e.course_id AND a.published AND (a.activity_type = 'file_submission'::text OR (EXISTS ( SELECT 1
+          WHERE a.course_id = e.course_id AND a.published AND (a.kind = 'file_submission'::text OR (EXISTS ( SELECT 1
                    FROM assessments s
                   WHERE s.activity_id = a.id)) OR a.required) AND NOT (EXISTS ( SELECT 1
                    FROM assessments s
@@ -4400,7 +4466,7 @@ view learning.learner_visible_activities  SELECT id AS activity_id,
    FROM activities a
   WHERE published AND NOT (EXISTS ( SELECT 1
            FROM assessments s
-          WHERE s.activity_id = a.id AND s.lifecycle <> 'published'::text));
+          WHERE s.activity_id = a.id AND s.status <> 'published'::text));
 view learning.xp_transactions_v  SELECT id,
     user_id,
     amount,

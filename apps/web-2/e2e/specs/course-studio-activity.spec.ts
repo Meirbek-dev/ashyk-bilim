@@ -109,9 +109,9 @@ test('B-CST-29 a YouTube video takes only a YouTube link; a file video offers an
   const made = await studio.course({ chapters: [{}] })
   const headers = cookieOf(seed, 'teacher')
   const chapter = { chapter_id: made.chapters[0]?.chapter.id ?? '' }
-  const kinds: Pick<CreateActivityRequest, 'activity_type' | 'activity_sub_type'> = {
-    activity_type: 'video',
-    activity_sub_type: 'video_youtube',
+  const kinds: Pick<CreateActivityRequest, 'kind' | 'sub_kind'> = {
+    kind: 'video',
+    sub_kind: 'video_youtube',
   }
   const youtube = await createActivity({
     client: studio.api,
@@ -137,7 +137,7 @@ test('B-CST-29 a YouTube video takes only a YouTube link; a file video offers an
     throwOnError: true,
   })
   expect(saved.data.content).toMatchObject({ uri: 'https://youtu.be/dQw4w9WgXcQ' })
-  const body: CreateActivityRequest = { name: 'Файл', activity_type: 'video', activity_sub_type: 'video_hosted' }
+  const body: CreateActivityRequest = { name: 'Файл', kind: 'video', sub_kind: 'video_hosted' }
   const hosted = await createActivity({ client: studio.api, path: chapter, body, headers, throwOnError: true })
   await page.goto(studioUrl(made.course.id, hosted.data.id))
   await expect(page.getByText(m.studio_media_none({}, ru))).toBeVisible()
@@ -162,7 +162,7 @@ test('B-CST-34 a legacy custom activity has no editor: edit says so and links to
   seed,
 }) => {
   const made = await studio.course({ chapters: [{}] })
-  const body: CreateActivityRequest = { name: 'Своя', activity_type: 'custom', activity_sub_type: 'custom' }
+  const body: CreateActivityRequest = { name: 'Своя', kind: 'custom', sub_kind: 'custom' }
   const path = { chapter_id: made.chapters[0]?.chapter.id ?? '' }
   const headers = cookieOf(seed, 'teacher')
   const custom = await createActivity({ client: studio.api, path, body, headers, throwOnError: true })

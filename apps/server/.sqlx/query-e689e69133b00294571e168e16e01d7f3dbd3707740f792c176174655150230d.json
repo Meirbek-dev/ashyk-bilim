@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE analytics_events SET performed_by = NULL WHERE performed_by = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e689e69133b00294571e168e16e01d7f3dbd3707740f792c176174655150230d"
+}

@@ -347,7 +347,7 @@ mod tests {
                     course_id: course,
                     chapter_id: chapter,
                     name: name.into(),
-                    activity_type: kind.into(),
+                    kind: kind.into(),
                     position: 0,
                     published: true,
                     updated_at: 0,

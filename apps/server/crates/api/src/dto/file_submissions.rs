@@ -105,7 +105,7 @@ pub struct FileSubmission {
     pub chapter_id: ChapterId,
     pub title: String,
     pub instructions: String,
-    pub lifecycle: FileSubmissionLifecycle,
+    pub status: FileSubmissionLifecycle,
     /// The backing activity is live.
     pub published: bool,
     pub allowed_mime_types: Vec<String>,
@@ -147,7 +147,7 @@ impl From<domain::FileSubmission> for FileSubmission {
             chapter_id: s.chapter_id,
             title: s.title,
             instructions: s.row.instructions,
-            lifecycle: s.row.lifecycle,
+            status: s.row.lifecycle,
             published: s.published,
             allowed_mime_types: s.row.allowed_mime_types,
             max_files: s.row.max_files,

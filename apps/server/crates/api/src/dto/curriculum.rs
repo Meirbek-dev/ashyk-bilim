@@ -46,9 +46,9 @@ pub struct Activity {
     pub course_id: CourseId,
     pub name: String,
     #[schema(value_type = crate::dto::enums::ActivityType)]
-    pub activity_type: String,
+    pub kind: String,
     #[schema(value_type = crate::dto::enums::ActivitySubType)]
-    pub activity_sub_type: String,
+    pub sub_kind: String,
     pub published: bool,
     /// 1-based, contiguous within the chapter.
     pub position: i32,
@@ -73,8 +73,8 @@ impl Activity {
             chapter_id: a.chapter_id,
             course_id: a.course_id,
             name: a.name,
-            activity_type: a.activity_type,
-            activity_sub_type: a.activity_sub_type,
+            kind: a.kind,
+            sub_kind: a.sub_kind,
             published: a.published,
             position: a.position,
             version: a.version,
@@ -153,11 +153,11 @@ pub struct CreateActivityRequest {
     /// One of the closed activity-type set (e.g. `video`, `exam`).
     #[garde(length(min = 1, max = 64))]
     #[schema(value_type = crate::dto::enums::ActivityType)]
-    pub activity_type: String,
-    /// Must pair with `activity_type` (e.g. `video_youtube`).
+    pub kind: String,
+    /// Must pair with `kind` (e.g. `video_youtube`).
     #[garde(length(min = 1, max = 64))]
     #[schema(value_type = crate::dto::enums::ActivitySubType)]
-    pub activity_sub_type: String,
+    pub sub_kind: String,
 }
 
 /// Full activity view with the heavy jsonb columns.
@@ -216,13 +216,13 @@ pub struct UpdateActivityRequest {
     pub name: Option<String>,
     #[garde(skip)]
     pub published: Option<bool>,
-    /// Change together with `activity_sub_type` (both or neither).
+    /// Change together with `sub_kind` (both or neither).
     #[garde(inner(length(min = 1, max = 64)))]
     #[schema(value_type = Option<crate::dto::enums::ActivityType>)]
-    pub activity_type: Option<String>,
+    pub kind: Option<String>,
     #[garde(inner(length(min = 1, max = 64)))]
     #[schema(value_type = Option<crate::dto::enums::ActivitySubType>)]
-    pub activity_sub_type: Option<String>,
+    pub sub_kind: Option<String>,
     #[garde(custom(json_object))]
     #[schema(value_type = Option<ab_domain::wire::ActivityContent>)]
     pub content: Option<serde_json::Value>,
@@ -239,7 +239,7 @@ pub struct Block {
     pub id: BlockId,
     pub activity_id: ActivityId,
     /// `image`, `pdf`, `video` (or `custom` for migrated legacy rows).
-    pub block_type: String,
+    pub kind: String,
     #[schema(value_type = ab_domain::wire::BlockContent)]
     pub content: serde_json::Value,
     pub created_at_unix: i64,
@@ -250,7 +250,7 @@ impl From<ab_domain::catalog::curriculum::Block> for Block {
         Self {
             id: b.id,
             activity_id: b.activity_id,
-            block_type: b.block_type,
+            kind: b.kind,
             content: b.content,
             created_at_unix: b.created_at,
         }
@@ -263,7 +263,7 @@ pub struct CreateBlockRequest {
     /// `image`, `pdf`, or `video`.
     #[garde(length(min = 1, max = 32))]
     #[schema(value_type = crate::dto::enums::BlockType)]
-    pub block_type: String,
+    pub kind: String,
     /// A finalized upload (purpose must match the block type).
     #[garde(skip)]
     pub upload_id: uuid::Uuid,

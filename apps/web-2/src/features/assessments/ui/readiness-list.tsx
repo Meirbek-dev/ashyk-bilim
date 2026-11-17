@@ -15,8 +15,8 @@ export function ReadinessList({ courseId, activityId, assessment }: ReadinessLis
   const { data: readiness } = useSuspenseQuery(assessmentReadinessOptions(assessment.id))
   // «Ready to publish» only before it is: a live one says learners see it, an archived one says nothing here.
   if (readiness.issues.length === 0) {
-    if (assessment.lifecycle === 'archived') return null
-    return assessment.lifecycle === 'published' ? (
+    if (assessment.status === 'archived') return null
+    return assessment.status === 'published' ? (
       <p className="text-sm text-muted-foreground">{m.assessments_live()}</p>
     ) : (
       <p className="text-sm text-success">{m.assessments_ready()}</p>

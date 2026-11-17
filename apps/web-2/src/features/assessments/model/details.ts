@@ -5,7 +5,7 @@ import { vGradingType, vUpdateAssessmentRequest } from '#/shared/api/gen/valibot
 
 // "Basics": description, weight and scale. The title is the activity's name (server UX-112): the name section edits it.
 
-export type DetailsForm = { description: string; weight: string; grading_type: GradingType }
+export type DetailsForm = { description: string; weight: string; grading_kind: GradingType }
 
 const { description, weight } = vUpdateAssessmentRequest.entries
 
@@ -18,17 +18,17 @@ const weightText = v.pipe(
 export const detailsFormSchema = v.object({
   description: description.wrapped,
   weight: weightText,
-  grading_type: vGradingType,
+  grading_kind: vGradingType,
 })
 
 export const detailsForm = (assessment: AssessmentDetail): DetailsForm => ({
   description: assessment.description,
   weight: String(assessment.weight),
-  grading_type: assessment.grading_type,
+  grading_kind: assessment.grading_kind,
 })
 
 export const detailsBody = (form: DetailsForm): UpdateAssessmentRequest => ({
   description: form.description,
   weight: Number(form.weight.replace(',', '.')),
-  grading_type: form.grading_type,
+  grading_kind: form.grading_kind,
 })

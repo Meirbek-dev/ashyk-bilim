@@ -53,7 +53,7 @@ pub struct AgendaDeadline {
     pub activity_id: ActivityId,
     pub activity_name: String,
     /// `quiz`, `exam`, `code_challenge` or `file_submission`.
-    pub activity_type: String,
+    pub kind: String,
     pub assessment_id: Option<AssessmentId>,
     pub file_submission_id: Option<FileSubmissionId>,
     /// The learner's effective due date (overrides applied).
@@ -76,7 +76,7 @@ pub struct ContinueLearning {
     pub activity_id: ActivityId,
     pub activity_name: String,
     #[schema(value_type = crate::wire::ActivityType)]
-    pub activity_type: String,
+    pub kind: String,
     /// Null before the projection wrote the course's progress.
     pub progress_pct: Option<f64>,
     /// Anything done or handed in (the run's `learning_status` is not `not_started`): «Продолжить», else «Начать».
@@ -128,7 +128,7 @@ fn deadline(row: DeadlineRow) -> AgendaDeadline {
         course_name: row.course_name,
         activity_id: row.activity_id,
         activity_name: row.activity_name,
-        activity_type: row.activity_type,
+        kind: row.kind,
         assessment_id: row.assessment_id,
         file_submission_id: row.file_submission_id,
         due_at_unix: row.due_at,
@@ -247,7 +247,7 @@ impl AgendaService {
                 thumbnail_key: run.course.thumbnail_key.clone(),
                 activity_id: next,
                 activity_name: activity.name,
-                activity_type: activity.activity_type,
+                kind: activity.kind,
                 progress_pct: run.progress_pct,
                 started: run.started(),
             });

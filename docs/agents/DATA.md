@@ -19,24 +19,24 @@ Every table, column, key and foreign key with the table's purpose: `docs/agents/
 | Word in the UI                    | Table / column                                                                       |
 | --------------------------------- | ------------------------------------------------------------------------------------ |
 | course, its picture               | `courses` (`public`, `archived_at`; `thumbnail_image_key` under `/content/<key>`)    |
-| chapter, activity                 | `chapters`, `activities` (`activity_type`, `activity_sub_type`, `published`, `content`) |
+| chapter, activity                 | `chapters`, `activities` (`kind`, `sub_kind`, `published`, `content`) |
 | course teacher / author           | `course_staff` (`course_id`, `user_id`, `authorship`, `status`); the creator is the one `authorship = 'creator'` row (`course_creator(id)`; `collection_staff` / `collection_creator(id)` for a collection), not `creator_id` |
 | enrolled learner                  | `course_members` (view: `enrolments` without staff); joins and leaves: `enrolment_events` (a leave keeps its marks in `completions`); per activity: `completions` (the fact), `activity_progress` (projection); old marks on graded activities: `trail_legacy_marks` (history only) |
-| quiz, exam, code challenge        | `assessments` (`activity_id`, `lifecycle`; title/kind = the activity's) + `assessment_items` (`body` json) |
+| quiz, exam, code challenge        | `assessments` (`activity_id`, `status`; title/kind = the activity's) + `assessment_items` (`body` json) |
 | code statement, tests, languages  | `assessment_items.body`: `prompt`, `tests[]`, `languages[]`, `time_limit_seconds`     |
 | attempt (quiz, exam, code)        | `submissions` (`status` draft / submitted / graded / released / returned) |
 | what an attempt answered against  | `submissions.items_snapshot` / `policy_snapshot`, `assessment_version_id` -> `assessment_versions` |
 | a grade and its history           | `grading_entries` (journal, highest `revision` = current) = `submissions.final_score`; breakdown `submission_breakdown(id, auto_breakdown)` (latest entry's, else the hand-in's) |
 | code "Run"                        | `code_runs` (`code_run_status(status, verdict)`, `verdict`; + `code_run_cases`, `verdict`) |
-| file task, its hand-ins           | `assessments` (policy, `lifecycle`) + `file_submissions` (same `id`: `instructions`, rubric, file caps); hand-ins are `submissions`, their files `file_submission_files` (`attempt_id` = the submission) |
+| file task, its hand-ins           | `assessments` (policy, `status`) + `file_submissions` (same `id`: `instructions`, rubric, file caps); hand-ins are `submissions`, their files `file_submission_files` (`attempt_id` = the submission) |
 | lesson media                      | `activities.content->>'filename'` (video, PDF), `blocks.content` (page blocks)       |
 | role, permission                  | `user_roles` -> `roles` (`slug`); permissions in `role_permissions`                 |
 | group                             | `usergroups`, `usergroup_members`, `usergroup_courses`                               |
 | course progress                   | `course_progress_v` (`progress_pct`, `completed_at`); `course_progress` is the stored copy the server no longer reads |
 | personal message ("Диалоги")      | `conversations` (`last_message_id`), `conversation_members` (`user_id`, `peer_id`, `last_read_message_id`), `messages` (`deleted_at` a tombstone, context `course_id` / `activity_id`); files `message_uploads` (`upload_id` -> `uploads`, purpose `message-attachment`; a bulk send names one upload from each copy); a `message_sent` intervention from analytics has `payload.message_id`; reports `message_reports`, bans `message_bans`. The text (`messages.body`, file names, report and ban free text) is not readable as `ashyq_ro` |
 
-A learner sees an activity when it is `published` and, for a file task, its `file_submissions.lifecycle` is
-`published`; an assessment needs `assessments.lifecycle = 'published'`.
+A learner sees an activity when it is `published`; an assessment (a file task too) needs
+`assessments.status = 'published'`.
 
 ## Ready queries
 
@@ -54,7 +54,7 @@ code_challenge, file_submission):
 ```sql
 select a.course_id, a.id, a.name from activities a join enrolments t on t.course_id = a.course_id
 join users u on u.id = t.user_id where u.username = '<login>'
-and a.activity_type = 'code_challenge' and a.published limit 5
+and a.kind = 'code_challenge' and a.published limit 5
 ```
 
 Activities with learner work, most first (good review data):
@@ -75,8 +75,9 @@ Make a file task reviewable (published, with instructions and a deadline in 3 da
 
 ```sql
 update activities set published = true where id = '<activity>';
-update file_submissions set lifecycle = 'published', published_at = now(), instructions = 'Ответьте на вопросы.',
-  max_files = 2, due_at = now() + interval '3 days' where activity_id = '<activity>';
+update assessments set status = 'published', published_at = now(), due_at = now() + interval '3 days'
+  where activity_id = '<activity>';
+update file_submissions set instructions = 'Ответьте на вопросы.', max_files = 2 where activity_id = '<activity>';
 ```
 
 Media referenced by the database but missing from local storage: `just restore-media --slot N` copies them from

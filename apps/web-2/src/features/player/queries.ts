@@ -67,7 +67,7 @@ async function ensureLearner(queryClient: QueryClient, courseId: CourseId) {
   return state
 }
 
-type Entry = Pick<ActivityState, 'title' | 'activity_type' | 'blocked_reason'>
+type Entry = Pick<ActivityState, 'title' | 'kind' | 'blocked_reason'>
 
 /**
  * An activity of the course as its learner sees it: the outline entry (`blocked_reason` closes it). Staff previewing
@@ -81,7 +81,7 @@ export async function ensureEntry(queryClient: QueryClient, courseId: CourseId, 
   if (!preview) throw notFound()
   const activity = await queryClient.query({ ...activityOptions(activityId), staleTime: 'static' }).catch(missing)
   if (activity.course_id !== courseId) throw notFound()
-  const entry: Entry = { title: activity.name, activity_type: activity.activity_type, blocked_reason: null }
+  const entry: Entry = { title: activity.name, kind: activity.kind, blocked_reason: null }
   return { state, preview, entry }
 }
 
@@ -134,11 +134,11 @@ export async function ensurePlayer(
     // Staff previewing an activity the outline does not list (unpublished): its own read, a lesson of this course.
     if (!staffPreview(state)) throw notFound()
     const activity = await queryClient.query({ ...activityOptions(activityId), staleTime: 'static' }).catch(missing)
-    if (activity.course_id !== courseId || activityKind(activity.activity_type) !== 'lesson') throw notFound()
+    if (activity.course_id !== courseId || activityKind(activity.kind) !== 'lesson') throw notFound()
     return { title: activity.name, open }
   }
   const { entry } = found
-  if (!entry.blocked_reason && activityKind(entry.activity_type) === 'lesson')
+  if (!entry.blocked_reason && activityKind(entry.kind) === 'lesson')
     await queryClient.query({ ...activityOptions(activityId), staleTime: 'static' }).catch(missing)
   return { title: entry.title, open }
 }

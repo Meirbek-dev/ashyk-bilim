@@ -75,7 +75,7 @@ pub struct SeededCourse {
 
 #[derive(Debug, Serialize)]
 pub struct SeededActivity {
-    pub activity_type: String,
+    pub kind: String,
     pub id: ActivityId,
     pub name: String,
 }
@@ -133,7 +133,7 @@ pub async fn seed_e2e(
         .await?
         .into_iter()
         .map(|a| SeededActivity {
-            activity_type: a.activity_type,
+            kind: a.kind,
             id: a.id,
             name: a.name,
         })
@@ -275,7 +275,7 @@ async fn build_content(state: &AppState, teacher: &Actor, course_id: CourseId) -
             { "type": "paragraph", "content": [{ "type": "text", "text": text }] }
         ] })
     };
-    for (name, activity_type, sub_type, content) in [
+    for (name, kind, sub_type, content) in [
         (
             "Dynamic page",
             "dynamic",
@@ -297,7 +297,7 @@ async fn build_content(state: &AppState, teacher: &Actor, course_id: CourseId) -
     ] {
         let activity = state
             .curriculum
-            .add_activity(teacher, chapter.id, name, activity_type, sub_type)
+            .add_activity(teacher, chapter.id, name, kind, sub_type)
             .await?;
         state
             .curriculum
@@ -358,7 +358,7 @@ async fn build_assessments(
                     title,
                     description: "",
                     weight: 1.0,
-                    grading_type: GradingType::Percentage,
+                    grading_kind: GradingType::Percentage,
                     policy: None,
                 },
             )

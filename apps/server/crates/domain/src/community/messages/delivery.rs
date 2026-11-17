@@ -202,7 +202,7 @@ impl MessagesService {
                     teacher_user_id: actor.user_id,
                     user_id: out.to,
                     course_id: course,
-                    intervention_type: "message_sent",
+                    kind: "message_sent",
                     status: "completed",
                     outcome: None,
                     outcome_code: None,

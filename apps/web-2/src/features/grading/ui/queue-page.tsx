@@ -13,7 +13,7 @@ import { FileQueue } from './file-queue'
 export function QueuePage() {
   const { activityId, courseId } = useParams({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
-  const kind = workKind(activity.activity_type)
+  const kind = workKind(activity.kind)
   // The workspace is as wide as the window; a row read across 1900 px loses its learner before it reaches the grade.
   if (kind === 'assessment')
     return (

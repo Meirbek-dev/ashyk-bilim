@@ -153,9 +153,9 @@ describe('rules: the question draw', () => {
   })
 
   test('B-ASM-16 basics: weight within 0..100 (comma too), description up to the contract limit', () => {
-    const form = { description: 'd', weight: '12,5', grading_type: 'numeric' as const }
+    const form = { description: 'd', weight: '12,5', grading_kind: 'numeric' as const }
     expect(v.is(detailsFormSchema, form)).toBe(true)
-    expect(detailsBody(form)).toEqual({ description: 'd', weight: 12.5, grading_type: 'numeric' })
+    expect(detailsBody(form)).toEqual({ description: 'd', weight: 12.5, grading_kind: 'numeric' })
     expect(v.is(detailsFormSchema, { ...form, weight: '101' })).toBe(false)
     expect(v.is(detailsFormSchema, { ...form, weight: '' })).toBe(false)
   })
@@ -170,7 +170,7 @@ const at = (code: ReadinessIssueCode, severity: 'blocker' | 'warning', item_id: 
 })
 
 const event = (actor: string | null, by?: string): AuditEvent => ({
-  actor_id: actor,
+  performed_by: actor,
   actor_name: null,
   created_at_unix: 0,
   event: 'lifecycle-transition',

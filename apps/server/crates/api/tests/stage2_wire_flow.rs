@@ -396,7 +396,7 @@ async fn creates_replay_under_idempotency_key(pool: PgPool) {
         ),
         (
             format!("/api/v2/chapters/{chapter}/activities"),
-            json!({ "name": "A", "activity_type": "dynamic", "activity_sub_type": "dynamic_page" }),
+            json!({ "name": "A", "kind": "dynamic", "sub_kind": "dynamic_page" }),
         ),
         (
             format!("/api/v2/courses/{course}/updates"),
@@ -610,7 +610,7 @@ async fn lesson(app: &TestApp, admin: &MintedSession, chapter: &str, name: &str)
         .post_as(
             admin,
             &format!("/api/v2/chapters/{chapter}/activities"),
-            &json!({ "name": name, "activity_type": "dynamic", "activity_sub_type": "dynamic_page" }),
+            &json!({ "name": name, "kind": "dynamic", "sub_kind": "dynamic_page" }),
         )
         .await;
     let activity = id(&created);

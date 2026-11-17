@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO assessment_audit_events (assessment_id, performed_by, event, payload)\n           VALUES ($1, $2, $3, $4)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7db223ef3164c9930e46491ba3d484802eefed3225731e8948eaf1aa10c70fd2"
+}

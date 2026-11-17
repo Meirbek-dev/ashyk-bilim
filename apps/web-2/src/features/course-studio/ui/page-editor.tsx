@@ -24,7 +24,7 @@ export function PageEditor({ courseId, activity }: { courseId: string; activity:
           activityId={activity.id}
           content={content}
           onChange={autosave.change}
-          header={<ActivityHeading type={activity.activity_type} title={activity.name} />}
+          header={<ActivityHeading type={activity.kind} title={activity.name} />}
         />
       </Suspense>
       <ConflictDialog

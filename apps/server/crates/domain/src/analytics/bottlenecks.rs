@@ -116,7 +116,7 @@ pub fn build_content_bottlenecks(
                 course_name: course.name.clone(),
                 activity_id: *activity_id,
                 activity_name: activity.name.clone(),
-                activity_type: activity.activity_type.clone(),
+                kind: activity.kind.clone(),
                 signal,
                 severity,
                 completion_rate,

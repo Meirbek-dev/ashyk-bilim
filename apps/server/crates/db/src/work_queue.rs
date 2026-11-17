@@ -122,7 +122,7 @@ pub async fn list_teacher_grading_work(
                          AND fa.status = 'submitted' AND NOT fa.preview
                        ORDER BY fa.updated_at DESC LIMIT 1)
                   ) AS "review_ref?",
-                  (a.activity_type = 'file_submission') AS "review_is_file!"
+                  (a.kind = 'file_submission') AS "review_is_file!"
            FROM activity_progress p
            JOIN activities a ON a.id = p.activity_id
            JOIN courses c ON c.id = p.course_id
@@ -178,7 +178,7 @@ pub async fn list_teacher_release_work(
                          AND fa.status = 'graded' AND NOT fa.preview
                        ORDER BY fa.updated_at DESC LIMIT 1)
                   ) AS "review_ref?",
-                  (a.activity_type = 'file_submission') AS "review_is_file!"
+                  (a.kind = 'file_submission') AS "review_is_file!"
            FROM activity_progress p
            JOIN activities a ON a.id = p.activity_id
            JOIN courses c ON c.id = p.course_id
@@ -208,7 +208,7 @@ pub struct DeadlineRow {
     pub course_name: String,
     pub activity_id: ActivityId,
     pub activity_name: String,
-    pub activity_type: String,
+    pub kind: String,
     pub assessment_id: Option<ab_core::id::AssessmentId>,
     pub file_submission_id: Option<ab_core::id::FileSubmissionId>,
     pub due_at: i64,
@@ -265,7 +265,7 @@ pub async fn upcoming_deadlines(
            )
            SELECT w.user_id AS "user_id!: UserId", w.course_id AS "course_id!: CourseId",
                   c.name AS course_name, w.activity_id AS "activity_id!: ActivityId",
-                  a.name AS activity_name, a.activity_type,
+                  a.name AS activity_name, a.kind,
                   w.assessment_id AS "assessment_id?: ab_core::id::AssessmentId",
                   w.file_submission_id AS "file_submission_id?: ab_core::id::FileSubmissionId",
                   (extract(epoch FROM w.due_at))::bigint AS "due_at!",

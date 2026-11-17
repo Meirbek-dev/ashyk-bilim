@@ -37,7 +37,7 @@ export function EntryCard({
   /** An archived course (the note above says so): no hours left, no how-to, no retake to ask for. */
   archived?: boolean
 }) {
-  const kind = activityKind(entry.activity_type)
+  const kind = activityKind(entry.kind)
   // Failed with no attempt left (B-PLY-19): the learner is not left at a dead end that «Продолжить» keeps leading to.
   // Due within 48 h and not handed in (B-PLY-21): the hours left in the warning tone, as /home says it.
   const left = entry.due_at_unix === null ? 0 : entry.due_at_unix - nowUnix

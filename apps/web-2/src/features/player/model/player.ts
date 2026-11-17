@@ -83,7 +83,7 @@ export type PlayerAction =
 export function playerAction(state: LearnerCourseState, entry: ActivityState): PlayerAction {
   // An open view's one action is the enrolment (`OpenViewNote`, the entry card's link): no mark, no attempt.
   if (entry.blocked_reason || openView(state)) return null
-  const kind = activityKind(entry.activity_type)
+  const kind = activityKind(entry.kind)
   if (kind !== 'lesson') {
     const action = entry.allowed_actions.find(isEntryAction)
     return action ? { kind: 'open', route: kind, action } : null

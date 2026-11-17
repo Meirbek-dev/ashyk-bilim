@@ -191,7 +191,7 @@ pub struct ActivityState {
     pub id: ActivityId,
     pub title: String,
     #[schema(value_type = crate::wire::ActivityType)]
-    pub activity_type: String,
+    pub kind: String,
     pub required: bool,
     pub state: WorkState,
     pub complete: bool,
@@ -325,7 +325,7 @@ impl LearnerStateService {
                 .collect();
         Ok(activities
             .iter()
-            .filter(|a| a.activity_type != "file_submission" && !owned.contains(&a.id))
+            .filter(|a| a.kind != "file_submission" && !owned.contains(&a.id))
             .map(|a| a.id)
             .collect())
     }
@@ -625,7 +625,7 @@ async fn closed_hand_ins(
             closed.push(assessment.activity_id);
         }
     }
-    for state in past.iter().filter(|s| s.activity_type == "file_submission") {
+    for state in past.iter().filter(|s| s.kind == "file_submission") {
         if ab_db::file_submissions::get_file_submission_by_activity(pool, state.id)
             .await?
             .is_some_and(|fs| !fs.allow_late)
@@ -741,7 +741,7 @@ fn activity_state(
     ActivityState {
         id: activity.id,
         title: activity.name.clone(),
-        activity_type: activity.activity_type.clone(),
+        kind: activity.kind.clone(),
         required: progress.is_none_or(|p| p.required),
         state,
         complete: progress.is_some_and(super::projector::progress_is_completed),
@@ -970,7 +970,7 @@ mod tests {
         ActivityState {
             id: ActivityId::new(),
             title: String::new(),
-            activity_type: "dynamic".to_owned(),
+            kind: "dynamic".to_owned(),
             required,
             state,
             complete,

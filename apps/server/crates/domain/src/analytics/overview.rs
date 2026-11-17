@@ -84,7 +84,7 @@ pub fn summarize_interventions(rows: &[InterventionRow]) -> InterventionSummary 
         resolved: count_i64(rows.iter().filter(|r| r.status == "resolved").count()),
         recovered_learners: count_i64(
             rows.iter()
-                .filter(|r| r.intervention_type == "learner_recovered")
+                .filter(|r| r.kind == "learner_recovered")
                 .count(),
         ),
         avg_risk_delta_after_intervention: mean(&deltas).map(round1),

@@ -24,7 +24,7 @@ pub async fn stale_sources(pool: &PgPool, model: &str, limit: i64) -> Result<Vec
     let rows = sqlx::query_as!(
         StaleSource,
         r#"WITH sources AS (
-               SELECT CASE a.activity_type
+               SELECT CASE a.kind
                           WHEN 'dynamic' THEN 'lesson'
                           WHEN 'file_submission' THEN 'assignment'
                           ELSE 'activity' END AS source_type,
@@ -34,12 +34,12 @@ pub async fn stale_sources(pool: &PgPool, model: &str, limit: i64) -> Result<Vec
                FROM activities a
                JOIN courses c ON c.id = a.course_id AND c.archived_at IS NULL
                LEFT JOIN file_submissions fs ON fs.activity_id = a.id
-               WHERE a.activity_type IN ('dynamic', 'video', 'document', 'file_submission')
+               WHERE a.kind IN ('dynamic', 'video', 'document', 'file_submission')
                UNION ALL
                SELECT 'item', s.id, a.course_id, a.id,
                       s.content_version::bigint * 2000000 + a.version::bigint * 2 + a.published::int
                FROM assessments s
-               JOIN activities a ON a.id = s.activity_id AND a.activity_type <> 'file_submission'
+               JOIN activities a ON a.id = s.activity_id AND a.kind <> 'file_submission'
                JOIN courses c ON c.id = a.course_id AND c.archived_at IS NULL
                UNION ALL
                SELECT 'course', c.id, c.id, NULL::uuid,
@@ -73,7 +73,7 @@ pub async fn stale_sources(pool: &PgPool, model: &str, limit: i64) -> Result<Vec
 pub struct ActivitySourceRow {
     pub course_id: CourseId,
     pub name: String,
-    pub activity_type: String,
+    pub kind: String,
     pub chapter_name: String,
     pub content: serde_json::Value,
     pub details: serde_json::Value,
@@ -84,7 +84,7 @@ pub struct ActivitySourceRow {
 pub async fn activity_source(pool: &PgPool, id: ActivityId) -> Result<Option<ActivitySourceRow>> {
     let row = sqlx::query_as!(
         ActivitySourceRow,
-        r#"SELECT a.course_id AS "course_id: CourseId", a.name, a.activity_type,
+        r#"SELECT a.course_id AS "course_id: CourseId", a.name, a.kind,
                   ch.name AS chapter_name, a.content, a.details,
                   fs.instructions AS "instructions?", fs.rubric AS "rubric?"
            FROM activities a

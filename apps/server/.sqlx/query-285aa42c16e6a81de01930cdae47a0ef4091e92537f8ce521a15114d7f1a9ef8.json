@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE assessments\n           SET status = 'published', published_at = now(), scheduled_at = NULL\n           WHERE id = $1 AND status = 'scheduled' AND scheduled_at <= now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "285aa42c16e6a81de01930cdae47a0ef4091e92537f8ce521a15114d7f1a9ef8"
+}

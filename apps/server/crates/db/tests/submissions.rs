@@ -29,7 +29,7 @@ async fn seed(pool: &PgPool) -> (UserId, CourseId, AssessmentId) {
             .await
             .unwrap();
     let chapter: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO chapters (course_id, name, creator_id) VALUES ($1, 'ch', $2) RETURNING id",
+        "INSERT INTO chapters (course_id, name, created_by) VALUES ($1, 'ch', $2) RETURNING id",
     )
     .bind(course)
     .bind(user)
@@ -37,7 +37,7 @@ async fn seed(pool: &PgPool) -> (UserId, CourseId, AssessmentId) {
     .await
     .unwrap();
     let activity: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type)
+        "INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind)
          VALUES ($1, $2, 'q', 'quiz', 'quiz_standard') RETURNING id",
     )
     .bind(chapter)
@@ -46,7 +46,7 @@ async fn seed(pool: &PgPool) -> (UserId, CourseId, AssessmentId) {
     .await
     .unwrap();
     let assessment: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO assessments (activity_id, course_id, lifecycle, published_at,
+        "INSERT INTO assessments (activity_id, course_id, status, published_at,
                                   grading_mode, grade_release_mode, completion_rule)
          VALUES ($1, $2, 'published', now(), 'auto', 'immediate', 'passed')
          RETURNING id",

@@ -81,7 +81,7 @@ async fn published_course(app: &TestApp, teacher: &MintedSession, name: &str) ->
             teacher,
             &format!("/api/v2/chapters/{chapter_id}/activities"),
             &serde_json::json!({
-                "name": "Lesson 1", "activity_type": "dynamic", "activity_sub_type": "dynamic_page",
+                "name": "Lesson 1", "kind": "dynamic", "sub_kind": "dynamic_page",
             }),
         )
         .await;
@@ -884,8 +884,8 @@ async fn course_qa_fits_a_large_course_into_the_request_cap(pool: PgPool) {
     let alice = learner(&app, "alice").await;
     let course_id = published_course(&app, &teacher, "Big").await;
     sqlx::query(
-        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, published, position)
-         SELECT chapter_id, course_id, 'Lesson ' || n, activity_type, activity_sub_type, true, n
+        "INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind, published, position)
+         SELECT chapter_id, course_id, 'Lesson ' || n, kind, sub_kind, true, n
          FROM activities, generate_series(2, 200) n WHERE course_id = $1::uuid",
     )
     .bind(&course_id)

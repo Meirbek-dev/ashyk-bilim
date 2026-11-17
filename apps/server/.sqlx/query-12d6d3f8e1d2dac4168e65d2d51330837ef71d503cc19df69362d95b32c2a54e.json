@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id AS \"id: AssessmentId\" FROM assessments\n           WHERE status = 'scheduled' AND scheduled_at <= now()\n           ORDER BY scheduled_at",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: AssessmentId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "assessments",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "12d6d3f8e1d2dac4168e65d2d51330837ef71d503cc19df69362d95b32c2a54e"
+}

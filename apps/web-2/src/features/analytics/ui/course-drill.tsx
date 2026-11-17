@@ -25,7 +25,7 @@ const columns = (courseId: CourseId): DataColumn<ActivityDropoffRow>[] => [
     header: m.analytics_col_activity(),
     priority: 1,
     cell: row => {
-      const meta = activityTypeMeta[activityType(row.activity_type)]
+      const meta = activityTypeMeta[activityType(row.kind)]
       return (
         <span className="inline-flex items-center gap-1 wrap-anywhere">
           <meta.icon aria-hidden className={`size-4 shrink-0 ${meta.ink}`} />

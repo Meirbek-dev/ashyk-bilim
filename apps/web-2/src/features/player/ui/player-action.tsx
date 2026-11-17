@@ -50,10 +50,9 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
   useHotkey(shortcuts.mark.hotkey, submit)
   const error = mark.error ?? unmark.error
   // An open view: work leads into the enrolment; a lesson has no action (the note above the page offers it).
-  if (openView(state))
-    return activityKind(entry.activity_type) === 'lesson' ? null : <OpenViewEnroll courseId={courseId} />
+  if (openView(state)) return activityKind(entry.kind) === 'lesson' ? null : <OpenViewEnroll courseId={courseId} />
   const unmarkable =
-    entry.complete && !entry.blocked_reason && activityKind(entry.activity_type) === 'lesson' && !courseArchived(state)
+    entry.complete && !entry.blocked_reason && activityKind(entry.kind) === 'lesson' && !courseArchived(state)
   // Nothing to offer (an archived course): no empty box that the card's gap would still space out.
   if (!action && !unmarkable && !error) return null
   return (

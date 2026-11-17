@@ -146,7 +146,7 @@ async fn world(pool: &PgPool) -> World {
             .await
             .unwrap();
     let chapter: Uuid = sqlx::query_scalar(
-        "INSERT INTO chapters (course_id, name, creator_id) VALUES ($1, 'ch', $2) RETURNING id",
+        "INSERT INTO chapters (course_id, name, created_by) VALUES ($1, 'ch', $2) RETURNING id",
     )
     .bind(course)
     .bind(user)
@@ -154,7 +154,7 @@ async fn world(pool: &PgPool) -> World {
     .await
     .unwrap();
     let activity: Uuid = sqlx::query_scalar(
-        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type)
+        "INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind)
          VALUES ($1, $2, 'q', 'quiz', 'quiz_standard') RETURNING id",
     )
     .bind(chapter)
@@ -163,7 +163,7 @@ async fn world(pool: &PgPool) -> World {
     .await
     .unwrap();
     let assessment: Uuid = sqlx::query_scalar(
-        "INSERT INTO assessments (activity_id, course_id, lifecycle, published_at,
+        "INSERT INTO assessments (activity_id, course_id, status, published_at,
                                   grading_mode, grade_release_mode, completion_rule)
          VALUES ($1, $2, 'published', now(), 'auto', 'immediate', 'passed')
          RETURNING id",
@@ -580,7 +580,7 @@ async fn sibling_positions_are_unique_at_commit(pool: PgPool) {
         .await
         .unwrap();
     let second: Uuid = sqlx::query_scalar(
-        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, position)
+        "INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind, position)
          VALUES ($1, $2, 'b', 'dynamic', 'dynamic_page', 2) RETURNING id",
     )
     .bind(chapter)
@@ -1157,7 +1157,7 @@ async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPoo
         "UPDATE chapters SET thumbnail_key = 'k/chapter' WHERE course_id = $2",
         "INSERT INTO collections (name, creator_id, cover_key) VALUES ('col', $1, 'k/cover')",
         "UPDATE platforms SET logo_key = 'k/logo'",
-        "INSERT INTO blocks (activity_id, block_type, content)
+        "INSERT INTO blocks (activity_id, kind, content)
          VALUES ($3, 'image', '{\"file_key\": \"k/block\"}')",
         "INSERT INTO discussion_posts (course_id, user_id, content)
          VALUES ($2, $1, '{\"type\":\"doc\",\"content\":[{\"type\":\"image\",\"attrs\":
@@ -1220,7 +1220,7 @@ async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPoo
 
     let block = upload("block-image", "k/unclaimed").await;
     sqlx::query(
-        "INSERT INTO blocks (activity_id, block_type, content, claimed)
+        "INSERT INTO blocks (activity_id, kind, content, claimed)
          VALUES ($1, 'image', '{\"file_key\": \"k/unclaimed\"}', false)",
     )
     .bind(w.activity)
@@ -1608,7 +1608,7 @@ async fn projections_and_rollups_are_keyed_by_what_they_describe(pool: PgPool) {
 #[ab_testdb::test]
 async fn the_event_prune_keeps_400_days(pool: PgPool) {
     sqlx::query(
-        "INSERT INTO analytics_events (event_type, occurred_at)
+        "INSERT INTO analytics_events (event, occurred_at)
          VALUES ('login', now() - interval '401 days'), ('login', now() - interval '399 days'),
                 ('login', now())",
     )
@@ -1816,7 +1816,7 @@ async fn an_assessment_is_named_and_typed_by_its_activity(pool: PgPool) {
     assert_eq!(row.title, "renamed");
 
     let retyped = sqlx::query(
-        "UPDATE activities SET activity_type = 'exam', activity_sub_type = 'exam_standard'
+        "UPDATE activities SET kind = 'exam', sub_kind = 'exam_standard'
          WHERE id = $1",
     )
     .bind(w.activity)
@@ -2587,8 +2587,8 @@ async fn a_row_cannot_point_at_someone_elses_work(pool: PgPool) {
     let theirs = submission(&pool, &w, 1, false).await.unwrap();
     let foreign_item: Uuid = {
         let activity: Uuid = sqlx::query_scalar(
-            "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, position)
-             SELECT chapter_id, course_id, 'other', activity_type, activity_sub_type, position + 1
+            "INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind, position)
+             SELECT chapter_id, course_id, 'other', kind, sub_kind, position + 1
              FROM activities WHERE id = $1 RETURNING id",
         )
         .bind(w.activity)
@@ -2596,9 +2596,9 @@ async fn a_row_cannot_point_at_someone_elses_work(pool: PgPool) {
         .await
         .unwrap();
         let assessment: Uuid = sqlx::query_scalar(
-            "INSERT INTO assessments (activity_id, course_id, lifecycle, published_at,
+            "INSERT INTO assessments (activity_id, course_id, status, published_at,
                                       grading_mode, grade_release_mode, completion_rule)
-             SELECT $1, course_id, lifecycle, published_at, grading_mode, grade_release_mode, completion_rule
+             SELECT $1, course_id, status, published_at, grading_mode, grade_release_mode, completion_rule
              FROM assessments WHERE id = $2 RETURNING id",
         )
         .bind(activity)
@@ -3116,6 +3116,63 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         // a release later drops `users_reissue_certificates`.
         ("users_reissue_certificates", "debt"),
         ("users_sync_state", "debt"),
+        // The previous release's column names (REWRITE 5.8 item 9): `renamed_columns()` keeps each pair equal.
+        (
+            "activities_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
+        (
+            "analytics_events_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
+        (
+            "analytics_saved_views_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
+        (
+            "assessment_audit_events_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
+        (
+            "assessments_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
+        (
+            "blocks_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
+        (
+            "bulk_actions_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
+        (
+            "chapters_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
+        (
+            "course_updates_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
+        (
+            "courses_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
+        (
+            "daily_teacher_metrics_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
+        (
+            "item_feedback_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
+        (
+            "teacher_interventions_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
+        (
+            "usergroups_aliases",
+            "derived; the previous release's names, a contract drops it",
+        ),
     ];
     let found: Vec<String> = sqlx::query_scalar(
         "SELECT DISTINCT t.tgname::text FROM pg_trigger t
@@ -3618,7 +3675,7 @@ async fn assessment_shapes_hold_at_the_database(pool: PgPool) {
 
     // A hand-in cannot name another assessment's version.
     let activity: Uuid = sqlx::query_scalar(
-        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, position)
+        "INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind, position)
          SELECT chapter_id, course_id, 'q2', 'quiz', 'quiz_standard', position + 1 FROM activities
          WHERE id = $1 RETURNING id",
     )
@@ -3873,7 +3930,7 @@ async fn derived_values_are_read_from_their_source(pool: PgPool) {
             comment: "good",
             score: None,
             max_score: None,
-            annotation_type: ab_core::assessments::AnnotationType::Text,
+            kind: ab_core::assessments::AnnotationType::Text,
             annotation_key: None,
         },
     )

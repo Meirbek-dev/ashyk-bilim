@@ -30,7 +30,7 @@ export function ActivityLine({ courseId, activity, status }: ActivityLineProps) 
       </span>
       <span className="flex shrink-0 flex-wrap items-baseline gap-x-2 @3xl:contents">
         <span className="text-sm text-muted-foreground @3xl:ms-2 @3xl:flex-1 @3xl:whitespace-nowrap">
-          {activityTypeMeta[activity.activity_type].label()}
+          {activityTypeMeta[activity.kind].label()}
         </span>
         <span className={STATUS_CELL}>{status}</span>
       </span>

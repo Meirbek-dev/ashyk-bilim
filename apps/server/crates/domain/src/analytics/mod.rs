@@ -130,7 +130,7 @@ const FAR_FUTURE: Day = Day(jiff::civil::date(9999, 12, 31));
 pub struct NewIntervention {
     pub user_id: UserId,
     pub course_id: CourseId,
-    pub intervention_type: String,
+    pub kind: String,
     pub status: String,
     pub outcome: Option<String>,
     pub outcome_code: Option<InterventionOutcome>,
@@ -515,9 +515,9 @@ impl AnalyticsService {
             .ok_or_else(|| Error::not_found("course"))?
             .ensure_not_archived()?;
         let mut errors = Vec::new();
-        if !INTERVENTION_TYPES.contains(&input.intervention_type.as_str()) {
+        if !INTERVENTION_TYPES.contains(&input.kind.as_str()) {
             errors.push(FieldError {
-                field: "intervention_type".into(),
+                field: "kind".into(),
                 code: "invalid".into(),
                 message: format!("expected one of {}", INTERVENTION_TYPES.join(", ")),
             });
@@ -578,7 +578,7 @@ impl AnalyticsService {
                 teacher_user_id: actor.user_id,
                 user_id: input.user_id,
                 course_id: input.course_id,
-                intervention_type: &input.intervention_type,
+                kind: &input.kind,
                 status: &input.status,
                 outcome: input.outcome.as_deref(),
                 outcome_code: input.outcome_code.map(InterventionOutcome::as_str),
@@ -695,13 +695,13 @@ impl AnalyticsService {
         actor: &Actor,
         filters: &AnalyticsFilters,
         name: &str,
-        view_type: &str,
+        kind: &str,
         query: &serde_json::Value,
     ) -> Result<SavedView> {
         self.read_scope(actor, filters).await?;
         let name = ab_core::strip_controls(name);
-        let (name, view_type) = (ab_core::trim_blank(&name), view_type.trim());
-        let mut errors: Vec<FieldError> = [("name", name), ("view_type", view_type)]
+        let (name, kind) = (ab_core::trim_blank(&name), kind.trim());
+        let mut errors: Vec<FieldError> = [("name", name), ("kind", kind)]
             .into_iter()
             .filter(|(_, value)| value.is_empty())
             .map(|(field, _)| FieldError::required(field))
@@ -718,9 +718,8 @@ impl AnalyticsService {
         }
         // UX-106: `teacher_user_id` impersonation is read-only - a view is
         // saved under the acting user (like interventions, BUG-157).
-        let row =
-            ab_db::analytics::upsert_saved_view(&self.pool, actor.user_id, name, view_type, query)
-                .await?;
+        let row = ab_db::analytics::upsert_saved_view(&self.pool, actor.user_id, name, kind, query)
+            .await?;
         Ok(row.into())
     }
 

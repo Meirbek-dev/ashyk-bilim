@@ -433,7 +433,7 @@ async fn seed_e2e_builds_fixtures_idempotently(pool: PgPool) {
         .as_array()
         .unwrap()
         .iter()
-        .map(|a| a["activity_type"].as_str().unwrap())
+        .map(|a| a["kind"].as_str().unwrap())
         .collect();
     types.sort_unstable();
     assert_eq!(

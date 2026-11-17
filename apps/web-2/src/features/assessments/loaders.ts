@@ -30,7 +30,7 @@ export async function assessmentHome(
 /** Studio layout and `edit`: the assessment behind a quiz, exam or code challenge; false for other activities. */
 export async function ensureAssessment(queryClient: QueryClient, activityId: string): Promise<boolean> {
   const activity = await activityOf(queryClient, activityId)
-  if (!isAssessmentType(activity.activity_type)) return false
+  if (!isAssessmentType(activity.kind)) return false
   await queryClient.query({ ...assessmentOptions(activityId), staleTime: 'static' })
   return true
 }

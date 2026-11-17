@@ -40,8 +40,8 @@ export function ContentsRow({ courseId, activity, onPick, nowUnix }: RowProps) {
   const work = activity.complete ? undefined : (flight[activity.state] ?? overdue)
   const label = (
     <>
-      <ActivityIcon type={activity.activity_type} size="sm" />
-      <span className="sr-only">{activityTypeMeta[activity.activity_type].label()}: </span>
+      <ActivityIcon type={activity.kind} size="sm" />
+      <span className="sr-only">{activityTypeMeta[activity.kind].label()}: </span>
       {/* Two lines at most (real names run to four): the full name is the tooltip. */}
       <span title={activity.title} className="line-clamp-2 min-w-0 flex-1 wrap-anywhere">
         {activity.title}

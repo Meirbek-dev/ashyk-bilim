@@ -85,12 +85,12 @@ pub async fn course_readiness(
             warnings.push(item(ReadinessCode::ActivityUnpublished, Some(activity)));
             continue;
         }
-        match activity.activity_type.as_str() {
+        match activity.kind.as_str() {
             "quiz" | "exam" | "code_challenge" => {
                 let assessment =
                     ab_db::assessments::get_assessment_by_activity(pool, activity.id).await?;
                 match assessment {
-                    None if activity.activity_type == "code_challenge" => {
+                    None if activity.kind == "code_challenge" => {
                         blockers.push(item(
                             ReadinessCode::CodeChallengeUnconfigured,
                             Some(activity),

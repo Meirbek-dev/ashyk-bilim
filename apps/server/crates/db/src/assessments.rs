@@ -37,7 +37,7 @@ pub struct AssessmentRow {
     pub published_at: Option<i64>,
     pub archived_at: Option<i64>,
     pub weight: f64,
-    pub grading_type: GradingType,
+    pub grading_kind: GradingType,
     pub content_version: i32,
     pub policy_version: i32,
     /// `If-Match` lock over the whole row (any change bumps it, by trigger).
@@ -156,7 +156,7 @@ pub struct NewAssessment<'a> {
     pub course_id: CourseId,
     pub description: &'a str,
     pub weight: f64,
-    pub grading_type: GradingType,
+    pub grading_kind: GradingType,
     pub creator_id: UserId,
     pub policy: &'a PolicyValues,
 }
@@ -168,8 +168,8 @@ pub async fn insert_assessment<'e>(
     let p = new.policy;
     let id = sqlx::query_scalar!(
         r#"INSERT INTO assessments (
-               activity_id, course_id, description, weight, grading_type,
-               creator_id,
+               activity_id, course_id, description, weight, grading_kind,
+               created_by,
                grading_mode, grade_release_mode, completion_rule, passing_score,
                max_attempts, time_limit_seconds, due_at, allow_late,
                late_policy_kind, late_penalty_percent_per_day, late_penalty_max_days,
@@ -189,7 +189,7 @@ pub async fn insert_assessment<'e>(
         new.course_id.0,
         new.description,
         new.weight,
-        new.grading_type.as_str(),
+        new.grading_kind.as_str(),
         new.creator_id.0,
         p.grading_mode.as_str(),
         p.grade_release_mode.as_str(),
@@ -233,15 +233,15 @@ pub async fn get_assessment<'e>(
         AssessmentRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
                   course_id AS "course_id: CourseId",
-                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id)
+                  (SELECT act.kind FROM activities act WHERE act.id = assessments.activity_id)
                       AS "kind!: AssessmentKind",
                   (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id)
                       AS "title!",
-                  description, lifecycle AS "lifecycle: Lifecycle",
+                  description, status AS "lifecycle: Lifecycle",
                   (extract(epoch FROM scheduled_at))::bigint AS "scheduled_at?",
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
-                  weight::float8 AS "weight!", grading_type AS "grading_type: GradingType",
+                  weight::float8 AS "weight!", grading_kind AS "grading_kind: GradingType",
                   content_version, policy_version, version,
                   grading_mode AS "grading_mode: GradingMode",
                   grade_release_mode AS "grade_release_mode: GradeReleaseMode",
@@ -260,7 +260,7 @@ pub async fn get_assessment<'e>(
                   attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
                   draw_count, draw_strata,
                   access_mode AS "access_mode: AccessMode",
-                  creator_id AS "creator_id: UserId",
+                  created_by AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM assessments WHERE id = $1
@@ -307,15 +307,15 @@ pub async fn get_assessment_by_activity<'e>(
         AssessmentRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
                   course_id AS "course_id: CourseId",
-                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id)
+                  (SELECT act.kind FROM activities act WHERE act.id = assessments.activity_id)
                       AS "kind!: AssessmentKind",
                   (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id)
                       AS "title!",
-                  description, lifecycle AS "lifecycle: Lifecycle",
+                  description, status AS "lifecycle: Lifecycle",
                   (extract(epoch FROM scheduled_at))::bigint AS "scheduled_at?",
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
-                  weight::float8 AS "weight!", grading_type AS "grading_type: GradingType",
+                  weight::float8 AS "weight!", grading_kind AS "grading_kind: GradingType",
                   content_version, policy_version, version,
                   grading_mode AS "grading_mode: GradingMode",
                   grade_release_mode AS "grade_release_mode: GradeReleaseMode",
@@ -334,7 +334,7 @@ pub async fn get_assessment_by_activity<'e>(
                   attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
                   draw_count, draw_strata,
                   access_mode AS "access_mode: AccessMode",
-                  creator_id AS "creator_id: UserId",
+                  created_by AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM assessments WHERE activity_id = $1
@@ -354,15 +354,15 @@ pub async fn list_assessments_for_course(
         AssessmentRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
                   course_id AS "course_id: CourseId",
-                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id)
+                  (SELECT act.kind FROM activities act WHERE act.id = assessments.activity_id)
                       AS "kind!: AssessmentKind",
                   (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id)
                       AS "title!",
-                  description, lifecycle AS "lifecycle: Lifecycle",
+                  description, status AS "lifecycle: Lifecycle",
                   (extract(epoch FROM scheduled_at))::bigint AS "scheduled_at?",
                   (extract(epoch FROM published_at))::bigint AS "published_at?",
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
-                  weight::float8 AS "weight!", grading_type AS "grading_type: GradingType",
+                  weight::float8 AS "weight!", grading_kind AS "grading_kind: GradingType",
                   content_version, policy_version, version,
                   grading_mode AS "grading_mode: GradingMode",
                   grade_release_mode AS "grade_release_mode: GradeReleaseMode",
@@ -381,7 +381,7 @@ pub async fn list_assessments_for_course(
                   attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
                   draw_count, draw_strata,
                   access_mode AS "access_mode: AccessMode",
-                  creator_id AS "creator_id: UserId",
+                  created_by AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM assessments WHERE course_id = $1
@@ -419,12 +419,12 @@ pub async fn gradebook_columns(
     let rows = sqlx::query_as!(
         GradebookAssessmentRow,
         r#"SELECT s.id AS "id: AssessmentId", s.activity_id AS "activity_id: ActivityId",
-                  a.name AS title, a.activity_type AS "kind: AssessmentKind",
+                  a.name AS title, a.kind AS "kind: AssessmentKind",
                   (extract(epoch FROM s.due_at))::bigint AS "due_at?", s.passing_score::float8 AS "passing_score!", s.weight::float8 AS "weight!"
            FROM assessments s
            JOIN activities a ON a.id = s.activity_id
            JOIN chapters c ON c.id = a.chapter_id
-           WHERE s.course_id = $1 AND a.activity_type <> 'file_submission'
+           WHERE s.course_id = $1 AND a.kind <> 'file_submission'
              AND (EXISTS (SELECT 1 FROM learner_visible_activities v WHERE v.activity_id = a.id)
                   OR EXISTS (SELECT 1 FROM submissions x WHERE x.assessment_id = s.id
                              AND x.status <> 'draft' AND NOT x.preview))
@@ -443,18 +443,18 @@ pub async fn update_assessment_details<'e>(
     id: AssessmentId,
     description: Option<&str>,
     weight: Option<f64>,
-    grading_type: Option<GradingType>,
+    grading_kind: Option<GradingType>,
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE assessments SET
                description = COALESCE($2, description),
                weight = COALESCE($3::float8, weight),
-               grading_type = COALESCE($4, grading_type)
+               grading_kind = COALESCE($4, grading_kind)
            WHERE id = $1"#,
         id.0,
         description,
         weight,
-        grading_type.map(GradingType::as_str)
+        grading_kind.map(GradingType::as_str)
     )
     .execute(db)
     .await?;
@@ -531,7 +531,7 @@ pub async fn set_lifecycle<'e>(
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE assessments SET
-               lifecycle = $2,
+               status = $2,
                scheduled_at = to_timestamp($3),
                published_at = to_timestamp($4),
                archived_at = to_timestamp($5)
@@ -557,8 +557,8 @@ pub async fn draft_scheduled_in_course(
     course_id: CourseId,
 ) -> Result<Vec<AssessmentId>> {
     let ids = sqlx::query_scalar!(
-        r#"UPDATE assessments SET lifecycle = 'draft', scheduled_at = NULL
-           WHERE course_id = $1 AND lifecycle = 'scheduled'
+        r#"UPDATE assessments SET status = 'draft', scheduled_at = NULL
+           WHERE course_id = $1 AND status = 'scheduled'
            RETURNING id AS "id: AssessmentId""#,
         course_id.0
     )
@@ -571,7 +571,7 @@ pub async fn draft_scheduled_in_course(
 pub async fn list_due(pool: &PgPool) -> Result<Vec<AssessmentId>> {
     let ids = sqlx::query_scalar!(
         r#"SELECT id AS "id: AssessmentId" FROM assessments
-           WHERE lifecycle = 'scheduled' AND scheduled_at <= now()
+           WHERE status = 'scheduled' AND scheduled_at <= now()
            ORDER BY scheduled_at"#
     )
     .fetch_all(pool)
@@ -584,8 +584,8 @@ pub async fn list_due(pool: &PgPool) -> Result<Vec<AssessmentId>> {
 pub async fn publish_due<'e>(db: impl sqlx::PgExecutor<'e>, id: AssessmentId) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE assessments
-           SET lifecycle = 'published', published_at = now(), scheduled_at = NULL
-           WHERE id = $1 AND lifecycle = 'scheduled' AND scheduled_at <= now()"#,
+           SET status = 'published', published_at = now(), scheduled_at = NULL
+           WHERE id = $1 AND status = 'scheduled' AND scheduled_at <= now()"#,
         id.0
     )
     .execute(db)
@@ -896,7 +896,7 @@ pub async fn insert_audit_event<'e, E: sqlx::PgExecutor<'e>>(
     payload: serde_json::Value,
 ) -> Result<()> {
     sqlx::query!(
-        r#"INSERT INTO assessment_audit_events (assessment_id, actor_id, event, payload)
+        r#"INSERT INTO assessment_audit_events (assessment_id, performed_by, event, payload)
            VALUES ($1, $2, $3, $4)"#,
         assessment_id.0,
         actor_id.map(|u| u.0),
@@ -925,8 +925,8 @@ pub async fn list_audit_events(
 ) -> Result<Vec<AuditEventRow>> {
     let rows = sqlx::query_as!(
         AuditEventRow,
-        r#"SELECT e.id, e.actor_id AS "actor_id: UserId",
-                  (SELECT u.display_name FROM users u WHERE u.id = e.actor_id) AS "actor_name?",
+        r#"SELECT e.id, e.performed_by AS "actor_id: UserId",
+                  (SELECT u.display_name FROM users u WHERE u.id = e.performed_by) AS "actor_name?",
                   e.event, e.payload,
                   (extract(epoch FROM e.created_at))::bigint AS "created_at!"
            FROM assessment_audit_events e

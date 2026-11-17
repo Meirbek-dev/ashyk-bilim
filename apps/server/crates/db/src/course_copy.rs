@@ -16,9 +16,9 @@ pub async fn copy_course(
 ) -> Result<CourseId> {
     let id = sqlx::query_scalar!(
         r#"WITH course AS (
-               INSERT INTO courses (name, description, about, learnings, tags, thumbnail_type,
+               INSERT INTO courses (name, description, about, learnings, tags, thumbnail_kind,
                                     thumbnail_image_key, thumbnail_video_key, creator_id)
-               SELECT $2, description, about, learnings, tags, thumbnail_type,
+               SELECT $2, description, about, learnings, tags, thumbnail_kind,
                       thumbnail_image_key, thumbnail_video_key, $3
                FROM courses WHERE id = $1
                RETURNING id, creator_id),
@@ -68,7 +68,7 @@ pub async fn copy_chapters(
     (old, new): (&[Uuid], &[Uuid]),
 ) -> Result<()> {
     sqlx::query!(
-        r#"INSERT INTO chapters (id, course_id, name, description, thumbnail_key, position, creator_id)
+        r#"INSERT INTO chapters (id, course_id, name, description, thumbnail_key, position, created_by)
            SELECT m.new_id, $1, c.name, c.description, c.thumbnail_key, c.position, $2
            FROM unnest($3::uuid[], $4::uuid[]) AS m(old_id, new_id)
            JOIN chapters c ON c.id = m.old_id"#,
@@ -92,9 +92,9 @@ pub async fn copy_activities(
     (old, new, chapters): (&[Uuid], &[Uuid], &[Uuid]),
 ) -> Result<()> {
     sqlx::query!(
-        r#"INSERT INTO activities (id, chapter_id, course_id, name, activity_type, activity_sub_type,
-                                   content, details, settings, published, position, creator_id)
-           SELECT m.new_id, m.chapter_id, $1, a.name, a.activity_type, a.activity_sub_type,
+        r#"INSERT INTO activities (id, chapter_id, course_id, name, kind, sub_kind,
+                                   content, details, settings, published, position, created_by)
+           SELECT m.new_id, m.chapter_id, $1, a.name, a.kind, a.sub_kind,
                   a.content, a.details, a.settings, false, a.position, $2
            FROM unnest($3::uuid[], $4::uuid[], $5::uuid[]) AS m(old_id, new_id, chapter_id)
            JOIN activities a ON a.id = m.old_id"#,
@@ -118,8 +118,8 @@ pub async fn copy_activities(
     for block in blocks {
         let new_block = Uuid::now_v7();
         sqlx::query!(
-            r#"INSERT INTO blocks (id, activity_id, block_type, content, claimed)
-               SELECT $2, $3, block_type, content, claimed FROM blocks WHERE id = $1"#,
+            r#"INSERT INTO blocks (id, activity_id, kind, content, claimed)
+               SELECT $2, $3, kind, content, claimed FROM blocks WHERE id = $1"#,
             block.id,
             new_block,
             block.activity_id
@@ -143,7 +143,7 @@ pub async fn copy_activities(
         r#"WITH a AS (
                INSERT INTO assessments (activity_id, course_id, due_at, allow_late,
                    late_policy_kind, late_penalty_percent_per_day, late_penalty_max_days,
-                   late_cutoff_at, max_attempts, grade_release_mode, creator_id,
+                   late_cutoff_at, max_attempts, grade_release_mode, created_by,
                    grading_mode, completion_rule, passing_score, required)
                SELECT m.new_id, $1, s.due_at, s.allow_late, s.late_policy_kind,
                       s.late_penalty_percent_per_day, s.late_penalty_max_days, s.late_cutoff_at,

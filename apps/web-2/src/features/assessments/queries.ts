@@ -101,7 +101,7 @@ export const lifecycleOptions = (queryClient: QueryClient, activityId: string, c
     putAssessment(queryClient, activityId)(assessment)
     queryClient.setQueryData<ActivityDetail>(
       getActivityQueryKey({ path: { activity_id: activityId } }),
-      activity => activity && { ...activity, published: assessment.lifecycle === 'published' },
+      activity => activity && { ...activity, published: assessment.status === 'published' },
     )
   },
   // Readiness does not change with the state (the schedule warning is checked again when scheduling).

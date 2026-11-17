@@ -862,7 +862,7 @@ const BODIES: &[(&str, &str, &str)] = &[
     (
         "POST",
         "/api/v2/analytics/teacher/interventions",
-        r#"{"course_id":"$course","user_id":"$learner","intervention_type":"message_sent"}"#,
+        r#"{"course_id":"$course","user_id":"$learner","kind":"message_sent"}"#,
     ),
     (
         "POST",
@@ -1065,7 +1065,7 @@ async fn world(app: &TestApp) -> World {
             .as_array()
             .unwrap()
             .iter()
-            .find(|a| a["activity_type"] == kind)
+            .find(|a| a["kind"] == kind)
             .map(|a| a["id"].as_str().unwrap().to_owned())
             .unwrap()
     };
@@ -1195,7 +1195,7 @@ async fn world(app: &TestApp) -> World {
         &app.post_as(
             &owner,
             &format!("/api/v2/activities/{dynamic}/blocks"),
-            &json!({ "block_type": "image", "upload_id": image }),
+            &json!({ "kind": "image", "upload_id": image }),
         )
         .await,
         "block",
@@ -1366,7 +1366,7 @@ async fn world(app: &TestApp) -> World {
         &app.post_as(
             &owner,
             "/api/v2/analytics/teacher/interventions",
-            &json!({ "course_id": course, "user_id": learner.user_id, "intervention_type": "message_sent" }),
+            &json!({ "course_id": course, "user_id": learner.user_id, "kind": "message_sent" }),
         )
         .await,
         "intervention",

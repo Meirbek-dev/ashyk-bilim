@@ -5,6 +5,14 @@
 use sqlx::PgPool;
 
 async fn seed_course(pool: &PgPool) -> (uuid::Uuid, uuid::Uuid, uuid::Uuid) {
+    seed_course_on(pool, false).await
+}
+
+/// `previous_schema`: the activity's kind is still `activity_type` / `activity_sub_type` (before 20261116075644).
+async fn seed_course_on(
+    pool: &PgPool,
+    previous_schema: bool,
+) -> (uuid::Uuid, uuid::Uuid, uuid::Uuid) {
     let course: uuid::Uuid =
         sqlx::query_scalar("INSERT INTO courses (name) VALUES ('Rust 101') RETURNING id")
             .fetch_one(pool)
@@ -17,10 +25,13 @@ async fn seed_course(pool: &PgPool) -> (uuid::Uuid, uuid::Uuid, uuid::Uuid) {
     .fetch_one(pool)
     .await
     .unwrap();
-    let activity: uuid::Uuid = sqlx::query_scalar(
+    let activity: uuid::Uuid = sqlx::query_scalar(if previous_schema {
         "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type)
-         VALUES ($1, $2, 'Lesson', 'dynamic', 'dynamic_page') RETURNING id",
-    )
+         VALUES ($1, $2, 'Lesson', 'dynamic', 'dynamic_page') RETURNING id"
+    } else {
+        "INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind)
+         VALUES ($1, $2, 'Lesson', 'dynamic', 'dynamic_page') RETURNING id"
+    })
     .bind(chapter)
     .bind(course)
     .fetch_one(pool)
@@ -47,7 +58,7 @@ async fn platform_is_a_singleton(pool: PgPool) {
 async fn invalid_type_subtype_pairs_are_rejected(pool: PgPool) {
     let (course, chapter, _activity) = seed_course(&pool).await;
     let bad = sqlx::query(
-        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type)
+        "INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind)
          VALUES ($1, $2, 'Bad', 'video', 'document_pdf')",
     )
     .bind(chapter)
@@ -64,7 +75,7 @@ async fn invalid_type_subtype_pairs_are_rejected(pool: PgPool) {
 async fn cascades_flow_course_to_blocks(pool: PgPool) {
     let (course, _chapter, activity) = seed_course(&pool).await;
     sqlx::query(
-        "INSERT INTO blocks (activity_id, block_type, content)
+        "INSERT INTO blocks (activity_id, kind, content)
          VALUES ($1, 'image', '{\"file_key\": \"k\"}')",
     )
     .bind(activity)
@@ -226,12 +237,16 @@ async fn seed_code_challenge_on(
     prompt: &str,
     previous_schema: bool,
 ) -> uuid::Uuid {
-    let (course, chapter, _) = seed_course(pool).await;
-    let activity: uuid::Uuid = sqlx::query_scalar(
+    let (course, chapter, _) = seed_course_on(pool, previous_schema).await;
+    let activity: uuid::Uuid = sqlx::query_scalar(if previous_schema {
         "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, content, position)
          VALUES ($1, $2, 'Hello', 'code_challenge', 'code_general', jsonb_build_object('description', $3::text), 2)
-         RETURNING id",
-    )
+         RETURNING id"
+    } else {
+        "INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind, content, position)
+         VALUES ($1, $2, 'Hello', 'code_challenge', 'code_general', jsonb_build_object('description', $3::text), 2)
+         RETURNING id"
+    })
     .bind(chapter)
     .bind(course)
     .bind(description)

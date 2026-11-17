@@ -39,8 +39,6 @@ export type AccessView = {
 export type ActionId = 'enroll' | 'start' | 'continue' | 'revise' | 'view_feedback' | 'wait_for_grade' | 'view_certificate' | 'review_completion' | 'none';
 
 export type Activity = {
-    activity_sub_type: ActivitySubType;
-    activity_type: ActivityType;
     /**
      * What the caller may do to this activity now.
      */
@@ -48,12 +46,14 @@ export type Activity = {
     chapter_id: ChapterId;
     course_id: CourseId;
     id: ActivityId;
+    kind: ActivityType;
     name: string;
     /**
      * 1-based, contiguous within the chapter.
      */
     position: number;
     published: boolean;
+    sub_kind: ActivitySubType;
     /**
      * Optimistic lock - send back as `If-Match` on the content PATCH.
      */
@@ -112,10 +112,10 @@ export type ActivityDraftStats = {
 export type ActivityDropoffRow = {
     activity_id: ActivityId;
     activity_name: string;
-    activity_type: string;
     chapter_id: ChapterId;
     current_step_completions: number;
     dropoff_pct: number;
+    kind: string;
     previous_step_completions: number;
 };
 
@@ -149,7 +149,6 @@ export type ActivitySettings = {
 };
 
 export type ActivityState = {
-    activity_type: ActivityType;
     allowed_actions: Array<string>;
     available: boolean;
     blocked_reason: BlockedReason | null;
@@ -157,6 +156,7 @@ export type ActivityState = {
     due_at_unix: UnixTime | null;
     id: ActivityId;
     is_late: boolean;
+    kind: ActivityType;
     /**
      * When a `scheduled` test opens.
      */
@@ -463,10 +463,6 @@ export type AgendaCourseUpdate = {
 export type AgendaDeadline = {
     activity_id: ActivityId;
     activity_name: string;
-    /**
-     * `quiz`, `exam`, `code_challenge` or `file_submission`.
-     */
-    activity_type: string;
     assessment_id: AssessmentId | null;
     course_id: CourseId;
     course_name: string;
@@ -479,6 +475,10 @@ export type AgendaDeadline = {
      */
     due_at_unix: UnixTime;
     file_submission_id: FileSubmissionId | null;
+    /**
+     * `quiz`, `exam`, `code_challenge` or `file_submission`.
+     */
+    kind: string;
     /**
      * Set when `status` is `released`: whether the grade passed.
      */
@@ -725,17 +725,17 @@ export type Assessment = {
     content_version: number;
     course_id: CourseId;
     created_at_unix: UnixTime;
-    creator_id: UserId | null;
+    created_by: UserId | null;
     description: string;
     edit_lock: EditLock | null;
-    grading_type: GradingType;
+    grading_kind: GradingType;
     id: AssessmentId;
     kind: AssessmentKind;
-    lifecycle: Lifecycle;
     policy: Policy;
     policy_version: number;
     published_at_unix: UnixTime | null;
     scheduled_at_unix: UnixTime | null;
+    status: Lifecycle;
     title: string;
     updated_at_unix: UnixTime;
     /**
@@ -1129,16 +1129,15 @@ export type AttemptState = {
     draft_id: SubmissionId | null;
     effective: EffectivePolicy;
     is_teacher_preview: boolean;
-    lifecycle: Lifecycle;
     opens_at_unix: UnixTime | null;
     /**
      * The latest attempt was returned for revision; the cap is lifted.
      */
     revision_requested: boolean;
+    status: Lifecycle;
 };
 
 export type AuditEvent = {
-    actor_id: UserId | null;
     /**
      * The actor's display name (`null`: the scheduler, or a deleted user).
      */
@@ -1147,6 +1146,7 @@ export type AuditEvent = {
     event: AuditEventKind;
     id: string;
     payload: AuditPayload;
+    performed_by: UserId | null;
 };
 
 /**
@@ -1224,13 +1224,13 @@ export type AwardResponse = {
 
 export type Block = {
     activity_id: ActivityId;
-    /**
-     * `image`, `pdf`, `video` (or `custom` for migrated legacy rows).
-     */
-    block_type: string;
     content: BlockContent;
     created_at_unix: UnixTime;
     id: BlockId;
+    /**
+     * `image`, `pdf`, `video` (or `custom` for migrated legacy rows).
+     */
+    kind: string;
 };
 
 /**
@@ -1270,13 +1270,13 @@ export type BlockedReason = 'restricted' | 'scheduled';
 export type Bucket = 'day' | 'week';
 
 export type BulkAction = {
-    action_type: BulkActionType;
     affected_count: number;
     assessment_id: AssessmentId;
     completed_at_unix: UnixTime | null;
     created_at_unix: UnixTime;
     error_log: string;
     id: BulkActionId;
+    kind: BulkActionType;
     params: BulkActionParams;
     performed_by: UserId | null;
     status: BulkActionStatus;
@@ -1948,7 +1948,6 @@ export type ConsistencyReport = {
 export type ContentBottleneckRow = {
     activity_id: ActivityId;
     activity_name: string;
-    activity_type: string;
     avg_time_seconds: number | null;
     completed_learners: number;
     completion_rate: number | null;
@@ -1956,6 +1955,7 @@ export type ContentBottleneckRow = {
     course_name: string;
     exit_count: number;
     failed_assessments: number;
+    kind: string;
     note: string;
     severity: Severity;
     signal: ContentBottleneckSignal;
@@ -1998,9 +1998,9 @@ export type ContinueLearning = {
      */
     activity_id: ActivityId;
     activity_name: string;
-    activity_type: ActivityType;
     course_id: CourseId;
     course_name: string;
+    kind: ActivityType;
     /**
      * Null before the projection wrote the course's progress.
      */
@@ -2570,14 +2570,14 @@ export type CoursesSection = {
 
 export type CreateActivityRequest = {
     /**
-     * Must pair with `activity_type` (e.g. `video_youtube`).
-     */
-    activity_sub_type: ActivitySubType;
-    /**
      * One of the closed activity-type set (e.g. `video`, `exam`).
      */
-    activity_type: ActivityType;
+    kind: ActivityType;
     name: string;
+    /**
+     * Must pair with `kind` (e.g. `video_youtube`).
+     */
+    sub_kind: ActivitySubType;
 };
 
 export type CreateAssessmentRequest = {
@@ -2586,7 +2586,7 @@ export type CreateAssessmentRequest = {
      */
     chapter_id: ChapterId;
     description?: string;
-    grading_type?: GradingType;
+    grading_kind?: GradingType;
     kind: AssessmentKind;
     /**
      * Omit to start from the kind's preset.
@@ -2601,13 +2601,13 @@ export type CreateAssessmentRequest = {
 
 export type CreateBlockRequest = {
     /**
-     * `image`, `pdf`, or `video`.
-     */
-    block_type: BlockType;
-    /**
      * Original client-side file name, for display.
      */
     file_name?: string;
+    /**
+     * `image`, `pdf`, or `video`.
+     */
+    kind: BlockType;
     /**
      * A finalized upload (purpose must match the block type).
      */
@@ -2738,7 +2738,7 @@ export type CreateInterventionRequest = {
      * `message_sent`, `submission_graded`, `extension_granted`,
      * `meeting_scheduled` or `learner_recovered`.
      */
-    intervention_type: InterventionType;
+    kind: InterventionType;
     notes?: string;
     outcome?: string;
     /**
@@ -3624,7 +3624,6 @@ export type FileSubmission = {
     id: FileSubmissionId;
     instructions: string;
     late_policy: LatePolicy;
-    lifecycle: FileSubmissionLifecycle;
     max_attempts: number | null;
     max_file_size_mb: number | null;
     max_files: number;
@@ -3635,6 +3634,7 @@ export type FileSubmission = {
     published_at_unix: UnixTime | null;
     rubric: FileRubric;
     settings: FileSubmissionSettings;
+    status: FileSubmissionLifecycle;
     title: string;
     updated_at_unix: UnixTime;
     /**
@@ -4307,8 +4307,9 @@ export type Intervention = {
     allowed_actions: Array<InterventionAction>;
     course_id: CourseId;
     created_at_unix: UnixTime;
+    created_by: UserId;
     id: InterventionId;
-    intervention_type: InterventionType;
+    kind: InterventionType;
     notes: string | null;
     outcome: string | null;
     outcome_code: InterventionOutcome | null;
@@ -4317,7 +4318,6 @@ export type Intervention = {
     risk_score_after: number | null;
     risk_score_before: number | null;
     status: InterventionStatus;
-    teacher_user_id: UserId;
     updated_at_unix: UnixTime;
     user_id: UserId;
     /**
@@ -4699,9 +4699,9 @@ export type LegacyTestVerdict = {
  */
 export type LessonHit = {
     activity_id: ActivityId;
-    activity_type: ActivityType;
     course_id: CourseId;
     course_name: string;
+    kind: ActivityType;
     title: string;
 };
 
@@ -4899,12 +4899,12 @@ export type MessageAction = 'delete' | 'report';
 export type MessageContext = {
     activity_id: ActivityId | null;
     activity_name: string | null;
-    activity_type: ActivityType | null;
     course_id: CourseId;
     /**
      * Null once the course is gone.
      */
     course_name: string | null;
+    kind: ActivityType | null;
 };
 
 /**
@@ -6762,6 +6762,10 @@ export type SaveDraftRequest = {
  */
 export type SaveViewRequest = {
     /**
+     * Defaults to `overview`.
+     */
+    kind?: string;
+    /**
      * Blank → 422 `required` (trimmed in the service).
      */
     name: string;
@@ -6769,10 +6773,6 @@ export type SaveViewRequest = {
      * The saved filter state (an object of at most 16 KiB serialized, UX-148).
      */
     query?: SavedQuery;
-    /**
-     * Defaults to `overview`.
-     */
-    view_type?: string;
 };
 
 /**
@@ -6785,11 +6785,11 @@ export type SavedQuery = {
 export type SavedView = {
     created_at_unix: UnixTime;
     id: SavedViewId;
+    kind: string;
     name: string;
     query: SavedQuery;
-    teacher_user_id: UserId;
     updated_at_unix: UnixTime;
-    view_type: string;
+    user_id: UserId;
 };
 
 export type SavedViewId = string;
@@ -7670,21 +7670,21 @@ export type UnreadCount = {
 };
 
 export type UpdateActivityRequest = {
-    activity_sub_type?: ActivitySubType;
-    /**
-     * Change together with `activity_sub_type` (both or neither).
-     */
-    activity_type?: ActivityType;
     content?: ActivityContent;
     details?: ActivityDetails;
+    /**
+     * Change together with `sub_kind` (both or neither).
+     */
+    kind?: ActivityType;
     name?: string;
     published?: boolean;
     settings?: ActivitySettings;
+    sub_kind?: ActivitySubType;
 };
 
 export type UpdateAssessmentRequest = {
     description?: string;
-    grading_type?: GradingType;
+    grading_kind?: GradingType;
     title?: string;
     /**
      * BUG-208: 0–100 - an unbounded weight overflows the course average.
@@ -8129,7 +8129,7 @@ export type Usergroup = {
      */
     can_write: boolean;
     created_at_unix: UnixTime;
-    creator_id: UserId | null;
+    created_by: UserId | null;
     description: string;
     id: UsergroupId;
     member_count: number;

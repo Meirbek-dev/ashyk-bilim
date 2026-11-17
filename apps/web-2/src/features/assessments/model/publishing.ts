@@ -33,8 +33,8 @@ export const lifecycleOf = (value: string | undefined): Lifecycle | null =>
 
 /** Who did it: you, the scheduler, or someone else (named by `actor_name`). */
 export function auditActor(event: AuditEvent, me: string): 'you' | 'system' | 'other' {
-  if (event.payload.by === 'scheduler' || event.actor_id === null) return 'system'
-  return event.actor_id === me ? 'you' : 'other'
+  if (event.payload.by === 'scheduler' || event.performed_by === null) return 'system'
+  return event.performed_by === me ? 'you' : 'other'
 }
 
 /** The transitions the server allows from the current state (`allowed_transitions`); it still answers 409 to others. */

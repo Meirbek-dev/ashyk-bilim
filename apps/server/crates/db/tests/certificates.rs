@@ -49,7 +49,7 @@ async fn a_certificate_keeps_what_it_was_issued_with(pool: PgPool) {
     // The grade is course_progress_v's weighted average: 80 weighing 1, 90 weighing 3 (the plain one is 85).
     sqlx::query(
         "WITH ch AS (INSERT INTO chapters (course_id, name) VALUES ($1, 'Intro') RETURNING id),
-              a AS (INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type,
+              a AS (INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind,
                                             position, published)
                     SELECT ch.id, $1, 'Quiz ' || n, 'dynamic', 'dynamic_page', n, true
                     FROM ch, generate_series(1, 2) n RETURNING id, position),

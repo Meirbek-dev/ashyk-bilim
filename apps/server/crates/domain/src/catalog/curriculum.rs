@@ -31,10 +31,10 @@ pub const TYPE_SUBTYPES: &[(&str, &[&str])] = &[
     ("custom", &["custom"]),
 ];
 
-fn valid_pair(activity_type: &str, sub_type: &str) -> bool {
+fn valid_pair(kind: &str, sub_type: &str) -> bool {
     TYPE_SUBTYPES
         .iter()
-        .any(|(t, subs)| *t == activity_type && subs.contains(&sub_type))
+        .any(|(t, subs)| *t == kind && subs.contains(&sub_type))
 }
 
 /// Clamp a 1-based position into `[0, len]` as a vec index.
@@ -138,8 +138,8 @@ pub struct ActivityDetail {
 
 /// Block create request: file-backed types claim a finalized upload; the
 /// legacy `custom` type only exists for ETL'd rows and cannot be created.
-fn purpose_for_block(block_type: &str) -> Option<&'static str> {
-    match block_type {
+fn purpose_for_block(kind: &str) -> Option<&'static str> {
+    match kind {
         "image" => Some("block-image"),
         "pdf" => Some("block-pdf"),
         "video" => Some("block-video"),
@@ -375,16 +375,16 @@ impl CurriculumService {
         actor: &Actor,
         chapter_id: ChapterId,
         name: &str,
-        activity_type: &str,
-        activity_sub_type: &str,
+        kind: &str,
+        sub_kind: &str,
     ) -> Result<Activity> {
         // UX-311: permission before the payload's pair check.
         let chapter = self.writable_chapter(actor, chapter_id).await?;
-        if !valid_pair(activity_type, activity_sub_type) {
+        if !valid_pair(kind, sub_kind) {
             return Err(Error::validation(vec![FieldError {
-                field: "activity_sub_type".into(),
+                field: "sub_kind".into(),
                 code: "invalid".into(),
-                message: format!("'{activity_sub_type}' is not valid for '{activity_type}'"),
+                message: format!("'{sub_kind}' is not valid for '{kind}'"),
             }]));
         }
         let name = ab_core::required_str("name", name)?;
@@ -393,8 +393,8 @@ impl CurriculumService {
             chapter_id,
             chapter.course_id,
             name,
-            activity_type,
-            activity_sub_type,
+            kind,
+            sub_kind,
             actor.user_id,
         )
         .await?;
@@ -454,9 +454,9 @@ impl CurriculumService {
     async fn require_publishable(
         tx: &mut sqlx::PgConnection,
         activity_id: ActivityId,
-        activity_type: &str,
+        kind: &str,
     ) -> Result<()> {
-        let reason = match activity_type {
+        let reason = match kind {
             "file_submission" => {
                 let published =
                     ab_db::file_submissions::lock_file_submission_by_activity(tx, activity_id)
@@ -466,9 +466,7 @@ impl CurriculumService {
             }
             "quiz" | "exam" | "code_challenge" => {
                 match ab_db::assessments::lock_assessment_by_activity(tx, activity_id).await? {
-                    None if activity_type == "code_challenge" => {
-                        Some("code-challenge-unconfigured")
-                    }
+                    None if kind == "code_challenge" => Some("code-challenge-unconfigured"),
                     Some(a) if a.lifecycle == Lifecycle::Published => None,
                     _ => Some("assessment-not-ready"),
                 }
@@ -518,9 +516,9 @@ impl CurriculumService {
     async fn has_attached_content(
         db: &mut sqlx::PgConnection,
         activity_id: ActivityId,
-        activity_type: &str,
+        kind: &str,
     ) -> Result<bool> {
-        Ok(match activity_type {
+        Ok(match kind {
             "quiz" | "exam" | "code_challenge" => {
                 ab_db::assessments::get_assessment_by_activity(db, activity_id)
                     .await?
@@ -552,13 +550,13 @@ impl CurriculumService {
                 serde_json::json!({ "expected": expected, "actual": activity.version }),
             ));
         }
-        if let Some((activity_type, sub_type)) = changes.type_pair
-            && !valid_pair(activity_type, sub_type)
+        if let Some((kind, sub_type)) = changes.type_pair
+            && !valid_pair(kind, sub_type)
         {
             return Err(Error::validation(vec![FieldError {
-                field: "activity_sub_type".into(),
+                field: "sub_kind".into(),
                 code: "invalid".into(),
-                message: format!("'{sub_type}' is not valid for '{activity_type}'"),
+                message: format!("'{sub_type}' is not valid for '{kind}'"),
             }]));
         }
         let name = changes
@@ -572,11 +570,9 @@ impl CurriculumService {
         // (or keeps) and the published flag it asks for. It runs whenever
         // the merged row is published and either the flag flips or the type
         // changes - a live activity cannot become a quiz with no assessment.
-        let merged_type = changes
-            .type_pair
-            .map_or(activity.activity_type.as_str(), |(t, _)| t);
+        let merged_type = changes.type_pair.map_or(activity.kind.as_str(), |(t, _)| t);
         let merged_published = changes.published.unwrap_or(activity.published);
-        let type_changes = merged_type != activity.activity_type;
+        let type_changes = merged_type != activity.kind;
         let mut tx = self.pool.begin().await?;
         if merged_published && (type_changes || !activity.published) {
             Self::require_publishable(&mut tx, activity_id, merged_type).await?;
@@ -584,7 +580,7 @@ impl CurriculumService {
         if merged_published && (type_changes || !activity.published || changes.content.is_some()) {
             let merged_sub = changes
                 .type_pair
-                .map_or(activity.activity_sub_type.as_str(), |(_, s)| s);
+                .map_or(activity.sub_kind.as_str(), |(_, s)| s);
             let content = match changes.content {
                 Some(content) => content.clone(),
                 None => ab_db::catalog::get_activity_content(&mut *tx, activity_id)
@@ -596,9 +592,7 @@ impl CurriculumService {
         // UX-104/UX-112/BUG-201: an assessment or file-submission config
         // stays attached to its activity in every lifecycle; the type cannot
         // move away from it while the row exists.
-        if type_changes
-            && Self::has_attached_content(&mut tx, activity_id, &activity.activity_type).await?
-        {
+        if type_changes && Self::has_attached_content(&mut tx, activity_id, &activity.kind).await? {
             return Err(Error::conflict(
                 "the activity has an assessment attached; delete it before changing the type",
             ));
@@ -776,17 +770,17 @@ impl CurriculumService {
         &self,
         actor: &Actor,
         activity_id: ActivityId,
-        block_type: &str,
+        kind: &str,
         upload_id: Uuid,
         file_name: Option<&str>,
     ) -> Result<Block> {
         // UX-311: permission before the payload's type check.
         self.writable_activity(actor, activity_id).await?;
-        let Some(required_purpose) = purpose_for_block(block_type) else {
+        let Some(required_purpose) = purpose_for_block(kind) else {
             return Err(Error::validation(vec![FieldError {
-                field: "block_type".into(),
+                field: "kind".into(),
                 code: "invalid".into(),
-                message: format!("'{block_type}' is not a creatable block type"),
+                message: format!("'{kind}' is not a creatable block type"),
             }]));
         };
 
@@ -801,7 +795,7 @@ impl CurriculumService {
                 field: "upload_id".into(),
                 code: "wrong-purpose".into(),
                 message: format!(
-                    "a {block_type} block needs a '{required_purpose}' upload, \
+                    "a {kind} block needs a '{required_purpose}' upload, \
                      got '{}'",
                     upload.purpose
                 ),
@@ -827,7 +821,7 @@ impl CurriculumService {
             "file_size": upload.size_bytes,
             "file_type": upload.mime,
         });
-        let id = ab_db::catalog::insert_block(&mut *tx, activity_id, block_type, &content).await?;
+        let id = ab_db::catalog::insert_block(&mut *tx, activity_id, kind, &content).await?;
         tx.commit().await?;
         ab_db::catalog::get_block(&self.pool, id)
             .await?

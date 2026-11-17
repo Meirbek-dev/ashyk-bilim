@@ -13,7 +13,7 @@ import { FileResults } from './file-results'
 export function ResultsPage() {
   const { activityId } = useParams({ from: '/_authed/teach/courses/$courseId_/activities/$activityId' })
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
-  const kind = workKind(activity.activity_type)
+  const kind = workKind(activity.kind)
   if (kind === 'assessment') return <AssessmentResults activityId={activityId} />
   if (kind === 'file') return <FileResults activityId={activityId} />
   return (

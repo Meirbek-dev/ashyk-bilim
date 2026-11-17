@@ -10,7 +10,7 @@ const at = (local: string) => fromDateTimeInput(local)
 const deadline = (activity_id: string, due_at_unix: number): AgendaDeadline => ({
   activity_id,
   activity_name: activity_id,
-  activity_type: 'quiz',
+  kind: 'quiz',
   assessment_id: null,
   course_id: 'c1',
   course_name: 'Course',

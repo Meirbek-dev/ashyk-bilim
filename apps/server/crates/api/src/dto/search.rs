@@ -28,7 +28,7 @@ pub struct LessonHit {
     pub activity_id: ab_core::id::ActivityId,
     pub title: String,
     #[schema(value_type = ab_domain::wire::ActivityType)]
-    pub activity_type: String,
+    pub kind: String,
     pub course_id: ab_core::id::CourseId,
     pub course_name: String,
 }
@@ -73,7 +73,7 @@ impl SearchResults {
                 .map(|l| LessonHit {
                     activity_id: l.activity_id,
                     title: l.name,
-                    activity_type: l.activity_type,
+                    kind: l.kind,
                     course_id: l.course_id,
                     course_name: l.course_name,
                 })

@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE activities SET\n               name = COALESCE($2, name),\n               published = COALESCE($3, published),\n               content = COALESCE($4, content),\n               details = COALESCE($5, details),\n               settings = COALESCE($6, settings),\n               kind = COALESCE($8, kind),\n               sub_kind = COALESCE($9, sub_kind),\n               version = version + 1\n           WHERE id = $1 AND ($7::int IS NULL OR version = $7)\n             AND (name, published, content, details, settings, kind, sub_kind)\n                 IS DISTINCT FROM\n                 (COALESCE($2, name), COALESCE($3, published), COALESCE($4, content),\n                  COALESCE($5, details), COALESCE($6, settings),\n                  COALESCE($8, kind), COALESCE($9, sub_kind))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bool",
+        "Jsonb",
+        "Jsonb",
+        "Jsonb",
+        "Int4",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "04164aaf164ca183c694f7f4e5b4a4ea89618160de8ef29ae452eb2db23c95c5"
+}

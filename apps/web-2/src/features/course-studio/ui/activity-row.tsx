@@ -72,7 +72,7 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
         </div>
       ) : null}
       <span className={`flex shrink-0 justify-start ${LEAD}`}>
-        <ActivityIcon type={activity.activity_type} size="sm" />
+        <ActivityIcon type={activity.kind} size="sm" />
       </span>
       {renaming ? (
         <RenameForm

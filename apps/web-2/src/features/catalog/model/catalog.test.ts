@@ -157,7 +157,7 @@ test('B-CAT-07 lessons found by name are a section, counted as none when the ans
   expect(searchCount(results, 'lessons')).toBe(0)
   const lesson = {
     activity_id: 'a',
-    activity_type: 'video',
+    kind: 'video',
     course_id: 'c',
     course_name: 'SQL',
     title: 'JOIN',
@@ -170,7 +170,7 @@ const user = (id: string) => ({ id, username: id, display_name: id, avatar_key: 
 test('B-CAT-07 a search pages every section: hits add up per section, and only a full last page has more', () => {
   const lesson = {
     activity_id: 'a',
-    activity_type: 'video',
+    kind: 'video',
     course_id: 'c',
     course_name: 'SQL',
     title: 'JOIN',

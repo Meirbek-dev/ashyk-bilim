@@ -1700,7 +1700,7 @@ impl GradingService {
                     comment: grade.feedback.trim(),
                     score: grade.score,
                     max_score: by_id.get(&grade.item_id).map(|i| i.max_score),
-                    annotation_type: ab_core::assessments::AnnotationType::Text,
+                    kind: ab_core::assessments::AnnotationType::Text,
                     annotation_key: None,
                 },
             )

@@ -3,6 +3,8 @@
 //!
 //! - a renamed table is a view under its old name (`certifications`, `certificate_users` with its
 //!   `certification_id`, `course_discussions`), its upserts included.
+//! - a renamed column's old name is a column the `<table>_aliases` trigger keeps equal, and the old upsert keys
+//!   have a twin index.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use sqlx::PgPool;
@@ -149,4 +151,158 @@ async fn renamed_tables_answer_to_their_old_names(pool: PgPool) {
         .await,
         1
     );
+}
+
+/// Part 2: a renamed column's old name is a compatibility column. The previous release writes it (the new one
+/// follows), the server writes the new one (the old one follows), and its upserts find their key.
+#[ab_testdb::test]
+async fn renamed_columns_answer_to_their_old_names(pool: PgPool) {
+    let (user, course) = user_and_course(&pool).await;
+    let chapter: Uuid = scalar(
+        &pool,
+        "INSERT INTO chapters (course_id, name, creator_id) VALUES ($1, 'ch', $2) RETURNING id",
+        &[course, user],
+    )
+    .await;
+    assert_eq!(
+        scalar::<Uuid>(
+            &pool,
+            "SELECT created_by FROM chapters WHERE id = $1",
+            &[chapter]
+        )
+        .await,
+        user
+    );
+
+    // The previous release's activity insert and update.
+    let old_activity: Uuid = scalar(
+        &pool,
+        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, creator_id)
+         VALUES ($1, $2, 'q', 'quiz', 'quiz_standard', $3) RETURNING id",
+        &[chapter, course, user],
+    )
+    .await;
+    let (kind, sub_kind, created_by): (String, String, Option<Uuid>) =
+        sqlx::query_as("SELECT kind, sub_kind, created_by FROM activities WHERE id = $1")
+            .bind(old_activity)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        (kind.as_str(), sub_kind.as_str(), created_by),
+        ("quiz", "quiz_standard", Some(user))
+    );
+    run(
+        &pool,
+        "UPDATE activities SET creator_id = NULL WHERE id = $1",
+        &[old_activity],
+    )
+    .await;
+    let created_by: Option<Uuid> = scalar(
+        &pool,
+        "SELECT created_by FROM activities WHERE id = $1",
+        &[old_activity],
+    )
+    .await;
+    assert_eq!(created_by, None);
+
+    // The server's names fill the old ones the previous release reads.
+    let activity: Uuid = scalar(
+        &pool,
+        "INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind, created_by, position)
+         VALUES ($1, $2, 'q2', 'quiz', 'quiz_standard', $3, 100) RETURNING id",
+        &[chapter, course, user],
+    )
+    .await;
+    let (activity_type, creator_id): (String, Option<Uuid>) =
+        sqlx::query_as("SELECT activity_type, creator_id FROM activities WHERE id = $1")
+            .bind(activity)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!((activity_type.as_str(), creator_id), ("quiz", Some(user)));
+
+    // An assessment's lifecycle both ways.
+    let assessment: Uuid = scalar(
+        &pool,
+        "INSERT INTO assessments (activity_id, course_id, lifecycle, creator_id,
+                                  grading_mode, grade_release_mode, completion_rule)
+         VALUES ($1, $2, 'draft', $3, 'auto', 'immediate', 'passed') RETURNING id",
+        &[activity, course, user],
+    )
+    .await;
+    run(
+        &pool,
+        "UPDATE assessments SET lifecycle = 'published', published_at = now() WHERE id = $1",
+        &[assessment],
+    )
+    .await;
+    let status: String = scalar(
+        &pool,
+        "SELECT status FROM assessments WHERE id = $1",
+        &[assessment],
+    )
+    .await;
+    assert_eq!(status, "published");
+    run(
+        &pool,
+        "UPDATE assessments SET status = 'draft', published_at = NULL WHERE id = $1",
+        &[assessment],
+    )
+    .await;
+    let lifecycle: String = scalar(
+        &pool,
+        "SELECT lifecycle FROM assessments WHERE id = $1",
+        &[assessment],
+    )
+    .await;
+    assert_eq!(lifecycle, "draft");
+    // The guard sees the previous release's change of the kind.
+    let retyped = sqlx::query("UPDATE activities SET activity_type = 'video', activity_sub_type = 'video_youtube' WHERE id = $1")
+        .bind(activity)
+        .execute(&pool)
+        .await;
+    assert!(retyped.is_err());
+
+    // An event under its old names.
+    run(
+        &pool,
+        "INSERT INTO analytics_events (event_type, actor_id, course_id) VALUES ('login', $1, $2)",
+        &[user, course],
+    )
+    .await;
+    let performed_by: Option<Uuid> = scalar(
+        &pool,
+        "SELECT performed_by FROM analytics_events WHERE event = 'login'",
+        &[],
+    )
+    .await;
+    assert_eq!(performed_by, Some(user));
+
+    // The previous release's upserts infer their keys from the old names.
+    let rollup = "INSERT INTO daily_teacher_metrics (metric_date, teacher_user_id, managed_course_count)
+                  VALUES (current_date, $1, 1)
+                  ON CONFLICT (metric_date, teacher_user_id) DO UPDATE SET managed_course_count = 2";
+    run(&pool, rollup, &[user]).await;
+    run(&pool, rollup, &[user]).await;
+    let managed: i32 = scalar(
+        &pool,
+        "SELECT managed_course_count FROM daily_teacher_metrics WHERE teacher_id = $1",
+        &[user],
+    )
+    .await;
+    assert_eq!(managed, 2);
+    let save = "INSERT INTO analytics_saved_views (teacher_user_id, name, view_type, query)
+                VALUES ($1, 'mine', 'overview', '{}')
+                ON CONFLICT (teacher_user_id, view_type, name) DO UPDATE SET query = '{\"a\": 1}'
+                RETURNING id";
+    let view: Uuid = scalar(&pool, save, &[user]).await;
+    assert_eq!(scalar::<Uuid>(&pool, save, &[user]).await, view);
+    let (owner, kind): (Uuid, String) =
+        sqlx::query_as("SELECT user_id, kind FROM analytics_saved_views WHERE id = $1")
+            .bind(view)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!((owner, kind.as_str()), (user, "overview"));
 }

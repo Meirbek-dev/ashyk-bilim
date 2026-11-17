@@ -362,7 +362,7 @@ pub struct BulkAction {
     pub id: BulkActionId,
     pub assessment_id: AssessmentId,
     pub performed_by: Option<UserId>,
-    pub action_type: BulkActionType,
+    pub kind: BulkActionType,
     pub status: BulkActionStatus,
     #[schema(value_type = ab_domain::wire::BulkActionParams)]
     pub params: serde_json::Value,
@@ -379,7 +379,7 @@ impl From<ab_domain::grading::bulk::BulkAction> for BulkAction {
             id: a.id,
             assessment_id: a.assessment_id,
             performed_by: a.performed_by,
-            action_type: a.action_type,
+            kind: a.action_type,
             status: a.status,
             params: a.params,
             target_user_ids: a.target_user_ids,

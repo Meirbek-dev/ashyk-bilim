@@ -154,7 +154,7 @@ const orNotFound = (error: unknown): never => {
 /** What is graded behind the activity; null for a page, a video, a document. */
 async function ensureWork(queryClient: QueryClient, activityId: ActivityId): Promise<Work | null> {
   const activity = await queryClient.query({ ...activityOptions(activityId), staleTime: 'static' }).catch(orNotFound)
-  const kind = workKind(activity.activity_type)
+  const kind = workKind(activity.kind)
   if (kind === 'assessment') {
     const assessment = await queryClient
       .query({ ...assessmentOptions(activityId), staleTime: 'static' })

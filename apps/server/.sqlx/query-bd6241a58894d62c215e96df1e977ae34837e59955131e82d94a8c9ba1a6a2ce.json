@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE activity_progress p SET required = r.required\n           FROM (SELECT a.id, a.kind = 'file_submission' OR a.required\n                              OR EXISTS (SELECT 1 FROM assessments s WHERE s.activity_id = a.id) AS required\n                 FROM activities a WHERE a.course_id = $1) r\n           WHERE p.activity_id = r.id AND p.course_id = $1 AND p.user_id = $2\n             AND p.required IS DISTINCT FROM r.required",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bd6241a58894d62c215e96df1e977ae34837e59955131e82d94a8c9ba1a6a2ce"
+}

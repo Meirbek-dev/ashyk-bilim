@@ -26,7 +26,7 @@ async function api(cookie, method, path, body, headers = {}) {
 const course = await api(teacher, 'POST', 'courses', { name: 'Restore integrity fixture' })
 const chapter = await api(teacher, 'POST', `courses/${course.id}/chapters`, { name: 'Preserved chapter' })
 const lesson = await api(teacher, 'POST', `chapters/${chapter.id}/activities`, {
-  name: 'Preserved lesson', activity_type: 'dynamic', activity_sub_type: 'dynamic_page',
+  name: 'Preserved lesson', kind: 'dynamic', sub_kind: 'dynamic_page',
 })
 await api(teacher, 'PATCH', `activities/${lesson.id}`, { published: true })
 const quiz = await api(teacher, 'POST', 'assessments', { chapter_id: chapter.id, kind: 'quiz', title: 'Preserved quiz' })
@@ -50,7 +50,7 @@ const stored = await fetch(upload.put_url, {
 })
 assert(stored.ok, `image PUT: ${stored.status} ${(await stored.text()).slice(0, 500)}`)
 await api(teacher, 'POST', `uploads/${upload.id}/finalize`, {})
-await api(teacher, 'POST', `activities/${lesson.id}/blocks`, { block_type: 'image', upload_id: upload.id })
+await api(teacher, 'POST', `activities/${lesson.id}/blocks`, { kind: 'image', upload_id: upload.id })
 mkdirSync(new URL('../../tmp/restore-test/', import.meta.url), { recursive: true })
 writeFileSync(new URL('../../tmp/restore-test/object-key', import.meta.url), upload.key)
 writeFileSync(new URL('../../tmp/restore-test/course-id', import.meta.url), course.id)

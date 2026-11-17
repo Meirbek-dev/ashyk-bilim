@@ -472,8 +472,8 @@ async fn lesson(
         .post_as(
             session,
             &format!("/api/v2/chapters/{chapter_id}/activities"),
-            &serde_json::json!({ "name": name, "activity_type": "dynamic",
-                                  "activity_sub_type": "dynamic_page" }),
+            &serde_json::json!({ "name": name, "kind": "dynamic",
+                                  "sub_kind": "dynamic_page" }),
         )
         .await;
     assert_eq!(activity.status, StatusCode::CREATED, "{}", activity.text());
@@ -514,7 +514,7 @@ async fn lessons_are_found_only_when_published_in_a_published_course(pool: PgPoo
         assert_eq!(lessons.len(), 1, "{lessons:?}");
         assert_eq!(lessons[0]["activity_id"], live.as_str());
         assert_eq!(lessons[0]["course_name"], "Botany");
-        assert_eq!(lessons[0]["activity_type"], "dynamic");
+        assert_eq!(lessons[0]["kind"], "dynamic");
     }
     let anonymous = app.get("/api/v2/search?q=photosynthesis").await;
     assert_eq!(anonymous.json()["lessons"].as_array().unwrap().len(), 1);

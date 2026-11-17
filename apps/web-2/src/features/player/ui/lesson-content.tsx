@@ -27,7 +27,7 @@ const lines = (
 
 export function LessonContent({ activityId, onVideoEnded }: { activityId: ActivityId; onVideoEnded?: () => void }) {
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
-  const content = lessonDocument(activity.activity_type, activity.activity_sub_type, activity.content)
+  const content = lessonDocument(activity.kind, activity.sub_kind, activity.content)
   if (!content) return <EmptyState>{m.player_empty()}</EmptyState>
   const page = pageWithOutline(content)
   return (

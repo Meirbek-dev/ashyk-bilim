@@ -7,7 +7,7 @@ import { notStarted } from './continue-hero'
 const item = (progress_pct: number | null, started = (progress_pct ?? 0) > 0): ContinueLearning => ({
   activity_id: 'a',
   activity_name: 'Скорость и путь',
-  activity_type: 'dynamic',
+  kind: 'dynamic',
   course_id: 'c',
   course_name: 'Физика',
   progress_pct,

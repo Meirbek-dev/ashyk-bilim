@@ -1735,7 +1735,7 @@ pub struct ActivityContextRow {
     pub id: ActivityId,
     pub chapter_id: ChapterId,
     pub name: String,
-    pub activity_type: String,
+    pub kind: String,
     pub published: bool,
     pub content: serde_json::Value,
     pub details: serde_json::Value,
@@ -1749,7 +1749,7 @@ pub async fn activities_with_content(
     let rows = sqlx::query_as!(
         ActivityContextRow,
         r#"SELECT a.id AS "id: ActivityId", a.chapter_id AS "chapter_id: ChapterId", a.name,
-                  a.activity_type, a.published, a.content, a.details
+                  a.kind, a.published, a.content, a.details
            FROM activities a JOIN chapters c ON c.id = a.chapter_id
            WHERE a.course_id = $1
            ORDER BY c.position, c.id, a.position, a.id"#,
@@ -1764,7 +1764,7 @@ pub async fn activity_context(pool: &PgPool, id: ActivityId) -> Result<Option<Ac
     let row = sqlx::query_as!(
         ActivityContextRow,
         r#"SELECT id AS "id: ActivityId", chapter_id AS "chapter_id: ChapterId", name,
-                  activity_type, published, content, details
+                  kind, published, content, details
            FROM activities WHERE id = $1"#,
         id.0
     )
@@ -1796,7 +1796,7 @@ pub async fn assessments_context(
         AssessmentContextRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
                   (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id) AS "title!",
-                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id)
+                  (SELECT act.kind FROM activities act WHERE act.id = assessments.activity_id)
                       AS "kind!",
                   grading_mode, passing_score::float8 AS "passing_score!", max_attempts, time_limit_seconds,
                   (extract(epoch FROM due_at))::bigint AS "due_at?"

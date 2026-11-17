@@ -490,7 +490,7 @@ mod tests {
                     course_id: course,
                     chapter_id: chapter,
                     name: format!("A{position}"),
-                    activity_type: "dynamic".into(),
+                    kind: "dynamic".into(),
                     position,
                     published: true,
                     updated_at: NOW,

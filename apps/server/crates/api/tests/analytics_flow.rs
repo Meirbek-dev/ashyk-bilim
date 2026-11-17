@@ -99,8 +99,8 @@ async fn lesson(app: &TestApp, teacher: &MintedSession, chapter_id: &str, name: 
         .post_as(
             teacher,
             &format!("/api/v2/chapters/{chapter_id}/activities"),
-            &serde_json::json!({ "name": name, "activity_type": "dynamic",
-                                  "activity_sub_type": "dynamic_page" }),
+            &serde_json::json!({ "name": name, "kind": "dynamic",
+                                  "sub_kind": "dynamic_page" }),
         )
         .await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
@@ -296,7 +296,7 @@ async fn enrol(pool: &PgPool, course_id: &str, user_id: ab_core::id::UserId, pct
 }
 
 async fn event_count(pool: &PgPool, event_type: &str) -> i64 {
-    sqlx::query_scalar::<_, i64>("SELECT count(*) FROM analytics_events WHERE event_type = $1")
+    sqlx::query_scalar::<_, i64>("SELECT count(*) FROM analytics_events WHERE event = $1")
         .bind(event_type)
         .fetch_one(pool)
         .await
@@ -642,7 +642,7 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert_eq!(named, 0);
     assert_eq!(table_count(&pool, "daily_teacher_metrics").await, 3);
     let platform_row = sqlx::query_scalar::<_, i32>(
-        "SELECT managed_course_count FROM daily_teacher_metrics WHERE teacher_user_id IS NULL",
+        "SELECT managed_course_count FROM daily_teacher_metrics WHERE teacher_id IS NULL",
     )
     .fetch_one(&pool)
     .await
@@ -650,7 +650,7 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert_eq!(platform_row, 2);
     // The overview reads the platform aggregate from daily_platform_metrics (schema review 2026-11-08, item 16):
     // without the NULL-teacher row the previous release still gets, it is found.
-    sqlx::query("DELETE FROM daily_teacher_metrics WHERE teacher_user_id IS NULL")
+    sqlx::query("DELETE FROM daily_teacher_metrics WHERE teacher_id IS NULL")
         .execute(&pool)
         .await
         .unwrap();
@@ -692,7 +692,7 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
             "/api/v2/analytics/teacher/interventions",
             &serde_json::json!({
                 "user_id": bob.user_id, "course_id": course_id,
-                "intervention_type": "message_sent", "notes": "pin\u{202E}ged\u{7}\nline 2"
+                "kind": "message_sent", "notes": "pin\u{202E}ged\u{7}\nline 2"
             }),
         )
         .await;
@@ -700,10 +700,7 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
     assert_eq!(created.json()["status"], "completed");
     // UX-163: controls stripped, line breaks kept.
     assert_eq!(created.json()["notes"], "pinged\nline 2");
-    assert_eq!(
-        created.json()["teacher_user_id"],
-        teacher.user_id.to_string()
-    );
+    assert_eq!(created.json()["created_by"], teacher.user_id.to_string());
     assert!(
         created.json()["risk_score_before"].is_number(),
         "{}",
@@ -796,7 +793,7 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
             "/api/v2/analytics/teacher/interventions",
             &serde_json::json!({
                 "user_id": bob.user_id, "course_id": course_id,
-                "intervention_type": "hug", "status": "done"
+                "kind": "hug", "status": "done"
             }),
         )
         .await;
@@ -812,7 +809,7 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
             "/api/v2/analytics/teacher/interventions",
             &serde_json::json!({
                 "user_id": bob.user_id, "course_id": other_course,
-                "intervention_type": "message_sent"
+                "kind": "message_sent"
             }),
         )
         .await;
@@ -851,7 +848,7 @@ async fn dashboards_rollups_interventions_views_and_exports(pool: PgPool) {
         .await;
     assert_eq!(saved.status, StatusCode::CREATED, "{}", saved.text());
     assert_eq!(saved.json()["name"], "Mine", "UX-163");
-    assert_eq!(saved.json()["view_type"], "overview");
+    assert_eq!(saved.json()["kind"], "overview");
     let view_id = saved.json()["id"].as_str().unwrap().to_owned();
     let upserted = app
         .post_as(
@@ -1067,7 +1064,7 @@ async fn unknown_learner_and_blank_view_name_are_validation_errors(pool: PgPool)
             "/api/v2/analytics/teacher/interventions",
             &serde_json::json!({
                 "user_id": uuid::Uuid::now_v7(), "course_id": course_id,
-                "intervention_type": "message_sent"
+                "kind": "message_sent"
             }),
         )
         .await;
@@ -1084,7 +1081,7 @@ async fn unknown_learner_and_blank_view_name_are_validation_errors(pool: PgPool)
         .post_as(
             &teacher,
             "/api/v2/analytics/teacher/saved-views",
-            &serde_json::json!({ "name": "   ", "view_type": "  ", "query": {} }),
+            &serde_json::json!({ "name": "   ", "kind": "  ", "query": {} }),
         )
         .await;
     assert_eq!(
@@ -1106,7 +1103,7 @@ async fn unknown_learner_and_blank_view_name_are_validation_errors(pool: PgPool)
         .collect();
     assert_eq!(
         fields,
-        [("name".to_owned(), true), ("view_type".to_owned(), true)]
+        [("name".to_owned(), true), ("kind".to_owned(), true)]
     );
 
     // UX-148: free-form JSON on interventions / saved views is capped at 16 KiB
@@ -1132,7 +1129,7 @@ async fn unknown_learner_and_blank_view_name_are_validation_errors(pool: PgPool)
             "/api/v2/analytics/teacher/interventions",
             &serde_json::json!({
                 "user_id": uuid::Uuid::now_v7(), "course_id": course_id,
-                "intervention_type": "message_sent", "payload": blob
+                "kind": "message_sent", "payload": blob
             }),
         )
         .await;
@@ -1270,7 +1267,7 @@ async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
     // Both last posted 15 days ago (+30): at risk, so listed (UX-240).
     for user in [alice.user_id, bob.user_id] {
         sqlx::query(
-            "INSERT INTO analytics_events (event_type, course_id, user_id, occurred_at)              VALUES ('discussion.posted', $1, $2, now() - interval '15 days')",
+            "INSERT INTO analytics_events (event, course_id, user_id, occurred_at)              VALUES ('discussion.posted', $1, $2, now() - interval '15 days')",
         )
         .bind(uuid::Uuid::parse_str(&course_id).unwrap())
         .bind(user.0)
@@ -1343,7 +1340,7 @@ async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
     // Idempotent intervention creation.
     let body = serde_json::json!({
         "user_id": alice.user_id, "course_id": course_id,
-        "intervention_type": "message_sent", "notes": "pinged"
+        "kind": "message_sent", "notes": "pinged"
     });
     let post_key = |body: serde_json::Value, key: &'static str| {
         let app = &app;
@@ -1391,7 +1388,7 @@ async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
     assert_eq!(list.json()["total"], 2, "{}", list.text());
     let reused = post(serde_json::json!({
         "user_id": bob.user_id, "course_id": course_id,
-        "intervention_type": "message_sent"
+        "kind": "message_sent"
     }))
     .await;
     assert_eq!(
@@ -1464,7 +1461,7 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
             "/api/v2/analytics/teacher/interventions",
             &serde_json::json!({
                 "user_id": outsider.user_id, "course_id": course_id,
-                "intervention_type": "message_sent"
+                "kind": "message_sent"
             }),
         )
         .await;
@@ -1495,7 +1492,7 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
             "/api/v2/analytics/teacher/interventions",
             &serde_json::json!({
                 "user_id": co.user_id, "course_id": course_id,
-                "intervention_type": "message_sent"
+                "kind": "message_sent"
             }),
         )
         .await;
@@ -1514,7 +1511,7 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
     enrol(&pool, &course_id, bob.user_id, 0.0).await;
     for user in [alice.user_id, bob.user_id] {
         sqlx::query(
-            "INSERT INTO analytics_events (event_type, course_id, user_id) VALUES ('activity.completed', $1, $2)",
+            "INSERT INTO analytics_events (event, course_id, user_id) VALUES ('activity.completed', $1, $2)",
         )
         .bind(uuid::Uuid::parse_str(&course_id).unwrap())
         .bind(user.0)
@@ -1589,7 +1586,7 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
             "/api/v2/analytics/teacher/interventions",
             &serde_json::json!({
                 "user_id": bob.user_id, "course_id": course_id,
-                "intervention_type": "message_sent"
+                "kind": "message_sent"
             }),
         )
         .await;
@@ -1617,12 +1614,12 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
             ),
             &serde_json::json!({
                 "user_id": alice.user_id, "course_id": course_id,
-                "intervention_type": "message_sent"
+                "kind": "message_sent"
             }),
         )
         .await;
     assert_eq!(as_admin.status, StatusCode::CREATED, "{}", as_admin.text());
-    assert_eq!(as_admin.json()["teacher_user_id"], boss.to_string());
+    assert_eq!(as_admin.json()["created_by"], boss.to_string());
     let teachers = app
         .get_as(&teacher, "/api/v2/analytics/teacher/interventions")
         .await;
@@ -1631,7 +1628,7 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
     // Replay under the same key needs the analytics grant.
     let body = serde_json::json!({
         "user_id": alice.user_id, "course_id": course_id,
-        "intervention_type": "message_sent"
+        "kind": "message_sent"
     });
     let post = |session: &MintedSession| {
         let app = &app;
@@ -1693,7 +1690,7 @@ async fn impersonation_is_read_only_interventions_page_and_reporters_are_out(poo
         .post_as(
             &teacher,
             "/api/v2/analytics/teacher/saved-views",
-            &serde_json::json!({ "name": "Mine", "view_type": "watchlist", "query": {} }),
+            &serde_json::json!({ "name": "Mine", "kind": "watchlist", "query": {} }),
         )
         .await;
     assert_eq!(saved.status, StatusCode::CREATED, "{}", saved.text());
@@ -1730,7 +1727,7 @@ async fn impersonation_is_read_only_interventions_page_and_reporters_are_out(poo
         "{}",
         admins_own.text()
     );
-    assert_eq!(admins_own.json()["teacher_user_id"], boss.to_string());
+    assert_eq!(admins_own.json()["user_id"], boss.to_string());
     let teachers = app
         .get_as(&teacher, "/api/v2/analytics/teacher/saved-views")
         .await;
@@ -1760,7 +1757,7 @@ async fn impersonation_is_read_only_interventions_page_and_reporters_are_out(poo
                 &teacher,
                 "/api/v2/analytics/teacher/interventions",
                 &serde_json::json!({
-                    "user_id": alice.user_id, "course_id": course_id, "intervention_type": kind
+                    "user_id": alice.user_id, "course_id": course_id, "kind": kind
                 }),
             )
             .await;
@@ -1778,7 +1775,7 @@ async fn impersonation_is_read_only_interventions_page_and_reporters_are_out(poo
     assert_eq!(body["page"], 2);
     assert_eq!(body["page_size"], 1);
     assert_eq!(body["items"].as_array().unwrap().len(), 1);
-    assert_eq!(body["items"][0]["intervention_type"], "message_sent");
+    assert_eq!(body["items"][0]["kind"], "message_sent");
 
     // A reporter reads the course but it is not in their analytics scope.
     let reporter = instructor(&app, "reporter").await;
@@ -2464,7 +2461,7 @@ async fn interventions_racing_a_leave_are_not_in_course(pool: PgPool) {
         .unwrap();
     let body = serde_json::json!({
         "user_id": alice.user_id, "course_id": course_id,
-        "intervention_type": "message_sent"
+        "kind": "message_sent"
     });
     let create = app.post_as(&teacher, "/api/v2/analytics/teacher/interventions", &body);
     let commit_leave = async {
@@ -2856,7 +2853,7 @@ async fn an_event_commits_with_its_action_or_not_at_all(pool: PgPool) {
         .unwrap();
     committed.commit().await.unwrap();
     let payload: serde_json::Value =
-        sqlx::query_scalar("SELECT payload FROM analytics_events WHERE event_type = 'login'")
+        sqlx::query_scalar("SELECT payload FROM analytics_events WHERE event = 'login'")
             .fetch_one(&pool)
             .await
             .unwrap();

@@ -16,7 +16,7 @@ const group: Usergroup = {
   can_write: true,
   created_at_unix: 1_790_000_000,
   updated_at_unix: 1_790_000_000,
-  creator_id: null,
+  created_by: null,
   version: 1,
 }
 const member: UsergroupMember = {

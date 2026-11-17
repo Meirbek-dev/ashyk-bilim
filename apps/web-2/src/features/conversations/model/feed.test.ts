@@ -128,7 +128,7 @@ describe('labels', () => {
       course_name: 'Algebra',
       activity_id: null,
       activity_name: null,
-      activity_type: null,
+      kind: null,
     }
     expect(contextTarget(course)).toMatchObject({ to: '/courses/$courseId' })
     expect(contextText(course)).toBe(m.conversations_context_course({ course: 'Algebra' }))

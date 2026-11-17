@@ -98,14 +98,14 @@ describe('creating an activity', () => {
   test('B-CST-08 file submission through its config; page, video and PDF as activities with the server pair', () => {
     expect(createPlan('file_submission', 'youtube')).toEqual({ door: 'file-submission' })
     expect(createPlan('dynamic', 'youtube')).toMatchObject({
-      activity_type: 'dynamic',
-      activity_sub_type: 'dynamic_page',
+      kind: 'dynamic',
+      sub_kind: 'dynamic_page',
     })
-    expect(createPlan('video', 'youtube')).toMatchObject({ activity_sub_type: 'video_youtube' })
-    expect(createPlan('video', 'file')).toMatchObject({ activity_sub_type: 'video_hosted' })
+    expect(createPlan('video', 'youtube')).toMatchObject({ sub_kind: 'video_youtube' })
+    expect(createPlan('video', 'file')).toMatchObject({ sub_kind: 'video_hosted' })
     expect(createPlan('document', 'file')).toMatchObject({
-      activity_type: 'document',
-      activity_sub_type: 'document_pdf',
+      kind: 'document',
+      sub_kind: 'document_pdf',
     })
   })
 })
@@ -194,9 +194,9 @@ describe('certificate', () => {
   })
 })
 
-const block = (id: string, block_type: string): Block => ({
+const block = (id: string, kind: string): Block => ({
   id,
-  block_type,
+  kind,
   activity_id: 'a',
   created_at_unix: 1,
   content: { file_key: id, file_name: id, file_size: 1, file_type: 'video/mp4' },
@@ -257,18 +257,18 @@ describe('media', () => {
   })
 
   test('B-CST-29 stored shapes: YouTube {uri}, an uploaded file {filename: key, file_name}', () => {
-    expect(mediaSource({ activity_sub_type: 'video_youtube', content: { uri: 'https://youtu.be/a' } })).toEqual({
+    expect(mediaSource({ sub_kind: 'video_youtube', content: { uri: 'https://youtu.be/a' } })).toEqual({
       kind: 'youtube',
       uri: 'https://youtu.be/a',
     })
     const content = fileContent({ id: 'up1', key: 'k/v.mp4', size_bytes: 1 }, 'v.mp4')
     expect(content).toEqual({ filename: 'k/v.mp4', upload_id: 'up1', file_name: 'v.mp4' })
-    expect(mediaSource({ activity_sub_type: 'video_hosted', content })).toEqual({
+    expect(mediaSource({ sub_kind: 'video_hosted', content })).toEqual({
       kind: 'file',
       key: 'k/v.mp4',
       name: 'v.mp4',
     })
-    expect(mediaSource({ activity_sub_type: 'document_pdf', content: {} })).toEqual({ kind: 'none' })
+    expect(mediaSource({ sub_kind: 'document_pdf', content: {} })).toEqual({ kind: 'none' })
   })
 })
 

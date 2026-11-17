@@ -12,7 +12,7 @@ import { assessmentXlsxHref } from '../model/exports'
 type ExcelMenuProps = {
   courseId: string
   activityId: string
-  assessment: Pick<AssessmentDetail, 'id' | 'allowed_actions' | 'lifecycle' | 'items'>
+  assessment: Pick<AssessmentDetail, 'id' | 'allowed_actions' | 'status' | 'items'>
 }
 
 /**
@@ -20,7 +20,7 @@ type ExcelMenuProps = {
  * server requires) and download the test in that format (a browser download; the server says when nothing fits).
  */
 export function ExcelMenu({ courseId, activityId, assessment }: ExcelMenuProps) {
-  const loadable = assessment.allowed_actions.includes('edit') && assessment.lifecycle === 'draft'
+  const loadable = assessment.allowed_actions.includes('edit') && assessment.status === 'draft'
   const exportable = assessment.items.length > 0
   if (!loadable && !exportable) return null
   return (

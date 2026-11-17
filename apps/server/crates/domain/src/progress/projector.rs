@@ -801,7 +801,7 @@ async fn projection_for(
     activity: &ActivityRow,
     user_id: UserId,
 ) -> Result<Option<(ActivityProgressWrite, bool)>> {
-    if activity.activity_type == "file_submission" {
+    if activity.kind == "file_submission" {
         let Some(fs) =
             ab_db::file_submissions::get_file_submission_by_activity(&mut *conn, activity.id)
                 .await?
@@ -880,7 +880,7 @@ async fn is_pipeline_owned<'e>(
     db: impl sqlx::PgExecutor<'e>,
     activity: &ActivityRow,
 ) -> Result<bool> {
-    if activity.activity_type == "file_submission" {
+    if activity.kind == "file_submission" {
         return Ok(true);
     }
     Ok(

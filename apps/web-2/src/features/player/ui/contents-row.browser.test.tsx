@@ -9,7 +9,7 @@ import { ContentsRow } from './contents-row'
 const quiz = (patch: Partial<ActivityState>): ActivityState => ({
   id: 'a',
   title: 'Тест 1',
-  activity_type: 'quiz',
+  kind: 'quiz',
   allowed_actions: ['start'],
   available: true,
   blocked_reason: null,

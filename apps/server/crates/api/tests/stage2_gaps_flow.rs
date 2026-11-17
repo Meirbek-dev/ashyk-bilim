@@ -733,7 +733,7 @@ async fn file_submissions_unpublish(pool: PgPool) {
     assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
     let back = app.post_as(&teacher, &unpublish, &json!({})).await;
     assert_eq!(back.status, StatusCode::OK, "{}", back.text());
-    assert_eq!(back.json()["lifecycle"], "draft");
+    assert_eq!(back.json()["status"], "draft");
     assert_eq!(back.json()["published"], false);
     assert_eq!(back.json()["allowed_actions"], json!(["update", "publish"]));
     let hidden = app

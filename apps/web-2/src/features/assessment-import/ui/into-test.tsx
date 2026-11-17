@@ -14,7 +14,7 @@ export function IntoTest({ courseId, activityId }: { courseId: string; activityI
   const navigate = useNavigate()
   const { data: test } = useSuspenseQuery(targetTestOptions(activityId))
   // As the builder: `edit` (no attempts yet); the server loads questions only into a draft.
-  const editable = test.allowed_actions.includes('edit') && test.lifecycle === 'draft'
+  const editable = test.allowed_actions.includes('edit') && test.status === 'draft'
   const builder = {
     to: '/teach/courses/$courseId/activities/$activityId/edit',
     params: { courseId, activityId },

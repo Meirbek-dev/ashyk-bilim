@@ -103,7 +103,7 @@ async fn course(app: &TestApp, teacher: &MintedSession, name: &str) -> (String, 
         &app.post_as(
             teacher,
             &format!("/api/v2/chapters/{chapter_id}/activities"),
-            &json!({ "name": "Lesson 1", "activity_type": "dynamic", "activity_sub_type": "dynamic_page" }),
+            &json!({ "name": "Lesson 1", "kind": "dynamic", "sub_kind": "dynamic_page" }),
         )
         .await,
     );

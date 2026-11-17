@@ -27,7 +27,7 @@ test('B-CST-29 a hosted video uploads, is attached, plays, and can be replaced a
   const { data: activity } = await createActivity({
     client: studio.api,
     path: { chapter_id: made.chapters[0]?.chapter.id ?? '' },
-    body: { name: 'Lecture', activity_type: 'video', activity_sub_type: 'video_hosted' },
+    body: { name: 'Lecture', kind: 'video', sub_kind: 'video_hosted' },
     headers,
     throwOnError: true,
   })
@@ -93,7 +93,7 @@ test('B-CST-29 corrupt video bytes are refused before any upload; a valid video 
   const { data: activity } = await createActivity({
     client: studio.api,
     path: { chapter_id: made.chapters[0]?.chapter.id ?? '' },
-    body: { name: 'Lecture', activity_type: 'video', activity_sub_type: 'video_hosted' },
+    body: { name: 'Lecture', kind: 'video', sub_kind: 'video_hosted' },
     headers: cookieOf(seed, 'teacher'),
     throwOnError: true,
   })

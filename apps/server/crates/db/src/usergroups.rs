@@ -22,7 +22,7 @@ pub async fn insert_usergroup(
     creator_id: UserId,
 ) -> Result<UsergroupId> {
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO usergroups (name, description, creator_id)
+        r#"INSERT INTO usergroups (name, description, created_by)
            VALUES ($1, $2, $3) RETURNING id"#,
         name,
         description,
@@ -37,7 +37,7 @@ pub async fn get_usergroup(pool: &PgPool, id: UsergroupId) -> Result<Option<User
     let row = sqlx::query_as!(
         UsergroupRow,
         r#"SELECT g.id AS "id: UsergroupId", g.name, g.description,
-                  g.creator_id AS "creator_id: UserId",
+                  g.created_by AS "creator_id: UserId",
                   (SELECT count(*) FROM usergroup_members m
                    WHERE m.usergroup_id = g.id) AS "member_count!",
                   g.version,
@@ -67,7 +67,7 @@ pub async fn list_usergroups(
     let rows = sqlx::query_as!(
         UsergroupRow,
         r#"SELECT g.id AS "id: UsergroupId", g.name, g.description,
-                  g.creator_id AS "creator_id: UserId",
+                  g.created_by AS "creator_id: UserId",
                   (SELECT count(*) FROM usergroup_members m
                    WHERE m.usergroup_id = g.id) AS "member_count!",
                   g.version,
@@ -248,7 +248,7 @@ pub async fn list_for_course(pool: &PgPool, course_id: CourseId) -> Result<Vec<U
     let rows = sqlx::query_as!(
         UsergroupRow,
         r#"SELECT g.id AS "id: UsergroupId", g.name, g.description,
-                  g.creator_id AS "creator_id: UserId",
+                  g.created_by AS "creator_id: UserId",
                   (SELECT count(*) FROM usergroup_members m
                    WHERE m.usergroup_id = g.id) AS "member_count!",
                   g.version,

@@ -302,7 +302,7 @@ pub async fn grade_changed(
         .await
         .ok()
         .flatten()
-        .map(|a| a.activity_type);
+        .map(|a| a.kind);
     user::submission(
         owner,
         user::SubmissionUpdated {
@@ -376,7 +376,7 @@ pub async fn work_handed_in(
         .await
         .ok()
         .flatten()
-        .map_or_default(|a| a.activity_type);
+        .map_or_default(|a| a.kind);
     let learner_name = ab_db::notifications::user_name(pool, learner)
         .await
         .ok()
@@ -436,7 +436,7 @@ pub async fn remediation_assigned(
         .await
         .ok()
         .flatten()
-        .map_or_default(|a| a.activity_type);
+        .map_or_default(|a| a.kind);
     let payload = NotificationPayload::RemediationAssigned {
         course_id,
         course_name,

@@ -381,7 +381,7 @@ pub fn build_course_detail(
             chapter_id: activity.chapter_id,
             activity_id: activity.id,
             activity_name: activity.name.clone(),
-            activity_type: activity.activity_type.clone(),
+            kind: activity.kind.clone(),
             previous_step_completions: count_i64(prev),
             current_step_completions: count_i64(current),
             dropoff_pct,

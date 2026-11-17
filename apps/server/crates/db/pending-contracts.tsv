@@ -14,10 +14,10 @@ column	submissions.policy_snapshot	the release after the readers moved to assess
 column	submissions.violations	the release after the readers moved to submission_violation_log (20261108000200); record_violation stops writing it	ARCHITECTURE §8 "History stays"
 trigger	course_discussions_recount_replies	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
 trigger	discussion_reactions_recount	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
-column	course_discussions.likes_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
-column	course_discussions.dislikes_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
-column	course_discussions.replies_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
-column	daily_teacher_metrics.id	the release after the platform rollup moved to daily_platform_metrics (20261108000500): delete the NULL-teacher rows, teacher_user_id NOT NULL, (metric_date, teacher_user_id) the primary key	schema review 2026-11-08 item 16
+column	discussion_posts.likes_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
+column	discussion_posts.dislikes_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
+column	discussion_posts.replies_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
+column	daily_teacher_metrics.id	the release after the platform rollup moved to daily_platform_metrics (20261108000500): delete the NULL-teacher rows, teacher_id NOT NULL, (metric_date, teacher_id) the primary key	schema review 2026-11-08 item 16
 constraint	daily_teacher_metrics_metric_date_teacher_user_id_key	the same contract as daily_teacher_metrics.id	schema review 2026-11-08 item 16
 table	gamification_config	the release after the settings move (20261116064418): the values live on the platforms row	REWRITE 5.6 n9
 table	ai_feature_switches	the release after the settings move (20261116064418): platforms.ai_features	REWRITE 5.6 n9
@@ -82,3 +82,38 @@ table	course_progress	the release after readers moved to course_progress_v (2026
 view	certifications	the release after the server reads and writes certificate_templates (20261116075643)	REWRITE 5.8 item 9
 view	certificate_users	the release after the server reads and writes certificates (20261116075643)	REWRITE 5.8 item 9
 view	course_discussions	the release after the server reads and writes discussion_posts (20261116075643)	REWRITE 5.8 item 9
+column	activities.creator_id	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	activities.activity_type	the release after the server writes the new names (20261116075644); first recreate activities_keep_assessment_type as BEFORE UPDATE OF kind	REWRITE 5.8 item 9
+column	activities.activity_sub_type	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	chapters.creator_id	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	usergroups.creator_id	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	assessments.creator_id	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	assessments.grading_type	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	assessments.lifecycle	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	course_updates.author_id	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	courses.thumbnail_type	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	blocks.block_type	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	item_feedback.annotation_type	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	bulk_actions.action_type	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	assessment_audit_events.actor_id	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	teacher_interventions.teacher_user_id	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	teacher_interventions.intervention_type	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	analytics_events.actor_id	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	analytics_events.event_type	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+column	daily_teacher_metrics.teacher_user_id	the release after the server writes the new names (20261116075644); daily_teacher_metrics_previous_key goes with it	REWRITE 5.8 item 9
+column	analytics_saved_views.teacher_user_id	the release after the server writes the new names (20261116075644); analytics_saved_views_previous_key goes with it	REWRITE 5.8 item 9
+column	analytics_saved_views.view_type	the release after the server writes the new names (20261116075644)	REWRITE 5.8 item 9
+trigger	activities_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9
+trigger	chapters_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9
+trigger	usergroups_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9
+trigger	assessments_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9
+trigger	course_updates_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9
+trigger	courses_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9
+trigger	blocks_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9
+trigger	item_feedback_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9
+trigger	bulk_actions_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9
+trigger	assessment_audit_events_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9
+trigger	teacher_interventions_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9
+trigger	analytics_events_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9
+trigger	daily_teacher_metrics_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9
+trigger	analytics_saved_views_aliases	the release after the server writes the new names (20261116075644), with the old columns; drop renamed_columns() after the last one	REWRITE 5.8 item 9

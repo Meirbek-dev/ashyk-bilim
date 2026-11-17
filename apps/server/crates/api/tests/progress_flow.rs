@@ -68,8 +68,8 @@ async fn lesson(app: &TestApp, teacher: &MintedSession, chapter_id: &str, name: 
         .post_as(
             teacher,
             &format!("/api/v2/chapters/{chapter_id}/activities"),
-            &serde_json::json!({ "name": name, "activity_type": "dynamic",
-                                  "activity_sub_type": "dynamic_page" }),
+            &serde_json::json!({ "name": name, "kind": "dynamic",
+                                  "sub_kind": "dynamic_page" }),
         )
         .await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
@@ -106,8 +106,8 @@ async fn trail_runs_steps_and_learner_state(pool: PgPool) {
     app.post_as(
         &teacher,
         &format!("/api/v2/chapters/{chapter_id}/activities"),
-        &serde_json::json!({ "name": "Draft", "activity_type": "dynamic",
-                              "activity_sub_type": "dynamic_page" }),
+        &serde_json::json!({ "name": "Draft", "kind": "dynamic",
+                              "sub_kind": "dynamic_page" }),
     )
     .await;
     let alice = learner(&app, "alice").await;
@@ -461,8 +461,8 @@ async fn drafts_never_count_and_totals_follow_publishing(pool: PgPool) {
         .post_as(
             &teacher,
             &format!("/api/v2/chapters/{chapter_id}/activities"),
-            &serde_json::json!({ "name": "Draft", "activity_type": "dynamic",
-                                  "activity_sub_type": "dynamic_page" }),
+            &serde_json::json!({ "name": "Draft", "kind": "dynamic",
+                                  "sub_kind": "dynamic_page" }),
         )
         .await
         .json()["id"]
@@ -1048,7 +1048,7 @@ async fn first_marks_past_pool_size_all_land_with_their_hooks(pool: PgPool) {
         assert_eq!(mark.status, StatusCode::OK, "mark {i}: {}", mark.text());
     }
     let (events, awards): (i64, i64) = sqlx::query_as(
-        "SELECT (SELECT count(*) FROM analytics_events WHERE event_type = 'activity.completed'),
+        "SELECT (SELECT count(*) FROM analytics_events WHERE event = 'activity.completed'),
                 (SELECT count(*) FROM xp_transactions WHERE source = 'course_completion')",
     )
     .fetch_one(&app.pool)

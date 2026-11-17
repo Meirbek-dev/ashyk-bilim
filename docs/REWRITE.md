@@ -798,6 +798,8 @@ in the order it can be done, each step a forward migration on the current schema
       assessment_items, course_updates, ai_threads (authored text).
     Order: the AI tables with their AI work; the rest after the lane merges of review 3 settle (several of
     these tables change shape there: submissions/file tasks, resource_authors, progress).
+    Status: switched in 5.8 item 9 (renamed in place, the old name a compatibility column; what it skipped and
+    why is there). Left: the AI tables, and the contract dropping the old names.
 16. **Grading records** (schema review 2, items 1-10; ARCHITECTURE §8 has what landed: own code-run
     verdicts, score domains and numeric scores, snapshot and current-grade guarantees, assessment
     versions). Left, in order:
@@ -1095,6 +1097,53 @@ Queue, in order:
      grading, the scheduler, analytics, AI context, the DOT import/export, the API DTOs).
 9. **Names, last**: `certifications` -> `certificate_templates`, `certificate_users` -> `certificates`,
    `course_discussions` -> `discussion_posts`, and the column renames of 5.6 n15, in the API too.
+   - Tables: switched in `20261116075643_rename_certificates_and_posts`. Each table is renamed in place (its
+     constraints, indexes and triggers keep their names) and its old name is a view over it: a single-table
+     view is updatable, so the previous release's reads, inserts with `ON CONFLICT`, updates, `FOR UPDATE` and
+     deletes go through it, the guards fire and the `ashyq_ro` column grants cover both names.
+     `certificates.certification_id` is `template_id` (the `certificate_users` view gives it back under the old
+     name). The API moved with them: `/certifications/...` is `/certificate-templates/...` (tag `certificates`),
+     the DTOs are `CertificateTemplate*`, the issued certificate's `certification_id` / `certification` are
+     `template_id` / `template`; the web's routes are unchanged. Kept: the template config's stored keys
+     (`certification_name`, `certification_type`) and the idempotency scope `certification` (stored values; a
+     rename would rewrite rows for nothing), and `discussion_reactions` / `post_uploads.discussion_id` (a key named
+     after the table; its rename would be a second compatibility column for no reader). Left: the contract
+     dropping the three views.
+   - Columns: switched in `20261116075644_rename_columns`, with `20261116075645` / `20261116075646` (the previous
+     release's upsert keys). Each column is renamed in place (constraints, indexes and keys follow it) and its old
+     name comes back as a plain column, backfilled; `renamed_columns()`, as each table's `<table>_aliases` trigger,
+     keeps the pair equal whichever name a writer sets, and `activities_keep_assessment_type` fires on either
+     name. The two upserts of the previous release that infer their key from old names get a twin unique index
+     on the old columns: `daily_teacher_metrics (metric_date, teacher_user_id)` and `analytics_saved_views
+     (teacher_user_id, view_type, name)`. Renamed: `creator_id` -> `created_by` on activities, assessments,
+     chapters, usergroups, `course_updates.author_id` -> `created_by`; `actor_id` -> `performed_by` on
+     analytics_events and assessment_audit_events; `daily_teacher_metrics.teacher_user_id` -> `teacher_id`,
+     `analytics_saved_views.teacher_user_id` -> `user_id`, `teacher_interventions.teacher_user_id` ->
+     `created_by`; `activities.activity_type` / `activity_sub_type` -> `kind` / `sub_kind`, `blocks.block_type`,
+     `teacher_interventions.intervention_type`, `analytics_saved_views.view_type`, `item_feedback.annotation_type`,
+     `bulk_actions.action_type` -> `kind`; `assessments.grading_type` -> `grading_kind`, `courses.thumbnail_type`
+     -> `thumbnail_kind`; `analytics_events.event_type` -> `event`; `assessments.lifecycle` -> `status`. The API
+     fields of those names changed in place (an assessment's and a file task's `status`, `grading_kind`,
+     `created_by`, an activity's, block's, bulk action's, intervention's and saved view's `kind`, an audit event's
+     `performed_by`, a saved view's `user_id`, an intervention's `created_by`); the
+     endpoint `POST /assessments/{id}/lifecycle`, the `Lifecycle` type and the stored `lifecycle-transition` audit
+     event keep the concept's name. Left: the contract dropping the old columns (their twin keys with them), the
+     fourteen `*_aliases` triggers and `renamed_columns()`; it first recreates `activities_keep_assessment_type`
+     as `BEFORE UPDATE OF kind`.
+   - Skipped, with the reason:
+     - `courses` / `collections.creator_id`: item 4's contract drops them (`course_staff` / `resource_authors`
+       hold the creator); `file_submissions.lifecycle` / `creator_id` and `assessments.title` are gone already
+       (review 3); `activity_progress.state` became `status` in item 5.
+     - `daily_course_metrics` / `learner_risk_snapshots.teacher_user_id`: item 7's contract drops them.
+     - The AI tables (`student_user_id`, `ai_grade_drafts.learner_id`, `ai_grade_corrections.teacher_id`,
+       `ai_approvals.action_type`, `ai_events.event_type`, `source_type`): n15 puts them with the AI work, and
+       `source_type` is also the vocabulary of the model's citation schema and of the stored citations, which a
+       column rename alone would split.
+     - `code_runs.code_sha256` / `input_sha256` keep their names: the plain names `source_sha256` /
+       `stdin_sha256` hold the hex copies item 6 keeps for the previous release, so taking them needs that
+       contract first, and the current names say what is hashed.
+     - Constraint and index names keep the old column names (a name nobody reads; renaming them is a lock per
+       object).
 
 ## 6. Auth
 

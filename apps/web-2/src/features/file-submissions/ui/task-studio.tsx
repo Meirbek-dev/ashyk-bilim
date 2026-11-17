@@ -26,10 +26,10 @@ export function TaskStudio({ activityId, tab }: TaskStudioProps) {
         <>
           {/* Live: the header switch says it and takes it down. An archived task explains itself first; a draft ends
               with «Опубликовать» after what it needs: the instructions, then the rubric (B-FSB-24). */}
-          {task.lifecycle === 'archived' ? <PublishSection task={task} /> : null}
+          {task.status === 'archived' ? <PublishSection task={task} /> : null}
           <InstructionsSection task={task} />
           <RubricSection task={task} />
-          {task.lifecycle === 'draft' ? <PublishSection task={task} /> : null}
+          {task.status === 'draft' ? <PublishSection task={task} /> : null}
         </>
       ) : (
         <>

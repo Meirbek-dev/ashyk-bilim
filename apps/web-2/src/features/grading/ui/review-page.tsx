@@ -19,5 +19,5 @@ export function ReviewPage({ aside }: { aside?: ReviewAside }): ReactElement {
   const { courseId, activityId, submissionId } = useParams({ from: ROUTE })
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
   const at = { courseId, activityId, submissionId, aside }
-  return workKind(activity.activity_type) === 'file' ? <FileReview {...at} /> : <AssessmentReview {...at} />
+  return workKind(activity.kind) === 'file' ? <FileReview {...at} /> : <AssessmentReview {...at} />
 }

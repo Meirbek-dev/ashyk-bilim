@@ -60,8 +60,8 @@ const graph: ConceptGraph = {
 
 const curriculum = {
   chapters: [
-    { activities: [{ id: 'act1', name: 'Lecture', activity_type: 'dynamic' }] },
-    { activities: [{ id: 'act2', name: 'Quiz', activity_type: 'quiz' }] },
+    { activities: [{ id: 'act1', name: 'Lecture', kind: 'dynamic' }] },
+    { activities: [{ id: 'act2', name: 'Quiz', kind: 'quiz' }] },
   ],
 } satisfies { chapters: { activities: ActivityInfo[] }[] }
 

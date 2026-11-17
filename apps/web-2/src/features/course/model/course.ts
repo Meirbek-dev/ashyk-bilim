@@ -82,7 +82,7 @@ export function curriculumSyllabus(curriculum: Curriculum, open = false): Syllab
         .map((activity): SyllabusActivity => ({
           id: activity.id,
           title: activity.name,
-          type: activity.activity_type,
+          type: activity.kind,
           complete: false,
           available: open,
           opensAt: null,
@@ -109,7 +109,7 @@ export const outlineSyllabus = (state: LearnerCourseState, staff = false, nowUni
     activities: chapter.activities.map(activity => ({
       id: activity.id,
       title: activity.title,
-      type: activity.activity_type,
+      type: activity.kind,
       complete: activity.complete,
       available: (state.enrolled || staff || state.guest_access) && activity.available,
       opensAt: activity.opens_at_unix,
@@ -138,7 +138,7 @@ export function nextActivity(
   return {
     id: found.id,
     title: found.title,
-    type: found.activity_type,
+    type: found.kind,
     reason: isNextReason(next.reason) ? next.reason : null,
   }
 }

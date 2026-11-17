@@ -24,13 +24,8 @@ const LOOKUP: &str = "lookup value: the app never deletes or renames one";
 
 /// `(child table, child columns, parent table)` → reason.
 const ALLOWED: &[(&str, &str, &str, &str)] = &[
-    (
-        "activities",
-        "activity_type,activity_sub_type",
-        "activity_kinds",
-        LOOKUP,
-    ),
-    ("activities", "creator_id", "users", ACTOR),
+    ("activities", "kind,sub_kind", "activity_kinds", LOOKUP),
+    ("activities", "created_by", "users", ACTOR),
     ("ai_approvals", "requested_by", "users", ACTOR),
     ("ai_approvals", "resolved_by", "users", ACTOR),
     ("ai_course_analyses", "triggered_by", "users", ACTOR),
@@ -38,14 +33,14 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ("ai_lecture_reviews", "triggered_by", "users", ACTOR),
     ("ai_student_memory", "course_id", "courses", AI_OWNED),
     ("ai_submission_analyses", "triggered_by", "users", ACTOR),
-    ("assessment_audit_events", "actor_id", "users", ACTOR),
+    ("assessment_audit_events", "performed_by", "users", ACTOR),
     ("assessment_overrides", "granted_by", "users", ACTOR),
-    ("assessments", "creator_id", "users", ACTOR),
+    ("assessments", "created_by", "users", ACTOR),
     ("bulk_actions", "performed_by", "users", ACTOR),
-    ("chapters", "creator_id", "users", ACTOR),
+    ("chapters", "created_by", "users", ACTOR),
     ("collections", "creator_id", "users", ACTOR),
     ("discussion_posts", "user_id", "users", ACTOR),
-    ("course_updates", "author_id", "users", ACTOR),
+    ("course_updates", "created_by", "users", ACTOR),
     ("courses", "archived_by", "users", ACTOR),
     ("courses", "creator_id", "users", ACTOR),
     ("courses", "deleted_by", "users", ACTOR),
@@ -61,7 +56,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ),
     ("notifications", "kind", "notification_kinds", LOOKUP),
     ("uploads", "purpose", "upload_purposes", LOOKUP),
-    ("usergroups", "creator_id", "users", ACTOR),
+    ("usergroups", "created_by", "users", ACTOR),
 ];
 
 #[ab_testdb::test]

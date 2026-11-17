@@ -100,7 +100,7 @@ async fn published_activity(
         )
         .await;
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
-    assert_eq!(published.json()["lifecycle"], "published");
+    assert_eq!(published.json()["status"], "published");
     assert_eq!(published.json()["published"], true);
     id
 }
@@ -188,7 +188,7 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         .await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
     let id = created.json()["id"].as_str().unwrap().to_owned();
-    assert_eq!(created.json()["lifecycle"], "draft");
+    assert_eq!(created.json()["status"], "draft");
     assert_eq!(created.json()["max_files"], 1);
     assert_eq!(
         app.get_as(&alice, &format!("/api/v2/file-submissions/{id}"))
@@ -1336,7 +1336,7 @@ async fn publish_and_config_edits_serialize(pool: PgPool) {
             (published, edited)
         };
         let seen = app.get_as(&teacher, &path).await.json();
-        if seen["lifecycle"] == "published" {
+        if seen["status"] == "published" {
             assert_eq!(
                 edited.status,
                 StatusCode::CONFLICT,
@@ -1365,13 +1365,13 @@ async fn publish_and_config_edits_serialize(pool: PgPool) {
     let seen = async || app.get_as(&teacher, &path).await.json();
     drop_request_when(
         app.post_as(&teacher, &format!("{path}/publish"), &serde_json::json!({})),
-        async || seen().await["lifecycle"] == "published",
+        async || seen().await["status"] == "published",
         |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
     )
     .await;
     wait_until("the dropped publish left the activity hidden", async || {
         let seen = seen().await;
-        seen["lifecycle"] == "published" && seen["published"] == true
+        seen["status"] == "published" && seen["published"] == true
     })
     .await;
 }
@@ -2183,7 +2183,7 @@ async fn a_file_task_lives_in_the_assessment_pipeline(pool: PgPool) {
     let task = uuid::Uuid::parse_str(&id).unwrap();
     let (kind, lifecycle, grading_mode, max_attempts): (String, String, String, i32) =
         sqlx::query_as(
-            "SELECT act.activity_type, a.lifecycle, a.grading_mode, a.max_attempts
+            "SELECT act.kind, a.status, a.grading_mode, a.max_attempts
              FROM file_submissions f JOIN assessments a ON a.id = f.id
              JOIN activities act ON act.id = a.activity_id WHERE f.id = $1",
         )
@@ -2400,7 +2400,7 @@ async fn a_file_task_lives_in_the_assessment_pipeline(pool: PgPool) {
     assert_eq!(copied.status, StatusCode::CREATED, "{}", copied.text());
     let copy = uuid::Uuid::parse_str(copied.json()["id"].as_str().unwrap()).unwrap();
     let tasks: Vec<(String, i32, String)> = sqlx::query_as(
-        "SELECT a.lifecycle, a.max_attempts, f.instructions
+        "SELECT a.status, a.max_attempts, f.instructions
          FROM file_submissions f JOIN assessments a ON a.id = f.id AND a.activity_id = f.activity_id
          WHERE f.course_id = $1",
     )

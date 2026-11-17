@@ -357,8 +357,8 @@ One migration set for the database `ashyq`. Rules:
      is a MIME type); an event log's variant is `event`;
    - a row's state machine is `status` (one per table), not `state` / `lifecycle`; a status's moments are
      `<status>_at` timestamps.
-   Older columns that break it are renamed by REWRITE §5.6 n15 (each rename is expand/contract). A table-level CHECK is named
-   (`CONSTRAINT <table>_<rule> CHECK`): unnamed it becomes `<table>_check1`.
+   Older columns that broke it were renamed by REWRITE §5.8 item 9 (§5.6 n15; the AI tables' wait for their AI work).
+   A table-level CHECK is named (`CONSTRAINT <table>_<rule> CHECK`): unnamed it becomes `<table>_check1`.
    Every table has a `COMMENT ON TABLE` (what one row is, who writes it) in the migration that creates it;
    `docs/agents/SCHEMA.md` is generated from the schema (`just schema-docs`) and `crates/db/tests/schema_docs.rs`
    fails while it is stale or a table has no comment.
@@ -413,7 +413,7 @@ One migration set for the database `ashyq`. Rules:
 ### Schema guarantees (2026-11-07 schema review)
 
 - **One submission pipeline** (`20261115155501_merge_file_pipeline`). A file task is an `assessments` row (policy,
-  lifecycle; kind `file_submission`, `AssessmentKind::Assignment`, storage only) and a `file_submissions` row with the
+  status; kind `file_submission`, `AssessmentKind::Assignment`, storage only) and a `file_submissions` row with the
   same id (`file_submissions_assessment_fkey`: instructions, rubric, file caps, the task's `version`). A hand-in is a
   `submissions` row (the file API's attempt id), handed in against an `assessment_versions` row whose policy holds the
   caps and rubric and whose one item is worth 100 points; its files are `file_submission_files`, its grades
@@ -505,7 +505,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   applied grade draft lives as long as its grade; a queued or ready one until the teacher decides. Time-ordered append tables carry BRIN indexes on their
   timestamp for these sweeps and the analytics prune; a daily rollup is swept through its primary key, which its date leads.
 - **Growing value lists are lookup tables**: `notifications.kind` → `notification_kinds`, `uploads.purpose` →
-  `upload_purposes`, `activities (activity_type, activity_sub_type)` → `activity_kinds (kind, sub_kind)` (a new kind or purpose is one
+  `upload_purposes`, `activities (kind, sub_kind)` → `activity_kinds (kind, sub_kind)` (a new kind or purpose is one
   `INSERT` in a migration; an activity kind also gets its row in `curriculum::TYPE_SUBTYPES`). A user's switched-off kinds are
   `notification_opt_outs (user_id, kind)` rows with a key onto `notification_kinds` (the old
   `notification_preferences.disabled` array is gone, `20261103010100`). Short fixed lists stay CHECKs.
@@ -571,7 +571,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `(course_id, user_id)`, `user_id`, `(metric_date, ...)` are the primary keys and they have no `id` column;
   the platform aggregate is `daily_platform_metrics (metric_date)`. `daily_teacher_metrics` keeps its surrogate key
   and a NULL-teacher copy of that aggregate only for the previous release; a contract makes `(metric_date,
-  teacher_user_id)` its key (`just contracts-pending`).
+  teacher_id)` its key (`just contracts-pending`).
 - **A stored language is the `language_code` domain** (`ru|kk|en`: `users.locale` (D-03; the API still renders
   and accepts the region form), `courses.language`, `translations.lang`); an AI answer's `language` is `auto` or
   one of them (REWRITE 5.8 item 6).
@@ -627,7 +627,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `effective_breakdown`, else `submissions.auto_breakdown` (the auto-grader's breakdown written at hand-in, the
   teacher's starting point while no entry exists), else `{}`; `submissions.grading` is gone (`20261103070100`).
 - **An assessment is named and typed by its activity** (`20261102020400_assessment_name_from_activity`): the
-  title is `activities.name`, the kind `activities.activity_type` (1:1 through `assessments.activity_id`); readers
+  title is `activities.name`, the kind `activities.kind` (1:1 through `assessments.activity_id`); readers
   join them and nothing writes a copy. An activity with an assessment cannot change its type
   (`activities_keep_assessment_type`). The copies `assessments.title` / `kind` are gone (contract
   `20261103020100`).

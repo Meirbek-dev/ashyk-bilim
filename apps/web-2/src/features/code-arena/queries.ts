@@ -118,7 +118,7 @@ type ArenaParams = {
  */
 export async function ensureArena(queryClient: QueryClient, { courseId, activityId, run, submission }: ArenaParams) {
   const { state, entry, preview } = await ensureEntry(queryClient, courseId, activityId)
-  if (entry.activity_type !== 'code_challenge') throw notFound()
+  if (entry.kind !== 'code_challenge') throw notFound()
   const names = { title: entry.title, courseTitle: state.title, locked: entry.blocked_reason !== null, preview }
   if (names.locked) return names
   const [challenge] = await Promise.all([
@@ -186,7 +186,7 @@ export async function ensureCodeStudio(queryClient: QueryClient, activityId: Act
   const activity = await queryClient
     .query({ ...getActivityOptions(byActivity(activityId)), staleTime: 'static' })
     .catch(() => null)
-  if (activity?.activity_type !== 'code_challenge') return { codeChallenge: false }
+  if (activity?.kind !== 'code_challenge') return { codeChallenge: false }
   await Promise.all([
     queryClient.query({ ...challengeOptions(activityId), staleTime: 'static' }),
     queryClient.query({ ...runnerStateOptions(), staleTime: 'static' }),

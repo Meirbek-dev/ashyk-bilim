@@ -280,7 +280,7 @@ pub struct MessageRow {
     pub course_name: Option<String>,
     pub activity_id: Option<ActivityId>,
     pub activity_name: Option<String>,
-    pub activity_type: Option<String>,
+    pub kind: Option<String>,
     /// The viewer reported it already.
     pub reported: bool,
     pub created_at: i64,
@@ -302,7 +302,7 @@ pub async fn list_messages(
                   (SELECT c.name FROM courses c WHERE c.id = m.course_id) AS "course_name?",
                   m.activity_id AS "activity_id?: ActivityId",
                   (SELECT a.name FROM activities a WHERE a.id = m.activity_id) AS "activity_name?",
-                  (SELECT a.activity_type FROM activities a WHERE a.id = m.activity_id) AS "activity_type?",
+                  (SELECT a.kind FROM activities a WHERE a.id = m.activity_id) AS "kind?",
                   EXISTS (SELECT 1 FROM message_reports r WHERE r.message_id = m.id AND r.reported_by = $2)
                     AS "reported!",
                   (extract(epoch FROM m.created_at))::bigint AS "created_at!"
@@ -333,7 +333,7 @@ pub async fn get_message<'e>(
                   (SELECT c.name FROM courses c WHERE c.id = m.course_id) AS "course_name?",
                   m.activity_id AS "activity_id?: ActivityId",
                   (SELECT a.name FROM activities a WHERE a.id = m.activity_id) AS "activity_name?",
-                  (SELECT a.activity_type FROM activities a WHERE a.id = m.activity_id) AS "activity_type?",
+                  (SELECT a.kind FROM activities a WHERE a.id = m.activity_id) AS "kind?",
                   EXISTS (SELECT 1 FROM message_reports r WHERE r.message_id = m.id AND r.reported_by = $2)
                     AS "reported!",
                   (extract(epoch FROM m.created_at))::bigint AS "created_at!"
@@ -647,7 +647,7 @@ pub async fn context_of(pool: &PgPool, message: MessageId, around: i64) -> Resul
                   (SELECT c.name FROM courses c WHERE c.id = m.course_id) AS "course_name?",
                   m.activity_id AS "activity_id?: ActivityId",
                   (SELECT a.name FROM activities a WHERE a.id = m.activity_id) AS "activity_name?",
-                  (SELECT a.activity_type FROM activities a WHERE a.id = m.activity_id) AS "activity_type?",
+                  (SELECT a.kind FROM activities a WHERE a.id = m.activity_id) AS "kind?",
                   false AS "reported!",
                   (extract(epoch FROM m.created_at))::bigint AS "created_at!"
            FROM near m

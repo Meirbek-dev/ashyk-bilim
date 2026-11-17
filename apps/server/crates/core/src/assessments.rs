@@ -157,7 +157,7 @@ text_enum!(
 impl AssessmentKind {
     /// The activity `(type, subtype)` pair that hosts this assessment.
     #[must_use]
-    pub const fn activity_type(self) -> (&'static str, &'static str) {
+    pub const fn activity_kind(self) -> (&'static str, &'static str) {
         match self {
             Self::Quiz => ("quiz", "quiz_standard"),
             Self::Exam => ("exam", "exam_standard"),

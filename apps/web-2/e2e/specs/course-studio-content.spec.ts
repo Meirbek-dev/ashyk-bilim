@@ -85,7 +85,7 @@ test('B-CST-08 one dialog creates any type and opens its studio', async ({ page,
     headers,
     throwOnError: true,
   })
-  const created = data.chapters[0]?.activities.map(a => [a.name, a.activity_type, a.activity_sub_type])
+  const created = data.chapters[0]?.activities.map(a => [a.name, a.kind, a.sub_kind])
   expect(created).toEqual([
     ['Входной тест', 'quiz', 'quiz_standard'],
     ['Лекция', 'video', 'video_youtube'],

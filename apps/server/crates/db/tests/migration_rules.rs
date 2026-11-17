@@ -321,7 +321,7 @@ fn renames_break(code: &str) -> bool {
         let words: Vec<&str> = s.split_whitespace().skip(3).collect();
         match words.as_slice() {
             ["rename", "to", new] if views.contains(&table.as_str()) => {
-                renamed.push((*new).to_owned())
+                renamed.push((*new).to_owned());
             }
             ["rename", "column", old, "to", _] => {
                 let left = format!(" add column {old} ");

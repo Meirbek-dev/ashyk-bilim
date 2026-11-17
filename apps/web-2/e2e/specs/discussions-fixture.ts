@@ -43,7 +43,7 @@ export const test = base.extend<{
       const activity = await createActivity({
         client: api,
         path: { chapter_id: chapter.data.id },
-        body: { name: 'Страница', activity_type: 'dynamic', activity_sub_type: 'dynamic_page' },
+        body: { name: 'Страница', kind: 'dynamic', sub_kind: 'dynamic_page' },
         headers,
       })
       const id = activity.data?.id ?? ''

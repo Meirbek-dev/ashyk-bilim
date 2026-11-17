@@ -508,7 +508,7 @@ pub struct CreateAssessment<'a> {
     pub title: &'a str,
     pub description: &'a str,
     pub weight: f64,
-    pub grading_type: GradingType,
+    pub grading_kind: GradingType,
     /// `None` → the kind's preset.
     pub policy: Option<PolicyInput>,
 }
@@ -518,7 +518,7 @@ pub struct AssessmentChanges<'a> {
     pub title: Option<&'a str>,
     pub description: Option<&'a str>,
     pub weight: Option<f64>,
-    pub grading_type: Option<GradingType>,
+    pub grading_kind: Option<GradingType>,
 }
 
 /// Full-replacement item metadata.
@@ -900,13 +900,13 @@ impl AssessmentsService {
         let policy = input.policy.unwrap_or_else(|| PolicyInput::preset(kind));
         policy.validate()?;
 
-        let (activity_type, sub_type) = kind.activity_type();
+        let (activity_kind, sub_type) = kind.activity_kind();
         let activity_id = ab_db::catalog::insert_activity(
             &mut *tx,
             input.chapter_id,
             chapter.course_id,
             title,
-            activity_type,
+            activity_kind,
             sub_type,
             actor.user_id,
         )
@@ -918,7 +918,7 @@ impl AssessmentsService {
                 course_id: chapter.course_id,
                 description: input.description,
                 weight: input.weight,
-                grading_type: input.grading_type,
+                grading_kind: input.grading_kind,
                 creator_id: actor.user_id,
                 policy: &policy.to_values(),
             },
@@ -1074,8 +1074,8 @@ impl AssessmentsService {
             .weight
             .is_none_or(|w| (w - assessment.weight).abs() < f64::EPSILON)
             && changes
-                .grading_type
-                .is_none_or(|g| g == assessment.grading_type);
+                .grading_kind
+                .is_none_or(|g| g == assessment.grading_kind);
         if wording_only {
             ensure_renamable(&mut *tx, &assessment).await?;
         } else {
@@ -1110,7 +1110,7 @@ impl AssessmentsService {
             id,
             changes.description,
             changes.weight,
-            changes.grading_type,
+            changes.grading_kind,
         )
         .await?;
         if let Some(title) = title {
@@ -1555,13 +1555,13 @@ impl AssessmentsService {
         creator: ab_core::id::UserId,
     ) -> Result<(AssessmentId, ab_core::id::ActivityId)> {
         let id = source.id;
-        let (activity_type, sub_type) = source.kind.activity_type();
+        let (activity_kind, sub_type) = source.kind.activity_kind();
         let activity_id = ab_db::catalog::insert_activity(
             &mut *tx,
             chapter_id,
             course_id,
             title,
-            activity_type,
+            activity_kind,
             sub_type,
             creator,
         )
@@ -1573,7 +1573,7 @@ impl AssessmentsService {
                 course_id,
                 description: &source.description,
                 weight: source.weight,
-                grading_type: source.grading_type,
+                grading_kind: source.grading_kind,
                 creator_id: creator,
                 policy: &source.policy(),
             },

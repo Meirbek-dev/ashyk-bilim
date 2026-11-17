@@ -68,7 +68,7 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
     to: '/teach/courses/$courseId/activities/$activityId/results',
     params: { courseId, activityId },
   })
-  const writing = Boolean(editing) && activity.activity_type === 'dynamic'
+  const writing = Boolean(editing) && activity.kind === 'dynamic'
   const [save, setSave] = useState<SaveStates>({})
   const state = activitySaveState(save, activityId)
   // A reload or a closed tab inside the autosave pause (or with a refused save) would drop the edit: the browser asks
@@ -86,7 +86,7 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
       <span className="sr-only @3xl:not-sr-only">{m.platform_back_to_course()}</span>
     </RouterLink>
   )
-  const previewTo = PREVIEW[activity.activity_type]
+  const previewTo = PREVIEW[activity.kind]
   const preview = previewTo ? (
     <RouterLink
       to={previewTo}
@@ -114,7 +114,7 @@ export function CourseStudioLayout({ publishControl, aside }: CourseStudioLayout
       wide
     >
       <div className="flex flex-col gap-gutter">
-        <StudioTabs handedIn={HANDED_IN[activity.activity_type]} />
+        <StudioTabs handedIn={HANDED_IN[activity.kind]} />
         {/* A teacher's tool is compact (DESIGN 5), except the lesson's page: it is written at the size it is read. */}
         <div data-density={writing ? undefined : 'compact'} className="flex min-w-0 flex-col">
           <DensityContext value={writing ? undefined : 'compact'}>

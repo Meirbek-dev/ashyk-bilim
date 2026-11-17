@@ -27,7 +27,7 @@ function TaskPublishSwitch({ activity }: { activity: ActivityDetail }) {
   const unpublish = useMutation(unpublishTaskOptions(queryClient, activity.course_id, activity.id))
   const [confirming, setConfirming] = useState(false)
   if (!task) return null
-  const published = task.lifecycle === 'published'
+  const published = task.status === 'published'
   const allowed = (task.allowed_actions ?? []).includes(published ? 'unpublish' : 'publish')
   const pending = publish.isPending || unpublish.isPending
   const run = () =>
@@ -81,4 +81,4 @@ function TaskPublishSwitch({ activity }: { activity: ActivityDetail }) {
 
 /** The studio header's published control (course-studio `publishControl`): file submissions only, null for the rest. */
 export const fileSubmissionPublishControl = (activity: ActivityDetail) =>
-  activity.activity_type === 'file_submission' ? <TaskPublishSwitch activity={activity} /> : null
+  activity.kind === 'file_submission' ? <TaskPublishSwitch activity={activity} /> : null

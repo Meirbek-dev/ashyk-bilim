@@ -47,7 +47,7 @@ export function FileUpload({ node, updateAttributes }: ViewProps) {
           claim.mutateAsync(
             {
               path: { activity_id: activityId },
-              body: { block_type: blockType, upload_id: upload.id, file_name: file.name },
+              body: { kind: blockType, upload_id: upload.id, file_name: file.name },
               headers: { 'Idempotency-Key': upload.id },
             },
             { onSuccess: block => updateAttributes({ blockObject: fileBlockObject(block.id, upload, file.name) }) },

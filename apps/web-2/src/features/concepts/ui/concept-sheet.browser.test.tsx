@@ -58,8 +58,8 @@ const graph: ConceptGraph = {
   ],
 }
 const activities: ActivityInfo[] = [
-  { id: ids.lecture, name: 'Fractions lecture', activity_type: 'dynamic' },
-  { id: ids.quiz, name: 'Fractions quiz', activity_type: 'quiz' },
+  { id: ids.lecture, name: 'Fractions lecture', kind: 'dynamic' },
+  { id: ids.quiz, name: 'Fractions quiz', kind: 'quiz' },
 ]
 
 afterEach(() => vi.unstubAllGlobals())

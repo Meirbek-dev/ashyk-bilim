@@ -22,7 +22,7 @@ type QuickPublishProps = {
 
 export function QuickPublish({ courseId, activity, onPublished }: QuickPublishProps) {
   const update = useMutation(updateActivityOptions(useQueryClient(), courseId))
-  if (activity.published || !LESSON_TYPES.includes(activity.activity_type)) return null
+  if (activity.published || !LESSON_TYPES.includes(activity.kind)) return null
   if (!activity.allowed_actions.includes('update')) return null
   const publish = () =>
     update.mutate(

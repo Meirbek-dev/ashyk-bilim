@@ -73,7 +73,7 @@ export function LearnerSheet({ learnerId, courseId, row }: LearnerSheetProps) {
         <ul className="flex flex-col divide-y border-y">
           {data.items.map(item => (
             <li key={item.id} className="flex flex-col gap-1 py-3 text-sm">
-              <span className="font-medium">{interventionTypeLabels[item.intervention_type]()}</span>
+              <span className="font-medium">{interventionTypeLabels[item.kind]()}</span>
               <span className="text-muted-foreground">
                 {interventionStatusLabels[item.status]()} · {formatDate(item.created_at_unix)}
               </span>

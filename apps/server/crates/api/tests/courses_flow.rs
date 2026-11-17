@@ -544,8 +544,8 @@ async fn thumbnail_travels_the_upload_pipeline(pool: PgPool) {
         .post_as(
             &teacher,
             &format!("/api/v2/chapters/{chapter_id}/activities"),
-            &serde_json::json!({ "name": "Page", "activity_type": "dynamic",
-                                  "activity_sub_type": "dynamic_page" }),
+            &serde_json::json!({ "name": "Page", "kind": "dynamic",
+                                  "sub_kind": "dynamic_page" }),
         )
         .await;
     let activity_id = activity.json()["id"].as_str().unwrap().to_owned();
@@ -554,7 +554,7 @@ async fn thumbnail_travels_the_upload_pipeline(pool: PgPool) {
         .post_as(
             &teacher,
             &format!("/api/v2/activities/{activity_id}/blocks"),
-            &serde_json::json!({ "block_type": "image", "upload_id": image }),
+            &serde_json::json!({ "kind": "image", "upload_id": image }),
         )
         .await;
     assert_eq!(block.status, StatusCode::CREATED, "{}", block.text());
@@ -720,7 +720,7 @@ async fn readiness_reports_blockers_and_warnings(pool: PgPool) {
             &teacher,
             &format!("/api/v2/chapters/{chapter_id}/activities"),
             &serde_json::json!({
-                "name": "Intro", "activity_type": "dynamic", "activity_sub_type": "dynamic_page"
+                "name": "Intro", "kind": "dynamic", "sub_kind": "dynamic_page"
             }),
         )
         .await;

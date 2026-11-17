@@ -26,8 +26,8 @@ export function MediaFileSection({ courseId, activity }: { courseId: string; act
   const remove = useMutation(deleteBlockMutation())
   const claimed = useRef<Block | null>(null)
   const source = mediaSource(activity)
-  const { blockType, purpose } = mediaBlock(activity.activity_type)
-  const video = activity.activity_type === 'video'
+  const { blockType, purpose } = mediaBlock(activity.kind)
+  const video = activity.kind === 'video'
   const point = (upload: FinalizedUpload, file: File) =>
     update.mutateAsync(
       {
@@ -50,7 +50,7 @@ export function MediaFileSection({ courseId, activity }: { courseId: string; act
     if (claimed.current?.content.upload_id !== upload.id) {
       claimed.current = await claim.mutateAsync({
         path: { activity_id: activity.id },
-        body: { block_type: blockType, upload_id: upload.id, file_name: file.name },
+        body: { kind: blockType, upload_id: upload.id, file_name: file.name },
         headers: { 'Idempotency-Key': upload.id },
       })
     }

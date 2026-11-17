@@ -33,10 +33,10 @@ export function ContinueHero({ item }: { item: ContinueLearning }) {
           {item.course_name}
         </h3>
         <div className="flex items-start gap-3">
-          <ActivityIcon type={item.activity_type} />
+          <ActivityIcon type={item.kind} />
           <p className="flex min-w-0 flex-col">
             <span className="text-sm text-muted-foreground">
-              {m.home_continue_next({ activity: activityTypeMeta[item.activity_type].label() })}
+              {m.home_continue_next({ activity: activityTypeMeta[item.kind].label() })}
             </span>
             <span className="font-medium wrap-anywhere">{item.activity_name}</span>
           </p>

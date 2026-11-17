@@ -63,8 +63,8 @@ async fn create_activity(
             &format!("/api/v2/chapters/{chapter_id}/activities"),
             &serde_json::json!({
                 "name": name,
-                "activity_type": "video",
-                "activity_sub_type": "video_youtube",
+                "kind": "video",
+                "sub_kind": "video_youtube",
             }),
         )
         .await;
@@ -200,8 +200,8 @@ async fn activities_order_within_and_across_chapters(pool: PgPool) {
             &format!("/api/v2/chapters/{ch1}/activities"),
             &serde_json::json!({
                 "name": "bad",
-                "activity_type": "video",
-                "activity_sub_type": "exam_standard",
+                "kind": "video",
+                "sub_kind": "exam_standard",
             }),
         )
         .await;
@@ -492,7 +492,7 @@ async fn file_submission_activity_needs_a_published_config(pool: PgPool) {
         .patch_as(
             &teacher,
             &format!("/api/v2/activities/{activity_id}"),
-            &serde_json::json!({ "activity_type": "dynamic", "activity_sub_type": "dynamic_page" }),
+            &serde_json::json!({ "kind": "dynamic", "sub_kind": "dynamic_page" }),
         )
         .await;
     assert_eq!(detached.status, StatusCode::CONFLICT, "{}", detached.text());
@@ -579,7 +579,7 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
         .patch_as(
             &teacher,
             &format!("/api/v2/activities/{activity_id}"),
-            &serde_json::json!({ "activity_type": "dynamic", "activity_sub_type": "dynamic_page" }),
+            &serde_json::json!({ "kind": "dynamic", "sub_kind": "dynamic_page" }),
         )
         .await;
     assert_eq!(detached.status, StatusCode::CONFLICT, "{}", detached.text());
@@ -587,7 +587,7 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
     assert_eq!(
         app.get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
             .await
-            .json()["activity_type"],
+            .json()["kind"],
         "exam"
     );
 
@@ -614,8 +614,8 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
             &teacher,
             &format!("/api/v2/activities/{draft}"),
             &serde_json::json!({
-                "activity_type": "file_submission",
-                "activity_sub_type": "file_submission_standard",
+                "kind": "file_submission",
+                "sub_kind": "file_submission_standard",
                 "published": true,
             }),
         )
@@ -629,7 +629,7 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
         .get_as(&teacher, &format!("/api/v2/activities/{draft}"))
         .await;
     assert_eq!(detail.json()["published"], false);
-    assert_eq!(detail.json()["activity_type"], "video");
+    assert_eq!(detail.json()["kind"], "video");
 
     // BUG-135: a type change on an already-published activity runs the same
     // gate - a live page cannot silently become a quiz with no assessment.
@@ -640,7 +640,7 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
         .patch_as(
             &teacher,
             &format!("/api/v2/activities/{live}"),
-            &serde_json::json!({ "activity_type": "quiz", "activity_sub_type": "quiz_standard" }),
+            &serde_json::json!({ "kind": "quiz", "sub_kind": "quiz_standard" }),
         )
         .await;
     assert_eq!(retyped.status, StatusCode::CONFLICT, "{}", retyped.text());
@@ -649,7 +649,7 @@ async fn assessment_activities_publish_through_their_assessment(pool: PgPool) {
         .get_as(&teacher, &format!("/api/v2/activities/{live}"))
         .await;
     assert_eq!(detail.json()["published"], true);
-    assert_eq!(detail.json()["activity_type"], "video");
+    assert_eq!(detail.json()["kind"], "video");
 }
 
 /// Unpublished activities exist for editors only: learners and anonymous
@@ -944,7 +944,7 @@ async fn activity_version_moves_only_when_the_row_changes(pool: PgPool) {
         serde_json::json!({}),
         serde_json::json!({ "published": false }),
         serde_json::json!({ "name": "Page" }),
-        serde_json::json!({ "activity_type": "video", "activity_sub_type": "video_youtube" }),
+        serde_json::json!({ "kind": "video", "sub_kind": "video_youtube" }),
     ];
     for body in no_ops {
         let res = app.patch_as(&teacher, &path, &body).await;
@@ -955,7 +955,7 @@ async fn activity_version_moves_only_when_the_row_changes(pool: PgPool) {
         .patch_as(
             &teacher,
             &path,
-            &serde_json::json!({ "activity_type": "video", "activity_sub_type": "video_hosted" }),
+            &serde_json::json!({ "kind": "video", "sub_kind": "video_hosted" }),
         )
         .await;
     assert_eq!(retyped.json()["version"], 2, "{}", retyped.text());
@@ -1100,8 +1100,8 @@ async fn blank_names_are_rejected_and_trimmed(pool: PgPool) {
             &format!("/api/v2/chapters/{chapter_id}/activities"),
             &serde_json::json!({
                 "name": "",
-                "activity_type": "video",
-                "activity_sub_type": "video_youtube",
+                "kind": "video",
+                "sub_kind": "video_youtube",
             }),
         )
         .await,
@@ -1206,8 +1206,8 @@ async fn refused_activity_patch_writes_nothing(pool: PgPool) {
             &format!("/api/v2/activities/{activity_id}"),
             &serde_json::json!({
                 "name": "Renamed",
-                "activity_type": "dynamic",
-                "activity_sub_type": "dynamic_page",
+                "kind": "dynamic",
+                "sub_kind": "dynamic_page",
             }),
         )
         .await;
@@ -1216,7 +1216,7 @@ async fn refused_activity_patch_writes_nothing(pool: PgPool) {
     let detail = app
         .get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
         .await;
-    assert_eq!(detail.json()["activity_type"], "quiz");
+    assert_eq!(detail.json()["kind"], "quiz");
     assert_eq!(detail.json()["name"], "Quiz");
 }
 
@@ -1389,7 +1389,7 @@ async fn draft_assessment_pins_the_activity_type(pool: PgPool) {
         .patch_as(
             &teacher,
             &format!("/api/v2/activities/{activity_id}"),
-            &serde_json::json!({ "activity_type": "dynamic", "activity_sub_type": "dynamic_page" }),
+            &serde_json::json!({ "kind": "dynamic", "sub_kind": "dynamic_page" }),
         )
         .await;
     assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
@@ -1397,7 +1397,7 @@ async fn draft_assessment_pins_the_activity_type(pool: PgPool) {
     assert_eq!(
         app.get_as(&teacher, &format!("/api/v2/activities/{activity_id}"))
             .await
-            .json()["activity_type"],
+            .json()["kind"],
         "quiz"
     );
 }
@@ -1512,7 +1512,7 @@ async fn media_lessons_publish_only_with_their_media(pool: PgPool) {
                 .post_as(
                     teacher,
                     &format!("/api/v2/chapters/{chapter_id}/activities"),
-                    &serde_json::json!({ "name": sub, "activity_type": kind, "activity_sub_type": sub }),
+                    &serde_json::json!({ "name": sub, "kind": kind, "sub_kind": sub }),
                 )
                 .await;
             assert_eq!(res.status, StatusCode::CREATED, "{}", res.text());
@@ -1587,7 +1587,7 @@ async fn activity_kinds_match_the_server_list(pool: PgPool) {
     let err = sqlx::query(
         "WITH c AS (INSERT INTO courses (name) VALUES ('kinds') RETURNING id),
               ch AS (INSERT INTO chapters (course_id, name, position) SELECT id, 'ch', 1 FROM c RETURNING id, course_id)
-         INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, position)
+         INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind, position)
          SELECT id, course_id, 'a', 'video', 'quiz_standard', 1 FROM ch",
     )
     .execute(&pool)

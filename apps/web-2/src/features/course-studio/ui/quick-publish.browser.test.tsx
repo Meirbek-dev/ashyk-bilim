@@ -12,8 +12,8 @@ const lesson: Activity = {
   course_id: '0190a5d2-0000-7000-8000-000000000022',
   chapter_id: '0190a5d2-0000-7000-8000-000000000023',
   name: 'Lesson 1',
-  activity_type: 'video',
-  activity_sub_type: 'video_hosted',
+  kind: 'video',
+  sub_kind: 'video_hosted',
   allowed_actions: ['update', 'delete', 'move'],
   position: 1,
   published: false,
@@ -58,7 +58,7 @@ describe('QuickPublish', () => {
   })
 
   test.each([
-    { ...lesson, activity_type: 'quiz' as const, activity_sub_type: 'quiz_standard' as const },
+    { ...lesson, kind: 'quiz' as const, sub_kind: 'quiz_standard' as const },
     { ...lesson, published: true },
     { ...lesson, allowed_actions: [] },
   ])('B-CST-06 a quiz, a published lesson or a read-only row get no button (%#)', async row => {

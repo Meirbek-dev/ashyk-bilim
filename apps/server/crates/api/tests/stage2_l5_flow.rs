@@ -585,7 +585,7 @@ async fn duplicate_course_copies_content_as_drafts(pool: PgPool) {
         .post_as(
             &w.admin,
             &format!("/api/v2/chapters/{}/activities", w.chapter),
-            &json!({ "name": "Read", "activity_type": "dynamic", "activity_sub_type": "dynamic_page" }),
+            &json!({ "name": "Read", "kind": "dynamic", "sub_kind": "dynamic_page" }),
         )
         .await);
     app.patch_as(
@@ -669,7 +669,7 @@ async fn duplicate_course_copies_content_as_drafts(pool: PgPool) {
         .get_as(&w.admin, &format!("/api/v2/courses/{copy}/assessments"))
         .await;
     let a = &assessments.json()[0];
-    assert_eq!(a["lifecycle"], "draft");
+    assert_eq!(a["status"], "draft");
     assert_ne!(a["id"], quiz_id.as_str());
     let detail = app
         .get_as(
@@ -690,5 +690,5 @@ async fn duplicate_course_copies_content_as_drafts(pool: PgPool) {
             &format!("/api/v2/courses/{}/assessments", w.course),
         )
         .await;
-    assert_eq!(source.json()[0]["lifecycle"], "published");
+    assert_eq!(source.json()[0]["status"], "published");
 }

@@ -1337,7 +1337,7 @@ pub struct ItemFeedbackRow {
     pub comment: String,
     pub score: Option<f64>,
     pub max_score: Option<f64>,
-    pub annotation_type: AnnotationType,
+    pub kind: AnnotationType,
     pub annotation_key: Option<String>,
     /// The grade entry's grader (the row keeps no copy of its own).
     pub graded_by: Option<UserId>,
@@ -1352,7 +1352,7 @@ pub struct NewItemFeedback<'a> {
     pub comment: &'a str,
     pub score: Option<f64>,
     pub max_score: Option<f64>,
-    pub annotation_type: AnnotationType,
+    pub kind: AnnotationType,
     pub annotation_key: Option<&'a str>,
 }
 
@@ -1363,7 +1363,7 @@ pub async fn insert_item_feedback<'e, E: sqlx::PgExecutor<'e>>(
     let id = sqlx::query_scalar!(
         r#"INSERT INTO item_feedback
                (grading_entry_id, submission_id, item_id, item_ref, comment, score, max_score,
-                annotation_type, annotation_key)
+                kind, annotation_key)
            VALUES ($1, $2, $3, $4, $5, $6::float8, $7::float8, $8, $9)
            RETURNING id AS "id: ItemFeedbackId""#,
         f.grading_entry_id.0,
@@ -1373,7 +1373,7 @@ pub async fn insert_item_feedback<'e, E: sqlx::PgExecutor<'e>>(
         f.comment,
         f.score,
         f.max_score,
-        f.annotation_type.as_str(),
+        f.kind.as_str(),
         f.annotation_key
     )
     .fetch_one(executor)
@@ -1391,7 +1391,7 @@ pub async fn get_item_feedback(
                   f.grading_entry_id AS "grading_entry_id: GradingEntryId",
                   f.submission_id AS "submission_id: SubmissionId",
                   f.item_id AS "item_id: AssessmentItemId", f.item_ref, f.comment, f.score::float8 AS "score?",
-                  f.max_score::float8 AS "max_score?", f.annotation_type AS "annotation_type: AnnotationType",
+                  f.max_score::float8 AS "max_score?", f.kind AS "kind: AnnotationType",
                   f.annotation_key, g.graded_by AS "graded_by: UserId",
                   (extract(epoch FROM f.created_at))::bigint AS "created_at!"
            FROM item_feedback f JOIN grading_entries g ON g.id = f.grading_entry_id
@@ -1416,7 +1416,7 @@ pub async fn list_item_feedback(
                   f.grading_entry_id AS "grading_entry_id: GradingEntryId",
                   f.submission_id AS "submission_id: SubmissionId",
                   f.item_id AS "item_id: AssessmentItemId", f.item_ref, f.comment, f.score::float8 AS "score?",
-                  f.max_score::float8 AS "max_score?", f.annotation_type AS "annotation_type: AnnotationType",
+                  f.max_score::float8 AS "max_score?", f.kind AS "kind: AnnotationType",
                   f.annotation_key, g.graded_by AS "graded_by: UserId",
                   (extract(epoch FROM f.created_at))::bigint AS "created_at!"
            FROM item_feedback f JOIN grading_entries g ON g.id = f.grading_entry_id
@@ -1795,7 +1795,7 @@ pub async fn insert_bulk_action<'e, E: sqlx::PgExecutor<'e>>(
     let targets: Vec<uuid::Uuid> = target_user_ids.iter().map(|u| u.0).collect();
     let id = sqlx::query_scalar!(
         r#"INSERT INTO bulk_actions
-               (assessment_id, performed_by, action_type, params, target_user_ids)
+               (assessment_id, performed_by, kind, params, target_user_ids)
            VALUES ($1, $2, $3, $4, $5)
            RETURNING id AS "id: BulkActionId""#,
         assessment_id.0,
@@ -1814,7 +1814,7 @@ pub async fn get_bulk_action(pool: &PgPool, id: BulkActionId) -> Result<Option<B
         BulkActionRow,
         r#"SELECT id AS "id: BulkActionId", assessment_id AS "assessment_id: AssessmentId",
                   performed_by AS "performed_by: UserId",
-                  action_type AS "action_type: BulkActionType", params,
+                  kind AS "action_type: BulkActionType", params,
                   target_user_ids AS "target_user_ids: Vec<UserId>",
                   status AS "status: BulkActionStatus", affected_count, error_log,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",

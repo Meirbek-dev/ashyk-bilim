@@ -166,7 +166,7 @@ impl AiService {
         let restricted = role == AiThreadRole::Student
             && activity
                 .as_ref()
-                .is_some_and(|a| RESTRICTED_ACTIVITY_TYPES.contains(&a.activity_type.as_str()));
+                .is_some_and(|a| RESTRICTED_ACTIVITY_TYPES.contains(&a.kind.as_str()));
         let bundle = context::course_bundle(
             &self.pool,
             course_id,

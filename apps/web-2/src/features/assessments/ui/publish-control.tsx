@@ -5,4 +5,4 @@ import { AssessmentPublishSwitch } from './publish-switch'
 
 /** The studio header's published control (course-studio `publishControl`): assessments only, null for the rest. */
 export const assessmentPublishControl = (activity: ActivityDetail) =>
-  isAssessmentType(activity.activity_type) ? <AssessmentPublishSwitch activity={activity} /> : null
+  isAssessmentType(activity.kind) ? <AssessmentPublishSwitch activity={activity} /> : null

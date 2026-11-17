@@ -10,15 +10,13 @@ export type ConceptStatus = 'suggested' | 'approved' | 'rejected'
 export const conceptStatus = (status: string): ConceptStatus =>
   status === 'approved' || status === 'rejected' ? status : 'suggested'
 
-export type ActivityInfo = Pick<Activity, 'id' | 'name' | 'activity_type'>
+export type ActivityInfo = Pick<Activity, 'id' | 'name' | 'kind'>
 
 /** The course's activities in curriculum order (chapter by chapter). */
 export const courseActivities = (curriculum: {
   chapters: readonly { activities: readonly ActivityInfo[] }[]
 }): ActivityInfo[] =>
-  curriculum.chapters.flatMap(chapter =>
-    chapter.activities.map(({ id, name, activity_type }) => ({ id, name, activity_type })),
-  )
+  curriculum.chapters.flatMap(chapter => chapter.activities.map(({ id, name, kind }) => ({ id, name, kind })))
 
 export type TagRow = {
   tag: ConceptTagView

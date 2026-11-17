@@ -31,7 +31,7 @@ export function PublishSection({ task }: { task: FileSubmission }) {
   // A refusal is about the task as it was: once a section saves (new version), «add the instructions» is stale.
   const [refusedAt, setRefusedAt] = useState<number | undefined | null>(null)
   const allowed = task.allowed_actions ?? []
-  const status = lifecycleStatus[task.lifecycle]
+  const status = lifecycleStatus[task.status]
   const run = () =>
     publish.mutate(
       { path: { file_submission_id: task.id } },
@@ -47,11 +47,11 @@ export function PublishSection({ task }: { task: FileSubmission }) {
         <h2 id="submission-publishing" className="text-xl font-semibold">
           {m.submission_publishing()}
         </h2>
-        <span className={`text-sm ${task.lifecycle === 'draft' ? 'text-warning' : 'text-muted-foreground'}`}>
+        <span className={`text-sm ${task.status === 'draft' ? 'text-warning' : 'text-muted-foreground'}`}>
           {status.label()}
         </span>
       </div>
-      <p className="text-sm text-muted-foreground">{lifecycleHints[task.lifecycle]()}</p>
+      <p className="text-sm text-muted-foreground">{lifecycleHints[task.status]()}</p>
       {allowed.includes('publish') ? (
         <div>
           <SubmitButton pending={publish.isPending} onClick={run}>

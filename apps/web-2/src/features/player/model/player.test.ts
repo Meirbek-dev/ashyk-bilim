@@ -7,7 +7,7 @@ import { activityKind, locate, nextStep, openView, playerAction } from './player
 const activity = (id: string, patch: Partial<ActivityState> = {}): ActivityState => ({
   id,
   title: id,
-  activity_type: 'dynamic',
+  kind: 'dynamic',
   allowed_actions: ['start'],
   available: true,
   blocked_reason: null,
@@ -89,7 +89,7 @@ describe('player model', () => {
   test('B-PLY-06 a lesson that is not done offers to mark it, whatever comes next', () => {
     const lessons: ActivityType[] = ['dynamic', 'video', 'document', 'custom']
     for (const type of lessons) {
-      const entry = activity('a', { activity_type: type })
+      const entry = activity('a', { kind: type })
       expect(activityKind(type)).toBe('lesson')
       expect(playerAction(course([[entry]], { activity_id: 'b' }), entry)).toEqual({ kind: 'mark' })
     }
@@ -120,17 +120,17 @@ describe('player model', () => {
       ['file_submission', 'submission', ['revise', 'view_feedback'], 'revise'],
     ] as const
     for (const [type, route, actions, action] of cases) {
-      const entry = activity('q', { activity_type: type, allowed_actions: [...actions] })
+      const entry = activity('q', { kind: type, allowed_actions: [...actions] })
       expect(playerAction(course([[entry]]), entry)).toEqual({ kind: 'open', route, action })
     }
-    const silent = activity('q', { activity_type: 'quiz', allowed_actions: ['something_new'] })
+    const silent = activity('q', { kind: 'quiz', allowed_actions: ['something_new'] })
     expect(playerAction(course([[silent]]), silent)).toBeNull()
   })
 
   test('B-PLY-12 a restricted activity has no action at all', () => {
     const types: ActivityType[] = ['dynamic', 'quiz']
     for (const type of types) {
-      const entry = activity('a', { activity_type: type, blocked_reason: 'restricted' })
+      const entry = activity('a', { kind: type, blocked_reason: 'restricted' })
       expect(playerAction(course([[entry]]), entry)).toBeNull()
     }
   })
@@ -152,7 +152,7 @@ describe('staff preview', () => {
 describe('open view', () => {
   test('B-PLY-23 a reader of a course open without sign-in gets no mark and no attempt: nothing is recorded', () => {
     const lesson = activity('a')
-    const quiz = activity('q', { activity_type: 'quiz', allowed_actions: ['start'] })
+    const quiz = activity('q', { kind: 'quiz', allowed_actions: ['start'] })
     const state = { ...course([[lesson, quiz]]), enrolled: false, guest_access: true }
     expect(openView(state)).toBe(true)
     expect(playerAction(state, lesson)).toBeNull()

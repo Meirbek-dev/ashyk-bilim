@@ -62,7 +62,7 @@ export const activityTypeMeta = {
 const isActivityType = (value: string): value is ActivityType => Object.hasOwn(activityTypeMeta, value)
 
 /**
- * `ActivityState.activity_type` (the learner outline) is still a string in the contract: a value the table does not
+ * `ActivityState.kind` (the learner outline) is still a string in the contract: a value the table does not
  * know reads as `custom`.
  */
 export const activityType = (value: string): ActivityType => (isActivityType(value) ? value : 'custom')

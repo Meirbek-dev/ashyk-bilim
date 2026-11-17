@@ -28,7 +28,7 @@ export const editableStatuses = (allowed: readonly string[]) =>
  * status required (the form always has one chosen).
  */
 export const interventionFormSchema = v.object({
-  ...v.pick(vCreateInterventionRequest, ['notes', 'intervention_type']).entries,
+  ...v.pick(vCreateInterventionRequest, ['notes', 'kind']).entries,
   status: vInterventionStatus,
 })
 export type InterventionForm = v.InferOutput<typeof interventionFormSchema>

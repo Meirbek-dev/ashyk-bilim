@@ -9,7 +9,7 @@ import { EntryCard } from './entry-card'
 const exam = (patch: Partial<ActivityState>): ActivityState => ({
   id: 'a',
   title: 'Экзамен',
-  activity_type: 'exam',
+  kind: 'exam',
   allowed_actions: ['view_feedback'],
   available: true,
   blocked_reason: null,

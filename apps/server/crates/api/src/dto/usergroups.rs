@@ -8,7 +8,7 @@ pub struct Usergroup {
     pub id: UsergroupId,
     pub name: String,
     pub description: String,
-    pub creator_id: Option<UserId>,
+    pub created_by: Option<UserId>,
     pub member_count: i64,
     /// Whether the caller may edit/delete the group and change its members
     /// or courses (`usergroup:manage:platform`, or creator with
@@ -31,7 +31,7 @@ impl Usergroup {
             id: g.id,
             name: g.name,
             description: g.description,
-            creator_id: g.creator_id,
+            created_by: g.creator_id,
             member_count: g.member_count,
             version: g.version,
             created_at_unix: g.created_at,

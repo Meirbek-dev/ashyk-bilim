@@ -104,9 +104,7 @@ export const draftLessons = (curriculum: Curriculum): Activity[] =>
     .flatMap(chapter => chapter.activities)
     .filter(
       activity =>
-        !activity.published &&
-        LESSON_TYPES.includes(activity.activity_type) &&
-        activity.allowed_actions.includes('update'),
+        !activity.published && LESSON_TYPES.includes(activity.kind) && activity.allowed_actions.includes('update'),
     )
 
 export function programSummary(curriculum: Curriculum) {

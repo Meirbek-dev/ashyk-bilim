@@ -38,7 +38,7 @@ const toasts: Record<Lifecycle, () => string> = {
 export function LifecycleActions({ activityId, title, assessment }: LifecycleActionsProps) {
   const transition = useMutation(lifecycleOptions(useQueryClient(), activityId, assessment.course_id, assessment.id))
   const [archiving, setArchiving] = useState(false)
-  const from = assessment.lifecycle
+  const from = assessment.status
   const move = (to: Lifecycle, scheduledAt?: number) =>
     transition.mutateAsync(
       {

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH old AS (SELECT version FROM assessments WHERE id = $1),\n           a AS (\n               UPDATE assessments SET\n                   status = $2,\n                   published_at = CASE WHEN $2 = 'published' THEN COALESCE(published_at, now())\n                                       ELSE published_at END,\n                   archived_at = CASE WHEN $2 = 'archived' THEN now() ELSE NULL END\n               WHERE id = $1 RETURNING version)\n           UPDATE file_submissions f SET version = f.version + (a.version <> old.version)::int\n           FROM a, old WHERE f.id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "629bf5b06ba7b5f3cca1372639fc3108649311ab7f7d479ce626a7919cdf2bdc"
+}

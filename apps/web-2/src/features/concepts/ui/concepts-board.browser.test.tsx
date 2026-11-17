@@ -18,11 +18,11 @@ const ids = {
   learner: '0190a5d2-0000-7000-8000-000000000030',
 }
 
-const activity = (id: string, name: string, type: Activity['activity_type']): Activity => ({
+const activity = (id: string, name: string, type: Activity['kind']): Activity => ({
   id,
   name,
-  activity_type: type,
-  activity_sub_type: 'quiz_standard',
+  kind: type,
+  sub_kind: 'quiz_standard',
   allowed_actions: [],
   chapter_id: '0190a5d2-0000-7000-8000-000000000040',
   course_id: courseId,

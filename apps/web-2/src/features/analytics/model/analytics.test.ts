@@ -57,12 +57,12 @@ describe('analytics model', () => {
   })
 
   test('B-ANL-17 a saved view opens its tab with its filters; unknown parts fall back', () => {
-    expect(viewTarget({ view_type: 'operations', query: { window: '90d', course: COURSE } })).toEqual({
+    expect(viewTarget({ kind: 'operations', query: { window: '90d', course: COURSE } })).toEqual({
       tab: 'operations',
       filters: { window: '90d', compare: 'previous_period', bucket: 'day', course: COURSE, cohort: undefined },
     })
-    expect(viewTarget({ view_type: 'legacy-watchlist', query: { window: 'all' } }).tab).toBe('overview')
-    expect(viewTarget({ view_type: 'learners', query: { window: 'all' } }).filters.window).toBe('28d')
+    expect(viewTarget({ kind: 'legacy-watchlist', query: { window: 'all' } }).tab).toBe('overview')
+    expect(viewTarget({ kind: 'learners', query: { window: 'all' } }).filters.window).toBe('28d')
   })
 
   test('B-ANL-18 pages are counted from total and page_size; an empty list is one page', () => {

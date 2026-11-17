@@ -2663,7 +2663,7 @@ async fn deadline_extension_is_a_queued_bulk_action(pool: PgPool) {
         .await;
     assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
     assert_eq!(queued.json()["status"], "pending");
-    assert_eq!(queued.json()["action_type"], "extend_deadline");
+    assert_eq!(queued.json()["kind"], "extend_deadline");
     let action_id = queued.json()["id"].as_str().unwrap().to_owned();
     let (kind, payload): (String, serde_json::Value) =
         sqlx::query_as("SELECT kind, payload FROM jobs ORDER BY created_at DESC LIMIT 1")

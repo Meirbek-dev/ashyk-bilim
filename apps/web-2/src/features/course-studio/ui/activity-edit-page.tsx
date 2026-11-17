@@ -19,10 +19,9 @@ export function ActivityEditPage() {
     from: '/_authed/teach/courses/$courseId_/activities/$activityId/edit',
   })
   const { data: activity } = useSuspenseQuery(activityOptions(activityId))
-  if (activity.activity_type === 'dynamic')
-    return <PageEditor key={activity.id} courseId={courseId} activity={activity} />
-  if (activity.activity_sub_type === 'video_youtube') return <YoutubeSection courseId={courseId} activity={activity} />
-  if (activity.activity_type === 'video' || activity.activity_type === 'document')
+  if (activity.kind === 'dynamic') return <PageEditor key={activity.id} courseId={courseId} activity={activity} />
+  if (activity.sub_kind === 'video_youtube') return <YoutubeSection courseId={courseId} activity={activity} />
+  if (activity.kind === 'video' || activity.kind === 'document')
     return <MediaFileSection courseId={courseId} activity={activity} />
   return (
     <div className="flex max-w-prose flex-col items-start gap-4">

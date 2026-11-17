@@ -193,7 +193,7 @@ pub struct MessageContext {
     pub activity_id: Option<ActivityId>,
     pub activity_name: Option<String>,
     #[schema(value_type = Option<crate::wire::ActivityType>)]
-    pub activity_type: Option<String>,
+    pub kind: Option<String>,
 }
 
 /// A file attached to a message; only the two participants download it.
@@ -260,7 +260,7 @@ impl Message {
             course_name: row.course_name,
             activity_id: row.activity_id,
             activity_name: row.activity_name,
-            activity_type: row.activity_type,
+            kind: row.kind,
         });
         Self {
             id: row.id,

@@ -18,7 +18,7 @@ import {
 import { createInterventionOptions } from '../queries'
 import { interventionStatusLabels, interventionTypeLabels } from './labels'
 
-const defaultValues: InterventionForm = { intervention_type: 'message_sent', status: 'completed', notes: '' }
+const defaultValues: InterventionForm = { kind: 'message_sent', status: 'completed', notes: '' }
 
 /**
  * "New intervention" for one learner in one course. The key survives a resubmit that got no answer, so the server
@@ -70,7 +70,7 @@ export function InterventionDialog({ learnerId, courseId }: { learnerId: UserId;
       pending={create.isPending}
       error={create.error}
     >
-      <form.AppField name="intervention_type">
+      <form.AppField name="kind">
         {field => (
           <field.SelectField
             label={m.analytics_col_type()}

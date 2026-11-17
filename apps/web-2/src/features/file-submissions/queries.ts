@@ -73,7 +73,7 @@ export const downloadOptions = (id: FileAttemptFileId, disposition: Disposition 
 export async function ensureSubmission(queryClient: QueryClient, courseId: CourseId, activityId: ActivityId) {
   // The player's rules: enrolled, or the course's staff previewing (an unpublished task too, B-FSB-25).
   const { state, entry, preview } = await ensureEntry(queryClient, courseId, activityId)
-  if (entry.activity_type !== 'file_submission') throw notFound()
+  if (entry.kind !== 'file_submission') throw notFound()
   if (!entry.blocked_reason) {
     const task = await queryClient.query({ ...taskOptions(activityId), staleTime: 'static' })
     if (task)
@@ -129,7 +129,7 @@ export async function ensureTaskStudio(queryClient: QueryClient, activityId: Act
   const activity = await queryClient
     .query({ ...getActivityOptions(byActivity(activityId)), staleTime: 'static' })
     .catch(() => null)
-  if (activity?.activity_type !== 'file_submission') return { fileSubmission: false }
+  if (activity?.kind !== 'file_submission') return { fileSubmission: false }
   await queryClient.query({ ...taskOptions(activityId), staleTime: 'static' })
   return { fileSubmission: true }
 }

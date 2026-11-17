@@ -75,8 +75,8 @@ pub async fn create_assessment(
                         title: &request.title,
                         description: request.description.as_deref().unwrap_or(""),
                         weight: request.weight.unwrap_or(1.0),
-                        grading_type: request
-                            .grading_type
+                        grading_kind: request
+                            .grading_kind
                             .unwrap_or(ab_core::assessments::GradingType::Percentage),
                         policy: request.policy.map(Into::into),
                     },
@@ -194,7 +194,7 @@ pub async fn update_assessment(
                 title: request.title.as_deref(),
                 description: request.description.as_deref(),
                 weight: request.weight,
-                grading_type: request.grading_type,
+                grading_kind: request.grading_kind,
             },
         )
         .await?;

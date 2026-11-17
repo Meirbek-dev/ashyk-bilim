@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH a AS (\n               INSERT INTO assessments\n                   (activity_id, course_id, due_at, allow_late, late_policy_kind,\n                    late_penalty_percent_per_day, late_penalty_max_days, late_cutoff_at,\n                    max_attempts, grade_release_mode, created_by,\n                    grading_mode, completion_rule, passing_score, required)\n               VALUES ($1, $2, to_timestamp($8), $9, $10, $11::float8, $12, to_timestamp($13),\n                       $14, $15, $17, 'manual', 'graded', 60, true)\n               RETURNING id)\n           INSERT INTO file_submissions\n               (id, activity_id, course_id, instructions, rubric, allowed_mime_types, max_files,\n                max_file_size_mb, settings)\n           SELECT a.id, $1, $2, $3, $4, $5, $6, $7, $16 FROM a\n           RETURNING id AS \"id: FileSubmissionId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: FileSubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "TextArray",
+        "Int4",
+        "Int4",
+        "Float8",
+        "Bool",
+        "Text",
+        "Float8",
+        "Int4",
+        "Float8",
+        "Int4",
+        "Text",
+        "Jsonb",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "543af38513144bb219593ea6fa2a0d0c29b5f51523b104dd5e2b6a5a3f161137"
+}

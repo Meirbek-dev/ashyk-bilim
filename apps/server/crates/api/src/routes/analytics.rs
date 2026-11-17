@@ -263,7 +263,7 @@ pub async fn create_intervention(
                     NewIntervention {
                         user_id: request.user_id,
                         course_id: request.course_id,
-                        intervention_type: request.intervention_type,
+                        kind: request.kind,
                         status: request.status,
                         outcome: request.outcome,
                         outcome_code: request.outcome_code,
@@ -387,7 +387,7 @@ pub async fn save_view(
             &actor,
             &filters,
             &request.name,
-            &request.view_type,
+            &request.kind,
             &request.query,
         )
         .await?;

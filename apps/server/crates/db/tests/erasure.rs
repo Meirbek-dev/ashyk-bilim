@@ -43,7 +43,7 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("message_reports", "reported_by", ERASED),
     ("message_reports", "resolved_by", ACTOR),
     ("messages", "user_id", TOMBSTONE),
-    ("activities", "creator_id", ACTOR),
+    ("activities", "created_by", ACTOR),
     ("activity_progress", "user_id", RECORD),
     // A teacher's spreadsheet import: expires within 30 days.
     ("assessment_imports", "created_by", ACTOR),
@@ -65,16 +65,16 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("ai_submission_analyses", "triggered_by", ACTOR),
     ("ai_threads", "user_id", ERASED),
     ("ai_token_ledger", "user_id", ERASED),
-    ("analytics_saved_views", "teacher_user_id", SETTING),
+    ("analytics_saved_views", "user_id", SETTING),
     ("assessment_access_users", "user_id", SETTING),
-    ("assessment_audit_events", "actor_id", ACTOR),
+    ("assessment_audit_events", "performed_by", ACTOR),
     ("assessment_overrides", "granted_by", ACTOR),
     ("assessment_overrides", "user_id", SETTING),
-    ("assessments", "creator_id", ACTOR),
+    ("assessments", "created_by", ACTOR),
     ("auth_audit_log", "user_id", AUDIT),
     ("bulk_actions", "performed_by", ACTOR),
     ("certificates", "user_id", RECORD),
-    ("chapters", "creator_id", ACTOR),
+    ("chapters", "created_by", ACTOR),
     ("code_runs", "user_id", RECORD),
     ("collection_staff", "user_id", SETTING),
     ("collections", "creator_id", ACTOR),
@@ -84,12 +84,12 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("discussion_posts", "user_id", ACTOR),
     ("course_progress", "user_id", RECORD),
     ("course_staff", "user_id", SETTING),
-    ("course_updates", "author_id", ACTOR),
+    ("course_updates", "created_by", ACTOR),
     ("courses", "archived_by", ACTOR),
     ("courses", "creator_id", ACTOR),
     ("courses", "deleted_by", ACTOR),
     ("daily_course_metrics", "teacher_user_id", SETTING),
-    ("daily_teacher_metrics", "teacher_user_id", SETTING),
+    ("daily_teacher_metrics", "teacher_id", SETTING),
     ("daily_user_course_progress", "user_id", ERASED),
     ("discussion_reactions", "user_id", SETTING),
     ("enrolments", "user_id", RECORD),
@@ -108,12 +108,12 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("notification_opt_outs", "user_id", SETTING),
     ("notifications", "user_id", ERASED),
     ("submissions", "user_id", RECORD),
-    ("teacher_interventions", "teacher_user_id", ACTOR),
+    ("teacher_interventions", "created_by", ACTOR),
     ("teacher_interventions", "user_id", ERASED),
     ("uploads", "created_by", RECORD),
     ("user_roles", "user_id", SETTING),
     ("usergroup_members", "user_id", SETTING),
-    ("usergroups", "creator_id", ACTOR),
+    ("usergroups", "created_by", ACTOR),
     ("xp_transactions", "user_id", RECORD),
 ];
 
@@ -176,7 +176,7 @@ async fn erasure_removes_derived_data_and_keeps_the_grade(pool: PgPool) {
             .await
             .unwrap();
     let chapter: Uuid = sqlx::query_scalar(
-        "INSERT INTO chapters (course_id, name, creator_id) VALUES ($1, 'ch', $2) RETURNING id",
+        "INSERT INTO chapters (course_id, name, created_by) VALUES ($1, 'ch', $2) RETURNING id",
     )
     .bind(course)
     .bind(user)
@@ -184,7 +184,7 @@ async fn erasure_removes_derived_data_and_keeps_the_grade(pool: PgPool) {
     .await
     .unwrap();
     let activity: Uuid = sqlx::query_scalar(
-        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type)
+        "INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind)
          VALUES ($1, $2, 'q', 'quiz', 'quiz_standard') RETURNING id",
     )
     .bind(chapter)
@@ -193,7 +193,7 @@ async fn erasure_removes_derived_data_and_keeps_the_grade(pool: PgPool) {
     .await
     .unwrap();
     let assessment: Uuid = sqlx::query_scalar(
-        "INSERT INTO assessments (activity_id, course_id, lifecycle, published_at,
+        "INSERT INTO assessments (activity_id, course_id, status, published_at,
                                   grading_mode, grade_release_mode, completion_rule)
          VALUES ($1, $2, 'published', now(), 'auto', 'immediate', 'passed')
          RETURNING id",

@@ -71,7 +71,7 @@ const task = (over: Partial<FileSubmission> = {}): FileSubmission => ({
   chapter_id: 'ch',
   title: 'Эссе',
   instructions: 'Напишите эссе.',
-  lifecycle: 'published',
+  status: 'published',
   published: true,
   allowed_mime_types: [],
   max_files: 2,

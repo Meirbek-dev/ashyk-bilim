@@ -25,7 +25,7 @@ async fn scheduled_assessment(pool: &PgPool, title: &str, offset: &str) -> uuid:
             .await
             .unwrap();
     let chapter: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO chapters (course_id, name, creator_id) VALUES ($1, 'c', $2) RETURNING id",
+        "INSERT INTO chapters (course_id, name, created_by) VALUES ($1, 'c', $2) RETURNING id",
     )
     .bind(course)
     .bind(user)
@@ -33,7 +33,7 @@ async fn scheduled_assessment(pool: &PgPool, title: &str, offset: &str) -> uuid:
     .await
     .unwrap();
     let activity: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, creator_id)
+        "INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind, created_by)
          VALUES ($1, $2, $3, 'quiz', 'quiz_standard', $4) RETURNING id",
     )
     .bind(chapter)
@@ -44,7 +44,7 @@ async fn scheduled_assessment(pool: &PgPool, title: &str, offset: &str) -> uuid:
     .await
     .unwrap();
     let assessment: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO assessments (activity_id, course_id, lifecycle, scheduled_at,
+        "INSERT INTO assessments (activity_id, course_id, status, scheduled_at,
                                   grading_mode, grade_release_mode, completion_rule)
          VALUES ($1, $2, 'scheduled', now() + $3::interval,
                  'auto', 'immediate', 'passed') RETURNING id",
@@ -79,7 +79,7 @@ async fn due_schedules_publish_and_future_ones_wait(pool: PgPool) {
 
     let (lifecycle, published_at_set, scheduled_at_set, activity_live): (String, bool, bool, bool) =
         sqlx::query_as(
-            "SELECT a.lifecycle, a.published_at IS NOT NULL, a.scheduled_at IS NOT NULL, act.published
+            "SELECT a.status, a.published_at IS NOT NULL, a.scheduled_at IS NOT NULL, act.published
              FROM assessments a JOIN activities act ON act.id = a.activity_id
              WHERE a.id = $1",
         )
@@ -104,7 +104,7 @@ async fn due_schedules_publish_and_future_ones_wait(pool: PgPool) {
     assert_eq!(events, 1);
 
     let (later_lifecycle, later_live): (String, bool) = sqlx::query_as(
-        "SELECT a.lifecycle, act.published FROM assessments a
+        "SELECT a.status, act.published FROM assessments a
          JOIN activities act ON act.id = a.activity_id WHERE a.id = $1",
     )
     .bind(later)

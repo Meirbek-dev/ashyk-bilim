@@ -75,7 +75,7 @@ export type VideoSource = 'youtube' | 'file'
  * behind its config. Created through the plain activity door they could never be published (server readiness).
  */
 export type CreatePlan =
-  | { door: 'activity'; activity_type: ActivityType; activity_sub_type: ActivitySubType }
+  | { door: 'activity'; kind: ActivityType; sub_kind: ActivitySubType }
   | { door: 'assessment'; kind: AssessmentKind }
   | { door: 'file-submission' }
 
@@ -95,11 +95,11 @@ export function createPlan(type: CreatableType, source: VideoSource): CreatePlan
     file_submission: { door: 'file-submission' },
     video: {
       door: 'activity',
-      activity_type: 'video',
-      activity_sub_type: source === 'file' ? 'video_hosted' : 'video_youtube',
+      kind: 'video',
+      sub_kind: source === 'file' ? 'video_hosted' : 'video_youtube',
     },
-    document: { door: 'activity', activity_type: 'document', activity_sub_type: 'document_pdf' },
-    dynamic: { door: 'activity', activity_type: 'dynamic', activity_sub_type: 'dynamic_page' },
+    document: { door: 'activity', kind: 'document', sub_kind: 'document_pdf' },
+    dynamic: { door: 'activity', kind: 'dynamic', sub_kind: 'dynamic_page' },
   }
   return plans[type]
 }
@@ -211,9 +211,9 @@ export type MediaSource =
   | { kind: 'none' }
 
 /** YouTube rows store `{uri}`; uploaded video and PDF rows `{filename: <storage key>, file_name}`. */
-export function mediaSource(activity: Pick<ActivityDetail, 'activity_sub_type' | 'content'>): MediaSource {
+export function mediaSource(activity: Pick<ActivityDetail, 'sub_kind' | 'content'>): MediaSource {
   const media: MediaContent = 'content' in activity.content ? {} : activity.content
-  if (activity.activity_sub_type === 'video_youtube') {
+  if (activity.sub_kind === 'video_youtube') {
     return media.uri ? { kind: 'youtube', uri: media.uri } : { kind: 'none' }
   }
   return media.filename
@@ -268,7 +268,7 @@ export const mediaBlock = (activityType: string) =>
 
 /** Only the replaced media's claims: keep the new file and unrelated editor blocks. */
 export const replacedMediaBlockIds = (blocks: Block[], blockType: string, keptId: string) =>
-  blocks.filter(block => block.block_type === blockType && block.id !== keptId).map(block => block.id)
+  blocks.filter(block => block.kind === blockType && block.id !== keptId).map(block => block.id)
 
 /**
  * The current media file as the learner's player shows it (B-CST-29): a one-block document for the editor's viewer, and

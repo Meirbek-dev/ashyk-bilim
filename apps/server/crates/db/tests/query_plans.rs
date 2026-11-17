@@ -107,7 +107,7 @@ FROM generate_series(1, 60) g JOIN users u ON u.username = 'plan-' || g;
 INSERT INTO chapters (course_id, name, position)
 SELECT c.id, 'Chapter ' || n, n FROM courses c, generate_series(1, 4) n;
 
-INSERT INTO activities (chapter_id, course_id, name, activity_type, activity_sub_type, position, published)
+INSERT INTO activities (chapter_id, course_id, name, kind, sub_kind, position, published)
 SELECT ch.id, ch.course_id, 'Activity ' || n, 'dynamic', 'dynamic_page', n, n <> 5
 FROM chapters ch, generate_series(1, 5) n;
 

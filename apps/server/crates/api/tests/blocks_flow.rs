@@ -48,8 +48,8 @@ async fn scaffold_activity(app: &TestApp, session: &MintedSession) -> (String, S
             &format!("/api/v2/chapters/{chapter_id}/activities"),
             &serde_json::json!({
                 "name": "Page",
-                "activity_type": "dynamic",
-                "activity_sub_type": "dynamic_page",
+                "kind": "dynamic",
+                "sub_kind": "dynamic_page",
             }),
         )
         .await;
@@ -105,7 +105,7 @@ async fn video_block_claim_replays_without_duplicate_references(pool: PgPool) {
     let (_, activity) = scaffold_activity(&app, &teacher).await;
     let upload = finalized_upload(&app, &teacher, "block-video", "video/mp4").await;
     let body = serde_json::json!({
-        "block_type": "video", "upload_id": upload, "file_name": "lecture.mp4",
+        "kind": "video", "upload_id": upload, "file_name": "lecture.mp4",
     });
     let claim = |body: &serde_json::Value| {
         app.send(
@@ -220,7 +220,7 @@ async fn activity_content_roundtrip_and_type_changes(pool: PgPool) {
         .patch_as(
             &teacher,
             &format!("/api/v2/activities/{activity}"),
-            &serde_json::json!({ "activity_type": "video" }),
+            &serde_json::json!({ "kind": "video" }),
         )
         .await;
     assert_eq!(half.status, StatusCode::UNPROCESSABLE_ENTITY);
@@ -228,8 +228,8 @@ async fn activity_content_roundtrip_and_type_changes(pool: PgPool) {
         .patch_as(
             &teacher,
             &format!("/api/v2/activities/{activity}"),
-            &serde_json::json!({ "activity_type": "video",
-                                  "activity_sub_type": "dynamic_page" }),
+            &serde_json::json!({ "kind": "video",
+                                  "sub_kind": "dynamic_page" }),
         )
         .await;
     assert_eq!(bad.status, StatusCode::UNPROCESSABLE_ENTITY);
@@ -237,12 +237,12 @@ async fn activity_content_roundtrip_and_type_changes(pool: PgPool) {
         .patch_as(
             &teacher,
             &format!("/api/v2/activities/{activity}"),
-            &serde_json::json!({ "activity_type": "video",
-                                  "activity_sub_type": "video_youtube" }),
+            &serde_json::json!({ "kind": "video",
+                                  "sub_kind": "video_youtube" }),
         )
         .await;
     assert_eq!(changed.status, StatusCode::OK);
-    assert_eq!(changed.json()["activity_type"], "video");
+    assert_eq!(changed.json()["kind"], "video");
 }
 
 #[ab_testdb::test]
@@ -257,7 +257,7 @@ async fn block_lifecycle_over_the_upload_pipeline(pool: PgPool) {
         .post_as(
             &teacher,
             &format!("/api/v2/activities/{activity}/blocks"),
-            &serde_json::json!({ "block_type": "image", "upload_id": avatar }),
+            &serde_json::json!({ "kind": "image", "upload_id": avatar }),
         )
         .await;
     assert_eq!(refused.status, StatusCode::UNPROCESSABLE_ENTITY);
@@ -267,14 +267,14 @@ async fn block_lifecycle_over_the_upload_pipeline(pool: PgPool) {
         .post_as(
             &teacher,
             &format!("/api/v2/activities/{activity}/blocks"),
-            &serde_json::json!({ "block_type": "image", "upload_id": upload,
+            &serde_json::json!({ "kind": "image", "upload_id": upload,
                                   "file_name": "diagram.png" }),
         )
         .await;
     assert_eq!(created.status, StatusCode::CREATED);
     let block = created.json();
     let block_id = block["id"].as_str().unwrap().to_owned();
-    assert_eq!(block["block_type"], "image");
+    assert_eq!(block["kind"], "image");
     assert_eq!(block["content"]["file_name"], "diagram.png");
     assert_eq!(block["content"]["file_type"], "image/png");
     assert!(
@@ -298,7 +298,7 @@ async fn block_lifecycle_over_the_upload_pipeline(pool: PgPool) {
         .post_as(
             &teacher,
             &format!("/api/v2/activities/{activity}/blocks"),
-            &serde_json::json!({ "block_type": "image", "upload_id": pending_id }),
+            &serde_json::json!({ "kind": "image", "upload_id": pending_id }),
         )
         .await;
     assert_eq!(unclaimed.status, StatusCode::CONFLICT);
@@ -355,7 +355,7 @@ async fn block_claim_rolls_back_when_the_activity_vanishes(pool: PgPool) {
         .await
         .unwrap();
     let path = format!("/api/v2/activities/{activity}/blocks");
-    let body = serde_json::json!({ "block_type": "image", "upload_id": upload });
+    let body = serde_json::json!({ "kind": "image", "upload_id": upload });
     let create = app.post_as(&teacher, &path, &body);
     let commit = async {
         tokio::time::sleep(std::time::Duration::from_millis(500)).await;
@@ -392,8 +392,8 @@ async fn activity_in(app: &TestApp, session: &MintedSession, chapter: uuid::Uuid
         .post_as(
             session,
             &format!("/api/v2/chapters/{chapter}/activities"),
-            &serde_json::json!({ "name": "Page", "activity_type": "dynamic",
-                                  "activity_sub_type": "dynamic_page" }),
+            &serde_json::json!({ "name": "Page", "kind": "dynamic",
+                                  "sub_kind": "dynamic_page" }),
         )
         .await;
     created.json()["id"].as_str().unwrap().to_owned()
@@ -404,7 +404,7 @@ async fn block(app: &TestApp, session: &MintedSession, activity: &str, upload: &
         .post_as(
             session,
             &format!("/api/v2/activities/{activity}/blocks"),
-            &serde_json::json!({ "block_type": "image", "upload_id": upload }),
+            &serde_json::json!({ "kind": "image", "upload_id": upload }),
         )
         .await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
@@ -433,7 +433,7 @@ async fn cascade_delete_releases_a_block_committed_under_it(pool: PgPool) {
         // A block create in flight: row inserted + claim taken, not committed.
         let mut tx = app.pool.begin().await.unwrap();
         sqlx::query(
-            "INSERT INTO blocks (activity_id, block_type, content)
+            "INSERT INTO blocks (activity_id, kind, content)
              SELECT $1, 'image', jsonb_build_object('upload_id', id::text, 'file_key', key)
              FROM uploads WHERE id = $2",
         )
@@ -502,7 +502,7 @@ async fn concurrent_block_writes_keep_the_reference_count(pool: PgPool) {
         let blocks_path = format!("/api/v2/activities/{a1}/blocks");
         let activity_path = format!("/api/v2/activities/{a1}");
         let block_path = format!("/api/v2/blocks/{b1}");
-        let body = serde_json::json!({ "block_type": "image", "upload_id": upload });
+        let body = serde_json::json!({ "kind": "image", "upload_id": upload });
         let (x, y) = match round % 3 {
             0 => {
                 let (x, y) = tokio::join!(
@@ -640,8 +640,8 @@ async fn replacing_a_lesson_file_releases_the_old_one(pool: PgPool) {
         .post_as(
             &teacher,
             &format!("/api/v2/chapters/{chapter}/activities"),
-            &serde_json::json!({ "name": "Lecture", "activity_type": "video",
-                                  "activity_sub_type": "video_hosted" }),
+            &serde_json::json!({ "name": "Lecture", "kind": "video",
+                                  "sub_kind": "video_hosted" }),
         )
         .await;
     let video = created.json()["id"].as_str().unwrap().to_owned();
@@ -690,7 +690,7 @@ async fn replacing_a_lesson_file_releases_the_old_one(pool: PgPool) {
                 &teacher,
                 &format!("{path}/blocks"),
                 // A long Cyrillic name (284 chars, 563 bytes): the cap counts characters.
-                &serde_json::json!({ "block_type": "video", "upload_id": upload,
+                &serde_json::json!({ "kind": "video", "upload_id": upload,
                                       "file_name": format!("{}.mp4", "Лекция ".repeat(40)) }),
             )
             .await;

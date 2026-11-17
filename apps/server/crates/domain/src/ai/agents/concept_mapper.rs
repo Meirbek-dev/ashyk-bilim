@@ -302,7 +302,7 @@ impl AiService {
             }
             let mut chapter_sources = Vec::new();
             for activity in activities.iter().filter(|a| a.chapter_id == ch.id) {
-                let body = match activity.activity_type.as_str() {
+                let body = match activity.kind.as_str() {
                     "dynamic" => lesson_text(&activity.content),
                     _ => activity
                         .details
@@ -321,7 +321,7 @@ impl AiService {
                         "Chapter: {}\nActivity: {} ({})\n{}",
                         ch.name,
                         activity.name,
-                        activity.activity_type,
+                        activity.kind,
                         body.chars().take(ACTIVITY_CHARS).collect::<String>()
                     ),
                     metadata: json!({ "activity_id": activity.id }),

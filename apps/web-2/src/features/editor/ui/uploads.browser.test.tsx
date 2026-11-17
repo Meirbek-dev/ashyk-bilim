@@ -33,7 +33,7 @@ const blockResponse = () =>
   json({
     id: BLOCK,
     activity_id: ACTIVITY,
-    block_type: 'image',
+    kind: 'image',
     content: { file_key: SLOT.key, file_name: 'Photo.PNG', file_size: 4, file_type: 'image/png' },
     created_at_unix: 1,
   })
@@ -94,7 +94,7 @@ describe('file blocks', () => {
       .element(screen.getByRole('img', { name: m.editor_image_alt() }))
       .toHaveAttribute('src', `/content/${SLOT.key}`)
     const claim = api.mock.calls.map(([request]) => request).find(request => request.url.endsWith('/blocks'))
-    expect(await claim?.json()).toEqual({ block_type: 'image', upload_id: SLOT.id, file_name: 'Photo.PNG' })
+    expect(await claim?.json()).toEqual({ kind: 'image', upload_id: SLOT.id, file_name: 'Photo.PNG' })
     expect(find(last(onChange), 'blockImage')?.attrs?.['blockObject']).toEqual({
       block_uuid: BLOCK,
       content: { file_id: SLOT.id, file_key: SLOT.key, file_format: 'png', file_name: 'Photo.PNG' },

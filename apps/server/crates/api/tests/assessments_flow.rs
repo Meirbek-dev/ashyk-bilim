@@ -83,7 +83,7 @@ async fn quiz_authoring_and_lifecycle(pool: PgPool) {
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
     let body = created.json();
     let id = body["id"].as_str().unwrap().to_owned();
-    assert_eq!(body["lifecycle"], "draft");
+    assert_eq!(body["status"], "draft");
     assert_eq!(body["policy"]["review_visibility"], "full");
     assert_eq!(body["policy"]["grade_release_mode"], "immediate");
     assert!(body["items"].as_array().unwrap().is_empty());
@@ -91,7 +91,7 @@ async fn quiz_authoring_and_lifecycle(pool: PgPool) {
         .get_as(&teacher, &format!("/api/v2/courses/{course_id}/curriculum"))
         .await;
     let activity = &curriculum.json()["chapters"][0]["activities"][0];
-    assert_eq!(activity["activity_type"], "quiz");
+    assert_eq!(activity["kind"], "quiz");
     assert_eq!(activity["name"], "Quiz 1");
     assert_eq!(activity["published"], false);
 
@@ -246,7 +246,7 @@ async fn quiz_authoring_and_lifecycle(pool: PgPool) {
         )
         .await;
     assert_eq!(scheduled.status, StatusCode::OK, "{}", scheduled.text());
-    assert_eq!(scheduled.json()["lifecycle"], "scheduled");
+    assert_eq!(scheduled.json()["status"], "scheduled");
     let published = app
         .post_as(
             &teacher,
@@ -255,7 +255,7 @@ async fn quiz_authoring_and_lifecycle(pool: PgPool) {
         )
         .await;
     assert_eq!(published.status, StatusCode::OK);
-    assert_eq!(published.json()["lifecycle"], "published");
+    assert_eq!(published.json()["status"], "published");
     assert!(published.json()["published_at_unix"].is_i64());
     assert!(published.json()["scheduled_at_unix"].is_null());
     let curriculum = app
@@ -318,7 +318,7 @@ async fn quiz_authoring_and_lifecycle(pool: PgPool) {
             &serde_json::json!({ "to": "draft" }),
         )
         .await;
-    assert_eq!(back.json()["lifecycle"], "draft");
+    assert_eq!(back.json()["status"], "draft");
     // published_at survives the round trip (legacy semantics).
     assert!(back.json()["published_at_unix"].is_i64());
 
@@ -549,7 +549,7 @@ async fn duplicate_copies_policy_and_items_as_a_fresh_draft(pool: PgPool) {
     let body = copy.json();
     assert_ne!(body["id"], id.as_str());
     assert_eq!(body["title"], "Midterm (copy)");
-    assert_eq!(body["lifecycle"], "draft");
+    assert_eq!(body["status"], "draft");
     assert!(body["published_at_unix"].is_null());
     // The exam preset travelled with the copy, and the items kept their order.
     assert_eq!(body["policy"]["time_limit_seconds"], 3600);
@@ -1465,7 +1465,7 @@ async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
     let detail = app
         .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
         .await;
-    assert_eq!(detail.json()["lifecycle"], "scheduled", "{}", detail.text());
+    assert_eq!(detail.json()["status"], "scheduled", "{}", detail.text());
     let audit = app
         .get_as(&teacher, &format!("/api/v2/assessments/{id}/audit"))
         .await;
@@ -1489,7 +1489,7 @@ async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
     let detail = app
         .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
         .await;
-    assert_eq!(detail.json()["lifecycle"], "published", "{}", detail.text());
+    assert_eq!(detail.json()["status"], "published", "{}", detail.text());
 }
 
 /// BUG-177: a whitespace-only title is 422 `title`/`required` on create and
@@ -2128,7 +2128,7 @@ async fn publish_and_item_writes_serialize(pool: PgPool) {
         let detail = app
             .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
             .await;
-        let lifecycle = detail.json()["lifecycle"].clone();
+        let lifecycle = detail.json()["status"].clone();
         let readiness = app
             .get_as(&teacher, &format!("/api/v2/assessments/{id}/readiness"))
             .await;
@@ -2197,7 +2197,7 @@ async fn schedule_and_item_add_serialize(pool: PgPool) {
         let readiness = app
             .get_as(&teacher, &format!("/api/v2/assessments/{id}/readiness"))
             .await;
-        if detail.json()["lifecycle"] == "scheduled" {
+        if detail.json()["status"] == "scheduled" {
             assert_eq!(
                 added.status,
                 StatusCode::CONFLICT,
@@ -2255,7 +2255,7 @@ async fn lifecycle_and_activity_flag_never_disagree(pool: PgPool) {
     let detail_path = format!("/api/v2/assessments/{id}");
     let lifecycle_path = format!("{detail_path}/lifecycle");
     let activity_path = format!("/api/v2/activities/{activity_id}");
-    let lifecycle = async || app.get_as(&teacher, &detail_path).await.json()["lifecycle"].clone();
+    let lifecycle = async || app.get_as(&teacher, &detail_path).await.json()["status"].clone();
     let agree = async || {
         let activity = app.get_as(&teacher, &activity_path).await;
         (lifecycle().await == "published") == (activity.json()["published"] == true)

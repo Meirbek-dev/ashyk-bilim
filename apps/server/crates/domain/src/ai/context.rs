@@ -386,7 +386,7 @@ pub async fn course_bundle(
             .iter()
             .find(|c| c.id == activity.chapter_id)
             .map_or("Unassigned", |c| c.name.as_str());
-        let lesson = only_activity.is_some() && activity.activity_type == "dynamic";
+        let lesson = only_activity.is_some() && activity.kind == "dynamic";
         let content = if lesson {
             clipped_text(&lesson_text(&activity.content), FOCUS_CHARS)
         } else {
@@ -394,7 +394,7 @@ pub async fn course_bundle(
         };
         let activity_lines = [
             format!("Chapter: {chapter_title}"),
-            format!("Activity: {} ({})", activity.name, activity.activity_type),
+            format!("Activity: {} ({})", activity.name, activity.kind),
             format!(
                 "Published: {}",
                 if activity.published { "True" } else { "False" }

@@ -988,7 +988,7 @@ pub async fn erase_personal_data(tx: &mut sqlx::PgConnection, user_id: UserId) -
         .await?
         .rows_affected();
     sqlx::query!(
-        "UPDATE analytics_events SET actor_id = NULL WHERE actor_id = $1",
+        "UPDATE analytics_events SET performed_by = NULL WHERE performed_by = $1",
         uid
     )
     .execute(&mut *tx)

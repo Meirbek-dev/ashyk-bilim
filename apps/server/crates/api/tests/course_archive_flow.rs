@@ -107,8 +107,8 @@ async fn lesson(app: &TestApp, teacher: &MintedSession, chapter_id: &str) -> Str
         .post_as(
             teacher,
             &format!("/api/v2/chapters/{chapter_id}/activities"),
-            &serde_json::json!({ "name": "Intro", "activity_type": "dynamic",
-                                  "activity_sub_type": "dynamic_page" }),
+            &serde_json::json!({ "name": "Intro", "kind": "dynamic",
+                                  "sub_kind": "dynamic_page" }),
         )
         .await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
@@ -889,10 +889,8 @@ async fn archived_course_is_read_only_for_everyone(pool: PgPool) {
             format!("/chapters/{chapter_id}/activities"),
             &teacher,
         )
-        .body(
-            serde_json::json!({ "name": "New", "activity_type": "dynamic",
-                                      "activity_sub_type": "dynamic_page" }),
-        ),
+        .body(serde_json::json!({ "name": "New", "kind": "dynamic",
+                                      "sub_kind": "dynamic_page" })),
         c(
             "rename activity",
             "PATCH",
@@ -1293,7 +1291,7 @@ async fn archived_course_is_read_only_for_everyone(pool: PgPool) {
         )
         .body(
             serde_json::json!({ "user_id": bob.user_id, "course_id": course_id,
-                                      "intervention_type": "message_sent" }),
+                                      "kind": "message_sent" }),
         ),
     ];
     for call in &refused {
@@ -1695,7 +1693,7 @@ async fn archive_unschedules_assessments_and_the_sweep_publishes_nothing(pool: P
     let detail = app
         .get_as(&teacher, &format!("/api/v2/assessments/{quiz_id}"))
         .await;
-    assert_eq!(detail.json()["lifecycle"], "draft", "{}", detail.text());
+    assert_eq!(detail.json()["status"], "draft", "{}", detail.text());
     assert!(detail.json()["scheduled_at_unix"].is_null());
     let audit = app
         .get_as(&teacher, &format!("/api/v2/assessments/{quiz_id}/audit"))
@@ -1718,7 +1716,7 @@ async fn archive_unschedules_assessments_and_the_sweep_publishes_nothing(pool: P
     let detail = app
         .get_as(&teacher, &format!("/api/v2/assessments/{quiz_id}"))
         .await;
-    assert_eq!(detail.json()["lifecycle"], "draft");
+    assert_eq!(detail.json()["status"], "draft");
 
     // Restored: still a draft - the author reschedules by hand.
     let restored = lifecycle(&app, &teacher, &course_id, "restore").await;
@@ -1726,7 +1724,7 @@ async fn archive_unschedules_assessments_and_the_sweep_publishes_nothing(pool: P
     let detail = app
         .get_as(&teacher, &format!("/api/v2/assessments/{quiz_id}"))
         .await;
-    assert_eq!(detail.json()["lifecycle"], "draft");
+    assert_eq!(detail.json()["status"], "draft");
 }
 
 // ── 6. auto-submit ──────────────────────────────────────────────────────

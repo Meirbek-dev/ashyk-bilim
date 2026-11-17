@@ -27,7 +27,7 @@ export function AssessmentPublishSwitch({ activity }: { activity: ActivityDetail
   const { data: assessment } = useSuspenseQuery(assessmentOptions(activity.id))
   const transition = useMutation(lifecycleOptions(useQueryClient(), activity.id, activity.course_id, assessment.id))
   const [confirming, setConfirming] = useState(false)
-  const published = assessment.lifecycle === 'published'
+  const published = assessment.status === 'published'
   const allowed = can(assessment, 'transition') && canMove(assessment, published ? 'draft' : 'published')
   const set = (to: Lifecycle) =>
     transition.mutate(

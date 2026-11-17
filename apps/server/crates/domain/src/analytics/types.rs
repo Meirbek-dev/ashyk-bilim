@@ -360,7 +360,7 @@ pub struct ContentBottleneckRow {
     pub course_name: String,
     pub activity_id: ActivityId,
     pub activity_name: String,
-    pub activity_type: String,
+    pub kind: String,
     pub signal: ContentBottleneckSignal,
     pub severity: Severity,
     pub completion_rate: Option<f64>,
@@ -427,9 +427,9 @@ pub struct InsightFeedItem {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct SavedView {
     pub id: SavedViewId,
-    pub teacher_user_id: UserId,
+    pub user_id: UserId,
     pub name: String,
-    pub view_type: String,
+    pub kind: String,
     #[schema(value_type = crate::wire::SavedQuery)]
     pub query: serde_json::Value,
     pub created_at_unix: i64,
@@ -603,11 +603,11 @@ pub struct AdminAnalyticsResponse {
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct Intervention {
     pub id: InterventionId,
-    pub teacher_user_id: UserId,
+    pub created_by: UserId,
     pub user_id: UserId,
     pub course_id: CourseId,
     #[schema(value_type = crate::analytics::InterventionType)]
-    pub intervention_type: String,
+    pub kind: String,
     #[schema(value_type = crate::analytics::InterventionStatus)]
     pub status: String,
     pub outcome: Option<String>,
@@ -634,10 +634,10 @@ impl From<ab_db::analytics::InterventionRow> for Intervention {
         let resolved = r.status == "resolved";
         Self {
             id: r.id,
-            teacher_user_id: r.teacher_user_id,
+            created_by: r.teacher_user_id,
             user_id: r.user_id,
             course_id: r.course_id,
-            intervention_type: r.intervention_type,
+            kind: r.kind,
             status: r.status,
             outcome: r.outcome,
             allowed_actions: if resolved {
@@ -665,9 +665,9 @@ impl From<ab_db::analytics::SavedViewRow> for SavedView {
     fn from(r: ab_db::analytics::SavedViewRow) -> Self {
         Self {
             id: r.id,
-            teacher_user_id: r.teacher_user_id,
+            user_id: r.teacher_user_id,
             name: r.name,
-            view_type: r.view_type,
+            kind: r.kind,
             query: r.query,
             created_at_unix: r.created_at,
             updated_at_unix: r.updated_at,
@@ -837,7 +837,7 @@ pub struct ActivityDropoffRow {
     pub chapter_id: ChapterId,
     pub activity_id: ActivityId,
     pub activity_name: String,
-    pub activity_type: String,
+    pub kind: String,
     pub previous_step_completions: i64,
     pub current_step_completions: i64,
     pub dropoff_pct: f64,

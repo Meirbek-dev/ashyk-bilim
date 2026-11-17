@@ -20,7 +20,7 @@ export function SaveViewDialog({ tab, filters }: { tab: Tab; filters: Filters })
     defaultValues: { name: '' },
     onSubmit: ({ name }) =>
       save.mutateAsync(
-        { body: { name, view_type: tab, query: filters } },
+        { body: { name, kind: tab, query: filters } },
         {
           onSuccess: () => {
             setOpen(false)

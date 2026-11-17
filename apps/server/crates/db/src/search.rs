@@ -261,7 +261,7 @@ pub async fn search_collections(
 pub struct LessonHitRow {
     pub activity_id: ActivityId,
     pub name: String,
-    pub activity_type: String,
+    pub kind: String,
     pub course_id: CourseId,
     pub course_name: String,
 }
@@ -276,7 +276,7 @@ pub async fn search_lessons(
     offset: i64,
 ) -> Result<Vec<LessonHitRow>> {
     let mut qb = QueryBuilder::<Postgres>::new(
-        "SELECT a.id AS activity_id, a.name, a.activity_type,
+        "SELECT a.id AS activity_id, a.name, a.kind,
                 c.id AS course_id, c.name AS course_name
          FROM activities a JOIN courses c ON c.id = a.course_id
          WHERE a.published AND c.public AND c.archived_at IS NULL",

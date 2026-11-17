@@ -861,7 +861,7 @@ impl ImportsService {
                             title: &title,
                             description: "",
                             weight: 1.0,
-                            grading_type: GradingType::Percentage,
+                            grading_kind: GradingType::Percentage,
                             policy: Some(policy_for(PolicyInput::preset(kind))),
                         },
                     )

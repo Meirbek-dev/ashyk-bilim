@@ -204,7 +204,7 @@ pub async fn refresh_required<'e>(
 ) -> Result<()> {
     sqlx::query!(
         r#"UPDATE activity_progress p SET required = r.required
-           FROM (SELECT a.id, a.activity_type = 'file_submission' OR a.required
+           FROM (SELECT a.id, a.kind = 'file_submission' OR a.required
                               OR EXISTS (SELECT 1 FROM assessments s WHERE s.activity_id = a.id) AS required
                  FROM activities a WHERE a.course_id = $1) r
            WHERE p.activity_id = r.id AND p.course_id = $1 AND p.user_id = $2
@@ -229,7 +229,7 @@ pub async fn ensure_course_rows<'e>(
     sqlx::query!(
         r#"INSERT INTO activity_progress (course_id, activity_id, user_id, required, due_at)
            SELECT a.course_id, a.id, $2,
-                  a.activity_type = 'file_submission' OR s.id IS NOT NULL OR a.required,
+                  a.kind = 'file_submission' OR s.id IS NOT NULL OR a.required,
                   s.due_at
            FROM activities a
            LEFT JOIN assessments s ON s.activity_id = a.id
@@ -702,7 +702,7 @@ pub async fn list_completed_steps(pool: &PgPool, user_id: UserId) -> Result<Vec<
                   (extract(epoch FROM c.completed_at))::bigint AS "completed_at!"
            FROM completions c
            JOIN activities a ON a.id = c.activity_id
-           WHERE c.user_id = $1 AND a.activity_type <> 'file_submission'
+           WHERE c.user_id = $1 AND a.kind <> 'file_submission'
              AND NOT EXISTS (SELECT 1 FROM assessments x WHERE x.activity_id = a.id)
            ORDER BY c.completed_at, c.activity_id"#,
         user_id.0

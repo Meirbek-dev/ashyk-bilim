@@ -74,7 +74,7 @@ export function DetailsSection({ activityId, assessment }: DetailsSectionProps) 
               />
             )}
           </form.AppField>
-          <form.AppField name="grading_type">
+          <form.AppField name="grading_kind">
             {field => (
               <field.RadioGroupField label={m.assessments_field_grading_type()} options={optionsOf(gradingLabels)} />
             )}

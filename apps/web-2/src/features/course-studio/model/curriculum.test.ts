@@ -20,8 +20,8 @@ const activity = (id: string, chapter_id: string, position: number): Activity =>
   position,
   course_id: 'c',
   name: id,
-  activity_type: 'dynamic',
-  activity_sub_type: 'dynamic_page',
+  kind: 'dynamic',
+  sub_kind: 'dynamic_page',
   allowed_actions: ['update', 'delete', 'move'],
   published: false,
   version: 1,
@@ -94,7 +94,7 @@ test('B-CST-06 the program line counts chapters, activities and drafts', () => {
 
 test('B-CST-51 «Опубликовать уроки» takes the draft pages, videos and documents one may change, not tests or live ones', () => {
   const mixed = withActivity(
-    withActivity(curriculum, { ...activity('b2', 'B', 2), activity_type: 'quiz', activity_sub_type: 'quiz_standard' }),
+    withActivity(curriculum, { ...activity('b2', 'B', 2), kind: 'quiz', sub_kind: 'quiz_standard' }),
     { ...activity('b3', 'B', 3), published: true },
   )
   const locked = withActivity(mixed, { ...activity('b4', 'B', 4), allowed_actions: [] })

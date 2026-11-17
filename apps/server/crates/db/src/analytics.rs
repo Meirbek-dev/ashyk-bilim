@@ -162,7 +162,7 @@ pub struct ActivityInfoRow {
     pub course_id: CourseId,
     pub chapter_id: ChapterId,
     pub name: String,
-    pub activity_type: String,
+    pub kind: String,
     pub position: i32,
     pub published: bool,
     pub updated_at: i64,
@@ -176,7 +176,7 @@ pub async fn list_activities(
     let rows = sqlx::query_as!(
         ActivityInfoRow,
         r#"SELECT id AS "id: ActivityId", course_id AS "course_id: CourseId",
-                  chapter_id AS "chapter_id: ChapterId", name, activity_type, position, published,
+                  chapter_id AS "chapter_id: ChapterId", name, kind, position, published,
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
            FROM activities WHERE course_id = ANY($1) ORDER BY course_id, chapter_id, position, id"#,
         &ids
@@ -208,9 +208,9 @@ pub async fn list_assessments(
         AssessmentInfoRow,
         r#"SELECT id AS "id: AssessmentId", activity_id AS "activity_id: ActivityId",
                   course_id AS "course_id: CourseId",
-                  (SELECT act.activity_type FROM activities act WHERE act.id = assessments.activity_id) AS "kind!: AssessmentKind",
+                  (SELECT act.kind FROM activities act WHERE act.id = assessments.activity_id) AS "kind!: AssessmentKind",
                   (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id) AS "title!",
-                  lifecycle AS "lifecycle: Lifecycle", grading_mode AS "grading_mode: GradingMode",
+                  status AS "lifecycle: Lifecycle", grading_mode AS "grading_mode: GradingMode",
                   passing_score::float8 AS "passing_score!", (extract(epoch FROM due_at))::bigint AS "due_at?"
            FROM assessments WHERE course_id = ANY($1)
              AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)
@@ -550,7 +550,7 @@ pub struct NewEvent<'a> {
 pub async fn insert_event<'e>(db: impl sqlx::PgExecutor<'e>, e: NewEvent<'_>) -> Result<()> {
     sqlx::query!(
         r"INSERT INTO analytics_events
-              (event_type, course_id, activity_id, assessment_id, submission_id, user_id, actor_id, payload)
+              (event, course_id, activity_id, assessment_id, submission_id, user_id, performed_by, payload)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         e.event_type,
         e.course_id.map(|c| c.0),
@@ -585,7 +585,7 @@ pub async fn list_events(
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
         EventInfoRow,
-        r#"SELECT event_type, course_id AS "course_id: CourseId",
+        r#"SELECT event AS event_type, course_id AS "course_id: CourseId",
                   activity_id AS "activity_id: ActivityId",
                   assessment_id AS "assessment_id: AssessmentId", user_id AS "user_id: UserId",
                   (extract(epoch FROM occurred_at))::bigint AS "occurred_at!"
@@ -653,7 +653,7 @@ pub async fn list_bulk_actions_for_assessment(
 ) -> Result<Vec<BulkActionAuditRow>> {
     let rows = sqlx::query_as!(
         BulkActionAuditRow,
-        r#"SELECT id AS "id: BulkActionId", performed_by AS "performed_by: UserId", action_type,
+        r#"SELECT id AS "id: BulkActionId", performed_by AS "performed_by: UserId", kind AS action_type,
                   status, target_user_ids AS "target_user_ids: Vec<UserId>", affected_count,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM completed_at))::bigint AS "completed_at?"
@@ -828,13 +828,13 @@ pub async fn insert_teacher_metrics(
 ) -> Result<()> {
     sqlx::query!(
         r"INSERT INTO daily_teacher_metrics
-              (metric_date, teacher_user_id, managed_course_count, active_learners_7d,
+              (metric_date, teacher_id, managed_course_count, active_learners_7d,
                active_learners_28d, active_learners_90d, returning_learners_28d, completion_rate,
                avg_progress_pct, at_risk_learners, ungraded_submissions,
                courses_with_negative_engagement, certificates_issued_28d, generated_at)
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
                   to_timestamp($14))
-          ON CONFLICT (metric_date, teacher_user_id) DO UPDATE SET
+          ON CONFLICT (metric_date, teacher_id) DO UPDATE SET
               managed_course_count = EXCLUDED.managed_course_count,
               active_learners_7d = EXCLUDED.active_learners_7d,
               active_learners_28d = EXCLUDED.active_learners_28d,
@@ -1244,14 +1244,14 @@ pub async fn latest_teacher_metrics_before(
     };
     let row = sqlx::query_as!(
         TeacherMetricsRow,
-        r#"SELECT metric_date::text AS "metric_date!", teacher_user_id AS "teacher_user_id: UserId",
+        r#"SELECT metric_date::text AS "metric_date!", teacher_id AS "teacher_user_id: UserId",
                   managed_course_count, active_learners_7d, active_learners_28d,
                   active_learners_90d, returning_learners_28d, completion_rate, avg_progress_pct,
                   at_risk_learners, ungraded_submissions, courses_with_negative_engagement,
                   certificates_issued_28d,
                   (extract(epoch FROM generated_at))::bigint AS "generated_at!"
            FROM daily_teacher_metrics
-           WHERE teacher_user_id = $1 AND metric_date < $2
+           WHERE teacher_id = $1 AND metric_date < $2
            ORDER BY metric_date DESC LIMIT 1"#,
         teacher.0,
         before as _
@@ -1416,7 +1416,7 @@ pub async fn rollup_counts(pool: &PgPool, date: Day) -> Result<RollupCounts> {
     let row = sqlx::query!(
         r#"SELECT
              (SELECT count(*) FROM daily_teacher_metrics
-               WHERE metric_date = $1 AND teacher_user_id IS NOT NULL) AS "teacher_rows!",
+               WHERE metric_date = $1 AND teacher_id IS NOT NULL) AS "teacher_rows!",
              (SELECT count(*) FROM daily_platform_metrics WHERE metric_date = $1) AS "platform_rows!",
              (SELECT count(*) FROM daily_course_metrics WHERE metric_date = $1) AS "course_rows!",
              (SELECT count(*) FROM daily_course_engagement WHERE metric_date = $1) AS "engagement_rows!",
@@ -1446,7 +1446,7 @@ pub struct InterventionRow {
     pub teacher_user_id: UserId,
     pub user_id: UserId,
     pub course_id: CourseId,
-    pub intervention_type: String,
+    pub kind: String,
     pub status: String,
     pub outcome: Option<String>,
     /// S-GAPS-2: the closed outcome (`InterventionOutcome`), next to the
@@ -1467,7 +1467,7 @@ pub struct NewIntervention<'a> {
     pub teacher_user_id: UserId,
     pub user_id: UserId,
     pub course_id: CourseId,
-    pub intervention_type: &'a str,
+    pub kind: &'a str,
     pub status: &'a str,
     pub outcome: Option<&'a str>,
     pub outcome_code: Option<&'a str>,
@@ -1485,13 +1485,13 @@ pub async fn insert_intervention<'e>(
     let row = sqlx::query_as!(
         InterventionRow,
         r#"INSERT INTO teacher_interventions
-              (teacher_user_id, user_id, course_id, intervention_type, status, outcome, notes,
+              (created_by, user_id, course_id, kind, status, outcome, notes,
                risk_score_before, risk_score_after, payload, resolved_at, outcome_code)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
                    CASE WHEN $11 THEN now() ELSE NULL END, $12)
-           RETURNING id AS "id: InterventionId", teacher_user_id AS "teacher_user_id: UserId",
+           RETURNING id AS "id: InterventionId", created_by AS "teacher_user_id: UserId",
                      user_id AS "user_id: UserId", course_id AS "course_id: CourseId",
-                     intervention_type, status, outcome, outcome_code, version, notes,
+                     kind, status, outcome, outcome_code, version, notes,
                      risk_score_before, risk_score_after, payload,
                      (extract(epoch FROM created_at))::bigint AS "created_at!",
                      (extract(epoch FROM updated_at))::bigint AS "updated_at!",
@@ -1499,7 +1499,7 @@ pub async fn insert_intervention<'e>(
         i.teacher_user_id.0,
         i.user_id.0,
         i.course_id.0,
-        i.intervention_type,
+        i.kind,
         i.status,
         i.outcome,
         i.notes,
@@ -1526,15 +1526,15 @@ pub async fn list_interventions(
     let ids = uuids(course_ids);
     let rows = sqlx::query_as!(
         InterventionRow,
-        r#"SELECT id AS "id: InterventionId", teacher_user_id AS "teacher_user_id: UserId",
+        r#"SELECT id AS "id: InterventionId", created_by AS "teacher_user_id: UserId",
                   user_id AS "user_id: UserId", course_id AS "course_id: CourseId",
-                  intervention_type, status, outcome, outcome_code, version, notes,
+                  kind, status, outcome, outcome_code, version, notes,
                   risk_score_before, risk_score_after, payload,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!",
                   (extract(epoch FROM resolved_at))::bigint AS "resolved_at?"
            FROM teacher_interventions
-           WHERE teacher_user_id = $1 AND course_id = ANY($2)
+           WHERE created_by = $1 AND course_id = ANY($2)
              AND ($3::uuid IS NULL OR user_id = $3)
              AND ($4::uuid IS NULL OR course_id = $4)
            ORDER BY created_at DESC, id DESC"#,
@@ -1554,9 +1554,9 @@ pub async fn get_intervention(
 ) -> Result<Option<InterventionRow>> {
     let row = sqlx::query_as!(
         InterventionRow,
-        r#"SELECT id AS "id: InterventionId", teacher_user_id AS "teacher_user_id: UserId",
+        r#"SELECT id AS "id: InterventionId", created_by AS "teacher_user_id: UserId",
                   user_id AS "user_id: UserId", course_id AS "course_id: CourseId",
-                  intervention_type, status, outcome, outcome_code, version, notes,
+                  kind, status, outcome, outcome_code, version, notes,
                   risk_score_before, risk_score_after, payload,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!",
@@ -1593,9 +1593,9 @@ pub async fn update_intervention(
                risk_score_after = COALESCE($6, risk_score_after),
                resolved_at = CASE WHEN $7 THEN COALESCE(resolved_at, now()) ELSE NULL END
            WHERE id = $1
-           RETURNING id AS "id: InterventionId", teacher_user_id AS "teacher_user_id: UserId",
+           RETURNING id AS "id: InterventionId", created_by AS "teacher_user_id: UserId",
                      user_id AS "user_id: UserId", course_id AS "course_id: CourseId",
-                     intervention_type, status, outcome, outcome_code, version, notes,
+                     kind, status, outcome, outcome_code, version, notes,
                      risk_score_before, risk_score_after, payload,
                      (extract(epoch FROM created_at))::bigint AS "created_at!",
                      (extract(epoch FROM updated_at))::bigint AS "updated_at!",
@@ -1620,7 +1620,7 @@ pub struct SavedViewRow {
     pub id: SavedViewId,
     pub teacher_user_id: UserId,
     pub name: String,
-    pub view_type: String,
+    pub kind: String,
     pub query: serde_json::Value,
     pub created_at: i64,
     pub updated_at: i64,
@@ -1629,11 +1629,11 @@ pub struct SavedViewRow {
 pub async fn list_saved_views(pool: &PgPool, teacher_user_id: UserId) -> Result<Vec<SavedViewRow>> {
     let rows = sqlx::query_as!(
         SavedViewRow,
-        r#"SELECT id AS "id: SavedViewId", teacher_user_id AS "teacher_user_id: UserId", name,
-                  view_type, query,
+        r#"SELECT id AS "id: SavedViewId", user_id AS "teacher_user_id: UserId", name,
+                  kind, query,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM analytics_saved_views WHERE teacher_user_id = $1
+           FROM analytics_saved_views WHERE user_id = $1
            ORDER BY updated_at DESC, id DESC"#,
         teacher_user_id.0
     )
@@ -1642,27 +1642,27 @@ pub async fn list_saved_views(pool: &PgPool, teacher_user_id: UserId) -> Result<
     Ok(rows)
 }
 
-/// Insert, or update the query of the existing (teacher, view_type, name).
+/// Insert, or update the query of the existing (teacher, kind, name).
 pub async fn upsert_saved_view(
     pool: &PgPool,
     teacher_user_id: UserId,
     name: &str,
-    view_type: &str,
+    kind: &str,
     query: &serde_json::Value,
 ) -> Result<SavedViewRow> {
     let row = sqlx::query_as!(
         SavedViewRow,
-        r#"INSERT INTO analytics_saved_views (teacher_user_id, name, view_type, query)
+        r#"INSERT INTO analytics_saved_views (user_id, name, kind, query)
            VALUES ($1, $2, $3, $4)
-           ON CONFLICT (teacher_user_id, view_type, name) DO UPDATE SET
+           ON CONFLICT (user_id, kind, name) DO UPDATE SET
                query = EXCLUDED.query, updated_at = now()
-           RETURNING id AS "id: SavedViewId", teacher_user_id AS "teacher_user_id: UserId", name,
-                     view_type, query,
+           RETURNING id AS "id: SavedViewId", user_id AS "teacher_user_id: UserId", name,
+                     kind, query,
                      (extract(epoch FROM created_at))::bigint AS "created_at!",
                      (extract(epoch FROM updated_at))::bigint AS "updated_at!""#,
         teacher_user_id.0,
         name,
-        view_type,
+        kind,
         query
     )
     .fetch_one(pool)
@@ -1678,7 +1678,7 @@ pub async fn delete_saved_view(
     id: SavedViewId,
 ) -> Result<bool> {
     let result = sqlx::query!(
-        "DELETE FROM analytics_saved_views WHERE id = $1 AND teacher_user_id = $2",
+        "DELETE FROM analytics_saved_views WHERE id = $1 AND user_id = $2",
         id.0,
         teacher_user_id.0
     )
