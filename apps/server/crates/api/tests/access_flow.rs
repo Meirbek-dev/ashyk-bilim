@@ -408,19 +408,21 @@ async fn seed_e2e_builds_fixtures_idempotently(pool: PgPool) {
         .unwrap();
     let report = serde_json::to_value(&first).unwrap();
     assert!(!report.to_string().contains("seed-pass-123"), "{report}");
-    // REWRITE 5.6 n8 step 4: the e2e fixtures' members read the same from
-    // course_progress_v as from the stored projection.
+    // REWRITE 5.8 item 10: the e2e fixtures have members, and each one the
+    // view reads as complete has the completion recorded.
     let members: i64 = sqlx::query_scalar("SELECT count(*) FROM course_progress_v")
         .fetch_one(&app.pool)
         .await
         .unwrap();
     assert!(members > 0, "the seeded course has members");
-    assert_eq!(
-        ab_db::progress::course_progress_view_drift(&app.pool)
-            .await
-            .unwrap(),
-        0
-    );
+    let unrecorded: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM course_progress_v v JOIN enrolments e USING (course_id, user_id)
+         WHERE v.certificate_eligible AND e.completed_at IS NULL",
+    )
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert_eq!(unrecorded, 0);
     let accounts = report["accounts"].as_array().unwrap();
     assert_eq!(accounts.len(), 4);
     assert_eq!(accounts[0]["email"], "admin@e2e.test");

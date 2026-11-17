@@ -3649,7 +3649,7 @@ async fn grader_actions_never_enrol_a_leaver(pool: PgPool) {
     assert_eq!(runs, 0, "a grader's action re-enrolled the leaver");
     // BUG-260: the grade is recorded, nothing else - no completion.
     let completed: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM course_progress
+        "SELECT count(*) FROM course_progress_v
          WHERE user_id = $1 AND (completed_at IS NOT NULL OR certificate_eligible)",
     )
     .bind(alice.user_id.0)

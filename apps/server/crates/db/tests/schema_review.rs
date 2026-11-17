@@ -2999,6 +2999,16 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "derived; reads count on read, a contract drops it",
         ),
         ("course_discussions_upload_ids", "derived"),
+        // Compatibility with the previous release (REWRITE 5.8 item 10): a course completion either release
+        // notices reaches the other's record; the contract dropping `course_progress` drops both.
+        (
+            "course_progress_completion",
+            "compat; a contract drops it with course_progress",
+        ),
+        (
+            "enrolments_completion",
+            "compat; a contract drops it with course_progress",
+        ),
         ("courses_upload_ids", "derived"),
         (
             "discussion_reactions_recount",

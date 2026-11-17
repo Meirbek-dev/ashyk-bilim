@@ -300,27 +300,6 @@ pub async fn due_overrides<'e>(
     Ok(rows)
 }
 
-/// Assessment weights per activity (for the weighted course average).
-pub struct ActivityWeightRow {
-    pub activity_id: ActivityId,
-    pub weight: f64,
-}
-
-pub async fn list_assessment_weights<'e>(
-    db: impl sqlx::PgExecutor<'e>,
-    course_id: CourseId,
-) -> Result<Vec<ActivityWeightRow>> {
-    let rows = sqlx::query_as!(
-        ActivityWeightRow,
-        r#"SELECT activity_id AS "activity_id: ActivityId", weight::float8 AS "weight!"
-           FROM assessments WHERE course_id = $1"#,
-        course_id.0
-    )
-    .fetch_all(db)
-    .await?;
-    Ok(rows)
-}
-
 // ── Course progress ─────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
@@ -341,77 +320,48 @@ pub struct CourseProgressRow {
     pub certificate_eligible: bool,
 }
 
-#[derive(Debug, Clone)]
-/// What the projector writes. `progress_pct` and `certificate_eligible`
-/// are not written: they are generated columns over the counts and
-/// `completed_at` (items 14/15).
-pub struct CourseProgressWrite {
-    pub course_id: CourseId,
-    pub user_id: UserId,
-    pub completed_required_count: i32,
-    pub total_required_count: i32,
-    pub grade_average: Option<f64>,
-    pub weighted_grade_average: Option<f64>,
-    pub missing_required_count: i32,
-    pub needs_grading_count: i32,
-    pub last_activity_at: Option<i64>,
-    /// The course completion; set exactly when `certificate_eligible`.
-    pub completed_at: Option<i64>,
-    /// Every required activity done by a member: the stored flag's rule.
-    pub certificate_eligible: bool,
+/// What a recalculation found: whether the member's `course_progress_v` row
+/// is complete, and whether this call recorded the completion.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CourseCompletion {
+    pub eligible: bool,
+    /// The first time: `enrolments.completed_at` was empty and is set now.
+    pub recorded: bool,
 }
 
-pub async fn upsert_course_progress<'e>(
-    db: impl sqlx::PgExecutor<'e>,
-    w: &CourseProgressWrite,
-) -> Result<()> {
-    sqlx::query!(
-        r#"INSERT INTO course_progress
-               (course_id, user_id, completed_required_count, total_required_count,
-                grade_average, weighted_grade_average, missing_required_count,
-                needs_grading_count, last_activity_at, completed_at)
-           VALUES ($1, $2, $3, $4, $5::float8, $6::float8, $7, $8, to_timestamp($9), to_timestamp($10))
-           ON CONFLICT (course_id, user_id) DO UPDATE SET
-               completed_required_count = EXCLUDED.completed_required_count,
-               total_required_count = EXCLUDED.total_required_count,
-               grade_average = EXCLUDED.grade_average,
-               weighted_grade_average = EXCLUDED.weighted_grade_average,
-               missing_required_count = EXCLUDED.missing_required_count,
-               needs_grading_count = EXCLUDED.needs_grading_count,
-               last_activity_at = EXCLUDED.last_activity_at,
-               completed_at = EXCLUDED.completed_at"#,
-        w.course_id.0,
-        w.user_id.0,
-        w.completed_required_count,
-        w.total_required_count,
-        w.grade_average,
-        w.weighted_grade_average,
-        w.missing_required_count,
-        w.needs_grading_count,
-        epoch(w.last_activity_at),
-        epoch(w.completed_at)
-    )
-    .execute(db)
-    .await?;
-    Ok(())
-}
-
-/// Whether the stored rollup says the member completed the course: the
-/// projector's own state, read before it rewrites the row to notice the
-/// transition (readers use [`get_course_progress`]).
-pub async fn stored_course_completed<'e>(
-    db: impl sqlx::PgExecutor<'e>,
+/// Record a member's course completion once (REWRITE 5.8 item 10).
+///
+/// `enrolments.completed_at` takes the view's completion time the first time
+/// the view says the course is complete, and is never cleared or moved
+/// afterwards (a course that gains a required activity keeps it). `recorded`
+/// is that transition, the completion signal. A non-member (no enrolment,
+/// or staff: the view has no row) is never eligible.
+pub async fn record_course_completion(
+    conn: &mut PgConnection,
     course_id: CourseId,
     user_id: UserId,
-) -> Result<bool> {
-    Ok(sqlx::query_scalar!(
-        "SELECT certificate_eligible FROM course_progress WHERE course_id = $1 AND user_id = $2",
+) -> Result<CourseCompletion> {
+    let row = sqlx::query!(
+        r#"WITH v AS (
+               SELECT certificate_eligible, completed_at FROM course_progress_v
+                WHERE course_id = $1 AND user_id = $2),
+           recorded AS (
+               UPDATE enrolments e SET completed_at = coalesce(v.completed_at, now())
+                 FROM v
+                WHERE e.course_id = $1 AND e.user_id = $2 AND e.completed_at IS NULL
+                  AND v.certificate_eligible
+            RETURNING 1)
+           SELECT coalesce((SELECT certificate_eligible FROM v), false) AS "eligible!",
+                  EXISTS (SELECT 1 FROM recorded) AS "recorded!""#,
         course_id.0,
         user_id.0
     )
-    .fetch_optional(db)
-    .await?
-    .unwrap_or(false))
+    .fetch_one(&mut *conn)
+    .await?;
+    Ok(CourseCompletion {
+        eligible: row.eligible,
+        recorded: row.recorded,
+    })
 }
 
 /// The member's progress; `None` for anyone without an enrolment (a leaver)
@@ -822,40 +772,6 @@ pub async fn completion_drift(pool: &PgPool) -> Result<i64> {
     Ok(drift)
 }
 
-/// How many members' `course_progress_v` row disagrees with their stored
-/// `course_progress` row (or has none).
-///
-/// Compares the counts, percent, certificate flag, `completed_at` and the
-/// last activity within a second, the grade averages within 0.01 (the
-/// projector rounds a float): the projector stores whole seconds, and a lesson mark stamps
-/// its row from the server's clock just after the completion's `now()`. `maintenance:reconcile` logs it after
-/// the re-projection while the projector still writes the table readers left
-/// (REWRITE 5.8 item 8).
-pub async fn course_progress_view_drift(pool: &PgPool) -> Result<i64> {
-    let drift = sqlx::query_scalar!(
-        r#"SELECT count(*) AS "drift!"
-           FROM course_progress_v v
-           LEFT JOIN course_progress p ON p.course_id = v.course_id AND p.user_id = v.user_id
-           WHERE (p.total_required_count, p.completed_required_count, p.progress_pct,
-                  p.certificate_eligible, p.completed_at IS NULL)
-                 IS DISTINCT FROM
-                 (v.total_required_count, v.completed_required_count, v.progress_pct,
-                  v.certificate_eligible, v.completed_at IS NULL)
-              OR abs(extract(epoch FROM p.completed_at - v.completed_at)) >= 1
-              OR (p.missing_required_count, p.needs_grading_count, p.last_activity_at IS NULL,
-                  p.grade_average IS NULL, p.weighted_grade_average IS NULL)
-                 IS DISTINCT FROM
-                 (v.missing_required_count, v.needs_grading_count, v.last_activity_at IS NULL,
-                  v.grade_average IS NULL, v.weighted_grade_average IS NULL)
-              OR abs(extract(epoch FROM p.last_activity_at - v.last_activity_at)) >= 1
-              OR abs(p.grade_average - v.grade_average) > 0.01
-              OR abs(p.weighted_grade_average - v.weighted_grade_average) > 0.01"#
-    )
-    .fetch_one(pool)
-    .await?;
-    Ok(drift)
-}
-
 /// One learner's `course_progress_v.progress_pct` per course, in one query.
 ///
 /// UX-250: the trail run carries what `learner-state` shows. `started`: any
@@ -1078,10 +994,11 @@ pub async fn resolve_enrol_targets(
 
 /// A digest of one member's stored projection.
 ///
-/// Every `activity_progress` row of the course and the `course_progress` row,
-/// bookkeeping columns left out: the reconciliation compares it before and
-/// after a re-projection to count the members whose projection had drifted
-/// (schema review item 15).
+/// Every `activity_progress` row of the course, bookkeeping columns left out,
+/// and the recorded completion (`enrolments.completed_at`; the course totals
+/// are the view's, nothing stores them): the reconciliation compares it
+/// before and after a re-projection to count the members whose projection had
+/// drifted (schema review item 15).
 pub async fn projection_fingerprint(
     conn: &mut PgConnection,
     course_id: CourseId,
@@ -1094,9 +1011,8 @@ pub async fn projection_fingerprint(
                          FROM activity_progress ap
                          WHERE ap.course_id = $1 AND ap.user_id = $2), '')
                || '|' ||
-               coalesce((SELECT (to_jsonb(cp) - 'id' - 'created_at' - 'updated_at')::text
-                         FROM course_progress cp
-                         WHERE cp.course_id = $1 AND cp.user_id = $2), '')) AS "fingerprint!""#,
+               coalesce((SELECT e.completed_at::text FROM enrolments e
+                         WHERE e.course_id = $1 AND e.user_id = $2), '')) AS "fingerprint!""#,
         course_id.0,
         user_id.0
     )

@@ -551,21 +551,27 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `enrolment_events` row keeps what it reset); the lesson projection and the trail's steps read it. Graded kinds
   complete through their projection: the projector's graded write keeps the row equal to
   `activity_progress.completed_at` in the same transaction (`sync_graded_completion`); no trigger does it.
-- **`course_progress` derives what follows from it** (`20261103030100_course_progress_generated.sql`):
-  `progress_pct` (completed / total, two decimals, numeric rounding) and `certificate_eligible` (every required
-  activity done and `completed_at` set; a leaver's `completed_at` is cleared) are virtual generated columns, never
-  written by the code; the counts are `0 <= completed <= total` and `completed_at` only on a completed course.
 - **A member's course progress is `course_progress_v`** (`20261102071000`, readers since
   `20261116075642_course_progress_readers`, REWRITE 5.8 item 8), computed from enrolments (members only), published
   required activities (graded always; others by `activities.required`; never an assessment restricted away from the
   member), completions and `activity_progress` (needs-grading, last activity, the grade averages weighted by
-  `assessments.weight`). Every reader takes it from the view: learner-state, the trail, the roster, the catalog's
-  progress sort, the archive preview, analytics, the certificate's eligibility and grade. The projector still writes
-  the stored `course_progress` for the previous release and reads it only to notice the completion (the
-  `course_completed` hook pays once); `maintenance:reconcile` logs `view_drift` (`course_progress_view_drift`: members
-  whose counts, percent, flag, `completed_at` or last activity (within a second) or grade averages (within 0.01)
-  differ from the stored row), and the progress tests assert it is 0 on every scenario and on the e2e seed. Left: the
-  projector stops writing the table, then a contract drops it (`just contracts-pending`).
+  `assessments.weight`); `certificate_eligible` is every required activity done, `completed_at` the last of them.
+  Every reader takes it from the view: learner-state, the trail, the roster, the catalog's progress sort, the archive
+  preview, analytics, the certificate's eligibility and grade. Nothing stores the totals.
+- **A course completion is `enrolments.completed_at`** (`20261116075659_enrolment_completion`, REWRITE 5.8 item 10):
+  the projector's recalculation sets it once, to the view's `completed_at`, the first time the member's view row is
+  complete (`ab_db::progress::record_course_completion`), and that transition alone pays `course_completed` (XP, the
+  completion counter, the learning streak). It is never cleared or moved while the enrolment exists: a course that
+  later gains a required activity reads as incomplete in the view and keeps the completion, and completing it again
+  pays nothing; a leave deletes the enrolment and the completion with it. A repair (`backfill`, the weekly
+  `maintenance:reconcile`) records a completion it finds and pays nothing. The column was backfilled from the stored
+  `course_progress.completed_at`, so no completion noticed before it is noticed again. The certificate is issued
+  whenever the view says eligible (idempotent), dated by the view's `completed_at`.
+  `course_progress`, the stored rollup, is the previous release's only (the server neither reads nor writes it):
+  that release writes it and reads its `certificate_eligible` to notice a completion, so two triggers carry a
+  completion across (`course_progress_completion`: a stored completion reaches an empty `enrolments.completed_at`;
+  `enrolments_completion`: a recorded completion marks the stored row complete). Left: the contract dropping the
+  table, the triggers and their functions (`just contracts-pending`).
 - **Projections and rollups are keyed by what they describe** (REWRITE 5.6 n12): `(activity_id, user_id)`,
   `(course_id, user_id)`, `user_id`, `(metric_date, ...)` are the primary keys and they have no `id` column;
   the platform aggregate is `daily_platform_metrics (metric_date)`. `daily_teacher_metrics` keeps its surrogate key

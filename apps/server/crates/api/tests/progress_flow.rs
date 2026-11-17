@@ -241,12 +241,13 @@ async fn trail_runs_steps_and_learner_state(pool: PgPool) {
     // No certification configured → the block stays inert (legacy semantics).
     assert_eq!(done.json()["certificate"]["configured"], false);
     assert_eq!(done.json()["certificate"]["eligible"], false);
-    let eligible: bool =
-        sqlx::query_scalar("SELECT certificate_eligible FROM course_progress WHERE course_id = $1")
-            .bind(uuid::Uuid::parse_str(&course_id).unwrap())
-            .fetch_one(&app.pool)
-            .await
-            .unwrap();
+    let eligible: bool = sqlx::query_scalar(
+        "SELECT certificate_eligible FROM course_progress_v WHERE course_id = $1",
+    )
+    .bind(uuid::Uuid::parse_str(&course_id).unwrap())
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
     assert!(eligible);
 
     // Un-mark one: back to 50%.
@@ -339,7 +340,7 @@ async fn trail_runs_steps_and_learner_state(pool: PgPool) {
         .status,
         StatusCode::FORBIDDEN
     );
-    assert_view_matches_projection(&app.pool).await;
+    assert_completions_recorded(&app.pool).await;
 }
 
 #[ab_testdb::test]
@@ -443,7 +444,7 @@ async fn assessment_submissions_project_into_progress(pool: PgPool) {
     assert_eq!((status.as_str(), passed), ("released", Some(true)));
     assert_eq!(attempts, 1);
     assert_eq!(latest, Some(uuid::Uuid::parse_str(&sub_id).unwrap()));
-    assert_view_matches_projection(&app.pool).await;
+    assert_completions_recorded(&app.pool).await;
 }
 
 /// Drafts never enter the denominator: marking one is a 404, and
@@ -535,7 +536,7 @@ async fn drafts_never_count_and_totals_follow_publishing(pool: PgPool) {
             .await;
         assert_eq!(gone.status, StatusCode::NOT_FOUND, "{}", gone.text());
     }
-    assert_view_matches_projection(&app.pool).await;
+    assert_completions_recorded(&app.pool).await;
 }
 
 /// Studio lifecycle transitions flip the activity like the curriculum
@@ -598,7 +599,7 @@ async fn studio_publish_and_unpublish_follow_into_totals(pool: PgPool) {
         assert_eq!(after["completed_required_count"], 3, "{after}");
         assert_eq!(after["progress_pct"], pct, "{after}");
     }
-    assert_view_matches_projection(&app.pool).await;
+    assert_completions_recorded(&app.pool).await;
 }
 
 /// REWRITE 5.6 n8 step 3: a lesson's `settings.required` is `activities.required`, and flipping it
@@ -621,7 +622,7 @@ async fn a_lessons_required_flag_moves_the_members_totals(pool: PgPool) {
     assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
     let stored = async || {
         sqlx::query_as::<_, (i32, i32)>(
-            "SELECT completed_required_count, total_required_count FROM course_progress
+            "SELECT completed_required_count, total_required_count FROM course_progress_v
              WHERE course_id = $1::uuid",
         )
         .bind(&course_id)
@@ -650,7 +651,7 @@ async fn a_lessons_required_flag_moves_the_members_totals(pool: PgPool) {
         })
         .await;
     }
-    assert_view_matches_projection(&app.pool).await;
+    assert_completions_recorded(&app.pool).await;
 }
 
 /// BUG-161: deleting a chapter cascades its activities, so the learner
@@ -698,7 +699,7 @@ async fn chapter_delete_recalculates_totals(pool: PgPool) {
     assert_eq!(after["progress_pct"], 50.0, "{after}");
     // The pass was owed in the delete's transaction and done inline: its job is gone, not waiting for a worker.
     assert_eq!(progress_jobs(&app.pool).await, 0);
-    assert_view_matches_projection(&app.pool).await;
+    assert_completions_recorded(&app.pool).await;
 }
 
 async fn progress_jobs(pool: &PgPool) -> i64 {
@@ -1211,7 +1212,7 @@ async fn course_recalculation_skips_leavers(pool: PgPool) {
 
     let rewarded = || async {
         let row: (i64, i64, i64) = sqlx::query_as(
-            "SELECT (SELECT count(*) FROM course_progress
+            "SELECT (SELECT count(*) FROM course_progress_v
                      WHERE user_id = $1 AND (completed_at IS NOT NULL OR certificate_eligible)),
                     (SELECT count(*) FROM certificates WHERE user_id = $1),
                     (SELECT count(*) FROM xp_transactions
@@ -1239,7 +1240,7 @@ async fn course_recalculation_skips_leavers(pool: PgPool) {
         .await;
     assert_eq!(deleted.status, StatusCode::NO_CONTENT, "{}", deleted.text());
     assert_eq!(rewarded().await, (0, 0, 0), "after delete");
-    assert_view_matches_projection(&app.pool).await;
+    assert_completions_recorded(&app.pool).await;
 }
 
 /// BUG-269: the concurrent BUG-268. Twelve members who passed 1 of 2
@@ -1316,7 +1317,7 @@ async fn course_recalculation_racing_leaves_skips_the_leavers(pool: PgPool) {
 
     let rewarded = async |member: &MintedSession| {
         sqlx::query_as::<_, (i64, i64, i64)>(
-            "SELECT (SELECT count(*) FROM course_progress
+            "SELECT (SELECT count(*) FROM course_progress_v
                      WHERE user_id = $1 AND (completed_at IS NOT NULL OR certificate_eligible)),
                     (SELECT count(*) FROM certificates WHERE user_id = $1),
                     (SELECT count(*) FROM xp_transactions
@@ -1395,7 +1396,7 @@ async fn course_recalculation_outwaits_a_busy_member(pool: PgPool) {
     assert_eq!(unpublished.status, StatusCode::OK, "{}", unpublished.text());
     for (i, member) in members.iter().enumerate() {
         let complete: bool = sqlx::query_scalar(
-            "SELECT certificate_eligible FROM course_progress
+            "SELECT certificate_eligible FROM course_progress_v
              WHERE user_id = $1 AND course_id = $2::uuid",
         )
         .bind(member.user_id.0)
@@ -1457,7 +1458,7 @@ async fn unpublish_dropped_under_a_member_lock_still_recalculates(pool: PgPool) 
     let progress = async || {
         sqlx::query_as::<_, (i32, i32, bool)>(
             "SELECT completed_required_count, total_required_count, certificate_eligible
-             FROM course_progress WHERE user_id = $1 AND course_id = $2::uuid",
+             FROM course_progress_v WHERE user_id = $1 AND course_id = $2::uuid",
         )
         .bind(alice.user_id.0)
         .bind(&course_id)
@@ -1641,7 +1642,7 @@ async fn rejoin_reprojects_what_changed_while_away(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(certs, 1, "the rejoined member was not certified");
-    assert_view_matches_projection(&app.pool).await;
+    assert_completions_recorded(&app.pool).await;
 }
 
 /// BUG-276 / UX-187: a learner who passed and left reads as not enrolled,
@@ -1682,21 +1683,18 @@ async fn a_leaver_is_issued_no_certificate(pool: PgPool) {
         .await
         .json();
     assert_eq!(state["enrollment_state"], "not_enrolled", "{state}");
-    // The leave drops the completion even with no lesson to un-mark.
-    let completed: (bool, bool) = sqlx::query_as(
-        "SELECT certificate_eligible, completed_at IS NOT NULL FROM course_progress
-         WHERE user_id = $1 AND course_id = $2::uuid",
+    // The leave drops the completion even with no lesson to un-mark: the
+    // enrolment holding it is gone, and the view has no row for a leaver.
+    let completed: i64 = sqlx::query_scalar(
+        "SELECT (SELECT count(*) FROM enrolments WHERE user_id = $1 AND course_id = $2::uuid)
+                + (SELECT count(*) FROM course_progress_v WHERE user_id = $1 AND course_id = $2::uuid)",
     )
     .bind(alice.user_id.0)
     .bind(&course_id)
     .fetch_one(&app.pool)
     .await
     .unwrap();
-    assert_eq!(
-        completed,
-        (false, false),
-        "the leaver still reads completed"
-    );
+    assert_eq!(completed, 0, "the leaver still reads completed");
     let created = app
         .post_as(
             &teacher,
@@ -1738,7 +1736,7 @@ async fn a_leaver_is_issued_no_certificate(pool: PgPool) {
         "{}",
         back.text()
     );
-    assert_view_matches_projection(&app.pool).await;
+    assert_completions_recorded(&app.pool).await;
 }
 
 /// BUG-289: a learner who rejoins by submitting another quiz (no
@@ -1802,7 +1800,7 @@ async fn rejoin_by_submission_reprojects_the_member(pool: PgPool) {
         "{}",
         mine.text()
     );
-    assert_view_matches_projection(&app.pool).await;
+    assert_completions_recorded(&app.pool).await;
 }
 
 /// BUG-291: a learner who joins the staff and leaves it again - removed,
@@ -1905,7 +1903,7 @@ async fn leaving_the_staff_reprojects_the_member(pool: PgPool) {
             mine.text()
         );
     }
-    assert_view_matches_projection(&app.pool).await;
+    assert_completions_recorded(&app.pool).await;
 }
 
 /// BUG-292: a member who joins the course's staff keeps the run but is no
@@ -2142,7 +2140,7 @@ async fn restricted_assessment_is_required_only_of_the_allowlist(pool: PgPool) {
     let gone = app.get_as(&bob, &state_path).await.json();
     assert_eq!(gone["progress"]["total_required_count"], 1, "{gone}");
     assert_eq!(gone["progress"]["progress_pct"], 100.0);
-    assert_view_matches_projection(&app.pool).await;
+    assert_completions_recorded(&app.pool).await;
 }
 
 /// UX-213: dropped from a quiz's allowlist, a learner can no longer take it
@@ -2274,7 +2272,8 @@ async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
         .execute(&pool)
         .await
         .unwrap();
-    sqlx::query("DELETE FROM course_progress")
+    // A migrated learner: no completion recorded.
+    sqlx::query("UPDATE enrolments SET completed_at = NULL")
         .execute(&pool)
         .await
         .unwrap();
@@ -2324,7 +2323,236 @@ async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(certs, 1, "the certificate itself is kept");
-    assert_view_matches_projection(&pool).await;
+    assert_completions_recorded(&pool).await;
+}
+
+/// A member's recorded course completion and what the `course_completed`
+/// hook wrote for it: `enrolments.completed_at` (epoch seconds), the course's
+/// XP rows and the counted completions (REWRITE 5.8 item 10).
+async fn completion_facts(
+    pool: &PgPool,
+    course_id: &str,
+    user: &MintedSession,
+) -> (Option<i64>, i64, i64) {
+    sqlx::query_as(
+        "SELECT (SELECT extract(epoch FROM completed_at)::bigint FROM enrolments
+                  WHERE course_id = $1::uuid AND user_id = $2),
+                (SELECT count(*) FROM xp_transactions
+                  WHERE user_id = $2 AND source = 'course_completion'),
+                (SELECT count(*) FROM gamification_completions
+                  WHERE user_id = $2 AND kind = 'course')",
+    )
+    .bind(course_id)
+    .bind(user.user_id.0)
+    .fetch_one(pool)
+    .await
+    .unwrap()
+}
+
+/// Forget what the hook wrote for the user, as for a learner whose journal
+/// has none (a migrated one): a second `course_completed` would show again.
+async fn forget_completion_journal(pool: &PgPool, user: &MintedSession) {
+    for sql in [
+        "DELETE FROM xp_transactions WHERE user_id = $1",
+        "DELETE FROM gamification_completions WHERE user_id = $1",
+    ] {
+        sqlx::query(sql)
+            .bind(user.user_id.0)
+            .execute(pool)
+            .await
+            .unwrap();
+    }
+}
+
+async fn mark(app: &TestApp, who: &MintedSession, activity_id: &str) {
+    let marked = app
+        .post_as(
+            who,
+            &format!("/api/v2/trail/activities/{activity_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
+}
+
+async fn join(app: &TestApp, who: &MintedSession, course_id: &str) {
+    let joined = app
+        .post_as(
+            who,
+            &format!("/api/v2/trail/courses/{course_id}"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(joined.status, StatusCode::OK, "{}", joined.text());
+}
+
+/// REWRITE 5.8 item 10: the first completion sets `enrolments.completed_at`
+/// and pays `course_completed`; a course that later gains a required lesson
+/// keeps the completion, and completing it again pays nothing.
+#[ab_testdb::test]
+async fn a_course_completion_is_recorded_once_and_kept(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Once 101").await;
+    let a1 = lesson(&app, &teacher, &chapter_id, "Intro").await;
+    let a2 = lesson(&app, &teacher, &chapter_id, "Outro").await;
+    let alice = learner(&app, "alice").await;
+    join(&app, &alice, &course_id).await;
+    mark(&app, &alice, &a1).await;
+    assert_eq!(completion_facts(&pool, &course_id, &alice).await.0, None);
+    mark(&app, &alice, &a2).await;
+    let (completed_at, xp, counted) = completion_facts(&pool, &course_id, &alice).await;
+    assert!(completed_at.is_some());
+    assert_eq!((xp, counted), (1, 1), "the first completion pays");
+
+    // The course gains a required lesson: no longer complete, still completed.
+    let a3 = lesson(&app, &teacher, &chapter_id, "Encore").await;
+    let state = app
+        .get_as(
+            &alice,
+            &format!("/api/v2/courses/{course_id}/learner-state"),
+        )
+        .await
+        .json();
+    assert_eq!(state["progress"]["missing_required_count"], 1, "{state}");
+    assert_eq!(
+        completion_facts(&pool, &course_id, &alice).await.0,
+        completed_at
+    );
+
+    forget_completion_journal(&pool, &alice).await;
+    mark(&app, &alice, &a3).await;
+    assert_eq!(
+        completion_facts(&pool, &course_id, &alice).await,
+        (completed_at, 0, 0),
+        "completing the course again is no new completion"
+    );
+    assert_completions_recorded(&pool).await;
+}
+
+/// REWRITE 5.8 item 10: the switch backfills `enrolments.completed_at` from
+/// the stored `course_progress.completed_at`, so a completion the previous
+/// release noticed is never noticed again: a recalculation of the completed
+/// member pays nothing.
+#[ab_testdb::test]
+async fn a_backfilled_completion_pays_nothing(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Backfill 101").await;
+    let a1 = lesson(&app, &teacher, &chapter_id, "Only").await;
+    let alice = learner(&app, "alice").await;
+    join(&app, &alice, &course_id).await;
+    mark(&app, &alice, &a1).await;
+    // The database before the switch: the previous release stored the
+    // completion in its rollup, the enrolment had no column for it.
+    let stored: i64 = sqlx::query_scalar(
+        "UPDATE course_progress SET completed_at = now() - interval '3 days'
+          WHERE user_id = $1 RETURNING extract(epoch FROM completed_at)::bigint",
+    )
+    .bind(alice.user_id.0)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    sqlx::query("UPDATE enrolments SET completed_at = NULL")
+        .execute(&pool)
+        .await
+        .unwrap();
+    forget_completion_journal(&pool, &alice).await;
+    // The migration's backfill (20261116075659_enrolment_completion).
+    sqlx::query(
+        "UPDATE enrolments e SET completed_at = p.completed_at
+           FROM course_progress p
+          WHERE p.course_id = e.course_id AND p.user_id = e.user_id AND p.completed_at IS NOT NULL",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    mark(&app, &alice, &a1).await;
+    ab_domain::progress::ProgressProjector::new(pool.clone())
+        .recalculate_course_for_all(ab_core::id::CourseId(
+            uuid::Uuid::parse_str(&course_id).unwrap(),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        completion_facts(&pool, &course_id, &alice).await,
+        (Some(stored), 0, 0),
+        "a past completion paid again"
+    );
+}
+
+/// REWRITE 5.8 item 10, the switch release beside the previous one (the
+/// rollback image): a completion either release notices is noticed once.
+/// The previous release writes `course_progress` and reads its
+/// `certificate_eligible` to notice the transition; this release writes
+/// `enrolments.completed_at` alone, and a trigger on each side carries it.
+#[ab_testdb::test]
+async fn either_release_notices_a_completion_once(pool: PgPool) {
+    let app = TestApp::spawn(pool.clone()).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, chapter_id) = public_course(&app, &teacher, "Two releases").await;
+    let a1 = lesson(&app, &teacher, &chapter_id, "Only").await;
+    let alice = learner(&app, "alice").await;
+    let bob = learner(&app, "bob").await;
+    join(&app, &alice, &course_id).await;
+    join(&app, &bob, &course_id).await;
+
+    // The previous release completes alice: her completion row and its
+    // rollup upsert (`upsert_course_progress`), which pays the hook there.
+    sqlx::query("INSERT INTO completions (activity_id, user_id) VALUES ($1::uuid, $2)")
+        .bind(&a1)
+        .bind(alice.user_id.0)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO course_progress
+             (course_id, user_id, completed_required_count, total_required_count,
+              grade_average, weighted_grade_average, missing_required_count,
+              needs_grading_count, last_activity_at, completed_at)
+         VALUES ($1::uuid, $2, 1, 1, NULL, NULL, 0, 0, now(), now())
+         ON CONFLICT (course_id, user_id) DO UPDATE SET
+             completed_required_count = EXCLUDED.completed_required_count,
+             total_required_count = EXCLUDED.total_required_count,
+             missing_required_count = EXCLUDED.missing_required_count,
+             last_activity_at = EXCLUDED.last_activity_at,
+             completed_at = EXCLUDED.completed_at",
+    )
+    .bind(&course_id)
+    .bind(alice.user_id.0)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let (recorded, ..) = completion_facts(&pool, &course_id, &alice).await;
+    assert!(
+        recorded.is_some(),
+        "the previous release's completion is recorded"
+    );
+    // This release (rolled forward) re-projects her: no transition, no pay.
+    mark(&app, &alice, &a1).await;
+    assert_eq!(
+        completion_facts(&pool, &course_id, &alice).await,
+        (recorded, 0, 0)
+    );
+
+    // This release completes bob and pays; the previous release (rolled
+    // back) reads his stored rollup as completed, so it sees no transition.
+    mark(&app, &bob, &a1).await;
+    let (bob_at, xp, counted) = completion_facts(&pool, &course_id, &bob).await;
+    assert!(bob_at.is_some());
+    assert_eq!((xp, counted), (1, 1));
+    let stored_completed: bool = sqlx::query_scalar(
+        "SELECT certificate_eligible FROM course_progress
+          WHERE course_id = $1::uuid AND user_id = $2",
+    )
+    .bind(&course_id)
+    .bind(bob.user_id.0)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(stored_completed, "the previous release would pay bob again");
+    assert_completions_recorded(&pool).await;
 }
 
 /// REWRITE 5.8 item 8: readers take a member's progress from
@@ -2601,32 +2829,22 @@ async fn learner_state_reads_each_learners_extended_due_date(pool: PgPool) {
     assert_eq!(activity(&alices, &task_activity)["due_at_unix"], task_due);
 }
 
-/// REWRITE 5.6 n8 step 4: `course_progress_v` (computed from enrolments and
-/// completions) says what the stored projection says for every member -
-/// `course_progress_view_drift` is 0. Called at the end of the scenarios.
-async fn assert_view_matches_projection(pool: &PgPool) {
-    let differing: Vec<(String, String)> = sqlx::query_as(
-        "SELECT row_to_json(v)::text, coalesce(row_to_json(p)::text, 'none')
+/// REWRITE 5.8 item 10: every member whose `course_progress_v` row is
+/// complete has their completion recorded (`enrolments.completed_at`, set by
+/// the projector that noticed it). Called at the end of the scenarios.
+async fn assert_completions_recorded(pool: &PgPool) {
+    let unrecorded: Vec<String> = sqlx::query_scalar(
+        "SELECT row_to_json(v)::text
          FROM course_progress_v v
-         LEFT JOIN (SELECT course_id, user_id, total_required_count, completed_required_count,
-                           progress_pct, certificate_eligible, completed_at
-                    FROM course_progress) p USING (course_id, user_id)
-         WHERE (p.total_required_count, p.completed_required_count, p.progress_pct,
-                p.certificate_eligible, p.completed_at IS NULL)
-               IS DISTINCT FROM
-               (v.total_required_count, v.completed_required_count, v.progress_pct,
-                v.certificate_eligible, v.completed_at IS NULL)
-            OR abs(extract(epoch FROM p.completed_at - v.completed_at)) >= 1",
+         JOIN enrolments e USING (course_id, user_id)
+         WHERE v.certificate_eligible AND e.completed_at IS NULL",
     )
     .fetch_all(pool)
     .await
     .unwrap();
-    assert!(differing.is_empty(), "view vs projection: {differing:#?}");
-    assert_eq!(
-        ab_db::progress::course_progress_view_drift(pool)
-            .await
-            .unwrap(),
-        0
+    assert!(
+        unrecorded.is_empty(),
+        "completions not recorded: {unrecorded:#?}"
     );
 }
 
@@ -2660,7 +2878,7 @@ async fn membership_is_the_enrolment_not_the_trail(pool: PgPool) {
     };
     let counts = || async {
         sqlx::query_as::<_, (i32, i32)>(
-            "SELECT completed_required_count, total_required_count FROM course_progress
+            "SELECT completed_required_count, total_required_count FROM course_progress_v
              WHERE user_id = $1",
         )
         .bind(alice.user_id.0)
@@ -2700,7 +2918,7 @@ async fn membership_is_the_enrolment_not_the_trail(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(rows, 0);
-    assert_view_matches_projection(&pool).await;
+    assert_completions_recorded(&pool).await;
 }
 
 /// REWRITE 5.6 n5 (rest): the roster, `GET /trail` and `/enrollments` read
@@ -2816,7 +3034,7 @@ async fn roster_and_trail_read_enrolments(pool: PgPool) {
     assert!(runs[1]["steps"].as_array().unwrap().is_empty());
     let (all, _) = roster(String::new()).await;
     assert_eq!(all, ["carol", "bob", "alice"]);
-    assert_view_matches_projection(&pool).await;
+    assert_completions_recorded(&pool).await;
 }
 
 /// REWRITE 5.6 n8, review item 12: a lesson completion is its `completions`
@@ -2871,7 +3089,7 @@ async fn a_lesson_completion_is_the_completions_row(pool: PgPool) {
     let drift = ab_db::progress::completion_drift(&pool).await.unwrap();
     assert_eq!(drift, 0, "what maintenance:reconcile logs");
     let counts: (i32, i32) = sqlx::query_as(
-        "SELECT completed_required_count, total_required_count FROM course_progress
+        "SELECT completed_required_count, total_required_count FROM course_progress_v
          WHERE user_id = $1",
     )
     .bind(alice.user_id.0)
@@ -2902,7 +3120,7 @@ async fn a_lesson_completion_is_the_completions_row(pool: PgPool) {
     .unwrap();
     let drift = ab_db::progress::completion_drift(&pool).await.unwrap();
     assert_eq!(drift, 1);
-    assert_view_matches_projection(&pool).await;
+    assert_completions_recorded(&pool).await;
 }
 
 /// REWRITE 5.6 n8 step 1: a graded activity's projection writer owns its
@@ -2958,7 +3176,7 @@ async fn graded_writers_own_their_completions(pool: PgPool) {
         .unwrap();
     assert_eq!(completions().await, [(essay_activity, true)]);
     assert_eq!(ab_db::progress::completion_drift(&pool).await.unwrap(), 0);
-    assert_view_matches_projection(&pool).await;
+    assert_completions_recorded(&pool).await;
 }
 
 /// `guest_access` (owner, 2026-11-16): off by default; the author turns it on

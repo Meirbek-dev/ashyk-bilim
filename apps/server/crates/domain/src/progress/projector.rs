@@ -1,8 +1,8 @@
 //! The submission-to-progress projection (legacy `services/progress`).
 //!
 //! Idempotent: every write path calls it after the fact, and the backfill
-//! rebuilds `activity_progress` / `course_progress` from current submission
-//! state. Assessment-backed activities project from `submissions`,
+//! rebuilds `activity_progress` and records a course completion once from
+//! current submission state. Assessment-backed activities project from `submissions`,
 //! file-submission activities from their attempts, everything else from
 //! explicit completions (trail steps).
 
@@ -14,7 +14,7 @@ use ab_core::{Error, Result};
 use ab_db::assessments::AssessmentRow;
 use ab_db::catalog::ActivityRow;
 use ab_db::file_submissions::AttemptRow;
-use ab_db::progress::{ActivityProgressRow, ActivityProgressWrite, CourseProgressWrite};
+use ab_db::progress::{ActivityProgressRow, ActivityProgressWrite};
 use ab_db::submissions::SubmissionRow;
 use sqlx::{PgConnection, PgPool};
 
@@ -76,10 +76,6 @@ fn now_unix() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
-}
-
-fn round2(value: f64) -> f64 {
-    (value * 100.0).round() / 100.0
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -415,48 +411,30 @@ impl ProgressProjector {
 
     /// [`Self::recalculate_course`] on the caller's connection, so a trail
     /// mark / leave commits the aggregate with its step (BUG-221). The hook
-    /// is set when this recalculation completed the course: only that
-    /// transition pays `course_completed`, never a re-read of an old
-    /// completion (a GET, a repair, an ETL-migrated learner). The transition
-    /// is the stored rollup's, which the projector alone still reads (REWRITE
-    /// 5.8 item 8). Touches nothing but `conn`: the hook is the caller's, after
-    /// commit (BUG-235).
+    /// is set when this recalculation completed the course: only the first
+    /// completion, the one that sets `enrolments.completed_at` (REWRITE 5.8
+    /// item 10), pays `course_completed`, never a re-read of an old
+    /// completion (a GET, a repair, an ETL-migrated learner) or a completion
+    /// again after the course gained a required activity. Touches nothing but
+    /// `conn`: the hook is the caller's, after commit (BUG-235).
     pub async fn recalculate_course_on(
         &self,
         conn: &mut PgConnection,
         course_id: CourseId,
         user_id: UserId,
     ) -> Result<AfterCommit> {
-        let was_completed =
-            ab_db::progress::stored_course_completed(&mut *conn, course_id, user_id).await?;
         ab_db::progress::ensure_course_rows(&mut *conn, course_id, user_id).await?;
         ab_db::progress::refresh_required(&mut *conn, course_id, user_id).await?;
-        let mut rows =
-            ab_db::progress::list_course_progress_rows(&mut *conn, course_id, user_id).await?;
-        // BUG-318: an assessment the learner is not allowed to take is not
-        // required of them (access changes re-run this via `after_course_change`).
-        let restricted =
-            ab_db::progress::restricted_activity_ids(&mut *conn, course_id, user_id).await?;
-        for row in &mut rows {
-            row.required &= !restricted.contains(&row.activity_id);
-        }
-        let weights = ab_db::progress::list_assessment_weights(&mut *conn, course_id).await?;
-        let mut write = aggregate_course(course_id, user_id, &rows, &weights);
-        // BUG-276: completion is a member's - a leaver keeps the counts, not
-        // the completion or the certificate (the caller holds the trail lock).
-        if !ab_db::progress::has_trail_run(&mut *conn, course_id, user_id).await? {
-            write.certificate_eligible = false;
-            write.completed_at = None;
-        } else if write.certificate_eligible && write.completed_at.is_none() {
-            write.completed_at = Some(now_unix());
-        }
-        ab_db::progress::upsert_course_progress(&mut *conn, &write).await?;
-        if write.certificate_eligible {
+        // The course's state is `course_progress_v`'s (every required activity
+        // done; BUG-276: a leaver has no row, BUG-318: an assessment restricted
+        // away from the learner is not required of them).
+        let completion =
+            ab_db::progress::record_course_completion(&mut *conn, course_id, user_id).await?;
+        if completion.eligible {
             crate::certifications::issue_for_completion(&mut *conn, course_id, user_id).await?;
         }
         Ok(AfterCommit {
-            course_completed: (write.certificate_eligible && !was_completed)
-                .then_some((user_id, course_id)),
+            course_completed: completion.recorded.then_some((user_id, course_id)),
         })
     }
 
@@ -1108,73 +1086,4 @@ pub(crate) const fn progress_is_completed(row: &ActivityProgressRow) -> bool {
             (row.status, row.passed),
             (ActivityProgressStatus::Completed, _) | (ActivityProgressStatus::Released, Some(true))
         )
-}
-
-/// Legacy `recalculate_course_progress` arithmetic over the required rows
-/// (`rows` is the published set - `list_course_progress_rows` filters).
-pub(crate) fn aggregate_course(
-    course_id: CourseId,
-    user_id: UserId,
-    rows: &[ActivityProgressRow],
-    weights: &[ab_db::progress::ActivityWeightRow],
-) -> CourseProgressWrite {
-    let required: Vec<&ActivityProgressRow> = rows.iter().filter(|r| r.required).collect();
-    let total = required.len();
-    let completed = required.iter().filter(|r| progress_is_completed(r)).count();
-    let scored: Vec<f64> = required.iter().filter_map(|r| r.score).collect();
-    let needs_grading = required
-        .iter()
-        .filter(|r| r.teacher_action_required)
-        .count();
-    let last_activity_at = required.iter().filter_map(|r| r.last_activity_at).max();
-    let all_completed = total > 0 && completed >= total;
-    // The course completion needs a time (the stored flag reads it): rows
-    // completed by status alone (a released pass without a stamp) fall back
-    // to the last activity.
-    let completed_at = if all_completed {
-        required
-            .iter()
-            .filter_map(|r| r.completed_at)
-            .max()
-            .or(last_activity_at)
-    } else {
-        None
-    };
-    let (mut numerator, mut denominator) = (0.0, 0.0);
-    for row in &required {
-        let Some(score) = row.score else { continue };
-        let weight = weights
-            .iter()
-            .find(|w| w.activity_id == row.activity_id)
-            .map_or(1.0, |w| w.weight);
-        if weight <= 0.0 {
-            continue;
-        }
-        numerator = score.mul_add(weight, numerator);
-        denominator += weight;
-    }
-    let count = |n: usize| i32::try_from(n).unwrap_or(i32::MAX);
-    #[allow(clippy::cast_precision_loss)]
-    let grade_average = if scored.is_empty() {
-        None
-    } else {
-        Some(round2(scored.iter().sum::<f64>() / scored.len() as f64))
-    };
-    CourseProgressWrite {
-        course_id,
-        user_id,
-        completed_required_count: count(completed),
-        total_required_count: count(total),
-        grade_average,
-        // BUG-208: inf/inf is NaN → JSON null; skip the average instead.
-        weighted_grade_average: (denominator > 0.0)
-            .then(|| numerator / denominator)
-            .filter(|avg| avg.is_finite())
-            .map(round2),
-        missing_required_count: count(total.saturating_sub(completed)),
-        needs_grading_count: count(needs_grading),
-        last_activity_at,
-        completed_at,
-        certificate_eligible: all_completed,
-    }
 }

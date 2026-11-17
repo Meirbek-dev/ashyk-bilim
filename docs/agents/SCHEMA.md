@@ -1625,6 +1625,7 @@ Projection: a learner's totals in a course (counts, percentage, grade averages, 
 - Check `course_progress_completed_at_check`: `CHECK (((completed_at IS NULL) OR ((total_required_count > 0) AND (completed_required_count >= total_required_count))))`
 - Check `course_progress_counts_check`: `CHECK (((completed_required_count >= 0) AND (completed_required_count <= total_required_count)))`
 - Index `course_progress_user_idx`: `CREATE INDEX course_progress_user_idx ON learning.course_progress USING btree (user_id)`
+- Trigger `course_progress_completion`: `CREATE TRIGGER course_progress_completion AFTER INSERT OR UPDATE OF completed_at ON learning.course_progress FOR EACH ROW WHEN ((new.completed_at IS NOT NULL)) EXECUTE FUNCTION course_progress_completion()`
 
 ## course_progress_v (view)
 
@@ -1993,16 +1994,18 @@ One join or leave of a course, appended by enrol/unenrol. Survives the course; e
 
 Course membership (a learner joined or was enrolled). The course's staff are never members, even with a row: readers add NOT is_course_staff(course_id, user_id).
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| course_id | uuid |  |  |
-| user_id | uuid |  |  |
-| enrolled_at | timestamp with time zone |  | `now()` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| course_id | uuid |  |  |  |
+| user_id | uuid |  |  |  |
+| enrolled_at | timestamp with time zone |  | `now()` |  |
+| completed_at | timestamp with time zone | null |  | When the member first completed the course (course_progress_v); set once by the projector, never cleared. |
 
 - Primary key `enrolments_pkey`: `PRIMARY KEY (course_id, user_id)`
 - Foreign key `enrolments_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `enrolments_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Index `enrolments_user_idx`: `CREATE INDEX enrolments_user_idx ON learning.enrolments USING btree (user_id)`
+- Trigger `enrolments_completion`: `CREATE TRIGGER enrolments_completion AFTER UPDATE OF completed_at ON learning.enrolments FOR EACH ROW WHEN (((old.completed_at IS NULL) AND (new.completed_at IS NOT NULL))) EXECUTE FUNCTION enrolments_completion()`
 
 ## file_submission_files
 

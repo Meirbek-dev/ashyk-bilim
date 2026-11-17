@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH v AS (\n               SELECT certificate_eligible, completed_at FROM course_progress_v\n                WHERE course_id = $1 AND user_id = $2),\n           recorded AS (\n               UPDATE enrolments e SET completed_at = coalesce(v.completed_at, now())\n                 FROM v\n                WHERE e.course_id = $1 AND e.user_id = $2 AND e.completed_at IS NULL\n                  AND v.certificate_eligible\n            RETURNING 1)\n           SELECT coalesce((SELECT certificate_eligible FROM v), false) AS \"eligible!\",\n                  EXISTS (SELECT 1 FROM recorded) AS \"recorded!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "eligible!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "recorded!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "2bfee8c6b522cbdd58bcdc5b0e84fad0032b6721348311853bd85b5b150cebe3"
+}

@@ -1798,6 +1798,16 @@ AS $function$
                OR (v ? 'emoji' AND (jsonb_typeof(v -> 'emoji') IS DISTINCT FROM 'string'
                                     OR char_length(v ->> 'emoji') > 16)))
 $function$
+function CREATE OR REPLACE FUNCTION public.course_progress_completion()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    UPDATE enrolments SET completed_at = NEW.completed_at
+     WHERE course_id = NEW.course_id AND user_id = NEW.user_id AND completed_at IS NULL;
+    RETURN NULL;
+END $function$
 function CREATE OR REPLACE FUNCTION public.course_shared_with(p_course uuid, p_viewer uuid, p_archived boolean)
  RETURNS boolean
  LANGUAGE sql
@@ -1868,6 +1878,31 @@ AS $function$
        AND (SELECT count(DISTINCT v ->> 'group') FROM jsonb_array_elements(strata) AS s (v))
            = jsonb_array_length(strata)
 $function$
+function CREATE OR REPLACE FUNCTION public.enrolments_completion()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    INSERT INTO course_progress (course_id, user_id, total_required_count, completed_required_count,
+                                 missing_required_count, needs_grading_count, last_activity_at, grade_average,
+                                 weighted_grade_average, completed_at)
+    SELECT v.course_id, v.user_id, greatest(v.total_required_count, 1), greatest(v.total_required_count, 1),
+           0, v.needs_grading_count, v.last_activity_at, v.grade_average, v.weighted_grade_average,
+           NEW.completed_at
+      FROM course_progress_v v
+     WHERE v.course_id = NEW.course_id AND v.user_id = NEW.user_id
+    ON CONFLICT (course_id, user_id) DO UPDATE SET
+        total_required_count = EXCLUDED.total_required_count,
+        completed_required_count = EXCLUDED.completed_required_count,
+        missing_required_count = 0,
+        needs_grading_count = EXCLUDED.needs_grading_count,
+        last_activity_at = EXCLUDED.last_activity_at,
+        grade_average = EXCLUDED.grade_average,
+        weighted_grade_average = EXCLUDED.weighted_grade_average,
+        completed_at = EXCLUDED.completed_at;
+    RETURN NULL;
+END $function$
 function CREATE OR REPLACE FUNCTION public.ensure_app_search_path()
  RETURNS text
  LANGUAGE plpgsql
@@ -3601,6 +3636,7 @@ table learning.enrolment_events event text NOT NULL DEFAULT -
 table learning.enrolment_events id uuid NOT NULL DEFAULT uuidv7()
 table learning.enrolment_events source text NOT NULL DEFAULT -
 table learning.enrolment_events user_id uuid NOT NULL DEFAULT -
+table learning.enrolments completed_at timestamp with time zone DEFAULT -
 table learning.enrolments course_id uuid NOT NULL DEFAULT -
 table learning.enrolments enrolled_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.enrolments user_id uuid NOT NULL DEFAULT -
@@ -3821,12 +3857,14 @@ trigger CREATE TRIGGER course_concepts_touch BEFORE UPDATE ON learning.course_co
 trigger CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id, deleted_at ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()
 trigger CREATE TRIGGER course_discussions_touch BEFORE UPDATE ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION touch_row('version', 'status', 'content')
 trigger CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF content ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION post_uploads_sync()
+trigger CREATE TRIGGER course_progress_completion AFTER INSERT OR UPDATE OF completed_at ON learning.course_progress FOR EACH ROW WHEN ((new.completed_at IS NOT NULL)) EXECUTE FUNCTION course_progress_completion()
 trigger CREATE TRIGGER course_progress_touch BEFORE UPDATE ON learning.course_progress FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER course_staff_touch BEFORE UPDATE ON core.course_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER course_updates_touch BEFORE UPDATE ON core.course_updates FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER courses_touch BEFORE UPDATE ON core.courses FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_image_key, thumbnail_video_key ON core.courses FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_image_key', 'thumbnail_image_upload_id', 'thumbnail_video_key', 'thumbnail_video_upload_id')
 trigger CREATE TRIGGER discussion_reactions_recount AFTER INSERT OR DELETE OR UPDATE ON core.discussion_reactions FOR EACH ROW EXECUTE FUNCTION discussion_reactions_recount()
+trigger CREATE TRIGGER enrolments_completion AFTER UPDATE OF completed_at ON learning.enrolments FOR EACH ROW WHEN (((old.completed_at IS NULL) AND (new.completed_at IS NOT NULL))) EXECUTE FUNCTION enrolments_completion()
 trigger CREATE TRIGGER file_submissions_touch BEFORE UPDATE ON learning.file_submissions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER gamification_profiles_touch BEFORE UPDATE ON learning.gamification_profiles FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER grading_entries_append_only BEFORE DELETE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_no_delete()

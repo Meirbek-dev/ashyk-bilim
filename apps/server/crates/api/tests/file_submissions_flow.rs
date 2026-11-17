@@ -1693,7 +1693,7 @@ async fn a_grade_for_a_leaver_issues_no_certificate(pool: PgPool) {
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
     assert_eq!(published.json()["final_score"], 91.0);
     let (completed, certificates): (i64, i64) = sqlx::query_as(
-        "SELECT (SELECT count(*) FROM course_progress
+        "SELECT (SELECT count(*) FROM course_progress_v
                  WHERE user_id = $1 AND (completed_at IS NOT NULL OR certificate_eligible)),
                 (SELECT count(*) FROM certificates WHERE user_id = $1)",
     )

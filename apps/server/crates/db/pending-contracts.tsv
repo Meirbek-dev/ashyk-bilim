@@ -8,7 +8,6 @@ column	users.email_verified	owner Q-2026-11-02-1, then resolve-email-verified in
 trigger	activities_required_from_settings	activity settings move into the typed body	REWRITE 5.6 n8 step 3
 column	blocks.legacy_uuid	an admin rewrite of the lesson links to block ids	REWRITE 5
 column	users.zitadel_user_id	phase 4 (Zitadel removed)	REWRITE 5.1
-table	course_progress	four weekly zero-drift runs, then readers move to course_progress_v	REWRITE 5.6 n8 step 4-5
 column	submissions.items_snapshot	the release after the readers moved to assessment_versions (20261108000200); re-run the 20261102020600 backfill first	REWRITE 5.6 n16 "Versions as the record"
 column	submissions.policy_snapshot	the release after the readers moved to assessment_versions (20261108000200)	REWRITE 5.6 n16 "Versions as the record"
 column	submissions.violations	the release after the readers moved to submission_violation_log (20261108000200); record_violation stops writing it	ARCHITECTURE §8 "History stays"
@@ -19,4 +18,8 @@ column	discussion_posts.dislikes_count	the release after reads counted on read (
 column	discussion_posts.replies_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
 column	daily_teacher_metrics.id	the release after the platform rollup moved to daily_platform_metrics (20261108000500): delete the NULL-teacher rows, teacher_id NOT NULL, (metric_date, teacher_id) the primary key	schema review 2026-11-08 item 16
 constraint	daily_teacher_metrics_metric_date_teacher_user_id_key	the same contract as daily_teacher_metrics.id	schema review 2026-11-08 item 16
-table	course_progress	the release after readers moved to course_progress_v (20261116075642): first the projector stops writing it (it notices the completion from the certificate or an event instead), then a contract drops it with projection_fingerprint's and the drift's reads and renames the view to course_progress	REWRITE 5.6 n8 step 5
+table	course_progress	the release after 20261116075659 (the server neither reads nor writes it; the previous release does)	REWRITE 5.8 item 10 "Course completion"
+trigger	course_progress_completion	the same contract as course_progress (a completion the previous release stores reaches enrolments.completed_at)	REWRITE 5.8 item 10 "Course completion"
+trigger	enrolments_completion	the same contract as course_progress (a recorded completion marks the previous release's row complete)	REWRITE 5.8 item 10 "Course completion"
+function	course_progress_completion	the same contract as course_progress	REWRITE 5.8 item 10 "Course completion"
+function	enrolments_completion	the same contract as course_progress	REWRITE 5.8 item 10 "Course completion"

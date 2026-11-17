@@ -718,10 +718,11 @@ in the order it can be done, each step a forward migration on the current schema
       on the same rule at every recalculation, which removed the one known source of drift.
       Done 2026-11-16 without the month of zero drift (owner's decision, 5.8 item 8): every reader takes the
       view (`20261116075642`), which now also reads `activity_progress` (score, needs-grading, last activity),
-      while the projector still writes the table; `maintenance:reconcile` compares both.
-   5. Then the projector stops writing `course_progress`; a contract drops the table and renames the view
-      to `course_progress`. `activity_progress` stays a table (score, attempts, lateness are its own facts
-      until 5.6 n6 folds submissions into `attempts`).
+      while the projector kept writing the table and `maintenance:reconcile` compared both until step 5.
+   5. The projector stopped writing `course_progress` (5.8 item 10, `20261116075659`): a member's completion is
+      `enrolments.completed_at`, the totals are the view's. Left: the contract dropping the table. The view keeps
+      its name `course_progress_v` (5.8 item 10 says why). `activity_progress` stays a table (score, attempts,
+      lateness are its own facts until 5.6 n6 folds submissions into `attempts`).
    Gamification: compute the totals from the journals in the leaderboard query (an index on
    `xp_transactions (user_id)` already exists), dropping the counters, under the same month-of-zero rule.
 9. **Settings and translations** (item 17). Four mechanisms today: `platforms` columns + `description_kk/_en`,
@@ -1069,16 +1070,11 @@ Queue, in order:
    - Progress: switched in `20261116075642_course_progress_readers`. The view gained what readers still took from
      the stored table (missing and needs-grading counts, the last activity, the grade averages weighted by
      `assessments.weight`), and every reader moved to it: learner-state, the trail, the roster, the catalog's
-     progress sort, the archive preview, analytics, the certificate's eligibility and grade. The projector still
-     writes `course_progress` for the previous release and reads it only to notice a completion (the hook pays
-     once); `view_drift` compares the new columns too. Left (5.6 n8 step 5): a release that stops writing the table,
-     with the completion transition read from something else, then the contract dropping it and renaming the
-     view. Not a small change: nothing else records every course completion. A certificate exists only for a
-     course with a template, no analytics event marks one, and `gamification_completions` holds only those the
-     hook counted, so the release needs a new completion record, backfilled from `course_progress.completed_at` (else every past completion
-     reads as new and fires `course_completed`, which pays the XP and counts the completion of a learner whose
-     journal has none, such as a migrated one), and `maintenance:reconcile` loses its drift and fingerprint over
-     the table. It waits for its own slice.
+     progress sort, the archive preview, analytics, the certificate's eligibility and grade. The projector kept
+     writing `course_progress` for the previous release and reading it to notice a completion. Stopping that
+     needed a completion record (nothing else records every course completion: a certificate exists only for a
+     course with a template, no analytics event marks one, `gamification_completions` holds only those the hook
+     counted), which item 10 added as `enrolments.completed_at`.
    - Points as the record (n16): not done here, bigger than one slice (queued as item 10, 2026-11-18). What one release could carry is in already: the
      server writes each entry's points (item 7). The rest moves every grade the platform stores and shows. The
      grader does not count the version's points: an item scores its `max_score` share of 100 (`item_points`, the
@@ -1150,9 +1146,28 @@ Queue, in order:
      - Constraint and index names keep the old column names (a name nobody reads; renaming them is a lock per
        object).
 10. **After the queue** (owner decisions 2026-11-18), in this order, each a switch release and its contract:
-    - *Course completion*: `enrolments.completed_at`, backfilled from `course_progress.completed_at`, set once by
-      the projector (the completion signal: a past completion never pays again); the contract drops `course_progress`.
-      A completion stays when a course later gains a required activity, as today.
+    - *Course completion*: switched in `20261116075659_enrolment_completion`. `enrolments.completed_at` (backfilled
+      from `course_progress.completed_at`, so a past completion never pays again) is set once by the projector, to
+      the view's `completed_at`, the first time the member's `course_progress_v` row is complete; that transition
+      alone fires `course_completed` (XP, the completion counter, the learning streak). The certificate is issued
+      whenever the view says eligible, as before (idempotent). A completion stays when the course later gains a
+      required activity: the view reads incomplete, the column keeps the date and completing again pays nothing.
+      What "as today" meant: the stored `course_progress.completed_at` was cleared then (its check allows it only
+      on a complete row) and set again on re-completion, which fired the hook again; the hook paid once anyway for
+      a learner whose journal held the completion (XP by `source_uuid`, the counter by `gamification_completions`),
+      and an issued certificate stays. A leave deletes the enrolment, the completion with it (as the stored
+      column was cleared for a leaver). A repair (`backfill`, `maintenance:reconcile`) records a completion and
+      pays nothing, as before; the reconcile's `view_drift` is gone (nothing stored to compare) and its fingerprint
+      covers `activity_progress` and `enrolments.completed_at`. The server neither reads nor writes
+      `course_progress`. The previous release (the rollback image) writes it and reads its `certificate_eligible`
+      to notice a completion, so two triggers carry a completion between the releases: `course_progress_completion`
+      (a completion it stores fills an empty `enrolments.completed_at`: rolled forward, this release does not pay
+      it again) and `enrolments_completion` (a completion this release records marks the stored row complete, its
+      counts made equal and the rest from the view: rolled back, the previous release sees no transition). The
+      stored row's other columns go stale until the previous release re-projects the member; it reads no other.
+      Left: the contract dropping `course_progress`, both triggers and their functions. The view keeps its name:
+      this release reads `course_progress_v`, so a rename in the contract would break it (a rename needs a
+      release that reads the new name first, one more release for a name).
     - *Code language by name*: short slugs (`python`, `cpp`, `java`, ...; the runner image fixes the version) replace
       Judge0's ids everywhere; one data-fix rewrites stored and frozen bodies; the API's `language_id` becomes
       `language`; `AB__CODE__ALLOWED_LANGUAGES` replaces `AB__CODE__ALLOWED_LANGUAGE_IDS` (the old name read for one
