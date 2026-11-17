@@ -131,15 +131,20 @@ async fn user(pool: &PgPool, name: &str) -> Uuid {
     .unwrap()
 }
 
+/// A course named `$1` created by `$2`: its `creator` staff row, as the server writes it.
+const CREATED_COURSE: &str = "WITH c AS (INSERT INTO courses (name) VALUES ($1) RETURNING id),
+     s AS (INSERT INTO course_staff (course_id, user_id, authorship) SELECT id, $2, 'creator' FROM c)
+SELECT id FROM c";
+
 /// User → course → chapter → quiz activity → assessment.
 async fn world(pool: &PgPool) -> World {
     let user = user(pool, "learner").await;
-    let course: Uuid =
-        sqlx::query_scalar("INSERT INTO courses (name, creator_id) VALUES ('c', $1) RETURNING id")
-            .bind(user)
-            .fetch_one(pool)
-            .await
-            .unwrap();
+    let course: Uuid = sqlx::query_scalar(CREATED_COURSE)
+        .bind("c")
+        .bind(user)
+        .fetch_one(pool)
+        .await
+        .unwrap();
     let chapter: Uuid = sqlx::query_scalar(
         "INSERT INTO chapters (course_id, name, created_by) VALUES ($1, 'ch', $2) RETURNING id",
     )
@@ -992,13 +997,11 @@ async fn embeddings_are_half_precision_with_one_index_per_model(pool: PgPool) {
 
 #[ab_testdb::test]
 async fn course_search_walks_the_trigram_index(pool: PgPool) {
-    let creator = user(&pool, "author").await;
     sqlx::query(
-        "INSERT INTO courses (name, description, creator_id, public)
-         SELECT 'Course ' || md5(g::text) || ' базы данных', 'about ' || md5((g * 7)::text), $1, true
+        "INSERT INTO courses (name, description, public)
+         SELECT 'Course ' || md5(g::text) || ' базы данных', 'about ' || md5((g * 7)::text), true
            FROM generate_series(1, 10000) g",
     )
-    .bind(creator)
     .execute(&pool)
     .await
     .unwrap();
@@ -1016,22 +1019,19 @@ async fn course_search_walks_the_trigram_index(pool: PgPool) {
 /// so the trigram index answers it too (first page, newest first, anonymous viewer).
 #[ab_testdb::test]
 async fn listing_filters_walk_the_trigram_indexes(pool: PgPool) {
-    let creator = user(&pool, "author").await;
     sqlx::query(
-        "INSERT INTO courses (name, description, creator_id, public)
-         SELECT 'Course ' || md5(g::text) || ' базы данных', 'about ' || md5((g * 7)::text), $1, true
+        "INSERT INTO courses (name, description, public)
+         SELECT 'Course ' || md5(g::text) || ' базы данных', 'about ' || md5((g * 7)::text), true
            FROM generate_series(1, 10000) g",
     )
-    .bind(creator)
     .execute(&pool)
     .await
     .unwrap();
     sqlx::query(
-        "INSERT INTO collections (name, description, creator_id, public)
-         SELECT 'Collection ' || md5(g::text), 'about ' || md5((g * 7)::text), $1, true
+        "INSERT INTO collections (name, description, public)
+         SELECT 'Collection ' || md5(g::text), 'about ' || md5((g * 7)::text), true
            FROM generate_series(1, 10000) g",
     )
-    .bind(creator)
     .execute(&pool)
     .await
     .unwrap();
@@ -1150,7 +1150,7 @@ async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPoo
         "UPDATE users SET avatar_key = 'k/avatar' WHERE id = $1",
         "UPDATE courses SET thumbnail_image_key = 'k/thumb' WHERE id = $2",
         "UPDATE chapters SET thumbnail_key = 'k/chapter' WHERE course_id = $2",
-        "INSERT INTO collections (name, creator_id, cover_key) VALUES ('col', $1, 'k/cover')",
+        "INSERT INTO collections (name, cover_key) VALUES ('col', 'k/cover')",
         "UPDATE platforms SET logo_key = 'k/logo'",
         "INSERT INTO blocks (activity_id, kind, content)
          VALUES ($3, 'image', '{\"file_key\": \"k/block\"}')",
@@ -2993,20 +2993,12 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("assessment_versions_upload_ids", "derived"),
         ("blocks_upload_ids", "derived"),
         ("chapters_upload_ids", "derived"),
-        (
-            "collections_creator_row",
-            "derived; writers that name only creator_id, a contract drops it",
-        ),
         ("collections_upload_ids", "derived"),
         (
             "course_discussions_recount_replies",
             "derived; reads count on read, a contract drops it",
         ),
         ("course_discussions_upload_ids", "derived"),
-        (
-            "courses_creator_row",
-            "derived; writers that name only creator_id, a contract drops it",
-        ),
         ("courses_upload_ids", "derived"),
         (
             "discussion_reactions_recount",
@@ -3178,15 +3170,11 @@ async fn a_leave_says_who_and_keeps_its_marks(pool: PgPool) {
     assert_eq!(marks[0]["activity_id"], w.activity.to_string());
 }
 
-/// Teaching a course is its roster alone: a `creator_id` without a row gives no role (schema review 27).
+/// Teaching a course is its roster alone: the creator without a row gives no role (schema review 27).
 #[ab_testdb::test]
 async fn has_course_role_reads_the_roster(pool: PgPool) {
     let w = world(&pool).await;
-    let creator: Uuid = sqlx::query_scalar("SELECT creator_id FROM courses WHERE id = $1")
-        .bind(w.course)
-        .fetch_one(&pool)
-        .await
-        .unwrap();
+    let creator = w.user;
     let role = || {
         sqlx::query_scalar::<_, bool>("SELECT has_course_role($1, $2)")
             .bind(w.course)
@@ -3264,6 +3252,7 @@ async fn pending_contracts_name_live_objects(pool: PgPool) {
         let sql = match kind {
             "trigger" => "SELECT EXISTS (SELECT FROM pg_trigger WHERE NOT tgisinternal AND tgname = $1)",
             "constraint" => "SELECT EXISTS (SELECT FROM pg_constraint WHERE conname = $1)",
+            "function" => "SELECT EXISTS (SELECT FROM pg_proc WHERE proname = $1)",
             "table" => "SELECT to_regclass($1) IS NOT NULL",
             "view" => "SELECT EXISTS (SELECT FROM pg_class WHERE oid = to_regclass($1) AND relkind = 'v')",
             "column" => {
@@ -3794,8 +3783,8 @@ async fn a_handed_in_file_reads_its_upload(pool: PgPool) {
 }
 
 /// REWRITE 5.8 item 4, part 3: the creator of a course or a collection is its
-/// staff row with authorship `creator`, one per target. The server no longer
-/// writes `creator_id` (the next contract drops it).
+/// staff row with authorship `creator`, one per target; `creator_id` is gone
+/// (20261116075656).
 #[ab_testdb::test]
 async fn the_creator_is_the_staff_row(pool: PgPool) {
     use ab_core::id::UserId;
@@ -3810,13 +3799,14 @@ async fn the_creator_is_the_staff_row(pool: PgPool) {
             .await
             .unwrap();
     tx.commit().await.unwrap();
-    let written: (Option<Uuid>, Option<Uuid>) = sqlx::query_as(
-        "SELECT (SELECT creator_id FROM courses), (SELECT creator_id FROM collections)",
+    let copies: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM information_schema.columns
+         WHERE table_name IN ('courses', 'collections') AND column_name = 'creator_id'",
     )
     .fetch_one(&pool)
     .await
     .unwrap();
-    assert_eq!(written, (None, None));
+    assert_eq!(copies, 0);
     let read = ab_db::catalog::get_course(&pool, course)
         .await
         .unwrap()
@@ -3827,21 +3817,6 @@ async fn the_creator_is_the_staff_row(pool: PgPool) {
         .unwrap()
         .unwrap();
     assert_eq!(read.creator_id, Some(UserId(owner)));
-
-    // SQL that names only creator_id (tests, psql) gets the row until the contract.
-    let old: Uuid = sqlx::query_scalar(
-        "INSERT INTO collections (name, creator_id) VALUES ('old', $1) RETURNING id",
-    )
-    .bind(other)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    let creator: Option<Uuid> = sqlx::query_scalar("SELECT collection_creator($1)")
-        .bind(old)
-        .fetch_one(&pool)
-        .await
-        .unwrap();
-    assert_eq!(creator, Some(other));
 
     // One creator per course.
     let second = sqlx::query(
@@ -4123,24 +4098,31 @@ async fn a_code_run_is_a_status_and_a_verdict(pool: PgPool) {
         ("failed".into(), None, "failed".into())
     );
 
-    // The previous release wrote the verdict into `status` (`internal_error` for a run that never executed): its
-    // rows read as the same state until the next contract rewrites them.
-    let old = new_run("c").await;
-    sqlx::query("UPDATE code_runs SET status = 'time_limit', verdict = 'time_limit', finished_at = now() WHERE id = $1")
-        .bind(old.0)
-        .execute(&pool)
-        .await
-        .unwrap();
-    assert_eq!(stored(old).await.2, "done");
-    let failed = new_run("d").await;
-    sqlx::query(
-        "UPDATE code_runs SET status = 'internal_error', finished_at = now() WHERE id = $1",
-    )
-    .bind(failed.0)
-    .execute(&pool)
-    .await
-    .unwrap();
-    assert_eq!(stored(failed).await.2, "failed");
+    // The verdict spelling of `status` is gone (20261116075657), and only a run that executed has a verdict.
+    for (status, verdict) in [
+        ("time_limit", Some("time_limit")),
+        ("internal_error", None),
+        ("failed", Some("internal_error")),
+        ("degraded", Some("accepted")),
+    ] {
+        let bad = sqlx::query("UPDATE code_runs SET status = $2, verdict = $3 WHERE id = $1")
+            .bind(never.0)
+            .bind(status)
+            .bind(verdict)
+            .execute(&pool)
+            .await;
+        assert!(bad.is_err(), "{status} / {verdict:?} is refused");
+    }
+    // `code_run_status()` stays for the previous release, which reads through it: every state reads as itself.
+    for status in ["queued", "running", "degraded"] {
+        sqlx::query("UPDATE code_runs SET status = $2, verdict = NULL WHERE id = $1")
+            .bind(never.0)
+            .bind(status)
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert_eq!(stored(never).await, (status.into(), None, status.into()));
+    }
     let bad = sqlx::query("UPDATE code_runs SET verdict = 'degraded' WHERE id = $1")
         .bind(never.0)
         .execute(&pool)

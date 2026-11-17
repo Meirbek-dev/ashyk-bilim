@@ -37,11 +37,9 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ("assessments", "created_by", "users", ACTOR),
     ("bulk_actions", "performed_by", "users", ACTOR),
     ("chapters", "created_by", "users", ACTOR),
-    ("collections", "creator_id", "users", ACTOR),
     ("discussion_posts", "user_id", "users", ACTOR),
     ("course_updates", "created_by", "users", ACTOR),
     ("courses", "archived_by", "users", ACTOR),
-    ("courses", "creator_id", "users", ACTOR),
     ("courses", "deleted_by", "users", ACTOR),
     ("grading_entries", "graded_by", "users", ACTOR),
     (

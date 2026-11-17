@@ -51,7 +51,9 @@ async fn world(pool: PgPool) -> World {
     let learner = user(&app, "learner", &["user"]).await;
     let other_learner = user(&app, "learner2", &["user"]).await;
     let course: Uuid = sqlx::query_scalar(
-        "INSERT INTO courses (name, creator_id, public) VALUES ('Course', $1, true) RETURNING id",
+        "WITH c AS (INSERT INTO courses (name, public) VALUES ('Course', true) RETURNING id),
+              s AS (INSERT INTO course_staff (course_id, user_id, authorship) SELECT id, $1, 'creator' FROM c)
+         SELECT id FROM c",
     )
     .bind(teacher.user_id.0)
     .fetch_one(&pool)

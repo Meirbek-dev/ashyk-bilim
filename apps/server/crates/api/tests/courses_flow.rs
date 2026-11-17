@@ -250,7 +250,7 @@ async fn learnings_round_trip_and_tolerate_legacy_json(pool: PgPool) {
 
     // A migrated draft whose creator was lost is a 404 to anonymous
     // visitors, not a 500 (`course_visible` yields NULL there).
-    sqlx::query("UPDATE courses SET creator_id = NULL WHERE id = $1::uuid")
+    sqlx::query("DELETE FROM course_staff WHERE course_id = $1::uuid AND authorship = 'creator'")
         .bind(&id)
         .execute(&app.pool)
         .await

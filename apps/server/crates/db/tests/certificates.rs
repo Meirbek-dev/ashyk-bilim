@@ -31,7 +31,9 @@ async fn a_certificate_keeps_what_it_was_issued_with(pool: PgPool) {
     let teacher = user(&pool, "Aigerim Teacher").await;
     let learner = user(&pool, "Dana Learner").await;
     let course: Uuid = sqlx::query_scalar(
-        "INSERT INTO courses (name, creator_id) VALUES ('Algebra', $1) RETURNING id",
+        "WITH c AS (INSERT INTO courses (name) VALUES ('Algebra') RETURNING id),
+              s AS (INSERT INTO course_staff (course_id, user_id, authorship) SELECT id, $1, 'creator' FROM c)
+         SELECT id FROM c",
     )
     .bind(teacher)
     .fetch_one(&pool)
@@ -184,7 +186,9 @@ async fn renaming_writers_reissue_without_the_trigger(pool: PgPool) {
     let teacher = user(&pool, "Aigerim Teacher").await;
     let learner = user(&pool, "Dana Learner").await;
     let course: Uuid = sqlx::query_scalar(
-        "INSERT INTO courses (name, creator_id) VALUES ('Algebra', $1) RETURNING id",
+        "WITH c AS (INSERT INTO courses (name) VALUES ('Algebra') RETURNING id),
+              s AS (INSERT INTO course_staff (course_id, user_id, authorship) SELECT id, $1, 'creator' FROM c)
+         SELECT id FROM c",
     )
     .bind(teacher)
     .fetch_one(&pool)

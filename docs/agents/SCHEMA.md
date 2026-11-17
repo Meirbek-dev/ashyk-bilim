@@ -1283,9 +1283,9 @@ A run of learner code in the go-judge runner: a practice run or the graded run o
 - Check `code_runs_finished_check`: `CHECK (((status = ANY (ARRAY['queued'::text, 'running'::text])) OR (finished_at IS NOT NULL)))`
 - Check `code_runs_input_sha256_check`: `CHECK ((octet_length(input_sha256) = 32))`
 - Check `code_runs_purpose_check`: `CHECK ((purpose = ANY (ARRAY['custom'::text, 'visible'::text, 'final'::text, 'reference_check'::text])))`
-- Check `code_runs_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'done'::text, 'failed'::text, 'degraded'::text, 'accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text])))`
+- Check `code_runs_status_check`: `CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'done'::text, 'failed'::text, 'degraded'::text])))`
 - Check `code_runs_verdict_check`: `CHECK ((verdict = ANY (ARRAY['accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text])))`
-- Check `code_runs_verdict_when_done`: `CHECK (((verdict IS NULL) OR (status <> ALL (ARRAY['queued'::text, 'running'::text, 'degraded'::text]))))`
+- Check `code_runs_verdict_when_done`: `CHECK (((verdict IS NULL) OR (status = 'done'::text)))`
 - Index `code_runs_assessment_user_idx`: `CREATE INDEX code_runs_assessment_user_idx ON learning.code_runs USING btree (assessment_id, user_id)`
 - Index `code_runs_created_brin`: `CREATE INDEX code_runs_created_brin ON learning.code_runs USING brin (created_at)`
 - Index `code_runs_item_idx`: `CREATE INDEX code_runs_item_idx ON learning.code_runs USING btree (item_id, user_id, created_at DESC)`
@@ -1341,7 +1341,6 @@ A curated, ordered set of courses shown in the catalog.
 | name | text |  |  |
 | description | text |  | `''::text` |
 | public | boolean |  | `false` |
-| creator_id | uuid | null |  |
 | created_at | timestamp with time zone |  | `now()` |
 | updated_at | timestamp with time zone |  | `now()` |
 | version | integer |  | `1` |
@@ -1350,12 +1349,10 @@ A curated, ordered set of courses shown in the catalog.
 
 - Primary key `collections_pkey`: `PRIMARY KEY (id)`
 - Foreign key `collections_cover_upload_id_fkey`: `FOREIGN KEY (cover_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
-- Foreign key `collections_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
 - Check `collections_description_check`: `CHECK ((char_length(description) <= 5000))`
 - Check `collections_name_check`: `CHECK ((char_length(name) <= 500))`
 - Index `collections_cover_upload_id_idx`: `CREATE INDEX collections_cover_upload_id_idx ON core.collections USING btree (cover_upload_id) WHERE (cover_upload_id IS NOT NULL)`
 - Index `collections_search_trgm_idx`: `CREATE INDEX collections_search_trgm_idx ON core.collections USING gin (search_fold(((name \|\| ' '::text) \|\| description)) gin_trgm_ops)`
-- Trigger `collections_creator_row`: `CREATE TRIGGER collections_creator_row AFTER INSERT ON core.collections FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION collections_creator_row()`
 - Trigger `collections_upload_ids`: `CREATE TRIGGER collections_upload_ids BEFORE INSERT OR UPDATE OF cover_key ON core.collections FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('cover_key', 'cover_upload_id')`
 
 ## completions
@@ -1725,7 +1722,6 @@ A course: catalog card, visibility (public), lifecycle (archived_at) and setting
 | thumbnail_video_key | text | null |  |  |
 | public | boolean |  | `false` |  |
 | open_to_contributors | boolean |  | `false` |  |
-| creator_id | uuid | null |  |  |
 | created_at | timestamp with time zone |  | `now()` |  |
 | updated_at | timestamp with time zone |  | `now()` |  |
 | archived_at | timestamp with time zone | null |  |  |
@@ -1741,7 +1737,6 @@ A course: catalog card, visibility (public), lifecycle (archived_at) and setting
 
 - Primary key `courses_pkey`: `PRIMARY KEY (id)`
 - Foreign key `courses_archived_by_fkey`: `FOREIGN KEY (archived_by) REFERENCES users(id) ON DELETE SET NULL`
-- Foreign key `courses_creator_id_fkey`: `FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `courses_deleted_by_fkey`: `FOREIGN KEY (deleted_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `courses_thumbnail_image_upload_id_fkey`: `FOREIGN KEY (thumbnail_image_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
 - Foreign key `courses_thumbnail_video_upload_id_fkey`: `FOREIGN KEY (thumbnail_video_upload_id) REFERENCES uploads(id) ON DELETE SET NULL`
@@ -1758,7 +1753,6 @@ A course: catalog card, visibility (public), lifecycle (archived_at) and setting
 - Index `courses_search_trgm_idx`: `CREATE INDEX courses_search_trgm_idx ON core.courses USING gin (search_fold(((((name \|\| ' '::text) \|\| description) \|\| ' '::text) \|\| COALESCE(about, ''::text))) gin_trgm_ops)`
 - Index `courses_thumbnail_image_upload_id_idx`: `CREATE INDEX courses_thumbnail_image_upload_id_idx ON core.courses USING btree (thumbnail_image_upload_id) WHERE (thumbnail_image_upload_id IS NOT NULL)`
 - Index `courses_thumbnail_video_upload_id_idx`: `CREATE INDEX courses_thumbnail_video_upload_id_idx ON core.courses USING btree (thumbnail_video_upload_id) WHERE (thumbnail_video_upload_id IS NOT NULL)`
-- Trigger `courses_creator_row`: `CREATE TRIGGER courses_creator_row AFTER INSERT ON core.courses FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION courses_creator_row()`
 - Trigger `courses_upload_ids`: `CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_image_key, thumbnail_video_key ON core.courses FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_image_key', 'thumbnail_image_upload_id', 'thumbnail_video_key', 'thumbnail_video_upload_id')`
 
 ## daily_assessment_metrics

@@ -743,16 +743,15 @@ async fn in_flight_run_keys_answer_409_until_abandoned(pool: PgPool) {
     let retried = app.send(run(&alice, &item_id, Some("k"), &body)).await;
     assert_eq!(retried.status, StatusCode::CREATED, "{}", retried.text());
     assert_ne!(retried.json()["id"], first.json()["id"]);
-    let old: (String, String, Option<String>) = sqlx::query_as(
-        "SELECT code_run_status(status, verdict), status, verdict FROM code_runs WHERE id = $1",
-    )
-    .bind(run_id)
-    .fetch_one(&app.pool)
-    .await
-    .unwrap();
+    let old: (String, Option<String>) =
+        sqlx::query_as("SELECT status, verdict FROM code_runs WHERE id = $1")
+            .bind(run_id)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
     assert_eq!(
         old,
-        ("failed".into(), "failed".into(), None),
+        ("failed".into(), None),
         "the stored status is the run's state"
     );
 }

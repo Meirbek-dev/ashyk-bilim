@@ -430,8 +430,9 @@ async fn course_and_collection_listings_run_every_shape(pool: PgPool) {
         ("Archived C", true, true),
     ] {
         sqlx::query(
-            "INSERT INTO courses (name, description, creator_id, public, archived_at)
-             VALUES ($1, 'about', $2, $3, CASE WHEN $4 THEN now() END)",
+            "WITH c AS (INSERT INTO courses (name, description, public, archived_at)
+                        VALUES ($1, 'about', $3, CASE WHEN $4 THEN now() END) RETURNING id)
+             INSERT INTO course_staff (course_id, user_id, authorship) SELECT id, $2, 'creator' FROM c",
         )
         .bind(name)
         .bind(author)
@@ -442,8 +443,11 @@ async fn course_and_collection_listings_run_every_shape(pool: PgPool) {
         .unwrap();
     }
     let collection: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO collections (name, description, public, creator_id)
-         VALUES ('Data tools', 'SQL R', true, $1) RETURNING id",
+        "WITH c AS (INSERT INTO collections (name, description, public)
+                    VALUES ('Data tools', 'SQL R', true) RETURNING id),
+              s AS (INSERT INTO collection_staff (collection_id, user_id, authorship)
+                    SELECT id, $1, 'creator' FROM c)
+         SELECT id FROM c",
     )
     .bind(author)
     .fetch_one(&pool)

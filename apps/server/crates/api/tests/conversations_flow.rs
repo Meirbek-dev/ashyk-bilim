@@ -45,7 +45,9 @@ async fn user(app: &TestApp, name: &str, roles: &[&str], grants: &[&str]) -> Min
 
 async fn course(pool: &PgPool, creator: UserId) -> Uuid {
     sqlx::query_scalar(
-        "INSERT INTO courses (name, creator_id, public) VALUES ('Course', $1, true) RETURNING id",
+        "WITH c AS (INSERT INTO courses (name, public) VALUES ('Course', true) RETURNING id),
+              s AS (INSERT INTO course_staff (course_id, user_id, authorship) SELECT id, $1, 'creator' FROM c)
+         SELECT id FROM c",
     )
     .bind(creator.0)
     .fetch_one(pool)

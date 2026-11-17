@@ -36,7 +36,9 @@ async fn rollup_prunes_rows_past_the_retention_windows(pool: PgPool) {
     .await
     .unwrap();
     let course: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO courses (name, creator_id) VALUES ('Retention', $1) RETURNING id",
+        "WITH c AS (INSERT INTO courses (name) VALUES ('Retention') RETURNING id),
+              s AS (INSERT INTO course_staff (course_id, user_id, authorship) SELECT id, $1, 'creator' FROM c)
+         SELECT id FROM c",
     )
     .bind(user)
     .fetch_one(&pool)

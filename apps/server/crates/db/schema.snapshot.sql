@@ -576,7 +576,7 @@ constraint code_runs code_runs_passed_not_null NOT NULL passed
 constraint code_runs code_runs_pkey PRIMARY KEY (id)
 constraint code_runs code_runs_purpose_check CHECK ((purpose = ANY (ARRAY['custom'::text, 'visible'::text, 'final'::text, 'reference_check'::text])))
 constraint code_runs code_runs_purpose_not_null NOT NULL purpose
-constraint code_runs code_runs_status_check CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'done'::text, 'failed'::text, 'degraded'::text, 'accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text])))
+constraint code_runs code_runs_status_check CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'done'::text, 'failed'::text, 'degraded'::text])))
 constraint code_runs code_runs_status_not_null NOT NULL status
 constraint code_runs code_runs_submission_id_fkey FOREIGN KEY (submission_id, user_id) REFERENCES submissions(id, user_id) ON DELETE SET NULL (submission_id)
 constraint code_runs code_runs_total_not_null NOT NULL total
@@ -584,7 +584,7 @@ constraint code_runs code_runs_user_id_fkey FOREIGN KEY (user_id) REFERENCES use
 constraint code_runs code_runs_user_id_item_id_purpose_idempotency_key_key UNIQUE (user_id, item_id, purpose, idempotency_key)
 constraint code_runs code_runs_user_id_not_null NOT NULL user_id
 constraint code_runs code_runs_verdict_check CHECK ((verdict = ANY (ARRAY['accepted'::text, 'wrong_answer'::text, 'compile_error'::text, 'runtime_error'::text, 'time_limit'::text, 'internal_error'::text])))
-constraint code_runs code_runs_verdict_when_done CHECK (((verdict IS NULL) OR (status <> ALL (ARRAY['queued'::text, 'running'::text, 'degraded'::text]))))
+constraint code_runs code_runs_verdict_when_done CHECK (((verdict IS NULL) OR (status = 'done'::text)))
 constraint collection_courses collection_courses_collection_id_fkey FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
 constraint collection_courses collection_courses_collection_id_not_null NOT NULL collection_id
 constraint collection_courses collection_courses_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
@@ -608,7 +608,6 @@ constraint collection_staff collection_staff_user_id_not_null NOT NULL user_id
 constraint collection_staff collection_staff_version_not_null NOT NULL version
 constraint collections collections_cover_upload_id_fkey FOREIGN KEY (cover_upload_id) REFERENCES uploads(id) ON DELETE SET NULL
 constraint collections collections_created_at_not_null NOT NULL created_at
-constraint collections collections_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL
 constraint collections collections_description_check CHECK ((char_length(description) <= 5000))
 constraint collections collections_description_not_null NOT NULL description
 constraint collections collections_id_not_null NOT NULL id
@@ -791,7 +790,6 @@ constraint courses courses_about_not_null NOT NULL about
 constraint courses courses_archived_by_fkey FOREIGN KEY (archived_by) REFERENCES users(id) ON DELETE SET NULL
 constraint courses courses_assessments_require_enrollment_not_null NOT NULL assessments_require_enrollment
 constraint courses courses_created_at_not_null NOT NULL created_at
-constraint courses courses_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE SET NULL
 constraint courses courses_deleted_by_check CHECK (((deleted_by IS NULL) OR (deleted_at IS NOT NULL)))
 constraint courses courses_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES users(id) ON DELETE SET NULL
 constraint courses courses_deleted_is_archived CHECK (((deleted_at IS NULL) OR (archived_at IS NOT NULL)))
@@ -1762,17 +1760,6 @@ AS $function$
                    AND c.archived_at IS NULL
                    AND course_visible(c, p_viewer, p_see_all_courses))
 $function$
-function CREATE OR REPLACE FUNCTION public.collections_creator_row()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    INSERT INTO collection_staff (collection_id, user_id, authorship, status)
-    VALUES (NEW.id, NEW.creator_id, 'creator', 'active')
-    ON CONFLICT DO NOTHING;
-    RETURN NULL;
-END $function$
 function CREATE OR REPLACE FUNCTION public.course_creator(p_course uuid)
  RETURNS uuid
  LANGUAGE sql
@@ -1837,17 +1824,6 @@ AS $function$
     SELECT c.deleted_at IS NULL AND (
         c.public OR p_see_all OR course_shared_with(c.id, p_viewer, c.archived_at IS NOT NULL))
 $function$
-function CREATE OR REPLACE FUNCTION public.courses_creator_row()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    INSERT INTO course_staff (course_id, user_id, authorship, status)
-    VALUES (NEW.id, NEW.creator_id, 'creator', 'active')
-    ON CONFLICT DO NOTHING;
-    RETURN NULL;
-END $function$
 function CREATE OR REPLACE FUNCTION public.discussion_image_keys(content text)
  RETURNS SETOF text
  LANGUAGE sql
@@ -3142,7 +3118,6 @@ table core.collection_staff version integer NOT NULL DEFAULT 1
 table core.collections cover_key text DEFAULT -
 table core.collections cover_upload_id uuid DEFAULT -
 table core.collections created_at timestamp with time zone NOT NULL DEFAULT now()
-table core.collections creator_id uuid DEFAULT -
 table core.collections description text NOT NULL DEFAULT ''::text
 table core.collections id uuid NOT NULL DEFAULT uuidv7()
 table core.collections name text NOT NULL DEFAULT -
@@ -3181,7 +3156,6 @@ table core.courses archived_at timestamp with time zone DEFAULT -
 table core.courses archived_by uuid DEFAULT -
 table core.courses assessments_require_enrollment boolean NOT NULL DEFAULT true
 table core.courses created_at timestamp with time zone NOT NULL DEFAULT now()
-table core.courses creator_id uuid DEFAULT -
 table core.courses deleted_at timestamp with time zone DEFAULT -
 table core.courses deleted_by uuid DEFAULT -
 table core.courses description text NOT NULL DEFAULT ''::text
@@ -3845,7 +3819,6 @@ trigger CREATE TRIGGER certifications_touch BEFORE UPDATE ON learning.certificat
 trigger CREATE TRIGGER chapters_touch BEFORE UPDATE ON core.chapters FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER chapters_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_key ON core.chapters FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_key', 'thumbnail_upload_id')
 trigger CREATE TRIGGER collection_staff_touch BEFORE UPDATE ON core.collection_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
-trigger CREATE TRIGGER collections_creator_row AFTER INSERT ON core.collections FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION collections_creator_row()
 trigger CREATE TRIGGER collections_touch BEFORE UPDATE ON core.collections FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER collections_upload_ids BEFORE INSERT OR UPDATE OF cover_key ON core.collections FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('cover_key', 'cover_upload_id')
 trigger CREATE TRIGGER concept_tags_touch BEFORE UPDATE ON learning.concept_tags FOR EACH ROW EXECUTE FUNCTION touch_row()
@@ -3856,7 +3829,6 @@ trigger CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF c
 trigger CREATE TRIGGER course_progress_touch BEFORE UPDATE ON learning.course_progress FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER course_staff_touch BEFORE UPDATE ON core.course_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER course_updates_touch BEFORE UPDATE ON core.course_updates FOR EACH ROW EXECUTE FUNCTION touch_row('version')
-trigger CREATE TRIGGER courses_creator_row AFTER INSERT ON core.courses FOR EACH ROW WHEN ((new.creator_id IS NOT NULL)) EXECUTE FUNCTION courses_creator_row()
 trigger CREATE TRIGGER courses_touch BEFORE UPDATE ON core.courses FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_image_key, thumbnail_video_key ON core.courses FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_image_key', 'thumbnail_image_upload_id', 'thumbnail_video_key', 'thumbnail_video_upload_id')
 trigger CREATE TRIGGER discussion_reactions_recount AFTER INSERT OR DELETE OR UPDATE ON core.discussion_reactions FOR EACH ROW EXECUTE FUNCTION discussion_reactions_recount()

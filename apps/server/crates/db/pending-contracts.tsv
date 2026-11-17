@@ -1,5 +1,5 @@
 # Objects a later release drops (expand/contract, apps/server/AGENTS.md): what, why it waits, where it is explained.
-# Columns: kind (trigger | column | table | view | constraint), object (name or table.column), waits for, doc. Tab-separated.
+# Columns: kind (trigger | column | table | view | constraint | function), object (name or table.column), waits for, doc. Tab-separated.
 # A contract file that drops an object removes its row; `schema_review::pending_contracts_name_live_objects`
 # fails on a row whose object is gone, and `just contracts-pending` prints the list.
 trigger	users_reissue_certificates	the release after 3ba18e76 (writers re-issue themselves)	ARCHITECTURE §8 "A certificate states what was issued"
@@ -19,9 +19,5 @@ column	discussion_posts.dislikes_count	the release after reads counted on read (
 column	discussion_posts.replies_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
 column	daily_teacher_metrics.id	the release after the platform rollup moved to daily_platform_metrics (20261108000500): delete the NULL-teacher rows, teacher_id NOT NULL, (metric_date, teacher_id) the primary key	schema review 2026-11-08 item 16
 constraint	daily_teacher_metrics_metric_date_teacher_user_id_key	the same contract as daily_teacher_metrics.id	schema review 2026-11-08 item 16
-column	courses.creator_id	the contract after the 5.8 contract release (20261116075647), which stopped writing it on insert: creators are the staff rows (20261116075624)	REWRITE 5.8 item 4
-column	collections.creator_id	the contract after the 5.8 contract release (20261116075647), which stopped writing it on insert: creators are the staff rows (20261116075624)	REWRITE 5.8 item 4
-trigger	courses_creator_row	the contract that drops courses.creator_id	REWRITE 5.8 item 4
-trigger	collections_creator_row	the contract that drops collections.creator_id	REWRITE 5.8 item 4
-constraint	code_runs_status_check	the contract after the 5.8 contract release (20261116075650), which writes the run state: data-fix status to code_run_status(status, verdict), check queued/running/done/failed/degraded; drop code_run_status() a release after the server reads status directly	REWRITE 5.8 item 5
 table	course_progress	the release after readers moved to course_progress_v (20261116075642): first the projector stops writing it (it notices the completion from the certificate or an event instead), then a contract drops it with projection_fingerprint's and the drift's reads and renames the view to course_progress	REWRITE 5.6 n8 step 5
+function	code_run_status	the contract after the release that reads code_runs.status directly (20261116075657 made every stored status a state; 55b53d33 still reads through code_run_status())	REWRITE 5.8 item 5

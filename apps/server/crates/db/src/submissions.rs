@@ -1525,8 +1525,7 @@ impl RunEnd {
     }
 }
 
-/// The stored `status` is the run's state (`done`, `failed`, `degraded`); rows the previous release wrote spell it as the
-/// verdict until the next contract rewrites them, so readers go through `code_run_status()`.
+/// The stored `status` is the run's state (`done`, `failed`, `degraded`); `verdict` is how a run that executed ended.
 pub async fn finish_code_run(
     pool: &PgPool,
     id: CodeRunId,
@@ -1561,7 +1560,7 @@ pub async fn get_code_run(pool: &PgPool, id: CodeRunId) -> Result<Option<CodeRun
                   item_id AS "item_id: AssessmentItemId",
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
                   purpose AS "purpose: CodeRunPurpose",
-                  code_run_status(status, verdict) AS "status!: CodeRunStatus",
+                  status AS "status: CodeRunStatus",
                   verdict AS "verdict: RunVerdict", language_id,
                   encode(code_sha256, 'hex') AS "source_sha256!", encode(input_sha256, 'hex') AS stdin_sha256,
                   idempotency_key, passed, total,
@@ -1591,7 +1590,7 @@ pub async fn find_idempotent_run(
                   item_id AS "item_id: AssessmentItemId",
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
                   purpose AS "purpose: CodeRunPurpose",
-                  code_run_status(status, verdict) AS "status!: CodeRunStatus",
+                  status AS "status: CodeRunStatus",
                   verdict AS "verdict: RunVerdict", language_id,
                   encode(code_sha256, 'hex') AS "source_sha256!", encode(input_sha256, 'hex') AS stdin_sha256,
                   idempotency_key, passed, total,
@@ -1634,7 +1633,7 @@ pub async fn latest_final_run(
                   item_id AS "item_id: AssessmentItemId",
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
                   purpose AS "purpose: CodeRunPurpose",
-                  code_run_status(status, verdict) AS "status!: CodeRunStatus",
+                  status AS "status: CodeRunStatus",
                   verdict AS "verdict: RunVerdict", language_id,
                   encode(code_sha256, 'hex') AS "source_sha256!", encode(input_sha256, 'hex') AS stdin_sha256,
                   idempotency_key, passed, total,
@@ -1662,7 +1661,7 @@ pub async fn latest_final_run(
 pub async fn delete_superseded_failed_final_runs(pool: &PgPool) -> Result<u64> {
     let done = sqlx::query!(
         r#"DELETE FROM code_runs r
-           WHERE r.purpose = 'final' AND code_run_status(r.status, r.verdict) IN ('degraded', 'failed')
+           WHERE r.purpose = 'final' AND r.status IN ('degraded', 'failed')
              AND r.idempotency_key IS NULL AND r.submission_id IS NOT NULL
              AND NOT EXISTS (SELECT 1 FROM code_run_cases c WHERE c.run_id = r.id)
              AND EXISTS (SELECT 1 FROM code_runs n
@@ -1678,7 +1677,7 @@ pub async fn delete_superseded_failed_final_runs(pool: &PgPool) -> Result<u64> {
 pub async fn count_superseded_failed_final_runs(pool: &PgPool) -> Result<i64> {
     let n = sqlx::query_scalar!(
         r#"SELECT count(*) AS "n!" FROM code_runs r
-           WHERE r.purpose = 'final' AND code_run_status(r.status, r.verdict) IN ('degraded', 'failed')
+           WHERE r.purpose = 'final' AND r.status IN ('degraded', 'failed')
              AND r.idempotency_key IS NULL AND r.submission_id IS NOT NULL
              AND NOT EXISTS (SELECT 1 FROM code_run_cases c WHERE c.run_id = r.id)
              AND EXISTS (SELECT 1 FROM code_runs n

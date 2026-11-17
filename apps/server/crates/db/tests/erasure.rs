@@ -76,7 +76,6 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("chapters", "created_by", ACTOR),
     ("code_runs", "user_id", RECORD),
     ("collection_staff", "user_id", SETTING),
-    ("collections", "creator_id", ACTOR),
     ("concept_mastery", "user_id", ERASED),
     ("concept_tags", "decided_by", ACTOR),
     ("course_concepts", "decided_by", ACTOR),
@@ -85,7 +84,6 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("course_staff", "user_id", SETTING),
     ("course_updates", "created_by", ACTOR),
     ("courses", "archived_by", ACTOR),
-    ("courses", "creator_id", ACTOR),
     ("courses", "deleted_by", ACTOR),
     ("daily_teacher_metrics", "teacher_id", SETTING),
     ("daily_user_course_progress", "user_id", ERASED),
@@ -165,12 +163,15 @@ async fn erasure_removes_derived_data_and_keeps_the_grade(pool: PgPool) {
     .fetch_one(&pool)
     .await
     .unwrap();
-    let course: Uuid =
-        sqlx::query_scalar("INSERT INTO courses (name, creator_id) VALUES ('c', $1) RETURNING id")
-            .bind(user)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+    let course: Uuid = sqlx::query_scalar(
+        "WITH c AS (INSERT INTO courses (name) VALUES ('c') RETURNING id),
+              s AS (INSERT INTO course_staff (course_id, user_id, authorship) SELECT id, $1, 'creator' FROM c)
+         SELECT id FROM c",
+    )
+    .bind(user)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
     let chapter: Uuid = sqlx::query_scalar(
         "INSERT INTO chapters (course_id, name, created_by) VALUES ($1, 'ch', $2) RETURNING id",
     )

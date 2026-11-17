@@ -17,13 +17,16 @@ async fn scheduled_assessment(pool: &PgPool, title: &str, offset: &str) -> uuid:
     .fetch_one(pool)
     .await
     .unwrap();
-    let course: uuid::Uuid =
-        sqlx::query_scalar("INSERT INTO courses (name, creator_id) VALUES ($1, $2) RETURNING id")
-            .bind(title)
-            .bind(user)
-            .fetch_one(pool)
-            .await
-            .unwrap();
+    let course: uuid::Uuid = sqlx::query_scalar(
+        "WITH c AS (INSERT INTO courses (name) VALUES ($1) RETURNING id),
+              s AS (INSERT INTO course_staff (course_id, user_id, authorship) SELECT id, $2, 'creator' FROM c)
+         SELECT id FROM c",
+    )
+    .bind(title)
+    .bind(user)
+    .fetch_one(pool)
+    .await
+    .unwrap();
     let chapter: uuid::Uuid = sqlx::query_scalar(
         "INSERT INTO chapters (course_id, name, created_by) VALUES ($1, 'c', $2) RETURNING id",
     )

@@ -22,12 +22,15 @@ async fn seed(pool: &PgPool) -> (UserId, CourseId, AssessmentId) {
     .fetch_one(pool)
     .await
     .unwrap();
-    let course: uuid::Uuid =
-        sqlx::query_scalar("INSERT INTO courses (name, creator_id) VALUES ('c', $1) RETURNING id")
-            .bind(user)
-            .fetch_one(pool)
-            .await
-            .unwrap();
+    let course: uuid::Uuid = sqlx::query_scalar(
+        "WITH c AS (INSERT INTO courses (name) VALUES ('c') RETURNING id),
+              s AS (INSERT INTO course_staff (course_id, user_id, authorship) SELECT id, $1, 'creator' FROM c)
+         SELECT id FROM c",
+    )
+    .bind(user)
+    .fetch_one(pool)
+    .await
+    .unwrap();
     let chapter: uuid::Uuid = sqlx::query_scalar(
         "INSERT INTO chapters (course_id, name, created_by) VALUES ($1, 'ch', $2) RETURNING id",
     )

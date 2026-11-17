@@ -100,9 +100,11 @@ const FIXTURE: &str = r"
 INSERT INTO users (zitadel_user_id, username, email)
 SELECT 'plan-' || g, 'plan-' || g, 'plan-' || g || '@plans.test' FROM generate_series(1, 3000) g;
 
-INSERT INTO courses (name, description, creator_id, public)
-SELECT 'Course ' || g || ' algebra', 'Course ' || g, u.id, g % 4 <> 0
-FROM generate_series(1, 60) g JOIN users u ON u.username = 'plan-' || g;
+INSERT INTO courses (name, description, public)
+SELECT 'Course ' || g || ' algebra', 'Course ' || g, g % 4 <> 0 FROM generate_series(1, 60) g;
+
+INSERT INTO course_staff (course_id, user_id, authorship)
+SELECT c.id, u.id, 'creator' FROM courses c JOIN users u ON u.username = 'plan-' || split_part(c.name, ' ', 2);
 
 INSERT INTO chapters (course_id, name, position)
 SELECT c.id, 'Chapter ' || n, n FROM courses c, generate_series(1, 4) n;

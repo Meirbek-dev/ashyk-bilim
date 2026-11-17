@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: CodeRunId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  item_id AS \"item_id: AssessmentItemId\",\n                  submission_id AS \"submission_id: SubmissionId\", user_id AS \"user_id: UserId\",\n                  purpose AS \"purpose: CodeRunPurpose\",\n                  code_run_status(status, verdict) AS \"status!: CodeRunStatus\",\n                  verdict AS \"verdict: RunVerdict\", language_id,\n                  encode(code_sha256, 'hex') AS \"source_sha256!\", encode(input_sha256, 'hex') AS stdin_sha256,\n                  idempotency_key, passed, total,\n                  score::float8 AS \"score?\", compile_output, error_message,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM finished_at))::bigint AS \"finished_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM code_runs\n           WHERE submission_id = $1 AND item_id = $2 AND purpose = 'final'\n           ORDER BY id DESC LIMIT 1",
+  "query": "SELECT id AS \"id: CodeRunId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  item_id AS \"item_id: AssessmentItemId\",\n                  submission_id AS \"submission_id: SubmissionId\", user_id AS \"user_id: UserId\",\n                  purpose AS \"purpose: CodeRunPurpose\",\n                  status AS \"status: CodeRunStatus\",\n                  verdict AS \"verdict: RunVerdict\", language_id,\n                  encode(code_sha256, 'hex') AS \"source_sha256!\", encode(input_sha256, 'hex') AS stdin_sha256,\n                  idempotency_key, passed, total,\n                  score::float8 AS \"score?\", compile_output, error_message,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM finished_at))::bigint AS \"finished_at?\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM code_runs\n           WHERE submission_id = $1 AND item_id = $2 AND purpose = 'final'\n           ORDER BY id DESC LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -71,9 +71,14 @@
       },
       {
         "ordinal": 6,
-        "name": "status!: CodeRunStatus",
+        "name": "status: CodeRunStatus",
         "type_info": "Text",
-        "origin": "Expression"
+        "origin": {
+          "Table": {
+            "table": "code_runs",
+            "name": "status"
+          }
+        }
       },
       {
         "ordinal": 7,
@@ -202,7 +207,7 @@
       true,
       false,
       false,
-      null,
+      false,
       true,
       false,
       null,
@@ -218,5 +223,5 @@
       null
     ]
   },
-  "hash": "173ec318632ed1454466fd8feb8d2d8efd832098d79e22f7ea81e13d0cbb368c"
+  "hash": "b77e8980475fa43a0896d661e57c197e137b5c355d09bca2777c7f4c17937913"
 }

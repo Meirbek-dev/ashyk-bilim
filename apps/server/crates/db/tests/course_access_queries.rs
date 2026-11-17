@@ -16,11 +16,15 @@ async fn user(pool: &PgPool, name: &str) -> Uuid {
 }
 
 async fn course(pool: &PgPool, owner: Uuid) -> Uuid {
-    sqlx::query_scalar("INSERT INTO courses (name, creator_id) VALUES ('access', $1) RETURNING id")
-        .bind(owner)
-        .fetch_one(pool)
-        .await
-        .unwrap()
+    sqlx::query_scalar(
+        "WITH c AS (INSERT INTO courses (name) VALUES ('access') RETURNING id),
+              s AS (INSERT INTO course_staff (course_id, user_id, authorship) SELECT id, $1, 'creator' FROM c)
+         SELECT id FROM c",
+    )
+    .bind(owner)
+    .fetch_one(pool)
+    .await
+    .unwrap()
 }
 
 async fn member(pool: &PgPool, course: Uuid, user: Uuid) -> bool {
