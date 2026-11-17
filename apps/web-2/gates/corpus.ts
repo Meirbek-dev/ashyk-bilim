@@ -23,9 +23,9 @@ const EDITOR_SOURCES: [string, AnyExtension[], string][] = [
       where jsonb_typeof(content->'content') = 'array'`,
   ],
   [
-    'course_discussions.content',
+    'discussion_posts.content',
     discussionSchema(),
-    `select id::text, 'course_discussions.content' as source, content as value from course_discussions`,
+    `select id::text, 'discussion_posts.content' as source, content as value from discussion_posts`,
   ],
 ]
 

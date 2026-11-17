@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH work AS (\n               SELECT u.user_id, a.activity_type <> 'file_submission' AS quiz FROM activities a\n               JOIN assessments s ON s.activity_id = a.id\n               JOIN submissions u ON u.assessment_id = s.id\n               WHERE a.course_id = $1 AND NOT u.preview\n           ), learners AS (\n               SELECT d.user_id FROM (SELECT DISTINCT user_id FROM work OFFSET 0) d\n               WHERE NOT is_course_staff($1, d.user_id)\n           )\n           SELECT (SELECT count(*) FROM learners) AS \"learners!\",\n                  (SELECT count(*) FROM work w JOIN learners l USING (user_id) WHERE w.quiz) AS \"submissions!\",\n                  (SELECT count(*) FROM work w JOIN learners l USING (user_id) WHERE NOT w.quiz)\n                      AS \"file_attempts!\",\n                  (SELECT count(*) FROM certificates cu\n                   JOIN certificate_templates c ON c.id = cu.template_id\n                   WHERE c.course_id = $1) AS \"certificates!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "learners!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "submissions!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "file_attempts!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "certificates!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "abb88b8d2a3c58d7d7150083a96d50e2d477d6361a309445adcaa64e22948f55"
+}

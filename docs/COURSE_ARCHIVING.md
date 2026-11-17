@@ -138,7 +138,7 @@
 | Оценивание (`grading/teacher.rs`, `grading/bulk.rs`) **[P2]** | `save_grade`, `publish_all`, продления дедлайнов, оценка файлов | журнал, экспорт CSV, просмотр работ |
 | Прогресс (`progress/trail.rs`) | запись на курс, выход из курса (удаляет историю), отметки активностей | `GET /trail`, learner-state |
 | Обсуждения (`community/discussions.rs`) | create, update, delete, реакции | чтение |
-| Сертификаты (`certifications`) | create, update, delete настройки | `/me/certificates`, `/certificates/{code}`, PDF, `/courses/{id}/certificates/me` |
+| Сертификаты (`certificate_templates`) | create, update, delete настройки | `/me/certificates`, `/certificates/{code}`, PDF, `/courses/{id}/certificates/me` |
 | Авторы (`catalog/contributors.rs`) **[P3]** | заявка, добавление, смена роли, удаление, отзыв своей заявки | список |
 | Группы (`identity/usergroups.rs`) **[P3]** | привязка и отвязка курса | список |
 | Коллекции (`catalog/collections.rs`) | добавление архивного курса | удаление из коллекции (запись коллекции), существующие связи |

@@ -38,8 +38,8 @@ describe('B-EDT-22 block files stay under /content/', () => {
     expect(framePath('/ab-private/k.pdf?X-Amz-Credential=a%2Fb&X-Amz-Signature=s')).toBe(
       '/ab-private/k.pdf?X-Amz-Credential=a%2Fb&X-Amz-Signature=s',
     )
-    expect(framePath('/api/v2/certifications/c1/preview.pdf?lang=ru')).toBe(
-      '/api/v2/certifications/c1/preview.pdf?lang=ru',
+    expect(framePath('/api/v2/certificate-templates/c1/preview.pdf?lang=ru')).toBe(
+      '/api/v2/certificate-templates/c1/preview.pdf?lang=ru',
     )
     for (const src of [
       '/content/../ab-private/k.html',

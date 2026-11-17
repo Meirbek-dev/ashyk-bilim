@@ -544,7 +544,7 @@ async fn course_scoped_children_follow_their_parent(pool: PgPool) {
     assert!(wrong.is_err(), "course_id must match the assessment's");
     // A reply lives in its post's course.
     let post: Uuid = sqlx::query_scalar(
-        "INSERT INTO course_discussions (course_id, user_id, content) VALUES ($1, $2, 'p') RETURNING id",
+        "INSERT INTO discussion_posts (course_id, user_id, content) VALUES ($1, $2, 'p') RETURNING id",
     )
     .bind(w.course)
     .bind(w.user)
@@ -552,7 +552,7 @@ async fn course_scoped_children_follow_their_parent(pool: PgPool) {
     .await
     .unwrap();
     let reply = sqlx::query(
-        "INSERT INTO course_discussions (course_id, user_id, parent_id, kind, content)
+        "INSERT INTO discussion_posts (course_id, user_id, parent_id, kind, content)
          VALUES ($1, $2, $3, 'reply', 'r')",
     )
     .bind(other)
@@ -562,7 +562,7 @@ async fn course_scoped_children_follow_their_parent(pool: PgPool) {
     .await;
     assert!(reply.is_err(), "a reply must stay in its post's course");
     let no_parent = sqlx::query(
-        "INSERT INTO course_discussions (course_id, user_id, kind, content) VALUES ($1, $2, 'reply', 'r')",
+        "INSERT INTO discussion_posts (course_id, user_id, kind, content) VALUES ($1, $2, 'reply', 'r')",
     )
     .bind(w.course)
     .bind(w.user)
@@ -1159,7 +1159,7 @@ async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPoo
         "UPDATE platforms SET logo_key = 'k/logo'",
         "INSERT INTO blocks (activity_id, block_type, content)
          VALUES ($3, 'image', '{\"file_key\": \"k/block\"}')",
-        "INSERT INTO course_discussions (course_id, user_id, content)
+        "INSERT INTO discussion_posts (course_id, user_id, content)
          VALUES ($2, $1, '{\"type\":\"doc\",\"content\":[{\"type\":\"image\",\"attrs\":
                  {\"src\":\"/content/discussion-image/0123456789abcdef0123456789abcdef\"}}]}')",
     ] {
@@ -1203,7 +1203,7 @@ async fn the_reaper_keeps_referenced_files_whatever_the_counter_says(pool: PgPoo
         .execute(&pool)
         .await
         .unwrap();
-    sqlx::query("UPDATE course_discussions SET content = 'no image'")
+    sqlx::query("UPDATE discussion_posts SET content = 'no image'")
         .execute(&pool)
         .await
         .unwrap();
@@ -2432,9 +2432,9 @@ async fn one_touch_trigger_keeps_updated_at_and_version(pool: PgPool) {
     );
     assert!(t3 > t2);
 
-    // course_discussions: only content and status move the version.
+    // discussion_posts: only content and status move the version.
     let post: Uuid = sqlx::query_scalar(
-        "INSERT INTO course_discussions (course_id, user_id, content) VALUES ($1, $2, 'p') RETURNING id",
+        "INSERT INTO discussion_posts (course_id, user_id, content) VALUES ($1, $2, 'p') RETURNING id",
     )
     .bind(w.course)
     .bind(w.user)
@@ -2450,13 +2450,13 @@ async fn one_touch_trigger_keeps_updated_at_and_version(pool: PgPool) {
         .await
         .unwrap()
     };
-    let v = version("UPDATE course_discussions SET likes_count = likes_count + 1").await;
+    let v = version("UPDATE discussion_posts SET likes_count = likes_count + 1").await;
     assert_eq!(
-        version("UPDATE course_discussions SET content = 'edited'").await,
+        version("UPDATE discussion_posts SET content = 'edited'").await,
         v + 1
     );
     assert_eq!(
-        version("UPDATE course_discussions SET replies_count = 3").await,
+        version("UPDATE discussion_posts SET replies_count = 3").await,
         v + 1
     );
 
@@ -2867,7 +2867,7 @@ async fn deleting_content_is_refused_while_learner_work_exists(pool: PgPool) {
 async fn a_certificate_outlives_its_purged_course(pool: PgPool) {
     let w = world(&pool).await;
     let certification: Uuid = sqlx::query_scalar(
-        "INSERT INTO certifications (course_id, config) VALUES ($1, '{}') RETURNING id",
+        "INSERT INTO certificate_templates (course_id, config) VALUES ($1, '{}') RETURNING id",
     )
     .bind(w.course)
     .fetch_one(&pool)
@@ -2875,7 +2875,7 @@ async fn a_certificate_outlives_its_purged_course(pool: PgPool) {
     .unwrap();
     ab_db::certifications::issue_certificate(
         &pool,
-        ab_core::id::CertificationId(certification),
+        ab_core::id::CertificateTemplateId(certification),
         ab_core::id::UserId(w.user),
         "AAAA-AAAA-AAAA-AAAA",
         None,
@@ -2883,7 +2883,7 @@ async fn a_certificate_outlives_its_purged_course(pool: PgPool) {
     .await
     .unwrap();
     // Without a purge in the way the key itself refuses to lose an issued template.
-    let refused = sqlx::query("DELETE FROM certifications WHERE id = $1")
+    let refused = sqlx::query("DELETE FROM certificate_templates WHERE id = $1")
         .bind(certification)
         .execute(&pool)
         .await;
@@ -2914,7 +2914,7 @@ async fn a_certificate_outlives_its_purged_course(pool: PgPool) {
     assert_eq!(kept.course_id, course);
     let template = ab_db::certifications::get_certification(
         &pool,
-        ab_core::id::CertificationId(certification),
+        ab_core::id::CertificateTemplateId(certification),
     )
     .await
     .unwrap()
@@ -2933,7 +2933,7 @@ async fn children_of_a_course_scoped_parent_bind_the_course(pool: PgPool) {
         // The draft already binds (activity_id, course_id); a correction copies them.
         ("ai_grade_corrections", "ai_grade_drafts"),
         // Issued certificates keep the course id after the template lost its course.
-        ("certificate_users", "certifications"),
+        ("certificates", "certificate_templates"),
         // A notification's course is informational and goes on its own.
         ("notifications", "activities"),
         // A personal message's context is a link; the course and the activity go on their own.
@@ -3350,7 +3350,7 @@ async fn hashes_say_what_they_hold(pool: PgPool) {
     assert_eq!(columns.len(), 13, "{columns:?}");
     let score: String = sqlx::query_scalar(
         "SELECT format_type(atttypid, atttypmod) FROM pg_attribute
-         WHERE attrelid = 'certificate_users'::regclass AND attname = 'score'",
+         WHERE attrelid = 'certificates'::regclass AND attname = 'score'",
     )
     .fetch_one(&pool)
     .await
@@ -3375,6 +3375,7 @@ async fn pending_contracts_name_live_objects(pool: PgPool) {
             "trigger" => "SELECT EXISTS (SELECT FROM pg_trigger WHERE NOT tgisinternal AND tgname = $1)",
             "constraint" => "SELECT EXISTS (SELECT FROM pg_constraint WHERE conname = $1)",
             "table" => "SELECT to_regclass($1) IS NOT NULL",
+            "view" => "SELECT EXISTS (SELECT FROM pg_class WHERE oid = to_regclass($1) AND relkind = 'v')",
             "column" => {
                 "SELECT EXISTS (SELECT FROM pg_attribute WHERE attrelid = to_regclass(split_part($1, '.', 1))
                          AND attname = split_part($1, '.', 2) AND attnum > 0 AND NOT attisdropped)"
@@ -4395,7 +4396,7 @@ async fn a_deletion_is_a_timestamp(pool: PgPool) {
 
     let post = || async {
         sqlx::query_scalar::<_, Uuid>(
-            "INSERT INTO course_discussions (course_id, user_id, content) VALUES ($1, $2, 'p') RETURNING id",
+            "INSERT INTO discussion_posts (course_id, user_id, content) VALUES ($1, $2, 'p') RETURNING id",
         )
         .bind(w.course)
         .bind(w.user)
@@ -4407,7 +4408,7 @@ async fn a_deletion_is_a_timestamp(pool: PgPool) {
         let pool = pool.clone();
         async move {
             sqlx::query_as::<_, (String, bool, i32)>(
-                "SELECT status, deleted_at IS NOT NULL, version FROM course_discussions WHERE id = $1",
+                "SELECT status, deleted_at IS NOT NULL, version FROM discussion_posts WHERE id = $1",
             )
             .bind(id)
             .fetch_one(&pool)
@@ -4416,14 +4417,14 @@ async fn a_deletion_is_a_timestamp(pool: PgPool) {
         }
     };
     let (ours, theirs) = (post().await, post().await);
-    sqlx::query("UPDATE course_discussions SET deleted_at = now(), content = '' WHERE id = $1")
+    sqlx::query("UPDATE discussion_posts SET deleted_at = now(), content = '' WHERE id = $1")
         .bind(ours)
         .execute(&pool)
         .await
         .unwrap();
     assert_eq!(stored(ours).await, ("deleted".into(), true, 2));
     // The previous release tombstones by status.
-    sqlx::query("UPDATE course_discussions SET status = 'deleted', content = '' WHERE id = $1")
+    sqlx::query("UPDATE discussion_posts SET status = 'deleted', content = '' WHERE id = $1")
         .bind(theirs)
         .execute(&pool)
         .await

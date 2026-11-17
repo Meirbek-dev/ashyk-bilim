@@ -54,7 +54,7 @@ an entry that has a consumer).
 | operation | `list_course_assessments` (`GET /courses/{id}/assessments`) | `get_curriculum` + readiness, the gradebook | W-2 (G-07) |
 | operation | `get_file_submission` (`GET /file-submissions/{id}`) | `get_activity_file_submission` | W-2 (G-07) |
 | operation | `get_draft` (`GET /file-submissions/{id}/draft`) | `get_activity_file_submission.current_attempt` | W-2 (G-07) |
-| operation | `get_certification` (`GET /certifications/{id}`) | `list_course_certifications` | W-2 (G-07) |
+| operation | `get_certificate_template` (`GET /certificate-templates/{id}`) | `list_course_certificate_templates` | W-2 (G-07) |
 | operation | `rank` (`GET /gamification/rank`) | `Dashboard.user_rank` | W-2 (G-07) |
 | param | leaderboard `offset` | `cursor` | L-3 |
 | field | `NextAction.href`, `NextAction.label` | `course_id` / `activity_id` + client routes | L-3 |

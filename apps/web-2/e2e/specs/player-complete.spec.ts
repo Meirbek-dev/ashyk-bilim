@@ -1,5 +1,5 @@
 import { m } from '#/paraglide/messages'
-import { createCertification } from '#/shared/api/gen/sdk.gen'
+import { createCertificateTemplate } from '#/shared/api/gen/sdk.gen'
 
 import { expect as baseExpect, test } from '../fixtures/learning'
 
@@ -19,7 +19,12 @@ test('B-PLY-14 B-PLY-16 a course finished before its certificate was set up issu
   await learner.enroll(course, 1)
   const { name, value } = seed.accounts.teacher.cookie
   const headers = { cookie: `${name}=${value}` }
-  await createCertification({ client: api, body: { course_id: course.id, config: {} }, headers, throwOnError: true })
+  await createCertificateTemplate({
+    client: api,
+    body: { course_id: course.id, config: {} },
+    headers,
+    throwOnError: true,
+  })
   await learner.signIn()
   await page.goto(`/learn/${course.id}/complete`)
 

@@ -44,7 +44,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ("bulk_actions", "performed_by", "users", ACTOR),
     ("chapters", "creator_id", "users", ACTOR),
     ("collections", "creator_id", "users", ACTOR),
-    ("course_discussions", "user_id", "users", ACTOR),
+    ("discussion_posts", "user_id", "users", ACTOR),
     ("course_updates", "author_id", "users", ACTOR),
     ("courses", "archived_by", "users", ACTOR),
     ("courses", "creator_id", "users", ACTOR),

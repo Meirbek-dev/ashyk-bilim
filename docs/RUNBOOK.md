@@ -79,7 +79,7 @@ BEGIN;
 -- the person's work (grading_entries, item_feedback and the file rows of a file hand-in go with the submissions)
 DELETE FROM code_runs WHERE user_id = :'uid';
 DELETE FROM submissions WHERE user_id = :'uid';
-DELETE FROM certificate_users WHERE user_id = :'uid';
+DELETE FROM certificates WHERE user_id = :'uid';
 DELETE FROM trail_legacy_marks WHERE user_id = :'uid';
 DELETE FROM activity_progress WHERE user_id = :'uid';
 DELETE FROM course_progress WHERE user_id = :'uid';

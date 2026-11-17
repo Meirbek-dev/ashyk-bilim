@@ -1180,7 +1180,7 @@ async fn course_recalculation_skips_leavers(pool: PgPool) {
     let created = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
         )
         .await;
@@ -1213,7 +1213,7 @@ async fn course_recalculation_skips_leavers(pool: PgPool) {
         let row: (i64, i64, i64) = sqlx::query_as(
             "SELECT (SELECT count(*) FROM course_progress
                      WHERE user_id = $1 AND (completed_at IS NOT NULL OR certificate_eligible)),
-                    (SELECT count(*) FROM certificate_users WHERE user_id = $1),
+                    (SELECT count(*) FROM certificates WHERE user_id = $1),
                     (SELECT count(*) FROM xp_transactions
                      WHERE user_id = $1 AND source = 'course_completion')",
         )
@@ -1256,7 +1256,7 @@ async fn course_recalculation_racing_leaves_skips_the_leavers(pool: PgPool) {
     let created = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
         )
         .await;
@@ -1318,7 +1318,7 @@ async fn course_recalculation_racing_leaves_skips_the_leavers(pool: PgPool) {
         sqlx::query_as::<_, (i64, i64, i64)>(
             "SELECT (SELECT count(*) FROM course_progress
                      WHERE user_id = $1 AND (completed_at IS NOT NULL OR certificate_eligible)),
-                    (SELECT count(*) FROM certificate_users WHERE user_id = $1),
+                    (SELECT count(*) FROM certificates WHERE user_id = $1),
                     (SELECT count(*) FROM xp_transactions
                      WHERE user_id = $1 AND source = 'course_completion')",
         )
@@ -1588,7 +1588,7 @@ async fn rejoin_reprojects_what_changed_while_away(pool: PgPool) {
     let created = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
         )
         .await;
@@ -1635,12 +1635,11 @@ async fn rejoin_reprojects_what_changed_while_away(pool: PgPool) {
     );
     assert_eq!(state["progress"]["completed_required_count"], 2, "{state}");
     assert_eq!(state["progress"]["total_required_count"], 2, "{state}");
-    let certs: i64 =
-        sqlx::query_scalar("SELECT count(*) FROM certificate_users WHERE user_id = $1")
-            .bind(bob.user_id.0)
-            .fetch_one(&app.pool)
-            .await
-            .unwrap();
+    let certs: i64 = sqlx::query_scalar("SELECT count(*) FROM certificates WHERE user_id = $1")
+        .bind(bob.user_id.0)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
     assert_eq!(certs, 1, "the rejoined member was not certified");
     assert_view_matches_projection(&app.pool).await;
 }
@@ -1701,7 +1700,7 @@ async fn a_leaver_is_issued_no_certificate(pool: PgPool) {
     let created = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
         )
         .await;
@@ -1752,7 +1751,7 @@ async fn rejoin_by_submission_reprojects_the_member(pool: PgPool) {
     let created = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
         )
         .await;
@@ -1818,7 +1817,7 @@ async fn leaving_the_staff_reprojects_the_member(pool: PgPool) {
     let created = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
         )
         .await;
@@ -2248,7 +2247,7 @@ async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
     let created = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
         )
         .await;
@@ -2320,7 +2319,7 @@ async fn backfill_projects_migrated_trail_steps_without_xp(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(xp, 0, "a repair pays no XP");
-    let certs: i64 = sqlx::query_scalar("SELECT count(*) FROM certificate_users")
+    let certs: i64 = sqlx::query_scalar("SELECT count(*) FROM certificates")
         .fetch_one(&pool)
         .await
         .unwrap();

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM discussion_posts p\n               WHERE p.id = $1 AND p.deleted_at IS NOT NULL\n                 AND NOT EXISTS (SELECT 1 FROM discussion_posts c WHERE c.parent_id = p.id)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3e588866ea7df3eb40a78868f5cd23efbb2da454bd962aa4d34a4788aed6a6d8"
+}

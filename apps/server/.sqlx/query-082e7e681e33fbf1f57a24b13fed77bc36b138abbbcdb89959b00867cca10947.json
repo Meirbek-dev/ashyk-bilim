@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE discussion_posts\n           SET content = COALESCE($2, content),\n               -- `deleted` is the tombstone's timestamp, the status keeps the moderation.\n               status = CASE WHEN $3 = 'deleted' THEN status ELSE COALESCE($3, status) END,\n               deleted_at = CASE WHEN $3 = 'deleted' THEN COALESCE(deleted_at, now()) ELSE deleted_at END\n           WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "082e7e681e33fbf1f57a24b13fed77bc36b138abbbcdb89959b00867cca10947"
+}

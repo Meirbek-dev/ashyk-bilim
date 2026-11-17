@@ -425,7 +425,7 @@ One migration set for the database `ashyq`. Rules:
 - **Learner work outlives content.** `RESTRICT` keys refuse deleting an assessment, file task or course under an
   attempt. Retention purges only courses without learner work (`course_has_learner_work`); the rest wait for
   `ashyq admin purge-course`, which writes a JSON archive first. A certificate carries its own `course_id` and survives
-  the purge with its template (`certifications.course_id` NULL).
+  the purge with its template (`certificate_templates.course_id` NULL).
 - **A row cannot point at someone else's work.** Composite keys bind code runs, progress, AI drafts and remediation to
   the attempt's owner; `(parent, course_id)` keys bind course-scoped children (`children_of_a_course_scoped_parent_bind_the_course`).
 - **Grades are numbered.** `grading_entries.revision` counts per attempt: the server writes the highest plus one
@@ -482,7 +482,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   extra change is `graded_by` becoming NULL (its `ON DELETE SET NULL`), so a grader can be erased by hand
   (`20261102000100_ledger_grader_erasure.sql`); naming another grader is refused.
 - **A certificate states what was issued** (`20261102000200_certificates_freeze_issued.sql`): issuing stores the
-  holder's name, course and certificate names, the signing instructor and the course grade on `certificate_users`
+  holder's name, course and certificate names, the signing instructor and the course grade on `certificates`
   (a BEFORE INSERT trigger fills them, so no insert path can skip it); verification, the PDF and the profile read
   them, never the live course. The row is otherwise immutable, except `holder_name`: a change of the person's
   `display_name` re-issues (`reissued_at`), which is also how erasure blanks it. The writers that rename
@@ -522,7 +522,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   award's `previous_level` / `triggered_level_up` come from `xp_transactions_v` (the levels, `xp_level()`, of the
   user's XP before and after the row in journal order; filter the view by `user_id`); a test's `passed` is
   `verdict = 'accepted'` or a custom-input run; a feedback row's grader is its grade entry's `graded_by`; frozen rows
-  (`item_feedback`, `certificate_users`) have no `updated_at` the server reads; a handed-in file's key, type and size
+  (`item_feedback`, `certificates`) have no `updated_at` the server reads; a handed-in file's key, type and size
   are its `uploads` row's (`file_submission_files` stores the upload id, the display name, position and scan
   status). The stored copies stay for the previous release, filled by insert triggers, until a contract drops them
   (`just contracts-pending`). The media `*_key` columns are still the record beside their `*_upload_id`: keys from

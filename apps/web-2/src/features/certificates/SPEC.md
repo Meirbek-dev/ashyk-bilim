@@ -1,6 +1,6 @@
 # certificates
 
-Операции: verifyCertificate, certificatePdf, certificationPreviewPdf
+Операции: verifyCertificate, certificatePdf, certificateTemplatePreviewPdf
 
 ## Поведение
 

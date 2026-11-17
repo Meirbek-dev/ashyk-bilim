@@ -1,6 +1,6 @@
 # course-studio
 
-Операции: listCourses, createCourse, getCourse, updateCourse, courseLifecycle, courseReadiness, courseArchivePreview, courseDeletionPreview, getCurriculum, createChapter, updateChapter, deleteChapter, moveChapter, createActivity, createAssessment, createFileSubmission, getActivity, updateActivity, deleteActivity, moveActivity, createBlock, groupsForCourse, listGroups, addGroupCourses, removeGroupCourses, addContributor, updateContributor, removeContributor, createCourseUpdate, editCourseUpdate, deleteCourseUpdate, listCourseCertifications, createCertification, updateCertification, deleteCertification, listCourseLearners, enrollCourseLearners, removeCourseLearner, deleteCourse
+Операции: listCourses, createCourse, getCourse, updateCourse, courseLifecycle, courseReadiness, courseArchivePreview, courseDeletionPreview, getCurriculum, createChapter, updateChapter, deleteChapter, moveChapter, createActivity, createAssessment, createFileSubmission, getActivity, updateActivity, deleteActivity, moveActivity, createBlock, groupsForCourse, listGroups, addGroupCourses, removeGroupCourses, addContributor, updateContributor, removeContributor, createCourseUpdate, editCourseUpdate, deleteCourseUpdate, listCourseCertificateTemplates, createCertificateTemplate, updateCertificateTemplate, deleteCertificateTemplate, listCourseLearners, enrollCourseLearners, removeCourseLearner, deleteCourse
 
 Рабочее место курса `/teach/courses/$courseId/{overview,content,learners,team,settings,publish}` и студия
 активности `/teach/courses/$courseId/activities/$activityId/{edit,settings}`. Вкладки `gradebook`,
@@ -92,7 +92,7 @@
   (учащиеся, работы, работы с файлом, сертификаты, чьи коды перестанут работать; совет архивировать) и обязательный флажок «Я понимаю…»; `acknowledge_learner_work=true` уходит только с ним. Нули - как B-CST-36.
 - B-CST-53 409 `course-has-learner-work` (работы пришли после предпросмотра): текст ошибки, предпросмотр читается заново.
 - B-CST-37 Секция «Сертификат»: «Предпросмотр PDF» показывает во фрейме того же источника образец, напечатанный
-  сервером (`GET /certifications/{id}/preview.pdf?lang=` языка интерфейса); сохранённая правка перерисовывает его.
+  сервером (`GET /certificate-templates/{id}/preview.pdf?lang=` языка интерфейса); сохранённая правка перерисовывает его.
 - B-CST-38 Удаление курса, главы, сертификата и объявления уходит с `If-Match: version`; 412 - текст в окне подтверждения.
 - B-CST-39 `learners`, «Добавить учащихся» (при `manage_contributors`, курс не в архиве): почта или имена пользователей
   с уже созданной учётной записью - вставкой (строки, запятые, точки с запятой, табуляция) или из CSV (UTF-8 или

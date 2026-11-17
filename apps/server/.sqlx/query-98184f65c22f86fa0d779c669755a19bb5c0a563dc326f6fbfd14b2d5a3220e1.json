@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE discussion_posts SET deleted_at = now(), content = '', user_id = NULL\n               WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "98184f65c22f86fa0d779c669755a19bb5c0a563dc326f6fbfd14b2d5a3220e1"
+}

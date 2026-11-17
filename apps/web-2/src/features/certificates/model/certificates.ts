@@ -2,8 +2,8 @@ import { m } from '#/paraglide/messages'
 import { client } from '#/shared/api/gen/client.gen'
 import type {
   CertificatePdfData,
-  CertificationConfig,
-  CertificationPreviewPdfData,
+  CertificateTemplateConfig,
+  CertificateTemplatePreviewPdfData,
   CertificationType,
   UiLanguage,
 } from '#/shared/api/gen/types.gen'
@@ -26,9 +26,9 @@ export const certificatePdfHref = (code: string, lang: UiLanguage): string =>
  * so the frame's `src` is its URL, in the interface language (`?lang=`, the browser's `Accept-Language` may differ).
  */
 export const certificationPreviewHref = (certificationId: string, lang: UiLanguage): string =>
-  client.buildUrl<CertificationPreviewPdfData>({
-    url: '/api/v2/certifications/{certification_id}/preview.pdf',
-    path: { certification_id: certificationId },
+  client.buildUrl<CertificateTemplatePreviewPdfData>({
+    url: '/api/v2/certificate-templates/{template_id}/preview.pdf',
+    path: { template_id: certificationId },
     query: { lang },
     baseUrl: '',
   })
@@ -47,7 +47,7 @@ const typeLabels: Record<CertificationType, () => string> = {
 }
 
 /** The certificate as its PDF names it: the author's name and the type, each left out when unset. */
-export function certificateKind(config: CertificationConfig, courseName?: string): string {
+export function certificateKind(config: CertificateTemplateConfig, courseName?: string): string {
   const own = config.certification_name?.trim()
   // Next to its course a name that only repeats the course's is left out ("Python · Python course" reads twice).
   const name = own && own.toLowerCase() === courseName?.trim().toLowerCase() ? '' : own

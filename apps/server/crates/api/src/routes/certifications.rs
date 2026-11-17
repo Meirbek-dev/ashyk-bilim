@@ -1,7 +1,7 @@
-//! Certification templates (course authors) and issued certificates
+//! CertificateTemplate templates (course authors) and issued certificates
 //! (learners), plus public verification by code.
 
-use ab_core::id::{CertificationId, CourseId};
+use ab_core::id::{CertificateTemplateId, CourseId};
 use ab_core::language::Language;
 use axum::Json;
 use axum::extract::State;
@@ -9,8 +9,8 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 
 use crate::dto::certifications::{
-    Certification, CreateCertificationRequest, IssuedCertificate, UpdateCertificationRequest,
-    VerifiedCertificate,
+    CertificateTemplate, CreateCertificateTemplateRequest, IssuedCertificate,
+    UpdateCertificateTemplateRequest, VerifiedCertificate,
 };
 use crate::error::{ApiResult, Problem};
 use crate::extract::{
@@ -23,16 +23,16 @@ use ab_db::versions::Versioned;
 /// Add a certification template to a course (`certificate:create`).
 /// Honours `Idempotency-Key`.
 #[utoipa::path(
-    post, path = "/certifications", tag = "certifications",
+    post, path = "/certificate-templates", tag = "certificates",
     params(("Idempotency-Key" = Option<String>, Header, description = "Retry-safe replay key")),
-    request_body = CreateCertificationRequest,
+    request_body = CreateCertificateTemplateRequest,
     responses(
-        (status = 201, description = "Created", body = Certification),
+        (status = 201, description = "Created", body = CertificateTemplate),
         (status = 403, description = "No certificate authoring on this course", body = Problem,
          content_type = "application/problem+json"),
     )
 )]
-pub async fn create_certification(
+pub async fn create_certificate_template(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     headers: HeaderMap,
@@ -40,7 +40,7 @@ pub async fn create_certification(
 ) -> ApiResult<Response> {
     // UX-311: permission before the body.
     state.certifications.require_some_create(&actor).await?;
-    let request = ValidJson::<CreateCertificationRequest>::parse(&body)?;
+    let request = ValidJson::<CreateCertificateTemplateRequest>::parse(&body)?;
     idempotent(
         state.pool.clone(),
         actor.user_id,
@@ -56,7 +56,10 @@ pub async fn create_certification(
                 .certifications
                 .allowed_actions_for(&actor, created.course_id)
                 .await?;
-            Ok((StatusCode::CREATED, Certification::new(created, actions)))
+            Ok((
+                StatusCode::CREATED,
+                CertificateTemplate::new(created, actions),
+            ))
         },
     )
     .await
@@ -64,50 +67,50 @@ pub async fn create_certification(
 
 /// One template (course-scoped `certificate:read`).
 #[utoipa::path(
-    get, path = "/certifications/{certification_id}", tag = "certifications",
-    params(("certification_id" = CertificationId, Path, description = "Certification id")),
-    responses((status = 200, description = "Certification", body = Certification,
+    get, path = "/certificate-templates/{template_id}", tag = "certificates",
+    params(("template_id" = CertificateTemplateId, Path, description = "Certificate template id")),
+    responses((status = 200, description = "Certificate template", body = CertificateTemplate,
                headers(("ETag" = String, description = "Quoted `version`")))),
 )]
-pub async fn get_certification(
+pub async fn get_certificate_template(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    Path(id): Path<CertificationId>,
+    Path(id): Path<CertificateTemplateId>,
 ) -> ApiResult<Response> {
     let row = state.certifications.get(&actor, id).await?;
     let actions = state
         .certifications
         .allowed_actions_for(&actor, row.course_id)
         .await?;
-    let body = Certification::new(row, actions);
+    let body = CertificateTemplate::new(row, actions);
     Ok(with_etag(StatusCode::OK, body.version, body))
 }
 
 /// Replace the template document.
 #[utoipa::path(
-    patch, path = "/certifications/{certification_id}", tag = "certifications",
+    patch, path = "/certificate-templates/{template_id}", tag = "certificates",
     params(
-        ("certification_id" = CertificationId, Path, description = "Certification id"),
+        ("template_id" = CertificateTemplateId, Path, description = "Certificate template id"),
         ("If-Match" = Option<i32>, Header, description = "Current `version`; stale → 412"),
     ),
-    request_body = UpdateCertificationRequest,
+    request_body = UpdateCertificateTemplateRequest,
     responses(
-        (status = 200, description = "Updated", body = Certification,
+        (status = 200, description = "Updated", body = CertificateTemplate,
          headers(("ETag" = String, description = "Quoted new version"))),
         (status = 412, description = "Stale `If-Match`", body = Problem,
          content_type = "application/problem+json"),
     ),
 )]
-pub async fn update_certification(
+pub async fn update_certificate_template(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    Path(id): Path<CertificationId>,
+    Path(id): Path<CertificateTemplateId>,
     headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> ApiResult<Response> {
     // UX-311: permission before the body.
     state.certifications.require_updatable(&actor, id).await?;
-    let request = ValidJson::<UpdateCertificationRequest>::parse(&body)?;
+    let request = ValidJson::<UpdateCertificateTemplateRequest>::parse(&body)?;
     require_if_match(&state.pool, Versioned::Certification(id), &headers).await?;
     let row = state
         .certifications
@@ -117,7 +120,7 @@ pub async fn update_certification(
         .certifications
         .allowed_actions_for(&actor, row.course_id)
         .await?;
-    let body = Certification::new(row, actions);
+    let body = CertificateTemplate::new(row, actions);
     Ok(with_etag(StatusCode::OK, body.version, body))
 }
 
@@ -126,9 +129,9 @@ pub async fn update_certification(
 /// Before anything is issued: the caller as holder, today's date, code `PREVIEW`.
 /// Language: `?lang=`, else `Accept-Language`, else the caller's locale.
 #[utoipa::path(
-    get, path = "/certifications/{certification_id}/preview.pdf", tag = "certifications",
+    get, path = "/certificate-templates/{template_id}/preview.pdf", tag = "certificates",
     params(
-        ("certification_id" = CertificationId, Path, description = "Certification id"),
+        ("template_id" = CertificateTemplateId, Path, description = "Certificate template id"),
         ("Accept-Language" = Option<String>, Header, description = "ru, kk or en (default: the caller's locale)"),
         ("lang" = Option<crate::dto::enums::UiLanguage>, Query, description = "Overrides `Accept-Language` (for links)"),
     ),
@@ -138,10 +141,10 @@ pub async fn update_certification(
          content_type = "application/problem+json"),
     )
 )]
-pub async fn certification_preview_pdf(
+pub async fn certificate_template_preview_pdf(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    Path(id): Path<CertificationId>,
+    Path(id): Path<CertificateTemplateId>,
     headers: HeaderMap,
 ) -> ApiResult<Response> {
     let language = Language::from_accept_language(
@@ -172,8 +175,8 @@ pub async fn certification_preview_pdf(
 
 /// Turn the course's certificate off: deleted if nothing was issued, else retired (issued certificates stay valid).
 #[utoipa::path(
-    delete, path = "/certifications/{certification_id}", tag = "certifications",
-    params(("certification_id" = CertificationId, Path, description = "Certification id"),
+    delete, path = "/certificate-templates/{template_id}", tag = "certificates",
+    params(("template_id" = CertificateTemplateId, Path, description = "Certificate template id"),
         ("If-Match" = Option<i32>, Header, description = "Row `version`; stale -> 412"),
     ),
     responses(
@@ -182,10 +185,10 @@ pub async fn certification_preview_pdf(
          content_type = "application/problem+json"),
     ),
 )]
-pub async fn delete_certification(
+pub async fn delete_certificate_template(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
-    Path(id): Path<CertificationId>,
+    Path(id): Path<CertificateTemplateId>,
     headers: HeaderMap,
 ) -> ApiResult<StatusCode> {
     require_if_match_gated(&state.pool, Versioned::Certification(id), &headers, async {
@@ -198,20 +201,20 @@ pub async fn delete_certification(
 
 /// The course's templates (course-scoped `certificate:read`).
 #[utoipa::path(
-    get, path = "/courses/{course_id}/certifications", tag = "certifications",
+    get, path = "/courses/{course_id}/certificate-templates", tag = "certificates",
     params(("course_id" = CourseId, Path, description = "Course id")),
-    responses((status = 200, description = "Certifications", body = [Certification])),
+    responses((status = 200, description = "Certificate templates", body = [CertificateTemplate])),
 )]
-pub async fn list_course_certifications(
+pub async fn list_course_certificate_templates(
     State(state): State<AppState>,
     CurrentActor(actor): CurrentActor,
     Path(id): Path<CourseId>,
-) -> ApiResult<Json<Vec<Certification>>> {
+) -> ApiResult<Json<Vec<CertificateTemplate>>> {
     let rows = state.certifications.list_for_course(&actor, id).await?;
     let actions = state.certifications.allowed_actions_for(&actor, id).await?;
     Ok(Json(
         rows.into_iter()
-            .map(|row| Certification::new(row, actions.clone()))
+            .map(|row| CertificateTemplate::new(row, actions.clone()))
             .collect(),
     ))
 }
@@ -219,7 +222,7 @@ pub async fn list_course_certifications(
 /// The caller's certificates for a course; a completed course issues on
 /// the spot.
 #[utoipa::path(
-    get, path = "/courses/{course_id}/certificates/me", tag = "certifications",
+    get, path = "/courses/{course_id}/certificates/me", tag = "certificates",
     params(("course_id" = CourseId, Path, description = "Course id")),
     responses((status = 200, description = "Certificates", body = [IssuedCertificate])),
 )]
@@ -238,7 +241,7 @@ pub async fn my_course_certificates(
 
 /// Every certificate the caller holds.
 #[utoipa::path(
-    get, path = "/me/certificates", tag = "certifications",
+    get, path = "/me/certificates", tag = "certificates",
     responses((status = 200, description = "Certificates", body = [IssuedCertificate])),
 )]
 pub async fn my_certificates(
@@ -256,7 +259,7 @@ pub async fn my_certificates(
 /// The caller's certificates as keyset pages (S-05; `GET /me/certificates`
 /// stays the full list).
 #[utoipa::path(
-    get, path = "/me/certificates/page", tag = "certifications",
+    get, path = "/me/certificates/page", tag = "certificates",
     params(crate::dto::KeysetQuery),
     responses((status = 200, description = "Page of certificates", body = crate::dto::certifications::IssuedCertificatePage)),
 )]
@@ -281,7 +284,7 @@ pub async fn my_certificates_page(
 
 /// Public verification by code - no session needed.
 #[utoipa::path(
-    get, path = "/certificates/{code}", tag = "certifications",
+    get, path = "/certificates/{code}", tag = "certificates",
     params(("code" = String, Path, description = "Verification code (case-insensitive, dashes optional)")),
     responses(
         (status = 200, description = "Verified certificate", body = VerifiedCertificate),
@@ -303,7 +306,7 @@ pub async fn verify_certificate(
 /// `/{locale}/certificates/{code}/verify`). The page language follows
 /// `Accept-Language` (`ru`, `kk`, `en`), else the holder's locale.
 #[utoipa::path(
-    get, path = "/certificates/{code}/pdf", tag = "certifications",
+    get, path = "/certificates/{code}/pdf", tag = "certificates",
     params(
         ("code" = String, Path, description = "Verification code"),
         ("Accept-Language" = Option<String>, Header, description = "ru, kk or en (default: the holder's locale)"),

@@ -597,9 +597,9 @@ async fn fingerprint(pool: &PgPool) -> Vec<String> {
         "grading_entries",
         "file_submissions",
         "file_submission_files",
-        "course_discussions",
+        "discussion_posts",
         "discussion_reactions",
-        "certifications",
+        "certificate_templates",
         "course_staff",
         "usergroup_courses",
         "collection_courses",
@@ -734,7 +734,7 @@ async fn archived_course_is_read_only_for_everyone(pool: PgPool) {
     let cert = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id,
                                   "config": { "template": "classic", "title": "Certified" } }),
         )
@@ -1181,21 +1181,21 @@ async fn archived_course_is_read_only_for_everyone(pool: PgPool) {
         c(
             "create certification",
             "POST",
-            "/certifications".to_owned(),
+            "/certificate-templates".to_owned(),
             &teacher,
         )
         .body(serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } })),
         c(
             "update certification",
             "PATCH",
-            format!("/certifications/{cert_id}"),
+            format!("/certificate-templates/{cert_id}"),
             &teacher,
         )
         .body(serde_json::json!({ "config": { "template": "modern" } })),
         c(
             "delete certification",
             "DELETE",
-            format!("/certifications/{cert_id}"),
+            format!("/certificate-templates/{cert_id}"),
             &teacher,
         ),
         // Roster [P3]
@@ -1360,9 +1360,9 @@ async fn archived_course_is_read_only_for_everyone(pool: PgPool) {
             &teacher,
         ),
         c(
-            "certifications",
+            "certificate_templates",
             "GET",
-            format!("/courses/{course_id}/certifications"),
+            format!("/courses/{course_id}/certificate-templates"),
             &teacher,
         ),
         c(

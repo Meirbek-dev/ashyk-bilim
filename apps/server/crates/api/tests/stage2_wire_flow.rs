@@ -231,20 +231,23 @@ async fn every_edited_resource_is_version_guarded(pool: PgPool) {
     let cert = app
         .post_as(
             &admin,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &json!({ "course_id": course, "config": {} }),
         )
         .await;
     assert_eq!(cert.status, StatusCode::CREATED, "{}", cert.text());
     let cert_read = app
-        .get_as(&admin, &format!("/api/v2/certifications/{}", id(&cert)))
+        .get_as(
+            &admin,
+            &format!("/api/v2/certificate-templates/{}", id(&cert)),
+        )
         .await;
     assert_eq!(cert_read.headers["etag"], quoted(&cert.json()["version"]));
     assert_guarded(
         &app,
         &admin,
         "PATCH",
-        &format!("/api/v2/certifications/{}", id(&cert)),
+        &format!("/api/v2/certificate-templates/{}", id(&cert)),
         json!({ "config": { "certification_name": "N" } }),
         &cert.json()["version"],
     )
@@ -401,7 +404,7 @@ async fn creates_replay_under_idempotency_key(pool: PgPool) {
         ),
         ("/api/v2/usergroups".to_owned(), json!({ "name": "G" })),
         (
-            "/api/v2/certifications".to_owned(),
+            "/api/v2/certificate-templates".to_owned(),
             json!({ "course_id": course, "config": {} }),
         ),
         (
@@ -963,14 +966,17 @@ async fn keyset_pages_and_teacher_gaps(pool: PgPool) {
     let cert = app
         .post_as(
             &admin,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &json!({ "course_id": course, "config": { "certification_name": "Wire" } }),
         )
         .await;
     let pdf = app
         .get_as(
             &admin,
-            &format!("/api/v2/certifications/{}/preview.pdf?lang=kk", id(&cert)),
+            &format!(
+                "/api/v2/certificate-templates/{}/preview.pdf?lang=kk",
+                id(&cert)
+            ),
         )
         .await;
     assert_eq!(pdf.status, StatusCode::OK, "{}", pdf.text());
@@ -980,7 +986,7 @@ async fn keyset_pages_and_teacher_gaps(pool: PgPool) {
     let hidden = app
         .get_as(
             &outsider,
-            &format!("/api/v2/certifications/{}/preview.pdf", id(&cert)),
+            &format!("/api/v2/certificate-templates/{}/preview.pdf", id(&cert)),
         )
         .await;
     assert!(hidden.status.is_client_error());

@@ -1388,7 +1388,6 @@ export type Certificate = {
      * The template's `certification_name` as issued, else the course name.
      */
     certificate_name: string;
-    certification_id: CertificationId;
     /**
      * The course name as issued (renaming the course leaves it).
      */
@@ -1403,6 +1402,7 @@ export type Certificate = {
      * The course grade at issue (0-100), if anything was scored.
      */
     score: number | null;
+    template_id: CertificateTemplateId;
     user_id: UserId;
     /**
      * Public verification code; the client links `/certificates/{code}/verify`.
@@ -1436,15 +1436,15 @@ export type CertificateState = {
     verify_code: string | null;
 };
 
-export type Certification = {
+export type CertificateTemplate = {
     /**
      * What the caller may do to this template now.
      */
-    allowed_actions: Array<CertificationAction>;
-    config: CertificationConfig;
+    allowed_actions: Array<CertificateTemplateAction>;
+    config: CertificateTemplateConfig;
     course_id: CourseId;
     created_at_unix: UnixTime;
-    id: CertificationId;
+    id: CertificateTemplateId;
     updated_at_unix: UnixTime;
     /**
      * Optimistic lock: `If-Match` on `PATCH` (stale → 412); the `ETag` of `GET`.
@@ -1455,13 +1455,13 @@ export type Certification = {
 /**
  * What the caller may do to a certificate template (`Certification.allowed_actions`).
  */
-export type CertificationAction = 'update' | 'delete';
+export type CertificateTemplateAction = 'update' | 'delete';
 
 /**
- * `certifications.config`: what the certificate editor stores. The server
+ * `certificate_templates.config`: what the certificate editor stores. The server
  * reads the title, type, lecturer and optional training details.
  */
-export type CertificationConfig = {
+export type CertificateTemplateConfig = {
     /**
      * The name signed on the certificate; blank = the course's teachers.
      */
@@ -1481,7 +1481,7 @@ export type CertificationConfig = {
     training_hours?: string;
 };
 
-export type CertificationId = string;
+export type CertificateTemplateId = string;
 
 export type CertificationType = 'completion' | 'achievement' | 'assessment' | 'participation' | 'mastery' | 'professional' | 'continuing' | 'workshop' | 'specialization';
 
@@ -2614,11 +2614,11 @@ export type CreateBlockRequest = {
     upload_id: string;
 };
 
-export type CreateCertificationRequest = {
+export type CreateCertificateTemplateRequest = {
     /**
      * An object of at most 16 KiB serialized.
      */
-    config?: CertificationConfig;
+    config?: CertificateTemplateConfig;
     course_id: CourseId;
 };
 
@@ -4383,13 +4383,13 @@ export type IssueSeverity = 'error' | 'warning' | 'info';
  */
 export type IssuedCertificate = {
     certificate: Certificate;
-    certification: Certification;
     course: Course;
     /**
      * The name signed on the certificate as issued (`config.certificate_instructor`,
      * else the course creator's display name) - what the PDF prints.
      */
     instructor_name: string | null;
+    template: CertificateTemplate;
 };
 
 /**
@@ -5818,7 +5818,6 @@ export type PublicCertificate = {
      * The template's `certification_name` as issued, else the course name.
      */
     certificate_name: string;
-    certification_id: CertificationId;
     /**
      * The course name as issued (renaming the course leaves it).
      */
@@ -5833,6 +5832,7 @@ export type PublicCertificate = {
      * The course grade at issue (0-100), if anything was scored.
      */
     score: number | null;
+    template_id: CertificateTemplateId;
     verify_code: string;
 };
 
@@ -7692,11 +7692,11 @@ export type UpdateAssessmentRequest = {
     weight?: number;
 };
 
-export type UpdateCertificationRequest = {
+export type UpdateCertificateTemplateRequest = {
     /**
      * An object of at most 16 KiB serialized.
      */
-    config: CertificationConfig;
+    config: CertificateTemplateConfig;
 };
 
 export type UpdateChapterRequest = {
@@ -8185,13 +8185,13 @@ export type UsergroupPage = {
  */
 export type VerifiedCertificate = {
     certificate: PublicCertificate;
-    certification: Certification;
     course: Course;
     holder: CertificateHolder;
     /**
      * The name signed on the certificate - what the PDF prints.
      */
     instructor_name: string | null;
+    template: CertificateTemplate;
 };
 
 /**
@@ -13345,6 +13345,171 @@ export type GetBulkActionResponses = {
 
 export type GetBulkActionResponse = GetBulkActionResponses[keyof GetBulkActionResponses];
 
+export type CreateCertificateTemplateData = {
+    body: CreateCertificateTemplateRequest;
+    headers?: {
+        /**
+         * Retry-safe replay key
+         */
+        'Idempotency-Key'?: string | null;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v2/certificate-templates';
+};
+
+export type CreateCertificateTemplateErrors = {
+    /**
+     * No certificate authoring on this course
+     */
+    403: Problem;
+};
+
+export type CreateCertificateTemplateError = CreateCertificateTemplateErrors[keyof CreateCertificateTemplateErrors];
+
+export type CreateCertificateTemplateResponses = {
+    /**
+     * Created
+     */
+    201: CertificateTemplate;
+};
+
+export type CreateCertificateTemplateResponse = CreateCertificateTemplateResponses[keyof CreateCertificateTemplateResponses];
+
+export type DeleteCertificateTemplateData = {
+    body?: never;
+    headers?: {
+        /**
+         * Row `version`; stale -> 412
+         */
+        'If-Match'?: number | null;
+    };
+    path: {
+        /**
+         * Certificate template id
+         */
+        template_id: CertificateTemplateId;
+    };
+    query?: never;
+    url: '/api/v2/certificate-templates/{template_id}';
+};
+
+export type DeleteCertificateTemplateErrors = {
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
+};
+
+export type DeleteCertificateTemplateError = DeleteCertificateTemplateErrors[keyof DeleteCertificateTemplateErrors];
+
+export type DeleteCertificateTemplateResponses = {
+    /**
+     * Deleted, or retired when certificates were issued
+     */
+    204: void;
+};
+
+export type DeleteCertificateTemplateResponse = DeleteCertificateTemplateResponses[keyof DeleteCertificateTemplateResponses];
+
+export type GetCertificateTemplateData = {
+    body?: never;
+    path: {
+        /**
+         * Certificate template id
+         */
+        template_id: CertificateTemplateId;
+    };
+    query?: never;
+    url: '/api/v2/certificate-templates/{template_id}';
+};
+
+export type GetCertificateTemplateResponses = {
+    /**
+     * Certificate template
+     */
+    200: CertificateTemplate;
+};
+
+export type GetCertificateTemplateResponse = GetCertificateTemplateResponses[keyof GetCertificateTemplateResponses];
+
+export type UpdateCertificateTemplateData = {
+    body: UpdateCertificateTemplateRequest;
+    headers?: {
+        /**
+         * Current `version`; stale → 412
+         */
+        'If-Match'?: number | null;
+    };
+    path: {
+        /**
+         * Certificate template id
+         */
+        template_id: CertificateTemplateId;
+    };
+    query?: never;
+    url: '/api/v2/certificate-templates/{template_id}';
+};
+
+export type UpdateCertificateTemplateErrors = {
+    /**
+     * Stale `If-Match`
+     */
+    412: Problem;
+};
+
+export type UpdateCertificateTemplateError = UpdateCertificateTemplateErrors[keyof UpdateCertificateTemplateErrors];
+
+export type UpdateCertificateTemplateResponses = {
+    /**
+     * Updated
+     */
+    200: CertificateTemplate;
+};
+
+export type UpdateCertificateTemplateResponse = UpdateCertificateTemplateResponses[keyof UpdateCertificateTemplateResponses];
+
+export type CertificateTemplatePreviewPdfData = {
+    body?: never;
+    headers?: {
+        /**
+         * ru, kk or en (default: the caller's locale)
+         */
+        'Accept-Language'?: string | null;
+    };
+    path: {
+        /**
+         * Certificate template id
+         */
+        template_id: CertificateTemplateId;
+    };
+    query?: {
+        /**
+         * Overrides `Accept-Language` (for links)
+         */
+        lang?: UiLanguage;
+    };
+    url: '/api/v2/certificate-templates/{template_id}/preview.pdf';
+};
+
+export type CertificateTemplatePreviewPdfErrors = {
+    /**
+     * Unknown or inaccessible
+     */
+    404: Problem;
+};
+
+export type CertificateTemplatePreviewPdfError = CertificateTemplatePreviewPdfErrors[keyof CertificateTemplatePreviewPdfErrors];
+
+export type CertificateTemplatePreviewPdfResponses = {
+    /**
+     * PDF
+     */
+    200: Blob | File;
+};
+
+export type CertificateTemplatePreviewPdfResponse = CertificateTemplatePreviewPdfResponses[keyof CertificateTemplatePreviewPdfResponses];
+
 export type VerifyCertificateData = {
     body?: never;
     path: {
@@ -13415,171 +13580,6 @@ export type CertificatePdfResponses = {
 };
 
 export type CertificatePdfResponse = CertificatePdfResponses[keyof CertificatePdfResponses];
-
-export type CreateCertificationData = {
-    body: CreateCertificationRequest;
-    headers?: {
-        /**
-         * Retry-safe replay key
-         */
-        'Idempotency-Key'?: string | null;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/v2/certifications';
-};
-
-export type CreateCertificationErrors = {
-    /**
-     * No certificate authoring on this course
-     */
-    403: Problem;
-};
-
-export type CreateCertificationError = CreateCertificationErrors[keyof CreateCertificationErrors];
-
-export type CreateCertificationResponses = {
-    /**
-     * Created
-     */
-    201: Certification;
-};
-
-export type CreateCertificationResponse = CreateCertificationResponses[keyof CreateCertificationResponses];
-
-export type DeleteCertificationData = {
-    body?: never;
-    headers?: {
-        /**
-         * Row `version`; stale -> 412
-         */
-        'If-Match'?: number | null;
-    };
-    path: {
-        /**
-         * Certification id
-         */
-        certification_id: CertificationId;
-    };
-    query?: never;
-    url: '/api/v2/certifications/{certification_id}';
-};
-
-export type DeleteCertificationErrors = {
-    /**
-     * Stale `If-Match`
-     */
-    412: Problem;
-};
-
-export type DeleteCertificationError = DeleteCertificationErrors[keyof DeleteCertificationErrors];
-
-export type DeleteCertificationResponses = {
-    /**
-     * Deleted, or retired when certificates were issued
-     */
-    204: void;
-};
-
-export type DeleteCertificationResponse = DeleteCertificationResponses[keyof DeleteCertificationResponses];
-
-export type GetCertificationData = {
-    body?: never;
-    path: {
-        /**
-         * Certification id
-         */
-        certification_id: CertificationId;
-    };
-    query?: never;
-    url: '/api/v2/certifications/{certification_id}';
-};
-
-export type GetCertificationResponses = {
-    /**
-     * Certification
-     */
-    200: Certification;
-};
-
-export type GetCertificationResponse = GetCertificationResponses[keyof GetCertificationResponses];
-
-export type UpdateCertificationData = {
-    body: UpdateCertificationRequest;
-    headers?: {
-        /**
-         * Current `version`; stale → 412
-         */
-        'If-Match'?: number | null;
-    };
-    path: {
-        /**
-         * Certification id
-         */
-        certification_id: CertificationId;
-    };
-    query?: never;
-    url: '/api/v2/certifications/{certification_id}';
-};
-
-export type UpdateCertificationErrors = {
-    /**
-     * Stale `If-Match`
-     */
-    412: Problem;
-};
-
-export type UpdateCertificationError = UpdateCertificationErrors[keyof UpdateCertificationErrors];
-
-export type UpdateCertificationResponses = {
-    /**
-     * Updated
-     */
-    200: Certification;
-};
-
-export type UpdateCertificationResponse = UpdateCertificationResponses[keyof UpdateCertificationResponses];
-
-export type CertificationPreviewPdfData = {
-    body?: never;
-    headers?: {
-        /**
-         * ru, kk or en (default: the caller's locale)
-         */
-        'Accept-Language'?: string | null;
-    };
-    path: {
-        /**
-         * Certification id
-         */
-        certification_id: CertificationId;
-    };
-    query?: {
-        /**
-         * Overrides `Accept-Language` (for links)
-         */
-        lang?: UiLanguage;
-    };
-    url: '/api/v2/certifications/{certification_id}/preview.pdf';
-};
-
-export type CertificationPreviewPdfErrors = {
-    /**
-     * Unknown or inaccessible
-     */
-    404: Problem;
-};
-
-export type CertificationPreviewPdfError = CertificationPreviewPdfErrors[keyof CertificationPreviewPdfErrors];
-
-export type CertificationPreviewPdfResponses = {
-    /**
-     * PDF
-     */
-    200: Blob | File;
-};
-
-export type CertificationPreviewPdfResponse = CertificationPreviewPdfResponses[keyof CertificationPreviewPdfResponses];
 
 export type DeleteChapterData = {
     body?: never;
@@ -14461,6 +14461,27 @@ export type ListCourseAssessmentsResponses = {
 
 export type ListCourseAssessmentsResponse = ListCourseAssessmentsResponses[keyof ListCourseAssessmentsResponses];
 
+export type ListCourseCertificateTemplatesData = {
+    body?: never;
+    path: {
+        /**
+         * Course id
+         */
+        course_id: CourseId;
+    };
+    query?: never;
+    url: '/api/v2/courses/{course_id}/certificate-templates';
+};
+
+export type ListCourseCertificateTemplatesResponses = {
+    /**
+     * Certificate templates
+     */
+    200: Array<CertificateTemplate>;
+};
+
+export type ListCourseCertificateTemplatesResponse = ListCourseCertificateTemplatesResponses[keyof ListCourseCertificateTemplatesResponses];
+
 export type MyCourseCertificatesData = {
     body?: never;
     path: {
@@ -14481,27 +14502,6 @@ export type MyCourseCertificatesResponses = {
 };
 
 export type MyCourseCertificatesResponse = MyCourseCertificatesResponses[keyof MyCourseCertificatesResponses];
-
-export type ListCourseCertificationsData = {
-    body?: never;
-    path: {
-        /**
-         * Course id
-         */
-        course_id: CourseId;
-    };
-    query?: never;
-    url: '/api/v2/courses/{course_id}/certifications';
-};
-
-export type ListCourseCertificationsResponses = {
-    /**
-     * Certifications
-     */
-    200: Array<Certification>;
-};
-
-export type ListCourseCertificationsResponse = ListCourseCertificationsResponses[keyof ListCourseCertificationsResponses];
 
 export type CreateChapterData = {
     body: CreateChapterRequest;

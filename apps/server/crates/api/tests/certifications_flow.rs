@@ -90,7 +90,7 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
     assert_eq!(
         app.post_as(
             &alice,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": {} })
         )
         .await
@@ -109,7 +109,7 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
         let res = app
             .post_as(
                 &teacher,
-                "/api/v2/certifications",
+                "/api/v2/certificate-templates",
                 &serde_json::json!({ "course_id": course_id, "config": bad }),
             )
             .await;
@@ -123,20 +123,20 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
     let created = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id,
                                   "config": { "template": "classic", "title": "Certified",
                                     "course_start": "2026-09-01", "course_end": "2026-09-30", "training_hours": "72" } }),
         )
         .await;
     assert_eq!(created.status, StatusCode::CREATED, "{}", created.text());
-    let certification_id = created.json()["id"].as_str().unwrap().to_owned();
+    let template_id = created.json()["id"].as_str().unwrap().to_owned();
     assert_eq!(created.json()["config"]["template"], "classic");
     // Templates are for authors, not learners.
     assert_eq!(
         app.get_as(
             &alice,
-            &format!("/api/v2/certifications/{certification_id}")
+            &format!("/api/v2/certificate-templates/{template_id}")
         )
         .await
         .status,
@@ -145,7 +145,7 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
     let listed = app
         .get_as(
             &teacher,
-            &format!("/api/v2/courses/{course_id}/certifications"),
+            &format!("/api/v2/courses/{course_id}/certificate-templates"),
         )
         .await;
     assert_eq!(listed.json().as_array().unwrap().len(), 1);
@@ -191,8 +191,8 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
         .unwrap()
         .to_owned();
     assert_eq!(code.len(), 19);
-    assert_eq!(items[0]["certification"]["id"], certification_id.as_str());
-    assert_eq!(items[0]["certification"]["config"]["training_hours"], "72");
+    assert_eq!(items[0]["template"]["id"], template_id.as_str());
+    assert_eq!(items[0]["template"]["config"]["training_hours"], "72");
     assert_eq!(items[0]["course"]["name"], "Certified 101");
     // UX-131: no `certificate_instructor` in the config -> the creator's
     // display name, as the PDF prints it.
@@ -362,7 +362,7 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
     let updated = app
         .patch_as(
             &teacher,
-            &format!("/api/v2/certifications/{certification_id}"),
+            &format!("/api/v2/certificate-templates/{template_id}"),
             &serde_json::json!({ "config": { "template": "modern",
                                   "certificate_instructor": " Dr. Who " } }),
         )
@@ -380,7 +380,7 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
     assert_eq!(
         app.delete_as(
             &alice,
-            &format!("/api/v2/certifications/{certification_id}")
+            &format!("/api/v2/certificate-templates/{template_id}")
         )
         .await
         .status,
@@ -389,7 +389,7 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
     assert_eq!(
         app.delete_as(
             &teacher,
-            &format!("/api/v2/certifications/{certification_id}")
+            &format!("/api/v2/certificate-templates/{template_id}")
         )
         .await
         .status,
@@ -431,7 +431,7 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
     assert_eq!(
         app.get_as(
             &teacher,
-            &format!("/api/v2/certifications/{certification_id}")
+            &format!("/api/v2/certificate-templates/{template_id}")
         )
         .await
         .status,
@@ -440,7 +440,7 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
     assert!(
         app.get_as(
             &teacher,
-            &format!("/api/v2/courses/{course_id}/certifications"),
+            &format!("/api/v2/courses/{course_id}/certificate-templates"),
         )
         .await
         .json()
@@ -475,12 +475,12 @@ async fn template_issuance_verification_and_retirement(pool: PgPool) {
     let revived = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
         )
         .await;
     assert_eq!(revived.status, StatusCode::CREATED, "{}", revived.text());
-    assert_eq!(revived.json()["id"], certification_id.as_str());
+    assert_eq!(revived.json()["id"], template_id.as_str());
     assert_eq!(revived.json()["config"]["template"], "classic");
     let issued = app
         .get_as(
@@ -511,22 +511,23 @@ async fn a_template_nobody_holds_is_deleted(pool: PgPool) {
     let created = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": {} }),
         )
         .await;
     let id = created.json()["id"].as_str().unwrap().to_owned();
     assert_eq!(
-        app.delete_as(&teacher, &format!("/api/v2/certifications/{id}"))
+        app.delete_as(&teacher, &format!("/api/v2/certificate-templates/{id}"))
             .await
             .status,
         StatusCode::NO_CONTENT
     );
-    let rows: i64 = sqlx::query_scalar("SELECT count(*) FROM certifications WHERE id = $1::uuid")
-        .bind(&id)
-        .fetch_one(&pool)
-        .await
-        .unwrap();
+    let rows: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM certificate_templates WHERE id = $1::uuid")
+            .bind(&id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
     assert_eq!(rows, 0);
 }
 
@@ -542,7 +543,7 @@ async fn turning_the_certificate_on_twice_keeps_one_template(pool: PgPool) {
         let created = app
             .post_as(
                 &teacher,
-                "/api/v2/certifications",
+                "/api/v2/certificate-templates",
                 &serde_json::json!({ "course_id": course_id, "config": { "title": title } }),
             )
             .await;
@@ -554,7 +555,7 @@ async fn turning_the_certificate_on_twice_keeps_one_template(pool: PgPool) {
     let listed = app
         .get_as(
             &teacher,
-            &format!("/api/v2/courses/{course_id}/certifications"),
+            &format!("/api/v2/courses/{course_id}/certificate-templates"),
         )
         .await;
     assert_eq!(listed.json().as_array().unwrap().len(), 1);
@@ -564,7 +565,7 @@ async fn turning_the_certificate_on_twice_keeps_one_template(pool: PgPool) {
     let foreign = app
         .post_as(
             &other,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": {} }),
         )
         .await;
@@ -572,7 +573,7 @@ async fn turning_the_certificate_on_twice_keeps_one_template(pool: PgPool) {
     let listed = app
         .get_as(
             &teacher,
-            &format!("/api/v2/courses/{course_id}/certifications"),
+            &format!("/api/v2/courses/{course_id}/certificate-templates"),
         )
         .await;
     assert_eq!(listed.json()[0]["config"]["title"], "second");
@@ -599,8 +600,8 @@ async fn turning_the_certificate_on_twice_keeps_one_template(pool: PgPool) {
 async fn recode(pool: &PgPool, from: &str, to: &str) {
     let mut tx = pool.begin().await.unwrap();
     let (certification, user, issued): (uuid::Uuid, uuid::Uuid, i64) = sqlx::query_as(
-        "DELETE FROM certificate_users WHERE verify_code = $1
-         RETURNING certification_id, user_id, extract(epoch FROM created_at)::bigint",
+        "DELETE FROM certificates WHERE verify_code = $1
+         RETURNING template_id, user_id, extract(epoch FROM created_at)::bigint",
     )
     .bind(from)
     .fetch_one(&mut *tx)
@@ -608,7 +609,7 @@ async fn recode(pool: &PgPool, from: &str, to: &str) {
     .unwrap();
     ab_db::certifications::issue_certificate(
         &mut *tx,
-        ab_core::id::CertificationId(certification),
+        ab_core::id::CertificateTemplateId(certification),
         ab_core::id::UserId(user),
         to,
         Some(issued),

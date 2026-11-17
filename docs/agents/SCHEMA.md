@@ -44,8 +44,10 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`core.block_uploads`](#block_uploads): Uploads a lesson block references (derived from its content's file key by a trigger); the upload reaper keeps them
 - [`core.blocks`](#blocks): A content block of a page activity (files, embeds), linked from the editor document by legacy_uuid
 - [`learning.bulk_actions`](#bulk_actions): A bulk operation a teacher ran on the learners of an assessment, its targets and outcome
-- [`learning.certificate_users`](#certificate_users): A certificate issued to a learner, verifiable by verify_code
-- [`learning.certifications`](#certifications): The certificate a course issues on completion: layout and rules (config); disabled_at stops issuing
+- [`learning.certificate_templates`](#certificate_templates): The certificate a course issues on completion: layout and rules (config); disabled_at stops issuing
+- [`learning.certificate_users`](#certificate_users): The previous release's name of certificates; a contract drops it
+- [`learning.certificates`](#certificates): A certificate issued to a learner, verifiable by verify_code
+- [`learning.certifications`](#certifications): The previous release's name of certificate_templates; a contract drops it
 - [`core.chapters`](#chapters): A chapter of a course; position orders chapters within the course
 - [`learning.code_run_cases`](#code_run_cases): The result of one test case of a code run
 - [`learning.code_runs`](#code_runs): A run of learner code in the go-judge runner: a practice run or the graded run of a submission
@@ -61,7 +63,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`core.conversation_members`](#conversation_members): The two sides of a conversation, one row each: user_id reads it with peer_id; (user_id, peer_id) is unique, so a pair has one conversation
 - [`core.conversations`](#conversations): A personal conversation of two people (kind direct); created with its first message
 - [`learning.course_concepts`](#course_concepts): A concept (skill) of a course, proposed by AI or a teacher and decided by staff
-- [`core.course_discussions`](#course_discussions): A discussion post or reply in a course (replies point to their post by parent_id); counters are kept by triggers
+- [`core.course_discussions`](#course_discussions): The previous release's name of discussion_posts; a contract drops it
 - [`learning.course_members`](#course_members): Learners of a course: enrolments without its staff, whose stale rows stay in enrolments
 - [`learning.course_progress`](#course_progress): Projection: a learner's totals in a course (counts, percentage, grade averages, completion)
 - [`core.course_progress_v`](#course_progress_v): A member's course completion computed from enrolments, published activities and completions; compared with the course_progress projection by maintenance:reconcile until it replaces it (REWRITE 5.6 n8)
@@ -75,6 +77,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`analytics.daily_platform_metrics`](#daily_platform_metrics): Rollup: the platform-wide teacher metrics of one platform day (every course)
 - [`analytics.daily_teacher_metrics`](#daily_teacher_metrics): Daily rollup per teacher (or platform-wide when teacher_user_id is NULL)
 - [`analytics.daily_user_course_progress`](#daily_user_course_progress): Daily snapshot of each learner's progress in each course
+- [`core.discussion_posts`](#discussion_posts): A discussion post or reply in a course (replies point to their post by parent_id); counters are kept by triggers
 - [`core.discussion_reactions`](#discussion_reactions): A like or dislike of a discussion post by an account
 - [`learning.enrolment_events`](#enrolment_events): One join or leave of a course, appended by enrol/unenrol
 - [`learning.enrolments`](#enrolments): Course membership (a learner joined or was enrolled)
@@ -1180,35 +1183,7 @@ A bulk operation a teacher ran on the learners of an assessment, its targets and
 - Check `bulk_actions_status_check`: `CHECK ((status = ANY (ARRAY['pending'::text, 'running'::text, 'completed'::text, 'failed'::text])))`
 - Index `bulk_actions_assessment_idx`: `CREATE INDEX bulk_actions_assessment_idx ON learning.bulk_actions USING btree (assessment_id, status)`
 
-## certificate_users
-
-A certificate issued to a learner, verifiable by verify_code. Survives the account's anonymisation.
-
-| Column | Type | Null | Default | Comment |
-| --- | --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |  |
-| certification_id | uuid |  |  |  |
-| user_id | uuid |  |  |  |
-| verify_code | text |  |  |  |
-| created_at | timestamp with time zone |  | `now()` |  |
-| updated_at | timestamp with time zone |  | `now()` |  |
-| holder_name | text |  |  |  |
-| course_name | text |  |  |  |
-| certificate_name | text |  |  |  |
-| instructor_name | text | null |  |  |
-| score | percent | null |  |  |
-| reissued_at | timestamp with time zone | null |  |  |
-| course_id | uuid |  |  | The course it was issued for; no key: the certificate outlives the course. |
-
-- Primary key `certificate_users_pkey`: `PRIMARY KEY (id)`
-- Unique `certificate_users_certification_id_user_id_key`: `UNIQUE (certification_id, user_id)`
-- Unique `certificate_users_verify_code_key`: `UNIQUE (verify_code)`
-- Foreign key `certificate_users_certification_id_fkey`: `FOREIGN KEY (certification_id) REFERENCES certifications(id) ON DELETE RESTRICT`
-- Foreign key `certificate_users_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
-- Index `certificate_users_user_idx`: `CREATE INDEX certificate_users_user_idx ON learning.certificate_users USING btree (user_id)`
-- Trigger `certificate_users_frozen`: `CREATE TRIGGER certificate_users_frozen BEFORE UPDATE ON learning.certificate_users FOR EACH ROW EXECUTE FUNCTION certificate_users_frozen()`
-
-## certifications
+## certificate_templates
 
 The certificate a course issues on completion: layout and rules (config); disabled_at stops issuing.
 
@@ -1224,8 +1199,70 @@ The certificate a course issues on completion: layout and rules (config); disabl
 
 - Primary key `certifications_pkey`: `PRIMARY KEY (id)`
 - Foreign key `certifications_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL`
-- Index `certifications_course_idx`: `CREATE INDEX certifications_course_idx ON learning.certifications USING btree (course_id)`
-- Index `certifications_one_live_per_course`: `CREATE UNIQUE INDEX certifications_one_live_per_course ON learning.certifications USING btree (course_id) WHERE (disabled_at IS NULL)`
+- Index `certifications_course_idx`: `CREATE INDEX certifications_course_idx ON learning.certificate_templates USING btree (course_id)`
+- Index `certifications_one_live_per_course`: `CREATE UNIQUE INDEX certifications_one_live_per_course ON learning.certificate_templates USING btree (course_id) WHERE (disabled_at IS NULL)`
+
+## certificate_users (view)
+
+The previous release's name of certificates; a contract drops it.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| id | uuid | null |  |
+| user_id | uuid | null |  |
+| verify_code | text | null |  |
+| created_at | timestamp with time zone | null |  |
+| updated_at | timestamp with time zone | null |  |
+| certification_id | uuid | null |  |
+| course_id | uuid | null |  |
+| holder_name | text | null |  |
+| course_name | text | null |  |
+| certificate_name | text | null |  |
+| score | percent | null |  |
+| instructor_name | text | null |  |
+| reissued_at | timestamp with time zone | null |  |
+
+## certificates
+
+A certificate issued to a learner, verifiable by verify_code. Survives the account's anonymisation.
+
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| template_id | uuid |  |  |  |
+| user_id | uuid |  |  |  |
+| verify_code | text |  |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| updated_at | timestamp with time zone |  | `now()` |  |
+| holder_name | text |  |  |  |
+| course_name | text |  |  |  |
+| certificate_name | text |  |  |  |
+| instructor_name | text | null |  |  |
+| score | percent | null |  |  |
+| reissued_at | timestamp with time zone | null |  |  |
+| course_id | uuid |  |  | The course it was issued for; no key: the certificate outlives the course. |
+
+- Primary key `certificate_users_pkey`: `PRIMARY KEY (id)`
+- Unique `certificate_users_certification_id_user_id_key`: `UNIQUE (template_id, user_id)`
+- Unique `certificate_users_verify_code_key`: `UNIQUE (verify_code)`
+- Foreign key `certificate_users_certification_id_fkey`: `FOREIGN KEY (template_id) REFERENCES certificate_templates(id) ON DELETE RESTRICT`
+- Foreign key `certificate_users_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+- Index `certificate_users_user_idx`: `CREATE INDEX certificate_users_user_idx ON learning.certificates USING btree (user_id)`
+- Trigger `certificate_users_frozen`: `CREATE TRIGGER certificate_users_frozen BEFORE UPDATE ON learning.certificates FOR EACH ROW EXECUTE FUNCTION certificate_users_frozen()`
+
+## certifications (view)
+
+The previous release's name of certificate_templates; a contract drops it.
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| id | uuid | null |  |
+| course_id | uuid | null |  |
+| config | jsonb | null |  |
+| created_at | timestamp with time zone | null |  |
+| updated_at | timestamp with time zone | null |  |
+| version | integer | null |  |
+| disabled_at | timestamp with time zone | null |  |
 
 ## chapters
 
@@ -1640,43 +1677,26 @@ A concept (skill) of a course, proposed by AI or a teacher and decided by staff.
 - Index `course_concepts_decided_by_idx`: `CREATE INDEX course_concepts_decided_by_idx ON learning.course_concepts USING btree (decided_by)`
 - Index `course_concepts_run_idx`: `CREATE INDEX course_concepts_run_idx ON learning.course_concepts USING btree (run_id)`
 
-## course_discussions
+## course_discussions (view)
 
-A discussion post or reply in a course (replies point to their post by parent_id); counters are kept by triggers.
+The previous release's name of discussion_posts; a contract drops it.
 
-| Column | Type | Null | Default | Comment |
-| --- | --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |  |
-| course_id | uuid |  |  |  |
-| user_id | uuid | null |  |  |
-| parent_id | uuid | null |  |  |
-| kind | text |  | `'post'::text` |  |
-| status | text |  | `'active'::text` |  |
-| content | text |  |  |  |
-| likes_count | integer |  | `0` |  |
-| dislikes_count | integer |  | `0` |  |
-| replies_count | integer |  | `0` |  |
-| created_at | timestamp with time zone |  | `now()` |  |
-| updated_at | timestamp with time zone |  | `now()` |  |
-| version | integer |  | `1` |  |
-| deleted_at | timestamp with time zone | null |  | A tombstone: the post was deleted while others' replies hang under it (text and author wiped). |
-
-- Primary key `course_discussions_pkey`: `PRIMARY KEY (id)`
-- Unique `course_discussions_id_course_key`: `UNIQUE (id, course_id)`
-- Foreign key `course_discussions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `course_discussions_parent_id_fkey`: `FOREIGN KEY (parent_id, course_id) REFERENCES course_discussions(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
-- Foreign key `course_discussions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
-- Check `course_discussions_content_check`: `CHECK ((char_length(content) <= 20000))`
-- Check `course_discussions_kind_check`: `CHECK ((kind = ANY (ARRAY['post'::text, 'reply'::text])))`
-- Check `course_discussions_reply_parent_check`: `CHECK (((kind = 'reply'::text) = (parent_id IS NOT NULL)))`
-- Check `course_discussions_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'hidden'::text, 'deleted'::text])))`
-- Index `course_discussions_course_idx`: `CREATE INDEX course_discussions_course_idx ON core.course_discussions USING btree (course_id, created_at DESC)`
-- Index `course_discussions_parent_idx`: `CREATE INDEX course_discussions_parent_idx ON core.course_discussions USING btree (parent_id)`
-- Index `course_discussions_posts_keyset_idx`: `CREATE INDEX course_discussions_posts_keyset_idx ON core.course_discussions USING btree (course_id, id DESC) WHERE ((parent_id IS NULL) AND (status = 'active'::text))`
-- Index `course_discussions_replies_keyset_idx`: `CREATE INDEX course_discussions_replies_keyset_idx ON core.course_discussions USING btree (parent_id, id) WHERE (status = 'active'::text)`
-- Trigger `course_discussions_deleted_status`: `CREATE TRIGGER course_discussions_deleted_status BEFORE INSERT OR UPDATE ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION course_discussions_deleted_status()`
-- Trigger `course_discussions_recount_replies`: `CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()`
-- Trigger `course_discussions_upload_ids`: `CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF content ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION post_uploads_sync()`
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| id | uuid | null |  |
+| course_id | uuid | null |  |
+| user_id | uuid | null |  |
+| parent_id | uuid | null |  |
+| kind | text | null |  |
+| status | text | null |  |
+| content | text | null |  |
+| likes_count | integer | null |  |
+| dislikes_count | integer | null |  |
+| replies_count | integer | null |  |
+| created_at | timestamp with time zone | null |  |
+| updated_at | timestamp with time zone | null |  |
+| version | integer | null |  |
+| deleted_at | timestamp with time zone | null |  |
 
 ## course_members (view)
 
@@ -2008,6 +2028,44 @@ Daily snapshot of each learner's progress in each course.
 - Index `daily_user_course_progress_course_idx`: `CREATE INDEX daily_user_course_progress_course_idx ON analytics.daily_user_course_progress USING btree (course_id, metric_date DESC)`
 - Index `daily_user_course_progress_user_idx`: `CREATE INDEX daily_user_course_progress_user_idx ON analytics.daily_user_course_progress USING btree (user_id)`
 
+## discussion_posts
+
+A discussion post or reply in a course (replies point to their post by parent_id); counters are kept by triggers.
+
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| course_id | uuid |  |  |  |
+| user_id | uuid | null |  |  |
+| parent_id | uuid | null |  |  |
+| kind | text |  | `'post'::text` |  |
+| status | text |  | `'active'::text` |  |
+| content | text |  |  |  |
+| likes_count | integer |  | `0` |  |
+| dislikes_count | integer |  | `0` |  |
+| replies_count | integer |  | `0` |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| updated_at | timestamp with time zone |  | `now()` |  |
+| version | integer |  | `1` |  |
+| deleted_at | timestamp with time zone | null |  | A tombstone: the post was deleted while others' replies hang under it (text and author wiped). |
+
+- Primary key `course_discussions_pkey`: `PRIMARY KEY (id)`
+- Unique `course_discussions_id_course_key`: `UNIQUE (id, course_id)`
+- Foreign key `course_discussions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
+- Foreign key `course_discussions_parent_id_fkey`: `FOREIGN KEY (parent_id, course_id) REFERENCES discussion_posts(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
+- Foreign key `course_discussions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL`
+- Check `course_discussions_content_check`: `CHECK ((char_length(content) <= 20000))`
+- Check `course_discussions_kind_check`: `CHECK ((kind = ANY (ARRAY['post'::text, 'reply'::text])))`
+- Check `course_discussions_reply_parent_check`: `CHECK (((kind = 'reply'::text) = (parent_id IS NOT NULL)))`
+- Check `course_discussions_status_check`: `CHECK ((status = ANY (ARRAY['active'::text, 'hidden'::text, 'deleted'::text])))`
+- Index `course_discussions_course_idx`: `CREATE INDEX course_discussions_course_idx ON core.discussion_posts USING btree (course_id, created_at DESC)`
+- Index `course_discussions_parent_idx`: `CREATE INDEX course_discussions_parent_idx ON core.discussion_posts USING btree (parent_id)`
+- Index `course_discussions_posts_keyset_idx`: `CREATE INDEX course_discussions_posts_keyset_idx ON core.discussion_posts USING btree (course_id, id DESC) WHERE ((parent_id IS NULL) AND (status = 'active'::text))`
+- Index `course_discussions_replies_keyset_idx`: `CREATE INDEX course_discussions_replies_keyset_idx ON core.discussion_posts USING btree (parent_id, id) WHERE (status = 'active'::text)`
+- Trigger `course_discussions_deleted_status`: `CREATE TRIGGER course_discussions_deleted_status BEFORE INSERT OR UPDATE ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION course_discussions_deleted_status()`
+- Trigger `course_discussions_recount_replies`: `CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()`
+- Trigger `course_discussions_upload_ids`: `CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF content ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION post_uploads_sync()`
+
 ## discussion_reactions
 
 A like or dislike of a discussion post by an account.
@@ -2020,7 +2078,7 @@ A like or dislike of a discussion post by an account.
 | created_at | timestamp with time zone |  | `now()` |
 
 - Primary key `discussion_reactions_pkey`: `PRIMARY KEY (discussion_id, user_id)`
-- Foreign key `discussion_reactions_discussion_id_fkey`: `FOREIGN KEY (discussion_id) REFERENCES course_discussions(id) ON DELETE CASCADE`
+- Foreign key `discussion_reactions_discussion_id_fkey`: `FOREIGN KEY (discussion_id) REFERENCES discussion_posts(id) ON DELETE CASCADE`
 - Foreign key `discussion_reactions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
 - Check `discussion_reactions_reaction_check`: `CHECK ((reaction = ANY (ARRAY['like'::text, 'dislike'::text])))`
 - Index `discussion_reactions_user_idx`: `CREATE INDEX discussion_reactions_user_idx ON core.discussion_reactions USING btree (user_id)`
@@ -2626,7 +2684,7 @@ The discussion-image uploads a post's content shows (kept by trigger from the co
 | upload_id | uuid |  |  |
 
 - Primary key `post_uploads_pkey`: `PRIMARY KEY (discussion_id, upload_id)`
-- Foreign key `post_uploads_discussion_id_fkey`: `FOREIGN KEY (discussion_id) REFERENCES course_discussions(id) ON DELETE CASCADE`
+- Foreign key `post_uploads_discussion_id_fkey`: `FOREIGN KEY (discussion_id) REFERENCES discussion_posts(id) ON DELETE CASCADE`
 - Foreign key `post_uploads_upload_id_fkey`: `FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE`
 - Index `post_uploads_upload_idx`: `CREATE INDEX post_uploads_upload_idx ON core.post_uploads USING btree (upload_id)`
 

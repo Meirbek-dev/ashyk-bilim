@@ -21,7 +21,7 @@ import { CertificateShare } from './certificate-share'
  */
 export function CertificateVerifyPage({ code }: { code: string }) {
   const { data } = useSuspenseQuery(verificationOptions(code))
-  const { certificate, certification, course, holder, instructor_name: instructor } = data
+  const { certificate, template: certification, course, holder, instructor_name: instructor } = data
   const kind = certificateKind(
     { ...certification.config, certification_name: certificate.certificate_name },
     certificate.course_name,

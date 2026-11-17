@@ -266,9 +266,9 @@ const PERMISSION_GATED: &[(&str, &str)] = &[
     ("PUT", "/api/v2/discussions/{discussion_id}/like"),
     ("PUT", "/api/v2/discussions/{discussion_id}/dislike"),
     // Certification templates: certificate:create/update/delete (platform or course creator).
-    ("POST", "/api/v2/certifications"),
-    ("PATCH", "/api/v2/certifications/{certification_id}"),
-    ("DELETE", "/api/v2/certifications/{certification_id}"),
+    ("POST", "/api/v2/certificate-templates"),
+    ("PATCH", "/api/v2/certificate-templates/{template_id}"),
+    ("DELETE", "/api/v2/certificate-templates/{template_id}"),
     // Gamification admin: platform:manage:platform.
     ("POST", "/api/v2/gamification/xp"),
     ("PUT", "/api/v2/gamification/config"),

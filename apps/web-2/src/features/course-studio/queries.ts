@@ -10,21 +10,21 @@ import {
   courseLifecycleMutation,
   courseReadinessOptions,
   courseReadinessQueryKey,
-  createCertificationMutation,
+  createCertificateTemplateMutation,
   createCourseMutation,
   createCourseUpdateMutation,
-  deleteCertificationMutation,
+  deleteCertificateTemplateMutation,
   deleteCourseMutation,
   deleteCourseUpdateMutation,
   duplicateCourseMutation,
   editCourseUpdateMutation,
   getCourseOptions,
   getCourseQueryKey,
-  listCourseCertificationsOptions,
+  listCourseCertificateTemplatesOptions,
   listCoursesInfiniteQueryKey,
   listCoursesOptions,
   listGroupsOptions,
-  updateCertificationMutation,
+  updateCertificateTemplateMutation,
   updateCourseMutation,
   groupsForCourseOptions,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
@@ -36,7 +36,7 @@ import {
   removeGroupCourses,
 } from '#/shared/api/gen/sdk.gen'
 import type {
-  Certification,
+  CertificateTemplate,
   Course,
   CourseId,
   CoursePage,
@@ -83,7 +83,7 @@ export const archivePreviewOptions = (id: CourseId) => courseArchivePreviewOptio
 // What deleting the course takes with it (learner work, issued certificates): only callers who may delete it read it.
 export const deletionPreviewOptions = (id: CourseId) => courseDeletionPreviewOptions(byId(id))
 export const courseGroupsOptions = (id: CourseId) => groupsForCourseOptions(byId(id))
-export const certificationsOptions = (id: CourseId) => listCourseCertificationsOptions(byId(id))
+export const certificationsOptions = (id: CourseId) => listCourseCertificateTemplatesOptions(byId(id))
 export { contributorsOptions, updatesOptions }
 
 /**
@@ -240,28 +240,28 @@ export const deleteUpdateOptions = (queryClient: QueryClient, id: CourseId) => (
 
 // ---- Certificate: at most one configuration per course; readiness warns without one. ----
 
-const setCertifications = (queryClient: QueryClient, id: CourseId, rows: Certification[]) =>
+const setCertifications = (queryClient: QueryClient, id: CourseId, rows: CertificateTemplate[]) =>
   queryClient.setQueryData(certificationsOptions(id).queryKey, rows)
 
 const certificateMeta = (id: CourseId) => ({ invalidates: [courseReadinessQueryKey(byId(id))] })
 
 export const createCertificationOptions = (queryClient: QueryClient, id: CourseId) => ({
-  ...createCertificationMutation(),
-  onSuccess: (row: Certification) => setCertifications(queryClient, id, [row]),
+  ...createCertificateTemplateMutation(),
+  onSuccess: (row: CertificateTemplate) => setCertifications(queryClient, id, [row]),
   meta: certificateMeta(id),
 })
 
-export const certificationVersion = async (queryClient: QueryClient, id: CourseId, row: Certification) =>
+export const certificationVersion = async (queryClient: QueryClient, id: CourseId, row: CertificateTemplate) =>
   (await queryClient.query({ ...certificationsOptions(id), staleTime: 0 })).find(old => old.id === row.id)?.version ??
   row.version
 
 export const updateCertificationOptions = (queryClient: QueryClient, id: CourseId) => ({
-  ...updateCertificationMutation(),
-  onSuccess: (row: Certification) => setCertifications(queryClient, id, [row]),
+  ...updateCertificateTemplateMutation(),
+  onSuccess: (row: CertificateTemplate) => setCertifications(queryClient, id, [row]),
 })
 
 export const deleteCertificationOptions = (queryClient: QueryClient, id: CourseId) => ({
-  ...deleteCertificationMutation(),
+  ...deleteCertificateTemplateMutation(),
   onSuccess: () => setCertifications(queryClient, id, []),
   meta: certificateMeta(id),
 })

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE certificates SET holder_name = $2, reissued_at = now()\n          WHERE user_id = $1 AND holder_name IS DISTINCT FROM $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "687864dee1c9c9ea206bd24abda418acddb215aa633ed2534c00edc1368e19c4"
+}

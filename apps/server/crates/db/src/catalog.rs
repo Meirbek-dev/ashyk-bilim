@@ -608,8 +608,8 @@ pub async fn course_learner_work<'e>(
                   (SELECT count(*) FROM work w JOIN learners l USING (user_id) WHERE w.quiz) AS "submissions!",
                   (SELECT count(*) FROM work w JOIN learners l USING (user_id) WHERE NOT w.quiz)
                       AS "file_attempts!",
-                  (SELECT count(*) FROM certificate_users cu
-                   JOIN certifications c ON c.id = cu.certification_id
+                  (SELECT count(*) FROM certificates cu
+                   JOIN certificate_templates c ON c.id = cu.template_id
                    WHERE c.course_id = $1) AS "certificates!""#,
         id.0
     )
@@ -763,7 +763,7 @@ pub async fn deleted_course_archive(
                'item_feedback', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM item_feedback x
                                   JOIN submissions s ON s.id = x.submission_id WHERE s.course_id = c.id),
                'file_tasks', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM file_submissions x WHERE x.course_id = c.id),
-               'certificates', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM certificate_users x WHERE x.course_id = c.id),
+               'certificates', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM certificates x WHERE x.course_id = c.id),
                'enrolments', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM enrolments x WHERE x.course_id = c.id),
                'completions', (SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]') FROM completions x
                                 JOIN activities a ON a.id = x.activity_id WHERE a.course_id = c.id)
@@ -833,7 +833,7 @@ async fn purge_course(
     // Discussion images go with the course's posts (post_uploads cascades).
     let post_images = sqlx::query_scalar!(
         r#"SELECT DISTINCT p.upload_id FROM post_uploads p
-           JOIN course_discussions d ON d.id = p.discussion_id
+           JOIN discussion_posts d ON d.id = p.discussion_id
            WHERE d.course_id = $1"#,
         id.0
     )
@@ -848,8 +848,8 @@ async fn purge_course(
     .await?;
     // A template that issued nothing goes; one that did stays for its certificates, without a course.
     sqlx::query!(
-        "DELETE FROM certifications c WHERE c.course_id = $1
-         AND NOT EXISTS (SELECT 1 FROM certificate_users cu WHERE cu.certification_id = c.id)",
+        "DELETE FROM certificate_templates c WHERE c.course_id = $1
+         AND NOT EXISTS (SELECT 1 FROM certificates cu WHERE cu.template_id = c.id)",
         id.0
     )
     .execute(&mut *tx)

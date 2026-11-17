@@ -287,8 +287,7 @@ fn new_migrations_lock_briefly_and_expand_before_they_contract() {
                 }
             }
         }
-        let contracts =
-            c.contains("drop column") || c.contains("drop table") || c.contains(" rename ");
+        let contracts = c.contains("drop column") || c.contains("drop table") || renames_break(&c);
         if contracts && !sql.contains("-- contract:") {
             broken.push(format!(
                 "{name}: DROP/RENAME breaks the previous release; drop a release later and say `-- contract: <why>`"
@@ -296,6 +295,68 @@ fn new_migrations_lock_briefly_and_expand_before_they_contract() {
         }
     }
     assert!(broken.is_empty(), "{}", broken.join("\n"));
+}
+
+/// Whether a RENAME in the file takes a name the previous release uses. A rename that leaves the old name
+/// behind is expand: a table with a view under its old name (a column of that table renamed with it, the
+/// view keeps the old column name), a column with a column under its old name (a trigger keeps both equal).
+fn renames_break(code: &str) -> bool {
+    let statements: Vec<&str> = code.split(';').map(str::trim).collect();
+    let table_of = |s: &str| -> Option<String> {
+        let rest = s.strip_prefix("alter table ")?;
+        let rest = rest.strip_prefix("only ").unwrap_or(rest);
+        rest.split_whitespace().next().map(|t| bare(t).to_owned())
+    };
+    let views: Vec<&str> = statements
+        .iter()
+        .filter_map(|s| s.strip_prefix("create view "))
+        .filter_map(|r| r.split([' ', '(']).next())
+        .map(bare)
+        .collect();
+    let mut renamed: Vec<String> = Vec::new();
+    for s in statements.iter().filter(|s| s.contains(" rename ")) {
+        let Some(table) = table_of(s) else {
+            return true;
+        };
+        let words: Vec<&str> = s.split_whitespace().skip(3).collect();
+        match words.as_slice() {
+            ["rename", "to", new] if views.contains(&table.as_str()) => {
+                renamed.push((*new).to_owned())
+            }
+            ["rename", "column", old, "to", _] => {
+                let left = format!(" add column {old} ");
+                let kept = renamed.contains(&table)
+                    || statements
+                        .iter()
+                        .any(|a| table_of(a).as_ref() == Some(&table) && a.contains(&left));
+                if !kept {
+                    return true;
+                }
+            }
+            _ => return true,
+        }
+    }
+    false
+}
+
+#[test]
+fn a_rename_that_leaves_the_old_name_is_expand() {
+    let ok = code(
+        "ALTER TABLE learning.certifications RENAME TO certificate_templates;\n\
+         ALTER TABLE learning.certificate_templates RENAME COLUMN course TO course_id;\n\
+         CREATE VIEW learning.certifications AS SELECT * FROM learning.certificate_templates;\n\
+         ALTER TABLE blocks RENAME COLUMN block_type TO kind;\n\
+         ALTER TABLE blocks ADD COLUMN block_type text;\n",
+    );
+    assert!(!renames_break(&ok));
+    for bad in [
+        "ALTER TABLE certifications RENAME TO certificate_templates;",
+        "ALTER TABLE blocks RENAME COLUMN block_type TO kind;",
+        "ALTER TABLE blocks RENAME COLUMN block_type TO kind; ALTER TABLE users ADD COLUMN block_type text;",
+        "ALTER INDEX a RENAME TO b;",
+    ] {
+        assert!(renames_break(&code(bad)), "{bad}");
+    }
 }
 
 /// `create table` statements the file runs (not inside a function body) whose

@@ -3,7 +3,7 @@
 
 use ab_core::Result;
 use ab_core::id::{
-    AssessmentId, CertificationId, ChapterId, CourseId, CourseUpdateId, DiscussionId,
+    AssessmentId, CertificateTemplateId, ChapterId, CourseId, CourseUpdateId, DiscussionId,
     FileSubmissionId, InterventionId, UserId, UsergroupId,
 };
 use sqlx::PgPool;
@@ -14,7 +14,7 @@ pub enum Versioned<'a> {
     Course(CourseId),
     Chapter(ChapterId),
     CourseUpdate(CourseUpdateId),
-    Certification(CertificationId),
+    Certification(CertificateTemplateId),
     Contributor(CourseId, UserId),
     Usergroup(UsergroupId),
     Role(&'a str),
@@ -47,9 +47,12 @@ pub async fn current_version(pool: &PgPool, of: Versioned<'_>) -> Result<Option<
                 .await?
         }
         Versioned::Certification(id) => {
-            sqlx::query_scalar!("SELECT version FROM certifications WHERE id = $1", id.0)
-                .fetch_optional(pool)
-                .await?
+            sqlx::query_scalar!(
+                "SELECT version FROM certificate_templates WHERE id = $1",
+                id.0
+            )
+            .fetch_optional(pool)
+            .await?
         }
         Versioned::Contributor(course_id, user_id) => {
             sqlx::query_scalar!(
@@ -95,7 +98,7 @@ pub async fn current_version(pool: &PgPool, of: Versioned<'_>) -> Result<Option<
             .await?
         }
         Versioned::Discussion(id) => {
-            sqlx::query_scalar!("SELECT version FROM course_discussions WHERE id = $1", id.0)
+            sqlx::query_scalar!("SELECT version FROM discussion_posts WHERE id = $1", id.0)
                 .fetch_optional(pool)
                 .await?
         }

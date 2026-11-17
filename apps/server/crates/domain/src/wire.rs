@@ -460,10 +460,10 @@ pub struct AiEffectiveConfig {
     pub remediation_requests_per_hour_per_user: i32,
 }
 
-/// `certifications.config`: what the certificate editor stores. The server
+/// `certificate_templates.config`: what the certificate editor stores. The server
 /// reads the title, type, lecturer and optional training details.
 #[derive(Serialize, ToSchema)]
-pub struct CertificationConfig {
+pub struct CertificateTemplateConfig {
     #[schema(nullable = false)]
     pub certification_name: Option<String>,
     #[schema(nullable = false)]

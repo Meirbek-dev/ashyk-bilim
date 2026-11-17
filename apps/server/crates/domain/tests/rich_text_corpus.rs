@@ -49,7 +49,7 @@ async fn stored_documents_pass_the_write_check() {
         .fetch_all(&pool)
         .await
         .unwrap();
-    let posts: Vec<(String,)> = sqlx::query_as("SELECT content FROM course_discussions")
+    let posts: Vec<(String,)> = sqlx::query_as("SELECT content FROM discussion_posts")
         .fetch_all(&pool)
         .await
         .unwrap();

@@ -4173,9 +4173,6 @@ expression: json
             "description": "The template's `certification_name` as issued, else the course name.",
             "type": "string"
           },
-          "certification_id": {
-            "$ref": "#/components/schemas/CertificationId"
-          },
           "course_name": {
             "description": "The course name as issued (renaming the course leaves it).",
             "type": "string"
@@ -4205,6 +4202,9 @@ expression: json
               "null"
             ]
           },
+          "template_id": {
+            "$ref": "#/components/schemas/CertificateTemplateId"
+          },
           "user_id": {
             "$ref": "#/components/schemas/UserId"
           },
@@ -4215,7 +4215,7 @@ expression: json
         },
         "required": [
           "id",
-          "certification_id",
+          "template_id",
           "user_id",
           "verify_code",
           "issued_at_unix",
@@ -4292,17 +4292,17 @@ expression: json
         ],
         "type": "object"
       },
-      "Certification": {
+      "CertificateTemplate": {
         "properties": {
           "allowed_actions": {
             "description": "What the caller may do to this template now.",
             "items": {
-              "$ref": "#/components/schemas/CertificationAction"
+              "$ref": "#/components/schemas/CertificateTemplateAction"
             },
             "type": "array"
           },
           "config": {
-            "$ref": "#/components/schemas/CertificationConfig"
+            "$ref": "#/components/schemas/CertificateTemplateConfig"
           },
           "course_id": {
             "$ref": "#/components/schemas/CourseId"
@@ -4311,7 +4311,7 @@ expression: json
             "$ref": "#/components/schemas/UnixTime"
           },
           "id": {
-            "$ref": "#/components/schemas/CertificationId"
+            "$ref": "#/components/schemas/CertificateTemplateId"
           },
           "updated_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
@@ -4333,7 +4333,7 @@ expression: json
         ],
         "type": "object"
       },
-      "CertificationAction": {
+      "CertificateTemplateAction": {
         "description": "What the caller may do to a certificate template (`Certification.allowed_actions`).",
         "enum": [
           "update",
@@ -4341,8 +4341,8 @@ expression: json
         ],
         "type": "string"
       },
-      "CertificationConfig": {
-        "description": "`certifications.config`: what the certificate editor stores. The server\nreads the title, type, lecturer and optional training details.",
+      "CertificateTemplateConfig": {
+        "description": "`certificate_templates.config`: what the certificate editor stores. The server\nreads the title, type, lecturer and optional training details.",
         "properties": {
           "certificate_instructor": {
             "description": "The name signed on the certificate; blank = the course's teachers.",
@@ -4374,7 +4374,7 @@ expression: json
         },
         "type": "object"
       },
-      "CertificationId": {
+      "CertificateTemplateId": {
         "format": "uuid",
         "type": "string"
       },
@@ -7325,11 +7325,11 @@ expression: json
         ],
         "type": "object"
       },
-      "CreateCertificationRequest": {
+      "CreateCertificateTemplateRequest": {
         "additionalProperties": false,
         "properties": {
           "config": {
-            "$ref": "#/components/schemas/CertificationConfig",
+            "$ref": "#/components/schemas/CertificateTemplateConfig",
             "description": "An object of at most 16 KiB serialized."
           },
           "course_id": {
@@ -12215,9 +12215,6 @@ expression: json
           "certificate": {
             "$ref": "#/components/schemas/Certificate"
           },
-          "certification": {
-            "$ref": "#/components/schemas/Certification"
-          },
           "course": {
             "$ref": "#/components/schemas/Course"
           },
@@ -12227,11 +12224,14 @@ expression: json
               "string",
               "null"
             ]
+          },
+          "template": {
+            "$ref": "#/components/schemas/CertificateTemplate"
           }
         },
         "required": [
           "certificate",
-          "certification",
+          "template",
           "course",
           "instructor_name"
         ],
@@ -16418,9 +16418,6 @@ expression: json
             "description": "The template's `certification_name` as issued, else the course name.",
             "type": "string"
           },
-          "certification_id": {
-            "$ref": "#/components/schemas/CertificationId"
-          },
           "course_name": {
             "description": "The course name as issued (renaming the course leaves it).",
             "type": "string"
@@ -16450,13 +16447,16 @@ expression: json
               "null"
             ]
           },
+          "template_id": {
+            "$ref": "#/components/schemas/CertificateTemplateId"
+          },
           "verify_code": {
             "type": "string"
           }
         },
         "required": [
           "id",
-          "certification_id",
+          "template_id",
           "verify_code",
           "issued_at_unix",
           "course_name",
@@ -22002,11 +22002,11 @@ expression: json
         },
         "type": "object"
       },
-      "UpdateCertificationRequest": {
+      "UpdateCertificateTemplateRequest": {
         "additionalProperties": false,
         "properties": {
           "config": {
-            "$ref": "#/components/schemas/CertificationConfig",
+            "$ref": "#/components/schemas/CertificateTemplateConfig",
             "description": "An object of at most 16 KiB serialized."
           }
         },
@@ -23350,9 +23350,6 @@ expression: json
           "certificate": {
             "$ref": "#/components/schemas/PublicCertificate"
           },
-          "certification": {
-            "$ref": "#/components/schemas/Certification"
-          },
           "course": {
             "$ref": "#/components/schemas/Course"
           },
@@ -23365,11 +23362,14 @@ expression: json
               "string",
               "null"
             ]
+          },
+          "template": {
+            "$ref": "#/components/schemas/CertificateTemplate"
           }
         },
         "required": [
           "certificate",
-          "certification",
+          "template",
           "course",
           "holder",
           "instructor_name"
@@ -32906,6 +32906,283 @@ expression: json
         ]
       }
     },
+    "/api/v2/certificate-templates": {
+      "post": {
+        "operationId": "create_certificate_template",
+        "parameters": [
+          {
+            "description": "Retry-safe replay key",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCertificateTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificateTemplate"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No certificate authoring on this course"
+          }
+        },
+        "summary": "Add a certification template to a course (`certificate:create`).\nHonours `Idempotency-Key`.",
+        "tags": [
+          "certificates"
+        ]
+      }
+    },
+    "/api/v2/certificate-templates/{template_id}": {
+      "delete": {
+        "operationId": "delete_certificate_template",
+        "parameters": [
+          {
+            "description": "Certificate template id",
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CertificateTemplateId"
+            }
+          },
+          {
+            "description": "Row `version`; stale -> 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted, or retired when certificates were issued"
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
+          }
+        },
+        "summary": "Turn the course's certificate off: deleted if nothing was issued, else retired (issued certificates stay valid).",
+        "tags": [
+          "certificates"
+        ]
+      },
+      "get": {
+        "operationId": "get_certificate_template",
+        "parameters": [
+          {
+            "description": "Certificate template id",
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CertificateTemplateId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificateTemplate"
+                }
+              }
+            },
+            "description": "Certificate template",
+            "headers": {
+              "ETag": {
+                "description": "Quoted `version`",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "One template (course-scoped `certificate:read`).",
+        "tags": [
+          "certificates"
+        ]
+      },
+      "patch": {
+        "operationId": "update_certificate_template",
+        "parameters": [
+          {
+            "description": "Certificate template id",
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CertificateTemplateId"
+            }
+          },
+          {
+            "description": "Current `version`; stale → 412",
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCertificateTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificateTemplate"
+                }
+              }
+            },
+            "description": "Updated",
+            "headers": {
+              "ETag": {
+                "description": "Quoted new version",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "412": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Stale `If-Match`"
+          }
+        },
+        "summary": "Replace the template document.",
+        "tags": [
+          "certificates"
+        ]
+      }
+    },
+    "/api/v2/certificate-templates/{template_id}/preview.pdf": {
+      "get": {
+        "description": "Before anything is issued: the caller as holder, today's date, code `PREVIEW`.\nLanguage: `?lang=`, else `Accept-Language`, else the caller's locale.",
+        "operationId": "certificate_template_preview_pdf",
+        "parameters": [
+          {
+            "description": "Certificate template id",
+            "in": "path",
+            "name": "template_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CertificateTemplateId"
+            }
+          },
+          {
+            "description": "ru, kk or en (default: the caller's locale)",
+            "in": "header",
+            "name": "Accept-Language",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "description": "Overrides `Accept-Language` (for links)",
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UiLanguage"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "PDF"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown or inaccessible"
+          }
+        },
+        "summary": "A sample PDF of the template (course certificate readers).",
+        "tags": [
+          "certificates"
+        ]
+      }
+    },
     "/api/v2/certificates/{code}": {
       "get": {
         "operationId": "verify_certificate",
@@ -32944,7 +33221,7 @@ expression: json
         },
         "summary": "Public verification by code - no session needed.",
         "tags": [
-          "certifications"
+          "certificates"
         ]
       }
     },
@@ -33009,284 +33286,7 @@ expression: json
         },
         "summary": "The certificate as an A4-landscape PDF - public by code, like verification.",
         "tags": [
-          "certifications"
-        ]
-      }
-    },
-    "/api/v2/certifications": {
-      "post": {
-        "operationId": "create_certification",
-        "parameters": [
-          {
-            "description": "Retry-safe replay key",
-            "in": "header",
-            "name": "Idempotency-Key",
-            "required": false,
-            "schema": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCertificationRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Certification"
-                }
-              }
-            },
-            "description": "Created"
-          },
-          "403": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "No certificate authoring on this course"
-          }
-        },
-        "summary": "Add a certification template to a course (`certificate:create`).\nHonours `Idempotency-Key`.",
-        "tags": [
-          "certifications"
-        ]
-      }
-    },
-    "/api/v2/certifications/{certification_id}": {
-      "delete": {
-        "operationId": "delete_certification",
-        "parameters": [
-          {
-            "description": "Certification id",
-            "in": "path",
-            "name": "certification_id",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/CertificationId"
-            }
-          },
-          {
-            "description": "Row `version`; stale -> 412",
-            "in": "header",
-            "name": "If-Match",
-            "required": false,
-            "schema": {
-              "format": "int32",
-              "type": [
-                "integer",
-                "null"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Deleted, or retired when certificates were issued"
-          },
-          "412": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Stale `If-Match`"
-          }
-        },
-        "summary": "Turn the course's certificate off: deleted if nothing was issued, else retired (issued certificates stay valid).",
-        "tags": [
-          "certifications"
-        ]
-      },
-      "get": {
-        "operationId": "get_certification",
-        "parameters": [
-          {
-            "description": "Certification id",
-            "in": "path",
-            "name": "certification_id",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/CertificationId"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Certification"
-                }
-              }
-            },
-            "description": "Certification",
-            "headers": {
-              "ETag": {
-                "description": "Quoted `version`",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "summary": "One template (course-scoped `certificate:read`).",
-        "tags": [
-          "certifications"
-        ]
-      },
-      "patch": {
-        "operationId": "update_certification",
-        "parameters": [
-          {
-            "description": "Certification id",
-            "in": "path",
-            "name": "certification_id",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/CertificationId"
-            }
-          },
-          {
-            "description": "Current `version`; stale → 412",
-            "in": "header",
-            "name": "If-Match",
-            "required": false,
-            "schema": {
-              "format": "int32",
-              "type": [
-                "integer",
-                "null"
-              ]
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateCertificationRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Certification"
-                }
-              }
-            },
-            "description": "Updated",
-            "headers": {
-              "ETag": {
-                "description": "Quoted new version",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "412": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Stale `If-Match`"
-          }
-        },
-        "summary": "Replace the template document.",
-        "tags": [
-          "certifications"
-        ]
-      }
-    },
-    "/api/v2/certifications/{certification_id}/preview.pdf": {
-      "get": {
-        "description": "Before anything is issued: the caller as holder, today's date, code `PREVIEW`.\nLanguage: `?lang=`, else `Accept-Language`, else the caller's locale.",
-        "operationId": "certification_preview_pdf",
-        "parameters": [
-          {
-            "description": "Certification id",
-            "in": "path",
-            "name": "certification_id",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/CertificationId"
-            }
-          },
-          {
-            "description": "ru, kk or en (default: the caller's locale)",
-            "in": "header",
-            "name": "Accept-Language",
-            "required": false,
-            "schema": {
-              "type": [
-                "string",
-                "null"
-              ]
-            }
-          },
-          {
-            "description": "Overrides `Accept-Language` (for links)",
-            "in": "query",
-            "name": "lang",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/UiLanguage"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/pdf": {
-                "schema": {
-                  "format": "binary",
-                  "type": "string"
-                }
-              }
-            },
-            "description": "PDF"
-          },
-          "404": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Unknown or inaccessible"
-          }
-        },
-        "summary": "A sample PDF of the template (course certificate readers).",
-        "tags": [
-          "certifications"
+          "certificates"
         ]
       }
     },
@@ -34772,6 +34772,41 @@ expression: json
         ]
       }
     },
+    "/api/v2/courses/{course_id}/certificate-templates": {
+      "get": {
+        "operationId": "list_course_certificate_templates",
+        "parameters": [
+          {
+            "description": "Course id",
+            "in": "path",
+            "name": "course_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CourseId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CertificateTemplate"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Certificate templates"
+          }
+        },
+        "summary": "The course's templates (course-scoped `certificate:read`).",
+        "tags": [
+          "certificates"
+        ]
+      }
+    },
     "/api/v2/courses/{course_id}/certificates/me": {
       "get": {
         "operationId": "my_course_certificates",
@@ -34803,42 +34838,7 @@ expression: json
         },
         "summary": "The caller's certificates for a course; a completed course issues on\nthe spot.",
         "tags": [
-          "certifications"
-        ]
-      }
-    },
-    "/api/v2/courses/{course_id}/certifications": {
-      "get": {
-        "operationId": "list_course_certifications",
-        "parameters": [
-          {
-            "description": "Course id",
-            "in": "path",
-            "name": "course_id",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/CourseId"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/Certification"
-                  },
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Certifications"
-          }
-        },
-        "summary": "The course's templates (course-scoped `certificate:read`).",
-        "tags": [
-          "certifications"
+          "certificates"
         ]
       }
     },
@@ -39900,7 +39900,7 @@ expression: json
         },
         "summary": "Every certificate the caller holds.",
         "tags": [
-          "certifications"
+          "certificates"
         ]
       }
     },
@@ -39939,7 +39939,7 @@ expression: json
         },
         "summary": "The caller's certificates as keyset pages (S-05; `GET /me/certificates`\nstays the full list).",
         "tags": [
-          "certifications"
+          "certificates"
         ]
       }
     },
@@ -44362,8 +44362,8 @@ expression: json
       "name": "conversations"
     },
     {
-      "description": "Certification templates, issued certificates, public verification",
-      "name": "certifications"
+      "description": "Certificate templates, issued certificates, public verification",
+      "name": "certificates"
     },
     {
       "description": "XP, levels, streaks, leaderboard; admin awards and policy",

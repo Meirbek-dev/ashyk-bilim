@@ -115,7 +115,7 @@ async fn posts_replies_reactions_and_moderation(pool: PgPool) {
     // The API counts likes, dislikes and replies on read (schema review 2026-11-08, item 14): with the counter
     // triggers the previous release still needs switched off, every count below holds.
     for ddl in [
-        "ALTER TABLE course_discussions DISABLE TRIGGER course_discussions_recount_replies",
+        "ALTER TABLE discussion_posts DISABLE TRIGGER course_discussions_recount_replies",
         "ALTER TABLE discussion_reactions DISABLE TRIGGER discussion_reactions_recount",
     ] {
         sqlx::query(ddl).execute(&pool).await.unwrap();
@@ -613,7 +613,7 @@ async fn concurrent_likes_and_replies_all_count(pool: PgPool) {
     .await;
     assert!(replies.iter().all(|r| r.status == StatusCode::CREATED));
     let counts: Vec<(i32, i32)> = sqlx::query_as(
-        "SELECT likes_count, replies_count FROM course_discussions
+        "SELECT likes_count, replies_count FROM discussion_posts
          WHERE parent_id IS NULL ORDER BY id",
     )
     .fetch_all(&app.pool)
@@ -643,7 +643,7 @@ async fn owner_edit_cannot_undo_a_concurrent_hide(pool: PgPool) {
     assert_eq!(post.status, StatusCode::CREATED, "{}", post.text());
     let id = post.json()["id"].as_str().unwrap().to_owned();
     let mut moderator = app.pool.begin().await.unwrap();
-    sqlx::query("SELECT id FROM course_discussions WHERE id = $1::uuid FOR UPDATE")
+    sqlx::query("SELECT id FROM discussion_posts WHERE id = $1::uuid FOR UPDATE")
         .bind(&id)
         .fetch_one(&mut *moderator)
         .await
@@ -657,7 +657,7 @@ async fn owner_edit_cannot_undo_a_concurrent_hide(pool: PgPool) {
             let blocked: bool = sqlx::query_scalar(
                 "SELECT EXISTS (SELECT 1 FROM pg_stat_activity
                  WHERE datname = current_database() AND wait_event_type = 'Lock'
-                   AND query LIKE '%UPDATE course_discussions%')",
+                   AND query LIKE '%UPDATE discussion_posts%')",
             )
             .fetch_one(&app.pool)
             .await
@@ -667,7 +667,7 @@ async fn owner_edit_cannot_undo_a_concurrent_hide(pool: PgPool) {
             }
             tokio::task::yield_now().await;
         }
-        sqlx::query("UPDATE course_discussions SET status = 'hidden' WHERE id = $1::uuid")
+        sqlx::query("UPDATE discussion_posts SET status = 'hidden' WHERE id = $1::uuid")
             .bind(&id)
             .execute(&mut *moderator)
             .await

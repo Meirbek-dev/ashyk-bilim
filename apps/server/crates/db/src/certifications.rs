@@ -2,12 +2,12 @@
 //! them (compile-checked). Timestamps as epoch seconds.
 
 use ab_core::Result;
-use ab_core::id::{CertificateId, CertificationId, CourseId, UserId};
+use ab_core::id::{CertificateId, CertificateTemplateId, CourseId, UserId};
 use sqlx::PgPool;
 
 #[derive(Debug, Clone)]
-pub struct CertificationRow {
-    pub id: CertificationId,
+pub struct CertificateTemplateRow {
+    pub id: CertificateTemplateId,
     pub course_id: CourseId,
     /// Opaque template payload (the client's PDF designer document).
     pub config: serde_json::Value,
@@ -28,17 +28,17 @@ pub async fn insert_certification(
     pool: &PgPool,
     course_id: CourseId,
     config: &serde_json::Value,
-) -> Result<CertificationId> {
+) -> Result<CertificateTemplateId> {
     let mut tx = pool.begin().await?;
     let revived = sqlx::query_scalar!(
-        r#"UPDATE certifications SET disabled_at = NULL, config = $2
-           WHERE id = (SELECT id FROM certifications
+        r#"UPDATE certificate_templates SET disabled_at = NULL, config = $2
+           WHERE id = (SELECT id FROM certificate_templates
                        WHERE course_id = $1 AND disabled_at IS NOT NULL
-                         AND NOT EXISTS (SELECT 1 FROM certifications
+                         AND NOT EXISTS (SELECT 1 FROM certificate_templates
                                          WHERE course_id = $1 AND disabled_at IS NULL)
                        ORDER BY id DESC LIMIT 1
                        FOR UPDATE)
-           RETURNING id AS "id: CertificationId""#,
+           RETURNING id AS "id: CertificateTemplateId""#,
         course_id.0,
         config
     )
@@ -48,9 +48,9 @@ pub async fn insert_certification(
         Some(id) => id,
         None => {
             sqlx::query_scalar!(
-                r#"INSERT INTO certifications (course_id, config) VALUES ($1, $2)
+                r#"INSERT INTO certificate_templates (course_id, config) VALUES ($1, $2)
                    ON CONFLICT (course_id) WHERE disabled_at IS NULL DO UPDATE SET config = EXCLUDED.config
-                   RETURNING id AS "id: CertificationId""#,
+                   RETURNING id AS "id: CertificateTemplateId""#,
                 course_id.0,
                 config
             )
@@ -64,20 +64,20 @@ pub async fn insert_certification(
 
 pub async fn get_certification(
     pool: &PgPool,
-    id: CertificationId,
-) -> Result<Option<CertificationRow>> {
+    id: CertificateTemplateId,
+) -> Result<Option<CertificateTemplateRow>> {
     let row = sqlx::query_as!(
-        CertificationRow,
+        CertificateTemplateRow,
         // A purged course leaves the template only with issued certificates, which keep its id.
-        r#"SELECT c.id AS "id: CertificationId",
-                  COALESCE(c.course_id, (SELECT cu.course_id FROM certificate_users cu
-                                          WHERE cu.certification_id = c.id LIMIT 1))
+        r#"SELECT c.id AS "id: CertificateTemplateId",
+                  COALESCE(c.course_id, (SELECT cu.course_id FROM certificates cu
+                                          WHERE cu.template_id = c.id LIMIT 1))
                       AS "course_id!: CourseId",
                   c.config, c.version,
                   (extract(epoch FROM c.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM c.updated_at))::bigint AS "updated_at!",
                   (extract(epoch FROM c.disabled_at))::bigint AS disabled_at
-           FROM certifications c WHERE c.id = $1"#,
+           FROM certificate_templates c WHERE c.id = $1"#,
         id.0
     )
     .fetch_optional(pool)
@@ -93,7 +93,7 @@ pub async fn courses_offering_certificates(
 ) -> Result<Vec<CourseId>> {
     let ids: Vec<uuid::Uuid> = course_ids.iter().map(|c| c.0).collect();
     let rows = sqlx::query_scalar!(
-        r#"SELECT DISTINCT course_id AS "course_id!: CourseId" FROM certifications
+        r#"SELECT DISTINCT course_id AS "course_id!: CourseId" FROM certificate_templates
            WHERE course_id = ANY($1) AND disabled_at IS NULL"#,
         &ids
     )
@@ -106,14 +106,14 @@ pub async fn courses_offering_certificates(
 pub async fn list_course_certifications<'e>(
     db: impl sqlx::PgExecutor<'e>,
     course_id: CourseId,
-) -> Result<Vec<CertificationRow>> {
+) -> Result<Vec<CertificateTemplateRow>> {
     let rows = sqlx::query_as!(
-        CertificationRow,
-        r#"SELECT id AS "id: CertificationId", course_id AS "course_id!: CourseId", config, version,
+        CertificateTemplateRow,
+        r#"SELECT id AS "id: CertificateTemplateId", course_id AS "course_id!: CourseId", config, version,
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!",
                   (extract(epoch FROM disabled_at))::bigint AS disabled_at
-           FROM certifications WHERE course_id = $1 AND disabled_at IS NULL ORDER BY id"#,
+           FROM certificate_templates WHERE course_id = $1 AND disabled_at IS NULL ORDER BY id"#,
         course_id.0
     )
     .fetch_all(db)
@@ -123,11 +123,11 @@ pub async fn list_course_certifications<'e>(
 
 pub async fn update_certification_config(
     pool: &PgPool,
-    id: CertificationId,
+    id: CertificateTemplateId,
     config: &serde_json::Value,
 ) -> Result<bool> {
     let updated = sqlx::query!(
-        "UPDATE certifications SET config = $2 WHERE id = $1",
+        "UPDATE certificate_templates SET config = $2 WHERE id = $1",
         id.0,
         config
     )
@@ -141,11 +141,11 @@ pub async fn update_certification_config(
 /// One that issued no certificate is deleted; one that did is retired (`disabled_at`), so the issued
 /// certificates stay valid. The row lock waits for an issue in flight (its insert holds a key-share lock on
 /// this row), so a certificate issued meanwhile is seen (the key refuses the delete otherwise).
-pub async fn delete_certification(pool: &PgPool, id: CertificationId) -> Result<bool> {
+pub async fn delete_certification(pool: &PgPool, id: CertificateTemplateId) -> Result<bool> {
     let mut tx = pool.begin().await?;
     let Some(issued) = sqlx::query_scalar!(
-        r#"SELECT EXISTS (SELECT 1 FROM certificate_users WHERE certification_id = c.id) AS "issued!"
-           FROM certifications c WHERE c.id = $1 AND c.disabled_at IS NULL FOR UPDATE"#,
+        r#"SELECT EXISTS (SELECT 1 FROM certificates WHERE template_id = c.id) AS "issued!"
+           FROM certificate_templates c WHERE c.id = $1 AND c.disabled_at IS NULL FOR UPDATE"#,
         id.0
     )
     .fetch_optional(&mut *tx)
@@ -155,13 +155,13 @@ pub async fn delete_certification(pool: &PgPool, id: CertificationId) -> Result<
     };
     if issued {
         sqlx::query!(
-            "UPDATE certifications SET disabled_at = now() WHERE id = $1",
+            "UPDATE certificate_templates SET disabled_at = now() WHERE id = $1",
             id.0
         )
         .execute(&mut *tx)
         .await?;
     } else {
-        sqlx::query!("DELETE FROM certifications WHERE id = $1", id.0)
+        sqlx::query!("DELETE FROM certificate_templates WHERE id = $1", id.0)
             .execute(&mut *tx)
             .await?;
     }
@@ -174,7 +174,7 @@ pub async fn delete_certification(pool: &PgPool, id: CertificationId) -> Result<
 #[derive(Debug, Clone)]
 pub struct CertificateRow {
     pub id: CertificateId,
-    pub certification_id: CertificationId,
+    pub template_id: CertificateTemplateId,
     pub course_id: CourseId,
     pub user_id: UserId,
     /// Public verification code (`/certificates/{code}`).
@@ -201,28 +201,28 @@ pub struct CertificateRow {
 /// now when `None`); `false` when it already existed. What the certificate freezes is decided here.
 pub async fn issue_certificate<'e>(
     db: impl sqlx::PgExecutor<'e>,
-    certification_id: CertificationId,
+    template_id: CertificateTemplateId,
     user_id: UserId,
     verify_code: &str,
     issued_at: Option<i64>,
 ) -> Result<bool> {
     let inserted = sqlx::query!(
-        r#"INSERT INTO certificate_users
-               (certification_id, user_id, verify_code, created_at, course_id, holder_name,
+        r#"INSERT INTO certificates
+               (template_id, user_id, verify_code, created_at, course_id, holder_name,
                 course_name, certificate_name, instructor_name, score)
            SELECT ce.id, u.id, $3, COALESCE(to_timestamp($4::bigint), now()),
                   ce.course_id, u.display_name, co.name,
                   COALESCE(certification_text(ce.config, 'certification_name'), co.name),
                   COALESCE(certification_text(ce.config, 'certificate_instructor'), creator.display_name),
                   COALESCE(p.weighted_grade_average, p.grade_average)
-           FROM certifications ce
+           FROM certificate_templates ce
            JOIN courses co ON co.id = ce.course_id
            JOIN users u ON u.id = $2
            LEFT JOIN users creator ON creator.id = course_creator(co.id)
            LEFT JOIN course_progress_v p ON p.course_id = ce.course_id AND p.user_id = u.id
            WHERE ce.id = $1
-           ON CONFLICT (certification_id, user_id) DO NOTHING"#,
-        certification_id.0,
+           ON CONFLICT (template_id, user_id) DO NOTHING"#,
+        template_id.0,
         user_id.0,
         verify_code,
         issued_at
@@ -242,7 +242,7 @@ pub async fn reissue_for_holder<'e>(
     holder_name: &str,
 ) -> Result<u64> {
     let done = sqlx::query!(
-        "UPDATE certificate_users SET holder_name = $2, reissued_at = now()
+        "UPDATE certificates SET holder_name = $2, reissued_at = now()
           WHERE user_id = $1 AND holder_name IS DISTINCT FROM $2",
         user_id.0,
         holder_name
@@ -260,14 +260,14 @@ pub async fn list_user_certificates_for_course(
     let rows = sqlx::query_as!(
         CertificateRow,
         r#"SELECT cu.id AS "id: CertificateId",
-                  cu.certification_id AS "certification_id: CertificationId",
+                  cu.template_id AS "template_id: CertificateTemplateId",
                   cu.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
                   cu.verify_code, cu.holder_name, cu.course_name, cu.certificate_name,
                   cu.instructor_name, cu.score::float8 AS score,
                   (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM coalesce(cu.reissued_at, cu.created_at)))::bigint AS "updated_at!"
-           FROM certificate_users cu
+           FROM certificates cu
            WHERE cu.course_id = $1 AND cu.user_id = $2
            ORDER BY cu.id"#,
         course_id.0,
@@ -282,14 +282,14 @@ pub async fn list_user_certificates(pool: &PgPool, user_id: UserId) -> Result<Ve
     let rows = sqlx::query_as!(
         CertificateRow,
         r#"SELECT cu.id AS "id: CertificateId",
-                  cu.certification_id AS "certification_id: CertificationId",
+                  cu.template_id AS "template_id: CertificateTemplateId",
                   cu.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
                   cu.verify_code, cu.holder_name, cu.course_name, cu.certificate_name,
                   cu.instructor_name, cu.score::float8 AS score,
                   (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM coalesce(cu.reissued_at, cu.created_at)))::bigint AS "updated_at!"
-           FROM certificate_users cu
+           FROM certificates cu
            WHERE cu.user_id = $1
            ORDER BY cu.id DESC"#,
         user_id.0
@@ -306,14 +306,14 @@ pub async fn get_certificate_by_code(
     let row = sqlx::query_as!(
         CertificateRow,
         r#"SELECT cu.id AS "id: CertificateId",
-                  cu.certification_id AS "certification_id: CertificationId",
+                  cu.template_id AS "template_id: CertificateTemplateId",
                   cu.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
                   cu.verify_code, cu.holder_name, cu.course_name, cu.certificate_name,
                   cu.instructor_name, cu.score::float8 AS score,
                   (extract(epoch FROM cu.reissued_at))::bigint AS reissued_at,
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM coalesce(cu.reissued_at, cu.created_at)))::bigint AS "updated_at!"
-           FROM certificate_users cu
+           FROM certificates cu
            -- Dash-insensitive: ETL-migrated legacy codes keep their own
            -- `XX-XXXXXXXX-XXXX-XXXXXX` layout (the table is small; a seq
            -- scan is fine until it is not - then an expression index).

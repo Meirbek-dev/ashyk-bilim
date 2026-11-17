@@ -8,11 +8,11 @@
 
 pub mod pdf;
 
-use ab_core::id::{CertificationId, CourseId, UserId};
+use ab_core::id::{CertificateTemplateId, CourseId, UserId};
 use ab_core::language::Language;
 use ab_core::permission::{Action, Permission, ResourceType, Scope};
 use ab_core::{Error, FieldError, Result};
-use ab_db::certifications::{CertificateRow, CertificationRow};
+use ab_db::certifications::{CertificateRow, CertificateTemplateRow};
 use sqlx::{PgConnection, PgPool};
 
 use crate::assessments::service::AssessmentsService;
@@ -142,7 +142,7 @@ pub(crate) async fn issue_for_completion(
 #[derive(Debug, Clone)]
 pub struct IssuedCertificate {
     pub certificate: CertificateRow,
-    pub certification: CertificationRow,
+    pub certification: CertificateTemplateRow,
     pub course: Course,
     /// The name signed on the certificate, as issued (what the PDF prints).
     pub instructor_name: Option<String>,
@@ -176,7 +176,7 @@ pub struct CertificationsService {
 /// What the caller may do to a certificate template (`Certification.allowed_actions`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, utoipa::ToSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum CertificationAction {
+pub enum CertificateTemplateAction {
     Update,
     Delete,
 }
@@ -191,13 +191,13 @@ impl CertificationsService {
     /// `Certification.allowed_actions` on `course`'s templates: the
     /// update / delete gates, frozen with an archived course (409).
     #[must_use]
-    pub fn allowed_actions(actor: &Actor, course: &Course) -> Vec<CertificationAction> {
+    pub fn allowed_actions(actor: &Actor, course: &Course) -> Vec<CertificateTemplateAction> {
         if course.archived_at.is_some() {
             return Vec::new();
         }
         [
-            (CertificationAction::Update, Action::Update),
-            (CertificationAction::Delete, Action::Delete),
+            (CertificateTemplateAction::Update, Action::Update),
+            (CertificateTemplateAction::Delete, Action::Delete),
         ]
         .into_iter()
         .filter_map(|(out, action)| Self::may(actor, course, action).then_some(out))
@@ -209,7 +209,7 @@ impl CertificationsService {
         &self,
         actor: &Actor,
         course_id: CourseId,
-    ) -> Result<Vec<CertificationAction>> {
+    ) -> Result<Vec<CertificateTemplateAction>> {
         let course = self.courses.get(actor, course_id).await?;
         Ok(Self::allowed_actions(actor, &course))
     }
@@ -259,7 +259,7 @@ impl CertificationsService {
     }
 
     /// UX-311: [`Self::update`]'s gate on its own, before the body is read.
-    pub async fn require_updatable(&self, actor: &Actor, id: CertificationId) -> Result<()> {
+    pub async fn require_updatable(&self, actor: &Actor, id: CertificateTemplateId) -> Result<()> {
         let row = self.load_live(id).await?;
         self.scoped_course(actor, row.course_id, Action::Update)
             .await
@@ -267,14 +267,14 @@ impl CertificationsService {
     }
 
     /// Any certification, retired or not: what an issued certificate certifies.
-    async fn load(&self, id: CertificationId) -> Result<CertificationRow> {
+    async fn load(&self, id: CertificateTemplateId) -> Result<CertificateTemplateRow> {
         ab_db::certifications::get_certification(&self.pool, id)
             .await?
             .ok_or_else(|| Error::not_found("certification"))
     }
 
     /// A live certification: for its authors a retired one is gone (turned off; its certificates stay).
-    async fn load_live(&self, id: CertificationId) -> Result<CertificationRow> {
+    async fn load_live(&self, id: CertificateTemplateId) -> Result<CertificateTemplateRow> {
         let row = self.load(id).await?;
         if row.disabled_at.is_some() {
             return Err(Error::not_found("certification"));
@@ -284,7 +284,7 @@ impl CertificationsService {
 
     fn issued(
         certificate: CertificateRow,
-        certification: CertificationRow,
+        certification: CertificateTemplateRow,
         course: Course,
     ) -> IssuedCertificate {
         IssuedCertificate {
@@ -373,7 +373,7 @@ impl CertificationsService {
         actor: &Actor,
         course_id: CourseId,
         config: &serde_json::Value,
-    ) -> Result<CertificationRow> {
+    ) -> Result<CertificateTemplateRow> {
         // A course's template is set up by whoever may edit it: an author or a platform `update` grant.
         // `certificate:create:platform` (every instructor) only says "may create templates at all"
         // (`require_some_create`); gating on it let any instructor put - or, since a course has one
@@ -384,7 +384,11 @@ impl CertificationsService {
         self.load_live(id).await
     }
 
-    pub async fn get(&self, actor: &Actor, id: CertificationId) -> Result<CertificationRow> {
+    pub async fn get(
+        &self,
+        actor: &Actor,
+        id: CertificateTemplateId,
+    ) -> Result<CertificateTemplateRow> {
         let row = self.load_live(id).await?;
         self.scoped_course(actor, row.course_id, Action::Read)
             .await?;
@@ -395,7 +399,7 @@ impl CertificationsService {
         &self,
         actor: &Actor,
         course_id: CourseId,
-    ) -> Result<Vec<CertificationRow>> {
+    ) -> Result<Vec<CertificateTemplateRow>> {
         self.scoped_course(actor, course_id, Action::Read).await?;
         ab_db::certifications::list_course_certifications(&self.pool, course_id).await
     }
@@ -403,9 +407,9 @@ impl CertificationsService {
     pub async fn update(
         &self,
         actor: &Actor,
-        id: CertificationId,
+        id: CertificateTemplateId,
         config: &serde_json::Value,
-    ) -> Result<CertificationRow> {
+    ) -> Result<CertificateTemplateRow> {
         let row = self.load_live(id).await?;
         self.scoped_course(actor, row.course_id, Action::Update)
             .await?;
@@ -415,7 +419,7 @@ impl CertificationsService {
     }
 
     /// Turns the course's certificate off; certificates already issued stay valid (see the db call).
-    pub async fn delete(&self, actor: &Actor, id: CertificationId) -> Result<()> {
+    pub async fn delete(&self, actor: &Actor, id: CertificateTemplateId) -> Result<()> {
         let row = self.load_live(id).await?;
         self.scoped_course(actor, row.course_id, Action::Delete)
             .await?;
@@ -451,7 +455,7 @@ impl CertificationsService {
         .await?;
         let mut out = Vec::with_capacity(rows.len());
         for certificate in rows {
-            let certification = self.load(certificate.certification_id).await?;
+            let certification = self.load(certificate.template_id).await?;
             out.push(Self::issued(certificate, certification, course.clone()));
         }
         Ok(out)
@@ -463,7 +467,7 @@ impl CertificationsService {
         let mut out = Vec::with_capacity(rows.len());
         for certificate in rows {
             let Some(certification) =
-                ab_db::certifications::get_certification(&self.pool, certificate.certification_id)
+                ab_db::certifications::get_certification(&self.pool, certificate.template_id)
                     .await?
             else {
                 continue;
@@ -495,7 +499,7 @@ impl CertificationsService {
             ab_db::certifications::list_user_certificates(&self.pool, user_id).await?
         {
             let Some(certification) =
-                ab_db::certifications::get_certification(&self.pool, certificate.certification_id)
+                ab_db::certifications::get_certification(&self.pool, certificate.template_id)
                     .await?
             else {
                 continue;
@@ -524,7 +528,7 @@ impl CertificationsService {
         let certificate = ab_db::certifications::get_certificate_by_code(&self.pool, &code)
             .await?
             .ok_or_else(|| Error::not_found("certificate"))?;
-        let certification = self.load(certificate.certification_id).await?;
+        let certification = self.load(certificate.template_id).await?;
         let course = ab_db::catalog::get_course(&self.pool, certification.course_id)
             .await?
             .ok_or_else(|| Error::not_found("course"))?;
@@ -581,7 +585,7 @@ impl CertificationsService {
     pub async fn preview_pdf(
         &self,
         actor: &Actor,
-        id: CertificationId,
+        id: CertificateTemplateId,
         language: Option<Language>,
         verify_url: impl FnOnce(Language, &str) -> String,
     ) -> Result<Vec<u8>> {

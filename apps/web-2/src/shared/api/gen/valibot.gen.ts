@@ -633,9 +633,9 @@ export const vCertificateState = v.object({
 /**
  * What the caller may do to a certificate template (`Certification.allowed_actions`).
  */
-export const vCertificationAction = v.picklist(['update', 'delete']);
+export const vCertificateTemplateAction = v.picklist(['update', 'delete']);
 
-export const vCertificationId = v.pipe(v.string(), v.uuid());
+export const vCertificateTemplateId = v.pipe(v.string(), v.uuid());
 
 export const vCertificationType = v.picklist([
     'completion',
@@ -650,10 +650,10 @@ export const vCertificationType = v.picklist([
 ]);
 
 /**
- * `certifications.config`: what the certificate editor stores. The server
+ * `certificate_templates.config`: what the certificate editor stores. The server
  * reads the title, type, lecturer and optional training details.
  */
-export const vCertificationConfig = v.object({
+export const vCertificateTemplateConfig = v.object({
     certificate_instructor: v.optional(v.string()),
     certificate_pattern: v.optional(vCertificatePattern),
     certification_description: v.optional(v.string()),
@@ -1127,8 +1127,8 @@ export const vCreateBlockRequest = v.strictObject({
     upload_id: v.pipe(v.string(), v.uuid())
 });
 
-export const vCreateCertificationRequest = v.strictObject({
-    config: v.optional(vCertificationConfig),
+export const vCreateCertificateTemplateRequest = v.strictObject({
+    config: v.optional(vCertificateTemplateConfig),
     course_id: vCourseId
 });
 
@@ -4426,12 +4426,12 @@ export const vBlock = v.object({
     id: vBlockId
 });
 
-export const vCertification = v.object({
-    allowed_actions: v.array(vCertificationAction),
-    config: vCertificationConfig,
+export const vCertificateTemplate = v.object({
+    allowed_actions: v.array(vCertificateTemplateAction),
+    config: vCertificateTemplateConfig,
     course_id: vCourseId,
     created_at_unix: vUnixTime,
-    id: vCertificationId,
+    id: vCertificateTemplateId,
     updated_at_unix: vUnixTime,
     version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))
 });
@@ -4825,12 +4825,12 @@ export const vProgressState = v.object({
  */
 export const vPublicCertificate = v.object({
     certificate_name: v.string(),
-    certification_id: vCertificationId,
     course_name: v.string(),
     id: vCertificateId,
     issued_at_unix: vUnixTime,
     reissued_at_unix: v.nullable(vUnixTime),
     score: v.nullable(v.number()),
+    template_id: vCertificateTemplateId,
     verify_code: v.string()
 });
 
@@ -5037,8 +5037,8 @@ export const vUpdateAssessmentRequest = v.strictObject({
     weight: v.optional(v.pipe(v.number(), v.minValue(0), v.maxValue(100)))
 });
 
-export const vUpdateCertificationRequest = v.strictObject({
-    config: vCertificationConfig
+export const vUpdateCertificateTemplateRequest = v.strictObject({
+    config: vCertificateTemplateConfig
 });
 
 export const vUpdateChapterRequest = v.strictObject({
@@ -5340,12 +5340,12 @@ export const vBulkResult = v.object({
 
 export const vCertificate = v.object({
     certificate_name: v.string(),
-    certification_id: vCertificationId,
     course_name: v.string(),
     id: vCertificateId,
     issued_at_unix: vUnixTime,
     reissued_at_unix: v.nullable(vUnixTime),
     score: v.nullable(v.number()),
+    template_id: vCertificateTemplateId,
     user_id: vUserId,
     verify_code: v.string()
 });
@@ -5802,9 +5802,9 @@ export const vInterventionList = v.object({
  */
 export const vIssuedCertificate = v.object({
     certificate: vCertificate,
-    certification: vCertification,
     course: vCourse,
-    instructor_name: v.nullable(v.string())
+    instructor_name: v.nullable(v.string()),
+    template: vCertificateTemplate
 });
 
 /**
@@ -6715,10 +6715,10 @@ export const vUsergroupPage = v.object({
  */
 export const vVerifiedCertificate = v.object({
     certificate: vPublicCertificate,
-    certification: vCertification,
     course: vCourse,
     holder: vCertificateHolder,
-    instructor_name: v.nullable(v.string())
+    instructor_name: v.nullable(v.string()),
+    template: vCertificateTemplate
 });
 
 /**
@@ -8936,6 +8936,71 @@ export const vGetBulkActionPath = v.object({
  */
 export const vGetBulkActionResponse = vBulkAction;
 
+export const vCreateCertificateTemplateBody = vCreateCertificateTemplateRequest;
+
+export const vCreateCertificateTemplateHeaders = v.object({
+    'Idempotency-Key': v.nullish(v.string())
+});
+
+/**
+ * Created
+ */
+export const vCreateCertificateTemplateResponse = vCertificateTemplate;
+
+export const vDeleteCertificateTemplateHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
+export const vDeleteCertificateTemplatePath = v.object({
+    template_id: vCertificateTemplateId
+});
+
+/**
+ * Deleted, or retired when certificates were issued
+ */
+export const vDeleteCertificateTemplateResponse = v.void();
+
+export const vGetCertificateTemplatePath = v.object({
+    template_id: vCertificateTemplateId
+});
+
+/**
+ * Certificate template
+ */
+export const vGetCertificateTemplateResponse = vCertificateTemplate;
+
+export const vUpdateCertificateTemplateBody = vUpdateCertificateTemplateRequest;
+
+export const vUpdateCertificateTemplateHeaders = v.object({
+    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
+});
+
+export const vUpdateCertificateTemplatePath = v.object({
+    template_id: vCertificateTemplateId
+});
+
+/**
+ * Updated
+ */
+export const vUpdateCertificateTemplateResponse = vCertificateTemplate;
+
+export const vCertificateTemplatePreviewPdfHeaders = v.object({
+    'Accept-Language': v.nullish(v.string())
+});
+
+export const vCertificateTemplatePreviewPdfPath = v.object({
+    template_id: vCertificateTemplateId
+});
+
+export const vCertificateTemplatePreviewPdfQuery = v.object({
+    lang: v.optional(vUiLanguage)
+});
+
+/**
+ * PDF
+ */
+export const vCertificateTemplatePreviewPdfResponse = v.string();
+
 export const vVerifyCertificatePath = v.object({
     code: v.string()
 });
@@ -8961,71 +9026,6 @@ export const vCertificatePdfQuery = v.object({
  * PDF
  */
 export const vCertificatePdfResponse = v.string();
-
-export const vCreateCertificationBody = vCreateCertificationRequest;
-
-export const vCreateCertificationHeaders = v.object({
-    'Idempotency-Key': v.nullish(v.string())
-});
-
-/**
- * Created
- */
-export const vCreateCertificationResponse = vCertification;
-
-export const vDeleteCertificationHeaders = v.object({
-    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
-});
-
-export const vDeleteCertificationPath = v.object({
-    certification_id: vCertificationId
-});
-
-/**
- * Deleted, or retired when certificates were issued
- */
-export const vDeleteCertificationResponse = v.void();
-
-export const vGetCertificationPath = v.object({
-    certification_id: vCertificationId
-});
-
-/**
- * Certification
- */
-export const vGetCertificationResponse = vCertification;
-
-export const vUpdateCertificationBody = vUpdateCertificationRequest;
-
-export const vUpdateCertificationHeaders = v.object({
-    'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
-});
-
-export const vUpdateCertificationPath = v.object({
-    certification_id: vCertificationId
-});
-
-/**
- * Updated
- */
-export const vUpdateCertificationResponse = vCertification;
-
-export const vCertificationPreviewPdfHeaders = v.object({
-    'Accept-Language': v.nullish(v.string())
-});
-
-export const vCertificationPreviewPdfPath = v.object({
-    certification_id: vCertificationId
-});
-
-export const vCertificationPreviewPdfQuery = v.object({
-    lang: v.optional(vUiLanguage)
-});
-
-/**
- * PDF
- */
-export const vCertificationPreviewPdfResponse = v.string();
 
 export const vDeleteChapterHeaders = v.object({
     'If-Match': v.nullish(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))
@@ -9308,6 +9308,15 @@ export const vListCourseAssessmentsPath = v.object({
  */
 export const vListCourseAssessmentsResponse = v.array(vAssessment);
 
+export const vListCourseCertificateTemplatesPath = v.object({
+    course_id: vCourseId
+});
+
+/**
+ * Certificate templates
+ */
+export const vListCourseCertificateTemplatesResponse = v.array(vCertificateTemplate);
+
 export const vMyCourseCertificatesPath = v.object({
     course_id: vCourseId
 });
@@ -9316,15 +9325,6 @@ export const vMyCourseCertificatesPath = v.object({
  * Certificates
  */
 export const vMyCourseCertificatesResponse = v.array(vIssuedCertificate);
-
-export const vListCourseCertificationsPath = v.object({
-    course_id: vCourseId
-});
-
-/**
- * Certifications
- */
-export const vListCourseCertificationsResponse = v.array(vCertification);
 
 export const vCreateChapterBody = vCreateChapterRequest;
 

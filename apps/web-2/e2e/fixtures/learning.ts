@@ -8,7 +8,7 @@ import {
   enroll,
   courseLifecycle,
   createActivity,
-  createCertification,
+  createCertificateTemplate,
   createChapter,
   createCourse,
   deleteCourse,
@@ -81,7 +81,7 @@ export const test = base.extend<{
         activityIds.push(activity.id)
       }
       if (certificate) {
-        await createCertification({
+        await createCertificateTemplate({
           client: api,
           body: { course_id: course.id, config: {} },
           headers,

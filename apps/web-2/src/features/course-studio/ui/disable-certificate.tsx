@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import type { Certification, Course } from '#/shared/api/gen/types.gen'
+import type { CertificateTemplate, Course } from '#/shared/api/gen/types.gen'
 import { ConfirmDialog } from '#/shared/components/templates/confirm-dialog'
 import { Button } from '#/shared/ui/button'
 import { toast } from '#/shared/ui/toast'
@@ -10,12 +10,12 @@ import { toast } from '#/shared/ui/toast'
 import { deleteCertificationOptions } from '../queries'
 
 /** Switch the certificate off: the configuration is deleted after a confirmation. */
-export function DisableCertificate({ course, certification }: { course: Course; certification: Certification }) {
+export function DisableCertificate({ course, certification }: { course: Course; certification: CertificateTemplate }) {
   const [open, setOpen] = useState(false)
   const remove = useMutation(deleteCertificationOptions(useQueryClient(), course.id))
   const confirm = () =>
     remove.mutate(
-      { path: { certification_id: certification.id }, headers: { 'If-Match': certification.version } },
+      { path: { template_id: certification.id }, headers: { 'If-Match': certification.version } },
       {
         onSuccess: () => {
           setOpen(false)

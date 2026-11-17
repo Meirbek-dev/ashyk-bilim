@@ -310,9 +310,9 @@ pub async fn course_learners(pool: &PgPool, course_id: CourseId) -> Result<Vec<U
 /// A thread's author and everyone with an active reply under it.
 pub async fn thread_participants(pool: &PgPool, root: DiscussionId) -> Result<Vec<UserId>> {
     let ids = sqlx::query_scalar!(
-        r#"SELECT user_id AS "id!" FROM course_discussions WHERE id = $1
+        r#"SELECT user_id AS "id!" FROM discussion_posts WHERE id = $1
            UNION
-           SELECT user_id FROM course_discussions
+           SELECT user_id FROM discussion_posts
            WHERE parent_id = $1 AND status = 'active' AND deleted_at IS NULL"#,
         root.0
     )

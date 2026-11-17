@@ -89,5 +89,5 @@ export const contentSchema = (): AnyExtension[] => [
   WebPreview,
 ]
 
-/** The schema of discussion posts (`course_discussions.content`): rich text, images and embeds. */
+/** The schema of discussion posts (`discussion_posts.content`): rich text, images and embeds. */
 export const discussionSchema = (): AnyExtension[] => [starterKit(), HeadingIds, Image, EmbedBlock]

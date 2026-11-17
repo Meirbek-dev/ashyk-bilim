@@ -9,7 +9,7 @@
 //! - nothing else on an issued row can be rewritten.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use ab_core::id::{CertificationId, UserId};
+use ab_core::id::{CertificateTemplateId, UserId};
 use ab_db::certifications::{get_certificate_by_code, issue_certificate};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -38,7 +38,7 @@ async fn a_certificate_keeps_what_it_was_issued_with(pool: PgPool) {
     .await
     .unwrap();
     let certification: Uuid = sqlx::query_scalar(
-        r#"INSERT INTO certifications (course_id, config)
+        r#"INSERT INTO certificate_templates (course_id, config)
            VALUES ($1, '{"certification_name": "  Algebra I  ", "certificate_instructor": 7}')
            RETURNING id"#,
     )
@@ -74,7 +74,7 @@ async fn a_certificate_keeps_what_it_was_issued_with(pool: PgPool) {
     assert!(
         issue_certificate(
             &pool,
-            CertificationId(certification),
+            CertificateTemplateId(certification),
             UserId(learner),
             "AAAA-BBBB-CCCC-DDDD",
             None
@@ -102,7 +102,7 @@ async fn a_certificate_keeps_what_it_was_issued_with(pool: PgPool) {
         .await
         .unwrap();
     sqlx::query(
-        r#"UPDATE certifications SET config = '{"certification_name": "Other"}' WHERE id = $1"#,
+        r#"UPDATE certificate_templates SET config = '{"certification_name": "Other"}' WHERE id = $1"#,
     )
     .bind(certification)
     .execute(&pool)
@@ -151,10 +151,10 @@ async fn a_certificate_keeps_what_it_was_issued_with(pool: PgPool) {
 
     // Anything else on an issued row is refused.
     for change in [
-        "UPDATE certificate_users SET course_name = 'Forged'",
-        "UPDATE certificate_users SET score = 100",
-        "UPDATE certificate_users SET created_at = now() - interval '1 year'",
-        "UPDATE certificate_users SET verify_code = 'ZZZZ-ZZZZ-ZZZZ-ZZZZ'",
+        "UPDATE certificates SET course_name = 'Forged'",
+        "UPDATE certificates SET score = 100",
+        "UPDATE certificates SET created_at = now() - interval '1 year'",
+        "UPDATE certificates SET verify_code = 'ZZZZ-ZZZZ-ZZZZ-ZZZZ'",
     ] {
         let refused = sqlx::query(change).execute(&pool).await.unwrap_err();
         assert!(
@@ -190,16 +190,17 @@ async fn renaming_writers_reissue_without_the_trigger(pool: PgPool) {
     .fetch_one(&pool)
     .await
     .unwrap();
-    let certification: Uuid =
-        sqlx::query_scalar("INSERT INTO certifications (course_id) VALUES ($1) RETURNING id")
-            .bind(course)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+    let certification: Uuid = sqlx::query_scalar(
+        "INSERT INTO certificate_templates (course_id) VALUES ($1) RETURNING id",
+    )
+    .bind(course)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
     assert!(
         issue_certificate(
             &pool,
-            CertificationId(certification),
+            CertificateTemplateId(certification),
             UserId(learner),
             "EEEE-FFFF-GGGG-HHHH",
             None

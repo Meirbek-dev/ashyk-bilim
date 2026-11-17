@@ -3,7 +3,7 @@ import { type ReactNode, useState } from 'react'
 import { certificationPreviewHref } from '#/features/certificates'
 import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
-import type { Certification } from '#/shared/api/gen/types.gen'
+import type { CertificateTemplate } from '#/shared/api/gen/types.gen'
 import { PdfFrame } from '#/shared/components/pdf-frame'
 import { Button } from '#/shared/ui/button'
 
@@ -12,7 +12,13 @@ import { Button } from '#/shared/ui/button'
  * PDF is made on every read); a saved change (new `version`) loads the frame again.
  */
 // `actions`: the other certificate buttons, in the same row (not a column of single buttons).
-export function CertificatePreview({ certification, actions }: { certification: Certification; actions?: ReactNode }) {
+export function CertificatePreview({
+  certification,
+  actions,
+}: {
+  certification: CertificateTemplate
+  actions?: ReactNode
+}) {
   const [shown, setShown] = useState(false)
   return (
     <div className="flex flex-col items-start gap-4">

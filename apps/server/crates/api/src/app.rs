@@ -73,7 +73,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
         (name = "progress", description = "Personal trail and learner-facing course state"),
         (name = "discussions", description = "Course discussions: posts, replies, reactions, moderation"),
         (name = "conversations", description = "Personal messages: conversations of two people, reports and send bans"),
-        (name = "certifications", description = "Certification templates, issued certificates, public verification"),
+        (name = "certificates", description = "Certificate templates, issued certificates, public verification"),
         (name = "gamification", description = "XP, levels, streaks, leaderboard; admin awards and policy"),
         (name = "work-queue", description = "Unified inbox: ranked learner and teacher work items"),
         (name = "analytics", description = "Teacher and admin dashboards, at-risk learners, interventions, saved views, CSV exports"),
@@ -240,19 +240,23 @@ fn gamification_routes() -> OpenApiRouter<AppState> {
 
 fn certification_routes() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
-        .routes(routes!(routes::certifications::create_certification))
+        .routes(routes!(routes::certifications::create_certificate_template))
         .routes(routes!(
-            routes::certifications::get_certification,
-            routes::certifications::update_certification,
-            routes::certifications::delete_certification
+            routes::certifications::get_certificate_template,
+            routes::certifications::update_certificate_template,
+            routes::certifications::delete_certificate_template
         ))
-        .routes(routes!(routes::certifications::list_course_certifications))
+        .routes(routes!(
+            routes::certifications::list_course_certificate_templates
+        ))
         .routes(routes!(routes::certifications::my_course_certificates))
         .routes(routes!(routes::certifications::my_certificates))
         .routes(routes!(routes::certifications::my_certificates_page))
         .routes(routes!(routes::certifications::verify_certificate))
         .routes(routes!(routes::certifications::certificate_pdf))
-        .routes(routes!(routes::certifications::certification_preview_pdf))
+        .routes(routes!(
+            routes::certifications::certificate_template_preview_pdf
+        ))
 }
 
 fn discussion_routes() -> OpenApiRouter<AppState> {

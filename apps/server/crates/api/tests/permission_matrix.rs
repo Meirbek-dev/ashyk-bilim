@@ -445,13 +445,21 @@ const MATRIX: &[(&str, &str, u8)] = &[
     // Public verification of an issued certificate.
     ("GET", "/api/v2/certificates/{code}", ALL),
     ("GET", "/api/v2/certificates/{code}/pdf", ALL),
-    ("POST", "/api/v2/certifications", STAFF),
-    ("DELETE", "/api/v2/certifications/{certification_id}", STAFF),
-    ("GET", "/api/v2/certifications/{certification_id}", STAFF),
-    ("PATCH", "/api/v2/certifications/{certification_id}", STAFF),
+    ("POST", "/api/v2/certificate-templates", STAFF),
+    (
+        "DELETE",
+        "/api/v2/certificate-templates/{template_id}",
+        STAFF,
+    ),
+    ("GET", "/api/v2/certificate-templates/{template_id}", STAFF),
+    (
+        "PATCH",
+        "/api/v2/certificate-templates/{template_id}",
+        STAFF,
+    ),
     (
         "GET",
-        "/api/v2/certifications/{certification_id}/preview.pdf",
+        "/api/v2/certificate-templates/{template_id}/preview.pdf",
         STAFF,
     ),
     ("DELETE", "/api/v2/chapters/{chapter_id}", STAFF),
@@ -484,7 +492,11 @@ const MATRIX: &[(&str, &str, u8)] = &[
         "/api/v2/courses/{course_id}/certificates/me",
         PEER | LRN | OWN,
     ),
-    ("GET", "/api/v2/courses/{course_id}/certifications", STAFF),
+    (
+        "GET",
+        "/api/v2/courses/{course_id}/certificate-templates",
+        STAFF,
+    ),
     ("POST", "/api/v2/courses/{course_id}/chapters", STAFF),
     // The authors' roster is shown to whoever sees the course.
     // The concept graph: members read the approved graph, staff curate it; the world has no concept,
@@ -854,7 +866,7 @@ const BODIES: &[(&str, &str, &str)] = &[
     ),
     (
         "POST",
-        "/api/v2/certifications",
+        "/api/v2/certificate-templates",
         r#"{"course_id":"$course"}"#,
     ),
     (
@@ -1317,7 +1329,7 @@ async fn world(app: &TestApp) -> World {
     let certification = ok(
         &app.post_as(
             &owner,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &json!({ "course_id": course }),
         )
         .await,
@@ -1328,14 +1340,14 @@ async fn world(app: &TestApp) -> World {
         .to_owned();
     ab_db::certifications::issue_certificate(
         &app.pool,
-        ab_core::id::CertificationId(certification.parse().unwrap()),
+        ab_core::id::CertificateTemplateId(certification.parse().unwrap()),
         learner.user_id,
         "R-MATRIX-CODE",
         None,
     )
     .await
     .unwrap();
-    ids.insert("certification_id", certification);
+    ids.insert("template_id", certification);
     ids.insert("code", "R-MATRIX-CODE".to_owned());
     let collection = ok(
         &app.post_as(

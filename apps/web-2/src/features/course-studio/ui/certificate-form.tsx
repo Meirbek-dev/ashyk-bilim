@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { m } from '#/paraglide/messages'
-import type { Certification, Course } from '#/shared/api/gen/types.gen'
+import type { CertificateTemplate, Course } from '#/shared/api/gen/types.gen'
 import { useAppForm } from '#/shared/components/form/use-app-form'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
 import { SettingsSection } from '#/shared/components/templates/settings-section'
@@ -35,7 +35,7 @@ const typeLabels: Record<CertificateType, () => string> = {
 }
 const typeOptions = CERTIFICATE_TYPES.map(value => ({ value, label: typeLabels[value]() }))
 
-type CertificateFormProps = { course: Course; certification: Certification }
+type CertificateFormProps = { course: Course; certification: CertificateTemplate }
 
 /** Settings for the automatic certificate; unrelated legacy config keys survive a save. */
 export function CertificateForm({ course, certification }: CertificateFormProps) {
@@ -46,7 +46,7 @@ export function CertificateForm({ course, certification }: CertificateFormProps)
     (fields: CertificateFields, version: number) =>
       update.mutateAsync(
         {
-          path: { certification_id: certification.id },
+          path: { template_id: certification.id },
           body: { config: certificateConfig(certification.config, fields) },
           headers: { 'If-Match': version },
         },

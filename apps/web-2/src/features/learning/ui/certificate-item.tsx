@@ -12,7 +12,7 @@ import { CodeKeptWhole } from './code-kept-whole'
 
 /** One held certificate: what it states as issued, the PDF, its verify page and sharing. */
 export function CertificateItem({ issued }: { issued: IssuedCertificate }) {
-  const { certificate, certification, course, instructor_name: instructor } = issued
+  const { certificate, template: certification, course, instructor_name: instructor } = issued
   // As issued: a renamed course or an edited template does not rewrite a certificate.
   const kind = certificateKind(
     { ...certification.config, certification_name: certificate.certificate_name },

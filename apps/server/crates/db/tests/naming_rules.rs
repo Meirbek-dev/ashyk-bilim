@@ -11,8 +11,9 @@
 //!   `type` / `*_type` (`content_type` stays: it holds a MIME type);
 //! - a row's state machine is `status`, not `state` / `lifecycle`.
 //!
-//! Older columns that break it are renamed by the plan in REWRITE §5.6;
-//! renaming is a contract step, so they are not checked here. The rules read
+//! Older columns that break it are renamed by the plan in REWRITE §5.6 n15;
+//! a renamed column's old name, added back for the previous release in the
+//! file that renames it, is not checked. The rules read
 //! the embedded migrations; no database is needed.
 #![allow(clippy::panic)]
 
@@ -197,7 +198,17 @@ fn broken(name: &str, onto_users: bool) -> Option<&'static str> {
 fn new_columns_follow_the_naming_convention() {
     let mut found = Vec::new();
     for m in ab_db::MIGRATOR.iter().filter(|m| m.version >= FIRST) {
-        for (name, users) in columns(&tokens(m.sql.as_str())) {
+        let t = tokens(m.sql.as_str());
+        // The old name a rename leaves for the previous release (REWRITE 5.8 item 9).
+        let renamed_away: Vec<&String> = t
+            .windows(3)
+            .filter(|w| w[0] == "rename" && w[1] == "column")
+            .map(|w| &w[2])
+            .collect();
+        for (name, users) in columns(&t) {
+            if renamed_away.contains(&&name) {
+                continue;
+            }
             if let Some(why) = broken(&name, users) {
                 found.push(format!("{}_{}: {name}: {why}", m.version, m.description));
             }

@@ -50,7 +50,7 @@ pub async fn discussions_not_json(pool: &PgPool) -> Result<Vec<DiscussionContent
     Ok(sqlx::query_as!(
         DiscussionContentRow,
         r#"SELECT id AS "id: DiscussionId", content
-           FROM course_discussions
+           FROM discussion_posts
            WHERE ltrim(content) NOT LIKE '{%'
            ORDER BY id"#
     )
@@ -64,7 +64,7 @@ pub async fn set_discussion_content<'e>(
     content: &str,
 ) -> Result<()> {
     sqlx::query!(
-        "UPDATE course_discussions SET content = $2 WHERE id = $1",
+        "UPDATE discussion_posts SET content = $2 WHERE id = $1",
         id.0,
         content
     )

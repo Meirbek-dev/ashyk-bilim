@@ -1,5 +1,5 @@
 # Objects a later release drops (expand/contract, apps/server/AGENTS.md): what, why it waits, where it is explained.
-# Columns: kind (trigger | column | table | constraint), object (name or table.column), waits for, doc. Tab-separated.
+# Columns: kind (trigger | column | table | view | constraint), object (name or table.column), waits for, doc. Tab-separated.
 # A contract file that drops an object removes its row; `schema_review::pending_contracts_name_live_objects`
 # fails on a row whose object is gone, and `just contracts-pending` prints the list.
 trigger	users_reissue_certificates	the release after 3ba18e76 (writers re-issue themselves)	ARCHITECTURE §8 "A certificate states what was issued"
@@ -79,3 +79,6 @@ trigger	users_last_login	the contract that drops gamification_profiles.last_logi
 trigger	grading_entries_number	the release after the server numbers grade entries (20261116075641); drop grading_entries_number() with it	REWRITE 5.8 item 7
 trigger	grading_entries_points	the release after the server sets a grade entry's points (20261116075641); drop grading_entries_points() with it	REWRITE 5.8 item 7
 table	course_progress	the release after readers moved to course_progress_v (20261116075642): first the projector stops writing it (it notices the completion from the certificate or an event instead), then a contract drops it with projection_fingerprint's and the drift's reads and renames the view to course_progress	REWRITE 5.6 n8 step 5
+view	certifications	the release after the server reads and writes certificate_templates (20261116075643)	REWRITE 5.8 item 9
+view	certificate_users	the release after the server reads and writes certificates (20261116075643)	REWRITE 5.8 item 9
+view	course_discussions	the release after the server reads and writes discussion_posts (20261116075643)	REWRITE 5.8 item 9

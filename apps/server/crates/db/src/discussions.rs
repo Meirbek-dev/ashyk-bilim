@@ -1,6 +1,6 @@
 //! Course discussion queries (compile-checked).
 //!
-//! Over `course_discussions` + `discussion_reactions`; counters are
+//! Over `discussion_posts` + `discussion_reactions`; counters are
 //! trigger-maintained, the viewer's own reaction is resolved per row, and
 //! timestamps are epoch seconds.
 
@@ -56,13 +56,13 @@ pub async fn get_discussion(
                     WHERE r.discussion_id = d.id AND r.reaction = 'like') AS "likes_count!",
                   (SELECT count(*)::int4 FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS "dislikes_count!",
-                  (SELECT count(*)::int4 FROM course_discussions c
+                  (SELECT count(*)::int4 FROM discussion_posts c
                     WHERE c.parent_id = d.id AND c.status = 'active' AND c.deleted_at IS NULL) AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
-           FROM course_discussions d
+           FROM discussion_posts d
            WHERE d.id = $1"#,
         id.0,
         viewer.0
@@ -101,17 +101,17 @@ pub async fn list_posts(
                     WHERE r.discussion_id = d.id AND r.reaction = 'like') AS "likes_count!",
                   (SELECT count(*)::int4 FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS "dislikes_count!",
-                  (SELECT count(*)::int4 FROM course_discussions c
+                  (SELECT count(*)::int4 FROM discussion_posts c
                     WHERE c.parent_id = d.id AND c.status = 'active' AND c.deleted_at IS NULL) AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
-           FROM course_discussions d
+           FROM discussion_posts d
            WHERE d.course_id = $1 AND d.parent_id IS NULL
              AND (d.deleted_at IS NULL AND (d.status = 'active' OR ($5 AND d.status = 'hidden'))
                   OR (d.deleted_at IS NOT NULL
-                      AND EXISTS (SELECT 1 FROM course_discussions c
+                      AND EXISTS (SELECT 1 FROM discussion_posts c
                                   WHERE c.parent_id = d.id AND c.status = 'active' AND c.deleted_at IS NULL)))
              AND ($3::uuid IS NULL OR d.id < $3)
            ORDER BY d.id DESC
@@ -154,13 +154,13 @@ pub async fn list_replies(
                     WHERE r.discussion_id = d.id AND r.reaction = 'like') AS "likes_count!",
                   (SELECT count(*)::int4 FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS "dislikes_count!",
-                  (SELECT count(*)::int4 FROM course_discussions c
+                  (SELECT count(*)::int4 FROM discussion_posts c
                     WHERE c.parent_id = d.id AND c.status = 'active' AND c.deleted_at IS NULL) AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
-           FROM course_discussions d
+           FROM discussion_posts d
            WHERE d.parent_id = $1
              AND d.deleted_at IS NULL AND (d.status = 'active' OR ($5 AND d.status = 'hidden'))
              AND ($3::uuid IS NULL OR d.id > $3)
@@ -203,13 +203,13 @@ pub async fn list_replies_for(
                     WHERE r.discussion_id = d.id AND r.reaction = 'like') AS "likes_count!",
                   (SELECT count(*)::int4 FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.reaction = 'dislike') AS "dislikes_count!",
-                  (SELECT count(*)::int4 FROM course_discussions c
+                  (SELECT count(*)::int4 FROM discussion_posts c
                     WHERE c.parent_id = d.id AND c.status = 'active' AND c.deleted_at IS NULL) AS "replies_count!",
                   (SELECT r.reaction FROM discussion_reactions r
                     WHERE r.discussion_id = d.id AND r.user_id = $2) AS "my_reaction?: ReactionKind",
                   (extract(epoch FROM d.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM d.updated_at))::bigint AS "updated_at!"
-           FROM course_discussions d
+           FROM discussion_posts d
            WHERE d.parent_id = ANY($1)
              AND d.deleted_at IS NULL AND (d.status = 'active' OR ($3 AND d.status = 'hidden'))
            ORDER BY d.id"#,
@@ -230,7 +230,7 @@ pub async fn insert_discussion<'e>(
     content: &str,
 ) -> Result<DiscussionId> {
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO course_discussions (course_id, user_id, parent_id, kind, content)
+        r#"INSERT INTO discussion_posts (course_id, user_id, parent_id, kind, content)
            VALUES ($1, $2, $3, CASE WHEN $3::uuid IS NULL THEN 'post' ELSE 'reply' END, $4)
            RETURNING id AS "id: DiscussionId""#,
         course_id.0,
@@ -251,7 +251,7 @@ pub async fn update_discussion<'e>(
     status: Option<DiscussionStatus>,
 ) -> Result<bool> {
     let updated = sqlx::query!(
-        r#"UPDATE course_discussions
+        r#"UPDATE discussion_posts
            SET content = COALESCE($2, content),
                -- `deleted` is the tombstone's timestamp, the status keeps the moderation.
                status = CASE WHEN $3 = 'deleted' THEN status ELSE COALESCE($3, status) END,
@@ -309,7 +309,7 @@ pub async fn delete_discussion(
     let mut tx = pool.begin().await?;
     let Some(row) = sqlx::query!(
         r#"SELECT user_id AS "user_id?", parent_id AS "parent_id?"
-           FROM course_discussions WHERE id = $1 FOR UPDATE"#,
+           FROM discussion_posts WHERE id = $1 FOR UPDATE"#,
         id.0
     )
     .fetch_optional(&mut *tx)
@@ -319,7 +319,7 @@ pub async fn delete_discussion(
     };
     let images = sqlx::query_scalar!(
         r#"SELECT DISTINCT p.upload_id FROM post_uploads p
-           JOIN course_discussions d ON d.id = p.discussion_id
+           JOIN discussion_posts d ON d.id = p.discussion_id
            WHERE d.id = $1 OR d.parent_id = $1 OR d.id = $2"#,
         id.0,
         row.parent_id
@@ -327,7 +327,7 @@ pub async fn delete_discussion(
     .fetch_all(&mut *tx)
     .await?;
     let replied_by_others = sqlx::query_scalar!(
-        r#"SELECT EXISTS (SELECT 1 FROM course_discussions
+        r#"SELECT EXISTS (SELECT 1 FROM discussion_posts
                           WHERE parent_id = $1 AND deleted_at IS NULL
                             AND user_id IS DISTINCT FROM $2) AS "exists!""#,
         id.0,
@@ -337,7 +337,7 @@ pub async fn delete_discussion(
     .await?;
     if replied_by_others {
         sqlx::query!(
-            r#"UPDATE course_discussions SET deleted_at = now(), content = '', user_id = NULL
+            r#"UPDATE discussion_posts SET deleted_at = now(), content = '', user_id = NULL
                WHERE id = $1"#,
             id.0
         )
@@ -353,14 +353,14 @@ pub async fn delete_discussion(
         tx.commit().await?;
         return Ok(Deleted::Tombstone);
     }
-    sqlx::query!("DELETE FROM course_discussions WHERE id = $1", id.0)
+    sqlx::query!("DELETE FROM discussion_posts WHERE id = $1", id.0)
         .execute(&mut *tx)
         .await?;
     if let Some(parent) = row.parent_id {
         sqlx::query!(
-            r#"DELETE FROM course_discussions p
+            r#"DELETE FROM discussion_posts p
                WHERE p.id = $1 AND p.deleted_at IS NOT NULL
-                 AND NOT EXISTS (SELECT 1 FROM course_discussions c WHERE c.parent_id = p.id)"#,
+                 AND NOT EXISTS (SELECT 1 FROM discussion_posts c WHERE c.parent_id = p.id)"#,
             parent
         )
         .execute(&mut *tx)

@@ -29,11 +29,11 @@ root=$(pwd -W 2>/dev/null || pwd)
 course_id=$(<tmp/restore-test/course-id)
 # A synthetic earned certificate complements the API-created template and graded learner work.
 compose exec -T db sh -c 'psql -v ON_ERROR_STOP=1 -v course_id="$1" -U "$POSTGRES_USER" -d ashyq' sh "$course_id" <<'SQL'
-INSERT INTO certificate_users
-  (certification_id, user_id, verify_code, course_id, holder_name, course_name, certificate_name)
+INSERT INTO certificates
+  (template_id, user_id, verify_code, course_id, holder_name, course_name, certificate_name)
 SELECT cert.id, u.id, 'RESTORE-' || cert.id::text, c.id, u.display_name, c.name,
   coalesce(certification_text(cert.config, 'certification_name'), c.name)
-FROM certifications cert JOIN courses c ON c.id = cert.course_id
+FROM certificate_templates cert JOIN courses c ON c.id = cert.course_id
 CROSS JOIN users u
 WHERE c.id = :'course_id'::uuid AND u.username = 'e2e-student1';
 SELECT EXISTS (SELECT 1 FROM submissions s JOIN assessments a ON a.id = s.assessment_id

@@ -1091,7 +1091,7 @@ async fn a_pending_reattempt_keeps_the_course_completed(pool: PgPool) {
     let created = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
         )
         .await;
@@ -1659,7 +1659,7 @@ async fn a_grade_for_a_leaver_issues_no_certificate(pool: PgPool) {
     let created = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
         )
         .await;
@@ -1695,7 +1695,7 @@ async fn a_grade_for_a_leaver_issues_no_certificate(pool: PgPool) {
     let (completed, certificates): (i64, i64) = sqlx::query_as(
         "SELECT (SELECT count(*) FROM course_progress
                  WHERE user_id = $1 AND (completed_at IS NOT NULL OR certificate_eligible)),
-                (SELECT count(*) FROM certificate_users WHERE user_id = $1)",
+                (SELECT count(*) FROM certificates WHERE user_id = $1)",
     )
     .bind(alice.user_id.0)
     .fetch_one(&app.pool)
@@ -1865,7 +1865,7 @@ async fn dropped_file_grade_publish_still_projects(pool: PgPool) {
     let created = app
         .post_as(
             &teacher,
-            "/api/v2/certifications",
+            "/api/v2/certificate-templates",
             &serde_json::json!({ "course_id": course_id, "config": { "template": "classic" } }),
         )
         .await;

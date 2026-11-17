@@ -42,7 +42,7 @@ await api(learner, 'POST', `enrollments/${course.id}`, {})
 const submission = await api(learner, 'POST', `assessments/${quiz.id}/submissions`, {})
 await api(learner, 'POST', `submissions/${submission.id}/submit`, { answers: { [item.id]: { kind: 'choice', selected: ['a'] } } })
 await api(learner, 'POST', `courses/${course.id}/discussions`, { content: 'Preserved learner discussion' })
-await api(teacher, 'POST', 'certifications', { course_id: course.id })
+await api(teacher, 'POST', 'certificate-templates', { course_id: course.id })
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
 const upload = await api(teacher, 'POST', 'uploads', { purpose: 'block-image', mime: 'image/png', size_bytes: png.length })
 const stored = await fetch(upload.put_url, {

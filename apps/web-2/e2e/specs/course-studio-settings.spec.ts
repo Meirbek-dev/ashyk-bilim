@@ -1,6 +1,12 @@
 import { expectFailure } from '../fixtures/test'
 import { m } from '#/paraglide/messages'
-import { createCertification, createUpload, finalizeUpload, getCourse, updateCourse } from '#/shared/api/gen/sdk.gen'
+import {
+  createCertificateTemplate,
+  createUpload,
+  finalizeUpload,
+  getCourse,
+  updateCourse,
+} from '#/shared/api/gen/sdk.gen'
 import type { CreateUploadRequest } from '#/shared/api/gen/types.gen'
 
 import { cookieOf, expect, ru, test } from './course-studio-fixture'
@@ -216,7 +222,7 @@ test('B-CST-36 B-CST-38 deleting the course asks for its name, is sent with If-M
 test('B-CST-37 the certificate template is previewed as the server PDF', async ({ page, studio, seed }) => {
   const { course } = await studio.course()
   const headers = cookieOf(seed, 'teacher')
-  await createCertification({
+  await createCertificateTemplate({
     client: studio.api,
     body: { course_id: course.id, config: {} },
     headers,

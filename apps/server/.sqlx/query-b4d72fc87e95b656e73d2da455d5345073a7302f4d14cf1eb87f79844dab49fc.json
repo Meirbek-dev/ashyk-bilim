@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE certificate_templates SET disabled_at = NULL, config = $2\n           WHERE id = (SELECT id FROM certificate_templates\n                       WHERE course_id = $1 AND disabled_at IS NOT NULL\n                         AND NOT EXISTS (SELECT 1 FROM certificate_templates\n                                         WHERE course_id = $1 AND disabled_at IS NULL)\n                       ORDER BY id DESC LIMIT 1\n                       FOR UPDATE)\n           RETURNING id AS \"id: CertificateTemplateId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: CertificateTemplateId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "certificate_templates",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b4d72fc87e95b656e73d2da455d5345073a7302f4d14cf1eb87f79844dab49fc"
+}

@@ -481,7 +481,7 @@ pub async fn list_certificates(
         CertificateInfoRow,
         r#"SELECT cu.course_id AS "course_id: CourseId", cu.user_id AS "user_id: UserId",
                   (extract(epoch FROM cu.created_at))::bigint AS "created_at!"
-           FROM certificate_users cu
+           FROM certificates cu
            WHERE cu.course_id = ANY($1) ORDER BY cu.id"#,
         &ids
     )

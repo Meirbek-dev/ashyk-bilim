@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT DISTINCT p.upload_id FROM post_uploads p\n           JOIN discussion_posts d ON d.id = p.discussion_id\n           WHERE d.course_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "upload_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "post_uploads",
+            "name": "upload_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e9372f5e64343386ad1868e0454909c9effcf1bc730c431455989ebfa22fca81"
+}

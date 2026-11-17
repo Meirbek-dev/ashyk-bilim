@@ -127,7 +127,7 @@ async fn one_reaction_per_user_and_no_double_issuance(pool: PgPool) {
     .unwrap();
 
     let discussion: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO course_discussions (course_id, user_id, content)
+        "INSERT INTO discussion_posts (course_id, user_id, content)
          VALUES ($1, $2, 'hello') RETURNING id",
     )
     .bind(course)
@@ -148,16 +148,17 @@ async fn one_reaction_per_user_and_no_double_issuance(pool: PgPool) {
         .await;
     assert!(double.is_err(), "a user cannot both like and dislike");
 
-    let certification: uuid::Uuid =
-        sqlx::query_scalar("INSERT INTO certifications (course_id) VALUES ($1) RETURNING id")
-            .bind(course)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+    let certification: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO certificate_templates (course_id) VALUES ($1) RETURNING id",
+    )
+    .bind(course)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
     let issue = |code: &'static str| {
         ab_db::certifications::issue_certificate(
             &pool,
-            ab_core::id::CertificationId(certification),
+            ab_core::id::CertificateTemplateId(certification),
             ab_core::id::UserId(user),
             code,
             None,

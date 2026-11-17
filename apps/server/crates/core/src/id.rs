@@ -86,7 +86,7 @@ typed_id!(DiscussionId);
 typed_id!(ConversationId);
 typed_id!(MessageId);
 typed_id!(MessageReportId);
-typed_id!(CertificationId);
+typed_id!(CertificateTemplateId);
 typed_id!(CertificateId);
 typed_id!(GamificationProfileId);
 typed_id!(XpTransactionId);

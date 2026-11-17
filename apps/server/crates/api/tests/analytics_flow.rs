@@ -2206,12 +2206,13 @@ async fn leavers_drop_from_course_funnels_certificates_and_bottlenecks(pool: PgP
     .await;
     lesson(&app, &teacher, &chapter_id, "After the quiz").await;
     let course_uuid = uuid::Uuid::parse_str(&course_id).unwrap();
-    let certification: uuid::Uuid =
-        sqlx::query_scalar("INSERT INTO certifications (course_id) VALUES ($1) RETURNING id")
-            .bind(course_uuid)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+    let certification: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO certificate_templates (course_id) VALUES ($1) RETURNING id",
+    )
+    .bind(course_uuid)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
     let cohort: uuid::Uuid =
         sqlx::query_scalar("INSERT INTO usergroups (name) VALUES ('Stayers') RETURNING id")
             .fetch_one(&pool)
@@ -2236,7 +2237,7 @@ async fn leavers_drop_from_course_funnels_certificates_and_bottlenecks(pool: PgP
     for who in [&alice, &bob] {
         ab_db::certifications::issue_certificate(
             &pool,
-            ab_core::id::CertificationId(certification),
+            ab_core::id::CertificateTemplateId(certification),
             who.user_id,
             &who.user_id.to_string(),
             None,

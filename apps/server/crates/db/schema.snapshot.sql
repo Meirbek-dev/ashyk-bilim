@@ -527,28 +527,28 @@ constraint bulk_actions bulk_actions_pkey PRIMARY KEY (id)
 constraint bulk_actions bulk_actions_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'running'::text, 'completed'::text, 'failed'::text])))
 constraint bulk_actions bulk_actions_status_not_null NOT NULL status
 constraint bulk_actions bulk_actions_target_user_ids_not_null NOT NULL target_user_ids
-constraint certificate_users certificate_users_certificate_name_not_null NOT NULL certificate_name
-constraint certificate_users certificate_users_certification_id_fkey FOREIGN KEY (certification_id) REFERENCES certifications(id) ON DELETE RESTRICT
-constraint certificate_users certificate_users_certification_id_not_null NOT NULL certification_id
-constraint certificate_users certificate_users_certification_id_user_id_key UNIQUE (certification_id, user_id)
-constraint certificate_users certificate_users_course_id_not_null NOT NULL course_id
-constraint certificate_users certificate_users_course_name_not_null NOT NULL course_name
-constraint certificate_users certificate_users_created_at_not_null NOT NULL created_at
-constraint certificate_users certificate_users_holder_name_not_null NOT NULL holder_name
-constraint certificate_users certificate_users_id_not_null NOT NULL id
-constraint certificate_users certificate_users_pkey PRIMARY KEY (id)
-constraint certificate_users certificate_users_updated_at_not_null NOT NULL updated_at
-constraint certificate_users certificate_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
-constraint certificate_users certificate_users_user_id_not_null NOT NULL user_id
-constraint certificate_users certificate_users_verify_code_key UNIQUE (verify_code)
-constraint certificate_users certificate_users_verify_code_not_null NOT NULL verify_code
-constraint certifications certifications_config_not_null NOT NULL config
-constraint certifications certifications_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL
-constraint certifications certifications_created_at_not_null NOT NULL created_at
-constraint certifications certifications_id_not_null NOT NULL id
-constraint certifications certifications_pkey PRIMARY KEY (id)
-constraint certifications certifications_updated_at_not_null NOT NULL updated_at
-constraint certifications certifications_version_not_null NOT NULL version
+constraint certificate_templates certifications_config_not_null NOT NULL config
+constraint certificate_templates certifications_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL
+constraint certificate_templates certifications_created_at_not_null NOT NULL created_at
+constraint certificate_templates certifications_id_not_null NOT NULL id
+constraint certificate_templates certifications_pkey PRIMARY KEY (id)
+constraint certificate_templates certifications_updated_at_not_null NOT NULL updated_at
+constraint certificate_templates certifications_version_not_null NOT NULL version
+constraint certificates certificate_users_certificate_name_not_null NOT NULL certificate_name
+constraint certificates certificate_users_certification_id_fkey FOREIGN KEY (template_id) REFERENCES certificate_templates(id) ON DELETE RESTRICT
+constraint certificates certificate_users_certification_id_not_null NOT NULL template_id
+constraint certificates certificate_users_certification_id_user_id_key UNIQUE (template_id, user_id)
+constraint certificates certificate_users_course_id_not_null NOT NULL course_id
+constraint certificates certificate_users_course_name_not_null NOT NULL course_name
+constraint certificates certificate_users_created_at_not_null NOT NULL created_at
+constraint certificates certificate_users_holder_name_not_null NOT NULL holder_name
+constraint certificates certificate_users_id_not_null NOT NULL id
+constraint certificates certificate_users_pkey PRIMARY KEY (id)
+constraint certificates certificate_users_updated_at_not_null NOT NULL updated_at
+constraint certificates certificate_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
+constraint certificates certificate_users_user_id_not_null NOT NULL user_id
+constraint certificates certificate_users_verify_code_key UNIQUE (verify_code)
+constraint certificates certificate_users_verify_code_not_null NOT NULL verify_code
 constraint chapters chapters_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint chapters chapters_course_id_not_null NOT NULL course_id
 constraint chapters chapters_created_at_not_null NOT NULL created_at
@@ -763,26 +763,6 @@ constraint course_concepts course_concepts_slug_not_null NOT NULL slug
 constraint course_concepts course_concepts_status_check CHECK ((status = ANY (ARRAY['suggested'::text, 'approved'::text, 'rejected'::text])))
 constraint course_concepts course_concepts_status_not_null NOT NULL status
 constraint course_concepts course_concepts_updated_at_not_null NOT NULL updated_at
-constraint course_discussions course_discussions_content_check CHECK ((char_length(content) <= 20000))
-constraint course_discussions course_discussions_content_not_null NOT NULL content
-constraint course_discussions course_discussions_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
-constraint course_discussions course_discussions_course_id_not_null NOT NULL course_id
-constraint course_discussions course_discussions_created_at_not_null NOT NULL created_at
-constraint course_discussions course_discussions_dislikes_count_not_null NOT NULL dislikes_count
-constraint course_discussions course_discussions_id_course_key UNIQUE (id, course_id)
-constraint course_discussions course_discussions_id_not_null NOT NULL id
-constraint course_discussions course_discussions_kind_check CHECK ((kind = ANY (ARRAY['post'::text, 'reply'::text])))
-constraint course_discussions course_discussions_kind_not_null NOT NULL kind
-constraint course_discussions course_discussions_likes_count_not_null NOT NULL likes_count
-constraint course_discussions course_discussions_parent_id_fkey FOREIGN KEY (parent_id, course_id) REFERENCES course_discussions(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE
-constraint course_discussions course_discussions_pkey PRIMARY KEY (id)
-constraint course_discussions course_discussions_replies_count_not_null NOT NULL replies_count
-constraint course_discussions course_discussions_reply_parent_check CHECK (((kind = 'reply'::text) = (parent_id IS NOT NULL)))
-constraint course_discussions course_discussions_status_check CHECK ((status = ANY (ARRAY['active'::text, 'hidden'::text, 'deleted'::text])))
-constraint course_discussions course_discussions_status_not_null NOT NULL status
-constraint course_discussions course_discussions_updated_at_not_null NOT NULL updated_at
-constraint course_discussions course_discussions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-constraint course_discussions course_discussions_version_not_null NOT NULL version
 constraint course_progress course_progress_certificate_eligible_not_null NOT NULL certificate_eligible
 constraint course_progress course_progress_completed_at_check CHECK (((completed_at IS NULL) OR ((total_required_count > 0) AND (completed_required_count >= total_required_count))))
 constraint course_progress course_progress_completed_required_count_not_null NOT NULL completed_required_count
@@ -931,8 +911,28 @@ constraint daily_user_course_progress daily_user_course_progress_progress_pct_no
 constraint daily_user_course_progress daily_user_course_progress_total_steps_not_null NOT NULL total_steps
 constraint daily_user_course_progress daily_user_course_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint daily_user_course_progress daily_user_course_progress_user_id_not_null NOT NULL user_id
+constraint discussion_posts course_discussions_content_check CHECK ((char_length(content) <= 20000))
+constraint discussion_posts course_discussions_content_not_null NOT NULL content
+constraint discussion_posts course_discussions_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+constraint discussion_posts course_discussions_course_id_not_null NOT NULL course_id
+constraint discussion_posts course_discussions_created_at_not_null NOT NULL created_at
+constraint discussion_posts course_discussions_dislikes_count_not_null NOT NULL dislikes_count
+constraint discussion_posts course_discussions_id_course_key UNIQUE (id, course_id)
+constraint discussion_posts course_discussions_id_not_null NOT NULL id
+constraint discussion_posts course_discussions_kind_check CHECK ((kind = ANY (ARRAY['post'::text, 'reply'::text])))
+constraint discussion_posts course_discussions_kind_not_null NOT NULL kind
+constraint discussion_posts course_discussions_likes_count_not_null NOT NULL likes_count
+constraint discussion_posts course_discussions_parent_id_fkey FOREIGN KEY (parent_id, course_id) REFERENCES discussion_posts(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE
+constraint discussion_posts course_discussions_pkey PRIMARY KEY (id)
+constraint discussion_posts course_discussions_replies_count_not_null NOT NULL replies_count
+constraint discussion_posts course_discussions_reply_parent_check CHECK (((kind = 'reply'::text) = (parent_id IS NOT NULL)))
+constraint discussion_posts course_discussions_status_check CHECK ((status = ANY (ARRAY['active'::text, 'hidden'::text, 'deleted'::text])))
+constraint discussion_posts course_discussions_status_not_null NOT NULL status
+constraint discussion_posts course_discussions_updated_at_not_null NOT NULL updated_at
+constraint discussion_posts course_discussions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+constraint discussion_posts course_discussions_version_not_null NOT NULL version
 constraint discussion_reactions discussion_reactions_created_at_not_null NOT NULL created_at
-constraint discussion_reactions discussion_reactions_discussion_id_fkey FOREIGN KEY (discussion_id) REFERENCES course_discussions(id) ON DELETE CASCADE
+constraint discussion_reactions discussion_reactions_discussion_id_fkey FOREIGN KEY (discussion_id) REFERENCES discussion_posts(id) ON DELETE CASCADE
 constraint discussion_reactions discussion_reactions_discussion_id_not_null NOT NULL discussion_id
 constraint discussion_reactions discussion_reactions_pkey PRIMARY KEY (discussion_id, user_id)
 constraint discussion_reactions discussion_reactions_reaction_check CHECK ((reaction = ANY (ARRAY['like'::text, 'dislike'::text])))
@@ -1228,7 +1228,7 @@ constraint platforms platforms_thumbnail_upload_id_fkey FOREIGN KEY (thumbnail_u
 constraint platforms platforms_updated_at_not_null NOT NULL updated_at
 constraint platforms platforms_version_not_null NOT NULL version
 constraint platforms platforms_xp_rewards_not_null NOT NULL xp_rewards
-constraint post_uploads post_uploads_discussion_id_fkey FOREIGN KEY (discussion_id) REFERENCES course_discussions(id) ON DELETE CASCADE
+constraint post_uploads post_uploads_discussion_id_fkey FOREIGN KEY (discussion_id) REFERENCES discussion_posts(id) ON DELETE CASCADE
 constraint post_uploads post_uploads_discussion_id_not_null NOT NULL discussion_id
 constraint post_uploads post_uploads_pkey PRIMARY KEY (discussion_id, upload_id)
 constraint post_uploads post_uploads_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE
@@ -1696,10 +1696,12 @@ BEGIN
             ('ai_qa_messages', ARRAY['content', 'metadata']),
             ('teacher_interventions', ARRAY['notes', 'payload']),
             ('item_feedback', ARRAY['comment']),
+            ('certificates', ARRAY['holder_name']),
             ('certificate_users', ARRAY['holder_name']),
             ('jobs', ARRAY['payload', 'last_error']),
             ('submission_violations', ARRAY['event']),
             -- Schema review 2026-11-08: free text a person wrote or that is about one person, missed above.
+            ('discussion_posts', ARRAY['content']),
             ('course_discussions', ARRAY['content']),
             ('grading_entries', ARRAY['overall_feedback']),
             ('file_grading_entries', ARRAY['feedback']),
@@ -1870,7 +1872,7 @@ AS $function$
 BEGIN
     IF to_jsonb(NEW) - 'holder_name' - 'reissued_at' - 'updated_at'
        IS DISTINCT FROM to_jsonb(OLD) - 'holder_name' - 'reissued_at' - 'updated_at' THEN
-        RAISE EXCEPTION 'certificate_users rows state what was issued: only the holder name is re-issued'
+        RAISE EXCEPTION 'certificates state what was issued: only the holder name is re-issued'
             USING ERRCODE = 'integrity_constraint_violation';
     END IF;
     RETURN NEW;
@@ -1990,11 +1992,11 @@ function CREATE OR REPLACE FUNCTION public.course_discussions_recount_replies()
 AS $function$
 BEGIN
     IF TG_OP <> 'INSERT' AND OLD.parent_id IS NOT NULL AND OLD.status = 'active' THEN
-        UPDATE course_discussions SET replies_count = replies_count - 1
+        UPDATE discussion_posts SET replies_count = replies_count - 1
         WHERE id = OLD.parent_id;
     END IF;
     IF TG_OP <> 'DELETE' AND NEW.parent_id IS NOT NULL AND NEW.status = 'active' THEN
-        UPDATE course_discussions SET replies_count = replies_count + 1
+        UPDATE discussion_posts SET replies_count = replies_count + 1
         WHERE id = NEW.parent_id;
     END IF;
     RETURN NULL;
@@ -2003,7 +2005,7 @@ function CREATE OR REPLACE FUNCTION public.course_has_learner_work(p_course uuid
  RETURNS boolean
  LANGUAGE sql
  STABLE PARALLEL SAFE
-RETURN ((EXISTS (SELECT 1 FROM submissions WHERE ((submissions.course_id = course_has_learner_work.p_course) AND (NOT submissions.preview)))) OR (EXISTS (SELECT 1 FROM certificate_users WHERE (certificate_users.course_id = course_has_learner_work.p_course))))
+RETURN ((EXISTS (SELECT 1 FROM submissions WHERE ((submissions.course_id = course_has_learner_work.p_course) AND (NOT submissions.preview)))) OR (EXISTS (SELECT 1 FROM certificates WHERE (certificates.course_id = course_has_learner_work.p_course))))
 function CREATE OR REPLACE FUNCTION public.course_learnings_ok(items jsonb)
  RETURNS boolean
  LANGUAGE sql
@@ -2088,13 +2090,13 @@ function CREATE OR REPLACE FUNCTION public.discussion_reactions_recount()
 AS $function$
 BEGIN
     IF TG_OP <> 'INSERT' THEN
-        UPDATE course_discussions SET
+        UPDATE discussion_posts SET
             likes_count = likes_count - (OLD.reaction = 'like')::int,
             dislikes_count = dislikes_count - (OLD.reaction = 'dislike')::int
         WHERE id = OLD.discussion_id;
     END IF;
     IF TG_OP <> 'DELETE' THEN
-        UPDATE course_discussions SET
+        UPDATE discussion_posts SET
             likes_count = likes_count + (NEW.reaction = 'like')::int,
             dislikes_count = dislikes_count + (NEW.reaction = 'dislike')::int
         WHERE id = NEW.discussion_id;
@@ -2684,7 +2686,7 @@ function CREATE OR REPLACE FUNCTION public.users_reissue_certificates()
  SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
 AS $function$
 BEGIN
-    UPDATE certificate_users SET holder_name = NEW.display_name, reissued_at = now()
+    UPDATE certificates SET holder_name = NEW.display_name, reissued_at = now()
      WHERE user_id = NEW.id;
     RETURN NULL;
 END;
@@ -2838,8 +2840,8 @@ index CREATE INDEX auth_audit_log_user_idx ON ops.auth_audit_log USING btree (us
 index CREATE INDEX block_uploads_upload_idx ON core.block_uploads USING btree (upload_id)
 index CREATE INDEX blocks_activity_idx ON core.blocks USING btree (activity_id)
 index CREATE INDEX bulk_actions_assessment_idx ON learning.bulk_actions USING btree (assessment_id, status)
-index CREATE INDEX certificate_users_user_idx ON learning.certificate_users USING btree (user_id)
-index CREATE INDEX certifications_course_idx ON learning.certifications USING btree (course_id)
+index CREATE INDEX certificate_users_user_idx ON learning.certificates USING btree (user_id)
+index CREATE INDEX certifications_course_idx ON learning.certificate_templates USING btree (course_id)
 index CREATE INDEX chapters_thumbnail_upload_id_idx ON core.chapters USING btree (thumbnail_upload_id) WHERE (thumbnail_upload_id IS NOT NULL)
 index CREATE INDEX code_runs_assessment_user_idx ON learning.code_runs USING btree (assessment_id, user_id)
 index CREATE INDEX code_runs_created_brin ON learning.code_runs USING brin (created_at)
@@ -2871,10 +2873,10 @@ index CREATE INDEX conversation_members_peer_idx ON core.conversation_members US
 index CREATE INDEX conversations_last_message_idx ON core.conversations USING btree (last_message_id)
 index CREATE INDEX course_concepts_decided_by_idx ON learning.course_concepts USING btree (decided_by)
 index CREATE INDEX course_concepts_run_idx ON learning.course_concepts USING btree (run_id)
-index CREATE INDEX course_discussions_course_idx ON core.course_discussions USING btree (course_id, created_at DESC)
-index CREATE INDEX course_discussions_parent_idx ON core.course_discussions USING btree (parent_id)
-index CREATE INDEX course_discussions_posts_keyset_idx ON core.course_discussions USING btree (course_id, id DESC) WHERE ((parent_id IS NULL) AND (status = 'active'::text))
-index CREATE INDEX course_discussions_replies_keyset_idx ON core.course_discussions USING btree (parent_id, id) WHERE (status = 'active'::text)
+index CREATE INDEX course_discussions_course_idx ON core.discussion_posts USING btree (course_id, created_at DESC)
+index CREATE INDEX course_discussions_parent_idx ON core.discussion_posts USING btree (parent_id)
+index CREATE INDEX course_discussions_posts_keyset_idx ON core.discussion_posts USING btree (course_id, id DESC) WHERE ((parent_id IS NULL) AND (status = 'active'::text))
+index CREATE INDEX course_discussions_replies_keyset_idx ON core.discussion_posts USING btree (parent_id, id) WHERE (status = 'active'::text)
 index CREATE INDEX course_progress_user_idx ON learning.course_progress USING btree (user_id)
 index CREATE INDEX course_staff_user_idx ON core.course_staff USING btree (user_id, course_id)
 index CREATE INDEX course_update_activities_activity_idx ON core.course_update_activities USING btree (activity_id)
@@ -3011,11 +3013,11 @@ index CREATE UNIQUE INDEX block_uploads_pkey ON core.block_uploads USING btree (
 index CREATE UNIQUE INDEX blocks_legacy_uuid_key ON core.blocks USING btree (legacy_uuid)
 index CREATE UNIQUE INDEX blocks_pkey ON core.blocks USING btree (id)
 index CREATE UNIQUE INDEX bulk_actions_pkey ON learning.bulk_actions USING btree (id)
-index CREATE UNIQUE INDEX certificate_users_certification_id_user_id_key ON learning.certificate_users USING btree (certification_id, user_id)
-index CREATE UNIQUE INDEX certificate_users_pkey ON learning.certificate_users USING btree (id)
-index CREATE UNIQUE INDEX certificate_users_verify_code_key ON learning.certificate_users USING btree (verify_code)
-index CREATE UNIQUE INDEX certifications_one_live_per_course ON learning.certifications USING btree (course_id) WHERE (disabled_at IS NULL)
-index CREATE UNIQUE INDEX certifications_pkey ON learning.certifications USING btree (id)
+index CREATE UNIQUE INDEX certificate_users_certification_id_user_id_key ON learning.certificates USING btree (template_id, user_id)
+index CREATE UNIQUE INDEX certificate_users_pkey ON learning.certificates USING btree (id)
+index CREATE UNIQUE INDEX certificate_users_verify_code_key ON learning.certificates USING btree (verify_code)
+index CREATE UNIQUE INDEX certifications_one_live_per_course ON learning.certificate_templates USING btree (course_id) WHERE (disabled_at IS NULL)
+index CREATE UNIQUE INDEX certifications_pkey ON learning.certificate_templates USING btree (id)
 index CREATE UNIQUE INDEX chapters_id_course_key ON core.chapters USING btree (id, course_id)
 index CREATE UNIQUE INDEX chapters_pkey ON core.chapters USING btree (id)
 index CREATE UNIQUE INDEX chapters_position_key ON core.chapters USING btree (course_id, "position")
@@ -3042,8 +3044,8 @@ index CREATE UNIQUE INDEX conversations_pkey ON core.conversations USING btree (
 index CREATE UNIQUE INDEX course_concepts_course_id_slug_key ON learning.course_concepts USING btree (course_id, slug)
 index CREATE UNIQUE INDEX course_concepts_id_course_id_key ON learning.course_concepts USING btree (id, course_id)
 index CREATE UNIQUE INDEX course_concepts_pkey ON learning.course_concepts USING btree (id)
-index CREATE UNIQUE INDEX course_discussions_id_course_key ON core.course_discussions USING btree (id, course_id)
-index CREATE UNIQUE INDEX course_discussions_pkey ON core.course_discussions USING btree (id)
+index CREATE UNIQUE INDEX course_discussions_id_course_key ON core.discussion_posts USING btree (id, course_id)
+index CREATE UNIQUE INDEX course_discussions_pkey ON core.discussion_posts USING btree (id)
 index CREATE UNIQUE INDEX course_progress_pkey ON learning.course_progress USING btree (course_id, user_id)
 index CREATE UNIQUE INDEX course_staff_one_creator_idx ON core.course_staff USING btree (course_id) WHERE (authorship = 'creator'::text)
 index CREATE UNIQUE INDEX course_staff_pkey ON core.course_staff USING btree (course_id, user_id)
@@ -3529,20 +3531,6 @@ table core.conversations created_at timestamp with time zone NOT NULL DEFAULT no
 table core.conversations id uuid NOT NULL DEFAULT uuidv7()
 table core.conversations kind text NOT NULL DEFAULT 'direct'::text
 table core.conversations last_message_id uuid DEFAULT -
-table core.course_discussions content text NOT NULL DEFAULT -
-table core.course_discussions course_id uuid NOT NULL DEFAULT -
-table core.course_discussions created_at timestamp with time zone NOT NULL DEFAULT now()
-table core.course_discussions deleted_at timestamp with time zone DEFAULT -
-table core.course_discussions dislikes_count integer NOT NULL DEFAULT 0
-table core.course_discussions id uuid NOT NULL DEFAULT uuidv7()
-table core.course_discussions kind text NOT NULL DEFAULT 'post'::text
-table core.course_discussions likes_count integer NOT NULL DEFAULT 0
-table core.course_discussions parent_id uuid DEFAULT -
-table core.course_discussions replies_count integer NOT NULL DEFAULT 0
-table core.course_discussions status text NOT NULL DEFAULT 'active'::text
-table core.course_discussions updated_at timestamp with time zone NOT NULL DEFAULT now()
-table core.course_discussions user_id uuid DEFAULT -
-table core.course_discussions version integer NOT NULL DEFAULT 1
 table core.course_staff authorship text NOT NULL DEFAULT -
 table core.course_staff course_id uuid NOT NULL DEFAULT -
 table core.course_staff created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3585,6 +3573,20 @@ table core.courses thumbnail_video_key text DEFAULT -
 table core.courses thumbnail_video_upload_id uuid DEFAULT -
 table core.courses updated_at timestamp with time zone NOT NULL DEFAULT now()
 table core.courses version integer NOT NULL DEFAULT 1
+table core.discussion_posts content text NOT NULL DEFAULT -
+table core.discussion_posts course_id uuid NOT NULL DEFAULT -
+table core.discussion_posts created_at timestamp with time zone NOT NULL DEFAULT now()
+table core.discussion_posts deleted_at timestamp with time zone DEFAULT -
+table core.discussion_posts dislikes_count integer NOT NULL DEFAULT 0
+table core.discussion_posts id uuid NOT NULL DEFAULT uuidv7()
+table core.discussion_posts kind text NOT NULL DEFAULT 'post'::text
+table core.discussion_posts likes_count integer NOT NULL DEFAULT 0
+table core.discussion_posts parent_id uuid DEFAULT -
+table core.discussion_posts replies_count integer NOT NULL DEFAULT 0
+table core.discussion_posts status text NOT NULL DEFAULT 'active'::text
+table core.discussion_posts updated_at timestamp with time zone NOT NULL DEFAULT now()
+table core.discussion_posts user_id uuid DEFAULT -
+table core.discussion_posts version integer NOT NULL DEFAULT 1
 table core.discussion_reactions created_at timestamp with time zone NOT NULL DEFAULT now()
 table core.discussion_reactions discussion_id uuid NOT NULL DEFAULT -
 table core.discussion_reactions reaction text NOT NULL DEFAULT -
@@ -3885,26 +3887,26 @@ table learning.bulk_actions params jsonb NOT NULL DEFAULT '{}'::jsonb
 table learning.bulk_actions performed_by uuid DEFAULT -
 table learning.bulk_actions status text NOT NULL DEFAULT 'pending'::text
 table learning.bulk_actions target_user_ids uuid[] NOT NULL DEFAULT '{}'::uuid[]
-table learning.certificate_users certificate_name text NOT NULL DEFAULT -
-table learning.certificate_users certification_id uuid NOT NULL DEFAULT -
-table learning.certificate_users course_id uuid NOT NULL DEFAULT -
-table learning.certificate_users course_name text NOT NULL DEFAULT -
-table learning.certificate_users created_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.certificate_users holder_name text NOT NULL DEFAULT -
-table learning.certificate_users id uuid NOT NULL DEFAULT uuidv7()
-table learning.certificate_users instructor_name text DEFAULT -
-table learning.certificate_users reissued_at timestamp with time zone DEFAULT -
-table learning.certificate_users score percent DEFAULT -
-table learning.certificate_users updated_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.certificate_users user_id uuid NOT NULL DEFAULT -
-table learning.certificate_users verify_code text NOT NULL DEFAULT -
-table learning.certifications config jsonb NOT NULL DEFAULT '{}'::jsonb
-table learning.certifications course_id uuid DEFAULT -
-table learning.certifications created_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.certifications disabled_at timestamp with time zone DEFAULT -
-table learning.certifications id uuid NOT NULL DEFAULT uuidv7()
-table learning.certifications updated_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.certifications version integer NOT NULL DEFAULT 1
+table learning.certificate_templates config jsonb NOT NULL DEFAULT '{}'::jsonb
+table learning.certificate_templates course_id uuid DEFAULT -
+table learning.certificate_templates created_at timestamp with time zone NOT NULL DEFAULT now()
+table learning.certificate_templates disabled_at timestamp with time zone DEFAULT -
+table learning.certificate_templates id uuid NOT NULL DEFAULT uuidv7()
+table learning.certificate_templates updated_at timestamp with time zone NOT NULL DEFAULT now()
+table learning.certificate_templates version integer NOT NULL DEFAULT 1
+table learning.certificates certificate_name text NOT NULL DEFAULT -
+table learning.certificates course_id uuid NOT NULL DEFAULT -
+table learning.certificates course_name text NOT NULL DEFAULT -
+table learning.certificates created_at timestamp with time zone NOT NULL DEFAULT now()
+table learning.certificates holder_name text NOT NULL DEFAULT -
+table learning.certificates id uuid NOT NULL DEFAULT uuidv7()
+table learning.certificates instructor_name text DEFAULT -
+table learning.certificates reissued_at timestamp with time zone DEFAULT -
+table learning.certificates score percent DEFAULT -
+table learning.certificates template_id uuid NOT NULL DEFAULT -
+table learning.certificates updated_at timestamp with time zone NOT NULL DEFAULT now()
+table learning.certificates user_id uuid NOT NULL DEFAULT -
+table learning.certificates verify_code text NOT NULL DEFAULT -
 table learning.code_run_cases compile_output text DEFAULT -
 table learning.code_run_cases description text NOT NULL DEFAULT ''::text
 table learning.code_run_cases expected_output text DEFAULT -
@@ -4244,9 +4246,9 @@ trigger CREATE TRIGGER assessments_grace_period BEFORE INSERT OR UPDATE ON learn
 trigger CREATE TRIGGER assessments_touch BEFORE UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER blocks_touch BEFORE UPDATE ON core.blocks FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER blocks_upload_ids AFTER INSERT OR UPDATE OF content, claimed ON core.blocks FOR EACH ROW EXECUTE FUNCTION block_uploads_sync()
-trigger CREATE TRIGGER certificate_users_frozen BEFORE UPDATE ON learning.certificate_users FOR EACH ROW EXECUTE FUNCTION certificate_users_frozen()
-trigger CREATE TRIGGER certificate_users_touch BEFORE UPDATE ON learning.certificate_users FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER certifications_touch BEFORE UPDATE ON learning.certifications FOR EACH ROW EXECUTE FUNCTION touch_row('version')
+trigger CREATE TRIGGER certificate_users_frozen BEFORE UPDATE ON learning.certificates FOR EACH ROW EXECUTE FUNCTION certificate_users_frozen()
+trigger CREATE TRIGGER certificate_users_touch BEFORE UPDATE ON learning.certificates FOR EACH ROW EXECUTE FUNCTION touch_row()
+trigger CREATE TRIGGER certifications_touch BEFORE UPDATE ON learning.certificate_templates FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER chapters_touch BEFORE UPDATE ON core.chapters FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER chapters_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_key ON core.chapters FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_key', 'thumbnail_upload_id')
 trigger CREATE TRIGGER code_run_cases_passed BEFORE INSERT ON learning.code_run_cases FOR EACH ROW EXECUTE FUNCTION code_run_cases_passed()
@@ -4258,10 +4260,10 @@ trigger CREATE TRIGGER collections_touch BEFORE UPDATE ON core.collections FOR E
 trigger CREATE TRIGGER collections_upload_ids BEFORE INSERT OR UPDATE OF cover_key ON core.collections FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('cover_key', 'cover_upload_id')
 trigger CREATE TRIGGER concept_tags_touch BEFORE UPDATE ON learning.concept_tags FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER course_concepts_touch BEFORE UPDATE ON learning.course_concepts FOR EACH ROW EXECUTE FUNCTION touch_row()
-trigger CREATE TRIGGER course_discussions_deleted_status BEFORE INSERT OR UPDATE ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION course_discussions_deleted_status()
-trigger CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()
-trigger CREATE TRIGGER course_discussions_touch BEFORE UPDATE ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION touch_row('version', 'status', 'content')
-trigger CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF content ON core.course_discussions FOR EACH ROW EXECUTE FUNCTION post_uploads_sync()
+trigger CREATE TRIGGER course_discussions_deleted_status BEFORE INSERT OR UPDATE ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION course_discussions_deleted_status()
+trigger CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()
+trigger CREATE TRIGGER course_discussions_touch BEFORE UPDATE ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION touch_row('version', 'status', 'content')
+trigger CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF content ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION post_uploads_sync()
 trigger CREATE TRIGGER course_progress_touch BEFORE UPDATE ON learning.course_progress FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER course_staff_touch BEFORE UPDATE ON core.course_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER course_updates_touch BEFORE UPDATE ON core.course_updates FOR EACH ROW EXECUTE FUNCTION touch_row('version')
@@ -4304,6 +4306,21 @@ trigger CREATE TRIGGER users_touch BEFORE UPDATE ON core.users FOR EACH ROW EXEC
 trigger CREATE TRIGGER users_upload_ids BEFORE INSERT OR UPDATE OF avatar_key ON core.users FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('avatar_key', 'avatar_upload_id')
 trigger CREATE TRIGGER xp_transactions_levels BEFORE INSERT ON learning.xp_transactions FOR EACH ROW EXECUTE FUNCTION xp_transactions_levels()
 trigger CREATE TRIGGER xp_transactions_source_ref BEFORE INSERT ON learning.xp_transactions FOR EACH ROW EXECUTE FUNCTION xp_transactions_source_ref()
+view core.course_discussions  SELECT id,
+    course_id,
+    user_id,
+    parent_id,
+    kind,
+    status,
+    content,
+    likes_count,
+    dislikes_count,
+    replies_count,
+    created_at,
+    updated_at,
+    version,
+    deleted_at
+   FROM discussion_posts;
 view core.course_progress_v  SELECT e.course_id,
     e.user_id,
     count(r.activity_id)::integer AS total_required_count,
@@ -4346,6 +4363,28 @@ view core.course_progress_v  SELECT e.course_id,
                           WHERE g.assessment_id = s.id AND m.user_id = e.user_id))))) r ON true
   WHERE NOT is_course_staff(e.course_id, e.user_id)
   GROUP BY e.course_id, e.user_id;
+view learning.certificate_users  SELECT id,
+    user_id,
+    verify_code,
+    created_at,
+    updated_at,
+    template_id AS certification_id,
+    course_id,
+    holder_name,
+    course_name,
+    certificate_name,
+    score,
+    instructor_name,
+    reissued_at
+   FROM certificates;
+view learning.certifications  SELECT id,
+    course_id,
+    config,
+    created_at,
+    updated_at,
+    version,
+    disabled_at
+   FROM certificate_templates;
 view learning.course_members  SELECT course_id,
     user_id,
     enrolled_at

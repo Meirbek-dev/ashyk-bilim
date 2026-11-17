@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT user_id AS \"id!\" FROM discussion_posts WHERE id = $1\n           UNION\n           SELECT user_id FROM discussion_posts\n           WHERE parent_id = $1 AND status = 'active' AND deleted_at IS NULL",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "43aae200faae40326c552f37e132c3e844bf3bcf8f8a7865da6df349b8514c16"
+}
