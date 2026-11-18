@@ -75,7 +75,7 @@ inert until after the Stage 2 cutover, then revisit (switching it on now would m
 most existing assessments optional overnight). The old web is gone; the revisit is QUESTIONS Q-2026-11-07-4.
 
 ### 25. Imported data: duplicate email addresses
-Two imported users shared `Nurgul287@mail.ru`; the import gave the duplicates
+Two imported users shared one email address; the import gave the duplicates
 stable `+legacy-{id}` aliases. Tell the affected account holders which address to
 retain.
 
