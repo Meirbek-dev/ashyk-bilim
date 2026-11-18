@@ -4,7 +4,13 @@
 // (data on disk, migrations) opens a PR instead. The Dependency Dashboard issue lists everything pending.
 {
   $schema: 'https://docs.renovatebot.com/renovate-schema.json',
-  extends: ['config:recommended', ':semanticCommits', ':semanticCommitTypeAll(chore)'],
+  // Actions run with the repository's tokens: pinned to a commit digest (Renovate keeps the tag in a comment).
+  extends: [
+    'config:recommended',
+    ':semanticCommits',
+    ':semanticCommitTypeAll(chore)',
+    'helpers:pinGitHubActionDigests',
+  ],
   timezone: 'Asia/Almaty',
   schedule: ['before 6am on monday'],
   automergeType: 'branch',
