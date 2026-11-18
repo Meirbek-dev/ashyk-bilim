@@ -151,7 +151,7 @@ const lint: OxlintConfig = {
   jsPlugins: [{ name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' }, './gates/lint-plugin.ts', '@shadcn/lint'],
   categories: { correctness: 'error', suspicious: 'error' },
   options: { typeAware: true, typeCheck: true },
-  ignorePatterns: ['src/shared/api/gen*/**', 'src/paraglide/**', 'src/routeTree.*.ts', 'dist/**'],
+  ignorePatterns: ['src/shared/api/gen*/**', 'src/paraglide*/**', 'src/routeTree.*.ts', 'dist/**'],
   rules: {
     'vite-plus/prefer-vite-plus-imports': 'error',
     'react/react-in-jsx-scope': 'off',
