@@ -50,6 +50,11 @@ pub struct SubmissionRow {
     pub version: i64,
     pub draft_version: i64,
     pub content_version: i32,
+    /// A draft started on (or re-synced to) a version whose items are not
+    /// the current version's (`base_version_id`'s `items_sha256`): a hand-in
+    /// would score questions it never showed (BUG-237). A policy-only save
+    /// keeps the items, so it stales nothing.
+    pub items_stale: bool,
     pub items_snapshot: Option<serde_json::Value>,
     pub policy_snapshot: Option<serde_json::Value>,
     /// A course staff member's attempt (UX-182).
@@ -92,8 +97,9 @@ pub async fn insert_draft<'e>(
     let id = sqlx::query_scalar!(
         r#"INSERT INTO submissions
                (assessment_id, course_id, user_id, attempt_number, content_version,
-                preview, started_at)
-           VALUES ($1, $2, $3, $4, $5, $6, now())
+                preview, started_at, base_version_id)
+           VALUES ($1, $2, $3, $4, $5, $6, now(),
+                   (SELECT current_version_id FROM assessments WHERE id = $1))
            ON CONFLICT (assessment_id, user_id) WHERE status = 'draft' DO NOTHING
            RETURNING id AS "id: SubmissionId""#,
         assessment_id.0,
@@ -205,7 +211,8 @@ pub async fn resync_draft(
     content_version: i32,
 ) -> Result<Option<SubmissionId>> {
     let id = sqlx::query_scalar!(
-        r#"UPDATE submissions SET content_version = $3
+        r#"UPDATE submissions SET content_version = $3,
+               base_version_id = (SELECT current_version_id FROM assessments WHERE id = $1)
            WHERE assessment_id = $1 AND user_id = $2 AND status = 'draft'
            RETURNING id AS "id: SubmissionId""#,
         assessment_id.0,
@@ -259,6 +266,11 @@ pub async fn get_submission<'e>(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   version, draft_version, content_version,
+                  (base_version_id IS NULL
+                   OR (SELECT b.items_sha256 FROM assessment_versions b WHERE b.id = base_version_id)
+                      IS DISTINCT FROM (SELECT c.items_sha256 FROM assessments a
+                                        JOIN assessment_versions c ON c.id = a.current_version_id
+                                        WHERE a.id = submissions.assessment_id)) AS "items_stale!",
                   (SELECT v.items FROM assessment_versions v WHERE v.id = assessment_version_id) AS items_snapshot,
                   (SELECT v.policy FROM assessment_versions v WHERE v.id = assessment_version_id) AS policy_snapshot,
                   preview,
@@ -298,6 +310,11 @@ pub async fn open_draft(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   version, draft_version, content_version,
+                  (base_version_id IS NULL
+                   OR (SELECT b.items_sha256 FROM assessment_versions b WHERE b.id = base_version_id)
+                      IS DISTINCT FROM (SELECT c.items_sha256 FROM assessments a
+                                        JOIN assessment_versions c ON c.id = a.current_version_id
+                                        WHERE a.id = submissions.assessment_id)) AS "items_stale!",
                   (SELECT v.items FROM assessment_versions v WHERE v.id = assessment_version_id) AS items_snapshot,
                   (SELECT v.policy FROM assessment_versions v WHERE v.id = assessment_version_id) AS policy_snapshot,
                   preview,
@@ -341,6 +358,11 @@ pub async fn list_user_submissions<'e>(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   version, draft_version, content_version,
+                  (base_version_id IS NULL
+                   OR (SELECT b.items_sha256 FROM assessment_versions b WHERE b.id = base_version_id)
+                      IS DISTINCT FROM (SELECT c.items_sha256 FROM assessments a
+                                        JOIN assessment_versions c ON c.id = a.current_version_id
+                                        WHERE a.id = submissions.assessment_id)) AS "items_stale!",
                   (SELECT v.items FROM assessment_versions v WHERE v.id = assessment_version_id) AS items_snapshot,
                   (SELECT v.policy FROM assessment_versions v WHERE v.id = assessment_version_id) AS policy_snapshot,
                   preview,
@@ -614,6 +636,11 @@ pub async fn list_non_draft(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   version, draft_version, content_version,
+                  (base_version_id IS NULL
+                   OR (SELECT b.items_sha256 FROM assessment_versions b WHERE b.id = base_version_id)
+                      IS DISTINCT FROM (SELECT c.items_sha256 FROM assessments a
+                                        JOIN assessment_versions c ON c.id = a.current_version_id
+                                        WHERE a.id = submissions.assessment_id)) AS "items_stale!",
                   (SELECT v.items FROM assessment_versions v WHERE v.id = assessment_version_id) AS items_snapshot,
                   (SELECT v.policy FROM assessment_versions v WHERE v.id = assessment_version_id) AS policy_snapshot,
                   preview,
@@ -1086,6 +1113,11 @@ pub async fn list_releasable(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   version, draft_version, content_version,
+                  (base_version_id IS NULL
+                   OR (SELECT b.items_sha256 FROM assessment_versions b WHERE b.id = base_version_id)
+                      IS DISTINCT FROM (SELECT c.items_sha256 FROM assessments a
+                                        JOIN assessment_versions c ON c.id = a.current_version_id
+                                        WHERE a.id = submissions.assessment_id)) AS "items_stale!",
                   (SELECT v.items FROM assessment_versions v WHERE v.id = assessment_version_id) AS items_snapshot,
                   (SELECT v.policy FROM assessment_versions v WHERE v.id = assessment_version_id) AS policy_snapshot,
                   preview,
@@ -1126,6 +1158,11 @@ pub async fn list_submitted_for_user(
                   (extract(epoch FROM submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM graded_at))::bigint AS "graded_at?",
                   version, draft_version, content_version,
+                  (base_version_id IS NULL
+                   OR (SELECT b.items_sha256 FROM assessment_versions b WHERE b.id = base_version_id)
+                      IS DISTINCT FROM (SELECT c.items_sha256 FROM assessments a
+                                        JOIN assessment_versions c ON c.id = a.current_version_id
+                                        WHERE a.id = submissions.assessment_id)) AS "items_stale!",
                   (SELECT v.items FROM assessment_versions v WHERE v.id = assessment_version_id) AS items_snapshot,
                   (SELECT v.policy FROM assessment_versions v WHERE v.id = assessment_version_id) AS policy_snapshot,
                   preview,
@@ -1169,7 +1206,7 @@ pub async fn list_submitters(pool: &PgPool, assessment_id: AssessmentId) -> Resu
 pub async fn list_expired_drafts(pool: &PgPool, limit: i64) -> Result<Vec<SubmissionId>> {
     let ids = sqlx::query_scalar!(
         r#"SELECT s.id AS "id: SubmissionId"
-           FROM submissions s JOIN assessments a ON a.id = s.assessment_id
+           FROM submissions s JOIN assessment_policy_v a ON a.assessment_id = s.assessment_id
            LEFT JOIN assessment_overrides o
              ON o.assessment_id = s.assessment_id AND o.user_id = s.user_id
            -- `AssessmentsService::policy_at` at now(): the learner's due date and waiver.
@@ -1185,7 +1222,7 @@ pub async fn list_expired_drafts(pool: &PgPool, limit: i64) -> Result<Vec<Submis
                            THEN GREATEST(p.due, a.late_cutoff_at) END AS hand_in_at) d
            WHERE s.status = 'draft'
              -- A file draft is the learner's to hand in: nothing submits it for them.
-             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = a.id)
+             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = a.assessment_id)
              AND (s.auto_submit_retry_at IS NULL OR s.auto_submit_retry_at <= now())
              AND ((s.started_at IS NOT NULL AND a.time_limit_seconds IS NOT NULL
                    AND s.started_at + make_interval(secs => a.time_limit_seconds + a.grace_period_seconds) <= now())

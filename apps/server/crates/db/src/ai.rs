@@ -1797,9 +1797,11 @@ pub async fn assessments_context(
                   (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id) AS "title!",
                   (SELECT act.kind FROM activities act WHERE act.id = assessments.activity_id)
                       AS "kind!",
-                  grading_mode, passing_score::float8 AS "passing_score!", max_attempts, time_limit_seconds,
-                  (extract(epoch FROM due_at))::bigint AS "due_at?"
-           FROM assessments WHERE course_id = $1
+                  p.grading_mode AS "grading_mode!", p.passing_score::float8 AS "passing_score!",
+                  p.max_attempts AS "max_attempts?", p.time_limit_seconds AS "time_limit_seconds?",
+                  (extract(epoch FROM p.due_at))::bigint AS "due_at?"
+           FROM assessments JOIN assessment_policy_v p ON p.assessment_id = assessments.id
+           WHERE course_id = $1
              AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)
            ORDER BY id"#,
         course_id.0

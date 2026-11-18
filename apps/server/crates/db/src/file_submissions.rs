@@ -15,15 +15,6 @@ use ab_core::id::{
 };
 use sqlx::PgPool;
 
-/// `to_timestamp($n)` wants double precision; epoch seconds fit exactly.
-#[allow(clippy::cast_precision_loss)]
-const fn epoch(t: Option<i64>) -> Option<f64> {
-    match t {
-        Some(v) => Some(v as f64),
-        None => None,
-    }
-}
-
 // ── Activities ──────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone)]
@@ -73,12 +64,29 @@ pub struct FileSubmissionValues<'a> {
     pub settings: &'a serde_json::Value,
 }
 
-/// The assessment and its file body in one statement, under one id.
+impl FileSubmissionValues<'_> {
+    /// The policy a file task sets, as keys of the version's policy document.
+    #[must_use]
+    pub fn policy(&self) -> serde_json::Value {
+        serde_json::json!({
+            "due_at": self.due_at,
+            "allow_late": self.allow_late,
+            "late_policy_kind": self.late_policy_kind.as_str(),
+            "late_penalty_percent_per_day": self.late_penalty_percent_per_day,
+            "late_penalty_max_days": self.late_penalty_max_days,
+            "late_cutoff_at": self.late_cutoff_at,
+            "max_attempts": self.max_attempts,
+            "grade_release_mode": self.grade_release_mode.as_str(),
+        })
+    }
+}
+
+/// The assessment, its file body under the same id and its first version, on the caller's transaction.
 ///
 /// The policy a file task never sets is fixed here as migration `20261115155501` mapped it: graded by a
 /// teacher, always required, completed by a released grade, 60 passes.
-pub async fn insert_file_submission<'e>(
-    db: impl sqlx::PgExecutor<'e>,
+pub async fn insert_file_submission(
+    conn: &mut sqlx::PgConnection,
     activity_id: ActivityId,
     course_id: CourseId,
     creator_id: UserId,
@@ -86,18 +94,13 @@ pub async fn insert_file_submission<'e>(
 ) -> Result<FileSubmissionId> {
     let id = sqlx::query_scalar!(
         r#"WITH a AS (
-               INSERT INTO assessments
-                   (activity_id, course_id, due_at, allow_late, late_policy_kind,
-                    late_penalty_percent_per_day, late_penalty_max_days, late_cutoff_at,
-                    max_attempts, grade_release_mode, created_by,
-                    grading_mode, completion_rule, passing_score, required)
-               VALUES ($1, $2, to_timestamp($8), $9, $10, $11::float8, $12, to_timestamp($13),
-                       $14, $15, $17, 'manual', 'graded', 60, true)
+               INSERT INTO assessments (activity_id, course_id, created_by)
+               VALUES ($1, $2, $9)
                RETURNING id)
            INSERT INTO file_submissions
                (id, activity_id, course_id, instructions, rubric, allowed_mime_types, max_files,
                 max_file_size_mb, settings)
-           SELECT a.id, $1, $2, $3, $4, $5, $6, $7, $16 FROM a
+           SELECT a.id, $1, $2, $3, $4, $5, $6, $7, $8 FROM a
            RETURNING id AS "id: FileSubmissionId""#,
         activity_id.0,
         course_id.0,
@@ -106,19 +109,19 @@ pub async fn insert_file_submission<'e>(
         v.allowed_mime_types,
         v.max_files,
         v.max_file_size_mb,
-        epoch(v.due_at),
-        v.allow_late,
-        v.late_policy_kind.as_str(),
-        v.late_penalty_percent_per_day,
-        v.late_penalty_max_days,
-        epoch(v.late_cutoff_at),
-        v.max_attempts,
-        v.grade_release_mode.as_str(),
         v.settings,
         creator_id.0
     )
-    .fetch_one(db)
+    .fetch_one(&mut *conn)
     .await?;
+    let mut policy = v.policy();
+    if let Some(doc) = policy.as_object_mut() {
+        doc.insert("grading_mode".into(), "manual".into());
+        doc.insert("completion_rule".into(), "graded".into());
+        doc.insert("passing_score".into(), 60.into());
+        doc.insert("required".into(), true.into());
+    }
+    crate::assessment_versions::save(conn, AssessmentId(id.0), Some(&policy), false).await?;
     Ok(id)
 }
 
@@ -131,18 +134,20 @@ pub async fn get_file_submission<'e>(
         r#"SELECT f.id AS "id: FileSubmissionId", f.activity_id AS "activity_id: ActivityId",
                   f.course_id AS "course_id: CourseId", f.instructions, f.rubric, f.allowed_mime_types,
                   f.max_files, f.max_file_size_mb,
-                  (extract(epoch FROM a.due_at))::bigint AS "due_at?", a.allow_late,
-                  a.late_policy_kind AS "late_policy_kind: LatePolicyKind",
-                  a.late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", a.late_penalty_max_days,
-                  (extract(epoch FROM a.late_cutoff_at))::bigint AS "late_cutoff_at?",
-                  a.max_attempts, a.grade_release_mode AS "grade_release_mode: GradeReleaseMode",
+                  (extract(epoch FROM p.due_at))::bigint AS "due_at?", p.allow_late AS "allow_late!",
+                  p.late_policy_kind AS "late_policy_kind!: LatePolicyKind",
+                  p.late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?",
+                  p.late_penalty_max_days AS "late_penalty_max_days?",
+                  (extract(epoch FROM p.late_cutoff_at))::bigint AS "late_cutoff_at?",
+                  p.max_attempts AS "max_attempts?", p.grade_release_mode AS "grade_release_mode!: GradeReleaseMode",
                   a.status AS "lifecycle: FileSubmissionLifecycle",
                   (extract(epoch FROM a.published_at))::bigint AS "published_at?",
                   (extract(epoch FROM a.archived_at))::bigint AS "archived_at?",
                   f.settings, a.created_by AS "creator_id: UserId", f.version,
                   (extract(epoch FROM f.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM f.updated_at))::bigint AS "updated_at!"
-           FROM file_submissions f JOIN assessments a ON a.id = f.id WHERE f.id = $1"#,
+           FROM file_submissions f JOIN assessments a ON a.id = f.id
+           JOIN assessment_policy_v p ON p.assessment_id = f.id WHERE f.id = $1"#,
         id.0
     )
     .fetch_optional(db)
@@ -159,18 +164,20 @@ pub async fn get_file_submission_by_activity<'e>(
         r#"SELECT f.id AS "id: FileSubmissionId", f.activity_id AS "activity_id: ActivityId",
                   f.course_id AS "course_id: CourseId", f.instructions, f.rubric, f.allowed_mime_types,
                   f.max_files, f.max_file_size_mb,
-                  (extract(epoch FROM a.due_at))::bigint AS "due_at?", a.allow_late,
-                  a.late_policy_kind AS "late_policy_kind: LatePolicyKind",
-                  a.late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", a.late_penalty_max_days,
-                  (extract(epoch FROM a.late_cutoff_at))::bigint AS "late_cutoff_at?",
-                  a.max_attempts, a.grade_release_mode AS "grade_release_mode: GradeReleaseMode",
+                  (extract(epoch FROM p.due_at))::bigint AS "due_at?", p.allow_late AS "allow_late!",
+                  p.late_policy_kind AS "late_policy_kind!: LatePolicyKind",
+                  p.late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?",
+                  p.late_penalty_max_days AS "late_penalty_max_days?",
+                  (extract(epoch FROM p.late_cutoff_at))::bigint AS "late_cutoff_at?",
+                  p.max_attempts AS "max_attempts?", p.grade_release_mode AS "grade_release_mode!: GradeReleaseMode",
                   a.status AS "lifecycle: FileSubmissionLifecycle",
                   (extract(epoch FROM a.published_at))::bigint AS "published_at?",
                   (extract(epoch FROM a.archived_at))::bigint AS "archived_at?",
                   f.settings, a.created_by AS "creator_id: UserId", f.version,
                   (extract(epoch FROM f.created_at))::bigint AS "created_at!",
                   (extract(epoch FROM f.updated_at))::bigint AS "updated_at!"
-           FROM file_submissions f JOIN assessments a ON a.id = f.id WHERE f.activity_id = $1"#,
+           FROM file_submissions f JOIN assessments a ON a.id = f.id
+           JOIN assessment_policy_v p ON p.assessment_id = f.id WHERE f.activity_id = $1"#,
         activity_id.0
     )
     .fetch_optional(db)
@@ -211,46 +218,43 @@ pub async fn lock_file_submission_by_activity(
     get_file_submission_by_activity(conn, activity_id).await
 }
 
-/// The policy lands on the assessment, the body on `file_submissions`.
+/// The policy becomes the assessment's current version (a save), the body lands on `file_submissions`.
 ///
-/// The task's `version` (If-Match) moves once when either changed (`touch_row` bumps it for the body, the
-/// assessment's own bump is carried over).
-pub async fn update_file_submission<'e>(
-    db: impl sqlx::PgExecutor<'e>,
+/// The task's `version` (If-Match) moves once when either changed (`touch_row` bumps it for the body, a
+/// new current version adds one).
+pub async fn update_file_submission(
+    conn: &mut sqlx::PgConnection,
     id: FileSubmissionId,
     v: FileSubmissionValues<'_>,
 ) -> Result<bool> {
+    let before = sqlx::query_scalar!(
+        "SELECT current_version_id FROM assessments WHERE id = $1",
+        id.0
+    )
+    .fetch_optional(&mut *conn)
+    .await?;
+    let Some(before) = before else {
+        return Ok(false);
+    };
+    let saved =
+        crate::assessment_versions::save(conn, AssessmentId(id.0), Some(&v.policy()), false)
+            .await?;
     let updated = sqlx::query!(
-        r#"WITH old AS (SELECT version FROM assessments WHERE id = $1),
-           a AS (
-               UPDATE assessments SET
-                   due_at = to_timestamp($7), allow_late = $8,
-                   late_policy_kind = $9, late_penalty_percent_per_day = $10::float8,
-                   late_penalty_max_days = $11, late_cutoff_at = to_timestamp($12),
-                   max_attempts = $13, grade_release_mode = $14
-               WHERE id = $1 RETURNING version)
-           UPDATE file_submissions f SET
+        r#"UPDATE file_submissions f SET
                instructions = $2, rubric = $3, allowed_mime_types = $4, max_files = $5,
-               max_file_size_mb = $6, settings = $15,
-               version = f.version + (a.version <> old.version)::int
-           FROM a, old WHERE f.id = $1"#,
+               max_file_size_mb = $6, settings = $7,
+               version = f.version + $8::int
+           WHERE f.id = $1"#,
         id.0,
         v.instructions,
         v.rubric,
         v.allowed_mime_types,
         v.max_files,
         v.max_file_size_mb,
-        epoch(v.due_at),
-        v.allow_late,
-        v.late_policy_kind.as_str(),
-        v.late_penalty_percent_per_day,
-        v.late_penalty_max_days,
-        epoch(v.late_cutoff_at),
-        v.max_attempts,
-        v.grade_release_mode.as_str(),
-        v.settings
+        v.settings,
+        i32::from(before != Some(saved.0))
     )
-    .execute(db)
+    .execute(&mut *conn)
     .await?;
     Ok(updated.rows_affected() == 1)
 }
@@ -302,7 +306,7 @@ pub async fn list_for_course(
         GradebookFileSubmissionRow,
         r#"SELECT f.id AS "id: FileSubmissionId", f.activity_id AS "activity_id: ActivityId",
                   a.name AS title, (extract(epoch FROM s.due_at))::bigint AS "due_at?"
-           FROM file_submissions f JOIN assessments s ON s.id = f.id
+           FROM file_submissions f JOIN assessment_policy_v s ON s.assessment_id = f.id
            JOIN activities a ON a.id = f.activity_id
            JOIN chapters c ON c.id = a.chapter_id
            WHERE f.course_id = $1

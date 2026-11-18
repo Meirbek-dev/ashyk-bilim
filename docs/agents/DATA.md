@@ -22,13 +22,14 @@ Every table, column, key and foreign key with the table's purpose: `docs/agents/
 | chapter, activity                 | `chapters`, `activities` (`kind`, `sub_kind`, `published`, `content`) |
 | course teacher / author           | `course_staff` (`course_id`, `user_id`, `authorship`, `status`); the creator is the one `authorship = 'creator'` row (`course_creator(id)`; `collection_staff` / `collection_creator(id)` for a collection) |
 | enrolled learner                  | `course_members` (view: `enrolments` without staff); joins and leaves: `enrolment_events` (a leave keeps its marks in `completions`); per activity: `completions` (the fact), `activity_progress` (projection); old marks on graded activities: `trail_legacy_marks` (history only) |
-| quiz, exam, code challenge        | `assessments` (`activity_id`, `status`; title/kind = the activity's) + `assessment_items` (`body` json) |
+| quiz, exam, code challenge        | `assessments` (`activity_id`, `status`, `current_version_id`; title/kind = the activity's) + `assessment_items` (`body` json) |
+| its settings (deadline, attempts, passing score, ...) | the current version's `assessment_versions.policy`; typed per assessment in `assessment_policy_v` (`due_at`, `max_attempts`, `passing_score`, ...); a learner's own deadline or attempts: `assessment_overrides` |
 | code statement, tests, languages  | `assessment_items.body`: `prompt`, `tests[]`, `languages[]` (slugs: `python`, `cpp`, ...), `time_limit_seconds` |
 | attempt (quiz, exam, code)        | `submissions` (`status` draft / submitted / graded / released / returned) |
-| what an attempt answered against  | `submissions.items_snapshot` / `policy_snapshot`, `assessment_version_id` -> `assessment_versions` |
+| what an attempt answered against  | `submissions.assessment_version_id` -> `assessment_versions` (`items`, `policy`); a draft's `base_version_id` (stale when its `items_sha256` is not the current version's); `items_snapshot` / `policy_snapshot` are the old copies |
 | a grade and its history           | `grading_entries` (journal, highest `revision` = current) = `submissions.final_points`, out of `submissions.max_points` (the version's points); `final_score` / `raw_score` are the derived percentages; breakdown `submission_breakdown(id, auto_breakdown)` (latest entry's, else the hand-in's), item `score` / `max_score` in points |
 | code "Run"                        | `code_runs` (`status`, `verdict`, `language` slug; + `code_run_cases`, `verdict`) |
-| file task, its hand-ins           | `assessments` (policy, `status`) + `file_submissions` (same `id`: `instructions`, rubric, file caps); hand-ins are `submissions`, their files `file_submission_files` (`attempt_id` = the submission) |
+| file task, its hand-ins           | `assessments` (`status`, policy in `assessment_policy_v`) + `file_submissions` (same `id`: `instructions`, rubric, file caps); hand-ins are `submissions`, their files `file_submission_files` (`attempt_id` = the submission) |
 | lesson media                      | `activities.content->>'filename'` (video, PDF), `blocks.content` (page blocks)       |
 | role, permission                  | `user_roles` -> `roles` (`slug`); permissions in `role_permissions`                 |
 | group                             | `usergroups`, `usergroup_members`, `usergroup_courses`                               |
@@ -75,8 +76,9 @@ Make a file task reviewable (published, with instructions and a deadline in 3 da
 
 ```sql
 update activities set published = true where id = '<activity>';
-update assessments set status = 'published', published_at = now(), due_at = now() + interval '3 days'
-  where activity_id = '<activity>';
+update assessments set status = 'published', published_at = now() where activity_id = '<activity>';
+select assessment_version_save(id, jsonb_build_object('due_at', extract(epoch from now() + interval '3 days')::bigint))
+  from assessments where activity_id = '<activity>';
 update file_submissions set instructions = 'Ответьте на вопросы.', max_files = 2 where activity_id = '<activity>';
 ```
 
@@ -117,6 +119,20 @@ select count(*) as attempts,
        count(*) filter (where final_score >= passing_score and final_after < passing_score) as passed_to_false,
        max(abs(final_after - final_score)) as largest_shift
 from d
+```
+
+Before deploying policy in versions (`20261116075666`, REWRITE 5.8 item 10), on the release before it: versions the
+switch rebuilds (every one there: the nine-field hand-in shape), assessments it saves a first version for, and overrides
+that may explain a version's values. The migration prints what it did (NOTICE: rebuilt, merged, kept a policy the
+assessment no longer has; versions created). Counts only, read-only; for exact numbers run the migrations on a clone in
+a transaction and roll back.
+
+```sql
+select (select count(*) from assessment_versions) as versions,
+       (select count(*) from assessments a
+         where not exists (select from assessment_versions v where v.assessment_id = a.id)) as without_a_version,
+       (select count(*) from assessment_overrides) as overrides,
+       (select count(*) from submissions where status = 'draft') as drafts
 ```
 
 Media referenced by the database but missing from local storage: `just restore-media --slot N` copies them from

@@ -903,7 +903,7 @@ impl ImportsService {
                 if options.apply_settings {
                     let policy = policy_for(PolicyInput::from_row(&detail.assessment));
                     policy.validate()?;
-                    ab_db::assessments::update_policy(&mut *tx, assessment_id, &policy.to_values())
+                    ab_db::assessments::update_policy(&mut tx, assessment_id, &policy.to_values())
                         .await?;
                 }
                 assessment_id
@@ -939,6 +939,7 @@ impl ImportsService {
         // The pictures now belong to the items (the trigger links them).
         ab_db::uploads::hold(&mut *tx, &row.image_upload_ids).await?;
         ab_db::assessments::bump_content_version(&mut *tx, assessment_id).await?;
+        ab_db::assessment_versions::save(&mut tx, assessment_id, None, false).await?;
         ab_db::assessments::insert_audit_event(
             &mut *tx,
             assessment_id,

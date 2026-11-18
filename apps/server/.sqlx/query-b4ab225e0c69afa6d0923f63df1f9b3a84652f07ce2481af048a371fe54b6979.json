@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: AssessmentId\", activity_id AS \"activity_id: ActivityId\",\n                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id) AS \"title!\",\n                  (SELECT act.kind FROM activities act WHERE act.id = assessments.activity_id)\n                      AS \"kind!\",\n                  grading_mode, passing_score::float8 AS \"passing_score!\", max_attempts, time_limit_seconds,\n                  (extract(epoch FROM due_at))::bigint AS \"due_at?\"\n           FROM assessments WHERE course_id = $1\n             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)\n           ORDER BY id",
+  "query": "SELECT id AS \"id: AssessmentId\", activity_id AS \"activity_id: ActivityId\",\n                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id) AS \"title!\",\n                  (SELECT act.kind FROM activities act WHERE act.id = assessments.activity_id)\n                      AS \"kind!\",\n                  p.grading_mode AS \"grading_mode!\", p.passing_score::float8 AS \"passing_score!\",\n                  p.max_attempts AS \"max_attempts?\", p.time_limit_seconds AS \"time_limit_seconds?\",\n                  (extract(epoch FROM p.due_at))::bigint AS \"due_at?\"\n           FROM assessments JOIN assessment_policy_v p ON p.assessment_id = assessments.id\n           WHERE course_id = $1\n             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)\n           ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -39,11 +39,11 @@
       },
       {
         "ordinal": 4,
-        "name": "grading_mode",
+        "name": "grading_mode!",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "grading_mode"
           }
         }
@@ -56,22 +56,22 @@
       },
       {
         "ordinal": 6,
-        "name": "max_attempts",
+        "name": "max_attempts?",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "max_attempts"
           }
         }
       },
       {
         "ordinal": 7,
-        "name": "time_limit_seconds",
+        "name": "time_limit_seconds?",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "time_limit_seconds"
           }
         }
@@ -93,12 +93,12 @@
       false,
       null,
       null,
-      false,
+      true,
       null,
       true,
       true,
       null
     ]
   },
-  "hash": "277cfdd221ce9965092f3dbf0b35c63107a11e3c4b806dd19d7c0537c6b3b333"
+  "hash": "b4ab225e0c69afa6d0923f63df1f9b3a84652f07ce2481af048a371fe54b6979"
 }

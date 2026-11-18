@@ -563,7 +563,14 @@ async fn hand_ins_read_their_version_and_the_violation_journal(pool: PgPool) {
         .unwrap()
         .unwrap();
     assert_eq!(after.items_snapshot.as_ref(), Some(&items));
-    assert_eq!(after.policy_snapshot.as_ref(), Some(&policy));
+    // The version's policy: the assessment's, the hand-in's own keys over it.
+    assert_eq!(
+        after
+            .policy_snapshot
+            .as_ref()
+            .map(|p| p["max_attempts"].clone()),
+        Some(policy["max_attempts"].clone())
+    );
     assert_eq!(after.items_snapshot, before.items_snapshot);
     let log = after.violations.as_array().unwrap();
     assert_eq!(log.len(), 200, "the newest 200");

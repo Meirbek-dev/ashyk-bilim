@@ -113,6 +113,44 @@ pub struct PolicyValues {
     pub draw_strata: Option<serde_json::Value>,
 }
 
+impl PolicyValues {
+    /// The block as a version's policy document: the stored names, instants
+    /// as epoch seconds (`assessment_policy_doc` makes it canonical).
+    #[must_use]
+    pub fn to_doc(&self) -> serde_json::Value {
+        serde_json::json!({
+            "grading_mode": self.grading_mode.as_str(),
+            "grade_release_mode": self.grade_release_mode.as_str(),
+            "completion_rule": self.completion_rule.as_str(),
+            "passing_score": self.passing_score,
+            "max_attempts": self.max_attempts,
+            "time_limit_seconds": self.time_limit_seconds,
+            "due_at": self.due_at,
+            "allow_late": self.allow_late,
+            "late_policy_kind": self.late_policy_kind.as_str(),
+            "late_penalty_percent_per_day": self.late_penalty_percent_per_day,
+            "late_penalty_max_days": self.late_penalty_max_days,
+            "late_cutoff_at": self.late_cutoff_at,
+            "required": self.required,
+            "review_visibility": self.review_visibility.as_str(),
+            "randomize_questions": self.randomize_questions,
+            "randomize_options": self.randomize_options,
+            "partial_credit": self.partial_credit,
+            "negative_marking_percent": self.negative_marking_percent,
+            "grace_period_seconds": i64::from(self.grace_period_minutes) * 60,
+            "copy_paste_protection": self.copy_paste_protection,
+            "tab_switch_detection": self.tab_switch_detection,
+            "devtools_detection": self.devtools_detection,
+            "right_click_disabled": self.right_click_disabled,
+            "fullscreen_required": self.fullscreen_required,
+            "violation_threshold": self.violation_threshold,
+            "attempt_penalty_percent": self.attempt_penalty_percent,
+            "draw_count": self.draw_count,
+            "draw_strata": self.draw_strata,
+        })
+    }
+}
+
 impl AssessmentRow {
     /// The current policy block (patch base).
     #[must_use]
@@ -161,29 +199,14 @@ pub struct NewAssessment<'a> {
     pub policy: &'a PolicyValues,
 }
 
-pub async fn insert_assessment<'e>(
-    db: impl sqlx::PgExecutor<'e>,
+/// The assessment and its first version (`new.policy`), on the caller's transaction.
+pub async fn insert_assessment(
+    conn: &mut sqlx::PgConnection,
     new: NewAssessment<'_>,
 ) -> Result<AssessmentId> {
-    let p = new.policy;
     let id = sqlx::query_scalar!(
-        r#"INSERT INTO assessments (
-               activity_id, course_id, description, weight, grading_kind,
-               created_by,
-               grading_mode, grade_release_mode, completion_rule, passing_score,
-               max_attempts, time_limit_seconds, due_at, allow_late,
-               late_policy_kind, late_penalty_percent_per_day, late_penalty_max_days,
-               late_cutoff_at,
-               required, review_visibility, randomize_questions, randomize_options,
-               partial_credit, negative_marking_percent, grace_period_seconds,
-               copy_paste_protection, tab_switch_detection, devtools_detection,
-               right_click_disabled, fullscreen_required, violation_threshold,
-               attempt_penalty_percent, draw_count, draw_strata)
-           VALUES ($1, $2, $3, $4::float8, $5, $6,
-                   $7, $8, $9, $10::float8, $11, $12, to_timestamp($13), $14,
-                   $15, $16::float8, $17, to_timestamp($18),
-                   $19, $20, $21, $22, $23, $24::float8, $25 * 60,
-                   $26, $27, $28, $29, $30, $31, $32::float8, $33, $34)
+        r#"INSERT INTO assessments (activity_id, course_id, description, weight, grading_kind, created_by)
+           VALUES ($1, $2, $3, $4::float8, $5, $6)
            RETURNING id"#,
         new.activity_id.0,
         new.course_id.0,
@@ -191,38 +214,12 @@ pub async fn insert_assessment<'e>(
         new.weight,
         new.grading_kind.as_str(),
         new.creator_id.0,
-        p.grading_mode.as_str(),
-        p.grade_release_mode.as_str(),
-        p.completion_rule.as_str(),
-        p.passing_score,
-        p.max_attempts,
-        p.time_limit_seconds,
-        epoch(p.due_at),
-        p.allow_late,
-        p.late_policy_kind.as_str(),
-        p.late_penalty_percent_per_day,
-        p.late_penalty_max_days,
-        epoch(p.late_cutoff_at),
-        p.required,
-        p.review_visibility.as_str(),
-        p.randomize_questions,
-        p.randomize_options,
-        p.partial_credit,
-        p.negative_marking_percent,
-        p.grace_period_minutes,
-        p.copy_paste_protection,
-        p.tab_switch_detection,
-        p.devtools_detection,
-        p.right_click_disabled,
-        p.fullscreen_required,
-        p.violation_threshold,
-        p.attempt_penalty_percent,
-        p.draw_count,
-        p.draw_strata
     )
-    .fetch_one(db)
+    .fetch_one(&mut *conn)
     .await?;
-    Ok(AssessmentId(id))
+    let id = AssessmentId(id);
+    crate::assessment_versions::save(conn, id, Some(&new.policy.to_doc()), false).await?;
+    Ok(id)
 }
 
 pub async fn get_assessment<'e>(
@@ -243,27 +240,34 @@ pub async fn get_assessment<'e>(
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   weight::float8 AS "weight!", grading_kind AS "grading_kind: GradingType",
                   content_version, policy_version, version,
-                  grading_mode AS "grading_mode: GradingMode",
-                  grade_release_mode AS "grade_release_mode: GradeReleaseMode",
-                  completion_rule AS "completion_rule: CompletionRule",
-                  passing_score::float8 AS "passing_score!", max_attempts, time_limit_seconds,
-                  (extract(epoch FROM due_at))::bigint AS "due_at?",
-                  allow_late, late_policy_kind AS "late_policy_kind: LatePolicyKind",
-                  late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", late_penalty_max_days,
-                  (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
-                  required, review_visibility AS "review_visibility: ReviewVisibility",
-                  randomize_questions, randomize_options, partial_credit,
-                  negative_marking_percent::float8 AS "negative_marking_percent!",
-                  grace_period_seconds / 60 AS "grace_period_minutes!",
-                  copy_paste_protection, tab_switch_detection, devtools_detection,
-                  right_click_disabled, fullscreen_required, violation_threshold,
-                  attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
-                  draw_count, draw_strata,
+                  p.grading_mode AS "grading_mode!: GradingMode",
+                  p.grade_release_mode AS "grade_release_mode!: GradeReleaseMode",
+                  p.completion_rule AS "completion_rule!: CompletionRule",
+                  p.passing_score::float8 AS "passing_score!", p.max_attempts AS "max_attempts?",
+                  p.time_limit_seconds AS "time_limit_seconds?",
+                  (extract(epoch FROM p.due_at))::bigint AS "due_at?",
+                  p.allow_late AS "allow_late!", p.late_policy_kind AS "late_policy_kind!: LatePolicyKind",
+                  p.late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?",
+                  p.late_penalty_max_days AS "late_penalty_max_days?",
+                  (extract(epoch FROM p.late_cutoff_at))::bigint AS "late_cutoff_at?",
+                  p.required AS "required!", p.review_visibility AS "review_visibility!: ReviewVisibility",
+                  p.randomize_questions AS "randomize_questions!", p.randomize_options AS "randomize_options!",
+                  p.partial_credit AS "partial_credit!",
+                  p.negative_marking_percent::float8 AS "negative_marking_percent!",
+                  p.grace_period_seconds / 60 AS "grace_period_minutes!",
+                  p.copy_paste_protection AS "copy_paste_protection!",
+                  p.tab_switch_detection AS "tab_switch_detection!",
+                  p.devtools_detection AS "devtools_detection!",
+                  p.right_click_disabled AS "right_click_disabled!",
+                  p.fullscreen_required AS "fullscreen_required!",
+                  p.violation_threshold AS "violation_threshold!",
+                  p.attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
+                  p.draw_count AS "draw_count?", p.draw_strata AS "draw_strata?",
                   access_mode AS "access_mode: AccessMode",
                   created_by AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM assessments WHERE id = $1
+           FROM assessments JOIN assessment_policy_v p ON p.assessment_id = assessments.id WHERE assessments.id = $1
              AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)"#,
         id.0
     )
@@ -317,27 +321,34 @@ pub async fn get_assessment_by_activity<'e>(
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   weight::float8 AS "weight!", grading_kind AS "grading_kind: GradingType",
                   content_version, policy_version, version,
-                  grading_mode AS "grading_mode: GradingMode",
-                  grade_release_mode AS "grade_release_mode: GradeReleaseMode",
-                  completion_rule AS "completion_rule: CompletionRule",
-                  passing_score::float8 AS "passing_score!", max_attempts, time_limit_seconds,
-                  (extract(epoch FROM due_at))::bigint AS "due_at?",
-                  allow_late, late_policy_kind AS "late_policy_kind: LatePolicyKind",
-                  late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", late_penalty_max_days,
-                  (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
-                  required, review_visibility AS "review_visibility: ReviewVisibility",
-                  randomize_questions, randomize_options, partial_credit,
-                  negative_marking_percent::float8 AS "negative_marking_percent!",
-                  grace_period_seconds / 60 AS "grace_period_minutes!",
-                  copy_paste_protection, tab_switch_detection, devtools_detection,
-                  right_click_disabled, fullscreen_required, violation_threshold,
-                  attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
-                  draw_count, draw_strata,
+                  p.grading_mode AS "grading_mode!: GradingMode",
+                  p.grade_release_mode AS "grade_release_mode!: GradeReleaseMode",
+                  p.completion_rule AS "completion_rule!: CompletionRule",
+                  p.passing_score::float8 AS "passing_score!", p.max_attempts AS "max_attempts?",
+                  p.time_limit_seconds AS "time_limit_seconds?",
+                  (extract(epoch FROM p.due_at))::bigint AS "due_at?",
+                  p.allow_late AS "allow_late!", p.late_policy_kind AS "late_policy_kind!: LatePolicyKind",
+                  p.late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?",
+                  p.late_penalty_max_days AS "late_penalty_max_days?",
+                  (extract(epoch FROM p.late_cutoff_at))::bigint AS "late_cutoff_at?",
+                  p.required AS "required!", p.review_visibility AS "review_visibility!: ReviewVisibility",
+                  p.randomize_questions AS "randomize_questions!", p.randomize_options AS "randomize_options!",
+                  p.partial_credit AS "partial_credit!",
+                  p.negative_marking_percent::float8 AS "negative_marking_percent!",
+                  p.grace_period_seconds / 60 AS "grace_period_minutes!",
+                  p.copy_paste_protection AS "copy_paste_protection!",
+                  p.tab_switch_detection AS "tab_switch_detection!",
+                  p.devtools_detection AS "devtools_detection!",
+                  p.right_click_disabled AS "right_click_disabled!",
+                  p.fullscreen_required AS "fullscreen_required!",
+                  p.violation_threshold AS "violation_threshold!",
+                  p.attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
+                  p.draw_count AS "draw_count?", p.draw_strata AS "draw_strata?",
                   access_mode AS "access_mode: AccessMode",
                   created_by AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM assessments WHERE activity_id = $1
+           FROM assessments JOIN assessment_policy_v p ON p.assessment_id = assessments.id WHERE activity_id = $1
              AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)"#,
         activity_id.0
     )
@@ -364,27 +375,34 @@ pub async fn list_assessments_for_course(
                   (extract(epoch FROM archived_at))::bigint AS "archived_at?",
                   weight::float8 AS "weight!", grading_kind AS "grading_kind: GradingType",
                   content_version, policy_version, version,
-                  grading_mode AS "grading_mode: GradingMode",
-                  grade_release_mode AS "grade_release_mode: GradeReleaseMode",
-                  completion_rule AS "completion_rule: CompletionRule",
-                  passing_score::float8 AS "passing_score!", max_attempts, time_limit_seconds,
-                  (extract(epoch FROM due_at))::bigint AS "due_at?",
-                  allow_late, late_policy_kind AS "late_policy_kind: LatePolicyKind",
-                  late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?", late_penalty_max_days,
-                  (extract(epoch FROM late_cutoff_at))::bigint AS "late_cutoff_at?",
-                  required, review_visibility AS "review_visibility: ReviewVisibility",
-                  randomize_questions, randomize_options, partial_credit,
-                  negative_marking_percent::float8 AS "negative_marking_percent!",
-                  grace_period_seconds / 60 AS "grace_period_minutes!",
-                  copy_paste_protection, tab_switch_detection, devtools_detection,
-                  right_click_disabled, fullscreen_required, violation_threshold,
-                  attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
-                  draw_count, draw_strata,
+                  p.grading_mode AS "grading_mode!: GradingMode",
+                  p.grade_release_mode AS "grade_release_mode!: GradeReleaseMode",
+                  p.completion_rule AS "completion_rule!: CompletionRule",
+                  p.passing_score::float8 AS "passing_score!", p.max_attempts AS "max_attempts?",
+                  p.time_limit_seconds AS "time_limit_seconds?",
+                  (extract(epoch FROM p.due_at))::bigint AS "due_at?",
+                  p.allow_late AS "allow_late!", p.late_policy_kind AS "late_policy_kind!: LatePolicyKind",
+                  p.late_penalty_percent_per_day::float8 AS "late_penalty_percent_per_day?",
+                  p.late_penalty_max_days AS "late_penalty_max_days?",
+                  (extract(epoch FROM p.late_cutoff_at))::bigint AS "late_cutoff_at?",
+                  p.required AS "required!", p.review_visibility AS "review_visibility!: ReviewVisibility",
+                  p.randomize_questions AS "randomize_questions!", p.randomize_options AS "randomize_options!",
+                  p.partial_credit AS "partial_credit!",
+                  p.negative_marking_percent::float8 AS "negative_marking_percent!",
+                  p.grace_period_seconds / 60 AS "grace_period_minutes!",
+                  p.copy_paste_protection AS "copy_paste_protection!",
+                  p.tab_switch_detection AS "tab_switch_detection!",
+                  p.devtools_detection AS "devtools_detection!",
+                  p.right_click_disabled AS "right_click_disabled!",
+                  p.fullscreen_required AS "fullscreen_required!",
+                  p.violation_threshold AS "violation_threshold!",
+                  p.attempt_penalty_percent::float8 AS "attempt_penalty_percent!",
+                  p.draw_count AS "draw_count?", p.draw_strata AS "draw_strata?",
                   access_mode AS "access_mode: AccessMode",
                   created_by AS "creator_id: UserId",
                   (extract(epoch FROM created_at))::bigint AS "created_at!",
                   (extract(epoch FROM updated_at))::bigint AS "updated_at!"
-           FROM assessments WHERE course_id = $1
+           FROM assessments JOIN assessment_policy_v p ON p.assessment_id = assessments.id WHERE course_id = $1
              AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)
            ORDER BY id"#,
         course_id.0
@@ -420,8 +438,10 @@ pub async fn gradebook_columns(
         GradebookAssessmentRow,
         r#"SELECT s.id AS "id: AssessmentId", s.activity_id AS "activity_id: ActivityId",
                   a.name AS title, a.kind AS "kind: AssessmentKind",
-                  (extract(epoch FROM s.due_at))::bigint AS "due_at?", s.passing_score::float8 AS "passing_score!", s.weight::float8 AS "weight!"
+                  (extract(epoch FROM p.due_at))::bigint AS "due_at?", p.passing_score::float8 AS "passing_score!",
+                  s.weight::float8 AS "weight!"
            FROM assessments s
+           JOIN assessment_policy_v p ON p.assessment_id = s.id
            JOIN activities a ON a.id = s.activity_id
            JOIN chapters c ON c.id = a.chapter_id
            WHERE s.course_id = $1 AND a.kind <> 'file_submission'
@@ -461,62 +481,23 @@ pub async fn update_assessment_details<'e>(
     Ok(updated.rows_affected() == 1)
 }
 
-/// Replace the whole policy block and bump `policy_version`.
-pub async fn update_policy<'e>(
-    db: impl sqlx::PgExecutor<'e>,
+/// Replace the whole policy block: a new current version, and `policy_version` bumped.
+pub async fn update_policy(
+    conn: &mut sqlx::PgConnection,
     id: AssessmentId,
     p: &PolicyValues,
 ) -> Result<bool> {
     let updated = sqlx::query!(
-        r#"UPDATE assessments SET
-               grading_mode = $2, grade_release_mode = $3, completion_rule = $4,
-               passing_score = $5::float8, max_attempts = $6, time_limit_seconds = $7,
-               due_at = to_timestamp($8), allow_late = $9,
-               late_policy_kind = $10, late_penalty_percent_per_day = $11::float8,
-               late_penalty_max_days = $12, late_cutoff_at = to_timestamp($13),
-               required = $14, review_visibility = $15, randomize_questions = $16,
-               randomize_options = $17, partial_credit = $18,
-               negative_marking_percent = $19::float8, grace_period_seconds = $20 * 60,
-               copy_paste_protection = $21, tab_switch_detection = $22,
-               devtools_detection = $23, right_click_disabled = $24,
-               fullscreen_required = $25, violation_threshold = $26,
-               attempt_penalty_percent = $27::float8,
-               draw_count = $28, draw_strata = $29,
-               policy_version = policy_version + 1
-           WHERE id = $1"#,
-        id.0,
-        p.grading_mode.as_str(),
-        p.grade_release_mode.as_str(),
-        p.completion_rule.as_str(),
-        p.passing_score,
-        p.max_attempts,
-        p.time_limit_seconds,
-        epoch(p.due_at),
-        p.allow_late,
-        p.late_policy_kind.as_str(),
-        p.late_penalty_percent_per_day,
-        p.late_penalty_max_days,
-        epoch(p.late_cutoff_at),
-        p.required,
-        p.review_visibility.as_str(),
-        p.randomize_questions,
-        p.randomize_options,
-        p.partial_credit,
-        p.negative_marking_percent,
-        p.grace_period_minutes,
-        p.copy_paste_protection,
-        p.tab_switch_detection,
-        p.devtools_detection,
-        p.right_click_disabled,
-        p.fullscreen_required,
-        p.violation_threshold,
-        p.attempt_penalty_percent,
-        p.draw_count,
-        p.draw_strata
+        "UPDATE assessments SET policy_version = policy_version + 1 WHERE id = $1",
+        id.0
     )
-    .execute(db)
+    .execute(&mut *conn)
     .await?;
-    Ok(updated.rows_affected() == 1)
+    if updated.rows_affected() != 1 {
+        return Ok(false);
+    }
+    crate::assessment_versions::save(conn, id, Some(&p.to_doc()), false).await?;
+    Ok(true)
 }
 
 /// Lifecycle write. Timestamps are set explicitly by the service per the

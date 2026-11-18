@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: AssessmentId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\",\n                  (SELECT act.kind FROM activities act WHERE act.id = assessments.activity_id)\n                      AS \"kind!: AssessmentKind\",\n                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id)\n                      AS \"title!\",\n                  description, status AS \"lifecycle: Lifecycle\",\n                  (extract(epoch FROM scheduled_at))::bigint AS \"scheduled_at?\",\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\",\n                  (extract(epoch FROM archived_at))::bigint AS \"archived_at?\",\n                  weight::float8 AS \"weight!\", grading_kind AS \"grading_kind: GradingType\",\n                  content_version, policy_version, version,\n                  grading_mode AS \"grading_mode: GradingMode\",\n                  grade_release_mode AS \"grade_release_mode: GradeReleaseMode\",\n                  completion_rule AS \"completion_rule: CompletionRule\",\n                  passing_score::float8 AS \"passing_score!\", max_attempts, time_limit_seconds,\n                  (extract(epoch FROM due_at))::bigint AS \"due_at?\",\n                  allow_late, late_policy_kind AS \"late_policy_kind: LatePolicyKind\",\n                  late_penalty_percent_per_day::float8 AS \"late_penalty_percent_per_day?\", late_penalty_max_days,\n                  (extract(epoch FROM late_cutoff_at))::bigint AS \"late_cutoff_at?\",\n                  required, review_visibility AS \"review_visibility: ReviewVisibility\",\n                  randomize_questions, randomize_options, partial_credit,\n                  negative_marking_percent::float8 AS \"negative_marking_percent!\",\n                  grace_period_seconds / 60 AS \"grace_period_minutes!\",\n                  copy_paste_protection, tab_switch_detection, devtools_detection,\n                  right_click_disabled, fullscreen_required, violation_threshold,\n                  attempt_penalty_percent::float8 AS \"attempt_penalty_percent!\",\n                  draw_count, draw_strata,\n                  access_mode AS \"access_mode: AccessMode\",\n                  created_by AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM assessments WHERE activity_id = $1\n             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)",
+  "query": "SELECT id AS \"id: AssessmentId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\",\n                  (SELECT act.kind FROM activities act WHERE act.id = assessments.activity_id)\n                      AS \"kind!: AssessmentKind\",\n                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id)\n                      AS \"title!\",\n                  description, status AS \"lifecycle: Lifecycle\",\n                  (extract(epoch FROM scheduled_at))::bigint AS \"scheduled_at?\",\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\",\n                  (extract(epoch FROM archived_at))::bigint AS \"archived_at?\",\n                  weight::float8 AS \"weight!\", grading_kind AS \"grading_kind: GradingType\",\n                  content_version, policy_version, version,\n                  p.grading_mode AS \"grading_mode!: GradingMode\",\n                  p.grade_release_mode AS \"grade_release_mode!: GradeReleaseMode\",\n                  p.completion_rule AS \"completion_rule!: CompletionRule\",\n                  p.passing_score::float8 AS \"passing_score!\", p.max_attempts AS \"max_attempts?\",\n                  p.time_limit_seconds AS \"time_limit_seconds?\",\n                  (extract(epoch FROM p.due_at))::bigint AS \"due_at?\",\n                  p.allow_late AS \"allow_late!\", p.late_policy_kind AS \"late_policy_kind!: LatePolicyKind\",\n                  p.late_penalty_percent_per_day::float8 AS \"late_penalty_percent_per_day?\",\n                  p.late_penalty_max_days AS \"late_penalty_max_days?\",\n                  (extract(epoch FROM p.late_cutoff_at))::bigint AS \"late_cutoff_at?\",\n                  p.required AS \"required!\", p.review_visibility AS \"review_visibility!: ReviewVisibility\",\n                  p.randomize_questions AS \"randomize_questions!\", p.randomize_options AS \"randomize_options!\",\n                  p.partial_credit AS \"partial_credit!\",\n                  p.negative_marking_percent::float8 AS \"negative_marking_percent!\",\n                  p.grace_period_seconds / 60 AS \"grace_period_minutes!\",\n                  p.copy_paste_protection AS \"copy_paste_protection!\",\n                  p.tab_switch_detection AS \"tab_switch_detection!\",\n                  p.devtools_detection AS \"devtools_detection!\",\n                  p.right_click_disabled AS \"right_click_disabled!\",\n                  p.fullscreen_required AS \"fullscreen_required!\",\n                  p.violation_threshold AS \"violation_threshold!\",\n                  p.attempt_penalty_percent::float8 AS \"attempt_penalty_percent!\",\n                  p.draw_count AS \"draw_count?\", p.draw_strata AS \"draw_strata?\",\n                  access_mode AS \"access_mode: AccessMode\",\n                  created_by AS \"creator_id: UserId\",\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM assessments JOIN assessment_policy_v p ON p.assessment_id = assessments.id WHERE assessments.id = $1\n             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)",
   "describe": {
     "columns": [
       {
@@ -140,33 +140,33 @@
       },
       {
         "ordinal": 15,
-        "name": "grading_mode: GradingMode",
+        "name": "grading_mode!: GradingMode",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "grading_mode"
           }
         }
       },
       {
         "ordinal": 16,
-        "name": "grade_release_mode: GradeReleaseMode",
+        "name": "grade_release_mode!: GradeReleaseMode",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "grade_release_mode"
           }
         }
       },
       {
         "ordinal": 17,
-        "name": "completion_rule: CompletionRule",
+        "name": "completion_rule!: CompletionRule",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "completion_rule"
           }
         }
@@ -179,22 +179,22 @@
       },
       {
         "ordinal": 19,
-        "name": "max_attempts",
+        "name": "max_attempts?",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "max_attempts"
           }
         }
       },
       {
         "ordinal": 20,
-        "name": "time_limit_seconds",
+        "name": "time_limit_seconds?",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "time_limit_seconds"
           }
         }
@@ -207,22 +207,22 @@
       },
       {
         "ordinal": 22,
-        "name": "allow_late",
+        "name": "allow_late!",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "allow_late"
           }
         }
       },
       {
         "ordinal": 23,
-        "name": "late_policy_kind: LatePolicyKind",
+        "name": "late_policy_kind!: LatePolicyKind",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "late_policy_kind"
           }
         }
@@ -235,11 +235,11 @@
       },
       {
         "ordinal": 25,
-        "name": "late_penalty_max_days",
+        "name": "late_penalty_max_days?",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "late_penalty_max_days"
           }
         }
@@ -252,55 +252,55 @@
       },
       {
         "ordinal": 27,
-        "name": "required",
+        "name": "required!",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "required"
           }
         }
       },
       {
         "ordinal": 28,
-        "name": "review_visibility: ReviewVisibility",
+        "name": "review_visibility!: ReviewVisibility",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "review_visibility"
           }
         }
       },
       {
         "ordinal": 29,
-        "name": "randomize_questions",
+        "name": "randomize_questions!",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "randomize_questions"
           }
         }
       },
       {
         "ordinal": 30,
-        "name": "randomize_options",
+        "name": "randomize_options!",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "randomize_options"
           }
         }
       },
       {
         "ordinal": 31,
-        "name": "partial_credit",
+        "name": "partial_credit!",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "partial_credit"
           }
         }
@@ -319,66 +319,66 @@
       },
       {
         "ordinal": 34,
-        "name": "copy_paste_protection",
+        "name": "copy_paste_protection!",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "copy_paste_protection"
           }
         }
       },
       {
         "ordinal": 35,
-        "name": "tab_switch_detection",
+        "name": "tab_switch_detection!",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "tab_switch_detection"
           }
         }
       },
       {
         "ordinal": 36,
-        "name": "devtools_detection",
+        "name": "devtools_detection!",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "devtools_detection"
           }
         }
       },
       {
         "ordinal": 37,
-        "name": "right_click_disabled",
+        "name": "right_click_disabled!",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "right_click_disabled"
           }
         }
       },
       {
         "ordinal": 38,
-        "name": "fullscreen_required",
+        "name": "fullscreen_required!",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "fullscreen_required"
           }
         }
       },
       {
         "ordinal": 39,
-        "name": "violation_threshold",
+        "name": "violation_threshold!",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "violation_threshold"
           }
         }
@@ -391,22 +391,22 @@
       },
       {
         "ordinal": 41,
-        "name": "draw_count",
+        "name": "draw_count?",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "draw_count"
           }
         }
       },
       {
         "ordinal": 42,
-        "name": "draw_strata",
+        "name": "draw_strata?",
         "type_info": "Jsonb",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "draw_strata"
           }
         }
@@ -467,31 +467,31 @@
       false,
       false,
       false,
-      false,
-      false,
-      false,
+      true,
+      true,
+      true,
       null,
       true,
       true,
       null,
-      false,
-      false,
+      true,
+      true,
       null,
       true,
       null,
-      false,
-      false,
-      false,
-      false,
-      false,
+      true,
+      true,
+      true,
+      true,
+      true,
       null,
       null,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
       null,
       true,
       true,
@@ -501,5 +501,5 @@
       null
     ]
   },
-  "hash": "eb5ef5880bc4ba6eedce6f78ac1c3bcfe167f1fcba0df9b4b053fddb096a75c7"
+  "hash": "9c840050aaa0632def40ff14a401e6ad17c372f792e559662a77a4058f9ba6ed"
 }

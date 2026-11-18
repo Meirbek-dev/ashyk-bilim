@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT f.id AS \"id: FileSubmissionId\", f.activity_id AS \"activity_id: ActivityId\",\n                  f.course_id AS \"course_id: CourseId\", f.instructions, f.rubric, f.allowed_mime_types,\n                  f.max_files, f.max_file_size_mb,\n                  (extract(epoch FROM a.due_at))::bigint AS \"due_at?\", a.allow_late,\n                  a.late_policy_kind AS \"late_policy_kind: LatePolicyKind\",\n                  a.late_penalty_percent_per_day::float8 AS \"late_penalty_percent_per_day?\", a.late_penalty_max_days,\n                  (extract(epoch FROM a.late_cutoff_at))::bigint AS \"late_cutoff_at?\",\n                  a.max_attempts, a.grade_release_mode AS \"grade_release_mode: GradeReleaseMode\",\n                  a.status AS \"lifecycle: FileSubmissionLifecycle\",\n                  (extract(epoch FROM a.published_at))::bigint AS \"published_at?\",\n                  (extract(epoch FROM a.archived_at))::bigint AS \"archived_at?\",\n                  f.settings, a.created_by AS \"creator_id: UserId\", f.version,\n                  (extract(epoch FROM f.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM f.updated_at))::bigint AS \"updated_at!\"\n           FROM file_submissions f JOIN assessments a ON a.id = f.id WHERE f.activity_id = $1",
+  "query": "SELECT f.id AS \"id: FileSubmissionId\", f.activity_id AS \"activity_id: ActivityId\",\n                  f.course_id AS \"course_id: CourseId\", f.instructions, f.rubric, f.allowed_mime_types,\n                  f.max_files, f.max_file_size_mb,\n                  (extract(epoch FROM p.due_at))::bigint AS \"due_at?\", p.allow_late AS \"allow_late!\",\n                  p.late_policy_kind AS \"late_policy_kind!: LatePolicyKind\",\n                  p.late_penalty_percent_per_day::float8 AS \"late_penalty_percent_per_day?\",\n                  p.late_penalty_max_days AS \"late_penalty_max_days?\",\n                  (extract(epoch FROM p.late_cutoff_at))::bigint AS \"late_cutoff_at?\",\n                  p.max_attempts AS \"max_attempts?\", p.grade_release_mode AS \"grade_release_mode!: GradeReleaseMode\",\n                  a.status AS \"lifecycle: FileSubmissionLifecycle\",\n                  (extract(epoch FROM a.published_at))::bigint AS \"published_at?\",\n                  (extract(epoch FROM a.archived_at))::bigint AS \"archived_at?\",\n                  f.settings, a.created_by AS \"creator_id: UserId\", f.version,\n                  (extract(epoch FROM f.created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM f.updated_at))::bigint AS \"updated_at!\"\n           FROM file_submissions f JOIN assessments a ON a.id = f.id\n           JOIN assessment_policy_v p ON p.assessment_id = f.id WHERE f.id = $1",
   "describe": {
     "columns": [
       {
@@ -99,22 +99,22 @@
       },
       {
         "ordinal": 9,
-        "name": "allow_late",
+        "name": "allow_late!",
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "allow_late"
           }
         }
       },
       {
         "ordinal": 10,
-        "name": "late_policy_kind: LatePolicyKind",
+        "name": "late_policy_kind!: LatePolicyKind",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "late_policy_kind"
           }
         }
@@ -127,11 +127,11 @@
       },
       {
         "ordinal": 12,
-        "name": "late_penalty_max_days",
+        "name": "late_penalty_max_days?",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "late_penalty_max_days"
           }
         }
@@ -144,22 +144,22 @@
       },
       {
         "ordinal": 14,
-        "name": "max_attempts",
+        "name": "max_attempts?",
         "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "max_attempts"
           }
         }
       },
       {
         "ordinal": 15,
-        "name": "grade_release_mode: GradeReleaseMode",
+        "name": "grade_release_mode!: GradeReleaseMode",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "grade_release_mode"
           }
         }
@@ -248,13 +248,13 @@
       false,
       true,
       null,
-      false,
-      false,
-      null,
+      true,
       true,
       null,
       true,
-      false,
+      null,
+      true,
+      true,
       false,
       null,
       null,
@@ -265,5 +265,5 @@
       null
     ]
   },
-  "hash": "95075f36ecc326bbd67dbdc1a924c51ff63cbf4340f93d126e21424fc8d8f424"
+  "hash": "baf205f7f2f143f98147b557b84cce56507394e2bae016960d4b176be0aebf3a"
 }

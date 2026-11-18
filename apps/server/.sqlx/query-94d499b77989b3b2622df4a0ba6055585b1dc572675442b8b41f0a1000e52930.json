@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT assessment_version_save(\n                   $1, (SELECT v.policy FROM assessments s\n                        JOIN assessment_versions v ON v.id = s.current_version_id WHERE s.id = $2))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "assessment_version_save",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "94d499b77989b3b2622df4a0ba6055585b1dc572675442b8b41f0a1000e52930"
+}

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: AssessmentId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\",\n                  (SELECT act.kind FROM activities act WHERE act.id = assessments.activity_id) AS \"kind!: AssessmentKind\",\n                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id) AS \"title!\",\n                  status AS \"lifecycle: Lifecycle\", grading_mode AS \"grading_mode: GradingMode\",\n                  passing_score::float8 AS \"passing_score!\", (extract(epoch FROM due_at))::bigint AS \"due_at?\"\n           FROM assessments WHERE course_id = ANY($1)\n             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)\n           ORDER BY id",
+  "query": "SELECT id AS \"id: AssessmentId\", activity_id AS \"activity_id: ActivityId\",\n                  course_id AS \"course_id: CourseId\",\n                  (SELECT act.kind FROM activities act WHERE act.id = assessments.activity_id) AS \"kind!: AssessmentKind\",\n                  (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id) AS \"title!\",\n                  status AS \"lifecycle: Lifecycle\", p.grading_mode AS \"grading_mode!: GradingMode\",\n                  p.passing_score::float8 AS \"passing_score!\", (extract(epoch FROM p.due_at))::bigint AS \"due_at?\"\n           FROM assessments JOIN assessment_policy_v p ON p.assessment_id = assessments.id\n           WHERE course_id = ANY($1)\n             AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)\n           ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -61,11 +61,11 @@
       },
       {
         "ordinal": 6,
-        "name": "grading_mode: GradingMode",
+        "name": "grading_mode!: GradingMode",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "assessments",
+            "table": "assessment_policy_v",
             "name": "grading_mode"
           }
         }
@@ -95,10 +95,10 @@
       null,
       null,
       false,
-      false,
+      true,
       null,
       null
     ]
   },
-  "hash": "9dc63986eda33b51df02e999441e5271eb69ff0f178c1bc1976909f225292708"
+  "hash": "ff5f5218c9a90c28dc1f3135d45a1349196bbd74a40413a55ed7324ac7eb84a7"
 }

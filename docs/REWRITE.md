@@ -1070,15 +1070,8 @@ Queue, in order:
      counted), which item 10 added as `enrolments.completed_at`.
    - Points as the record (n16): its own slice, done in item 10 (the grader, the breakdown and the API moved to points;
      the writers took the recorded percentage from the rule both sides share).
-   - The policy split (n7): not done here, bigger than one slice and not only a move (queued as item 10, 2026-11-18). A version exists only from the
-     first hand-in (`assessment_versions::ensure` at submit), so a draft or not yet taken assessment has no version
-     to hold its policy, and the studio edits the columns. The version's `policy` is a hand-in snapshot of nine
-     fields with the learner's effective values (an override's due date and attempts), not the assessment's
-     policy; the other policy columns (lateness, anti-cheat, randomisation, draws, review, release,
-     weight) are in no version. The split needs versions written at publish and at each edit while published (n16
-     *Counters*, which also needs the separate items hash for BUG-237), a home for the policy of an assessment no
-     version holds yet, the per-learner overrides kept out of the shared policy, and every reader moved (studio,
-     grading, the scheduler, analytics, AI context, the DOT import/export, the API DTOs).
+   - The policy split (n7): done in item 10 (*Policy in versions*): every save writes a version, the policy lives
+     in it, readers take it from `assessment_policy_v`, a draft's staleness reads the items hash.
 9. **Names, last**: `certifications` -> `certificate_templates`, `certificate_users` -> `certificates`,
    `course_discussions` -> `discussion_posts`, and the column renames of 5.6 n15, in the API too.
    - Tables: switched in `20261116075643_rename_certificates_and_posts`. Each table is renamed in place (its
@@ -1203,6 +1196,34 @@ Queue, in order:
       and `current_version_id`; a draft's staleness reads a separate items hash. Old versions are rebuilt to the
       new shape: the assessment's policy apart from `assessment_overrides`; a value no override explains is taken as
       the assessment's policy at that time.
+      Switched in `20261116075666_policy_in_versions` (a data fix; its indexes `…667`, `…668`). A version's policy is
+      the 28 policy fields as one canonical document (`assessment_policy_doc`, built by Postgres only, so every
+      writer stores the same text); `assessment_version_save(id, patch, cosmetic)` writes the save (the items as
+      `assessment_items_doc` builds them, the patch over the current policy, an equal version reused) and moves
+      `assessments.current_version_id`; `assessment_versions_policy_check` keeps the columns' checks on the document.
+      The studio's policy save, item add / edit / delete / reorder, the DOT import,
+      a duplicate and the course copy call it on their transaction; `assessment_policy_v` gives readers the policy
+      under the columns' names and types, so the API keeps its shape (`content_version`, `policy_version` and the
+      task's `version` stay as the If-Match counters; a save alone leaves `version` as it is, `touch_row` skipping
+      the columns a trigger argument names with `-`). `assessment_versions.items_sha256` (generated) hashes the
+      items alone; a draft names its `base_version_id` and is stale when that one's items are not the current
+      one's (the 409 on submit and the timer's manual review keep their shape), so a policy-only save stales no draft
+      and a cosmetic one (a reorder, a wording fix) moves the drafts on the current items with it. A hand-in names
+      the version of its drawn items under the current policy (a file task's caps and rubric beside it); it keeps
+      writing the old snapshot columns for the previous release. The data fix rebuilt every version of the nine-field
+      shape: the assessment's stored policy, with each of the nine values that differs and that no override (a cap,
+      a due date of a learner who handed in against it) or preview (an open cap) explains kept as the policy then;
+      versions that became equal merged into the lowest number (hand-ins repointed), and every assessment saved its
+      current version (an equal one reused), the open drafts on it. The previous release keeps working on the
+      columns: BEFORE / deferred triggers (`assessments_policy_in_step`, `assessments_version_created`,
+      `assessments_version_items`, `submissions_base_version`) turn its column writes, inserts and content bumps
+      into versions and its drafts' inserts into base versions, and copy each new current version into the columns
+      it reads. Shape: a switch and its contract, the release before still reads and writes the 28 columns (one
+      release whose rollback is a restore would lose every grade since). Counted on the dev copy of production
+      (2026-11-18, a clone, rolled back): 28 versions rebuilt, 3 merged, 2 keep a policy their assessment no longer
+      has; 40 of 60 assessments had no version and got one, the other 20 found theirs; 2 drafts named their base.
+      Rollback hazard: a hand-in the release before writes after the switch is versioned in its nine-field shape
+      (never current, read as before); the contract rebuilds those the same way.
 
 ## 6. Auth
 

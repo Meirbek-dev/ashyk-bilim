@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT assessment_version_for(\n                      $1, $2,\n                      coalesce((SELECT v.policy FROM assessments a\n                                JOIN assessment_versions v ON v.id = a.current_version_id\n                                WHERE a.id = $1), assessment_policy_default()) || $3)\n                  AS \"id!: AssessmentVersionId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!: AssessmentVersionId",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Jsonb",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "2dd974045543ca55773b2d734809dd5740456d185e673e759b8ef95b17d7884d"
+}

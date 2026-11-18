@@ -18,3 +18,41 @@ column	discussion_posts.dislikes_count	the release after reads counted on read (
 column	discussion_posts.replies_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
 column	daily_teacher_metrics.id	the release after the platform rollup moved to daily_platform_metrics (20261108000500): delete the NULL-teacher rows, teacher_id NOT NULL, (metric_date, teacher_id) the primary key	schema review 2026-11-08 item 16
 constraint	daily_teacher_metrics_metric_date_teacher_user_id_key	the same contract as daily_teacher_metrics.id	schema review 2026-11-08 item 16
+trigger	assessments_policy_in_step	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+trigger	assessments_version_created	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+trigger	assessments_version_items	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+trigger	submissions_base_version	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+function	assessments_policy_in_step	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+function	assessments_version_sync	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+function	submissions_base_version	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+function	assessment_versions_rebuild	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+function	assessment_snapshot_value_ok	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+function	assessment_policy_columns	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.grading_mode	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.grade_release_mode	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.completion_rule	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.passing_score	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.max_attempts	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.time_limit_seconds	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.due_at	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.allow_late	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.late_policy_kind	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.late_penalty_percent_per_day	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.late_penalty_max_days	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.late_cutoff_at	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.required	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.review_visibility	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.randomize_questions	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.randomize_options	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.partial_credit	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.negative_marking_percent	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.grace_period_seconds	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.copy_paste_protection	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.tab_switch_detection	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.devtools_detection	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.right_click_disabled	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.fullscreen_required	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.violation_threshold	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.attempt_penalty_percent	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.draw_count	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*
+column	assessments.draw_strata	the release after the readers moved to assessment versions (20261116075666)	REWRITE 5.8 item 10 *Policy in versions*

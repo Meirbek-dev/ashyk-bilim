@@ -210,9 +210,10 @@ pub async fn list_assessments(
                   course_id AS "course_id: CourseId",
                   (SELECT act.kind FROM activities act WHERE act.id = assessments.activity_id) AS "kind!: AssessmentKind",
                   (SELECT act.name FROM activities act WHERE act.id = assessments.activity_id) AS "title!",
-                  status AS "lifecycle: Lifecycle", grading_mode AS "grading_mode: GradingMode",
-                  passing_score::float8 AS "passing_score!", (extract(epoch FROM due_at))::bigint AS "due_at?"
-           FROM assessments WHERE course_id = ANY($1)
+                  status AS "lifecycle: Lifecycle", p.grading_mode AS "grading_mode!: GradingMode",
+                  p.passing_score::float8 AS "passing_score!", (extract(epoch FROM p.due_at))::bigint AS "due_at?"
+           FROM assessments JOIN assessment_policy_v p ON p.assessment_id = assessments.id
+           WHERE course_id = ANY($1)
              AND NOT EXISTS (SELECT 1 FROM file_submissions fs WHERE fs.id = assessments.id)
            ORDER BY id"#,
         &ids

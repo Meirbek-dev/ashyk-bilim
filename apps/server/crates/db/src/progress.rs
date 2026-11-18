@@ -230,9 +230,10 @@ pub async fn ensure_course_rows<'e>(
         r#"INSERT INTO activity_progress (course_id, activity_id, user_id, required, due_at)
            SELECT a.course_id, a.id, $2,
                   a.kind = 'file_submission' OR s.id IS NOT NULL OR a.required,
-                  s.due_at
+                  sp.due_at
            FROM activities a
            LEFT JOIN assessments s ON s.activity_id = a.id
+           LEFT JOIN assessment_policy_v sp ON sp.assessment_id = s.id
            WHERE a.course_id = $1 AND a.published
            ON CONFLICT (activity_id, user_id) DO NOTHING"#,
         course_id.0,

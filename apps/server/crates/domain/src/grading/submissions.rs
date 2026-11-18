@@ -950,7 +950,7 @@ impl SubmissionsService {
             // BUG-224: a draft opened against older content never scores items
             // the learner did not see - `start` again re-syncs it to the current
             // version once the items are reloaded.
-            if ctx.submission.content_version < ctx.assessment.content_version {
+            if ctx.submission.items_stale {
                 return Err(Error::app_with_details(
                     ErrorCode::Conflict,
                     "assessment content changed since the draft was opened; reopen it",
@@ -1100,7 +1100,7 @@ impl SubmissionsService {
         // an auto score - items it never showed would score `no-answer`.
         // `submit` refuses it earlier (409, reopen); the timer sweep, which
         // cannot ask, hands it to a teacher (pending review).
-        if submission.content_version < assessment.content_version {
+        if submission.items_stale {
             grade.breakdown.needs_manual_review = true;
         }
         let at = opts.submitted_at.unwrap_or(now);
@@ -1141,12 +1141,15 @@ impl SubmissionsService {
         // start landing during the grade itself precedes the hand-in, as if
         // it had been issued before the submit.
         let (items_snapshot, policy_snapshot) = snapshots(&items, &assessment, &effective);
-        // Its own short transaction, before the hand-in's (BUG-377).
+        // Its own short transaction, before the hand-in's (BUG-377). The
+        // version holds the questions drawn under the assessment's policy (the
+        // current version when nothing was drawn); a learner's own cap or due
+        // date stays in `assessment_overrides`.
         let version = ab_db::assessment_versions::ensure(
             pool,
             assessment.id,
             &items_snapshot,
-            &policy_snapshot,
+            &serde_json::json!({}),
         )
         .await?;
         let mut attempts = pool.begin().await?;

@@ -713,7 +713,7 @@ impl FileSubmissionsService {
         )
         .await?;
         let id = ab_db::file_submissions::insert_file_submission(
-            &mut *tx,
+            &mut tx,
             activity_id,
             chapter.course_id,
             actor.user_id,
@@ -820,7 +820,7 @@ impl FileSubmissionsService {
             )
             .await?;
         }
-        ab_db::file_submissions::update_file_submission(&mut *tx, id, values).await?;
+        ab_db::file_submissions::update_file_submission(&mut tx, id, values).await?;
         // BUG-316: like a quiz policy PUT (BUG-312), new late rules re-price
         // every existing hand-in - one rule for every learner.
         let followup = if (row.due_at, row.allow_late, late_policy_of(&row))

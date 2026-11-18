@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: SubmissionId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: SubmissionStatus\", attempt_number, answers,\n                  submission_breakdown(id, auto_breakdown) AS \"grading!\",\n                  auto_score::float8 AS \"auto_score?\", final_score::float8 AS \"final_score?\",\n                  max_points::float8 AS \"max_points?\", auto_points::float8 AS \"auto_points?\",\n                  final_points::float8 AS \"final_points?\", is_late, late_penalty_pct::float8 AS \"late_penalty_pct!\",\n                  violation_count, submission_violation_log(id) AS \"violations!\",\n                  auto_submit_reason AS \"auto_submit_reason: AutoSubmitReason\",\n                  (extract(epoch FROM rules_accepted_at))::bigint AS \"rules_accepted_at?\",\n                  (extract(epoch FROM auto_submitted_at))::bigint AS \"auto_submitted_at?\",\n                  auto_submit_attempts,\n                  (extract(epoch FROM auto_submit_retry_at))::bigint AS \"auto_submit_retry_at?\",\n                  duration_seconds,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  version, draft_version, content_version,\n                  (SELECT v.items FROM assessment_versions v WHERE v.id = assessment_version_id) AS items_snapshot,\n                  (SELECT v.policy FROM assessment_versions v WHERE v.id = assessment_version_id) AS policy_snapshot,\n                  preview,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM submissions WHERE assessment_id = $1 AND user_id = $2 AND status <> 'draft' ORDER BY id",
+  "query": "SELECT id AS \"id: SubmissionId\", assessment_id AS \"assessment_id: AssessmentId\",\n                  course_id AS \"course_id: CourseId\", user_id AS \"user_id: UserId\",\n                  status AS \"status: SubmissionStatus\", attempt_number, answers,\n                  submission_breakdown(id, auto_breakdown) AS \"grading!\",\n                  auto_score::float8 AS \"auto_score?\", final_score::float8 AS \"final_score?\",\n                  max_points::float8 AS \"max_points?\", auto_points::float8 AS \"auto_points?\",\n                  final_points::float8 AS \"final_points?\", is_late, late_penalty_pct::float8 AS \"late_penalty_pct!\",\n                  violation_count, submission_violation_log(id) AS \"violations!\",\n                  auto_submit_reason AS \"auto_submit_reason: AutoSubmitReason\",\n                  (extract(epoch FROM rules_accepted_at))::bigint AS \"rules_accepted_at?\",\n                  (extract(epoch FROM auto_submitted_at))::bigint AS \"auto_submitted_at?\",\n                  auto_submit_attempts,\n                  (extract(epoch FROM auto_submit_retry_at))::bigint AS \"auto_submit_retry_at?\",\n                  duration_seconds,\n                  (extract(epoch FROM started_at))::bigint AS \"started_at?\",\n                  (extract(epoch FROM submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM graded_at))::bigint AS \"graded_at?\",\n                  version, draft_version, content_version,\n                  (base_version_id IS NULL\n                   OR (SELECT b.items_sha256 FROM assessment_versions b WHERE b.id = base_version_id)\n                      IS DISTINCT FROM (SELECT c.items_sha256 FROM assessments a\n                                        JOIN assessment_versions c ON c.id = a.current_version_id\n                                        WHERE a.id = submissions.assessment_id)) AS \"items_stale!\",\n                  (SELECT v.items FROM assessment_versions v WHERE v.id = assessment_version_id) AS items_snapshot,\n                  (SELECT v.policy FROM assessment_versions v WHERE v.id = assessment_version_id) AS policy_snapshot,\n                  preview,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\",\n                  (extract(epoch FROM updated_at))::bigint AS \"updated_at!\"\n           FROM submissions WHERE assessment_id = $1 AND status IN ('graded', 'released')\n             AND NOT preview ORDER BY id",
   "describe": {
     "columns": [
       {
@@ -254,18 +254,24 @@
       },
       {
         "ordinal": 29,
+        "name": "items_stale!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 30,
         "name": "items_snapshot",
         "type_info": "Jsonb",
         "origin": "Expression"
       },
       {
-        "ordinal": 30,
+        "ordinal": 31,
         "name": "policy_snapshot",
         "type_info": "Jsonb",
         "origin": "Expression"
       },
       {
-        "ordinal": 31,
+        "ordinal": 32,
         "name": "preview",
         "type_info": "Bool",
         "origin": {
@@ -276,13 +282,13 @@
         }
       },
       {
-        "ordinal": 32,
+        "ordinal": 33,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 33,
+        "ordinal": 34,
         "name": "updated_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -290,7 +296,6 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
         "Uuid"
       ]
     },
@@ -326,10 +331,11 @@
       false,
       null,
       null,
+      null,
       false,
       null,
       null
     ]
   },
-  "hash": "d82c2fcc8670945835d94b4224afa7cf6f4a0f1b8a974fa616e954a413b99c50"
+  "hash": "d493d151da0af5548b859f8702cd9ec06bf96dff2b5abe1adf8f3e593380f841"
 }

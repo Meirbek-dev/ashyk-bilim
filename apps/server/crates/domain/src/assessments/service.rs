@@ -936,6 +936,7 @@ impl AssessmentsService {
                 ItemMetadataInput::default().as_db(),
             )
             .await?;
+            ab_db::assessment_versions::save(&mut *tx, id, None, false).await?;
         }
         Ok(id)
     }
@@ -1153,7 +1154,7 @@ impl AssessmentsService {
             ..assessment.clone()
         };
         Self::ensure_stays_ready((&assessment, &items), (&would_be, &items))?;
-        ab_db::assessments::update_policy(&mut *tx, id, &policy.to_values()).await?;
+        ab_db::assessments::update_policy(&mut tx, id, &policy.to_values()).await?;
         let projector = ProgressProjector::new(self.pool.clone());
         let followup = projector
             .owe_lateness_change(&mut tx, id, None, Some(actor.user_id))
@@ -1598,6 +1599,7 @@ impl AssessmentsService {
             )
             .await?;
         }
+        ab_db::assessment_versions::save(&mut *tx, new_id, None, false).await?;
         ab_db::assessments::insert_audit_event(
             &mut *tx,
             new_id,
@@ -1712,6 +1714,7 @@ impl AssessmentsService {
         )
         .await?;
         ab_db::assessments::bump_content_version(&mut *tx, id).await?;
+        ab_db::assessment_versions::save(&mut tx, id, None, false).await?;
         tx.commit().await?;
         self.item(item_id).await
     }
@@ -1857,6 +1860,15 @@ impl AssessmentsService {
         } else if content_changed {
             ab_db::assessments::bump_content_version(&mut *tx, row.assessment_id).await?;
         }
+        // A wording fix or a rename keeps the answer key: the drafts on the
+        // replaced version move with it.
+        ab_db::assessment_versions::save(
+            &mut tx,
+            row.assessment_id,
+            None,
+            wording_edit || !content_changed,
+        )
+        .await?;
         tx.commit().await?;
         self.item(item_id).await
     }
@@ -1892,6 +1904,7 @@ impl AssessmentsService {
             .collect();
         ab_db::assessments::renumber_items(&mut tx, &remaining).await?;
         ab_db::assessments::bump_content_version(&mut *tx, row.assessment_id).await?;
+        ab_db::assessment_versions::save(&mut tx, row.assessment_id, None, false).await?;
         Ok(tx.commit().await?)
     }
 
@@ -1943,8 +1956,10 @@ impl AssessmentsService {
                 ),
             }]));
         }
-        // BUG-257: order is presentation, not content - no content bump.
+        // BUG-257: order is presentation, not content - no content bump, and
+        // the drafts on the replaced version move with it.
         ab_db::assessments::renumber_items(&mut tx, ordered).await?;
+        ab_db::assessment_versions::save(&mut tx, id, None, true).await?;
         tx.commit().await?;
         Ok(self.detail(id).await?.items)
     }

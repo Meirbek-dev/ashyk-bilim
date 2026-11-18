@@ -110,15 +110,17 @@ async fn seed(pool: &PgPool) -> Seed {
         .fetch_one(pool)
         .await
         .unwrap();
-        let version = ab_db::assessment_versions::ensure(
-            pool,
-            ab_core::id::AssessmentId(assessment),
-            &items,
-            &serde_json::json!({}),
+        // The release before's `assessment_versions::ensure`.
+        let version: Uuid = sqlx::query_scalar(
+            "INSERT INTO assessment_versions (assessment_id, number, items, policy)
+             VALUES ($1, 1, $2, '{}') RETURNING id",
         )
+        .bind(assessment)
+        .bind(&items)
+        .fetch_one(pool)
         .await
         .unwrap();
-        quizzes.push((activity, assessment, version.0));
+        quizzes.push((activity, assessment, version));
     }
     // A share-of-100 breakdown: q1 is 33.33 of 100, q2 66.67.
     let breakdown = |q1: f64, q2: f64, flag: Option<f64>| {

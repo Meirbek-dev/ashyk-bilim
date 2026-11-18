@@ -248,10 +248,11 @@ pub async fn upcoming_deadlines(
                       COALESCE(CASE WHEN o.expires_at IS NULL OR o.expires_at > now()
                                          OR o.due_extended
                                     THEN o.due_at_override END,
-                               s.due_at) AS due_at,
-                      s.late_cutoff_at AS cutoff_at
+                               sp.due_at) AS due_at,
+                      sp.late_cutoff_at AS cutoff_at
                FROM members m
                JOIN assessments s ON s.course_id = m.course_id
+               JOIN assessment_policy_v sp ON sp.assessment_id = s.id
                JOIN learner_visible_activities v ON v.activity_id = s.activity_id
                LEFT JOIN assessment_overrides o
                       ON o.assessment_id = s.id AND o.user_id = m.user_id

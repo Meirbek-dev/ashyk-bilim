@@ -1806,7 +1806,8 @@ async fn a_hand_in_names_one_frozen_assessment_version(pool: PgPool) {
     .fetch_all(&pool)
     .await
     .unwrap();
-    assert_eq!(rows, vec![(1, 3.5), (2, 3.5)]);
+    // Number 1 is the assessment's own save (no items yet, 0 points).
+    assert_eq!(rows, vec![(1, 0.0), (2, 3.5), (3, 3.5)]);
 
     let frozen = sqlx::query("UPDATE assessment_versions SET policy = '{}' WHERE id = $1")
         .bind(first.0)
@@ -2966,6 +2967,22 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ),
         ("assessment_items_upload_ids", "derived"),
         ("assessment_versions_points", "derived"),
+        (
+            "assessments_policy_in_step",
+            "derived; the previous release's columns, a contract drops it",
+        ),
+        (
+            "assessments_version_created",
+            "derived; the previous release's inserts, a contract drops it",
+        ),
+        (
+            "assessments_version_items",
+            "derived; the previous release's item edits, a contract drops it",
+        ),
+        (
+            "submissions_base_version",
+            "derived; the previous release's drafts, a contract drops it",
+        ),
         ("assessment_versions_upload_ids", "derived"),
         ("blocks_upload_ids", "derived"),
         ("chapters_upload_ids", "derived"),
@@ -3201,7 +3218,7 @@ async fn hashes_say_what_they_hold(pool: PgPool) {
         .unwrap_or_else(|e| panic!("{name}: {e}"));
         assert!(check.contains("octet_length"), "{name}: {check}");
     }
-    assert_eq!(columns.len(), 7, "{columns:?}");
+    assert_eq!(columns.len(), 8, "{columns:?}");
     let score: String = sqlx::query_scalar(
         "SELECT format_type(atttypid, atttypmod) FROM pg_attribute
          WHERE attrelid = 'certificates'::regclass AND attname = 'score'",
@@ -3392,7 +3409,7 @@ async fn assessment_shapes_hold_at_the_database(pool: PgPool) {
     // A version's hash is derived (a generated column): the writer sends none.
     let derived: bool = sqlx::query_scalar(
         "INSERT INTO assessment_versions (assessment_id, number, items, policy)
-         VALUES ($1, 1, '{\"items\": []}', '{}')
+         VALUES ($1, 2, '{\"items\": []}', '{}')
          RETURNING content_sha256 = assessment_content_sha256(items, policy)",
     )
     .bind(w.assessment)
@@ -4301,7 +4318,8 @@ async fn a_hash_is_32_bytes(pool: PgPool) {
 
     let version = empty_version(&pool, w.assessment).await;
     let same: bool = sqlx::query_scalar(
-        "SELECT content_sha256 = sha256(convert_to('{}|{}', 'UTF8')) FROM assessment_versions WHERE id = $1",
+        "SELECT content_sha256 = sha256(convert_to(items::text || '|' || policy::text, 'UTF8'))
+         FROM assessment_versions WHERE id = $1",
     )
     .bind(version)
     .fetch_one(&pool)

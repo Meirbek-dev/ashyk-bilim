@@ -36,8 +36,9 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`learning.assessment_item_uploads`](#assessment_item_uploads): Uploads an assessment item body names (any `upload_id` in it); synced by trigger from the body
 - [`learning.assessment_items`](#assessment_items): A question or task of an assessment (typed body by kind), ordered by position, max_score in points
 - [`learning.assessment_overrides`](#assessment_overrides): Per-learner exceptions of an assessment: extra attempts, a later due date, a waived late penalty
+- [`learning.assessment_policy_v`](#assessment_policy_v): An assessment's policy, typed, from its current version (assessments.current_version_id)
 - [`learning.assessment_version_uploads`](#assessment_version_uploads): Uploads a frozen assessment version's items name (any `upload_id` in them); written by trigger when the version is
-- [`learning.assessment_versions`](#assessment_versions): Frozen policy + items of an assessment as handed in (content-addressed, numbered per assessment); a hand-in names its version once
+- [`learning.assessment_versions`](#assessment_versions): An assessment's items + policy as saved (every save; the current one is assessments.current_version_id) or as handed in (a draw's questions); content-addressed, numbered per assessment, frozen
 - [`learning.assessments`](#assessments): The graded part of a quiz, exam or code challenge activity: lifecycle, attempt and grading policy
 - [`ops.auth_audit_log`](#auth_audit_log): Security events of accounts (logins, failures, erasure)
 - [`core.block_uploads`](#block_uploads): Uploads a lesson block references (derived from its content's file key by a trigger); the upload reaper keeps them
@@ -935,6 +936,44 @@ Per-learner exceptions of an assessment: extra attempts, a later due date, a wai
 - Check `assessment_overrides_note_check`: `CHECK ((char_length(note) <= 1000))`
 - Index `assessment_overrides_user_idx`: `CREATE INDEX assessment_overrides_user_idx ON learning.assessment_overrides USING btree (user_id)`
 
+## assessment_policy_v (view)
+
+An assessment's policy, typed, from its current version (assessments.current_version_id).
+
+| Column | Type | Null | Default |
+| --- | --- | --- | --- |
+| assessment_id | uuid | null |  |
+| version_id | uuid | null |  |
+| items_sha256 | bytea | null |  |
+| grading_mode | text | null |  |
+| grade_release_mode | text | null |  |
+| completion_rule | text | null |  |
+| passing_score | numeric | null |  |
+| max_attempts | integer | null |  |
+| time_limit_seconds | integer | null |  |
+| due_at | timestamp with time zone | null |  |
+| allow_late | boolean | null |  |
+| late_policy_kind | text | null |  |
+| late_penalty_percent_per_day | numeric | null |  |
+| late_penalty_max_days | integer | null |  |
+| late_cutoff_at | timestamp with time zone | null |  |
+| required | boolean | null |  |
+| review_visibility | text | null |  |
+| randomize_questions | boolean | null |  |
+| randomize_options | boolean | null |  |
+| partial_credit | boolean | null |  |
+| negative_marking_percent | numeric | null |  |
+| grace_period_seconds | integer | null |  |
+| copy_paste_protection | boolean | null |  |
+| tab_switch_detection | boolean | null |  |
+| devtools_detection | boolean | null |  |
+| right_click_disabled | boolean | null |  |
+| fullscreen_required | boolean | null |  |
+| violation_threshold | integer | null |  |
+| attempt_penalty_percent | numeric | null |  |
+| draw_count | integer | null |  |
+| draw_strata | jsonb | null |  |
+
 ## assessment_version_uploads
 
 Uploads a frozen assessment version's items name (any `upload_id` in them); written by trigger when the version is.
@@ -951,25 +990,28 @@ Uploads a frozen assessment version's items name (any `upload_id` in them); writ
 
 ## assessment_versions
 
-Frozen policy + items of an assessment as handed in (content-addressed, numbered per assessment); a hand-in names its version once.
+An assessment's items + policy as saved (every save; the current one is assessments.current_version_id) or as handed in (a draw's questions); content-addressed, numbered per assessment, frozen.
 
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| id | uuid |  | `uuidv7()` |
-| assessment_id | uuid |  |  |
-| number | integer |  |  |
-| items | jsonb |  |  |
-| policy | jsonb |  |  |
-| max_points | numeric(10,2) |  |  |
-| created_at | timestamp with time zone |  | `now()` |
-| content_sha256 | bytea |  | generated: `assessment_content_sha256(items, policy)` |
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| assessment_id | uuid |  |  |  |
+| number | integer |  |  |  |
+| items | jsonb |  |  |  |
+| policy | jsonb |  |  |  |
+| max_points | numeric(10,2) |  |  |  |
+| created_at | timestamp with time zone |  | `now()` |  |
+| content_sha256 | bytea |  | generated: `assessment_content_sha256(items, policy)` |  |
+| items_sha256 | bytea | null | generated: `assessment_items_sha256(items)` | sha256 of the items alone: an attempt is stale when its base version's differs from the current one's. |
 
 - Primary key `assessment_versions_pkey`: `PRIMARY KEY (id)`
 - Unique `assessment_versions_assessment_id_number_key`: `UNIQUE (assessment_id, number)`
 - Foreign key `assessment_versions_assessment_id_fkey`: `FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON DELETE CASCADE`
 - Check `assessment_versions_content_sha256_check`: `CHECK ((octet_length(content_sha256) = 32))`
+- Check `assessment_versions_items_sha256_check`: `CHECK ((octet_length(items_sha256) = 32))`
 - Check `assessment_versions_max_points_check`: `CHECK ((max_points >= (0)::numeric))`
 - Check `assessment_versions_number_check`: `CHECK ((number >= 1))`
+- Check `assessment_versions_policy_check`: `CHECK (((NOT (policy ?& assessment_policy_keys())) OR assessment_policy_ok(policy)))`
 - Index `assessment_versions_content_sha256_key`: `CREATE UNIQUE INDEX assessment_versions_content_sha256_key ON learning.assessment_versions USING btree (assessment_id, content_sha256)`
 - Index `assessment_versions_id_assessment_key`: `CREATE UNIQUE INDEX assessment_versions_id_assessment_key ON learning.assessment_versions USING btree (id, assessment_id)`
 - Trigger `assessment_versions_frozen`: `CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()`
@@ -994,9 +1036,9 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 | grading_kind | text |  | `'percentage'::text` |  |
 | content_version | integer |  | `1` |  |
 | policy_version | integer |  | `1` |  |
-| grading_mode | text |  |  |  |
-| grade_release_mode | text |  |  |  |
-| completion_rule | text |  |  |  |
+| grading_mode | text |  | `'auto'::text` |  |
+| grade_release_mode | text |  | `'immediate'::text` |  |
+| completion_rule | text |  | `'passed'::text` |  |
 | passing_score | percent |  | `60` |  |
 | max_attempts | integer | null |  |  |
 | time_limit_seconds | integer | null |  |  |
@@ -1027,6 +1069,7 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 | draw_count | integer | null |  | Questions drawn at random for each attempt; NULL: every question. |
 | draw_strata | jsonb | null |  | Draw quotas `[{group, count}]` taken first from items with that `draw_group`; NULL: none. |
 | grace_period_seconds | integer |  | `0` | How long after the time limit a timed attempt is still accepted. |
+| current_version_id | uuid | null |  | The version in force: its policy is the assessment's (assessment_policy_v), its items the ones saved last. |
 
 - Primary key `assessments_pkey`: `PRIMARY KEY (id)`
 - Unique `assessments_activity_id_key`: `UNIQUE (activity_id)`
@@ -1034,6 +1077,7 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Foreign key `assessments_activity_id_fkey`: `FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE`
 - Foreign key `assessments_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `assessments_creator_id_fkey`: `FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL`
+- Foreign key `assessments_current_version_fkey`: `FOREIGN KEY (current_version_id, id) REFERENCES assessment_versions(id, assessment_id)`
 - Check `assessments_access_mode_check`: `CHECK ((access_mode = ANY (ARRAY['all_course_learners'::text, 'restricted'::text])))`
 - Check `assessments_archived_at_check`: `CHECK (((status <> 'archived'::text) OR (archived_at IS NOT NULL)))`
 - Check `assessments_completion_rule_check`: `CHECK ((completion_rule = ANY (ARRAY['viewed'::text, 'submitted'::text, 'graded'::text, 'passed'::text, 'teacher_verified'::text])))`
@@ -1057,7 +1101,11 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Check `assessments_time_limit_seconds_check`: `CHECK (((time_limit_seconds IS NULL) OR (time_limit_seconds >= 1)))`
 - Check `assessments_violation_threshold_check`: `CHECK ((violation_threshold >= 1))`
 - Index `assessments_course_idx`: `CREATE INDEX assessments_course_idx ON learning.assessments USING btree (course_id)`
+- Index `assessments_current_version_idx`: `CREATE INDEX assessments_current_version_idx ON learning.assessments USING btree (current_version_id)`
 - Index `assessments_due_publish_idx`: `CREATE INDEX assessments_due_publish_idx ON learning.assessments USING btree (scheduled_at) WHERE (status = 'scheduled'::text)`
+- Trigger `assessments_policy_in_step`: `CREATE TRIGGER assessments_policy_in_step BEFORE UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION assessments_policy_in_step()`
+- Trigger `assessments_version_created`: `CREATE CONSTRAINT TRIGGER assessments_version_created AFTER INSERT ON learning.assessments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION assessments_version_sync()`
+- Trigger `assessments_version_items`: `CREATE CONSTRAINT TRIGGER assessments_version_items AFTER UPDATE OF content_version ON learning.assessments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((old.content_version IS DISTINCT FROM new.content_version)) EXECUTE FUNCTION assessments_version_sync()`
 
 ## auth_audit_log
 
@@ -2596,11 +2644,13 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 | final_points | score_points | null |  | The grade of record in points, the latest grade entry's final_points. |
 | auto_score | percent | null | generated: `percent_of_points((auto_points)::numeric, (max_points)::numeric)` | percent_of_points(auto_points, max_points), generated. |
 | final_score | percent | null | generated: `percent_of_points((final_points)::numeric, (max_points)::numeric)` | percent_of_points(final_points, max_points), generated. |
+| base_version_id | uuid | null |  | The version a draft started on (or re-synced to): stale when its items_sha256 is not the current one's; NULL: behind. |
 
 - Primary key `submissions_pkey`: `PRIMARY KEY (id)`
 - Unique `submissions_id_user_key`: `UNIQUE (id, user_id)`
 - Foreign key `submissions_assessment_id_fkey`: `FOREIGN KEY (assessment_id, course_id) REFERENCES assessments(id, course_id) ON UPDATE RESTRICT ON DELETE RESTRICT`
 - Foreign key `submissions_assessment_version_fkey`: `FOREIGN KEY (assessment_version_id, assessment_id) REFERENCES assessment_versions(id, assessment_id)`
+- Foreign key `submissions_base_version_fkey`: `FOREIGN KEY (base_version_id, assessment_id) REFERENCES assessment_versions(id, assessment_id)`
 - Foreign key `submissions_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE RESTRICT`
 - Foreign key `submissions_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Check `submissions_attempt_number_check`: `CHECK ((attempt_number >= 1))`
@@ -2618,11 +2668,13 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 - Check `submissions_violation_count_check`: `CHECK ((violation_count >= 0))`
 - Index `submissions_assessment_version_idx`: `CREATE INDEX submissions_assessment_version_idx ON learning.submissions USING btree (assessment_version_id)`
 - Index `submissions_attempt_number_key`: `CREATE UNIQUE INDEX submissions_attempt_number_key ON learning.submissions USING btree (assessment_id, user_id, attempt_number) WHERE (NOT preview)`
+- Index `submissions_base_version_idx`: `CREATE INDEX submissions_base_version_idx ON learning.submissions USING btree (base_version_id)`
 - Index `submissions_course_user_idx`: `CREATE INDEX submissions_course_user_idx ON learning.submissions USING btree (course_id, user_id)`
 - Index `submissions_one_open_draft`: `CREATE UNIQUE INDEX submissions_one_open_draft ON learning.submissions USING btree (assessment_id, user_id) WHERE (status = 'draft'::text)`
 - Index `submissions_review_idx`: `CREATE INDEX submissions_review_idx ON learning.submissions USING btree (assessment_id, status, submitted_at DESC)`
 - Index `submissions_timer_idx`: `CREATE INDEX submissions_timer_idx ON learning.submissions USING btree (started_at) WHERE ((status = 'draft'::text) AND (started_at IS NOT NULL))`
 - Index `submissions_user_idx`: `CREATE INDEX submissions_user_idx ON learning.submissions USING btree (user_id)`
+- Trigger `submissions_base_version`: `CREATE TRIGGER submissions_base_version BEFORE INSERT OR UPDATE OF content_version ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_base_version()`
 - Trigger `submissions_current_grade`: `CREATE CONSTRAINT TRIGGER submissions_current_grade AFTER UPDATE OF final_points ON learning.submissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.final_points)::numeric IS DISTINCT FROM (new.final_points)::numeric)) EXECUTE FUNCTION submissions_current_grade_check()`
 - Trigger `submissions_snapshots_frozen`: `CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id, selected_item_ids ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()`
 

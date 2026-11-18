@@ -1,0 +1,36 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH a AS (\n               INSERT INTO assessments (activity_id, course_id, created_by)\n               VALUES ($1, $2, $9)\n               RETURNING id)\n           INSERT INTO file_submissions\n               (id, activity_id, course_id, instructions, rubric, allowed_mime_types, max_files,\n                max_file_size_mb, settings)\n           SELECT a.id, $1, $2, $3, $4, $5, $6, $7, $8 FROM a\n           RETURNING id AS \"id: FileSubmissionId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: FileSubmissionId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "file_submissions",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "TextArray",
+        "Int4",
+        "Int4",
+        "Jsonb",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "888b62431002b06a77968ae114b4ab43e1d7a7a2675f4b5810d444873fda4ce4"
+}

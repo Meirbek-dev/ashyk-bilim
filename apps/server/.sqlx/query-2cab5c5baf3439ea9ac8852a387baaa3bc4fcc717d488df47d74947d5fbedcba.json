@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE file_submissions f SET\n               instructions = $2, rubric = $3, allowed_mime_types = $4, max_files = $5,\n               max_file_size_mb = $6, settings = $7,\n               version = f.version + $8::int\n           WHERE f.id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "TextArray",
+        "Int4",
+        "Int4",
+        "Jsonb",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2cab5c5baf3439ea9ac8852a387baaa3bc4fcc717d488df47d74947d5fbedcba"
+}
