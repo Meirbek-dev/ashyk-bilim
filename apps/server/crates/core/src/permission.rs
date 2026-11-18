@@ -173,6 +173,24 @@ impl PermissionSet {
         })
     }
 
+    /// A caller's stored grants: one the registry no longer knows is skipped
+    /// with a warning instead of failing the whole set (a stale grant must
+    /// not turn every request of its holder into a 500). `parse` stays strict
+    /// for the seed drift test and admin input.
+    #[must_use]
+    pub fn parse_known<'a>(strings: impl IntoIterator<Item = &'a str>) -> Self {
+        Self {
+            grants: strings
+                .into_iter()
+                .filter_map(|s| {
+                    Grant::parse(s)
+                        .inspect_err(|err| tracing::warn!(grant = s, %err, "unknown permission grant skipped"))
+                        .ok()
+                })
+                .collect(),
+        }
+    }
+
     #[must_use]
     pub fn grants(&self, perm: &Permission) -> bool {
         self.grants.iter().any(|g| g.grants(perm))
@@ -255,6 +273,17 @@ mod tests {
         assert!(Grant::parse("course").is_err());
         assert!(Grant::parse("course:create:platform:extra").is_err());
         assert!(Grant::parse("bogus:create").is_err());
+    }
+
+    #[test]
+    fn stored_set_skips_an_unknown_grant_and_keeps_the_rest() {
+        let set = PermissionSet::parse_known(["bogus:create", "course:create:platform"]);
+        assert!(set.grants(&perm(
+            ResourceType::Course,
+            Action::Create,
+            Some(Scope::Platform)
+        )));
+        assert!(PermissionSet::parse(["bogus:create"]).is_err());
     }
 
     /// Verbatim port of the legacy `PermissionChecker.has_perm` candidate

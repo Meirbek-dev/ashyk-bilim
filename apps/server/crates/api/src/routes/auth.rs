@@ -95,9 +95,9 @@ async fn signed_in(
 ) -> ab_core::Result<(CookieJar, Json<SessionInfo>)> {
     let actor = ab_domain::identity::Actor {
         user_id: ok.user_id,
-        permissions: ab_core::permission::PermissionSet::parse(
+        permissions: ab_core::permission::PermissionSet::parse_known(
             ok.permissions.iter().map(String::as_str),
-        )?,
+        ),
         roles: ok.roles,
         permission_strings: ok.permissions,
         mfa_enabled: ok.mfa_enabled,

@@ -28,15 +28,15 @@ pub struct Actor {
 }
 
 impl Actor {
-    /// Build from a validated session record. Fails only if the stored grant
-    /// strings no longer parse (registry drift - a deploy-time bug).
+    /// Build from a validated session record. A stored grant the registry no
+    /// longer knows is skipped with a warning ([`PermissionSet::parse_known`]).
     pub fn from_session(session_id: String, record: &SessionRecord) -> Result<Self> {
         Ok(Self {
             user_id: record.user_id,
             zitadel_user_id: record.zitadel_user_id.clone(),
             session_id,
             roles: record.roles.clone(),
-            permissions: PermissionSet::parse(record.permissions.iter().map(String::as_str))?,
+            permissions: PermissionSet::parse_known(record.permissions.iter().map(String::as_str)),
             permission_strings: record.permissions.clone(),
             rbac_version: record.rbac_version,
             mfa_enabled: record.mfa_enabled,
@@ -63,7 +63,7 @@ impl Actor {
             user_id,
             zitadel_user_id: String::new(),
             session_id: String::new(),
-            permissions: PermissionSet::parse(permission_strings.iter().map(String::as_str))?,
+            permissions: PermissionSet::parse_known(permission_strings.iter().map(String::as_str)),
             roles,
             permission_strings,
             rbac_version: 0,
