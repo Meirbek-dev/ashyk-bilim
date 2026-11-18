@@ -44,6 +44,7 @@ import type {
   Usergroup,
   UsergroupPage,
 } from '#/shared/api/gen/types.gen'
+import { allGroups, allPages } from '#/shared/api/pages'
 
 import type { BulkAction } from './model/bulk'
 import { can, courseRefusal, opensWorkspace, type CoursesSearch } from './model/course'
@@ -126,9 +127,15 @@ const putCourse = (queryClient: QueryClient) => (course: Course) =>
 
 export const createCourseOptions = () => ({ ...createCourseMutation(), meta: { invalidates: [lists()] } })
 
-// ponytail: the 100 most recently changed editable courses; a searchable picker when authors outgrow it.
 /** Courses a new one may be copied from: the caller's editable ones (the copy needs write access to the source). */
-export const copySourcesOptions = () => listCoursesOptions({ query: { mine: true, limit: 100 } })
+export const copySourcesOptions = () => ({
+  ...listCoursesOptions({ query: { mine: true, limit: 100 } }),
+  queryFn: ({ signal }: { signal: AbortSignal }) =>
+    allPages(async cursor => {
+      const query = { mine: true, limit: 100, ...(cursor ? { cursor } : {}) }
+      return (await listCourses({ query, signal, throwOnError: true })).data
+    }),
+})
 
 /** A copy of a course (chapters, activities, assessments as drafts; no learners); retried with one `Idempotency-Key`. */
 export const duplicateCourseOptions = () => ({ ...duplicateCourseMutation(), meta: { invalidates: [lists()] } })
@@ -148,10 +155,10 @@ export const lifecycleOptions = (queryClient: QueryClient, id: CourseId) => ({
 
 // ---- Groups (cohort access): link answers 204, the course's group list takes the change. ----
 
-// ponytail: the first 100 groups only (the API's page cap); a searchable picker when platforms outgrow it.
 /** Groups the caller may link courses to. */
 export const linkableGroupsOptions = () => ({
   ...listGroupsOptions({ query: { limit: 100 } }),
+  queryFn: ({ signal }: { signal: AbortSignal }) => allGroups(signal),
   select: (page: UsergroupPage) => page.items.filter(group => group.allowed_actions.includes('manage_courses')),
 })
 

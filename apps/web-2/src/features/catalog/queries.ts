@@ -9,6 +9,7 @@ import {
   searchOptions,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import { listCollections, listCourses, search } from '#/shared/api/gen/sdk.gen'
+import { allPages } from '#/shared/api/pages'
 import type { CourseId, CoursePage, SearchResults } from '#/shared/api/gen/types.gen'
 
 import { type CoursesFilter, nextCoursesCursor, SEARCH_LIMIT } from './model/catalog'
@@ -83,26 +84,18 @@ export const searchPagesOptions = (q: string) => {
 /** Pages read for `/sitemap.xml` at most (100 items each): a crawler waits for one answer, not a crawl of the API. */
 const SITEMAP_PAGES = 50
 
-async function readAll<T>(read: (cursor: string | undefined) => Promise<{ items: T[]; next_cursor?: string | null }>) {
-  const items: T[] = []
-  let cursor: string | undefined
-  for (let page = 0; page < SITEMAP_PAGES; page += 1) {
-    const answer = await read(cursor)
-    items.push(...answer.items)
-    if (!answer.next_cursor) break
-    cursor = answer.next_cursor
-  }
-  return items
-}
-
 /** B-CAT-30: the public pages `/sitemap.xml` lists, read from the published catalog and the collections. */
 export async function publicPages(): Promise<SitemapPage[]> {
   const [courses, collections] = await Promise.all([
-    readAll(
+    allPages(
       async cursor =>
         (await listCourses({ query: { limit: 100, preset: 'published', cursor }, throwOnError: true })).data,
+      SITEMAP_PAGES,
     ),
-    readAll(async cursor => (await listCollections({ query: { limit: 100, cursor }, throwOnError: true })).data),
+    allPages(
+      async cursor => (await listCollections({ query: { limit: 100, cursor }, throwOnError: true })).data,
+      SITEMAP_PAGES,
+    ),
   ])
-  return sitemapPages(courses, collections)
+  return sitemapPages(courses.items, collections.items)
 }

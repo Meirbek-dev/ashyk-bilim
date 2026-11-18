@@ -25,6 +25,7 @@ import {
   updateOverrideMutation,
   groupsForCourseOptions,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
+import { listCourseLearners } from '#/shared/api/gen/sdk.gen'
 import type {
   AccessView,
   ActivityDetail,
@@ -33,6 +34,7 @@ import type {
   CourseLearnerPage,
   StudentOverride,
 } from '#/shared/api/gen/types.gen'
+import { allPages } from '#/shared/api/pages'
 
 // Every write's answer goes into the cache of the assessment read by its activity (a refetch would repeat the
 // page's GET). Readiness has no answer of its own: it is read again where it is shown.
@@ -48,10 +50,14 @@ export const assessmentReadinessOptions = (id: string) => readinessOptions(byId(
 export const courseGroupsOptions = (courseId: string) => groupsForCourseOptions({ path: { course_id: courseId } })
 export const auditOptions = (id: string) => auditTrailOptions({ ...byId(id), query: { limit: 50 } })
 
-// ponytail: the first 100 learners (one keyset page); a searchable picker when courses outgrow it.
 /** Learners of the course (its members) for the access and exception pickers. */
 export const learnersOptions = (courseId: string) => ({
   ...listCourseLearnersOptions({ path: { course_id: courseId }, query: { limit: 100 } }),
+  queryFn: ({ signal }: { signal: AbortSignal }) =>
+    allPages(async cursor => {
+      const query = { limit: 100, ...(cursor ? { cursor } : {}) }
+      return (await listCourseLearners({ path: { course_id: courseId }, query, signal, throwOnError: true })).data
+    }),
   select: (page: CourseLearnerPage) => page.items,
 })
 

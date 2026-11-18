@@ -29,6 +29,7 @@ import {
   updateRoleMutation,
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import { getAdminUser, listUsers } from '#/shared/api/gen/sdk.gen'
+import { allGroups } from '#/shared/api/pages'
 import type {
   AdminUser,
   AdminUserPage,
@@ -233,10 +234,10 @@ export const notFoundOn404 = (error: unknown): never => {
   throw error
 }
 
-// ponytail: the first 100 groups only (the API's page cap); a group picker with search when platforms outgrow it.
 /** The groups the user panel can add someone to: those the caller may change the members of. */
 export const groupChoicesOptions = () => ({
   ...listGroupsOptions({ query: { limit: 100 } }),
+  queryFn: ({ signal }: { signal: AbortSignal }) => allGroups(signal),
   select: (page: UsergroupPage) => page.items.filter(group => group.allowed_actions.includes('manage_members')),
 })
 
