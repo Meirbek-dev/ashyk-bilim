@@ -562,7 +562,7 @@ impl CertificationsService {
         let text = |key: &str| config_text(config, key);
         let certificate = verified.issued.certificate;
         let code = certificate.verify_code.clone();
-        let bytes = pdf::render(&pdf::CertificatePdf {
+        let input = pdf::CertificatePdf {
             language,
             holder_name: certificate.holder_name,
             certificate_name: certificate.certificate_name,
@@ -575,8 +575,8 @@ impl CertificationsService {
             course_start: text("course_start"),
             course_end: text("course_end"),
             training_hours: text("training_hours").and_then(|h| h.parse().ok()),
-        })?;
-        Ok((code, bytes))
+        };
+        Ok((code, render_off_runtime(input).await?))
     }
 
     /// A sample PDF of a template before anything is issued from it
@@ -604,7 +604,7 @@ impl CertificationsService {
         let config = &certification.config;
         let text = |key: &str| config_text(config, key);
         let code = "PREVIEW";
-        pdf::render(&pdf::CertificatePdf {
+        render_off_runtime(pdf::CertificatePdf {
             language,
             holder_name: holder.map_or_default(|h| h.display_name),
             certificate_name: text("certification_name").unwrap_or_else(|| course.name.clone()),
@@ -618,7 +618,15 @@ impl CertificationsService {
             course_end: text("course_end"),
             training_hours: text("training_hours").and_then(|h| h.parse().ok()),
         })
+        .await
     }
+}
+
+/// Rendering is CPU-bound (fonts, layout): it runs on the blocking pool, not on a runtime worker.
+async fn render_off_runtime(input: pdf::CertificatePdf) -> Result<Vec<u8>> {
+    tokio::task::spawn_blocking(move || pdf::render(&input))
+        .await
+        .map_err(|e| Error::internal("certificate pdf", e))?
 }
 
 #[cfg(test)]
