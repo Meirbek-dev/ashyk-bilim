@@ -520,12 +520,6 @@ pub struct RunnerLimits {
     /// language of the runner image.
     #[serde(default)]
     pub allowed_languages: Vec<String>,
-    /// The allowlist before the slugs, in Judge0 ids
-    /// (`AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS`). Read for one release when
-    /// `allowed_languages` is empty: the code runner maps it to slugs and logs a
-    /// warning (`ab_clients::gojudge::languages::allowed`).
-    #[serde(default)]
-    pub allowed_language_ids: Option<Vec<i32>>,
 }
 
 impl RunnerLimits {
@@ -551,7 +545,6 @@ impl Default for RunnerLimits {
             max_output_bytes: Self::default_max_output_bytes(),
             max_program_output_kb: Self::default_max_program_output_kb(),
             allowed_languages: Vec::new(),
-            allowed_language_ids: None,
         }
     }
 }
@@ -814,7 +807,6 @@ impl Config {
                     "max_output_bytes": r.limits.max_output_bytes,
                     "max_program_output_kb": r.limits.max_program_output_kb,
                     "allowed_languages": r.limits.allowed_languages,
-                    "allowed_language_ids": r.limits.allowed_language_ids,
                 },
             })),
             "ai": self.ai.redacted(),

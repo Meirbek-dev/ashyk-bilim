@@ -1160,9 +1160,9 @@ Queue, in order:
       and a body naming a language the runner lacks is refused (`unknown-language`). An open tab of the old web fails
       on a run until reloaded. `AB__RUNNER__LIMITS__ALLOWED_LANGUAGES` (slugs) replaces
       `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS` (the decision named them `AB__CODE__*`: the allowlist lives under the
-      runner's limits). The old variable is still read when the new one is unset (mapped, a warning in the log); the
-      owner changes production's `server.env` after the switch's deploy, and the release after the contract removes
-      the fallback, the table's Judge0 column and `code_languages_stored()`.
+      runner's limits). The switch and its contract still read the old variable when the new one was unset (mapped, a
+      warning in the log); the release after the contract removed that fallback, the table's Judge0 column and
+      `code_languages_stored()` (`20261116075665`). Production's `server.env` sets neither variable.
       Shape: a switch and its contract, not one release whose rollback is a restore: the switch costs triggers over five
       jsonb columns and a column pair. The previous release reads Judge0's ids only, so the rows keep them for it:
       BEFORE triggers (`code_languages_as_ids`) turn what this release writes into ids in item bodies, the frozen items

@@ -512,10 +512,7 @@ forget and prune old snapshots (INFRA "Backup and restore").
 
 Code activities run in `runner` (profile `runner`, image `ashyq-runner:<sha>` from `infra/runner`; INFRA
 "Services"). Languages and their compile/run commands live in `apps/server/crates/clients/src/gojudge/languages.rs`
-and the Dockerfile together; `AB__RUNNER__LIMITS__ALLOWED_LANGUAGES` (slugs, `server.env`; INFRA) narrows them. The
-old `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS` (Judge0's ids) is still read when the new one is unset, with a warning
-at startup, until a later release drops it: replace it in `server.env` (`71` `python`, `54` `cpp`, `62` `java`, `50` `c`, `63`
-`javascript`, `74` `typescript`, `60` `go`, `73` `rust`, `78` `kotlin`, `68` `php`, `72` `ruby`). After a deploy:
+and the Dockerfile together; `AB__RUNNER__LIMITS__ALLOWED_LANGUAGES` (slugs, `server.env`; INFRA) narrows them. After a deploy:
 `dc run --rm -T --no-deps server admin runner-check`.
 
 One-time switch from Judge0 (the first deploy of a release with `runner`):

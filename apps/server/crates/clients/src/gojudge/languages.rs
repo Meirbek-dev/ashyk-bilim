@@ -17,9 +17,6 @@ use ab_core::config::RunnerLimits;
 pub struct Language {
     /// The platform's name of the language, and the web editor's mode.
     pub slug: &'static str,
-    /// Judge0's id, the platform's language key before the slugs: read only
-    /// to take `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS` for one release.
-    pub judge0: i32,
     pub name: &'static str,
     /// The learner's source is written to `/w/<source_file>`.
     pub source_file: &'static str,
@@ -58,7 +55,6 @@ const JAVA: &str = "/usr/bin/java";
 static LANGUAGES: &[Language] = &[
     Language {
         slug: "python",
-        judge0: 71,
         name: "Python (3.13)",
         source_file: "main.py",
         compile: &["/usr/bin/python3", "-m", "py_compile", "main.py"],
@@ -72,7 +68,6 @@ print(n * n)
     },
     Language {
         slug: "cpp",
-        judge0: 54,
         name: "C++ (GCC 14, C++20)",
         source_file: "main.cpp",
         // The flags must match the precompiled <bits/stdc++.h> of the image.
@@ -95,7 +90,6 @@ int main() { long long n; std::cin >> n; std::cout << n * n << "\n"; }
     },
     Language {
         slug: "java",
-        judge0: 62,
         name: "Java (OpenJDK 21)",
         source_file: "Main.java",
         // Every class of the file (nested, anonymous) travels in one jar;
@@ -132,7 +126,6 @@ public class Main {
     },
     Language {
         slug: "c",
-        judge0: 50,
         name: "C (GCC 14, C17)",
         source_file: "main.c",
         compile: &[
@@ -155,7 +148,6 @@ int main(void) { long long n; scanf("%lld", &n); printf("%lld\n", n * n); }
     },
     Language {
         slug: "javascript",
-        judge0: 63,
         name: "JavaScript (Node.js 20)",
         source_file: "main.js",
         compile: &["/usr/bin/node", "--check", "main.js"],
@@ -169,7 +161,6 @@ console.log(n * n);
     },
     Language {
         slug: "typescript",
-        judge0: 74,
         name: "TypeScript (7.0, Node.js 20)",
         source_file: "main.ts",
         compile: &[
@@ -198,7 +189,6 @@ console.log(n * n);
     },
     Language {
         slug: "go",
-        judge0: 60,
         name: "Go (1.24)",
         source_file: "main.go",
         compile: &["/usr/bin/go", "build", "-o", "main", "main.go"],
@@ -228,7 +218,6 @@ func main() {
     },
     Language {
         slug: "rust",
-        judge0: 73,
         name: "Rust (1.85)",
         source_file: "main.rs",
         compile: &[
@@ -256,7 +245,6 @@ fn main() {
     },
     Language {
         slug: "kotlin",
-        judge0: 78,
         name: "Kotlin (2.4, JVM 21)",
         source_file: "Main.kt",
         compile: &[
@@ -286,7 +274,6 @@ fn main() {
     },
     Language {
         slug: "php",
-        judge0: 68,
         name: "PHP (8.4)",
         source_file: "main.php",
         compile: &["/usr/bin/php", "-l", "main.php"],
@@ -301,7 +288,6 @@ echo $n * $n, "\n";
     },
     Language {
         slug: "ruby",
-        judge0: 72,
         name: "Ruby (3.3)",
         source_file: "main.rb",
         compile: &["/usr/bin/ruby", "-c", "main.rb"],
@@ -326,17 +312,8 @@ pub fn find(slug: &str) -> Option<&'static Language> {
     LANGUAGES.iter().find(|l| l.slug == slug)
 }
 
-/// The language Judge0 numbered `id` (the old allowlist's spelling).
-#[must_use]
-pub fn from_judge0(id: i32) -> Option<&'static Language> {
-    LANGUAGES.iter().find(|l| l.judge0 == id)
-}
-
-/// The platform's allowlist as slugs (empty = every language of the image).
-///
-/// `AB__RUNNER__LIMITS__ALLOWED_LANGUAGES`, else the old
-/// `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS` mapped from Judge0's ids, with a
-/// warning (read for one release; an id the image lacks is dropped).
+/// The platform's allowlist as slugs (empty = every language of the image);
+/// a slug the image lacks is logged.
 #[must_use]
 pub fn allowed(limits: &RunnerLimits) -> Vec<String> {
     for slug in &limits.allowed_languages {
@@ -344,26 +321,7 @@ pub fn allowed(limits: &RunnerLimits) -> Vec<String> {
             tracing::warn!(language = %slug, "AB__RUNNER__LIMITS__ALLOWED_LANGUAGES names a language the runner image lacks");
         }
     }
-    match &limits.allowed_language_ids {
-        Some(ids) if limits.allowed_languages.is_empty() => {
-            tracing::warn!(
-                "AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS is deprecated: set AB__RUNNER__LIMITS__ALLOWED_LANGUAGES to the slugs instead"
-            );
-            ids.iter()
-                .filter_map(|&id| {
-                    let language = from_judge0(id);
-                    if language.is_none() {
-                        tracing::warn!(
-                            judge0_id = id,
-                            "an allowed language id the runner image lacks is dropped"
-                        );
-                    }
-                    language.map(|l| l.slug.to_owned())
-                })
-                .collect()
-        }
-        _ => limits.allowed_languages.clone(),
-    }
+    limits.allowed_languages.clone()
 }
 
 #[cfg(test)]
@@ -372,34 +330,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_allowlist_takes_slugs_and_reads_the_old_ids_for_one_release() {
-        let limits = |slugs: &[&str], ids: Option<Vec<i32>>| RunnerLimits {
+    fn the_allowlist_takes_slugs() {
+        let limits = |slugs: &[&str]| RunnerLimits {
             allowed_languages: slugs.iter().map(|s| (*s).to_owned()).collect(),
-            allowed_language_ids: ids,
             ..RunnerLimits::default()
         };
         assert!(
             allowed(&RunnerLimits::default()).is_empty(),
             "nothing set: every language"
         );
-        assert_eq!(
-            allowed(&limits(&["python", "cpp"], None)),
-            ["python", "cpp"]
-        );
-        // The old variable alone: Judge0's ids become slugs, one the image lacks (Swift) goes.
-        assert_eq!(
-            allowed(&limits(&[], Some(vec![71, 62, 83]))),
-            ["python", "java"]
-        );
-        // Both set: the slugs win.
-        assert_eq!(allowed(&limits(&["go"], Some(vec![71]))), ["go"]);
-        // The environment spelling of both keys.
+        assert_eq!(allowed(&limits(&["python", "cpp"])), ["python", "cpp"]);
         let parsed: RunnerLimits = serde_json::from_value(serde_json::json!({
-            "allowed_languages": ["rust"], "allowed_language_ids": [50]
+            "allowed_languages": ["rust"]
         }))
         .unwrap();
         assert_eq!(parsed.allowed_languages, ["rust"]);
-        assert_eq!(parsed.allowed_language_ids, Some(vec![50]));
     }
 
     #[test]
@@ -408,10 +353,6 @@ mod tests {
         slugs.sort_unstable();
         slugs.dedup();
         assert_eq!(slugs.len(), LANGUAGES.len());
-        let mut ids: Vec<i32> = LANGUAGES.iter().map(|l| l.judge0).collect();
-        ids.sort_unstable();
-        ids.dedup();
-        assert_eq!(ids.len(), LANGUAGES.len());
         for language in LANGUAGES {
             assert!(
                 !language.slug.is_empty()
@@ -422,11 +363,7 @@ mod tests {
                 "{}: a slug is lowercase letters and digits",
                 language.slug
             );
-            assert_eq!(find(language.slug).map(|l| l.judge0), Some(language.judge0));
-            assert_eq!(
-                from_judge0(language.judge0).map(|l| l.slug),
-                Some(language.slug)
-            );
+            assert_eq!(find(language.slug).map(|l| l.slug), Some(language.slug));
             assert!(language.compile[0].starts_with('/'), "{}", language.name);
             assert!(language.run[0].starts_with('/'), "{}", language.name);
             assert_eq!(

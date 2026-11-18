@@ -1724,12 +1724,6 @@ function CREATE OR REPLACE FUNCTION public.certification_text(config jsonb, key 
 AS $function$
     SELECT NULLIF(btrim(CASE jsonb_typeof(config -> key) WHEN 'string' THEN config ->> key END), '')
 $function$
-function CREATE OR REPLACE FUNCTION public.code_languages_stored(items jsonb)
- RETURNS jsonb
- LANGUAGE sql
- IMMUTABLE PARALLEL SAFE
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-RETURN items
 function CREATE OR REPLACE FUNCTION public.collection_creator(p_collection uuid)
  RETURNS uuid
  LANGUAGE sql

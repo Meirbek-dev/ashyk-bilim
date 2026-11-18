@@ -148,12 +148,11 @@ pub struct CodeRunner {
 }
 
 impl CodeRunner {
-    /// `limits`' allowlist is taken as slugs (the old Judge0 ids mapped,
-    /// [`ab_clients::gojudge::languages::allowed`]).
+    /// `limits`' allowlist is slugs ([`ab_clients::gojudge::languages::allowed`]
+    /// logs one the image lacks).
     #[must_use]
     pub fn new(pool: PgPool, client: Option<Arc<GoJudgeClient>>, mut limits: RunnerLimits) -> Self {
         limits.allowed_languages = ab_clients::gojudge::languages::allowed(&limits);
-        limits.allowed_language_ids = None;
         Self {
             pool,
             client,
