@@ -54,7 +54,7 @@ impl CoursesService {
     pub(crate) async fn manageable(&self, actor: &Actor, course_id: CourseId) -> Result<Course> {
         let ctx = self.ctx(actor, course_id).await?;
         if ctx.granted(Caps::MANAGE_STAFF) {
-            return Ok(ctx.course);
+            return Ok(ctx.into_course());
         }
         Err(Error::forbidden(
             "no contributor management access to this course",
@@ -144,7 +144,7 @@ impl CoursesService {
     ) -> Result<Contributor> {
         let ctx = self.ctx(actor, course_id).await?;
         ctx.require(Caps::MANAGE_STAFF)?;
-        let course = ctx.course;
+        let course = ctx.into_course();
         let user_id = match target {
             Target::UserId(id) => ab_db::identity::user_status(&self.pool, id)
                 .await?
@@ -184,7 +184,7 @@ impl CoursesService {
     ) -> Result<Contributor> {
         let ctx = self.ctx(actor, course_id).await?;
         ctx.require(Caps::MANAGE_STAFF)?;
-        let course = ctx.course;
+        let course = ctx.into_course();
         Self::not_creator(&course, user_id)?;
         let before = ab_db::catalog::get_contributor(&self.pool, course_id, user_id).await?;
         let was_pending = before.as_ref().is_some_and(|c| c.status == "pending");

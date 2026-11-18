@@ -6,7 +6,7 @@
 //! the course's `allowed_actions`, so the UI and the server cannot disagree.
 //!
 //! Still on the v2 permission model (platform grants, creator, maintainers, contributors); 6.3's three roles and
-//! `course_staff` swap the rules in [`CourseCtx::of`] only.
+//! `course_staff` swap the rules in `CourseCtx::of` only.
 
 use std::ops::BitOr;
 
@@ -51,19 +51,22 @@ impl BitOr for Caps {
 }
 
 /// A course the caller can see, with their [`Caps`] in it.
+///
+/// Only [`CoursesService::ctx`] makes one (the course read through the read
+/// gate, the caps derived from the caller): the fields are private, so a
+/// context cannot be assembled for a course nobody checked.
 #[derive(Debug, Clone)]
 pub struct CourseCtx {
-    pub course: Course,
+    course: Course,
     /// Before the archive rule: what the caller's grants and authorship allow.
     granted: Caps,
     /// What the caller may do now.
-    pub caps: Caps,
+    caps: Caps,
 }
 
 impl CourseCtx {
     /// The rules, for a course already read through the read gate.
-    #[must_use]
-    pub fn of(actor: &Actor, course: Course) -> Self {
+    fn of(actor: &Actor, course: Course) -> Self {
         let granted = granted(actor, &course);
         let caps = if course.archived_at.is_some() {
             granted.without(Caps::WRITES)
@@ -90,6 +93,23 @@ impl CourseCtx {
             }));
         }
         self.course.ensure_not_archived()
+    }
+
+    /// The checked course.
+    #[must_use]
+    pub const fn course(&self) -> &Course {
+        &self.course
+    }
+
+    #[must_use]
+    pub fn into_course(self) -> Course {
+        self.course
+    }
+
+    /// What the caller may do now.
+    #[must_use]
+    pub const fn caps(&self) -> Caps {
+        self.caps
     }
 
     /// Granted before the archive rule (the author reads that stay open on an archived course).

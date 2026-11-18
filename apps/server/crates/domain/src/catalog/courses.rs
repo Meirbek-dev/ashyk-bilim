@@ -602,7 +602,7 @@ impl CoursesService {
     ) -> Result<CourseUpdate> {
         let ctx = self.ctx(actor, id).await?;
         ctx.require(Caps::EDIT)?;
-        let course = ctx.course;
+        let course = ctx.into_course();
         let update_id =
             ab_db::catalog::insert_course_update(&self.pool, id, title, content, actor.user_id)
                 .await?;
