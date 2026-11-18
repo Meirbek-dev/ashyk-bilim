@@ -186,7 +186,7 @@ async fn cross_site_mutations_are_rejected(pool: PgPool) {
 #[ab_testdb::test]
 async fn same_origin_and_navigation_requests_pass_csrf(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
-    for site in ["same-origin", "same-site", "none"] {
+    for site in ["same-origin", "none"] {
         let res = app
             .send(
                 Request::builder()
@@ -214,6 +214,34 @@ async fn same_origin_and_navigation_requests_pass_csrf(pool: PgPool) {
         )
         .await;
     assert_eq!(res.status, StatusCode::OK);
+}
+
+/// `same-site` is a sibling subdomain: it passes only from an origin the
+/// deployment names (a split web origin), never from any other subdomain.
+#[ab_testdb::test]
+async fn same_site_mutations_pass_only_from_trusted_origins(pool: PgPool) {
+    let app = TestApp::spawn_with(pool, |config| {
+        config.server.cors_origins = vec!["https://app.example.kz".to_owned()];
+    })
+    .await;
+    let post = |origin: Option<&str>| {
+        let builder = Request::builder()
+            .method("POST")
+            .uri("/api/v2/anything")
+            .header("sec-fetch-site", "same-site");
+        let builder = match origin {
+            Some(origin) => builder.header("origin", origin),
+            None => builder,
+        };
+        builder.body(Body::empty()).unwrap()
+    };
+    let trusted = app.send(post(Some("https://app.example.kz"))).await;
+    assert_eq!(trusted.status, StatusCode::NOT_FOUND, "reaches routing");
+    for origin in [Some("https://students.example.kz"), None] {
+        let res = app.send(post(origin)).await;
+        assert_eq!(res.status, StatusCode::FORBIDDEN, "origin={origin:?}");
+        assert_eq!(res.json()["code"], "csrf-rejected");
+    }
 }
 
 // ── CORS ────────────────────────────────────────────────────────────────────

@@ -597,7 +597,10 @@ pub fn build_router(state: AppState) -> Result<Router> {
                 "method not allowed on this route",
             ))
         })
-        .layer(axum::middleware::from_fn(crate::middleware::csrf_guard))
+        .layer(axum::middleware::from_fn_with_state(
+            crate::middleware::trusted_origins(&state.config.server),
+            crate::middleware::csrf_guard,
+        ))
         .layer(axum::middleware::from_fn(crate::middleware::lang_query))
         .layer(axum::middleware::from_fn(
             crate::middleware::problem_payload_too_large,
@@ -633,15 +636,25 @@ pub fn build_router(state: AppState) -> Result<Router> {
                     },
                 ))
                 .layer(TimeoutLayer::with_status_code(
-                    StatusCode::REQUEST_TIMEOUT,
+                    // 504, not 408: the server was slow, not the client; web-2 maps a bare 504 to «service unavailable».
+                    StatusCode::GATEWAY_TIMEOUT,
                     REQUEST_TIMEOUT,
                 ))
                 .layer(CompressionLayer::new())
-                .layer(CatchPanicLayer::new())
+                .layer(CatchPanicLayer::custom(panic_problem))
                 .layer(cors),
         )
         .with_state(state);
     Ok(router)
+}
+
+/// A panicking handler answers like any other internal error (problem+json),
+/// so the client shows its usual message instead of a plain-text body.
+fn panic_problem(_panic: Box<dyn std::any::Any + Send + 'static>) -> axum::response::Response {
+    axum::response::IntoResponse::into_response(crate::error::ApiError(Error::internal(
+        "handler panicked",
+        std::io::Error::other("panic"),
+    )))
 }
 
 /// `POST /api/v2/auth/dev-login` (`just login-as`, local QA on real-data

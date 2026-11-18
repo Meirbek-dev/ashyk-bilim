@@ -89,3 +89,21 @@ async fn the_pool_names_its_sessions_and_bounds_them(pool: PgPool) {
         ("ashyq-admin".into(), "0".into(), "45s".into(), "7s".into())
     );
 }
+
+/// A statement that hits its timeout is load, not a bug: it maps to a
+/// retryable 503 (`service-unavailable`), not an opaque 500.
+#[ab_testdb::test]
+async fn a_statement_timeout_is_service_unavailable(pool: PgPool) {
+    let mut tx = pool.begin().await.unwrap();
+    sqlx::query("SET LOCAL statement_timeout = '10ms'")
+        .execute(&mut *tx)
+        .await
+        .unwrap();
+    let err = sqlx::query("SELECT pg_sleep(1)")
+        .execute(&mut *tx)
+        .await
+        .unwrap_err();
+    let err = ab_core::Error::from(err);
+    assert_eq!(err.code(), ab_core::ErrorCode::ServiceUnavailable);
+    assert!(err.is_public());
+}

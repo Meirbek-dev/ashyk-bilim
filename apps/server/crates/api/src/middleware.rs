@@ -1,7 +1,9 @@
 //! Cross-cutting request middleware beyond tower-http layers.
 
 use ab_core::{Error, ErrorCode};
-use axum::extract::Request;
+use std::sync::Arc;
+
+use axum::extract::{Request, State};
 use axum::http::Method;
 use axum::middleware::Next;
 use axum::response::Response;
@@ -12,19 +14,29 @@ use crate::error::ApiError;
 ///
 /// Browsers send `Sec-Fetch-Site` on every request; a mutating request marked
 /// `cross-site` is rejected outright - cookies are our only credential, and no
-/// legitimate cross-site caller exists. (Mirrors the legacy middleware's
-/// posture; `SameSite=Lax` on the cookie is the second belt.)
-pub async fn csrf_guard(request: Request, next: Next) -> Result<Response, ApiError> {
+/// legitimate cross-site caller exists. `same-site` (another subdomain of the
+/// same registrable domain, which `SameSite=Lax` still sends cookies to) passes
+/// only from an `Origin` the deployment names (`cors_origins`, `web_url`):
+/// a sibling subdomain of a university domain is not ours.
+pub async fn csrf_guard(
+    State(trusted): State<Arc<[String]>>,
+    request: Request,
+    next: Next,
+) -> Result<Response, ApiError> {
     let mutating = matches!(
         *request.method(),
         Method::POST | Method::PUT | Method::PATCH | Method::DELETE
     );
     if mutating {
-        let sec_fetch_site = request
-            .headers()
-            .get("sec-fetch-site")
-            .and_then(|v| v.to_str().ok());
-        if sec_fetch_site == Some("cross-site") {
+        let header = |name: &str| request.headers().get(name).and_then(|v| v.to_str().ok());
+        let rejected = match header("sec-fetch-site") {
+            Some("cross-site") => true,
+            Some("same-site") => {
+                !header("origin").is_some_and(|origin| trusted.iter().any(|t| t == origin))
+            }
+            _ => false,
+        };
+        if rejected {
             return Err(ApiError(Error::app(
                 ErrorCode::CsrfRejected,
                 "cross-site mutation rejected",
@@ -32,6 +44,17 @@ pub async fn csrf_guard(request: Request, next: Next) -> Result<Response, ApiErr
         }
     }
     Ok(next.run(request).await)
+}
+
+/// Origins whose `same-site` mutations [`csrf_guard`] accepts.
+#[must_use]
+pub fn trusted_origins(server: &ab_core::config::ServerConfig) -> Arc<[String]> {
+    server
+        .cors_origins
+        .iter()
+        .chain(server.web_url.as_ref())
+        .map(|origin| origin.trim_end_matches('/').to_owned())
+        .collect()
 }
 
 /// Longest client-supplied `x-request-id` we echo (UX-118).

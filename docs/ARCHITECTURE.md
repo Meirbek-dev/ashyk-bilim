@@ -262,7 +262,7 @@ pub enum Error {
 - **Uploads**: direct-to-RustFS via presigned URLs (§11). The API never proxies upload bytes.
 - Middleware stack, outermost first (`crates/api/src/app.rs`): request-id (sanitize, set, propagate) → trace →
   timeout (30s, 408) → compression → catch-panic → CORS (strict allowlist with credentials) → request-id scope →
-  problem+json 413 → `?lang=` → CSRF guard (reject cross-site `Sec-Fetch-Site` on mutations) → routes. The
+  problem+json 413 → `?lang=` → CSRF guard (reject cross-site `Sec-Fetch-Site` on mutations, and same-site unless `Origin` is in `cors_origins`/`web_url`) → routes. The
   session is an extractor, not a layer.
 
 "Phase 9" is the post-cutover cleanup in `docs/STAGE-2-CUTOVER.md`; the server items are listed in
@@ -311,7 +311,7 @@ contract (`ab_api::app::dev_login_enabled`).
 - Sliding idle timeout **14 days**, absolute cap **90 days**, `MAX_SESSIONS_PER_USER = 10` (oldest evicted),
   instant revocation (delete key), session list + revoke endpoints.
 - Every login issues a fresh id; a disable, password change, TOTP activation or grant change ends the user's
-  sessions (epoch, §10). CSRF: `SameSite=Lax` + `Sec-Fetch-Site` check on mutations.
+  sessions (epoch, §10). CSRF: `SameSite=Lax` + `Sec-Fetch-Site` check on mutations (same-site only from a configured origin: sibling subdomains of the university domain are not ours).
 - The session answer (`GET /auth/session`, also the body of `POST /auth/login`): `user_id`, `roles`, raw
   `permissions` (legacy contract), `mfa_enabled`, plus `user` (id, username, email, display name, avatar key,
   locale, theme - what the app shell draws, no second request) and `capabilities`: a closed enum of UI-level

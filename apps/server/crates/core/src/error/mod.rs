@@ -176,6 +176,18 @@ impl From<sqlx::Error> for Error {
         let Some(db) = err.as_database_error() else {
             return Self::Db(err);
         };
+        // Lock/statement timeouts, serialization failures and deadlocks are
+        // load, not bugs: a 503 with `Retry-After` lets the client retry.
+        if matches!(
+            db.code().as_deref(),
+            Some("55P03" | "57014" | "40001" | "40P01")
+        ) {
+            tracing::warn!(error = %err, "database busy");
+            return Self::app(
+                ErrorCode::ServiceUnavailable,
+                "the database is busy; retry shortly",
+            );
+        }
         // Two writers appending to the same chapter/course/assessment at once
         // both took MAX(position) + 1: the sibling-position key refuses the
         // second (schema review item 5). A retry appends after the first.
