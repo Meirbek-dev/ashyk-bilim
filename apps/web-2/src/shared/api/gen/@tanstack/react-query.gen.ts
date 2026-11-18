@@ -5736,7 +5736,8 @@ export const liveOptions = (options?: Options<LiveData>) => queryOptions<LiveRes
 export const readyQueryKey = (options?: Options<ReadyData>) => createQueryKey('ready', options);
 
 /**
- * Readiness: Postgres is reachable (Redis, RustFS and Zitadel are not probed).
+ * Readiness: Postgres and Redis (sessions, rate limits, live events) answer.
+ * RustFS and Zitadel are not probed.
  */
 export const readyOptions = (options?: Options<ReadyData>) => queryOptions<ReadyResponse, ReadyError, ReadyResponse, ReturnType<typeof readyQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {

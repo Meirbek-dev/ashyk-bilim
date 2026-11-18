@@ -864,7 +864,7 @@ Postgres work uses Postgres advisory locks and row locks.
   (`docs/FINDINGS.md` #9).
 - HTTP spans come from `TraceLayer` and carry `request_id`, the same id as the `x-request-id` response header and
   the problem+json `request_id`, so `grep <id>` finds the request.
-- `/api/v2/health` (liveness: process up) and `/api/v2/health/ready` (readiness: Postgres ping). The image
+- `/api/v2/health` (liveness: process up) and `/api/v2/health/ready` (readiness: Postgres and Redis answer; 503 when one does not). The image
   healthcheck uses liveness; readiness is checked through nginx by `infra/scripts/smoke.sh`.
 
 ## 14. Testing & quality gates

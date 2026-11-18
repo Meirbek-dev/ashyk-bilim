@@ -17485,7 +17485,7 @@ export type ReadyErrors = {
     /**
      * A dependency is unreachable
      */
-    500: Problem;
+    503: Problem;
 };
 
 export type ReadyError = ReadyErrors[keyof ReadyErrors];

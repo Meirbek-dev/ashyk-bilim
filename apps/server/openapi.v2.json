@@ -39948,7 +39948,7 @@
             },
             "description": "Ready to serve traffic"
           },
-          "500": {
+          "503": {
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -39959,7 +39959,7 @@
             "description": "A dependency is unreachable"
           }
         },
-        "summary": "Readiness: Postgres is reachable (Redis, RustFS and Zitadel are not probed).",
+        "summary": "Readiness: Postgres and Redis (sessions, rate limits, live events) answer.\nRustFS and Zitadel are not probed.",
         "tags": [
           "health"
         ]

@@ -184,6 +184,15 @@ impl SessionStore {
         self.redis.clone()
     }
 
+    /// Readiness probe: Redis answers `PING`.
+    pub async fn ping(&self) -> Result<()> {
+        redis::cmd("PING")
+            .query_async::<String>(&mut self.redis.clone())
+            .await
+            .map(drop)
+            .map_err(|e| Error::internal("pinging redis", e))
+    }
+
     /// The client, for code that needs its own connection (blocking reads).
     #[must_use]
     pub fn client(&self) -> redis::Client {
