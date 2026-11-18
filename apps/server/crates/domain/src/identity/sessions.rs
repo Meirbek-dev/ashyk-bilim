@@ -254,7 +254,7 @@ impl SessionStore {
     /// login would). Prunes dead registry ids, then evicts the oldest live
     /// sessions beyond the cap ([`MAX_SESSIONS_PER_USER`] by default).
     pub async fn create(&self, new: NewSession) -> Result<Option<String>> {
-        // 256 bits of randomness; the id never appears in logs.
+        // 244 random bits (two UUIDv4, 122 each); the id never appears in logs.
         let id = format!(
             "{}{}",
             uuid::Uuid::new_v4().simple(),

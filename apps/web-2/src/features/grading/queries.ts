@@ -140,8 +140,8 @@ export const subjectDraftOptions = (subjectId: string) =>
       ),
   })
 
-/** A short-lived signed URL of a learner's file (1 h): asked for on click, not prefetched per file. */
-/** A short-lived signed `path` on our origin; `inline` for a preview in place, else a download. */
+/** A short-lived signed `path` on our origin, asked for on click (not prefetched per file); `inline` for a preview in
+ * place, else a download. */
 export const downloadOptions = (id: FileAttemptFileId, disposition: Disposition = 'attachment') =>
   fileUrlOptions({ path: { file_id: id }, query: { disposition } })
 
@@ -215,7 +215,6 @@ export async function ensureQueue(queryClient: QueryClient, activityId: Activity
   ])
 }
 
-/** The review page's loader: the work under review and the queue it walks (B-GRD-10). */
 /** The platform's code languages: a code answer names its language, not its id (read once per tab). */
 export const codeLanguagesOptions = () => ({ ...languagesOptions(), staleTime: Number.POSITIVE_INFINITY })
 
@@ -223,6 +222,7 @@ const hasCodeItem = (queryClient: QueryClient, activityId: ActivityId) =>
   queryClient.getQueryData(assessmentOptions(activityId).queryKey)?.items.some(item => item.body.kind === 'code') ??
   false
 
+/** The review page's loader: the work under review and the queue it walks (B-GRD-10). */
 export async function ensureReview(
   queryClient: QueryClient,
   activityId: ActivityId,

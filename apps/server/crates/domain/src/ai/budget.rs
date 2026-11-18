@@ -17,9 +17,9 @@ use sqlx::PgPool;
 use crate::identity::rate_limit::RateLimiter;
 
 const HOUR: Duration = Duration::from_secs(3600);
-/// How long an unsettled reservation holds budget. A run settles in
-/// seconds (provider timeouts are 5 s / 25 s); the lease only bounds a
-/// holder that crashed mid-run.
+/// How long an unsettled reservation holds budget. A run settles within
+/// its provider timeouts (`AiConfig`: 20 s to 120 s by default); the
+/// lease only bounds a holder that crashed mid-run.
 const RESERVATION_LEASE: Duration = Duration::from_mins(15);
 
 /// One admitted request's hold on the monthly budget (BUG-349): the prompt

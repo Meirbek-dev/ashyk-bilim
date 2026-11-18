@@ -10,7 +10,6 @@ RUN bun install --frozen-lockfile --ignore-scripts
 
 FROM deps AS build
 COPY apps/web-2/ ./
-# `build` = vp build + the chunk budgets (G-05): an over-budget bundle fails the image.
 RUN bun run build
 
 FROM deps AS runtime-deps

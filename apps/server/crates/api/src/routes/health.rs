@@ -16,8 +16,7 @@ pub async fn live() -> Json<Health> {
     Json(Health::ok())
 }
 
-/// Readiness: dependencies are reachable (Postgres; Redis/RustFS/Zitadel probes
-/// join as their clients land).
+/// Readiness: Postgres is reachable (Redis, RustFS and Zitadel are not probed).
 #[utoipa::path(
     get,
     path = "/health/ready",

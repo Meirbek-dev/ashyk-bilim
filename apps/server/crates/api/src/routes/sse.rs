@@ -6,7 +6,7 @@
 //! everyone signed in (their own stream only). `Last-Event-ID` replays
 //! what was missed (Redis stream ids), then a `connected` event, then live
 //! events; axum's keep-alive comments every 25s hold proxies open. Each
-//! user may hold five streams at once (429 beyond that). Access is
+//! user may hold `MAX_CONNECTIONS_PER_USER` (10) streams at once (429 beyond that). Access is
 //! re-checked before every batch of live events (and on every idle
 //! read timeout) against the session as it is now - logged out, revoked
 //! or regranted (BUG-320) - and the course roster: once lost, a terminal
