@@ -141,8 +141,8 @@ function useDraftSender(attempt: StudentSubmission) {
   function flush(last = false) {
     const batch = queueOf(attempt.id)
     const draft = queryClient.getQueryData(key)
-    // Offline nothing is sent: the queue holds the answers and the `online` event resumes.
-    if (!batch.length || sending.current || stopped.current || !navigator.onLine || draft?.status !== 'draft') return
+    // Sent even if `navigator.onLine` says offline (wrong behind some proxies/VPNs): a network error keeps the queue.
+    if (!batch.length || sending.current || stopped.current || draft?.status !== 'draft') return
     sending.current = true
     const ids = batch.map(entry => entry.id)
     if (last)
