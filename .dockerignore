@@ -44,3 +44,9 @@ tmp/
 **/test-results
 **/playwright-report
 **/*.log
+
+# Other checkouts' state and local dumps
+.jj
+dot-experiment-main*
+dumps/
+**/.next
