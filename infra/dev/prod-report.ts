@@ -110,6 +110,28 @@ function serverLog(names: string[]): string[] {
   return rows.size ? table([...rows.values()]) : ['  none']
 }
 
+/** Browser errors the web container logged from `POST /_client-error`, grouped by kind, message and route. */
+export function browserErrors(log: string): string[] {
+  const rows = new Map<string, [string, number, string]>()
+  for (const line of log.split('\n')) {
+    if (!line.startsWith('{')) continue
+    let entry: { source?: string; time?: string; report?: { kind?: string; message?: string; path?: string } }
+    try {
+      entry = JSON.parse(line)
+    } catch {
+      continue
+    }
+    if (entry.source !== 'browser') continue
+    const report = entry.report ?? {}
+    const key = `${report.kind ?? '?'} ${route(report.path ?? '')}: ${redact(String(report.message ?? '')).slice(0, 140)}`
+    const row = rows.get(key) ?? [key, 0, '']
+    row[1] += 1
+    row[2] = entry.time ? `last ${entry.time.slice(0, 16)}` : ''
+    rows.set(key, row)
+  }
+  return rows.size ? table([...rows.values()]) : ['  none']
+}
+
 function nginx(names: string[]): string[] {
   const name = names.find(n => /-nginx-\d+$/.test(n))
   if (!name) return ['  no nginx container']
@@ -289,6 +311,15 @@ if (import.meta.main) {
   for (const [title, lines] of [
     [`containers (${project})`, state(names)],
     [`server and worker warnings/errors, last ${since}`, serverLog(names)],
+    [
+      `browser errors, last ${since}`,
+      browserErrors(
+        names
+          .filter(n => /-web-\d+$/.test(n))
+          .map(n => readLogs(n, since))
+          .join('\n'),
+      ),
+    ],
     [`nginx 5xx, last ${since}`, nginx(names)],
     [`failed/dead jobs, last ${since}`, jobs(names)],
     ['skipped schema checks', checks(names)],

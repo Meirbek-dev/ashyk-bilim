@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { readLogs } from './prod-report'
+import { browserErrors, readLogs } from './prod-report'
 
 test('production log windows convert days to Docker-supported hours', () => {
   const commands: string[][] = []
@@ -28,4 +28,25 @@ test('an unreadable production log fails instead of reporting no errors', () => 
 
 test('an empty log is clean only when Docker read it successfully', () => {
   expect(readLogs('server', '24h', () => ({ code: 0, out: '' }))).toBe('')
+})
+
+test('browser errors group by kind, route and message, ignoring request lines', () => {
+  const report = (path: string) =>
+    JSON.stringify({
+      time: '2026-11-18T10:00:00Z',
+      level: 'error',
+      source: 'browser',
+      report: { kind: 'error', message: 'x is undefined', path },
+    })
+  const log = [
+    report('/learn/courses/0196a3b2-0000-7000-8000-000000000001'),
+    report('/learn/courses/0196a3b2-0000-7000-8000-000000000002'),
+    JSON.stringify({ level: 'info', path: '/', status: 200 }),
+    'not json',
+  ].join('\n')
+  const rows = browserErrors(log)
+  expect(rows).toHaveLength(1)
+  expect(rows[0]).toContain('x is undefined')
+  expect(rows[0]).toContain('2')
+  expect(browserErrors('')).toEqual(['  none'])
 })

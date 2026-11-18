@@ -17,7 +17,8 @@ const CLIENT_ERROR_MAX_BYTES = 8 * 1024
 // ponytail: in-process counter, per instance; move to the edge if the web ever runs replicated.
 const overBudget = createBudget(10)
 
-const log = (entry: Record<string, unknown>) => process.stdout.write(`${JSON.stringify(entry)}\n`)
+const log = (entry: Record<string, unknown>) =>
+  process.stdout.write(`${JSON.stringify({ time: new Date().toISOString(), ...entry })}\n`)
 
 // serverEnv is parsed on import: a missing or malformed variable has already stopped the process here.
 log({ level: 'info', msg: 'web server ready', public_origin: serverEnv.publicOrigin, api: serverEnv.apiOrigin })
