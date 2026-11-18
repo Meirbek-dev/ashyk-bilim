@@ -44,6 +44,9 @@ pub struct WorkerConfig {
     pub reap_interval: Duration,
     /// How often to check `job_schedules` for due recurring jobs.
     pub scheduler_interval: Duration,
+    /// Touched on every heartbeat tick: the container healthcheck reads its
+    /// age, so a loop that stopped turning shows as unhealthy.
+    pub alive_file: Option<std::path::PathBuf>,
 }
 
 impl Default for WorkerConfig {
@@ -55,6 +58,7 @@ impl Default for WorkerConfig {
             reap_after: Duration::from_mins(1),
             reap_interval: Duration::from_secs(30),
             scheduler_interval: Duration::from_secs(5),
+            alive_file: None,
         }
     }
 }
@@ -128,7 +132,10 @@ impl Worker {
                         tracing::warn!(%err, "job listener error; relying on poll");
                     }
                 },
-                _ = heartbeat.tick() => self.renew(&running).await,
+                _ = heartbeat.tick() => {
+                    self.renew(&running).await;
+                    self.touch_alive();
+                },
                 _ = reaper.tick() => {
                     match queue::reap(&self.pool, self.config.reap_after).await {
                         Ok(0) => {},
@@ -170,6 +177,14 @@ impl Worker {
             && let Err(err) = queue::heartbeat(&self.pool, &self.id, &ids).await
         {
             tracing::warn!(%err, "heartbeat failed");
+        }
+    }
+
+    fn touch_alive(&self) {
+        if let Some(path) = &self.config.alive_file
+            && let Err(err) = std::fs::write(path, b"alive\n")
+        {
+            tracing::warn!(%err, path = %path.display(), "worker alive file not written");
         }
     }
 

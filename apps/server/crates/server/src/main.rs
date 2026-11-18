@@ -650,6 +650,9 @@ async fn runner_check(config: &Config) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// The worker container's healthcheck (compose.prod.yaml) reads this file's age.
+const WORKER_ALIVE_FILE: &str = "/tmp/ashyq-worker-alive";
+
 // A flat list of handler registrations + schedules; splitting it would only hide the inventory.
 #[allow(clippy::too_many_lines)]
 async fn worker(config: Config) -> anyhow::Result<()> {
@@ -768,7 +771,11 @@ async fn worker(config: Config) -> anyhow::Result<()> {
 
     let retrieval = ai.retrieval().clone();
     let mastery = ab_domain::mastery::MasteryService::new(pool.clone(), retrieval.clone());
-    let worker = ab_jobs::Worker::new(pool.clone(), ab_jobs::WorkerConfig::default())
+    let worker_config = ab_jobs::WorkerConfig {
+        alive_file: Some(WORKER_ALIVE_FILE.into()),
+        ..ab_jobs::WorkerConfig::default()
+    };
+    let worker = ab_jobs::Worker::new(pool.clone(), worker_config)
         .register(ab_jobs::handlers::uploads::UploadsReaper::new(
             pool.clone(),
             storage,

@@ -156,11 +156,12 @@ services:
     environment: *server-env
     networks: [edge-net, data-net, exec-net]
     depends_on: *app-depends
-    # No HTTP port (the image's HEALTHCHECK curls :8000), and `up --wait` rejects
-    # a container without a healthcheck: liveness = the process is running.
+    # No HTTP port (the image's HEALTHCHECK curls :8000): the job loop touches
+    # /tmp/ashyq-worker-alive every 15 s, so a loop that stopped turning is unhealthy.
     healthcheck:
-      test: ['CMD', 'true']
+      test: ['CMD-SHELL', 'test -n "$(find /tmp/ashyq-worker-alive -mmin -2 2>/dev/null)"']
       interval: 30s
+      start_period: 30s
     stop_grace_period: 60s
     security_opt:
       - no-new-privileges:true

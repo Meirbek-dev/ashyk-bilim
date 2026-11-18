@@ -22,6 +22,7 @@ const fn fast_config() -> WorkerConfig {
         reap_after: Duration::from_secs(30),
         reap_interval: Duration::from_secs(30),
         scheduler_interval: Duration::from_hours(1),
+        alive_file: None,
     }
 }
 
@@ -270,4 +271,28 @@ async fn draining_jobs_keep_their_lease(pool: PgPool) {
     assert!(during > before, "heartbeat renewed while draining");
     handle.await.unwrap().unwrap();
     assert_eq!(jobs_left(&pool).await, 0, "the drained job succeeded");
+}
+
+#[ab_testdb::test]
+async fn the_job_loop_touches_its_alive_file(pool: PgPool) {
+    let path = std::env::temp_dir().join(format!("ashyq-alive-{}", uuid::Uuid::new_v4()));
+    let config = WorkerConfig {
+        alive_file: Some(path.clone()),
+        ..fast_config()
+    };
+    let cancel = CancellationToken::new();
+    let handle = tokio::spawn(Worker::new(pool, config).run(cancel.clone()));
+
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while !path.exists() {
+        assert!(
+            tokio::time::Instant::now() < deadline,
+            "alive file not written"
+        );
+        tokio::time::sleep(Duration::from_millis(25)).await;
+    }
+
+    cancel.cancel();
+    handle.await.unwrap().unwrap();
+    std::fs::remove_file(&path).unwrap();
 }
