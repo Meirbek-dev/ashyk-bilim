@@ -128,14 +128,7 @@ impl Worker {
                         tracing::warn!(%err, "job listener error; relying on poll");
                     }
                 },
-                _ = heartbeat.tick() => {
-                    let ids: Vec<JobId> = running.values().copied().collect();
-                    if !ids.is_empty()
-                        && let Err(err) = queue::heartbeat(&self.pool, &self.id, &ids).await
-                    {
-                        tracing::warn!(%err, "heartbeat failed");
-                    }
-                },
+                _ = heartbeat.tick() => self.renew(&running).await,
                 _ = reaper.tick() => {
                     match queue::reap(&self.pool, self.config.reap_after).await {
                         Ok(0) => {},
@@ -157,11 +150,27 @@ impl Worker {
         }
 
         tracing::info!(in_flight = tasks.len(), "worker draining");
-        while let Some(joined) = tasks.join_next_with_id().await {
-            finished(&mut running, joined);
+        // Draining jobs keep their lease: without heartbeats the reaper (of
+        // the next release's worker) would re-claim a job longer than
+        // `reap_after` and run it twice.
+        while !tasks.is_empty() {
+            tokio::select! {
+                Some(joined) = tasks.join_next_with_id() => finished(&mut running, joined),
+                _ = heartbeat.tick() => self.renew(&running).await,
+            }
         }
         tracing::info!("worker drained");
         Ok(())
+    }
+
+    /// Renew the lease of every job with a live task.
+    async fn renew(&self, running: &HashMap<tokio::task::Id, JobId>) {
+        let ids: Vec<JobId> = running.values().copied().collect();
+        if !ids.is_empty()
+            && let Err(err) = queue::heartbeat(&self.pool, &self.id, &ids).await
+        {
+            tracing::warn!(%err, "heartbeat failed");
+        }
     }
 
     /// Claim up to the free concurrency slots and spawn executions.

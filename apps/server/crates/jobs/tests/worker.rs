@@ -226,3 +226,48 @@ async fn duplicate_handler_registration_is_rejected() {
         .unwrap();
     assert!(worker.register(Counting { hits }).is_err());
 }
+
+struct Slow;
+
+impl JobHandler for Slow {
+    fn kind(&self) -> &'static str {
+        "test:slow"
+    }
+    fn handle(&self, _payload: serde_json::Value) -> BoxFuture<'static, Result<()>> {
+        async {
+            tokio::time::sleep(Duration::from_millis(1500)).await;
+            Ok(())
+        }
+        .boxed()
+    }
+}
+
+const HEARTBEAT: &str = "SELECT extract(epoch FROM heartbeat_at)::float8 FROM jobs";
+
+/// A job still running when the worker is told to stop keeps its lease while
+/// it drains: another worker's reaper must not take it and run it twice.
+#[ab_testdb::test]
+async fn draining_jobs_keep_their_lease(pool: PgPool) {
+    let worker = Worker::new(pool.clone(), fast_config())
+        .register(Slow)
+        .unwrap();
+    queue::enqueue(&pool, &NewJob::new("test:slow", serde_json::json!({})))
+        .await
+        .unwrap();
+    let cancel = CancellationToken::new();
+    let handle = tokio::spawn(worker.run(cancel.clone()));
+    wait_for_status(&pool, "running", 1).await;
+    cancel.cancel();
+    let before: f64 = sqlx::query_scalar(HEARTBEAT)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    tokio::time::sleep(Duration::from_millis(1100)).await;
+    let during: f64 = sqlx::query_scalar(HEARTBEAT)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert!(during > before, "heartbeat renewed while draining");
+    handle.await.unwrap().unwrap();
+    assert_eq!(jobs_left(&pool).await, 0, "the drained job succeeded");
+}
