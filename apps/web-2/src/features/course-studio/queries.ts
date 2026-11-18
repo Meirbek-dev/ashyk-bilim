@@ -158,18 +158,22 @@ export const linkableGroupsOptions = () => ({
 const setGroups = (queryClient: QueryClient, id: CourseId, change: (groups: Usergroup[]) => Usergroup[]) =>
   queryClient.setQueryData(courseGroupsOptions(id).queryKey, groups => groups && change(groups))
 
+/** Links each picked group side by side: the ones that linked join the cached list, the first failure is the error. */
 export const linkGroupsOptions = (queryClient: QueryClient, id: CourseId) => ({
-  mutationFn: (groups: Usergroup[]) =>
-    Promise.all(
+  mutationFn: async (groups: Usergroup[]) => {
+    const results = await Promise.allSettled(
       groups.map(group =>
         addGroupCourses({ path: { group_id: group.id }, body: { course_ids: [id] }, throwOnError: true }),
       ),
-    ),
-  onSuccess: (_: unknown, linked: Usergroup[]) =>
-    setGroups(queryClient, id, groups => [
-      ...groups,
-      ...linked.filter(group => !groups.some(old => old.id === group.id)),
-    ]),
+    )
+    const linked = groups.filter((_, i) => results[i]?.status === 'fulfilled')
+    setGroups(queryClient, id, current => [
+      ...current,
+      ...linked.filter(group => !current.some(old => old.id === group.id)),
+    ])
+    const failed = results.find(result => result.status === 'rejected')
+    if (failed?.status === 'rejected') throw failed.reason
+  },
 })
 
 export const unlinkGroupOptions = (queryClient: QueryClient, id: CourseId) => ({
