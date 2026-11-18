@@ -665,9 +665,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   it). Items list slugs in `languages` and key `starter_code` / `reference_solutions` by them, an answer and a run
   name one in `language`, the API (`language`, `LanguageInfo.id`) and `AB__RUNNER__LIMITS__ALLOWED_LANGUAGES` take
   them; a body naming a language the runner lacks is refused (`unknown-language`). Judge0's numeric ids were the key
-  before. Switch release `20261116075661`: the server reads either spelling (`ab_domain::code::judge0`) and writes
-  slugs, triggers store them as Judge0's ids for the previous release, `code_runs.language` sits beside
-  `language_id`; its contract rewrites every stored id.
+  before: the contract `20261116075662` rewrote every stored one (item bodies, frozen items, answers, breakdowns,
+  final-run keys) and dropped `code_runs.language_id`.
 
 ### SQLx usage
 

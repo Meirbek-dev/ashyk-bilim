@@ -2926,25 +2926,6 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("assessment_items_upload_ids", "derived"),
         ("assessment_versions_points", "derived"),
         ("assessment_versions_upload_ids", "derived"),
-        // Derived for the previous release (a code language stored as Judge0's id): the contract
-        // 20261116075662 drops them.
-        (
-            "assessment_items_code_languages",
-            "derived; the contract drops it",
-        ),
-        (
-            "assessment_versions_code_languages",
-            "derived; the contract drops it",
-        ),
-        ("code_runs_language", "derived; the contract drops it"),
-        (
-            "grading_entries_code_languages",
-            "derived; the contract drops it",
-        ),
-        (
-            "submissions_code_languages",
-            "derived; the contract drops it",
-        ),
         ("blocks_upload_ids", "derived"),
         ("chapters_upload_ids", "derived"),
         ("collections_upload_ids", "derived"),
@@ -4286,4 +4267,212 @@ async fn a_hash_is_32_bytes(pool: PgPool) {
     .await
     .unwrap();
     assert!(same, "a version's hash is the sha256 of its pair");
+}
+
+/// The migrations before `version`, run on an empty database, and a pool opened after them (the database carries
+/// the search_path a session takes at connect).
+// `sqlx::migrate!` embeds every migration in a local array, past the lint's 16 KiB.
+#[allow(clippy::large_stack_arrays)]
+async fn migrated_before(pool: &PgPool, version: i64) -> PgPool {
+    let mut before = sqlx::migrate!("../../migrations");
+    before.migrations = std::borrow::Cow::Owned(
+        before
+            .iter()
+            .filter(|m| m.version < version)
+            .cloned()
+            .collect(),
+    );
+    before.run(pool).await.unwrap();
+    sqlx::postgres::PgPoolOptions::new()
+        .max_connections(2)
+        .connect_with((*pool.connect_options()).clone())
+        .await
+        .unwrap()
+}
+
+const LANGUAGE_SWITCH: i64 = 20_261_116_075_661;
+const LANGUAGE_CONTRACT: i64 = 20_261_116_075_662;
+
+/// REWRITE 5.8 item 10: the switch drops the ids no runner language maps to from `languages` lists (83 below);
+/// the contract makes every Judge0 id the switch kept in the rows its slug, and no stored body, frozen item, answer
+/// or breakdown names a code language by number afterwards.
+#[allow(clippy::large_stack_arrays)]
+#[sqlx::test(migrations = false)]
+async fn the_contract_names_every_stored_code_language_by_slug(pool: PgPool) {
+    let pool = migrated_before(&pool, LANGUAGE_SWITCH).await;
+    let w = world(&pool).await;
+    let body = serde_json::json!({
+        "kind": "code", "languages": [71, 83, 54], "starter_code": {"71": "a", "54": "b"},
+        "reference_solutions": {"71": "r"}, "tests": []
+    });
+    let item: Uuid = sqlx::query_scalar(
+        "INSERT INTO assessment_items (assessment_id, kind, position, body) VALUES ($1, 'code', 1, $2) RETURNING id",
+    )
+    .bind(w.assessment)
+    .bind(&body)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let items = serde_json::json!({ "items": [{
+        "id": item, "kind": "code", "title": "", "max_score": 1, "position": 1, "body": body
+    }]});
+    let version: Uuid = sqlx::query_scalar(
+        "INSERT INTO assessment_versions (assessment_id, number, items, policy) VALUES ($1, 1, $2, '{}') RETURNING id",
+    )
+    .bind(w.assessment)
+    .bind(&items)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let breakdown = |language: i32| {
+        serde_json::json!({ "items": [{
+            "item_id": item, "user_answer": { "kind": "CODE", "language": language, "source": "" }
+        }]})
+    };
+    let sub: Uuid = sqlx::query_scalar(
+        "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, submitted_at,
+                                  items_snapshot, policy_snapshot, assessment_version_id, answers, auto_breakdown)
+         VALUES ($1, $2, $3, 'submitted', 1, now(), $4, '{}', $5, $6, $7) RETURNING id",
+    )
+    .bind(w.assessment)
+    .bind(w.course)
+    .bind(w.user)
+    .bind(&items)
+    .bind(version)
+    .bind(serde_json::json!({ item.to_string(): { "kind": "code", "language": 62, "source": "s" } }))
+    .bind(breakdown(71))
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "WITH e AS (INSERT INTO grading_entries (submission_id, revision, raw_score, final_score, raw_breakdown,
+                                                 effective_breakdown)
+                    VALUES ($1, 1, 80, 80, $2, $2) RETURNING submission_id)
+         UPDATE submissions s SET final_score = 80 FROM e WHERE s.id = e.submission_id",
+    )
+    .bind(sub)
+    .bind(breakdown(54))
+    .execute(&pool)
+    .await
+    .unwrap();
+    // The release before writes `language_id`; the switch backfills `language`.
+    sqlx::query(
+        "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status, language_id,
+                                code_sha256, idempotency_key)
+         VALUES ($1, $2, $3, $4, 'final', 'queued', 73, sha256('a'), 'final:' || $3 || ':' || $2 || ':73:abc')",
+    )
+    .bind(w.assessment)
+    .bind(item)
+    .bind(sub)
+    .bind(w.user)
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let pool = migrated_before(&pool, LANGUAGE_CONTRACT).await;
+    let lists: Vec<serde_json::Value> = sqlx::query_scalar(
+        "SELECT body -> 'languages' FROM assessment_items
+         UNION ALL SELECT items -> 'items' -> 0 -> 'body' -> 'languages' FROM assessment_versions
+         UNION ALL SELECT items_snapshot -> 'items' -> 0 -> 'body' -> 'languages' FROM submissions",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        lists,
+        vec![serde_json::json!([71, 54]); 3],
+        "83 runs nowhere"
+    );
+
+    sqlx::migrate!("../../migrations").run(&pool).await.unwrap();
+
+    let slugs = serde_json::json!({
+        "kind": "code", "languages": ["python", "cpp"], "starter_code": {"python": "a", "cpp": "b"},
+        "reference_solutions": {"python": "r"}, "tests": []
+    });
+    let stored: (serde_json::Value, serde_json::Value, serde_json::Value, serde_json::Value) = sqlx::query_as(
+        "SELECT i.body, v.items -> 'items' -> 0 -> 'body', s.items_snapshot -> 'items' -> 0 -> 'body',
+                s.answers -> i.id::text -> 'language'
+           FROM assessment_items i, submissions s JOIN assessment_versions v ON v.id = s.assessment_version_id
+          WHERE i.id = $1 AND s.id = $2",
+    )
+    .bind(item)
+    .bind(sub)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(stored.0, slugs);
+    assert_eq!(stored.1, slugs);
+    assert_eq!(stored.2, slugs);
+    assert_eq!(stored.3, serde_json::json!("java"));
+    let answered: Vec<String> = sqlx::query_scalar(
+        "SELECT b -> 'items' -> 0 -> 'user_answer' ->> 'language' FROM (
+             SELECT auto_breakdown FROM submissions UNION ALL SELECT raw_breakdown FROM grading_entries
+             UNION ALL SELECT effective_breakdown FROM grading_entries) AS x (b) ORDER BY 1",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(answered, ["cpp", "cpp", "python"]);
+    let run: (String, String) = sqlx::query_as("SELECT language, idempotency_key FROM code_runs")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(run, ("rust".into(), format!("final:{sub}:{item}:rust:abc")));
+    let hash_follows: bool = sqlx::query_scalar(
+        "SELECT content_sha256 = assessment_content_sha256(items, policy) FROM assessment_versions",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(hash_follows);
+
+    let numbered: i64 = sqlx::query_scalar(
+        r#"SELECT count(*) FROM (
+               SELECT body FROM assessment_items UNION ALL SELECT items FROM assessment_versions
+               UNION ALL SELECT items_snapshot FROM submissions UNION ALL SELECT answers FROM submissions
+               UNION ALL SELECT auto_breakdown FROM submissions UNION ALL SELECT raw_breakdown FROM grading_entries
+               UNION ALL SELECT effective_breakdown FROM grading_entries) AS x (d)
+            WHERE jsonb_path_exists(d, '$.**.language ? (@.type() == "number")')
+               OR jsonb_path_exists(d, '$.**.languages[*] ? (@.type() == "number")')
+               OR jsonb_path_exists(d, '$.**.starter_code.keyvalue() ? (@.key like_regex "^[0-9]+$")', '{}', true)
+               OR jsonb_path_exists(d, '$.**.reference_solutions.keyvalue() ? (@.key like_regex "^[0-9]+$")', '{}',
+                                    true)"#,
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(numbered, 0, "a code language stored by number");
+    let left: i64 = sqlx::query_scalar(
+        "SELECT (SELECT count(*) FROM information_schema.columns WHERE table_name = 'code_runs'
+                   AND column_name = 'language_id')
+              + (SELECT count(*) FROM pg_trigger WHERE tgname ~ '_code_languages$|^code_runs_language$')
+              + (SELECT count(*) FROM pg_proc WHERE proname ~ '^code_(language_|languages_as|.*_respelled$)')",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(left, 0, "the switch's bridge is gone");
+}
+
+/// An id the runner image lacks stops the contract: no row is left naming a language nobody can run.
+#[allow(clippy::large_stack_arrays)]
+#[sqlx::test(migrations = false)]
+async fn the_contract_stops_on_a_language_the_runner_lacks(pool: PgPool) {
+    let pool = migrated_before(&pool, LANGUAGE_CONTRACT).await;
+    let w = world(&pool).await;
+    sqlx::query(
+        "INSERT INTO assessment_items (assessment_id, kind, position, body)
+         VALUES ($1, 'code', 1, '{\"kind\": \"code\", \"languages\": [71, 83]}')",
+    )
+    .bind(w.assessment)
+    .execute(&pool)
+    .await
+    .unwrap();
+    let refused = sqlx::migrate!("../../migrations").run(&pool).await;
+    let message = format!("{:?}", refused.unwrap_err());
+    assert!(
+        message.contains("runner image lacks: 83 (assessment_items"),
+        "{message}"
+    );
 }

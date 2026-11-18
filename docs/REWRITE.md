@@ -1006,7 +1006,8 @@ Queue, in order:
      platform's language key everywhere, not only in `code_runs`: item bodies (`languages`, `starter_code` /
      `reference_solutions` keyed by it), answers (`language`, also inside grading breakdowns), frozen
      `assessment_versions` and `items_snapshot`, `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS`, the API (`language_id`)
-     and the web editor; a name in `code_runs` alone would have been a second spelling.
+     and the web editor; a name in `code_runs` alone would have been a second spelling. Done there: slugs in every
+     place (switch `20261116075661`, contract `20261116075662`).
    - Soft delete: switched in `20261116075635_soft_delete_timestamps`. Two tables mixed idioms: `messages` kept a
      deletion twice (`status = 'deleted'` and `deleted_at`), `course_discussions` only as `status = 'deleted'` (a
      tombstone). Both read and write `deleted_at` now (the discussions' backfilled from the tombstone's
@@ -1178,9 +1179,9 @@ Queue, in order:
       and a body naming a language the runner lacks is refused (`unknown-language`). An open tab of the old web fails
       on a run until reloaded. `AB__RUNNER__LIMITS__ALLOWED_LANGUAGES` (slugs) replaces
       `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS` (the decision named them `AB__CODE__*`: the allowlist lives under the
-      runner's limits). The old variable is read for one release when the new one is unset (mapped, a warning in the
-      log); the owner changes production's `server.env` after the deploy, and the release after the contract removes
-      the fallback and the table's Judge0 column.
+      runner's limits). The old variable is still read when the new one is unset (mapped, a warning in the log); the
+      owner changes production's `server.env` after the switch's deploy, and the release after the contract removes
+      the fallback, the table's Judge0 column and `code_languages_stored()`.
       Shape: a switch and its contract, not one release whose rollback is a restore: the switch costs triggers over five
       jsonb columns and a column pair. The previous release reads Judge0's ids only, so the rows keep them for it:
       BEFORE triggers (`code_languages_as_ids`) turn what this release writes into ids in item bodies, the frozen items
@@ -1189,6 +1190,12 @@ Queue, in order:
       and finds a version by the hash of its items as stored (`code_languages_stored()`). `code_runs.language`
       (backfilled) sits beside `language_id`; `code_runs_language` fills whichever an insert leaves out. Counted on the
       dev copy of production (2026-11-13): one code item, no code answer, no run.
+      Its contract `20261116075662_code_language_names_contract` (a data fix past the frozen rows' guards, as earlier
+      ones) rewrote every stored id as its slug: item bodies, the frozen items of versions (their `content_sha256`
+      follows) and submissions, answers, breakdowns of hand-ins and of the grade journal, and the language in a final
+      run's idempotency key; it dropped the triggers, their helpers and `code_runs.language_id`, and made
+      `code_languages_stored()` the identity for the switch release. An id the image lacks stops the migration
+      (`code languages the runner image lacks: ...`); the server reads slugs only (`ab_domain::code::judge0` went).
     - *Points as the record* (n16): the grader, the breakdown and AI drafts work in the version's points, the
       percentage shown beside; the percentage is derived (two decimals, half away from zero). Old grades take the
       shift of at most `0.5 / max_points`; `passed` is recomputed both ways, silently; certificates and XP stay.

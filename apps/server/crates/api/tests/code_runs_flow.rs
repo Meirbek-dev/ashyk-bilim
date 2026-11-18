@@ -1067,11 +1067,10 @@ async fn runner_state_is_degraded_while_the_breaker_is_open(pool: PgPool) {
     assert_eq!(state.json()["code"], "code-runner-degraded");
 }
 
-/// REWRITE 5.8 item 10, switch release: the API speaks slugs while the rows
-/// keep Judge0's ids for the release before (the rollback image), and what
-/// that release writes reads back as slugs.
+/// REWRITE 5.8 item 10: a code language is its slug on the API and in every
+/// row that names one.
 #[ab_testdb::test]
-async fn languages_are_slugs_on_the_api_and_judge0_ids_in_the_rows(pool: PgPool) {
+async fn languages_are_slugs_on_the_api_and_in_the_rows(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     FakeJudge::mount(&app.runner, fake_python).await;
     let teacher = instructor(&app, "teacher").await;
@@ -1118,57 +1117,19 @@ async fn languages_are_slugs_on_the_api_and_judge0_ids_in_the_rows(pool: PgPool)
         .fetch_one(&app.pool)
         .await
         .unwrap();
-    assert_eq!(stored.0, serde_json::json!([71, 62]));
+    assert_eq!(stored.0, serde_json::json!(["python", "java"]));
     assert_eq!(
         stored.1,
-        serde_json::json!({ "71": "print(int(input())**2)  # square" })
+        serde_json::json!({ "python": "print(int(input())**2)  # square" })
     );
-    assert_eq!(stored.2, serde_json::json!(71));
-    assert_eq!(stored.3, serde_json::json!([71, 62]));
-    assert_eq!(stored.4, serde_json::json!(71));
-    let runs: Vec<(i32, String)> =
-        sqlx::query_as("SELECT language_id, language FROM code_runs WHERE item_id = $1")
-            .bind(item)
-            .fetch_all(&app.pool)
-            .await
-            .unwrap();
+    assert_eq!(stored.2, serde_json::json!("python"));
+    assert_eq!(stored.3, serde_json::json!(["python", "java"]));
+    assert_eq!(stored.4, serde_json::json!("python"));
+    let runs: Vec<String> = sqlx::query_scalar("SELECT language FROM code_runs WHERE item_id = $1")
+        .bind(item)
+        .fetch_all(&app.pool)
+        .await
+        .unwrap();
     assert_eq!(runs.len(), 2);
-    assert!(
-        runs.iter().all(|r| *r == (71, "python".to_owned())),
-        "{runs:?}"
-    );
-
-    // The previous release's writes: ids, read back as slugs.
-    sqlx::query(
-        "UPDATE assessment_items SET body = body || '{\"languages\": [71, 54], \"starter_code\": {\"54\": \"int main(){}\"}}'
-          WHERE id = $1",
-    )
-    .bind(item)
-    .execute(&app.pool)
-    .await
-    .unwrap();
-    let detail = app
-        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
-        .await;
-    assert_eq!(detail.status, StatusCode::OK, "{}", detail.text());
-    let body = &detail.json()["items"][0]["body"];
-    assert_eq!(body["languages"], serde_json::json!(["python", "cpp"]));
-    assert_eq!(
-        body["starter_code"],
-        serde_json::json!({ "cpp": "int main(){}" })
-    );
-    let old_run: uuid::Uuid = sqlx::query_scalar(
-        "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, code_sha256)
-         SELECT assessment_id, id, $2, 'custom', 'queued', 54, sha256('a') FROM assessment_items WHERE id = $1
-         RETURNING id",
-    )
-    .bind(item)
-    .bind(alice.user_id.0)
-    .fetch_one(&app.pool)
-    .await
-    .unwrap();
-    let seen = app
-        .get_as(&alice, &format!("/api/v2/code-runs/{old_run}"))
-        .await;
-    assert_eq!(seen.json()["language"], "cpp", "{}", seen.text());
+    assert!(runs.iter().all(|r| r == "python"), "{runs:?}");
 }

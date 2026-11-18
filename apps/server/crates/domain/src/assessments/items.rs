@@ -243,13 +243,13 @@ pub struct CodeBody {
     #[serde(default)]
     pub constraints: Vec<String>,
     /// Language slugs (`GET /code/runner`).
-    #[serde(default, deserialize_with = "crate::code::judge0::languages")]
+    #[serde(default)]
     pub languages: Vec<String>,
     /// Keyed by language slug.
-    #[serde(default, deserialize_with = "crate::code::judge0::keyed")]
+    #[serde(default)]
     pub starter_code: BTreeMap<String, String>,
     /// Keyed by language slug.
-    #[serde(default, deserialize_with = "crate::code::judge0::keyed")]
+    #[serde(default)]
     pub reference_solutions: BTreeMap<String, String>,
     #[serde(default)]
     #[schema(max_items = 200)]
@@ -1204,14 +1204,13 @@ mod tests {
     fn legacy_sample_code_body_parses_with_defaults() {
         // Minimal legacy-shaped payload: defaults fill the rest.
         let raw = serde_json::json!({
-            "kind": "code", "prompt": "sum", "languages": [71],
+            "kind": "code", "prompt": "sum", "languages": ["python"],
             "tests": [{"id": "t1", "input": "1 2", "expected_output": "3"}]
         });
         let body = ItemBody::from_stored(&raw).unwrap();
         let ItemBody::Code(code) = &body else {
             panic!("code")
         };
-        assert_eq!(code.languages, ["python"], "a Judge0 id reads as its slug");
         assert_eq!(code.tests[0].weight, 1);
         assert!(code.tests[0].is_visible);
         assert_eq!(code.scoring_strategy, ScoringStrategy::PartialCredit);

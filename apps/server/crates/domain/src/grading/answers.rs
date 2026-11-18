@@ -44,7 +44,6 @@ pub enum ItemAnswer {
     },
     Code {
         /// The language's slug (`GET /code/runner`); `""` in the empty answer.
-        #[serde(deserialize_with = "crate::code::judge0::language")]
         language: String,
         #[serde(default)]
         source: String,

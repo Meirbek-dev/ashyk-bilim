@@ -904,7 +904,6 @@ A question or task of an assessment (typed body by kind), ordered by position, m
 - Check `assessment_items_source_file_check`: `CHECK (((source_file IS NULL) OR ((length(source_file) >= 1) AND (length(source_file) <= 255))))`
 - Check `assessment_items_source_row_check`: `CHECK (((source_row IS NULL) OR (source_row >= 1)))`
 - Check `assessment_items_tags_check`: `CHECK (text_list_ok(tags, 50, 64))`
-- Trigger `assessment_items_code_languages`: `CREATE TRIGGER assessment_items_code_languages BEFORE INSERT OR UPDATE OF body ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION code_languages_as_ids()`
 - Trigger `assessment_items_upload_ids`: `CREATE TRIGGER assessment_items_upload_ids AFTER INSERT OR UPDATE OF body ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_item_uploads_sync()`
 
 ## assessment_overrides
@@ -973,7 +972,6 @@ Frozen policy + items of an assessment as handed in (content-addressed, numbered
 - Check `assessment_versions_number_check`: `CHECK ((number >= 1))`
 - Index `assessment_versions_content_sha256_key`: `CREATE UNIQUE INDEX assessment_versions_content_sha256_key ON learning.assessment_versions USING btree (assessment_id, content_sha256)`
 - Index `assessment_versions_id_assessment_key`: `CREATE UNIQUE INDEX assessment_versions_id_assessment_key ON learning.assessment_versions USING btree (id, assessment_id)`
-- Trigger `assessment_versions_code_languages`: `CREATE TRIGGER assessment_versions_code_languages BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION code_languages_as_ids()`
 - Trigger `assessment_versions_frozen`: `CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()`
 - Trigger `assessment_versions_points`: `CREATE TRIGGER assessment_versions_points BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_points()`
 - Trigger `assessment_versions_upload_ids`: `CREATE TRIGGER assessment_versions_upload_ids AFTER INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_version_uploads_sync()`
@@ -1259,7 +1257,6 @@ A run of learner code in the go-judge runner: a practice run or the graded run o
 | user_id | uuid |  |  |  |
 | purpose | text |  |  |  |
 | status | text |  | `'queued'::text` |  |
-| language_id | integer |  |  |  |
 | idempotency_key | text | null |  |  |
 | passed | integer |  | `0` |  |
 | total | integer |  | `0` |  |
@@ -1292,7 +1289,6 @@ A run of learner code in the go-judge runner: a practice run or the graded run o
 - Index `code_runs_created_brin`: `CREATE INDEX code_runs_created_brin ON learning.code_runs USING brin (created_at)`
 - Index `code_runs_item_idx`: `CREATE INDEX code_runs_item_idx ON learning.code_runs USING btree (item_id, user_id, created_at DESC)`
 - Index `code_runs_submission_idx`: `CREATE INDEX code_runs_submission_idx ON learning.code_runs USING btree (submission_id)`
-- Trigger `code_runs_language`: `CREATE TRIGGER code_runs_language BEFORE INSERT ON learning.code_runs FOR EACH ROW EXECUTE FUNCTION code_runs_language()`
 
 ## collection_courses
 
@@ -2126,7 +2122,6 @@ Grade journal of submissions: one row per grading; append-only except published_
 - Check `grading_entries_points_check`: `CHECK ((((max_points IS NULL) AND (raw_points IS NULL) AND (final_points IS NULL)) OR ((max_points IS NOT NULL) AND (raw_points IS NOT NULL) AND ((raw_points)::numeric <= (max_points)::numeric) AND ((final_points IS NULL) = (final_score IS NULL)) AND ((final_points IS NULL) OR ((final_points)::numeric <= (max_points)::numeric)))))`
 - Index `grading_entries_submission_revision_key`: `CREATE UNIQUE INDEX grading_entries_submission_revision_key ON learning.grading_entries USING btree (submission_id, revision)`
 - Trigger `grading_entries_append_only`: `CREATE TRIGGER grading_entries_append_only BEFORE DELETE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_no_delete()`
-- Trigger `grading_entries_code_languages`: `CREATE TRIGGER grading_entries_code_languages BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION code_languages_as_ids()`
 - Trigger `grading_entries_current`: `CREATE CONSTRAINT TRIGGER grading_entries_current AFTER INSERT ON learning.grading_entries DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION grading_entries_current_check()`
 - Trigger `grading_entries_immutable`: `CREATE TRIGGER grading_entries_immutable BEFORE UPDATE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_guard()`
 
@@ -2624,7 +2619,6 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 - Index `submissions_review_idx`: `CREATE INDEX submissions_review_idx ON learning.submissions USING btree (assessment_id, status, submitted_at DESC)`
 - Index `submissions_timer_idx`: `CREATE INDEX submissions_timer_idx ON learning.submissions USING btree (started_at) WHERE ((status = 'draft'::text) AND (started_at IS NOT NULL))`
 - Index `submissions_user_idx`: `CREATE INDEX submissions_user_idx ON learning.submissions USING btree (user_id)`
-- Trigger `submissions_code_languages`: `CREATE TRIGGER submissions_code_languages BEFORE INSERT OR UPDATE OF answers, items_snapshot, auto_breakdown ON learning.submissions FOR EACH ROW EXECUTE FUNCTION code_languages_as_ids()`
 - Trigger `submissions_current_grade`: `CREATE CONSTRAINT TRIGGER submissions_current_grade AFTER UPDATE OF final_score ON learning.submissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.final_score)::numeric IS DISTINCT FROM (new.final_score)::numeric)) EXECUTE FUNCTION submissions_current_grade_check()`
 - Trigger `submissions_snapshots_frozen`: `CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id, selected_item_ids ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()`
 

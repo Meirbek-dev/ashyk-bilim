@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: AssessmentVersionId\" FROM assessment_versions\n           WHERE assessment_id = $1\n             AND content_sha256 = assessment_content_sha256(code_languages_stored($2), $3)",
+  "query": "SELECT id AS \"id: AssessmentVersionId\" FROM assessment_versions\n           WHERE assessment_id = $1 AND content_sha256 = assessment_content_sha256($2, $3)",
   "describe": {
     "columns": [
       {
@@ -26,5 +26,5 @@
       false
     ]
   },
-  "hash": "03bff97c790da515ed9dd42ca94272660a3c03730f7da974f5ce3a9796b33f83"
+  "hash": "b868c3b2b20ab354811a12bc7a24420e9414327b540652a4ea17a26eb7ef2538"
 }

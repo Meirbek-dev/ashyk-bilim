@@ -182,7 +182,6 @@ where
         fields.insert("kind".to_owned(), "code".into());
         fields.remove("latest_run");
     }
-    crate::code::judge0::answer_value(&mut answer);
     Ok(answer)
 }
 
@@ -272,7 +271,7 @@ mod tests {
             "item_id": "019bb10c-2f09-78b1-8191-f9cba6273cf4",
             "score": 0.0,
             "max_score": 1.0,
-            "user_answer": { "kind": "CODE", "source": "", "language": 71, "latest_run": { "score": 0.0 } },
+            "user_answer": { "kind": "CODE", "source": "", "language": "python", "latest_run": { "score": 0.0 } },
         }))
         .unwrap();
         assert_eq!(
