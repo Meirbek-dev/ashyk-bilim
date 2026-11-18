@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
+import { ciHealth, ciRuns } from './ci-health.ts'
 import { readHits } from './ledger.ts'
 import { databaseUrl, devEnv } from './lib.ts'
 
@@ -88,12 +89,20 @@ const web2Gates = [...block.matchAll(/^ {2}'?([a-z0-9-]+)'?[,:]/gm)].map(m => m[
 const quiet = web2Gates.filter(g => !hits.some(h => h.source === 'web2-gates' && h.gate === g))
 const since = hits[0]?.at.slice(0, 10)
 
+const runs = ciRuns(root)
+const ci = runs ? ciHealth(runs) : undefined
+
 if (process.argv.includes('--json'))
-  console.log(JSON.stringify({ ...metrics, gateHits: Object.fromEntries(byGate), quietWeb2Gates: quiet }, null, 2))
+  console.log(JSON.stringify({ ...metrics, ci, gateHits: Object.fromEntries(byGate), quietWeb2Gates: quiet }, null, 2))
 else {
   for (const [name, value] of Object.entries(metrics)) console.log(`${String(value).padStart(9)}  ${name}`)
   console.log(`\ngate hits, last 30 days${since ? ` (ledger from ${since})` : ' (ledger empty so far)'}:`)
   for (const [gate, count] of [...byGate].sort((a, b) => b[1] - a[1]))
     console.log(`${String(count).padStart(9)}  ${gate}`)
   console.log(`web-2 gates with no hit: ${quiet.join(', ') || 'none'}`)
+  console.log(
+    ci
+      ? `ci on main, last 30 days: ${ci.runs} finished runs, ${ci.red} red, ${ci.rerun} re-run`
+      : 'ci on main: n/a (gh unavailable)',
+  )
 }
