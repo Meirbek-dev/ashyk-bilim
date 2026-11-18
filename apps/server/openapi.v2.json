@@ -39959,7 +39959,7 @@
             "description": "A dependency is unreachable"
           }
         },
-        "summary": "Readiness: dependencies are reachable (Postgres; Redis/RustFS/Zitadel probes\njoin as their clients land).",
+        "summary": "Readiness: Postgres is reachable (Redis, RustFS and Zitadel are not probed).",
         "tags": [
           "health"
         ]

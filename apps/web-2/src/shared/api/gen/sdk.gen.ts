@@ -2941,8 +2941,7 @@ export const live = <ThrowOnError extends boolean = false>(options?: Options<Liv
 });
 
 /**
- * Readiness: dependencies are reachable (Postgres; Redis/RustFS/Zitadel probes
- * join as their clients land).
+ * Readiness: Postgres is reachable (Redis, RustFS and Zitadel are not probed).
  */
 export const ready = <ThrowOnError extends boolean = false>(options?: Options<ReadyData, ThrowOnError>): RequestResult<ReadyResponses, ReadyErrors, ThrowOnError> => (options?.client ?? client).get<ReadyResponses, ReadyErrors, ThrowOnError>({
     responseValidator: async (data) => await v.parseAsync(vReadyResponse, data),
