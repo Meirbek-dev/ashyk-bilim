@@ -211,7 +211,7 @@ async fn every_provider_down_is_unavailable() {
     let primary = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/v1/chat/completions"))
-        .respond_with(ResponseTemplate::new(500))
+        .respond_with(ResponseTemplate::new(500).set_body_string("upstream trace 7f3a"))
         .expect(1)
         .mount(&primary)
         .await;
@@ -225,6 +225,8 @@ async fn every_provider_down_is_unavailable() {
     assert!(matches!(err, LlmError::Unavailable(_)), "{err}");
     let mapped: ab_core::Error = err.into();
     assert_eq!(mapped.code(), ab_core::ErrorCode::AiProviderUnavailable);
+    // The provider's reply stays in the server log, never in the client-facing message.
+    assert!(!mapped.to_string().contains("upstream trace"), "{mapped}");
 }
 
 #[tokio::test]

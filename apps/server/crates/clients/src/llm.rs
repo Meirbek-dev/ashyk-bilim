@@ -193,10 +193,17 @@ impl std::error::Error for LlmError {}
 
 impl From<LlmError> for Error {
     fn from(err: LlmError) -> Self {
-        match err {
-            LlmError::Disabled => Self::app(ErrorCode::AiDisabled, "AI provider is not configured"),
-            other => Self::app(ErrorCode::AiProviderUnavailable, other.to_string()),
-        }
+        // The provider's own words (a body snippet) stay in the log; the client gets the kind of failure only.
+        let message = match &err {
+            LlmError::Disabled => {
+                return Self::app(ErrorCode::AiDisabled, "AI provider is not configured");
+            }
+            LlmError::Unavailable(_) => "AI provider unavailable",
+            LlmError::Rejected(_) => "AI provider rejected the request",
+            LlmError::InvalidOutput(_) => "AI provider returned unusable output",
+        };
+        tracing::warn!(%err, "llm call failed");
+        Self::app(ErrorCode::AiProviderUnavailable, message)
     }
 }
 
