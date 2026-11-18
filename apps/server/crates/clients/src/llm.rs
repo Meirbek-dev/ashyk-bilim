@@ -36,8 +36,9 @@ pub struct ProviderConfig {
     pub base_url: String,
     pub api_key: SecretString,
     pub model: String,
-    /// Hard timeout for one HTTP call (connect + full body for
-    /// non-streaming; connect + headers for streaming).
+    /// Hard timeout for one HTTP call: connect + full body for
+    /// non-streaming; connect, then each read (headers, every chunk) for
+    /// streaming, so a long answer that keeps arriving is not cut.
     pub timeout: Duration,
 }
 
@@ -368,7 +369,8 @@ impl LlmClient {
         let mut providers = Vec::with_capacity(config.providers.len());
         for provider in config.providers {
             let http = reqwest::Client::builder()
-                .timeout(provider.timeout)
+                .connect_timeout(provider.timeout)
+                .read_timeout(provider.timeout)
                 .build()
                 .map_err(|e| Error::internal("building llm http client", e))?;
             providers.push(Provider {
@@ -565,19 +567,25 @@ impl LlmClient {
     ) -> reqwest::RequestBuilder {
         let body = self.body(provider, request, stream);
         let key = provider.config.api_key.expose_secret();
-        if provider.config.name == ANTHROPIC {
-            return provider
+        let builder = if provider.config.name == ANTHROPIC {
+            provider
                 .http
                 .post(format!("{}/messages", provider.config.base_url))
                 .header("x-api-key", key)
                 .header("anthropic-version", ANTHROPIC_VERSION)
-                .json(&body);
+        } else {
+            provider
+                .http
+                .post(format!("{}/chat/completions", provider.config.base_url))
+                .bearer_auth(key)
+        };
+        let builder = builder.json(&body);
+        // A stream is bounded per read (the client's read timeout), a whole reply by the total.
+        if stream {
+            builder
+        } else {
+            builder.timeout(provider.config.timeout)
         }
-        provider
-            .http
-            .post(format!("{}/chat/completions", provider.config.base_url))
-            .bearer_auth(key)
-            .json(&body)
     }
 
     async fn complete_with(

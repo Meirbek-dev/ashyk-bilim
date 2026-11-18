@@ -323,6 +323,38 @@ async fn slow_provider_hits_the_hard_timeout() {
 }
 
 #[tokio::test]
+async fn stream_that_never_answers_hits_the_read_timeout() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_delay(Duration::from_secs(3))
+                .insert_header("content-type", "text/event-stream")
+                .set_body_string(
+                    "data: [DONE]
+
+",
+                ),
+        )
+        .mount(&server)
+        .await;
+    let llm = client(vec![provider(
+        "openai",
+        &server,
+        "gpt-6-luna",
+        Duration::from_millis(200),
+    )]);
+    let Err(err) = llm.stream(&request()).await else {
+        panic!("a silent provider must time out");
+    };
+    assert!(
+        matches!(&err, LlmError::Unavailable(msg) if msg.contains("timed out")),
+        "{err}"
+    );
+}
+
+#[tokio::test]
 async fn no_providers_means_disabled() {
     let llm = client(vec![]);
     assert!(!llm.is_enabled());
