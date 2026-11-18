@@ -621,7 +621,8 @@ pub fn build_router(state: AppState) -> Result<Router> {
                         tracing::info_span!(
                             "request",
                             method = %request.method(),
-                            uri = %request.uri(),
+                            // The path only: a query can carry secrets (the Google callback's `code`).
+                            uri = %request.uri().path(),
                             version = ?request.version(),
                             request_id = request
                                 .headers()
