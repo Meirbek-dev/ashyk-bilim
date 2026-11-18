@@ -49,7 +49,7 @@
   recipe shell. Windows needs Git Bash (`sh` on PATH), not WSL Bash.
 - Commit with `just commit -m "..." [paths]` and push with `just push` (skill `ship`). The checkout is jj colocated
   with git; jj runs no git hooks, so plain `jj commit` / `jj git push` skip every check. `just commit` runs the
-  pre-commit checks on the new commit and undoes it (`jj op restore`) when they fail; `just push` moves `main` to `@-` and
+  pre-commit checks on the new commit and squashes it back into the working copy when they fail; `just push` moves `main` to `@-` and
   pushes through git so pre-push runs. Plain git users get the same hooks natively.
 - Hooks (`.vite-hooks`, `infra/dev/hooks.ts`) check a checkout of what you commit/push, never the working
   tree, so other people's unstaged work cannot fail them. pre-commit: format of the staged web files, rustfmt of

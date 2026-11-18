@@ -10,7 +10,7 @@ jj runs no git hooks, so commits and pushes go through `just`, which runs the sa
 - Before: validate the changed behavior with focused checks. `just check --fast --wip` provides local lint, types
   and focused unit checks; do not repeat successful checks on unchanged inputs without a reason.
 - Commit: `just commit -m "fix(web-2): <what the user sees now>"` (add jj filesets or git paths to commit part of the
-  working copy). Under jj a failed check undoes the commit (`jj op restore`) and prints the findings; fix and repeat.
+  working copy). Under jj a failed check squashes the commit back into the working copy and prints the findings; fix and repeat.
   One finished item per commit; prefixes as in `git log` (`feat(domain):`, `fix(web-2):`, `test:`, `docs:`, `chore:`).
 - Push: `just push` (bookmark `main`, moved forward to `@-` under jj, then `git push` so the pre-push `just check --fast` runs
   on the pushed commit). Never `--no-verify`, never force-push. On ai-server the SSH keepalive lives in `core.sshCommand`.

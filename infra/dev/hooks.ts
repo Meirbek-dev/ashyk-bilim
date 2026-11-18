@@ -288,25 +288,20 @@ async function checkChange(hook: string, changed: string[], tree: () => string, 
 const jj = () => exists(join(top, '.jj')) && sync(['jj', '--version']).code === 0
 
 // `just commit -m "msg" [jj filesets | git paths]`. git runs its own hook. jj runs none: `jj commit`, then the
-// pre-commit checks on the new commit; a failure restores the operation before it (`jj op restore`), leaving the
-// changes in the working copy. Not `jj undo`: the checks' files can add a snapshot operation that undo would take.
+// pre-commit checks on the new commit; a failure squashes that one commit back into the working copy. Not
+// `jj op restore`: it would also roll back every operation another agent ran in this repo while the checks ran.
 async function commit(args: string[]): Promise<number> {
   const tool = jj() ? 'jj' : 'git'
-  // `jj status` snapshots the working copy first, so the recorded operation holds the changes being committed.
-  const before =
-    tool === 'jj' && sync(['jj', 'status'], top).code === 0
-      ? sync(['jj', 'op', 'log', '-n', '1', '--no-graph', '-T', 'id', '--ignore-working-copy'], top).out
-      : ''
   const made = Bun.spawnSync([tool, 'commit', ...args], { cwd: top, stdio: ['inherit', 'inherit', 'inherit'] })
   if (made.exitCode !== 0 || tool === 'git') return made.exitCode ?? 1
   const sha = sync(['jj', 'log', '-r', '@-', '--no-graph', '-T', 'commit_id', '--ignore-working-copy'], top).out
   const code = await verifyCommit(sha)
   if (code !== 0) {
-    const restored = before ? sync(['jj', 'op', 'restore', before], top) : { code: 1, out: 'no operation recorded' }
+    const undone = sync(['jj', 'squash', '--from', sha, '--into', '@', '--use-destination-message'], top)
     console.log(
-      restored.code === 0
-        ? 'commit: undone (jj op restore); the changes are back in the working copy. Fix the findings, then commit again.'
-        : `commit: the checks failed and the commit could not be undone (${restored.out}); \`jj op log\`, then \`jj op restore <id>\``,
+      undone.code === 0
+        ? 'commit: undone (squashed back into the working copy). Fix the findings, then commit again.'
+        : `commit: the checks failed and the commit could not be undone (${undone.out}); \`jj squash --from ${sha} --into @\``,
     )
   }
   return code
