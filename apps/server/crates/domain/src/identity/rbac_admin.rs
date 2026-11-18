@@ -200,12 +200,13 @@ impl RbacAdminService {
         let role = ab_db::identity::find_role_by_slug(&self.pool, slug)
             .await?
             .ok_or_else(|| Error::not_found("role"))?;
-        let version = ab_db::identity::assign_role(&self.pool, user_id, role.id)
+        // The audit row commits with the change, or neither does.
+        let mut tx = self.pool.begin().await?;
+        let version = ab_db::identity::assign_role(&mut tx, user_id, role.id)
             .await?
             .ok_or_else(|| Error::not_found("user"))?;
-        self.propagate(user_id, version).await;
         ab_db::identity::insert_auth_audit(
-            &self.pool,
+            &mut *tx,
             Some(user_id),
             "role-assigned",
             None,
@@ -213,6 +214,8 @@ impl RbacAdminService {
             serde_json::json!({ "role": slug, "by": actor.user_id }),
         )
         .await?;
+        tx.commit().await?;
+        self.propagate(user_id, version).await;
         crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Users).await;
         Ok(())
     }
@@ -244,10 +247,8 @@ impl RbacAdminService {
         let version = ab_db::identity::unassign_role(&mut tx, user_id, role.id)
             .await?
             .ok_or_else(|| Error::not_found("user"))?;
-        tx.commit().await?;
-        self.propagate(user_id, version).await;
         ab_db::identity::insert_auth_audit(
-            &self.pool,
+            &mut *tx,
             Some(user_id),
             "role-unassigned",
             None,
@@ -255,6 +256,8 @@ impl RbacAdminService {
             serde_json::json!({ "role": slug, "by": actor.user_id }),
         )
         .await?;
+        tx.commit().await?;
+        self.propagate(user_id, version).await;
         crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Users).await;
         Ok(())
     }
@@ -272,8 +275,9 @@ impl RbacAdminService {
         let display_name = trimmed_display_name(display_name)?;
         // UX-183: the description is shown next to the name - same strip.
         let description = description.map(ab_core::strip_controls_multiline);
+        let mut tx = self.pool.begin().await?;
         let created = ab_db::identity::insert_role(
-            &self.pool,
+            &mut *tx,
             slug,
             &display_name,
             description.as_deref(),
@@ -284,7 +288,7 @@ impl RbacAdminService {
             return Err(Error::app(ErrorCode::RoleSlugTaken, "role slug is taken"));
         }
         ab_db::identity::insert_auth_audit(
-            &self.pool,
+            &mut *tx,
             None,
             "role-created",
             None,
@@ -292,6 +296,7 @@ impl RbacAdminService {
             serde_json::json!({ "role": slug, "by": actor.user_id }),
         )
         .await?;
+        tx.commit().await?;
         crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Roles).await;
         Ok(())
     }
@@ -332,12 +337,12 @@ impl RbacAdminService {
         if role.is_system {
             return Err(Error::forbidden("system roles cannot be deleted"));
         }
-        let holders = ab_db::identity::delete_role(&self.pool, role.id)
+        let mut tx = self.pool.begin().await?;
+        let holders = ab_db::identity::delete_role(&mut tx, role.id)
             .await?
             .ok_or_else(|| Error::not_found("custom role"))?;
-        self.propagate_all(&holders).await;
         ab_db::identity::insert_auth_audit(
-            &self.pool,
+            &mut *tx,
             None,
             "role-deleted",
             None,
@@ -345,6 +350,8 @@ impl RbacAdminService {
             serde_json::json!({ "role": slug, "by": actor.user_id }),
         )
         .await?;
+        tx.commit().await?;
+        self.propagate_all(&holders).await;
         crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Roles).await;
         Ok(())
     }
@@ -389,12 +396,12 @@ impl RbacAdminService {
                 "system role grants are managed by migration",
             ));
         }
-        let holders = ab_db::identity::replace_role_permissions(&self.pool, role.id, &permissions)
+        let mut tx = self.pool.begin().await?;
+        let holders = ab_db::identity::replace_role_permissions(&mut tx, role.id, &permissions)
             .await?
             .ok_or_else(|| Error::not_found("custom role"))?;
-        self.propagate_all(&holders).await;
         ab_db::identity::insert_auth_audit(
-            &self.pool,
+            &mut *tx,
             None,
             "role-permissions-changed",
             None,
@@ -402,6 +409,8 @@ impl RbacAdminService {
             serde_json::json!({ "role": slug, "by": actor.user_id, "count": permissions.len() }),
         )
         .await?;
+        tx.commit().await?;
+        self.propagate_all(&holders).await;
         crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Roles).await;
         Ok(())
     }

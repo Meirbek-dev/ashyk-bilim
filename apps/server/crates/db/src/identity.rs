@@ -311,20 +311,21 @@ pub async fn find_role_by_slug(pool: &PgPool, slug: &str) -> Result<Option<RoleR
     Ok(row)
 }
 
-/// Assign a role and bump the user's rbac_version atomically. Returns the new
-/// version, or `None` if the user does not exist. Idempotent on re-assign.
+/// Assign a role and bump the user's rbac_version. Returns the new version,
+/// or `None` if the user does not exist. Idempotent on re-assign.
+///
+/// Runs in the caller's transaction (with its audit row).
 pub async fn assign_role(
-    pool: &PgPool,
+    conn: &mut sqlx::PgConnection,
     user_id: UserId,
     role_id: uuid::Uuid,
 ) -> Result<Option<i64>> {
-    let mut tx = pool.begin().await?;
     // Bump first: an unknown user is `None` here, before the FK could fire.
     let Some(version) = sqlx::query_scalar!(
         "UPDATE users SET rbac_version = rbac_version + 1 WHERE id = $1 RETURNING rbac_version",
         user_id.0
     )
-    .fetch_optional(&mut *tx)
+    .fetch_optional(&mut *conn)
     .await?
     else {
         return Ok(None);
@@ -334,9 +335,8 @@ pub async fn assign_role(
         user_id.0,
         role_id
     )
-    .execute(&mut *tx)
+    .execute(&mut *conn)
     .await?;
-    tx.commit().await?;
     Ok(Some(version))
 }
 
@@ -515,8 +515,8 @@ pub async fn set_avatar_key<'e>(
 /// Returns `None` when the slug is taken. The key columns get the
 /// conventional `roles.<slug>.*` keys so the row shape matches seeded roles;
 /// the display text lives in `display_name`/`description`.
-pub async fn insert_role(
-    pool: &PgPool,
+pub async fn insert_role<'e>(
+    db: impl sqlx::PgExecutor<'e>,
     slug: &str,
     display_name: &str,
     description: Option<&str>,
@@ -533,7 +533,7 @@ pub async fn insert_role(
         description,
         priority
     )
-    .fetch_optional(pool)
+    .fetch_optional(db)
     .await?;
     Ok(id)
 }
@@ -567,34 +567,34 @@ pub async fn update_role(
 /// Every holder's `rbac_version` is bumped in the same transaction, so their
 /// sessions are fenced even if the rewrite after commit never lands
 /// (BUG-345). Returns the bumped `(holder, version)` pairs, `None` for a
-/// missing/system role.
-pub async fn delete_role(pool: &PgPool, role_id: uuid::Uuid) -> Result<Option<Vec<(UserId, i64)>>> {
-    let mut tx = pool.begin().await?;
-    if !lock_custom_role(&mut tx, role_id).await? {
+/// missing/system role. Runs in the caller's transaction (with its audit row).
+pub async fn delete_role(
+    conn: &mut sqlx::PgConnection,
+    role_id: uuid::Uuid,
+) -> Result<Option<Vec<(UserId, i64)>>> {
+    if !lock_custom_role(conn, role_id).await? {
         return Ok(None);
     }
-    let holders = bump_role_holders(&mut tx, role_id).await?;
+    let holders = bump_role_holders(conn, role_id).await?;
     sqlx::query!("DELETE FROM roles WHERE id = $1", role_id)
-        .execute(&mut *tx)
+        .execute(&mut *conn)
         .await?;
-    tx.commit().await?;
     Ok(Some(holders))
 }
 
 /// Replace a custom role's grant set wholesale (validated by the caller) and
 /// bump every holder in the same transaction (see [`delete_role`]).
-/// `None` for a missing/system role.
+/// `None` for a missing/system role. Runs in the caller's transaction.
 pub async fn replace_role_permissions(
-    pool: &PgPool,
+    conn: &mut sqlx::PgConnection,
     role_id: uuid::Uuid,
     permissions: &[String],
 ) -> Result<Option<Vec<(UserId, i64)>>> {
-    let mut tx = pool.begin().await?;
-    if !lock_custom_role(&mut tx, role_id).await? {
+    if !lock_custom_role(conn, role_id).await? {
         return Ok(None);
     }
     sqlx::query!("DELETE FROM role_permissions WHERE role_id = $1", role_id)
-        .execute(&mut *tx)
+        .execute(&mut *conn)
         .await?;
     for permission in permissions {
         sqlx::query!(
@@ -603,7 +603,7 @@ pub async fn replace_role_permissions(
             role_id,
             permission
         )
-        .execute(&mut *tx)
+        .execute(&mut *conn)
         .await?;
     }
     // The grant set is part of the role: its `If-Match` version moves too.
@@ -611,10 +611,9 @@ pub async fn replace_role_permissions(
         "UPDATE roles SET version = version + 1 WHERE id = $1",
         role_id
     )
-    .execute(&mut *tx)
+    .execute(&mut *conn)
     .await?;
-    let holders = bump_role_holders(&mut tx, role_id).await?;
-    tx.commit().await?;
+    let holders = bump_role_holders(conn, role_id).await?;
     Ok(Some(holders))
 }
 

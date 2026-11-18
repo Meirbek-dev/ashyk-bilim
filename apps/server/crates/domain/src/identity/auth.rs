@@ -1291,9 +1291,11 @@ impl IdentityService {
             role_ids.push(role.id);
         }
         let (profile, _) = self.create_account(&account, true).await?;
+        let mut tx = self.pool.begin().await?;
         for role_id in role_ids {
-            ab_db::identity::assign_role(&self.pool, profile.id, role_id).await?;
+            ab_db::identity::assign_role(&mut tx, profile.id, role_id).await?;
         }
+        tx.commit().await?;
         crate::events::user::admin_list(&self.pool, crate::events::user::AdminList::Users).await;
         ab_db::identity::get_admin_user(&self.pool, profile.id)
             .await?
