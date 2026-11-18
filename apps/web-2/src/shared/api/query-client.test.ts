@@ -106,3 +106,15 @@ test('offline, a save and a read fail at once (an error to show) instead of wait
     onlineManager.setOnline(true)
   }
 })
+
+test('a failed mutation still reads its declared queries again (the change may have landed)', async () => {
+  const client = createQueryClient(async () => {})
+  const key = ['course', 'c']
+  client.setQueryData(key, 'before')
+  const mutation = client.getMutationCache().build(client, {
+    mutationFn: () => Promise.reject(new Error('timeout')),
+    meta: { invalidates: [key] },
+  })
+  await mutation.execute(undefined).catch(() => {})
+  expect(client.getQueryState(key)?.isInvalidated).toBe(true)
+})

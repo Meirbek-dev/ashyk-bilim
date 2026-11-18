@@ -75,7 +75,9 @@ export function createQueryClient(onSessionLost: () => Promise<void>): QueryClie
     queryCache: new QueryCache({ onError: loseSession }),
     mutationCache: new MutationCache({
       onError: loseSession,
-      onSuccess: async (_data, _variables, _context, mutation) => {
+      // Failed too: a timeout or a conflict may follow a change that did land (the server finishes a write the
+      // client stopped waiting for), so the declared reads are taken again either way.
+      onSettled: async (_data, _error, _variables, _context, mutation) => {
         const keys = mutation.meta?.invalidates
         if (keys) await Promise.all(keys.map(queryKey => queryClient.invalidateQueries({ queryKey })))
       },
