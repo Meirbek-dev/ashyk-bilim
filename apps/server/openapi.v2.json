@@ -4734,10 +4734,9 @@
             "type": "string"
           },
           "languages": {
-            "description": "Language ids (`GET /code/runner`).",
+            "description": "Language slugs (`GET /code/runner`).",
             "items": {
-              "format": "int32",
-              "type": "integer"
+              "type": "string"
             },
             "type": "array"
           },
@@ -4767,6 +4766,7 @@
             "additionalProperties": {
               "type": "string"
             },
+            "description": "Keyed by language slug.",
             "propertyNames": {
               "type": "string"
             },
@@ -4779,7 +4779,7 @@
             "additionalProperties": {
               "type": "string"
             },
-            "description": "Keyed by language id as a string (legacy shape).",
+            "description": "Keyed by language slug.",
             "propertyNames": {
               "type": "string"
             },
@@ -4850,9 +4850,9 @@
           "item_id": {
             "$ref": "#/components/schemas/AssessmentItemId"
           },
-          "language_id": {
-            "format": "int32",
-            "type": "integer"
+          "language": {
+            "description": "The language's slug.",
+            "type": "string"
           },
           "passed": {
             "format": "int32",
@@ -4908,7 +4908,7 @@
           "item_id",
           "purpose",
           "status",
-          "language_id",
+          "language",
           "passed",
           "total",
           "replayed",
@@ -12380,9 +12380,8 @@
                 "type": "string"
               },
               "language": {
-                "description": "Language id (`GET /code/runner`).",
-                "format": "int32",
-                "type": "integer"
+                "description": "The language's slug (`GET /code/runner`); `\"\"` in the empty answer.",
+                "type": "string"
               },
               "source": {
                 "type": "string"
@@ -12735,21 +12734,17 @@
         "description": "A runner language the platform allows.",
         "properties": {
           "id": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "monaco_language": {
-            "description": "Monaco editor language id.",
+            "description": "The language's slug (`python`, `cpp`, ...): what items, answers and\nruns name, and the web editor's mode.",
             "type": "string"
           },
           "name": {
+            "description": "With the version the runner image has (`Python (3.13)`).",
             "type": "string"
           }
         },
         "required": [
           "id",
-          "name",
-          "monaco_language"
+          "name"
         ],
         "type": "object"
       },
@@ -17475,9 +17470,9 @@
               "null"
             ]
           },
-          "language_id": {
-            "format": "int32",
-            "type": "integer"
+          "language": {
+            "description": "The language's slug.",
+            "type": "string"
           },
           "message": {
             "type": [
@@ -17510,7 +17505,7 @@
           }
         },
         "required": [
-          "language_id",
+          "language",
           "ok",
           "status",
           "passed",
@@ -18811,18 +18806,18 @@
             "description": "When present the run is unscored: one case named `custom`.",
             "type": "string"
           },
-          "language_id": {
-            "description": "Language id (`GET /code/runner`).",
-            "format": "int32",
-            "minimum": 1,
-            "type": "integer"
+          "language": {
+            "description": "The language's slug (`GET /code/runner`).",
+            "maxLength": 32,
+            "minLength": 1,
+            "type": "string"
           },
           "source": {
             "type": "string"
           }
         },
         "required": [
-          "language_id",
+          "language",
           "source"
         ],
         "type": "object"

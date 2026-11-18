@@ -3,6 +3,7 @@
 //! reference check, and the language list.
 
 pub mod compare;
+pub mod judge0;
 mod runner;
 pub mod sandbox;
 mod service;

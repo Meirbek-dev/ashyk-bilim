@@ -21,11 +21,10 @@ export function ReferenceResults({ results, languages }: ReferenceResultsProps) 
             ? { label: m.code_check_ok, tone: 'success' as const }
             : referenceStatus(result.status)
           return (
-            <li key={result.language_id} className="flex min-w-0 flex-col gap-2 py-2">
+            <li key={result.language} className="flex min-w-0 flex-col gap-2 py-2">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 <span className="font-medium">
-                  {languageOf(languages, result.language_id)?.name ??
-                    m.code_language_unknown({ id: result.language_id })}
+                  {languageOf(languages, result.language)?.name ?? m.code_language_unknown({ id: result.language })}
                 </span>
                 <StatusBadge tone={status.tone}>{status.label()}</StatusBadge>
                 {result.total > 0 ? (

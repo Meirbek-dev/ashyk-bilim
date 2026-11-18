@@ -576,7 +576,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   teacher_id)` its key (`just contracts-pending`).
 - **A stored language is the `language_code` domain** (`ru|kk|en`: `users.locale` (D-03; the API still renders
   and accepts the region form), `courses.language`, `translations.lang`); an AI answer's `language` is `auto` or
-  one of them (REWRITE 5.8 item 6).
+  one of them (REWRITE 5.8 item 6). `code_runs.language` is a code language, a slug (below).
 - **Embeddings are `halfvec(1024)`** (`content_chunks`, `ai_work_embeddings`); the HNSW index is partial per
   embedding model (a new model gets its own index in a migration), and the nearest-chunk query sets
   `hnsw.iterative_scan` and `plan_cache_mode = force_custom_plan` so its model's index applies.
@@ -659,6 +659,15 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   first failing test's, memory and output limits as `runtime_error`; `RunVerdict`). The server writes and
   reads the status; `20261116075657` rewrote the rows that spelled it as the verdict (`internal_error` for a failed
   run; REWRITE 5.8 item 5).
+- **A code language is its slug** (`python`, `cpp`, `java`, `c`, `javascript`, `typescript`, `go`, `rust`, `kotlin`,
+  `php`, `ruby`; REWRITE 5.8 item 10): one table, `ab_clients::gojudge::languages`, maps each slug to the runner
+  image's compile and run commands; the slug is also the web editor's mode and carries no version (the image fixes
+  it). Items list slugs in `languages` and key `starter_code` / `reference_solutions` by them, an answer and a run
+  name one in `language`, the API (`language`, `LanguageInfo.id`) and `AB__RUNNER__LIMITS__ALLOWED_LANGUAGES` take
+  them; a body naming a language the runner lacks is refused (`unknown-language`). Judge0's numeric ids were the key
+  before. Switch release `20261116075661`: the server reads either spelling (`ab_domain::code::judge0`) and writes
+  slugs, triggers store them as Judge0's ids for the previous release, `code_runs.language` sits beside
+  `language_id`; its contract rewrites every stored id.
 
 ### SQLx usage
 

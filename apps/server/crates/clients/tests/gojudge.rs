@@ -30,9 +30,9 @@ const LIMITS: Limits = Limits {
     output_bytes: 1024,
 };
 
-fn batch<'a>(language_id: i32, source: &'a str, inputs: &[&'a str]) -> Batch<'a> {
+fn batch<'a>(language: &'a str, source: &'a str, inputs: &[&'a str]) -> Batch<'a> {
     Batch {
-        language_id,
+        language,
         source,
         inputs: inputs.to_vec(),
         limits: LIMITS,
@@ -105,7 +105,7 @@ async fn compiles_once_runs_each_input_with_the_artifact_and_frees_it() {
         .mount(&server)
         .await;
     let outcomes = client(&server)
-        .run_batch("u", &batch(50, "int main(){}", &["2", "3"]))
+        .run_batch("u", &batch("c", "int main(){}", &["2", "3"]))
         .await
         .unwrap();
     assert_eq!(outcomes.len(), 2);
@@ -140,7 +140,7 @@ async fn a_failed_check_is_every_inputs_compile_error() {
         .mount(&server)
         .await;
     let outcomes = client(&server)
-        .run_batch("u", &batch(71, "print(", &["1", "2"]))
+        .run_batch("u", &batch("python", "print(", &["1", "2"]))
         .await
         .unwrap();
     assert_eq!(outcomes.len(), 2);
@@ -188,7 +188,7 @@ async fn python_runs_copy_in_the_source() {
         .mount(&server)
         .await;
     let outcomes = client(&server)
-        .run_batch("u", &batch(71, "print(input())", &["x"]))
+        .run_batch("u", &batch("python", "print(input())", &["x"]))
         .await
         .unwrap();
     assert_eq!(outcomes[0].verdict, TestVerdict::RuntimeError);
@@ -225,7 +225,7 @@ async fn stuck_runner(max_concurrency: usize) -> (MockServer, GoJudgeClient) {
 async fn budget_timeouts_are_busy_and_never_trip_the_breaker() {
     let (_server, client) = stuck_runner(2).await;
     for _ in 0..6 {
-        match client.run_batch("u", &batch(71, "x", &[""])).await {
+        match client.run_batch("u", &batch("python", "x", &[""])).await {
             Err(RunnerError::Busy(msg)) => assert!(msg.contains("budget"), "{msg}"),
             other => panic!("expected busy, got {other:?}"),
         }
@@ -238,7 +238,7 @@ async fn budget_timeouts_are_busy_and_never_trip_the_breaker() {
 #[tokio::test]
 async fn programs_beyond_the_concurrency_cap_queue_for_a_slot() {
     let (server, client) = stuck_runner(1).await;
-    let (a, b) = (batch(71, "a", &[""]), batch(71, "b", &[""]));
+    let (a, b) = (batch("python", "a", &[""]), batch("python", "b", &[""]));
     let both: [_; 2] = tokio::join!(client.run_batch("a", &a), client.run_batch("b", &b)).into();
     let messages: Vec<String> = both
         .into_iter()
@@ -261,9 +261,9 @@ async fn programs_beyond_the_concurrency_cap_queue_for_a_slot() {
 async fn one_owners_burst_does_not_queue_ahead_of_others() {
     let (server, client) = stuck_runner(2).await;
     let (a1, a2, b) = (
-        batch(71, "a1", &[""]),
-        batch(71, "a2", &[""]),
-        batch(71, "b", &[""]),
+        batch("python", "a1", &[""]),
+        batch("python", "a2", &[""]),
+        batch("python", "b", &[""]),
     );
     let (r1, r2, r3) = tokio::join!(
         client.run_batch("alice", &a1),
@@ -306,13 +306,13 @@ async fn breaker_opens_after_five_failures_and_skips_the_network() {
     let client = client(&server);
     for _ in 0..5 {
         assert!(matches!(
-            client.run_batch("u", &batch(71, "x", &[""])).await,
+            client.run_batch("u", &batch("python", "x", &[""])).await,
             Err(RunnerError::Unavailable(_))
         ));
     }
     assert!(client.is_degraded());
     // Sixth call: refused locally (the mock's expect(5) proves no request).
-    match client.run_batch("u", &batch(71, "x", &[""])).await {
+    match client.run_batch("u", &batch("python", "x", &[""])).await {
         Err(RunnerError::Unavailable(msg)) => assert!(msg.contains("circuit"), "{msg}"),
         other => panic!("expected open circuit, got {other:?}"),
     }
@@ -334,7 +334,7 @@ async fn a_queued_batch_rechecks_the_breaker_after_its_slot() {
         .mount(&server)
         .await;
     let client = GoJudgeClient::new(config(&server, Duration::from_secs(5), 1)).unwrap();
-    let one = batch(71, "x", &[""]);
+    let one = batch("python", "x", &[""]);
     let owners = ["u1", "u2", "u3", "u4", "u5", "u6"];
     // All six pass the breaker at once, then queue for the one slot.
     let results = futures::future::join_all(owners.iter().map(|o| client.run_batch(o, &one))).await;
@@ -356,15 +356,15 @@ async fn rejections_do_not_trip_the_breaker() {
         .await;
     let client = client(&server);
     for _ in 0..6 {
-        match client.run_batch("u", &batch(71, "x", &[""])).await {
+        match client.run_batch("u", &batch("python", "x", &[""])).await {
             Err(RunnerError::Rejected(msg)) => assert!(msg.contains("401"), "{msg}"),
             other => panic!("expected rejection, got {other:?}"),
         }
     }
     assert!(!client.is_degraded());
     // A language the image does not have never reaches go-judge.
-    match client.run_batch("u", &batch(999, "x", &[""])).await {
-        Err(RunnerError::Rejected(msg)) => assert!(msg.contains("999"), "{msg}"),
+    match client.run_batch("u", &batch("fortran", "x", &[""])).await {
+        Err(RunnerError::Rejected(msg)) => assert!(msg.contains("fortran"), "{msg}"),
         other => panic!("expected rejection, got {other:?}"),
     }
 }

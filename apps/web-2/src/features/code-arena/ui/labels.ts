@@ -92,7 +92,7 @@ export const difficultyLabels = {
 
 /**
  * A language's name from the platform. Without the list (the runner is down) the name is unknown, not the language
- * unavailable: «Язык № 71»; «Недоступный язык» only for one the platform no longer offers.
+ * unavailable: «Язык python»; «Недоступный язык» only for one the platform no longer offers.
  */
-export const languageName = (languages: LanguageInfo[] | null, id: number) =>
-  languageOf(languages, id)?.name ?? (languages ? m.code_language_unknown({ id }) : m.code_language_number({ id }))
+export const languageName = (languages: LanguageInfo[] | null, id: string) =>
+  languageOf(languages, id)?.name ?? (languages ? m.code_language_unknown({ id }) : m.code_language_slug({ id }))

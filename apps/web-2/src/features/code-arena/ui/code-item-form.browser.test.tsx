@@ -16,7 +16,7 @@ const body: CodeBody & { kind: 'code' } = {
   input_spec: 'a b',
   output_spec: 'a + b',
   constraints: [],
-  languages: [71],
+  languages: ['python'],
   starter_code: {},
   reference_solutions: {},
   tests: [{ id: 't1', input: '1 2', expected_output: '3', is_visible: true, weight: 1, description: null }],

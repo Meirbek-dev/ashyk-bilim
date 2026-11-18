@@ -48,7 +48,7 @@ const run = (patch: Partial<CodeRun>): CodeRun => ({
   created_at_unix: 1_760_000_000,
   error_message: null,
   finished_at_unix: 1_760_000_000,
-  language_id: 71,
+  language: 'python',
   passed: 0,
   total: 1,
   purpose: 'custom',

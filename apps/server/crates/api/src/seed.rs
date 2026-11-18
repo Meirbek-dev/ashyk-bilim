@@ -407,8 +407,8 @@ async fn fill_items(
         )
     })?;
     let body = item_body(serde_json::json!({
-        "kind": "code", "prompt": "Print n squared.", "languages": [71],
-        "reference_solutions": { "71": "print(int(input()) ** 2)" },
+        "kind": "code", "prompt": "Print n squared.", "languages": ["python"],
+        "reference_solutions": { "python": "print(int(input()) ** 2)" },
         "time_limit_seconds": 2,
         "tests": [
             { "id": "t1", "input": "2", "expected_output": "4", "is_visible": true, "weight": 1 },

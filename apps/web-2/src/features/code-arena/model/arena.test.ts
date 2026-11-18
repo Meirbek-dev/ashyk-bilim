@@ -21,8 +21,8 @@ import {
 import { caseVerdict } from './verdict'
 
 const body: CodeBody = {
-  languages: [71, 63],
-  starter_code: { '71': 'print()', '63': 'console.log()' },
+  languages: ['python', 'javascript'],
+  starter_code: { python: 'print()', javascript: 'console.log()' },
   max_output_kb: null,
   memory_limit_mb: 256,
   time_limit_seconds: 5,
@@ -53,7 +53,10 @@ const attempt = (patch: Partial<StudentSubmission>): StudentSubmission => ({
   ...patch,
 })
 
-const item = (languages: number[]): AssessmentItem => ({
+const py = (source: string) => ({ language: 'python', source })
+const js = (source: string) => ({ language: 'javascript', source })
+
+const item = (languages: string[]): AssessmentItem => ({
   id: 'i1',
   kind: 'code',
   title: 'Sum',
@@ -69,26 +72,23 @@ describe('code arena model', () => {
     expect(codeItemOf(null)).toBeNull()
     expect(codeItemOf({ items: [] })).toBeNull()
     expect(codeItemOf({ items: [item([])] })).toBeNull()
-    expect(codeItemOf({ items: [item([71])] })?.item.id).toBe('i1')
+    expect(codeItemOf({ items: [item(['python'])] })?.item.id).toBe('i1')
   })
 
   test('B-COD-05 the editor starts with the draft code, else the first language starter', () => {
-    expect(initialAnswer(body, null)).toEqual({ language: 71, source: 'print()' })
-    expect(initialAnswer(body, { language: 63, source: 'x' })).toEqual({ language: 63, source: 'x' })
+    expect(initialAnswer(body, null)).toEqual(py('print()'))
+    expect(initialAnswer(body, js('x'))).toEqual(js('x'))
     // A draft in a language the author removed falls back to the starter.
-    expect(initialAnswer(body, { language: 50, source: 'int main' })).toEqual({ language: 71, source: 'print()' })
-    const draft = attempt({ answers: { i1: { kind: 'code', language: 63, source: 'y' } } })
-    expect(answerOf(draft, 'i1')).toEqual({ language: 63, source: 'y' })
+    expect(initialAnswer(body, { language: 'c', source: 'int main' })).toEqual(py('print()'))
+    const draft = attempt({ answers: { i1: { kind: 'code', ...js('y') } } })
+    expect(answerOf(draft, 'i1')).toEqual(js('y'))
     expect(answerOf(draft, 'other')).toBeNull()
   })
 
   test('B-COD-05 switching language replaces untouched code and keeps the learner own', () => {
-    expect(switchLanguage(body, { language: 71, source: 'print()' }, 63)).toEqual({
-      language: 63,
-      source: 'console.log()',
-    })
-    expect(switchLanguage(body, { language: 71, source: '  ' }, 63).source).toBe('console.log()')
-    expect(switchLanguage(body, { language: 71, source: 'print(1)' }, 63)).toEqual({ language: 63, source: 'print(1)' })
+    expect(switchLanguage(body, py('print()'), 'javascript')).toEqual(js('console.log()'))
+    expect(switchLanguage(body, py('  '), 'javascript').source).toBe('console.log()')
+    expect(switchLanguage(body, py('print(1)'), 'javascript')).toEqual(js('print(1)'))
   })
 
   test('B-COD-08 a test verdict comes from its verdict code, not from its text', () => {
@@ -146,7 +146,7 @@ const apiError = (status: number, code: ApiError['code']) =>
 
 describe('code runner state', () => {
   test('B-COD-09 B-COD-23 the runner is ready, off, or down; only an outage of a configured runner is "down"', () => {
-    const python = { id: 71, name: 'Python', monaco_language: 'python' }
+    const python = { id: 'python', name: 'Python' }
     const ready = runnerOf({ runner_configured: true, languages: [python] })
     expect(ready).toEqual({ state: 'ready', languages: [python] })
     expect(languagesIn(ready)).toEqual([python])
@@ -163,10 +163,13 @@ describe('code runner state', () => {
 })
 
 test('B-COD-24 the starter is offered back only when there is one and the text differs from it', () => {
-  const withStarter = { starter_code: { '71': 'print()' } }
-  expect(starterReset(withStarter, { language: 71, source: 'x = 1' })).toEqual({ language: 71, source: 'print()' })
-  expect(starterReset(withStarter, { language: 71, source: 'print()' })).toBeNull()
-  expect(starterReset({}, { language: 71, source: 'x' })).toBeNull()
+  const withStarter = { starter_code: { python: 'print()' } }
+  expect(starterReset(withStarter, { language: 'python', source: 'x = 1' })).toEqual({
+    language: 'python',
+    source: 'print()',
+  })
+  expect(starterReset(withStarter, { language: 'python', source: 'print()' })).toBeNull()
+  expect(starterReset({}, { language: 'python', source: 'x' })).toBeNull()
 })
 
 describe('code arena entry', () => {

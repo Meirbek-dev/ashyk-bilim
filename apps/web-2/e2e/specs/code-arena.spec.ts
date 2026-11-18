@@ -122,11 +122,11 @@ test('B-COD-03 B-COD-04 B-COD-05 B-COD-06 B-COD-09 B-COD-12 the statement, a sta
   await expect(editor(page)).toContainText('a, b = map(int, input().split())')
   const language = page.getByLabel(m.code_language({}, ru), { exact: true })
   await expect(language.locator('option:checked')).toHaveText('Python (3.13)')
-  await language.selectOption('63')
+  await language.selectOption('javascript')
   await expect(editor(page)).toContainText('const [a, b] = [1, 2]')
   await typeCode(page, 'console.log(3)')
   await expect(page.getByText(m.code_unsaved({}, ru))).toBeVisible()
-  await language.selectOption('71')
+  await language.selectOption('python')
   await expect(editor(page)).toContainText('console.log(3)')
   await expect(page.getByRole('button', { name: m.code_run({}, ru) })).toBeVisible()
   await expect(page.getByText(m.code_saved({}, ru), { exact: true })).toBeVisible({ timeout: 20_000 })
@@ -134,14 +134,14 @@ test('B-COD-03 B-COD-04 B-COD-05 B-COD-06 B-COD-09 B-COD-12 the statement, a sta
   // A reload renders on the server (whatever its sandbox): the code is back.
   await page.reload()
   await expect(editor(page)).toContainText('console.log(3)')
-  // Reopened with the sandbox not configured: no names (the language by its number, B-COD-23), no runs.
+  // Reopened with the sandbox not configured: no names (the language by its slug, B-COD-23), no runs.
   await page.unroute('**/api/v2/code/runner')
   await page.route('**/api/v2/code/runner', route =>
     route.fulfill({ json: { runner_configured: false, languages: [] } }),
   )
   await openFromPlayer(page, course, made)
   await expect(editor(page)).toContainText('console.log(3)')
-  await expect(language.locator('option:checked')).toHaveText(m.code_language_number({ id: 71 }, ru))
+  await expect(language.locator('option:checked')).toHaveText(m.code_language_slug({ id: 'python' }, ru))
   await expect(page.getByText(m.code_runner_unavailable({}, ru))).toBeVisible()
   await expect(page.getByRole('button', { name: m.code_run({}, ru) })).toBeDisabled()
 })

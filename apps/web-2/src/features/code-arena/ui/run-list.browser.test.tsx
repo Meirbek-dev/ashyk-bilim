@@ -19,7 +19,7 @@ const run = (n: number): CodeRun => ({
   created_at_unix: 1_760_000_000 - n * 60,
   error_message: null,
   finished_at_unix: 1_760_000_000 - n * 60,
-  language_id: 71,
+  language: 'python',
   passed: 1,
   total: 1,
   purpose: 'visible',

@@ -78,8 +78,8 @@ test('B-COD-13 B-COD-14 B-COD-15 B-COD-16 B-COD-17 B-COD-18 the author fills a n
     kind: 'code',
     input_spec: 'a b',
     constraints: ['a > 0', 'b > 0'],
-    languages: [71],
-    starter_code: { '71': 'print()' },
+    languages: ['python'],
+    starter_code: { python: 'print()' },
     time_limit_seconds: 2,
   })
   expect(item?.body.kind === 'code' ? item.body.tests : []).toMatchObject([
@@ -99,7 +99,7 @@ test('B-COD-19 B-COD-18 the reference check saves first; a refused save keeps th
   const check: ReferenceCheckResponse = {
     results: [
       {
-        language_id: 71,
+        language: 'python',
         ok: true,
         status: 'accepted',
         passed: 2,
@@ -110,7 +110,7 @@ test('B-COD-19 B-COD-18 the reference check saves first; a refused save keeps th
         cases: [],
       },
       {
-        language_id: 63,
+        language: 'javascript',
         ok: false,
         status: 'missing_solution',
         passed: 0,

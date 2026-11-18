@@ -1002,11 +1002,11 @@ Queue, in order:
      The second contract `20261116075657_code_runs_status_contract` rewrote the old spelling to
      `code_run_status(status, verdict)`, narrowed the check to the five states and lets only a `done` run have a
      verdict; the server reads `status` directly. `20261116075658_drop_code_run_status` dropped the function.
-   - The language as its name: not done here, bigger than it looks (queued as item 10, 2026-11-18). Judge0's numeric id is the platform's language key
-     everywhere, not only in `code_runs`: item bodies (`languages`, `starter_code` / `reference_solutions` keyed by
-     it), answers (`language`), frozen `assessment_versions` and `items_snapshot`, `AB__CODE__ALLOWED_LANGUAGE_IDS`,
-     the API (`language_id`) and the web editor. A name in `code_runs` alone would be a second spelling; the switch
-     is its own slice (a slug per language, e.g. the editor mode, read-time translation of the frozen bodies).
+   - The language as its name: its own slice (item 10, *Code language by name*). Judge0's numeric id was the
+     platform's language key everywhere, not only in `code_runs`: item bodies (`languages`, `starter_code` /
+     `reference_solutions` keyed by it), answers (`language`, also inside grading breakdowns), frozen
+     `assessment_versions` and `items_snapshot`, `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS`, the API (`language_id`)
+     and the web editor; a name in `code_runs` alone would have been a second spelling.
    - Soft delete: switched in `20261116075635_soft_delete_timestamps`. Two tables mixed idioms: `messages` kept a
      deletion twice (`status = 'deleted'` and `deleted_at`), `course_discussions` only as `status = 'deleted'` (a
      tombstone). Both read and write `deleted_at` now (the discussions' backfilled from the tombstone's
@@ -1169,10 +1169,26 @@ Queue, in order:
       functions; `maintenance:reconcile` had nothing left over the table. The view keeps its name: the switch
       release reads `course_progress_v`, so a rename in the contract would break it (a rename needs a release that
       reads the new name first, one more release for a name).
-    - *Code language by name*: short slugs (`python`, `cpp`, `java`, ...; the runner image fixes the version) replace
-      Judge0's ids everywhere; one data-fix rewrites stored and frozen bodies; the API's `language_id` becomes
-      `language`; `AB__CODE__ALLOWED_LANGUAGES` replaces `AB__CODE__ALLOWED_LANGUAGE_IDS` (the old name read for one
-      release, the production env changed by the agent).
+    - *Code language by name*: switched in `20261116075661_code_language_names`. A language is its slug (`python`,
+      `cpp`, `java`, `c`, `javascript`, `typescript`, `go`, `rust`, `kotlin`, `php`, `ruby`): one table,
+      `ab_clients::gojudge::languages`, maps a slug to the runner image's commands, and the slug is also the web
+      editor's mode (no version: the image fixes it). The server reads, writes and serves slugs: the API's
+      `language_id` is `language` (run request, `CodeRun`, `ReferenceCheck`), `LanguageInfo.id` is the slug
+      (`monaco_language` went), item bodies list slugs and key their code maps by them, an answer's `language` is one,
+      and a body naming a language the runner lacks is refused (`unknown-language`). An open tab of the old web fails
+      on a run until reloaded. `AB__RUNNER__LIMITS__ALLOWED_LANGUAGES` (slugs) replaces
+      `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS` (the decision named them `AB__CODE__*`: the allowlist lives under the
+      runner's limits). The old variable is read for one release when the new one is unset (mapped, a warning in the
+      log); the owner changes production's `server.env` after the deploy, and the release after the contract removes
+      the fallback and the table's Judge0 column.
+      Shape: a switch and its contract, not one release whose rollback is a restore: the switch costs triggers over five
+      jsonb columns and a column pair. The previous release reads Judge0's ids only, so the rows keep them for it:
+      BEFORE triggers (`code_languages_as_ids`) turn what this release writes into ids in item bodies, the frozen items
+      of versions and submissions, answers and the answers inside breakdowns; this release reads either spelling
+      (`ab_domain::code::judge0`: an id the image lacks reads as its decimal string, `0`, the empty answer's, as `""`)
+      and finds a version by the hash of its items as stored (`code_languages_stored()`). `code_runs.language`
+      (backfilled) sits beside `language_id`; `code_runs_language` fills whichever an insert leaves out. Counted on the
+      dev copy of production (2026-11-13): one code item, no code answer, no run.
     - *Points as the record* (n16): the grader, the breakdown and AI drafts work in the version's points, the
       percentage shown beside; the percentage is derived (two decimals, half away from zero). Old grades take the
       shift of at most `0.5 / max_points`; `passed` is recomputed both ways, silently; certificates and XP stay.

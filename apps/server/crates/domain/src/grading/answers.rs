@@ -43,8 +43,9 @@ pub enum ItemAnswer {
         values: BTreeMap<String, String>,
     },
     Code {
-        /// Language id (`GET /code/runner`).
-        language: i32,
+        /// The language's slug (`GET /code/runner`); `""` in the empty answer.
+        #[serde(deserialize_with = "crate::code::judge0::language")]
+        language: String,
         #[serde(default)]
         source: String,
     },
@@ -80,7 +81,7 @@ impl ItemAnswer {
                 values: BTreeMap::new(),
             },
             ItemKind::Code => Self::Code {
-                language: 0,
+                language: String::new(),
                 source: String::new(),
             },
             ItemKind::Matching => Self::Matching {

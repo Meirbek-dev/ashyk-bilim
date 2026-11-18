@@ -512,7 +512,10 @@ forget and prune old snapshots (INFRA "Backup and restore").
 
 Code activities run in `runner` (profile `runner`, image `ashyq-runner:<sha>` from `infra/runner`; INFRA
 "Services"). Languages and their compile/run commands live in `apps/server/crates/clients/src/gojudge/languages.rs`
-and the Dockerfile together; `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS` narrows them. After a deploy:
+and the Dockerfile together; `AB__RUNNER__LIMITS__ALLOWED_LANGUAGES` (slugs, `server.env`; INFRA) narrows them. The
+old `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS` (Judge0's ids) is read for one release when the new one is unset and
+logs a warning at startup: replace it in `server.env` (`71` `python`, `54` `cpp`, `62` `java`, `50` `c`, `63`
+`javascript`, `74` `typescript`, `60` `go`, `73` `rust`, `78` `kotlin`, `68` `php`, `72` `ruby`). After a deploy:
 `dc run --rm -T --no-deps server admin runner-check`.
 
 One-time switch from Judge0 (the first deploy of a release with `runner`):
@@ -528,7 +531,7 @@ dc run --rm -T --no-deps server admin runner-check
 docker volume rm "$(sed -n 's/^COMPOSE_PROJECT_NAME=//p' .env)_judge0_box" 2>/dev/null || true
 ```
 
-Stored runs and answers keep their language ids and verdicts; the old runs keep their Judge0 token.
+Stored runs and answers kept their verdicts; their Judge0 language ids became slugs in REWRITE 5.8 item 10.
 
 ### 3.13 Point-in-time recovery
 

@@ -342,7 +342,7 @@ async fn code_run(
             submission_id: Some(submission),
             user_id: user,
             purpose,
-            language_id: 71,
+            language: "python",
             source_sha256: HASH_1,
             stdin_sha256: None,
             idempotency_key: Some(key),

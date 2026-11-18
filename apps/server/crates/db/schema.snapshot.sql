@@ -572,6 +572,7 @@ constraint code_runs code_runs_input_sha256_check CHECK ((octet_length(input_sha
 constraint code_runs code_runs_item_id_fkey FOREIGN KEY (item_id, assessment_id) REFERENCES assessment_items(id, assessment_id) ON DELETE CASCADE
 constraint code_runs code_runs_item_id_not_null NOT NULL item_id
 constraint code_runs code_runs_language_id_not_null NOT NULL language_id
+constraint code_runs code_runs_language_not_null NOT NULL language
 constraint code_runs code_runs_passed_not_null NOT NULL passed
 constraint code_runs code_runs_pkey PRIMARY KEY (id)
 constraint code_runs code_runs_purpose_check CHECK ((purpose = ANY (ARRAY['custom'::text, 'visible'::text, 'final'::text, 'reference_check'::text])))
@@ -1721,6 +1722,153 @@ function CREATE OR REPLACE FUNCTION public.certification_text(config jsonb, key 
 AS $function$
     SELECT NULLIF(btrim(CASE jsonb_typeof(config -> key) WHEN 'string' THEN config ->> key END), '')
 $function$
+function CREATE OR REPLACE FUNCTION public.code_answer_respelled(answer jsonb, to_slug boolean)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+SELECT CASE WHEN jsonb_typeof(answer) = 'object' AND lower(answer ->> 'kind') = 'code' AND answer ? 'language'
+    THEN answer || jsonb_build_object('language', code_language_respelled(answer -> 'language', to_slug))
+ELSE answer END
+$function$
+function CREATE OR REPLACE FUNCTION public.code_answers_respelled(answers jsonb, to_slug boolean)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+SELECT CASE WHEN jsonb_typeof(answers) = 'object' THEN
+    (SELECT coalesce(jsonb_object_agg(k, code_answer_respelled(v, to_slug)), '{}'::jsonb)
+       FROM jsonb_each(answers) AS e (k, v))
+ELSE answers END
+$function$
+function CREATE OR REPLACE FUNCTION public.code_body_respelled(body jsonb, to_slug boolean)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+SELECT CASE WHEN jsonb_typeof(body) = 'object' AND body ->> 'kind' = 'code' THEN
+    body
+    || CASE WHEN jsonb_typeof(body -> 'languages') = 'array' THEN jsonb_build_object('languages',
+           (SELECT coalesce(jsonb_agg(code_language_respelled(l, to_slug) ORDER BY n), '[]'::jsonb)
+              FROM jsonb_array_elements(body -> 'languages') WITH ORDINALITY AS e (l, n)))
+       ELSE '{}'::jsonb END
+    || CASE WHEN jsonb_typeof(body -> 'starter_code') = 'object'
+           THEN jsonb_build_object('starter_code', code_keys_respelled(body -> 'starter_code', to_slug))
+       ELSE '{}'::jsonb END
+    || CASE WHEN jsonb_typeof(body -> 'reference_solutions') = 'object'
+           THEN jsonb_build_object('reference_solutions', code_keys_respelled(body -> 'reference_solutions', to_slug))
+       ELSE '{}'::jsonb END
+ELSE body END
+$function$
+function CREATE OR REPLACE FUNCTION public.code_breakdown_respelled(breakdown jsonb, to_slug boolean)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+SELECT CASE WHEN jsonb_typeof(breakdown -> 'items') = 'array' THEN
+    breakdown || jsonb_build_object('items',
+        (SELECT coalesce(jsonb_agg(CASE WHEN jsonb_typeof(i -> 'user_answer') = 'object'
+                                       THEN i || jsonb_build_object('user_answer',
+                                                                    code_answer_respelled(i -> 'user_answer', to_slug))
+                                       ELSE i END ORDER BY n), '[]'::jsonb)
+           FROM jsonb_array_elements(breakdown -> 'items') WITH ORDINALITY AS e (i, n)))
+ELSE breakdown END
+$function$
+function CREATE OR REPLACE FUNCTION public.code_items_respelled(items jsonb, to_slug boolean)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+SELECT CASE WHEN jsonb_typeof(items -> 'items') = 'array' THEN
+    items || jsonb_build_object('items',
+        (SELECT coalesce(jsonb_agg(CASE WHEN jsonb_typeof(i -> 'body') = 'object'
+                                       THEN i || jsonb_build_object('body', code_body_respelled(i -> 'body', to_slug))
+                                       ELSE i END ORDER BY n), '[]'::jsonb)
+           FROM jsonb_array_elements(items -> 'items') WITH ORDINALITY AS e (i, n)))
+ELSE items END
+$function$
+function CREATE OR REPLACE FUNCTION public.code_keys_respelled(keyed jsonb, to_slug boolean)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+SELECT coalesce(jsonb_object_agg(
+           CASE
+               WHEN to_slug THEN CASE WHEN k ~ '^[0-9]{1,9}$' THEN code_language_slug(k::integer) ELSE k END
+               ELSE coalesce(code_language_judge0(k)::text, k)
+           END, v), '{}'::jsonb)
+  FROM jsonb_each(keyed) AS e (k, v)
+$function$
+function CREATE OR REPLACE FUNCTION public.code_language_judge0(slug text)
+ RETURNS integer
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+RETURN CASE slug WHEN ''::text THEN 0 WHEN 'python'::text THEN 71 WHEN 'cpp'::text THEN 54 WHEN 'java'::text THEN 62 WHEN 'c'::text THEN 50 WHEN 'javascript'::text THEN 63 WHEN 'typescript'::text THEN 74 WHEN 'go'::text THEN 60 WHEN 'rust'::text THEN 73 WHEN 'kotlin'::text THEN 78 WHEN 'php'::text THEN 68 WHEN 'ruby'::text THEN 72 ELSE CASE WHEN (slug ~ '^[0-9]{1,9}$'::text) THEN (slug)::integer ELSE NULL::integer END END
+function CREATE OR REPLACE FUNCTION public.code_language_respelled(language jsonb, to_slug boolean)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+SELECT CASE
+    WHEN to_slug AND jsonb_typeof(language) = 'number'
+        THEN to_jsonb(code_language_slug((language #>> '{}')::numeric::integer))
+    WHEN NOT to_slug AND jsonb_typeof(language) = 'string'
+        THEN coalesce(to_jsonb(code_language_judge0(language #>> '{}')), language)
+    ELSE language
+END
+$function$
+function CREATE OR REPLACE FUNCTION public.code_language_slug(id integer)
+ RETURNS text
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+RETURN CASE id WHEN 0 THEN ''::text WHEN 71 THEN 'python'::text WHEN 54 THEN 'cpp'::text WHEN 62 THEN 'java'::text WHEN 50 THEN 'c'::text WHEN 63 THEN 'javascript'::text WHEN 74 THEN 'typescript'::text WHEN 60 THEN 'go'::text WHEN 73 THEN 'rust'::text WHEN 78 THEN 'kotlin'::text WHEN 68 THEN 'php'::text WHEN 72 THEN 'ruby'::text ELSE (id)::text END
+function CREATE OR REPLACE FUNCTION public.code_languages_as_ids()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    CASE TG_TABLE_NAME
+    WHEN 'assessment_items' THEN
+        NEW.body := code_body_respelled(NEW.body, false);
+    WHEN 'assessment_versions' THEN
+        NEW.items := code_items_respelled(NEW.items, false);
+    WHEN 'submissions' THEN
+        NEW.answers := code_answers_respelled(NEW.answers, false);
+        NEW.items_snapshot := code_items_respelled(NEW.items_snapshot, false);
+        NEW.auto_breakdown := code_breakdown_respelled(NEW.auto_breakdown, false);
+    WHEN 'grading_entries' THEN
+        NEW.raw_breakdown := code_breakdown_respelled(NEW.raw_breakdown, false);
+        NEW.effective_breakdown := code_breakdown_respelled(NEW.effective_breakdown, false);
+    END CASE;
+    RETURN NEW;
+END $function$
+function CREATE OR REPLACE FUNCTION public.code_languages_stored(items jsonb)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+RETURN code_items_respelled(items, false)
+function CREATE OR REPLACE FUNCTION public.code_runs_language()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+BEGIN
+    IF NEW.language IS NULL THEN
+        NEW.language := code_language_slug(NEW.language_id);
+    ELSIF NEW.language_id IS NULL THEN
+        NEW.language_id := coalesce(code_language_judge0(NEW.language), 0);
+    END IF;
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.collection_creator(p_collection uuid)
  RETURNS uuid
  LANGUAGE sql
@@ -3505,6 +3653,7 @@ table learning.code_runs id uuid NOT NULL DEFAULT uuidv7()
 table learning.code_runs idempotency_key text DEFAULT -
 table learning.code_runs input_sha256 bytea DEFAULT -
 table learning.code_runs item_id uuid NOT NULL DEFAULT -
+table learning.code_runs language text NOT NULL DEFAULT -
 table learning.code_runs language_id integer NOT NULL DEFAULT -
 table learning.code_runs passed integer NOT NULL DEFAULT 0
 table learning.code_runs purpose text NOT NULL DEFAULT -
@@ -3766,9 +3915,11 @@ trigger CREATE TRIGGER ai_remediation_sessions_touch BEFORE UPDATE ON ai.ai_reme
 trigger CREATE TRIGGER ai_student_memory_touch BEFORE UPDATE ON ai.ai_student_memory FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER ai_threads_touch BEFORE UPDATE ON ai.ai_threads FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER analytics_saved_views_touch BEFORE UPDATE ON analytics.analytics_saved_views FOR EACH ROW EXECUTE FUNCTION touch_row()
+trigger CREATE TRIGGER assessment_items_code_languages BEFORE INSERT OR UPDATE OF body ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION code_languages_as_ids()
 trigger CREATE TRIGGER assessment_items_touch BEFORE UPDATE ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER assessment_items_upload_ids AFTER INSERT OR UPDATE OF body ON learning.assessment_items FOR EACH ROW EXECUTE FUNCTION assessment_item_uploads_sync()
 trigger CREATE TRIGGER assessment_overrides_touch BEFORE UPDATE ON learning.assessment_overrides FOR EACH ROW EXECUTE FUNCTION touch_row('version')
+trigger CREATE TRIGGER assessment_versions_code_languages BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION code_languages_as_ids()
 trigger CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()
 trigger CREATE TRIGGER assessment_versions_points BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_points()
 trigger CREATE TRIGGER assessment_versions_upload_ids AFTER INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_version_uploads_sync()
@@ -3779,6 +3930,7 @@ trigger CREATE TRIGGER certificate_users_frozen BEFORE UPDATE ON learning.certif
 trigger CREATE TRIGGER certifications_touch BEFORE UPDATE ON learning.certificate_templates FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER chapters_touch BEFORE UPDATE ON core.chapters FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER chapters_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_key ON core.chapters FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_key', 'thumbnail_upload_id')
+trigger CREATE TRIGGER code_runs_language BEFORE INSERT ON learning.code_runs FOR EACH ROW EXECUTE FUNCTION code_runs_language()
 trigger CREATE TRIGGER collection_staff_touch BEFORE UPDATE ON core.collection_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER collections_touch BEFORE UPDATE ON core.collections FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER collections_upload_ids BEFORE INSERT OR UPDATE OF cover_key ON core.collections FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('cover_key', 'cover_upload_id')
@@ -3795,6 +3947,7 @@ trigger CREATE TRIGGER discussion_reactions_recount AFTER INSERT OR DELETE OR UP
 trigger CREATE TRIGGER file_submissions_touch BEFORE UPDATE ON learning.file_submissions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER gamification_profiles_touch BEFORE UPDATE ON learning.gamification_profiles FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER grading_entries_append_only BEFORE DELETE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_no_delete()
+trigger CREATE TRIGGER grading_entries_code_languages BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION code_languages_as_ids()
 trigger CREATE TRIGGER grading_entries_immutable BEFORE UPDATE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_guard()
 trigger CREATE TRIGGER item_feedback_frozen BEFORE UPDATE ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION item_feedback_frozen()
 trigger CREATE TRIGGER item_feedback_upload_ids BEFORE INSERT OR UPDATE OF annotation_key ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('annotation_key', 'annotation_upload_id')
@@ -3803,6 +3956,7 @@ trigger CREATE TRIGGER jobs_touch BEFORE UPDATE ON ops.jobs FOR EACH ROW EXECUTE
 trigger CREATE TRIGGER platforms_touch BEFORE UPDATE ON core.platforms FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER platforms_upload_ids BEFORE INSERT OR UPDATE OF logo_key, thumbnail_key ON core.platforms FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('logo_key', 'logo_upload_id', 'thumbnail_key', 'thumbnail_upload_id')
 trigger CREATE TRIGGER roles_touch BEFORE UPDATE ON core.roles FOR EACH ROW EXECUTE FUNCTION touch_row('version')
+trigger CREATE TRIGGER submissions_code_languages BEFORE INSERT OR UPDATE OF answers, items_snapshot, auto_breakdown ON learning.submissions FOR EACH ROW EXECUTE FUNCTION code_languages_as_ids()
 trigger CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id, selected_item_ids ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()
 trigger CREATE TRIGGER submissions_touch BEFORE UPDATE ON learning.submissions FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER teacher_interventions_touch BEFORE UPDATE ON learning.teacher_interventions FOR EACH ROW EXECUTE FUNCTION touch_row('version')

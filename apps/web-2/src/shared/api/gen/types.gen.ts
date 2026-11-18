@@ -1617,19 +1617,22 @@ export type CodeBody = {
     constraints?: Array<string>;
     input_spec?: string;
     /**
-     * Language ids (`GET /code/runner`).
+     * Language slugs (`GET /code/runner`).
      */
-    languages?: Array<number>;
+    languages?: Array<string>;
     max_output_kb: number | null;
     memory_limit_mb: number | null;
     output_spec?: string;
     prompt?: string;
+    /**
+     * Keyed by language slug.
+     */
     reference_solutions?: {
         [key: string]: string;
     };
     scoring_strategy?: ScoringStrategy;
     /**
-     * Keyed by language id as a string (legacy shape).
+     * Keyed by language slug.
      */
     starter_code?: {
         [key: string]: string;
@@ -1651,7 +1654,10 @@ export type CodeRun = {
     finished_at_unix: UnixTime | null;
     id: CodeRunId;
     item_id: AssessmentItemId;
-    language_id: number;
+    /**
+     * The language's slug.
+     */
+    language: string;
     passed: number;
     purpose: CodeRunPurpose;
     /**
@@ -4433,9 +4439,9 @@ export type ItemAnswer = {
 } | {
     kind: 'code';
     /**
-     * Language id (`GET /code/runner`).
+     * The language's slug (`GET /code/runner`); `""` in the empty answer.
      */
-    language: number;
+    language: string;
     source?: string;
 } | {
     kind: 'matching';
@@ -4524,11 +4530,14 @@ export type KnowledgeGap = {
  * A runner language the platform allows.
  */
 export type LanguageInfo = {
-    id: number;
     /**
-     * Monaco editor language id.
+     * The language's slug (`python`, `cpp`, ...): what items, answers and
+     * runs name, and the web editor's mode.
      */
-    monaco_language: string;
+    id: string;
+    /**
+     * With the version the runner image has (`Python (3.13)`).
+     */
     name: string;
 };
 
@@ -6190,7 +6199,10 @@ export type RecommendedAction = 'review_submissions_first' | 'contact_learner_th
 export type ReferenceCheck = {
     cases: Array<CaseResult>;
     compile_output: string | null;
-    language_id: number;
+    /**
+     * The language's slug.
+     */
+    language: string;
     message: string | null;
     /**
      * Every test passed.
@@ -6672,9 +6684,9 @@ export type RunRequest = {
      */
     custom_input?: string;
     /**
-     * Language id (`GET /code/runner`).
+     * The language's slug (`GET /code/runner`).
      */
-    language_id: number;
+    language: string;
     source: string;
 };
 

@@ -21,7 +21,8 @@ const RUN_LIMIT: u32 = 20;
 const RUN_WINDOW: Duration = Duration::from_secs(60);
 
 pub struct RunInput<'a> {
-    pub language_id: i32,
+    /// The language's slug.
+    pub language: &'a str,
     pub source: &'a str,
     pub custom_input: Option<&'a str>,
     pub idempotency_key: Option<&'a str>,
@@ -41,10 +42,11 @@ pub const MAX_RUN_LIST: i64 = 50;
 /// A runner language the platform allows.
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct LanguageInfo {
-    pub id: i32,
-    pub name: String,
-    /// Monaco editor language id.
-    pub monaco_language: &'static str,
+    /// The language's slug (`python`, `cpp`, ...): what items, answers and
+    /// runs name, and the web editor's mode.
+    pub id: &'static str,
+    /// With the version the runner image has (`Python (3.13)`).
+    pub name: &'static str,
 }
 
 /// A reference check's per-language outcome: the run's verdict, the run's
@@ -69,7 +71,8 @@ pub enum ReferenceCheckStatus {
 /// One language's verdict from the author's reference check.
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct ReferenceCheck {
-    pub language_id: i32,
+    /// The language's slug.
+    pub language: String,
     /// Every test passed.
     pub ok: bool,
     /// The run's verdict, else its status, or `missing_solution` /
@@ -121,24 +124,24 @@ impl CodeRunsService {
         }
     }
 
-    fn require_language(&self, body: &CodeBody, language_id: i32) -> Result<()> {
-        if !self.runner.language_allowed(language_id) {
+    fn require_language(&self, body: &CodeBody, language: &str) -> Result<()> {
+        if !self.runner.language_allowed(language) {
             return Err(Error::app_with_details(
                 ErrorCode::LanguageNotAllowed,
                 "this language is not enabled on the platform",
                 serde_json::json!({
-                    "language_id": language_id,
-                    "allowed_language_ids": self.runner.limits().allowed_language_ids,
+                    "language": language,
+                    "allowed_languages": self.runner.limits().allowed_languages,
                 }),
             ));
         }
-        if !body.languages.is_empty() && !body.languages.contains(&language_id) {
+        if !body.languages.is_empty() && !body.languages.iter().any(|l| l == language) {
             return Err(Error::app_with_details(
                 ErrorCode::LanguageNotAllowed,
                 "this language is not allowed for this item",
                 serde_json::json!({
-                    "language_id": language_id,
-                    "allowed_language_ids": body.languages,
+                    "language": language,
+                    "allowed_languages": body.languages,
                 }),
             ));
         }
@@ -192,7 +195,7 @@ impl CodeRunsService {
         let (item_row, assessment, teacher) = self.runnable(actor, item_id).await?;
         let item = Item::try_from(item_row)?;
         let body = Self::code_body(&item)?;
-        self.require_language(body, input.language_id)?;
+        self.require_language(body, input.language)?;
         self.runner
             .validate_payload(input.source, input.custom_input)?;
         if !self
@@ -230,7 +233,7 @@ impl CodeRunsService {
                 } else {
                     CodeRunPurpose::Visible
                 },
-                language_id: input.language_id,
+                language: input.language,
                 source: input.source,
                 custom_input: input.custom_input,
                 tests: &visible,
@@ -365,14 +368,14 @@ impl CodeRunsService {
     ) -> Result<Vec<ReferenceCheck>> {
         let body = Self::code_body(item)?;
         let mut out = Vec::with_capacity(body.languages.len());
-        for &language_id in &body.languages {
+        for language in &body.languages {
             let Some(solution) = body
                 .reference_solutions
-                .get(&language_id.to_string())
+                .get(language)
                 .filter(|s| !s.trim().is_empty())
             else {
                 out.push(ReferenceCheck {
-                    language_id,
+                    language: language.clone(),
                     ok: false,
                     status: "missing_solution".into(),
                     passed: 0,
@@ -384,9 +387,9 @@ impl CodeRunsService {
                 });
                 continue;
             };
-            if !self.runner.language_allowed(language_id) {
+            if !self.runner.language_allowed(language) {
                 out.push(ReferenceCheck {
-                    language_id,
+                    language: language.clone(),
                     ok: false,
                     status: "language_not_allowed".into(),
                     passed: 0,
@@ -406,7 +409,7 @@ impl CodeRunsService {
                     submission_id: None,
                     user_id: actor.user_id,
                     purpose: CodeRunPurpose::ReferenceCheck,
-                    language_id,
+                    language,
                     source: solution,
                     custom_input: None,
                     tests: &body.tests,
@@ -415,7 +418,7 @@ impl CodeRunsService {
                 })
                 .await?;
             out.push(ReferenceCheck {
-                language_id,
+                language: language.clone(),
                 ok: run.verdict == Some(RunVerdict::Accepted),
                 status: run
                     .verdict
@@ -456,11 +459,10 @@ impl CodeRunsService {
         }
         Ok(ab_clients::gojudge::languages::all()
             .iter()
-            .filter(|l| self.runner.language_allowed(l.id))
+            .filter(|l| self.runner.language_allowed(l.slug))
             .map(|l| LanguageInfo {
-                id: l.id,
-                name: l.name.to_owned(),
-                monaco_language: l.editor,
+                id: l.slug,
+                name: l.name,
             })
             .collect())
     }

@@ -16,6 +16,8 @@ use sqlx::PgPool;
 /// a hand-in never waits for a second connection while holding one). The
 /// per-assessment advisory lock serialises numbering; a version nobody ends
 /// up linking (the hand-in lost its race) is harmless and reused next time.
+/// `code_languages_stored` hashes `items` as a row stores them (REWRITE 5.8
+/// item 10: Judge0's ids until the contract, the slugs this release writes).
 pub async fn ensure(
     pool: &PgPool,
     assessment_id: AssessmentId,
@@ -32,7 +34,8 @@ pub async fn ensure(
     .await?;
     let existing = sqlx::query_scalar!(
         r#"SELECT id AS "id: AssessmentVersionId" FROM assessment_versions
-           WHERE assessment_id = $1 AND content_sha256 = assessment_content_sha256($2, $3)"#,
+           WHERE assessment_id = $1
+             AND content_sha256 = assessment_content_sha256(code_languages_stored($2), $3)"#,
         assessment_id.0,
         items,
         policy

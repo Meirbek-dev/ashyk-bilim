@@ -13,7 +13,7 @@ import type { CodeFormApi } from './use-code-item-form'
 
 type LanguageFieldsProps = { form: CodeFormApi; runner: Runner; readOnly: boolean }
 
-const toggle = (ids: number[], id: number, on: boolean) => (on ? [...ids, id] : ids.filter(other => other !== id))
+const toggle = (ids: string[], id: string, on: boolean) => (on ? [...ids, id] : ids.filter(other => other !== id))
 
 const unavailable = (runner: Runner) =>
   runner.state === 'down' ? m.code_languages_down() : m.code_languages_unavailable()
@@ -25,7 +25,7 @@ const unavailable = (runner: Runner) =>
  */
 export function LanguageFields({ form, runner, readOnly }: LanguageFieldsProps) {
   const languages = languagesIn(runner)
-  const [picked, setPicked] = useState<number | null>(null)
+  const [picked, setPicked] = useState<string | null>(null)
   return (
     <StudioSection title={m.code_languages()} hint={languages === null ? unavailable(runner) : m.code_languages_hint()}>
       <form.Subscribe selector={state => state.values.languages}>
@@ -78,10 +78,10 @@ export function LanguageFields({ form, runner, readOnly }: LanguageFieldsProps) 
                           <Suspense fallback={<Skeleton className="h-40 w-full" />}>
                             <CodeEditor
                               readOnly={readOnly}
-                              value={field.state.value[String(current)] ?? ''}
-                              mode={languageOf(languages, current)?.monaco_language ?? 'plaintext'}
+                              value={field.state.value[current] ?? ''}
+                              mode={current}
                               label={name === 'starter' ? m.code_field_starter() : m.code_field_reference()}
-                              onChange={text => field.handleChange({ ...field.state.value, [String(current)]: text })}
+                              onChange={text => field.handleChange({ ...field.state.value, [current]: text })}
                             />
                           </Suspense>
                         </div>

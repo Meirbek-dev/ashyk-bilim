@@ -68,7 +68,6 @@ export function Workspace({ courseId, challenge, code, draft, receivedAt }: Work
         top={
           <EditorPane
             answer={answer}
-            languages={languages}
             prefs={prefs}
             keys={{ run: work.runCode, submit: () => setConfirming(work.canSubmit), save: saver.flush }}
             onChange={work.change}

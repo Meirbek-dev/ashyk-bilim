@@ -63,7 +63,8 @@ pub struct CodeRun {
     pub status: CodeRunStatus,
     /// How a `done` run ended; `None` before or without execution.
     pub verdict: Option<RunVerdict>,
-    pub language_id: i32,
+    /// The language's slug.
+    pub language: String,
     pub passed: i32,
     pub total: i32,
     /// Weighted pass share 0..100; `None` for unscored (custom-input) runs.
@@ -104,12 +105,12 @@ impl CodeRun {
 /// What a submit-time (`final`) run produced.
 #[derive(Debug)]
 pub enum FinalRun {
-    Ran(CodeRun),
+    Ran(Box<CodeRun>),
     /// The runner is unavailable (or not configured) - nothing was graded.
     Degraded(String),
     /// The stored answer's language is not allowed for this item.
     LanguageNotAllowed {
-        allowed: Vec<i32>,
+        allowed: Vec<String>,
     },
 }
 
@@ -129,7 +130,8 @@ pub struct RunSpec<'a> {
     pub submission_id: Option<SubmissionId>,
     pub user_id: UserId,
     pub purpose: CodeRunPurpose,
-    pub language_id: i32,
+    /// The language's slug.
+    pub language: &'a str,
     pub source: &'a str,
     /// `Some` = custom-input run: one unscored test.
     pub custom_input: Option<&'a str>,
@@ -146,8 +148,12 @@ pub struct CodeRunner {
 }
 
 impl CodeRunner {
+    /// `limits`' allowlist is taken as slugs (the old Judge0 ids mapped,
+    /// [`ab_clients::gojudge::languages::allowed`]).
     #[must_use]
-    pub fn new(pool: PgPool, client: Option<Arc<GoJudgeClient>>, limits: RunnerLimits) -> Self {
+    pub fn new(pool: PgPool, client: Option<Arc<GoJudgeClient>>, mut limits: RunnerLimits) -> Self {
+        limits.allowed_languages = ab_clients::gojudge::languages::allowed(&limits);
+        limits.allowed_language_ids = None;
         Self {
             pool,
             client,
@@ -172,9 +178,9 @@ impl CodeRunner {
 
     /// Whether a language passes the platform allowlist (empty = any).
     #[must_use]
-    pub fn language_allowed(&self, language_id: i32) -> bool {
-        self.limits.allowed_language_ids.is_empty()
-            || self.limits.allowed_language_ids.contains(&language_id)
+    pub fn language_allowed(&self, language: &str) -> bool {
+        self.limits.allowed_languages.is_empty()
+            || self.limits.allowed_languages.iter().any(|l| l == language)
     }
 
     /// Size and blank-source checks shared by every entry point. Blank
@@ -225,22 +231,22 @@ impl CodeRunner {
         &self,
         target: FinalTarget,
         body: &CodeBody,
-        language_id: i32,
+        language: &str,
         source: &str,
     ) -> Result<FinalRun> {
-        if !self.language_allowed(language_id)
-            || (!body.languages.is_empty() && !body.languages.contains(&language_id))
+        if !self.language_allowed(language)
+            || (!body.languages.is_empty() && !body.languages.iter().any(|l| l == language))
         {
             return Ok(FinalRun::LanguageNotAllowed {
                 allowed: if body.languages.is_empty() {
-                    self.limits.allowed_language_ids.clone()
+                    self.limits.allowed_languages.clone()
                 } else {
                     body.languages.clone()
                 },
             });
         }
         let key = format!(
-            "final:{}:{}:{language_id}:{}",
+            "final:{}:{}:{language}:{}",
             target.submission_id,
             target.item_id,
             sha256_hex(source)
@@ -252,7 +258,7 @@ impl CodeRunner {
                 submission_id: Some(target.submission_id),
                 user_id: target.user_id,
                 purpose: CodeRunPurpose::Final,
-                language_id,
+                language,
                 source,
                 custom_input: None,
                 tests: &body.tests,
@@ -266,7 +272,7 @@ impl CodeRunner {
                     .unwrap_or_else(|| "code runner unavailable".into()),
             ));
         }
-        Ok(FinalRun::Ran(run))
+        Ok(FinalRun::Ran(Box::new(run)))
     }
 
     /// Record a run row, execute in the sandbox, persist cases, return the run.
@@ -307,7 +313,7 @@ impl CodeRunner {
                 submission_id: spec.submission_id,
                 user_id: spec.user_id,
                 purpose: spec.purpose,
-                language_id: spec.language_id,
+                language: spec.language,
                 source_sha256: &source_sha,
                 stdin_sha256: stdin_sha.as_deref(),
                 idempotency_key: spec.idempotency_key,
@@ -409,7 +415,7 @@ impl CodeRunner {
         };
         if existing.source_sha256 != source_sha
             || existing.stdin_sha256.as_deref() != stdin_sha
-            || existing.language_id != spec.language_id
+            || existing.language != spec.language
         {
             return Err(Error::app_with_details(
                 ErrorCode::Conflict,
@@ -457,7 +463,7 @@ impl CodeRunner {
             ));
         };
         let batch = Batch {
-            language_id: spec.language_id,
+            language: spec.language,
             source: spec.source,
             inputs: tests.iter().map(|t| t.input.as_str()).collect(),
             limits: sandbox::limits(spec.body, &self.limits),
@@ -587,7 +593,7 @@ fn build(row: CodeRunRow, cases: Vec<CodeRunCaseRow>, replayed: bool) -> CodeRun
         purpose: row.purpose,
         status: row.status,
         verdict: row.verdict,
-        language_id: row.language_id,
+        language: row.language,
         passed: row.passed,
         total: row.total,
         score: row.score,

@@ -6,7 +6,7 @@ import type { AutoSubmitReason, StudentSubmission } from '#/shared/api/gen/types
 import { formatPercent } from '#/shared/i18n/format'
 import { Skeleton } from '#/shared/ui/skeleton'
 
-import { answerOf, languageOf, languagesIn, testsPassed, type CodeItem } from '../model/arena'
+import { answerOf, languagesIn, testsPassed, type CodeItem } from '../model/arena'
 import { runnerStateOptions } from '../queries'
 import { FinalRun } from './final-run'
 import { languageName } from './labels'
@@ -46,7 +46,6 @@ export function AttemptDetail({ attempt, code }: { attempt: StudentSubmission; c
   const { data: runner } = useSuspenseQuery(runnerStateOptions())
   const languages = languagesIn(runner)
   const answer = answerOf(attempt, code.item.id)
-  const language = answer ? languageOf(languages, answer.language) : null
   return (
     <div className="flex min-w-0 flex-col gap-3 pb-3">
       <div className="flex flex-col gap-0.5 tabular-nums empty:hidden">
@@ -63,7 +62,7 @@ export function AttemptDetail({ attempt, code }: { attempt: StudentSubmission; c
             <CodeEditor
               readOnly
               value={answer.source}
-              mode={language?.monaco_language ?? 'plaintext'}
+              mode={answer.language}
               label={m.code_attempt_code({ number: attempt.attempt_number })}
             />
           </Suspense>

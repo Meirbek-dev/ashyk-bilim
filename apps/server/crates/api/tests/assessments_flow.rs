@@ -394,8 +394,8 @@ async fn code_challenge_defaults_kind_rules_and_visibility(pool: PgPool) {
                 "title": "FizzBuzz",
                 "metadata": { "tags": [" Loops ", "loops", "Basics"], "difficulty": "easy" },
                 "body": {
-                    "kind": "code", "prompt": "print fizzbuzz", "languages": [71],
-                    "reference_solutions": { "71": "print('Fizz')" },
+                    "kind": "code", "prompt": "print fizzbuzz", "languages": ["python"],
+                    "reference_solutions": { "python": "print('Fizz')" },
                     "tests": [
                         { "id": "t1", "input": "3", "expected_output": "Fizz" },
                         { "id": "t2", "input": "5", "expected_output": "Buzz", "is_visible": false }

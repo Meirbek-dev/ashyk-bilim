@@ -1443,7 +1443,8 @@ pub struct CodeRunRow {
     pub status: CodeRunStatus,
     /// How an executed (`done`) run ended.
     pub verdict: Option<RunVerdict>,
-    pub language_id: i32,
+    /// The language's slug.
+    pub language: String,
     pub source_sha256: String,
     pub stdin_sha256: Option<String>,
     pub idempotency_key: Option<String>,
@@ -1463,7 +1464,7 @@ pub struct NewCodeRun<'a> {
     pub submission_id: Option<SubmissionId>,
     pub user_id: UserId,
     pub purpose: CodeRunPurpose,
-    pub language_id: i32,
+    pub language: &'a str,
     pub source_sha256: &'a str,
     pub stdin_sha256: Option<&'a str>,
     pub idempotency_key: Option<&'a str>,
@@ -1475,7 +1476,7 @@ pub struct NewCodeRun<'a> {
 pub async fn insert_code_run(pool: &PgPool, r: NewCodeRun<'_>) -> Result<Option<CodeRunId>> {
     let id = sqlx::query_scalar!(
         r#"INSERT INTO code_runs
-               (assessment_id, item_id, submission_id, user_id, purpose, status, language_id,
+               (assessment_id, item_id, submission_id, user_id, purpose, status, language,
                 code_sha256, input_sha256, idempotency_key, total, started_at)
            VALUES ($1, $2, $3, $4, $5, 'running', $6, decode($7, 'hex'), decode($8, 'hex'), $9, $10, now())
            ON CONFLICT (user_id, item_id, purpose, idempotency_key) DO NOTHING
@@ -1485,7 +1486,7 @@ pub async fn insert_code_run(pool: &PgPool, r: NewCodeRun<'_>) -> Result<Option<
         r.submission_id.map(|s| s.0),
         r.user_id.0,
         r.purpose.as_str(),
-        r.language_id,
+        r.language,
         r.source_sha256,
         r.stdin_sha256,
         r.idempotency_key,
@@ -1561,7 +1562,7 @@ pub async fn get_code_run(pool: &PgPool, id: CodeRunId) -> Result<Option<CodeRun
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
                   purpose AS "purpose: CodeRunPurpose",
                   status AS "status: CodeRunStatus",
-                  verdict AS "verdict: RunVerdict", language_id,
+                  verdict AS "verdict: RunVerdict", language,
                   encode(code_sha256, 'hex') AS "source_sha256!", encode(input_sha256, 'hex') AS stdin_sha256,
                   idempotency_key, passed, total,
                   score::float8 AS "score?", compile_output, error_message,
@@ -1591,7 +1592,7 @@ pub async fn find_idempotent_run(
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
                   purpose AS "purpose: CodeRunPurpose",
                   status AS "status: CodeRunStatus",
-                  verdict AS "verdict: RunVerdict", language_id,
+                  verdict AS "verdict: RunVerdict", language,
                   encode(code_sha256, 'hex') AS "source_sha256!", encode(input_sha256, 'hex') AS stdin_sha256,
                   idempotency_key, passed, total,
                   score::float8 AS "score?", compile_output, error_message,
@@ -1634,7 +1635,7 @@ pub async fn latest_final_run(
                   submission_id AS "submission_id: SubmissionId", user_id AS "user_id: UserId",
                   purpose AS "purpose: CodeRunPurpose",
                   status AS "status: CodeRunStatus",
-                  verdict AS "verdict: RunVerdict", language_id,
+                  verdict AS "verdict: RunVerdict", language,
                   encode(code_sha256, 'hex') AS "source_sha256!", encode(input_sha256, 'hex') AS stdin_sha256,
                   idempotency_key, passed, total,
                   score::float8 AS "score?", compile_output, error_message,

@@ -16,7 +16,7 @@ const FILL = 'relative min-h-0 flex-1 [&_.cm-editor]:absolute! [&_.cm-editor]:in
 
 type CodeEditorProps = {
   value: string
-  /** The server's editor language id (`monaco_language`); unknown ids edit as plain text. */
+  /** The language's slug (`LanguageInfo.id`), also its editor mode; an unknown one edits as plain text. */
   mode: string
   /** The accessible name of the text area. */
   label: string

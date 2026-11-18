@@ -586,14 +586,13 @@ async fn runner_check(config: &Config) -> anyhow::Result<()> {
     let limits = config.runner.as_ref().map_or_default(|r| r.limits.clone());
     let mut out = std::io::stdout();
     let mut failed = 0;
+    let allowed = languages::allowed(&limits);
     for language in languages::all() {
-        if !limits.allowed_language_ids.is_empty()
-            && !limits.allowed_language_ids.contains(&language.id)
-        {
+        if !allowed.is_empty() && !allowed.iter().any(|l| l == language.slug) {
             continue;
         }
         let batch = Batch {
-            language_id: language.id,
+            language: language.slug,
             source: language.sample,
             inputs: vec!["12\n"],
             limits: Limits {
@@ -635,8 +634,8 @@ async fn runner_check(config: &Config) -> anyhow::Result<()> {
         };
         writeln!(
             out,
-            "{:>3} {:<32} {:>6.2}s {verdict}",
-            language.id,
+            "{:<10} {:<32} {:>6.2}s {verdict}",
+            language.slug,
             language.name,
             started.elapsed().as_secs_f64()
         )?;

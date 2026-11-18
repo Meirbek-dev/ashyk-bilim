@@ -342,9 +342,9 @@ async fn retention_sweeps_old_logs_and_keeps_learner_work(pool: PgPool) {
     // Code runs: an old practice run loses its output, a graded run keeps it.
     for purpose in ["custom", "final"] {
         let run: Uuid = sqlx::query_scalar(
-            "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id,
+            "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language,
                                     code_sha256, compile_output, created_at, finished_at)
-             VALUES ($1, $2, $3, $4, 'done', 71, sha256('a'), 'warning', now() - interval '200 days',
+             VALUES ($1, $2, $3, $4, 'done', 'python', sha256('a'), 'warning', now() - interval '200 days',
                      now() - interval '200 days')
              RETURNING id",
         )
@@ -1566,9 +1566,9 @@ async fn a_code_run_case_stores_the_platforms_verdict(pool: PgPool) {
     .await
     .unwrap();
     let run: Uuid = sqlx::query_scalar(
-        "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id,
+        "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language,
                                 code_sha256, finished_at)
-         VALUES ($1, $2, $3, 'visible', 'done', 71, sha256('a'), now()) RETURNING id",
+         VALUES ($1, $2, $3, 'visible', 'done', 'python', sha256('a'), now()) RETURNING id",
     )
     .bind(w.assessment)
     .bind(item)
@@ -2540,8 +2540,8 @@ async fn a_row_cannot_point_at_someone_elses_work(pool: PgPool) {
     .unwrap();
     // The same rows with the right owner go in, so what refuses the ones below is the key.
     sqlx::query(
-        "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status, language_id, code_sha256)
-         VALUES ($1, $2, $3, $4, 'custom', 'queued', 71, sha256('a'))",
+        "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status, language, code_sha256)
+         VALUES ($1, $2, $3, $4, 'custom', 'queued', 'python', sha256('a'))",
     )
     .bind(w.assessment)
     .bind(own_item)
@@ -2576,8 +2576,8 @@ async fn a_row_cannot_point_at_someone_elses_work(pool: PgPool) {
         (
             "a code run of an item of another assessment",
             sqlx::query(
-                "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, code_sha256)
-                 VALUES ($1, $2, $3, 'custom', 'queued', 71, sha256('a'))",
+                "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language, code_sha256)
+                 VALUES ($1, $2, $3, 'custom', 'queued', 'python', sha256('a'))",
             )
             .bind(w.assessment)
             .bind(foreign_item)
@@ -2588,8 +2588,8 @@ async fn a_row_cannot_point_at_someone_elses_work(pool: PgPool) {
         (
             "a code run on another learner's submission",
             sqlx::query(
-                "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status, language_id, code_sha256)
-                 VALUES ($1, $2, $3, $4, 'custom', 'queued', 71, sha256('a'))",
+                "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status, language, code_sha256)
+                 VALUES ($1, $2, $3, $4, 'custom', 'queued', 'python', sha256('a'))",
             )
             .bind(w.assessment)
             .bind(own_item)
@@ -2722,9 +2722,9 @@ async fn a_finished_code_run_says_when_and_counts_add_up(pool: PgPool) {
         let (assessment, user) = (w.assessment, w.user);
         async move {
             sqlx::query(
-                "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, code_sha256,
+                "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language, code_sha256,
                                         passed, total, finished_at)
-                 VALUES ($1, $2, $3, 'custom', $4, 71, sha256('a'), $5, $6, CASE WHEN $7 THEN now() END)",
+                 VALUES ($1, $2, $3, 'custom', $4, 'python', sha256('a'), $5, $6, CASE WHEN $7 THEN now() END)",
             )
             .bind(assessment)
             .bind(item)
@@ -2926,6 +2926,25 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("assessment_items_upload_ids", "derived"),
         ("assessment_versions_points", "derived"),
         ("assessment_versions_upload_ids", "derived"),
+        // Derived for the previous release (a code language stored as Judge0's id): the contract
+        // 20261116075662 drops them.
+        (
+            "assessment_items_code_languages",
+            "derived; the contract drops it",
+        ),
+        (
+            "assessment_versions_code_languages",
+            "derived; the contract drops it",
+        ),
+        ("code_runs_language", "derived; the contract drops it"),
+        (
+            "grading_entries_code_languages",
+            "derived; the contract drops it",
+        ),
+        (
+            "submissions_code_languages",
+            "derived; the contract drops it",
+        ),
         ("blocks_upload_ids", "derived"),
         ("chapters_upload_ids", "derived"),
         ("collections_upload_ids", "derived"),
@@ -3622,9 +3641,9 @@ async fn derived_values_are_read_from_their_source(pool: PgPool) {
         ("custom", "runtime_error", true),
     ] {
         let run: Uuid = sqlx::query_scalar(
-            "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, code_sha256,
+            "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language, code_sha256,
                                     finished_at)
-             VALUES ($1, $2, $3, $4, 'done', 71, sha256('a'), now()) RETURNING id",
+             VALUES ($1, $2, $3, $4, 'done', 'python', sha256('a'), now()) RETURNING id",
         )
         .bind(w.assessment)
         .bind(item)
@@ -3964,7 +3983,7 @@ async fn a_code_run_is_a_status_and_a_verdict(pool: PgPool) {
                     submission_id: None,
                     user_id: UserId(w.user),
                     purpose: CodeRunPurpose::Visible,
-                    language_id: 71,
+                    language: "python",
                     source_sha256: &"a".repeat(64),
                     stdin_sha256: None,
                     idempotency_key: Some(key),
@@ -4143,6 +4162,8 @@ async fn one_language_domain(pool: PgPool) {
          JOIN information_schema.tables t USING (table_schema, table_name)
          WHERE t.table_type = 'BASE TABLE' AND c.table_schema::name = ANY (app_schemas() || 'public'::name)
            AND c.column_name IN ('locale', 'language', 'lang')
+           -- A code run's language is a code language's slug (ARCHITECTURE, `A code language is its slug`).
+           AND (c.table_name, c.column_name) <> ('code_runs', 'language')
          ORDER BY 1",
     )
     .fetch_all(&pool)

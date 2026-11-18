@@ -107,8 +107,8 @@ async fn code_challenge(
             &serde_json::json!({
                 "title": "Square",
                 "body": {
-                    "kind": "code", "prompt": "print n squared", "languages": [71, 62],
-                    "reference_solutions": { "71": "print(int(input())**2)  # square" },
+                    "kind": "code", "prompt": "print n squared", "languages": ["python", "java"],
+                    "reference_solutions": { "python": "print(int(input())**2)  # square" },
                     "time_limit_seconds": 2,
                     "tests": [
                         { "id": "t1", "input": "2", "expected_output": "4", "is_visible": true, "weight": 1 },
@@ -177,7 +177,7 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
             &alice,
             &item_id,
             Some("run-1"),
-            &serde_json::json!({ "language_id": 71, "source": SQUARE }),
+            &serde_json::json!({ "language": "python", "source": SQUARE }),
         ))
         .await;
     assert_eq!(first.status, StatusCode::CREATED, "{}", first.text());
@@ -206,7 +206,7 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
             &alice,
             &item_id,
             Some("run-1"),
-            &serde_json::json!({ "language_id": 71, "source": SQUARE }),
+            &serde_json::json!({ "language": "python", "source": SQUARE }),
         ))
         .await;
     assert_eq!(replay.status, StatusCode::OK);
@@ -218,7 +218,7 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
             &alice,
             &item_id,
             Some("run-1"),
-            &serde_json::json!({ "language_id": 71, "source": "print(0)" }),
+            &serde_json::json!({ "language": "python", "source": "print(0)" }),
         ))
         .await;
     assert_eq!(clash.status, StatusCode::CONFLICT);
@@ -230,7 +230,7 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
             &alice,
             &item_id,
             None,
-            &serde_json::json!({ "language_id": 71, "source": SQUARE, "custom_input": "5" }),
+            &serde_json::json!({ "language": "python", "source": SQUARE, "custom_input": "5" }),
         ))
         .await;
     assert_eq!(custom.status, StatusCode::CREATED, "{}", custom.text());
@@ -247,7 +247,7 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
             &alice,
             &item_id,
             None,
-            &serde_json::json!({ "language_id": 999, "source": SQUARE }),
+            &serde_json::json!({ "language": "fortran", "source": SQUARE }),
         ))
         .await;
     assert_eq!(unknown.status, StatusCode::UNPROCESSABLE_ENTITY);
@@ -257,20 +257,20 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
             &alice,
             &item_id,
             None,
-            &serde_json::json!({ "language_id": 63, "source": SQUARE }),
+            &serde_json::json!({ "language": "javascript", "source": SQUARE }),
         ))
         .await;
     assert_eq!(not_for_item.status, StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(
-        not_for_item.json()["details"]["allowed_language_ids"],
-        serde_json::json!([71, 62])
+        not_for_item.json()["details"]["allowed_languages"],
+        serde_json::json!(["python", "java"])
     );
     let blank = app
         .send(run(
             &alice,
             &item_id,
             None,
-            &serde_json::json!({ "language_id": 71, "source": "   " }),
+            &serde_json::json!({ "language": "python", "source": "   " }),
         ))
         .await;
     assert_eq!(blank.status, StatusCode::UNPROCESSABLE_ENTITY);
@@ -282,7 +282,7 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
             &alice,
             &item_id,
             None,
-            &serde_json::json!({ "language_id": 71, "source": "SYNTAX" }),
+            &serde_json::json!({ "language": "python", "source": "SYNTAX" }),
         ))
         .await;
     assert_eq!(broken.status, StatusCode::CREATED, "{}", broken.text());
@@ -320,7 +320,7 @@ async fn visible_and_custom_runs_replay_and_mask(pool: PgPool) {
             &teacher,
             &item_id,
             None,
-            &serde_json::json!({ "language_id": 71, "source": SQUARE }),
+            &serde_json::json!({ "language": "python", "source": SQUARE }),
         ))
         .await;
     assert_eq!(preview.status, StatusCode::CREATED, "{}", preview.text());
@@ -349,7 +349,7 @@ async fn submit_runs_hidden_tests_and_surfaces_compile_errors(pool: PgPool) {
             &alice,
             &format!("/api/v2/submissions/{sub_id}/submit"),
             &serde_json::json!({ "answers": {
-                &item_id: { "kind": "code", "language": 71, "source": SQUARE }
+                &item_id: { "kind": "code", "language": "python", "source": SQUARE }
             } }),
         )
         .await;
@@ -398,7 +398,7 @@ async fn submit_runs_hidden_tests_and_surfaces_compile_errors(pool: PgPool) {
             &bob,
             &format!("/api/v2/submissions/{bob_sub}/submit"),
             &serde_json::json!({ "answers": {
-                &item_id: { "kind": "code", "language": 71, "source": "SYNTAX" }
+                &item_id: { "kind": "code", "language": "python", "source": "SYNTAX" }
             } }),
         )
         .await;
@@ -422,7 +422,7 @@ async fn submit_runs_hidden_tests_and_surfaces_compile_errors(pool: PgPool) {
             &bob,
             &format!("/api/v2/submissions/{bob_sub}/submit"),
             &serde_json::json!({ "answers": {
-                &item_id: { "kind": "code", "language": 71, "source": "print(0)" }
+                &item_id: { "kind": "code", "language": "python", "source": "print(0)" }
             } }),
         )
         .await;
@@ -475,11 +475,11 @@ async fn submit_runs_hidden_tests_and_surfaces_compile_errors(pool: PgPool) {
     assert_eq!(checked.status, StatusCode::OK, "{}", checked.text());
     let results = checked.json()["results"].as_array().unwrap().clone();
     assert_eq!(results.len(), 2);
-    assert_eq!(results[0]["language_id"], 71);
+    assert_eq!(results[0]["language"], "python");
     assert_eq!(results[0]["ok"], true);
     assert_eq!(results[0]["passed"], 2);
     assert_eq!(results[0]["score"], 100.0);
-    assert_eq!(results[1]["language_id"], 62);
+    assert_eq!(results[1]["language"], "java");
     assert_eq!(results[1]["status"], "missing_solution");
     assert_eq!(results[1]["ok"], false);
 }
@@ -517,7 +517,7 @@ async fn busy_runner_at_the_deadline_hands_the_submit_in_for_review(pool: PgPool
             &alice,
             &format!("/api/v2/submissions/{sub_id}/submit"),
             &serde_json::json!({ "answers": {
-                &item_id: { "kind": "code", "language": 71, "source": SQUARE }
+                &item_id: { "kind": "code", "language": "python", "source": SQUARE }
             } }),
         )
         .await;
@@ -550,7 +550,7 @@ async fn degraded_runner_and_languages(pool: PgPool) {
             &alice,
             &item_id,
             None,
-            &serde_json::json!({ "language_id": 71, "source": SQUARE }),
+            &serde_json::json!({ "language": "python", "source": SQUARE }),
         ))
         .await;
     assert_eq!(
@@ -590,7 +590,7 @@ async fn degraded_runner_and_languages(pool: PgPool) {
             &alice,
             &format!("/api/v2/submissions/{handed}/submit"),
             &serde_json::json!({ "answers": {
-                &item_id: { "kind": "code", "language": 71, "source": SQUARE }
+                &item_id: { "kind": "code", "language": "python", "source": SQUARE }
             } }),
         )
         .await;
@@ -617,7 +617,7 @@ async fn degraded_runner_and_languages(pool: PgPool) {
                 .header(header::IF_MATCH, "1")
                 .body(Body::from(
                     serde_json::json!({ "answers": {
-                        &item_id: { "kind": "code", "language": 71, "source": SQUARE }
+                        &item_id: { "kind": "code", "language": "python", "source": SQUARE }
                     } })
                     .to_string(),
                 ))
@@ -645,15 +645,30 @@ async fn degraded_runner_and_languages(pool: PgPool) {
     // most used first; they need no call to the runner.
     let languages = app.get_as(&alice, "/api/v2/code/languages").await;
     assert_eq!(languages.status, StatusCode::OK, "{}", languages.text());
-    let ids: Vec<i64> = languages
+    let ids: Vec<String> = languages
         .json()
         .as_array()
         .unwrap()
         .iter()
-        .map(|l| l["id"].as_i64().unwrap())
+        .map(|l| l["id"].as_str().unwrap().to_owned())
         .collect();
-    assert_eq!(ids, [71, 54, 62, 50, 63, 74, 60, 73, 78, 68, 72]);
-    assert_eq!(languages.json()[0]["monaco_language"], "python");
+    assert_eq!(
+        ids,
+        [
+            "python",
+            "cpp",
+            "java",
+            "c",
+            "javascript",
+            "typescript",
+            "go",
+            "rust",
+            "kotlin",
+            "php",
+            "ruby"
+        ]
+    );
+    assert_eq!(languages.json()[0]["name"], "Python (3.13)");
 }
 
 /// BUG-369: a program printing a NUL byte is a wrong answer, not a 500 -
@@ -672,7 +687,7 @@ async fn nul_bytes_in_output_are_stored_not_fatal(pool: PgPool) {
             &alice,
             &item_id,
             None,
-            &serde_json::json!({ "language_id": 71, "source": nul }),
+            &serde_json::json!({ "language": "python", "source": nul }),
         ))
         .await;
     assert_eq!(ran.status, StatusCode::CREATED, "{}", ran.text());
@@ -692,7 +707,7 @@ async fn nul_bytes_in_output_are_stored_not_fatal(pool: PgPool) {
             &alice,
             &format!("/api/v2/submissions/{sub_id}/submit"),
             &serde_json::json!({ "answers": {
-                &item_id: { "kind": "code", "language": 71, "source": nul }
+                &item_id: { "kind": "code", "language": "python", "source": nul }
             } }),
         )
         .await;
@@ -714,7 +729,7 @@ async fn in_flight_run_keys_answer_409_until_abandoned(pool: PgPool) {
     let teacher = instructor(&app, "teacher").await;
     let (_id, item_id) = code_challenge(&app, &teacher, None).await;
     let alice = learner(&app, "alice").await;
-    let body = serde_json::json!({ "language_id": 71, "source": SQUARE });
+    let body = serde_json::json!({ "language": "python", "source": SQUARE });
 
     let first = app.send(run(&alice, &item_id, Some("k"), &body)).await;
     assert_eq!(first.status, StatusCode::CREATED, "{}", first.text());
@@ -762,7 +777,7 @@ async fn code_draft(
     who: &MintedSession,
     id: &str,
     item_id: &str,
-    language: i32,
+    language: &str,
     source: &str,
 ) -> String {
     let draft = app
@@ -806,7 +821,7 @@ async fn timer_sweep_finalizes_every_code_outcome(pool: PgPool) {
     FakeJudge::mount(&app.runner, fake_python).await;
     let teacher = instructor(&app, "teacher").await;
     let (id, item_id) = code_challenge(&app, &teacher, Some(60)).await;
-    let submit = |who: &MintedSession, sub: &str, language: i32, source: &str| {
+    let submit = |who: &MintedSession, sub: &str, language: &str, source: &str| {
         let body = serde_json::json!({ "answers": {
             &item_id: { "kind": "code", "language": language, "source": source }
         } });
@@ -824,8 +839,8 @@ async fn timer_sweep_finalizes_every_code_outcome(pool: PgPool) {
     };
 
     let bob = learner(&app, "bob").await;
-    let bob_sub = code_draft(&app, &bob, &id, &item_id, 71, "BOOM").await;
-    let refused = app.send(submit(&bob, &bob_sub, 71, "BOOM")).await;
+    let bob_sub = code_draft(&app, &bob, &id, &item_id, "python", "BOOM").await;
+    let refused = app.send(submit(&bob, &bob_sub, "python", "BOOM")).await;
     assert_eq!(
         refused.status,
         StatusCode::SERVICE_UNAVAILABLE,
@@ -835,8 +850,10 @@ async fn timer_sweep_finalizes_every_code_outcome(pool: PgPool) {
     assert_eq!(refused.json()["details"]["is_retryable"], false);
 
     let carol = learner(&app, "carol").await;
-    let carol_sub = code_draft(&app, &carol, &id, &item_id, 63, SQUARE).await;
-    let refused = app.send(submit(&carol, &carol_sub, 63, SQUARE)).await;
+    let carol_sub = code_draft(&app, &carol, &id, &item_id, "javascript", SQUARE).await;
+    let refused = app
+        .send(submit(&carol, &carol_sub, "javascript", SQUARE))
+        .await;
     assert_eq!(
         refused.status,
         StatusCode::UNPROCESSABLE_ENTITY,
@@ -846,18 +863,18 @@ async fn timer_sweep_finalizes_every_code_outcome(pool: PgPool) {
     assert_eq!(refused.json()["code"], "language-not-allowed");
 
     let dave = learner(&app, "dave").await;
-    let dave_sub = code_draft(&app, &dave, &id, &item_id, 71, "SYNTAX").await;
+    let dave_sub = code_draft(&app, &dave, &id, &item_id, "python", "SYNTAX").await;
     let erin = learner(&app, "erin").await;
-    let erin_sub = code_draft(&app, &erin, &id, &item_id, 71, r"print('\0')  # NUL").await;
+    let erin_sub = code_draft(&app, &erin, &id, &item_id, "python", r"print('\0')  # NUL").await;
     // Frank's final run is still executing (another hand-in, or a crashed
     // worker a moment ago): the sweep must not wait on it.
     let frank = learner(&app, "frank").await;
-    let frank_sub = code_draft(&app, &frank, &id, &item_id, 71, SQUARE).await;
+    let frank_sub = code_draft(&app, &frank, &id, &item_id, "python", SQUARE).await;
     sqlx::query(
         "INSERT INTO code_runs (assessment_id, item_id, submission_id, user_id, purpose, status,
-                                language_id, code_sha256, idempotency_key, total, started_at)
-         SELECT s.assessment_id, $2, s.id, s.user_id, 'final', 'running', 71, x.h,
-                'final:' || s.id || ':' || $2::text || ':71:' || encode(x.h, 'hex'), 2, now()
+                                language, code_sha256, idempotency_key, total, started_at)
+         SELECT s.assessment_id, $2, s.id, s.user_id, 'final', 'running', 'python', x.h,
+                'final:' || s.id || ':' || $2::text || ':python:' || encode(x.h, 'hex'), 2, now()
          FROM submissions s, (SELECT sha256(convert_to($3, 'UTF8')) AS h) x
          WHERE s.id = $1",
     )
@@ -920,7 +937,7 @@ async fn run_history_item_reference_check_and_runner_state(pool: PgPool) {
             &alice,
             &item_id,
             None,
-            &serde_json::json!({ "language_id": 71, "source": SQUARE }),
+            &serde_json::json!({ "language": "python", "source": SQUARE }),
         ))
         .await;
     assert_eq!(visible.status, StatusCode::CREATED, "{}", visible.text());
@@ -929,7 +946,7 @@ async fn run_history_item_reference_check_and_runner_state(pool: PgPool) {
             &alice,
             &format!("/api/v2/submissions/{sub_id}/submit"),
             &serde_json::json!({ "answers": {
-                &item_id: { "kind": "code", "language": 71, "source": SQUARE }
+                &item_id: { "kind": "code", "language": "python", "source": SQUARE }
             } }),
         )
         .await;
@@ -988,13 +1005,28 @@ async fn run_history_item_reference_check_and_runner_state(pool: PgPool) {
     let runner = app.get_as(&alice, "/api/v2/code/runner").await;
     assert_eq!(runner.status, StatusCode::OK, "{}", runner.text());
     assert_eq!(runner.json()["runner_configured"], true);
-    let ids: Vec<i64> = runner.json()["languages"]
+    let ids: Vec<String> = runner.json()["languages"]
         .as_array()
         .unwrap()
         .iter()
-        .map(|l| l["id"].as_i64().unwrap())
+        .map(|l| l["id"].as_str().unwrap().to_owned())
         .collect();
-    assert_eq!(ids, [71, 54, 62, 50, 63, 74, 60, 73, 78, 68, 72]);
+    assert_eq!(
+        ids,
+        [
+            "python",
+            "cpp",
+            "java",
+            "c",
+            "javascript",
+            "typescript",
+            "go",
+            "rust",
+            "kotlin",
+            "php",
+            "ruby"
+        ]
+    );
 }
 
 /// B-COD-23 on the server: after repeated failures the runner's breaker is
@@ -1015,7 +1047,7 @@ async fn runner_state_is_degraded_while_the_breaker_is_open(pool: PgPool) {
                 &alice,
                 &item_id,
                 None,
-                &serde_json::json!({ "language_id": 71, "source": SQUARE }),
+                &serde_json::json!({ "language": "python", "source": SQUARE }),
             ))
             .await;
         assert_eq!(
@@ -1033,4 +1065,110 @@ async fn runner_state_is_degraded_while_the_breaker_is_open(pool: PgPool) {
         state.text()
     );
     assert_eq!(state.json()["code"], "code-runner-degraded");
+}
+
+/// REWRITE 5.8 item 10, switch release: the API speaks slugs while the rows
+/// keep Judge0's ids for the release before (the rollback image), and what
+/// that release writes reads back as slugs.
+#[ab_testdb::test]
+async fn languages_are_slugs_on_the_api_and_judge0_ids_in_the_rows(pool: PgPool) {
+    let app = TestApp::spawn(pool).await;
+    FakeJudge::mount(&app.runner, fake_python).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (id, item_id) = code_challenge(&app, &teacher, None).await;
+    let item = uuid::Uuid::parse_str(&item_id).unwrap();
+    let alice = learner(&app, "alice").await;
+    let ran = app
+        .send(run(
+            &alice,
+            &item_id,
+            None,
+            &serde_json::json!({ "language": "python", "source": SQUARE }),
+        ))
+        .await;
+    assert_eq!(ran.status, StatusCode::CREATED, "{}", ran.text());
+    assert_eq!(ran.json()["language"], "python");
+    let draft = code_draft(&app, &alice, &id, &item_id, "python", SQUARE).await;
+    let submitted = app
+        .post_as(
+            &alice,
+            &format!("/api/v2/submissions/{draft}/submit"),
+            &serde_json::json!({}),
+        )
+        .await;
+    assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
+    assert_eq!(
+        submitted.json()["grading"]["items"][0]["user_answer"]["language"],
+        "python"
+    );
+
+    let sub = uuid::Uuid::parse_str(&draft).unwrap();
+    let stored: (serde_json::Value, serde_json::Value, serde_json::Value, serde_json::Value, serde_json::Value) =
+        sqlx::query_as(
+            "SELECT i.body -> 'languages', i.body -> 'reference_solutions', s.answers -> $2::text -> 'language',
+                    v.items -> 'items' -> 0 -> 'body' -> 'languages',
+                    e.raw_breakdown -> 'items' -> 0 -> 'user_answer' -> 'language'
+               FROM assessment_items i, submissions s
+               JOIN assessment_versions v ON v.id = s.assessment_version_id
+               JOIN grading_entries e ON e.submission_id = s.id
+              WHERE i.id = $2 AND s.id = $1",
+        )
+        .bind(sub)
+        .bind(item)
+        .fetch_one(&app.pool)
+        .await
+        .unwrap();
+    assert_eq!(stored.0, serde_json::json!([71, 62]));
+    assert_eq!(
+        stored.1,
+        serde_json::json!({ "71": "print(int(input())**2)  # square" })
+    );
+    assert_eq!(stored.2, serde_json::json!(71));
+    assert_eq!(stored.3, serde_json::json!([71, 62]));
+    assert_eq!(stored.4, serde_json::json!(71));
+    let runs: Vec<(i32, String)> =
+        sqlx::query_as("SELECT language_id, language FROM code_runs WHERE item_id = $1")
+            .bind(item)
+            .fetch_all(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(runs.len(), 2);
+    assert!(
+        runs.iter().all(|r| *r == (71, "python".to_owned())),
+        "{runs:?}"
+    );
+
+    // The previous release's writes: ids, read back as slugs.
+    sqlx::query(
+        "UPDATE assessment_items SET body = body || '{\"languages\": [71, 54], \"starter_code\": {\"54\": \"int main(){}\"}}'
+          WHERE id = $1",
+    )
+    .bind(item)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+    let detail = app
+        .get_as(&teacher, &format!("/api/v2/assessments/{id}"))
+        .await;
+    assert_eq!(detail.status, StatusCode::OK, "{}", detail.text());
+    let body = &detail.json()["items"][0]["body"];
+    assert_eq!(body["languages"], serde_json::json!(["python", "cpp"]));
+    assert_eq!(
+        body["starter_code"],
+        serde_json::json!({ "cpp": "int main(){}" })
+    );
+    let old_run: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO code_runs (assessment_id, item_id, user_id, purpose, status, language_id, code_sha256)
+         SELECT assessment_id, id, $2, 'custom', 'queued', 54, sha256('a') FROM assessment_items WHERE id = $1
+         RETURNING id",
+    )
+    .bind(item)
+    .bind(alice.user_id.0)
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    let seen = app
+        .get_as(&alice, &format!("/api/v2/code-runs/{old_run}"))
+        .await;
+    assert_eq!(seen.json()["language"], "cpp", "{}", seen.text());
 }

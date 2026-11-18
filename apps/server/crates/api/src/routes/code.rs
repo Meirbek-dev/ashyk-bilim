@@ -65,7 +65,7 @@ pub async fn run_item(
                 &actor,
                 id,
                 RunInput {
-                    language_id: request.language_id,
+                    language: &request.language,
                     source: &request.source,
                     custom_input: request.custom_input.as_deref(),
                     idempotency_key: key.as_deref(),

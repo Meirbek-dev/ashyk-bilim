@@ -516,9 +516,16 @@ pub struct RunnerLimits {
     /// is "Output Limit Exceeded". An item's `max_output_kb` lowers it.
     #[serde(default = "RunnerLimits::default_max_program_output_kb")]
     pub max_program_output_kb: i32,
-    /// Empty = every language of the runner image.
-    #[serde(default = "RunnerLimits::default_allowed_language_ids")]
-    pub allowed_language_ids: Vec<i32>,
+    /// Language slugs (`ab_clients::gojudge::languages`); empty = every
+    /// language of the runner image.
+    #[serde(default)]
+    pub allowed_languages: Vec<String>,
+    /// The allowlist before the slugs, in Judge0 ids
+    /// (`AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS`). Read for one release when
+    /// `allowed_languages` is empty: the code runner maps it to slugs and logs a
+    /// warning (`ab_clients::gojudge::languages::allowed`).
+    #[serde(default)]
+    pub allowed_language_ids: Option<Vec<i32>>,
 }
 
 impl RunnerLimits {
@@ -534,11 +541,6 @@ impl RunnerLimits {
     const fn default_max_program_output_kb() -> i32 {
         1024
     }
-    /// C, C++, Go, Java, JavaScript, PHP, Python, Ruby, Rust, TypeScript,
-    /// Kotlin (Judge0 ids; Swift 83 of the legacy list is not in the image).
-    fn default_allowed_language_ids() -> Vec<i32> {
-        vec![50, 54, 60, 62, 63, 68, 71, 72, 73, 74, 78]
-    }
 }
 
 impl Default for RunnerLimits {
@@ -548,7 +550,8 @@ impl Default for RunnerLimits {
             max_stdin_bytes: Self::default_max_stdin_bytes(),
             max_output_bytes: Self::default_max_output_bytes(),
             max_program_output_kb: Self::default_max_program_output_kb(),
-            allowed_language_ids: Self::default_allowed_language_ids(),
+            allowed_languages: Vec::new(),
+            allowed_language_ids: None,
         }
     }
 }
@@ -810,6 +813,7 @@ impl Config {
                     "max_stdin_bytes": r.limits.max_stdin_bytes,
                     "max_output_bytes": r.limits.max_output_bytes,
                     "max_program_output_kb": r.limits.max_program_output_kb,
+                    "allowed_languages": r.limits.allowed_languages,
                     "allowed_language_ids": r.limits.allowed_language_ids,
                 },
             })),

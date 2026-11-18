@@ -1310,9 +1310,9 @@ impl SubmissionsService {
             return Ok(manual_review());
         };
         let answer = answers.get(&item.id);
-        let (language_id, source) = match answer {
-            Some(ItemAnswer::Code { language, source }) => (*language, source.as_str()),
-            _ => (0, ""),
+        let (language, source) = match answer {
+            Some(ItemAnswer::Code { language, source }) => (language.as_str(), source.as_str()),
+            _ => ("", ""),
         };
         if source.trim().is_empty() {
             // Nothing to run: every test fails (legacy scored 0 with no run).
@@ -1326,7 +1326,7 @@ impl SubmissionsService {
         };
         // BUG-370: the timer cannot show an error and must not retry for an
         // hour: a run it cannot finish hands the attempt to a teacher.
-        let outcome = match runner.final_run(target, body, language_id, source).await {
+        let outcome = match runner.final_run(target, body, language, source).await {
             Ok(outcome) => outcome,
             Err(err) if lenient => {
                 tracing::error!(submission_id = %submission.id, %err,
@@ -1383,7 +1383,7 @@ impl SubmissionsService {
                     return Err(Error::app_with_details(
                         ErrorCode::LanguageNotAllowed,
                         "the answer's language is not allowed for this item",
-                        serde_json::json!({ "item_id": item.id, "allowed_language_ids": allowed }),
+                        serde_json::json!({ "item_id": item.id, "allowed_languages": allowed }),
                     ));
                 }
                 failed_cases(body)

@@ -9,7 +9,7 @@ import type {
 } from '#/shared/api/gen/types.gen'
 
 export type CodeItem = { item: AssessmentItem; body: CodeBody }
-export type CodeAnswer = { language: number; source: string }
+export type CodeAnswer = { language: string; source: string }
 
 /** The challenge's code item (a code challenge holds one; the server creates it with the challenge). */
 export function findCodeItem(assessment: Pick<AssessmentDetail, 'items'> | null): CodeItem | null {
@@ -35,14 +35,13 @@ export function answerOf(attempt: StudentSubmission | undefined, itemId: string)
   return answer?.kind === 'code' ? { language: answer.language, source: answer.source ?? '' } : null
 }
 
-const starterOf = (body: Pick<CodeBody, 'starter_code'>, language: number) =>
-  body.starter_code?.[String(language)] ?? ''
+const starterOf = (body: Pick<CodeBody, 'starter_code'>, language: string) => body.starter_code?.[language] ?? ''
 
 /** The editor's first state: the draft's code in an allowed language, else the first language's starter code. */
 export function initialAnswer(body: CodeBody, saved: CodeAnswer | null): CodeAnswer {
   const allowed = body.languages ?? []
   if (saved && allowed.includes(saved.language)) return saved
-  const language = allowed[0] ?? 0
+  const language = allowed[0] ?? ''
   return { language, source: starterOf(body, language) }
 }
 
@@ -53,7 +52,7 @@ export function starterReset(body: Pick<CodeBody, 'starter_code'>, current: Code
 }
 
 /** Code the learner has not touched (blank or the starter) follows the new language's starter; theirs stays. */
-export function switchLanguage(body: CodeBody, current: CodeAnswer, language: number): CodeAnswer {
+export function switchLanguage(body: CodeBody, current: CodeAnswer, language: string): CodeAnswer {
   const untouched = current.source.trim() === '' || current.source === starterOf(body, current.language)
   return { language, source: untouched ? starterOf(body, language) : current.source }
 }
@@ -72,7 +71,7 @@ export function testsPassed(attempt: StudentSubmission): { correct: number; tota
 }
 
 /** The platform's name of a language; null when the list is unavailable or does not hold it. */
-export const languageOf = (languages: LanguageInfo[] | null, id: number) =>
+export const languageOf = (languages: LanguageInfo[] | null, id: string) =>
   languages?.find(language => language.id === id) ?? null
 
 /** The runner as the pages see it: its languages, not configured (B-COD-09), or configured and down (B-COD-26). */

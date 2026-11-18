@@ -182,6 +182,7 @@ where
         fields.insert("kind".to_owned(), "code".into());
         fields.remove("latest_run");
     }
+    crate::code::judge0::answer_value(&mut answer);
     Ok(answer)
 }
 
@@ -276,7 +277,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             item.user_answer,
-            serde_json::json!({ "kind": "code", "source": "", "language": 71 })
+            serde_json::json!({ "kind": "code", "source": "", "language": "python" })
         );
         serde_json::from_value::<crate::grading::answers::ItemAnswer>(item.user_answer).unwrap();
     }

@@ -234,7 +234,10 @@ wins over `server.env`): `AB__ENVIRONMENT`, `AB__SERVER__HOST`,
 `AB__STORAGE__PUBLIC_BUCKET`, `AB__STORAGE__PRIVATE_BUCKET`,
 `AB__TELEMETRY__JSON_LOGS`, `AB__RUNNER__BASE_URL`, `AB__RUNNER__AUTH_TOKEN`
 (`AB__RUNNER__MAX_CONCURRENCY`, `AB__RUNNER__MAX_WAIT_SECS` and
-`AB__RUNNER__LIMITS__*` override the defaults).
+`AB__RUNNER__LIMITS__*` override the defaults). `AB__RUNNER__LIMITS__ALLOWED_LANGUAGES` (`server.env`, a list of
+language slugs, e.g. `["python","cpp"]`; unset = every language of the runner image) narrows the languages; it
+replaces `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS` (Judge0's ids), which the server still reads for one release when
+the new variable is unset, with a warning in its log (REWRITE 5.8 item 10).
 
 ### preflight (`just preflight`, also run by deploy and rollback)
 

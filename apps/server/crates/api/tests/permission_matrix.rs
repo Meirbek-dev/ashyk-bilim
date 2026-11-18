@@ -1286,7 +1286,7 @@ async fn world(app: &TestApp) -> World {
         &app.post_as(
             &learner,
             &format!("/api/v2/assessment-items/{code_item}/runs"),
-            &json!({ "language_id": 71, "source": "print(4)" }),
+            &json!({ "language": "python", "source": "print(4)" }),
         )
         .await,
         "code run",

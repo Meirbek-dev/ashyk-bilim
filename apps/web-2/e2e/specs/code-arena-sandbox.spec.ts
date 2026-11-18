@@ -7,7 +7,7 @@ import { expect, region, ru, start, SUM, test, typeCode, type Made } from './cod
 test.describe.configure({ timeout: 90_000 })
 const arena = (course: MadeCourse, made: Made) => '/learn/' + course.id + '/' + made.activityId + '/code'
 
-const realVerdicts: { name: string; source: string; language?: number; verdict: RunVerdict; label: () => string }[] = [
+const realVerdicts: { name: string; source: string; language?: string; verdict: RunVerdict; label: () => string }[] = [
   {
     name: 'wrong answer',
     source: 'print(0)',
@@ -17,7 +17,7 @@ const realVerdicts: { name: string; source: string; language?: number; verdict: 
   {
     name: 'compilation error',
     source: 'int main( {',
-    language: 54,
+    language: 'cpp',
     verdict: 'compile_error',
     label: () => m.code_status_compile_error({}, ru),
   },
@@ -38,13 +38,13 @@ for (const verdict of realVerdicts) {
   }) => {
     const course = await makeCourse({ activities: 1 })
     const made = await challenges.make(course, {
-      body: { ...SUM, languages: [71, 54], starter_code: { ...SUM.starter_code, '54': '' } },
+      body: { ...SUM, languages: ['python', 'cpp'], starter_code: { ...SUM.starter_code, cpp: '' } },
     })
     await learner.enroll(course)
     await learner.signIn()
     await page.goto(arena(course, made))
     await start(page)
-    await page.getByLabel(m.code_language({}, ru), { exact: true }).selectOption(String(verdict.language ?? 71))
+    await page.getByLabel(m.code_language({}, ru), { exact: true }).selectOption(verdict.language ?? 'python')
     await typeCode(page, verdict.source)
     const requested = page.waitForResponse(
       response =>

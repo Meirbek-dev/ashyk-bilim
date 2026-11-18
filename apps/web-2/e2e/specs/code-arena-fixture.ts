@@ -23,8 +23,8 @@ export const ru = { locale: 'ru' } as const
 type Headers = { cookie: string }
 
 const LANGUAGES: LanguageInfo[] = [
-  { id: 71, name: 'Python (3.13)', monaco_language: 'python' },
-  { id: 63, name: 'JavaScript (Node.js 20)', monaco_language: 'javascript' },
+  { id: 'python', name: 'Python (3.13)' },
+  { id: 'javascript', name: 'JavaScript (Node.js 20)' },
 ]
 
 export const SUM: CodeBody = {
@@ -32,9 +32,9 @@ export const SUM: CodeBody = {
   input_spec: 'Два целых числа через пробел.',
   output_spec: 'Одно число.',
   constraints: ['1 <= a, b <= 100'],
-  languages: [71, 63],
-  starter_code: { '71': 'a, b = map(int, input().split())\n', '63': 'const [a, b] = [1, 2]\n' },
-  reference_solutions: { '71': 'a, b = map(int, input().split())\nprint(a + b)\n' },
+  languages: ['python', 'javascript'],
+  starter_code: { python: 'a, b = map(int, input().split())\n', javascript: 'const [a, b] = [1, 2]\n' },
+  reference_solutions: { python: 'a, b = map(int, input().split())\nprint(a + b)\n' },
   tests: [
     { id: 'visible-1', description: null, input: '1 2', expected_output: '3', is_visible: true, weight: 1 },
     {
@@ -172,7 +172,7 @@ export const runOf = (made: Made, id: string): CodeRun => ({
   assessment_id: made.assessment.id,
   item_id: made.itemId,
   submission_id: null,
-  language_id: 71,
+  language: 'python',
   purpose: 'visible',
   status: 'done',
   verdict: 'wrong_answer',
@@ -199,7 +199,7 @@ export const gradedAttempt = (made: Made, id: string): StudentSubmission => ({
   attempt_number: 1,
   status: 'published',
   release_state: 'visible',
-  answers: { [made.itemId]: { kind: 'code', language: 71, source: 'print(1 + 2)' } },
+  answers: { [made.itemId]: { kind: 'code', language: 'python', source: 'print(1 + 2)' } },
   answered_count: 1,
   total_items: 1,
   final_score: 50,

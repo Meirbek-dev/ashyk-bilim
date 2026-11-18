@@ -1,0 +1,37 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO code_runs\n               (assessment_id, item_id, submission_id, user_id, purpose, status, language,\n                code_sha256, input_sha256, idempotency_key, total, started_at)\n           VALUES ($1, $2, $3, $4, $5, 'running', $6, decode($7, 'hex'), decode($8, 'hex'), $9, $10, now())\n           ON CONFLICT (user_id, item_id, purpose, idempotency_key) DO NOTHING\n           RETURNING id AS \"id: CodeRunId\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id: CodeRunId",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "code_runs",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f7caf830a87b6c7dc3effc784d32c0c037b96b644cd6cedf92aa4c51815b2311"
+}

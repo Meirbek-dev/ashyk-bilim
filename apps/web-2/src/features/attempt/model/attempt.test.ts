@@ -157,7 +157,7 @@ describe('attempt answers and outcomes', () => {
     expect(isBlank({ kind: 'open_text', text: '  ' })).toBe(true)
     expect(isBlank({ kind: 'form', values: { a: ' ' } })).toBe(true)
     expect(isBlank({ kind: 'matching', matches: [] })).toBe(true)
-    expect(isBlank({ kind: 'code', language: 71, source: '' })).toBe(true)
+    expect(isBlank({ kind: 'code', language: 'python', source: '' })).toBe(true)
     expect(isBlank({ kind: 'form', values: { a: '1' } })).toBe(false)
     const items = [item('q1'), item('q2'), item('q3')]
     expect(unanswered(items, { q2: { kind: 'choice', selected: ['o1'] } }).map(entry => entry.number)).toEqual([1, 3])

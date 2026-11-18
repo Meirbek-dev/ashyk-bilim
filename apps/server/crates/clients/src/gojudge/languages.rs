@@ -1,20 +1,26 @@
 //! The languages the runner image provides (`infra/runner/Dockerfile`), with
 //! the commands that build and run a program inside the sandbox.
 //!
-//! Ids are Judge0's: items store them in `languages`, `starter_code` and
-//! `reference_solutions`, answers and code runs in `language_id`, so they stay
-//! the platform's language ids. A language is added here and in the
-//! Dockerfile together; `ashyq admin runner-check` runs hello world in every
-//! allowed one against the deployed image.
+//! A language is its slug everywhere (REWRITE 5.8 item 10): items list slugs
+//! in `languages` and key `starter_code` / `reference_solutions` by them,
+//! answers and code runs name one in `language`, the API and
+//! `AB__RUNNER__LIMITS__ALLOWED_LANGUAGES` take them. The slug is also the
+//! web editor's mode. No version: the image fixes it. A language is added here
+//! and in the Dockerfile together; `ashyq admin runner-check` runs hello world
+//! in every allowed one against the deployed image.
+
+use ab_core::config::RunnerLimits;
 
 /// One way to build or run a program: `args[0]` is an absolute path in the
 /// image, the working directory is the sandbox's `/w`.
 #[derive(Debug)]
 pub struct Language {
-    pub id: i32,
+    /// The platform's name of the language, and the web editor's mode.
+    pub slug: &'static str,
+    /// Judge0's id, the platform's language key before the slugs: read only
+    /// to take `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS` for one release.
+    pub judge0: i32,
     pub name: &'static str,
-    /// The web editor's language mode.
-    pub editor: &'static str,
     /// The learner's source is written to `/w/<source_file>`.
     pub source_file: &'static str,
     /// Compiles the source, or only checks its syntax: a failure is the
@@ -51,9 +57,9 @@ const JAVA: &str = "/usr/bin/java";
 /// Most used first: the editor lists them in this order.
 static LANGUAGES: &[Language] = &[
     Language {
-        id: 71,
+        slug: "python",
+        judge0: 71,
         name: "Python (3.13)",
-        editor: "python",
         source_file: "main.py",
         compile: &["/usr/bin/python3", "-m", "py_compile", "main.py"],
         artifacts: &[],
@@ -65,9 +71,9 @@ print(n * n)
 ",
     },
     Language {
-        id: 54,
+        slug: "cpp",
+        judge0: 54,
         name: "C++ (GCC 14, C++20)",
-        editor: "cpp",
         source_file: "main.cpp",
         // The flags must match the precompiled <bits/stdc++.h> of the image.
         compile: &[
@@ -88,9 +94,9 @@ int main() { long long n; std::cin >> n; std::cout << n * n << "\n"; }
 "#,
     },
     Language {
-        id: 62,
+        slug: "java",
+        judge0: 62,
         name: "Java (OpenJDK 21)",
-        editor: "java",
         source_file: "Main.java",
         // Every class of the file (nested, anonymous) travels in one jar;
         // `jar` keeps its temp file next to it (a move out of /tmp is refused).
@@ -125,9 +131,9 @@ public class Main {
 ",
     },
     Language {
-        id: 50,
+        slug: "c",
+        judge0: 50,
         name: "C (GCC 14, C17)",
-        editor: "c",
         source_file: "main.c",
         compile: &[
             "/usr/bin/gcc",
@@ -148,9 +154,9 @@ int main(void) { long long n; scanf("%lld", &n); printf("%lld\n", n * n); }
 "#,
     },
     Language {
-        id: 63,
+        slug: "javascript",
+        judge0: 63,
         name: "JavaScript (Node.js 20)",
-        editor: "javascript",
         source_file: "main.js",
         compile: &["/usr/bin/node", "--check", "main.js"],
         artifacts: &[],
@@ -162,9 +168,9 @@ console.log(n * n);
 "#,
     },
     Language {
-        id: 74,
+        slug: "typescript",
+        judge0: 74,
         name: "TypeScript (7.0, Node.js 20)",
-        editor: "typescript",
         source_file: "main.ts",
         compile: &[
             "/usr/bin/node",
@@ -191,9 +197,9 @@ console.log(n * n);
 "#,
     },
     Language {
-        id: 60,
+        slug: "go",
+        judge0: 60,
         name: "Go (1.24)",
-        editor: "go",
         source_file: "main.go",
         compile: &["/usr/bin/go", "build", "-o", "main", "main.go"],
         artifacts: &["main"],
@@ -221,9 +227,9 @@ func main() {
 "#,
     },
     Language {
-        id: 73,
+        slug: "rust",
+        judge0: 73,
         name: "Rust (1.85)",
-        editor: "rust",
         source_file: "main.rs",
         compile: &[
             "/usr/bin/rustc",
@@ -249,9 +255,9 @@ fn main() {
 "#,
     },
     Language {
-        id: 78,
+        slug: "kotlin",
+        judge0: 78,
         name: "Kotlin (2.4, JVM 21)",
-        editor: "kotlin",
         source_file: "Main.kt",
         compile: &[
             "/usr/local/kotlin/bin/kotlinc",
@@ -279,9 +285,9 @@ fn main() {
 ",
     },
     Language {
-        id: 68,
+        slug: "php",
+        judge0: 68,
         name: "PHP (8.4)",
-        editor: "php",
         source_file: "main.php",
         compile: &["/usr/bin/php", "-l", "main.php"],
         artifacts: &[],
@@ -294,9 +300,9 @@ echo $n * $n, "\n";
 "#,
     },
     Language {
-        id: 72,
+        slug: "ruby",
+        judge0: 72,
         name: "Ruby (3.3)",
-        editor: "ruby",
         source_file: "main.rb",
         compile: &["/usr/bin/ruby", "-c", "main.rb"],
         artifacts: &[],
@@ -316,21 +322,111 @@ pub fn all() -> &'static [Language] {
 }
 
 #[must_use]
-pub fn find(id: i32) -> Option<&'static Language> {
-    LANGUAGES.iter().find(|l| l.id == id)
+pub fn find(slug: &str) -> Option<&'static Language> {
+    LANGUAGES.iter().find(|l| l.slug == slug)
+}
+
+/// The language Judge0 numbered `id` (the old allowlist's spelling).
+#[must_use]
+pub fn from_judge0(id: i32) -> Option<&'static Language> {
+    LANGUAGES.iter().find(|l| l.judge0 == id)
+}
+
+/// The platform's allowlist as slugs (empty = every language of the image).
+///
+/// `AB__RUNNER__LIMITS__ALLOWED_LANGUAGES`, else the old
+/// `AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS` mapped from Judge0's ids, with a
+/// warning (read for one release; an id the image lacks is dropped).
+#[must_use]
+pub fn allowed(limits: &RunnerLimits) -> Vec<String> {
+    for slug in &limits.allowed_languages {
+        if find(slug).is_none() {
+            tracing::warn!(language = %slug, "AB__RUNNER__LIMITS__ALLOWED_LANGUAGES names a language the runner image lacks");
+        }
+    }
+    match &limits.allowed_language_ids {
+        Some(ids) if limits.allowed_languages.is_empty() => {
+            tracing::warn!(
+                "AB__RUNNER__LIMITS__ALLOWED_LANGUAGE_IDS is deprecated: set AB__RUNNER__LIMITS__ALLOWED_LANGUAGES to the slugs instead"
+            );
+            ids.iter()
+                .filter_map(|&id| {
+                    let language = from_judge0(id);
+                    if language.is_none() {
+                        tracing::warn!(
+                            judge0_id = id,
+                            "an allowed language id the runner image lacks is dropped"
+                        );
+                    }
+                    language.map(|l| l.slug.to_owned())
+                })
+                .collect()
+        }
+        _ => limits.allowed_languages.clone(),
+    }
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
 
     #[test]
-    fn ids_are_unique_and_commands_absolute() {
-        let mut ids: Vec<i32> = LANGUAGES.iter().map(|l| l.id).collect();
+    fn the_allowlist_takes_slugs_and_reads_the_old_ids_for_one_release() {
+        let limits = |slugs: &[&str], ids: Option<Vec<i32>>| RunnerLimits {
+            allowed_languages: slugs.iter().map(|s| (*s).to_owned()).collect(),
+            allowed_language_ids: ids,
+            ..RunnerLimits::default()
+        };
+        assert!(
+            allowed(&RunnerLimits::default()).is_empty(),
+            "nothing set: every language"
+        );
+        assert_eq!(
+            allowed(&limits(&["python", "cpp"], None)),
+            ["python", "cpp"]
+        );
+        // The old variable alone: Judge0's ids become slugs, one the image lacks (Swift) goes.
+        assert_eq!(
+            allowed(&limits(&[], Some(vec![71, 62, 83]))),
+            ["python", "java"]
+        );
+        // Both set: the slugs win.
+        assert_eq!(allowed(&limits(&["go"], Some(vec![71]))), ["go"]);
+        // The environment spelling of both keys.
+        let parsed: RunnerLimits = serde_json::from_value(serde_json::json!({
+            "allowed_languages": ["rust"], "allowed_language_ids": [50]
+        }))
+        .unwrap();
+        assert_eq!(parsed.allowed_languages, ["rust"]);
+        assert_eq!(parsed.allowed_language_ids, Some(vec![50]));
+    }
+
+    #[test]
+    fn slugs_are_unique_and_commands_absolute() {
+        let mut slugs: Vec<&str> = LANGUAGES.iter().map(|l| l.slug).collect();
+        slugs.sort_unstable();
+        slugs.dedup();
+        assert_eq!(slugs.len(), LANGUAGES.len());
+        let mut ids: Vec<i32> = LANGUAGES.iter().map(|l| l.judge0).collect();
         ids.sort_unstable();
         ids.dedup();
         assert_eq!(ids.len(), LANGUAGES.len());
         for language in LANGUAGES {
+            assert!(
+                !language.slug.is_empty()
+                    && language
+                        .slug
+                        .bytes()
+                        .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit()),
+                "{}: a slug is lowercase letters and digits",
+                language.slug
+            );
+            assert_eq!(find(language.slug).map(|l| l.judge0), Some(language.judge0));
+            assert_eq!(
+                from_judge0(language.judge0).map(|l| l.slug),
+                Some(language.slug)
+            );
             assert!(language.compile[0].starts_with('/'), "{}", language.name);
             assert!(language.run[0].starts_with('/'), "{}", language.name);
             assert_eq!(

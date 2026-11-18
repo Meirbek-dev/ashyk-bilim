@@ -35,10 +35,10 @@ pub struct CodeRunnerInfo {
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
 #[serde(deny_unknown_fields)]
 pub struct RunRequest {
-    /// Language id (`GET /code/runner`).
-    #[garde(range(min = 1))]
-    #[schema(minimum = 1)]
-    pub language_id: i32,
+    /// The language's slug (`GET /code/runner`).
+    #[garde(length(min = 1, max = 32))]
+    #[schema(min_length = 1, max_length = 32)]
+    pub language: String,
     #[garde(skip)]
     pub source: String,
     /// When present the run is unscored: one case named `custom`.
@@ -58,7 +58,8 @@ pub struct CodeRun {
     pub status: CodeRunStatus,
     /// How a `done` run ended; `null` while it runs or when it never ran.
     pub verdict: Option<RunVerdict>,
-    pub language_id: i32,
+    /// The language's slug.
+    pub language: String,
     pub passed: i32,
     pub total: i32,
     /// Weighted pass share 0..100; `null` for custom-input runs.
@@ -82,7 +83,7 @@ impl From<DomainRun> for CodeRun {
             purpose: r.purpose,
             status: r.status,
             verdict: r.verdict,
-            language_id: r.language_id,
+            language: r.language,
             passed: r.passed,
             total: r.total,
             score: r.score,

@@ -8,9 +8,9 @@ import { bodyChanged, codeBodyOf, codeForm, codeFormSchema, newTest, testCounts 
 
 const stored: CodeBody = {
   prompt: 'Sum two numbers',
-  languages: [71],
-  starter_code: { '71': 'a, b = map(int, input().split())' },
-  reference_solutions: { '71': 'print(sum(map(int, input().split())))' },
+  languages: ['python'],
+  starter_code: { python: 'a, b = map(int, input().split())' },
+  reference_solutions: { python: 'print(sum(map(int, input().split())))' },
   constraints: ['1 <= a, b <= 100'],
   tests: [
     {
@@ -38,11 +38,14 @@ describe('code item form', () => {
     expect(body.prompt).toBe('Sum two numbers')
   })
 
-  test('B-COD-15 languages, starter code and reference solutions are saved per language id', () => {
+  test('B-COD-15 languages, starter code and reference solutions are saved per language', () => {
     const form = codeForm(stored)
-    const body = codeBodyOf({ ...form, languages: [71, 63], starter: { ...form.starter, '63': '// js' } }, stored)
-    expect(body.languages).toEqual([71, 63])
-    expect(body.starter_code).toEqual({ '71': 'a, b = map(int, input().split())', '63': '// js' })
+    const body = codeBodyOf(
+      { ...form, languages: ['python', 'javascript'], starter: { ...form.starter, javascript: '// js' } },
+      stored,
+    )
+    expect(body.languages).toEqual(['python', 'javascript'])
+    expect(body.starter_code).toEqual({ python: 'a, b = map(int, input().split())', javascript: '// js' })
     expect(body.reference_solutions).toEqual(stored.reference_solutions)
   })
 

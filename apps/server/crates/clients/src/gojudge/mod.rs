@@ -66,7 +66,8 @@ pub struct Limits {
 /// One program and the inputs to run it on.
 #[derive(Debug, Clone)]
 pub struct Batch<'a> {
-    pub language_id: i32,
+    /// The language's slug ([`languages`]).
+    pub language: &'a str,
     pub source: &'a str,
     pub inputs: Vec<&'a str>,
     pub limits: Limits,
@@ -239,10 +240,10 @@ impl GoJudgeClient {
         if batch.inputs.is_empty() {
             return Ok(Vec::new());
         }
-        let Some(language) = languages::find(batch.language_id) else {
+        let Some(language) = languages::find(batch.language) else {
             return Err(RunnerError::Rejected(format!(
-                "language {} is not in the runner image",
-                batch.language_id
+                "language {:?} is not in the runner image",
+                batch.language
             )));
         };
         if !self.admit() {

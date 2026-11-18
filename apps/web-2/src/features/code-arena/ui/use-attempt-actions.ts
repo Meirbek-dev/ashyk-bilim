@@ -29,7 +29,7 @@ export function useAttemptActions({ courseId, assessmentId, itemId, draftId }: A
     run.mutate(
       {
         path: { item_id: itemId },
-        body: { language_id: language, source, ...(input === undefined ? {} : { custom_input: input }) },
+        body: { language, source, ...(input === undefined ? {} : { custom_input: input }) },
         headers: { 'Idempotency-Key': runKey.key },
       },
       {

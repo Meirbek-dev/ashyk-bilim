@@ -242,13 +242,14 @@ pub struct CodeBody {
     pub output_spec: String,
     #[serde(default)]
     pub constraints: Vec<String>,
-    /// Language ids (`GET /code/runner`).
-    #[serde(default)]
-    pub languages: Vec<i32>,
-    /// Keyed by language id as a string (legacy shape).
-    #[serde(default)]
+    /// Language slugs (`GET /code/runner`).
+    #[serde(default, deserialize_with = "crate::code::judge0::languages")]
+    pub languages: Vec<String>,
+    /// Keyed by language slug.
+    #[serde(default, deserialize_with = "crate::code::judge0::keyed")]
     pub starter_code: BTreeMap<String, String>,
-    #[serde(default)]
+    /// Keyed by language slug.
+    #[serde(default, deserialize_with = "crate::code::judge0::keyed")]
     pub reference_solutions: BTreeMap<String, String>,
     #[serde(default)]
     #[schema(max_items = 200)]
@@ -932,6 +933,17 @@ impl ItemBody {
         }
         if let Self::Code(body) = self {
             if body
+                .languages
+                .iter()
+                .any(|l| ab_clients::gojudge::languages::find(l).is_none())
+            {
+                return fail(
+                    "body.languages",
+                    "unknown-language",
+                    "a language the code runner does not have",
+                );
+            }
+            if body
                 .time_limit_seconds
                 .is_some_and(|t| !(1..=MAX_CODE_TIME_SECONDS).contains(&t))
             {
@@ -1199,6 +1211,7 @@ mod tests {
         let ItemBody::Code(code) = &body else {
             panic!("code")
         };
+        assert_eq!(code.languages, ["python"], "a Judge0 id reads as its slug");
         assert_eq!(code.tests[0].weight, 1);
         assert!(code.tests[0].is_visible);
         assert_eq!(code.scoring_strategy, ScoringStrategy::PartialCredit);
@@ -1264,7 +1277,7 @@ mod tests {
             input_spec: String::new(),
             output_spec: String::new(),
             constraints: Vec::new(),
-            languages: vec![1],
+            languages: vec!["python".into()],
             starter_code: BTreeMap::new(),
             reference_solutions: BTreeMap::new(),
             tests: vec![CodeTestCase {
@@ -1305,6 +1318,22 @@ mod tests {
         slow.time_limit_seconds = Some(15);
         slow.memory_limit_mb = Some(99_999);
         assert!(ItemBody::Code(slow).validate().is_err());
+    }
+
+    #[test]
+    fn a_code_body_names_languages_of_the_runner() {
+        let ItemBody::Code(mut body) = ItemBody::default_code() else {
+            panic!("code")
+        };
+        body.languages = vec!["python".into(), "kotlin".into()];
+        assert!(ItemBody::Code(body.clone()).validate().is_ok());
+        body.languages.push("fortran".into());
+        let refused = ItemBody::Code(body).validate().unwrap_err();
+        assert!(matches!(
+            refused,
+            ab_core::Error::Validation { field_errors }
+                if field_errors[0].field == "body.languages"
+        ));
     }
 
     #[test]

@@ -8,12 +8,12 @@ import { languageName } from './labels'
 
 type LanguageSelectProps = {
   label: string
-  value: number
-  /** The ids to offer, in the author's order. */
-  ids: number[]
-  /** The platform's names; null when the sandbox is not configured ("Language #71"). */
+  value: string
+  /** The languages to offer (slugs), in the author's order. */
+  ids: string[]
+  /** The platform's names; null when the sandbox is not configured ("Language python"). */
   languages: LanguageInfo[] | null
-  onChange: (id: number) => void
+  onChange: (id: string) => void
   /** In the workspace toolbar: a small select, the label for screen readers only. */
   compact?: boolean
 }
@@ -29,11 +29,11 @@ export function LanguageSelect({ label, value, ids, languages, onChange, compact
       <NativeSelect
         id={id}
         size={compact ? 'sm' : 'default'}
-        value={String(value)}
-        onChange={event => onChange(Number(event.target.value))}
+        value={value}
+        onChange={event => onChange(event.target.value)}
       >
         {ids.map(option => (
-          <NativeSelectOption key={option} value={String(option)}>
+          <NativeSelectOption key={option} value={option}>
             {languageName(languages, option)}
           </NativeSelectOption>
         ))}

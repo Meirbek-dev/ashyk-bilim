@@ -437,7 +437,7 @@ mod tests {
 
     #[test]
     fn a_jvm_run_gets_its_memory_floor_and_a_heap_flag() {
-        let java = super::super::languages::find(62).unwrap();
+        let java = super::super::languages::find("java").unwrap();
         let limits = Limits {
             cpu_time: Duration::from_secs(2),
             memory_bytes: 64 * MIB,
@@ -447,7 +447,7 @@ mod tests {
         assert_eq!(cmd.memory_limit, 256 * MIB);
         assert!(cmd.args.contains(&"-Xmx192m".to_owned()), "{:?}", cmd.args);
         assert_eq!(cmd.clock_limit, 4_000_000_000);
-        let python = super::super::languages::find(71).unwrap();
+        let python = super::super::languages::find("python").unwrap();
         let cmd = run_cmd(python, &HashMap::new(), "5", limits);
         assert_eq!(cmd.memory_limit, 64 * MIB);
         assert_eq!(cmd.proc_limit, 32);

@@ -2117,8 +2117,7 @@ export const vFileSubmissionSettings = v.object({});
  * A runner language the platform allows.
  */
 export const vLanguageInfo = v.object({
-    id: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
-    monaco_language: v.string(),
+    id: v.string(),
     name: v.string()
 });
 
@@ -2353,7 +2352,7 @@ export const vItemAnswer = v.union([
     }),
     v.object({
         kind: v.picklist(['code']),
-        language: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+        language: v.string(),
         source: v.optional(v.string())
     }),
     v.object({
@@ -3179,7 +3178,7 @@ export const vReferenceCheckStatus = v.picklist([
 export const vReferenceCheck = v.object({
     cases: v.array(vCaseResult),
     compile_output: v.nullable(v.string()),
-    language_id: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    language: v.string(),
     message: v.nullable(v.string()),
     ok: v.boolean(),
     passed: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
@@ -3490,7 +3489,7 @@ export const vRunCustomValue = v.object({
  */
 export const vRunRequest = v.strictObject({
     custom_input: v.optional(v.string()),
-    language_id: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    language: v.pipe(v.string(), v.minLength(1), v.maxLength(32)),
     source: v.string()
 });
 
@@ -3619,7 +3618,7 @@ export const vScoringStrategy = v.picklist([
 export const vCodeBody = v.object({
     constraints: v.optional(v.array(v.string())),
     input_spec: v.optional(v.pipe(v.string(), v.maxLength(20000))),
-    languages: v.optional(v.array(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')))),
+    languages: v.optional(v.array(v.string())),
     max_output_kb: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     memory_limit_mb: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     output_spec: v.optional(v.pipe(v.string(), v.maxLength(20000))),
@@ -4449,7 +4448,7 @@ export const vCodeRun = v.object({
     finished_at_unix: v.nullable(vUnixTime),
     id: vCodeRunId,
     item_id: vAssessmentItemId,
-    language_id: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    language: v.string(),
     passed: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     purpose: vCodeRunPurpose,
     replayed: v.boolean(),

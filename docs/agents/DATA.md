@@ -23,11 +23,11 @@ Every table, column, key and foreign key with the table's purpose: `docs/agents/
 | course teacher / author           | `course_staff` (`course_id`, `user_id`, `authorship`, `status`); the creator is the one `authorship = 'creator'` row (`course_creator(id)`; `collection_staff` / `collection_creator(id)` for a collection) |
 | enrolled learner                  | `course_members` (view: `enrolments` without staff); joins and leaves: `enrolment_events` (a leave keeps its marks in `completions`); per activity: `completions` (the fact), `activity_progress` (projection); old marks on graded activities: `trail_legacy_marks` (history only) |
 | quiz, exam, code challenge        | `assessments` (`activity_id`, `status`; title/kind = the activity's) + `assessment_items` (`body` json) |
-| code statement, tests, languages  | `assessment_items.body`: `prompt`, `tests[]`, `languages[]`, `time_limit_seconds`     |
+| code statement, tests, languages  | `assessment_items.body`: `prompt`, `tests[]`, `languages[]` (Judge0 ids until `20261116075662`, then slugs), `time_limit_seconds` |
 | attempt (quiz, exam, code)        | `submissions` (`status` draft / submitted / graded / released / returned) |
 | what an attempt answered against  | `submissions.items_snapshot` / `policy_snapshot`, `assessment_version_id` -> `assessment_versions` |
 | a grade and its history           | `grading_entries` (journal, highest `revision` = current) = `submissions.final_score`; breakdown `submission_breakdown(id, auto_breakdown)` (latest entry's, else the hand-in's) |
-| code "Run"                        | `code_runs` (`status`, `verdict`; + `code_run_cases`, `verdict`) |
+| code "Run"                        | `code_runs` (`status`, `verdict`, `language` slug beside the old `language_id`; + `code_run_cases`, `verdict`) |
 | file task, its hand-ins           | `assessments` (policy, `status`) + `file_submissions` (same `id`: `instructions`, rubric, file caps); hand-ins are `submissions`, their files `file_submission_files` (`attempt_id` = the submission) |
 | lesson media                      | `activities.content->>'filename'` (video, PDF), `blocks.content` (page blocks)       |
 | role, permission                  | `user_roles` -> `roles` (`slug`); permissions in `role_permissions`                 |

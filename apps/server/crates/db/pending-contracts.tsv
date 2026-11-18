@@ -18,3 +18,12 @@ column	discussion_posts.dislikes_count	the release after reads counted on read (
 column	discussion_posts.replies_count	the release after reads counted on read (schema review 2026-11-08, item 14)	discussions_flow::posts_replies_reactions_and_moderation
 column	daily_teacher_metrics.id	the release after the platform rollup moved to daily_platform_metrics (20261108000500): delete the NULL-teacher rows, teacher_id NOT NULL, (metric_date, teacher_id) the primary key	schema review 2026-11-08 item 16
 constraint	daily_teacher_metrics_metric_date_teacher_user_id_key	the same contract as daily_teacher_metrics.id	schema review 2026-11-08 item 16
+trigger	assessment_items_code_languages	the contract 20261116075662 (the release before reads Judge0 ids only)	REWRITE 5.8 item 10 "Code language by name"
+trigger	assessment_versions_code_languages	the contract 20261116075662	REWRITE 5.8 item 10 "Code language by name"
+trigger	submissions_code_languages	the contract 20261116075662	REWRITE 5.8 item 10 "Code language by name"
+trigger	grading_entries_code_languages	the contract 20261116075662	REWRITE 5.8 item 10 "Code language by name"
+trigger	code_runs_language	the contract 20261116075662	REWRITE 5.8 item 10 "Code language by name"
+column	code_runs.language_id	the contract 20261116075662	REWRITE 5.8 item 10 "Code language by name"
+function	code_languages_stored	the release after the contract 20261116075662 (this release hashes versions through it)	REWRITE 5.8 item 10 "Code language by name"
+function	code_languages_as_ids	the contract 20261116075662, with code_language_slug, code_language_judge0 and the code_*_respelled helpers	REWRITE 5.8 item 10 "Code language by name"
+function	code_runs_language	the contract 20261116075662	REWRITE 5.8 item 10 "Code language by name"

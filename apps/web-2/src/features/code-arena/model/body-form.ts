@@ -37,7 +37,7 @@ export const codeFormSchema = v.object({
   input_spec: v.string(),
   output_spec: v.string(),
   constraints: v.string(),
-  languages: v.array(v.number()),
+  languages: v.array(v.string()),
   starter: v.record(v.string(), v.string()),
   reference: v.record(v.string(), v.string()),
   tests: v.array(testSchema),
