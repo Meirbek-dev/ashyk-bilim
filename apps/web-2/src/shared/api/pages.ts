@@ -3,6 +3,9 @@ import { listGroups } from './gen/sdk.gen'
 /**
  * Every page of a keyset list merged into one page, for pickers that must not drop rows past the first page.
  * Stops after `maxPages`; the answer then keeps the cursor it stopped at.
+ *
+ * shortcut: rows past `maxPages` × the page size (2,000 by default) are still left out, read one page after another;
+ * a picker with server-side search when a course or platform outgrows it.
  */
 export async function allPages<P extends { items: unknown[]; next_cursor: string | null }>(
   read: (cursor: string | undefined) => Promise<P>,

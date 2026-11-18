@@ -294,14 +294,17 @@ async function commit(args: string[]): Promise<number> {
   const tool = jj() ? 'jj' : 'git'
   const made = Bun.spawnSync([tool, 'commit', ...args], { cwd: top, stdio: ['inherit', 'inherit', 'inherit'] })
   if (made.exitCode !== 0 || tool === 'git') return made.exitCode ?? 1
-  const sha = sync(['jj', 'log', '-r', '@-', '--no-graph', '-T', 'commit_id', '--ignore-working-copy'], top).out
+  // The checks read the commit id; the undo names the change id, which survives a rebase another agent ran meanwhile.
+  const template = 'commit_id ++ " " ++ change_id'
+  const ids = sync(['jj', 'log', '-r', '@-', '--no-graph', '-T', template, '--ignore-working-copy'], top).out
+  const [sha = '', change = ''] = ids.split(' ')
   const code = await verifyCommit(sha)
   if (code !== 0) {
-    const undone = sync(['jj', 'squash', '--from', sha, '--into', '@', '--use-destination-message'], top)
+    const undone = sync(['jj', 'squash', '--from', change, '--into', '@', '--use-destination-message'], top)
     console.log(
       undone.code === 0
         ? 'commit: undone (squashed back into the working copy). Fix the findings, then commit again.'
-        : `commit: the checks failed and the commit could not be undone (${undone.out}); \`jj squash --from ${sha} --into @\``,
+        : `commit: the checks failed and the commit could not be undone (${undone.out}); \`jj squash --from ${change} --into @\``,
     )
   }
   return code

@@ -1208,7 +1208,7 @@ async fn roster_add_sweep_survives_hang_up_and_failure(pool: PgPool) {
 
 /// UX-209: a roster add whose sweep waits on a member lock held past the
 /// short inline wait answers 201 well before the request timeout (never a
-/// 408 for a landed add), and the queued `progress:staff-change` job
+/// 504 for a landed add), and the queued `progress:staff-change` job
 /// finishes the sweep once the lock frees.
 #[ab_testdb::test]
 async fn roster_add_past_the_inline_wait_is_201_and_the_job_sweeps(pool: PgPool) {

@@ -65,7 +65,7 @@ impl Followup {
 
 /// How long a post-commit re-projection holds the response (UX-209): far
 /// under the 30 s request timeout, so a busy member lock never turns a
-/// committed write into a 408 - the rest goes on in the background, with a
+/// committed write into a 504 - the rest goes on in the background, with a
 /// retrying job queued behind it.
 const INLINE_WAIT: std::time::Duration = std::time::Duration::from_secs(5);
 

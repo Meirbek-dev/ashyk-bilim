@@ -650,10 +650,20 @@ pub fn build_router(state: AppState) -> Result<Router> {
 
 /// A panicking handler answers like any other internal error (problem+json),
 /// so the client shows its usual message instead of a plain-text body.
-fn panic_problem(_panic: Box<dyn std::any::Any + Send + 'static>) -> axum::response::Response {
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "the signature CatchPanicLayer::custom calls"
+)]
+fn panic_problem(panic: Box<dyn std::any::Any + Send + 'static>) -> axum::response::Response {
+    // The panic's own words go into the error log (the default layer logged them; a custom one must).
+    let message = panic
+        .downcast_ref::<String>()
+        .map(String::as_str)
+        .or_else(|| panic.downcast_ref::<&str>().copied())
+        .unwrap_or("panic payload is not a string");
     axum::response::IntoResponse::into_response(crate::error::ApiError(Error::internal(
         "handler panicked",
-        std::io::Error::other("panic"),
+        std::io::Error::other(message.to_owned()),
     )))
 }
 
