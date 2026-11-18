@@ -31,7 +31,7 @@ Focused checks: `just server test-unit -E 'test(name)'`,
 `just web2 test --project unit <file>` (or `--project browser`).
 Batch gates: `just ci-server`, `just ci-web2`; `just ci` runs all local
 application/infra gates. Hosted CI also builds images, scans secrets and runs stack/E2E tests.
-The commit hook checks staged files; pre-push runs `just check`. No per-edit or Stop hooks repeat checks.
+The commit hook checks staged files; pre-push runs `just check --fast`. No per-edit or Stop hooks repeat checks.
 
 ## Production
 
