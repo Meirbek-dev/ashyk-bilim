@@ -201,7 +201,7 @@ async fn empty_version(pool: &PgPool, assessment: Uuid) -> Uuid {
 }
 
 async fn submission(pool: &PgPool, w: &World, number: i32, preview: bool) -> sqlx::Result<Uuid> {
-    let version = empty_version(pool, w.assessment).await;
+    let version = hundred_points(pool, w.assessment).await;
     handed_in(pool, w, number, preview, version).await
 }
 
@@ -216,8 +216,9 @@ async fn handed_in(
     sqlx::query_scalar(
         "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
                                   preview, submitted_at, items_snapshot, policy_snapshot,
-                                  assessment_version_id)
-         VALUES ($1, $2, $3, 'submitted', $4, $5, now(), '{}', '{}', $6) RETURNING id",
+                                  assessment_version_id, max_points)
+         VALUES ($1, $2, $3, 'submitted', $4, $5, now(), '{}', '{}', $6,
+                 (SELECT max_points FROM assessment_versions WHERE id = $6)) RETURNING id",
     )
     .bind(w.assessment)
     .bind(w.course)
@@ -628,8 +629,8 @@ async fn integrity_checks_exist_and_bite(pool: PgPool) {
     for bad in [
         "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number, status)
          VALUES ($1, $2, $3, 7, 'submitted')",
-        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number, final_score)
-         VALUES ($1, $2, $3, 8, 100.5)",
+        "INSERT INTO submissions (assessment_id, course_id, user_id, attempt_number, max_points, final_points)
+         VALUES ($1, $2, $3, 8, 100, 100.5)",
     ] {
         let refused = sqlx::query(bad)
             .bind(w.assessment)
@@ -771,9 +772,9 @@ async fn grade_journals_guard_the_whole_row(pool: PgPool) {
     let w = world(&pool).await;
     let submission = submission(&pool, &w, 1, false).await.unwrap();
     let entry: Uuid = sqlx::query_scalar(
-        "WITH e AS (INSERT INTO grading_entries (submission_id, revision, raw_score, final_score)
-                    VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 80, 80) RETURNING id, submission_id, effective_breakdown),
-              current AS (UPDATE submissions s SET final_score = 80
+        "WITH e AS (INSERT INTO grading_entries (submission_id, revision, max_points, raw_points, final_points)
+                    VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 100, 80, 80) RETURNING id, submission_id, effective_breakdown),
+              current AS (UPDATE submissions s SET final_points = 80
                           FROM e WHERE s.id = e.submission_id)
          SELECT id FROM e",
     )
@@ -799,9 +800,9 @@ async fn erasing_a_grader_keeps_the_journal(pool: PgPool) {
     let grader = user(&pool, "grader").await;
     let submission = submission(&pool, &w, 1, false).await.unwrap();
     let entry: Uuid = sqlx::query_scalar(
-        "WITH e AS (INSERT INTO grading_entries (submission_id, revision, graded_by, raw_score, final_score)
-                    VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), $2, 80, 80) RETURNING id, submission_id, effective_breakdown),
-              current AS (UPDATE submissions s SET final_score = 80
+        "WITH e AS (INSERT INTO grading_entries (submission_id, revision, graded_by, max_points, raw_points, final_points)
+                    VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), $2, 100, 80, 80) RETURNING id, submission_id, effective_breakdown),
+              current AS (UPDATE submissions s SET final_points = 80
                           FROM e WHERE s.id = e.submission_id)
          SELECT id FROM e",
     )
@@ -1643,7 +1644,7 @@ async fn a_handed_in_attempt_keeps_its_snapshots(pool: PgPool) {
     // Snapshots without the version they were frozen into are refused too.
     let hand_in = "UPDATE submissions SET status = 'submitted', submitted_at = now(),
                           items_snapshot = '{\"items\": []}', policy_snapshot = '{}',
-                          assessment_version_id = $2
+                          assessment_version_id = $2, max_points = 100
                    WHERE id = $1";
     let refused = sqlx::query(hand_in)
         .bind(draft)
@@ -1670,7 +1671,7 @@ async fn a_handed_in_attempt_keeps_its_snapshots(pool: PgPool) {
         assert!(refused.is_err(), "{rewrite}");
     }
     // Grading the attempt still works.
-    sqlx::query("UPDATE submissions SET status = 'graded', final_score = 50 WHERE id = $1")
+    sqlx::query("UPDATE submissions SET status = 'graded', final_points = 50 WHERE id = $1")
         .bind(draft)
         .execute(&pool)
         .await
@@ -1701,14 +1702,14 @@ async fn the_current_grade_is_the_latest_journal_entry(pool: PgPool) {
     .await
     .unwrap();
     // No entry yet: the current value is free (a hand-in awaiting review).
-    sqlx::query("UPDATE submissions SET final_score = 40 WHERE id = $1")
+    sqlx::query("UPDATE submissions SET final_points = 40 WHERE id = $1")
         .bind(sub)
         .execute(&pool)
         .await
         .unwrap();
     let entry =
-        "INSERT INTO grading_entries (submission_id, revision, raw_score, final_score, effective_breakdown)
-                 VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 80, $2, '{\"feedback\": \"ok\"}')";
+        "INSERT INTO grading_entries (submission_id, revision, max_points, raw_points, final_points, effective_breakdown)
+                 VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 100, 80, $2, '{\"feedback\": \"ok\"}')";
     let refused = sqlx::query(entry).bind(sub).bind(80.0).execute(&pool).await;
     assert!(
         refused.is_err(),
@@ -1722,14 +1723,14 @@ async fn the_current_grade_is_the_latest_journal_entry(pool: PgPool) {
         .execute(&mut *tx)
         .await
         .unwrap();
-    sqlx::query("UPDATE submissions SET final_score = 80 WHERE id = $1")
+    sqlx::query("UPDATE submissions SET final_points = 80 WHERE id = $1")
         .bind(sub)
         .execute(&mut *tx)
         .await
         .unwrap();
     tx.commit().await.unwrap();
 
-    let refused = sqlx::query("UPDATE submissions SET final_score = 90 WHERE id = $1")
+    let refused = sqlx::query("UPDATE submissions SET final_points = 90 WHERE id = $1")
         .bind(sub)
         .execute(&pool)
         .await;
@@ -1957,11 +1958,12 @@ async fn a_grade_entry_keeps_its_points(pool: PgPool) {
         "0.0125 rounds half away from zero"
     );
 
-    // A legacy hand-in (before versions, so without one) is out of its assessment's items now, 100 without items.
+    // A legacy hand-in (before versions, so without one) is out of what 20261116075663 gave it (its items then, 100
+    // without items); its entries copy that.
     let legacy: Uuid = sqlx::query_scalar(
         "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
-                                  submitted_at, created_at)
-         VALUES ($1, $2, $3, 'submitted', 2, '2026-06-01', '2026-06-01') RETURNING id",
+                                  submitted_at, created_at, max_points)
+         VALUES ($1, $2, $3, 'submitted', 2, '2026-06-01', '2026-06-01', 100) RETURNING id",
     )
     .bind(w.assessment)
     .bind(w.course)
@@ -2040,7 +2042,7 @@ async fn the_breakdown_is_read_from_the_journal(pool: PgPool) {
     let auto = serde_json::json!({ "items": [], "needs_manual_review": true });
     sqlx::query(
         "UPDATE submissions SET status = 'submitted', submitted_at = now(), auto_breakdown = $2,
-                items_snapshot = '{}', policy_snapshot = '{}', assessment_version_id = $3
+                items_snapshot = '{}', policy_snapshot = '{}', assessment_version_id = $3, max_points = 100
          WHERE id = $1",
     )
     .bind(draft)
@@ -2062,8 +2064,8 @@ async fn the_breakdown_is_read_from_the_journal(pool: PgPool) {
     let graded = serde_json::json!({ "items": [], "feedback": "ok" });
     let mut tx = pool.begin().await.unwrap();
     sqlx::query(
-        "INSERT INTO grading_entries (submission_id, revision, raw_score, final_score, raw_breakdown, effective_breakdown)
-         VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 70, 70, $2, $3)",
+        "INSERT INTO grading_entries (submission_id, revision, max_points, raw_points, final_points, raw_breakdown, effective_breakdown)
+         VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 100, 70, 70, $2, $3)",
     )
     .bind(draft)
     .bind(&auto)
@@ -2071,7 +2073,7 @@ async fn the_breakdown_is_read_from_the_journal(pool: PgPool) {
     .execute(&mut *tx)
     .await
     .unwrap();
-    sqlx::query("UPDATE submissions SET status = 'graded', final_score = 70 WHERE id = $1")
+    sqlx::query("UPDATE submissions SET status = 'graded', final_points = 70 WHERE id = $1")
         .bind(draft)
         .execute(&mut *tx)
         .await
@@ -2667,9 +2669,9 @@ async fn item_feedback_belongs_to_its_entry_and_is_frozen(pool: PgPool) {
     let first = submission(&pool, &w, 1, false).await.unwrap();
     let second = submission(&pool, &w, 2, false).await.unwrap();
     let entry: Uuid = sqlx::query_scalar(
-        "WITH e AS (INSERT INTO grading_entries (submission_id, revision, raw_score, final_score)
-                    VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 80, 80) RETURNING id, submission_id),
-              current AS (UPDATE submissions s SET final_score = 80
+        "WITH e AS (INSERT INTO grading_entries (submission_id, revision, max_points, raw_points, final_points)
+                    VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 100, 80, 80) RETURNING id, submission_id),
+              current AS (UPDATE submissions s SET final_points = 80
                           FROM e WHERE s.id = e.submission_id)
          SELECT id FROM e",
     )
@@ -2965,10 +2967,6 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("assessment_items_upload_ids", "derived"),
         ("assessment_versions_points", "derived"),
         ("assessment_versions_upload_ids", "derived"),
-        (
-            "grading_entries_points",
-            "derived: the percentages of the points (REWRITE 5.8 item 10), a contract makes them generated",
-        ),
         ("blocks_upload_ids", "derived"),
         ("chapters_upload_ids", "derived"),
         ("collections_upload_ids", "derived"),
@@ -2984,10 +2982,6 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ),
         ("item_feedback_upload_ids", "derived"),
         ("platforms_upload_ids", "derived"),
-        (
-            "submissions_points",
-            "derived: the percentages of the points (REWRITE 5.8 item 10), a contract makes them generated",
-        ),
         ("translations_touch_platform", "derived"),
         ("users_upload_ids", "derived"),
         // Business steps, known debts: move to the code that issues and renames. The renaming writers re-issue
@@ -3596,7 +3590,7 @@ async fn a_file_task_is_an_assessment(pool: PgPool) {
     assert_eq!(parent, "submissions");
 
     let entry: Uuid = sqlx::query_scalar(
-        "INSERT INTO grading_entries (submission_id, revision, raw_score, returned) VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 0, true)
+        "INSERT INTO grading_entries (submission_id, revision, max_points, raw_points, returned) VALUES ($1, (SELECT coalesce(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1), 100, 0, true)
          RETURNING id",
     )
     .bind(hand_in)
@@ -3695,7 +3689,7 @@ async fn derived_values_are_read_from_their_source(pool: PgPool) {
     // A feedback row's grader is its entry's.
     let hand_in = submission(&pool, &w, 1, false).await.unwrap();
     let entry: Uuid = sqlx::query_scalar(
-        "INSERT INTO grading_entries (submission_id, revision, raw_score, graded_by) VALUES ($1, 1, 0, $2) RETURNING id",
+        "INSERT INTO grading_entries (submission_id, revision, max_points, raw_points, graded_by) VALUES ($1, 1, 100, 0, $2) RETURNING id",
     )
     .bind(hand_in)
     .bind(w.user)

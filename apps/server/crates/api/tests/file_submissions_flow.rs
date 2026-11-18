@@ -460,7 +460,7 @@ async fn author_attempt_grade_and_download(pool: PgPool) {
         .unwrap();
         sqlx::query(
             "UPDATE submissions SET status = 'submitted', submitted_at = now(),
-                 items_snapshot = '{}', policy_snapshot = '{}', assessment_version_id = $2
+                 items_snapshot = '{}', policy_snapshot = '{}', assessment_version_id = $2, max_points = 100
              WHERE id = $1",
         )
         .bind(uuid::Uuid::parse_str(preview.json()["id"].as_str().unwrap()).unwrap())

@@ -641,7 +641,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   it in the hand-in UPDATE; `submissions.assessment_version_id` is then write-once like the snapshots. Readers
   take items and policy from the version (`20261108000200`); the snapshot columns wait for a contract.
 - **A grade is points; its percentage is derived** (`20261102070100_grading_points`, switch
-  `20261116075663_points_record`, REWRITE 5.8 item 10): a hand-in is out of `submissions.max_points` (its version's
+  `20261116075663_points_record`, contract `20261116075664`, REWRITE 5.8 item 10): a hand-in is out of `submissions.max_points` (its version's
   `assessment_versions.max_points`, written at hand-in; a hand-in without a version is out of its assessment's
   items now, 100 without items; a file task is out of 100). The grader scores each item in its own points
   (`max_score` of the version's item), the breakdown's `score` / `max_score` and a teacher's `score_override` are
@@ -653,10 +653,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   round(points × 100 / max, 2)`: numeric, half away from zero, 0 for max 0; `ab_domain::grading::score` is the same
   rule on whole hundredths, so the percentage a response carries is the one stored (a test pins both on the x.xx5
   cases). `points_of_percent(pct, max) = round(pct × max / 100, 2)` converted the stored percentages once
-  (a shift of at most `0.5 / max_points`). Until the contract `20261116075664` the percentages are columns that
-  BEFORE triggers derive from the points (`submissions_points`, `grading_entries_points`), which also turn what
-  the previous release writes (percentages, share-of-100 breakdowns) into points; the contract makes them
-  generated columns.
+  (a shift of at most `0.5 / max_points`). The percentages are columns generated from the points
+  (`GENERATED ALWAYS AS (percent_of_points(...)) STORED`), so no writer stores one of its own; an entry always has
+  its `max_points` and `raw_points`.
 - **One attempt status vocabulary** (`20261102070000_attempt_status_vocabulary`, contract `20261103070000`):
   submissions and file attempts are `draft → submitted → graded → released → returned` in storage, and the CHECKs
   refuse anything else. The API keeps `pending` / `published` (`attempt_status_enum!` in ab-core: serde and `as_str`

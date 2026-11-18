@@ -2100,31 +2100,30 @@ Grade journal of submissions: one row per grading; append-only except published_
 | id | uuid |  | `uuidv7()` |  |
 | submission_id | uuid |  |  |  |
 | graded_by | uuid | null |  |  |
-| raw_score | percent |  |  | percent_of_points(raw_points, max_points), derived. |
 | penalty_pct | percent |  | `0` |  |
-| final_score | percent | null |  | percent_of_points(final_points, max_points), derived. |
 | raw_breakdown | jsonb |  | `'{}'::jsonb` |  |
 | effective_breakdown | jsonb |  | `'{}'::jsonb` |  |
 | overall_feedback | text |  | `''::text` |  |
 | published_at | timestamp with time zone | null |  |  |
 | created_at | timestamp with time zone |  | `now()` |  |
-| max_points | score_points | null |  | What the attempt is out of: its submissions.max_points. |
-| raw_points | score_points | null |  | The grade before the penalties, in points (written by the server). |
+| max_points | score_points |  |  | What the attempt is out of: its submissions.max_points. |
+| raw_points | score_points |  |  | The grade before the penalties, in points (written by the server). |
 | final_points | score_points | null |  | The grade of record in points; NULL for a draft save. |
 | revision | integer |  |  | Number of the entry within its submission (1, 2, ...); the highest is the current grade. |
 | returned | boolean |  | `false` | This save returned the work for revision (the attempt went to status returned). |
+| raw_score | percent |  | generated: `percent_of_points((raw_points)::numeric, (max_points)::numeric)` | percent_of_points(raw_points, max_points), generated. |
+| final_score | percent | null | generated: `percent_of_points((final_points)::numeric, (max_points)::numeric)` | percent_of_points(final_points, max_points), generated. |
 
 - Primary key `grading_entries_pkey`: `PRIMARY KEY (id)`
 - Unique `grading_entries_id_submission_key`: `UNIQUE (id, submission_id)`
 - Foreign key `grading_entries_graded_by_fkey`: `FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL`
 - Foreign key `grading_entries_submission_id_fkey`: `FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE`
 - Check `grading_entries_breakdown_check`: `CHECK (((jsonb_typeof(raw_breakdown) = 'object'::text) AND (jsonb_typeof(effective_breakdown) = 'object'::text)))`
-- Check `grading_entries_points_check`: `CHECK ((((max_points IS NULL) AND (raw_points IS NULL) AND (final_points IS NULL)) OR ((max_points IS NOT NULL) AND (raw_points IS NOT NULL) AND ((raw_points)::numeric <= (max_points)::numeric) AND ((final_points IS NULL) = (final_score IS NULL)) AND ((final_points IS NULL) OR ((final_points)::numeric <= (max_points)::numeric)))))`
+- Check `grading_entries_points_check`: `CHECK ((((raw_points)::numeric <= (max_points)::numeric) AND ((final_points IS NULL) OR ((final_points)::numeric <= (max_points)::numeric))))`
 - Index `grading_entries_submission_revision_key`: `CREATE UNIQUE INDEX grading_entries_submission_revision_key ON learning.grading_entries USING btree (submission_id, revision)`
 - Trigger `grading_entries_append_only`: `CREATE TRIGGER grading_entries_append_only BEFORE DELETE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_no_delete()`
 - Trigger `grading_entries_current`: `CREATE CONSTRAINT TRIGGER grading_entries_current AFTER INSERT ON learning.grading_entries DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION grading_entries_current_check()`
 - Trigger `grading_entries_immutable`: `CREATE TRIGGER grading_entries_immutable BEFORE UPDATE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_guard()`
-- Trigger `grading_entries_points`: `CREATE TRIGGER grading_entries_points BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_points()`
 
 ## idempotency_keys
 
@@ -2568,8 +2567,6 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 | status | text |  | `'draft'::text` |  |
 | attempt_number | integer |  |  |  |
 | answers | jsonb |  | `'{}'::jsonb` |  |
-| auto_score | percent | null |  | percent_of_points(auto_points, max_points), derived. |
-| final_score | percent | null |  | percent_of_points(final_points, max_points), derived. |
 | is_late | boolean |  | `false` |  |
 | late_penalty_pct | percent |  | `0` |  |
 | violation_count | integer |  | `0` |  |
@@ -2597,6 +2594,8 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 | max_points | score_points | null |  | What the attempt is out of: its version's max_points, written at hand-in (submission_max_points); NULL on a draft. |
 | auto_points | score_points | null |  | The auto-grader's points (of max_points). |
 | final_points | score_points | null |  | The grade of record in points, the latest grade entry's final_points. |
+| auto_score | percent | null | generated: `percent_of_points((auto_points)::numeric, (max_points)::numeric)` | percent_of_points(auto_points, max_points), generated. |
+| final_score | percent | null | generated: `percent_of_points((final_points)::numeric, (max_points)::numeric)` | percent_of_points(final_points, max_points), generated. |
 
 - Primary key `submissions_pkey`: `PRIMARY KEY (id)`
 - Unique `submissions_id_user_key`: `UNIQUE (id, user_id)`
@@ -2624,8 +2623,7 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 - Index `submissions_review_idx`: `CREATE INDEX submissions_review_idx ON learning.submissions USING btree (assessment_id, status, submitted_at DESC)`
 - Index `submissions_timer_idx`: `CREATE INDEX submissions_timer_idx ON learning.submissions USING btree (started_at) WHERE ((status = 'draft'::text) AND (started_at IS NOT NULL))`
 - Index `submissions_user_idx`: `CREATE INDEX submissions_user_idx ON learning.submissions USING btree (user_id)`
-- Trigger `submissions_current_grade`: `CREATE CONSTRAINT TRIGGER submissions_current_grade AFTER UPDATE OF final_score, final_points ON learning.submissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.final_points)::numeric IS DISTINCT FROM (new.final_points)::numeric)) EXECUTE FUNCTION submissions_current_grade_check()`
-- Trigger `submissions_points`: `CREATE TRIGGER submissions_points BEFORE INSERT OR UPDATE ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_points()`
+- Trigger `submissions_current_grade`: `CREATE CONSTRAINT TRIGGER submissions_current_grade AFTER UPDATE OF final_points ON learning.submissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.final_points)::numeric IS DISTINCT FROM (new.final_points)::numeric)) EXECUTE FUNCTION submissions_current_grade_check()`
 - Trigger `submissions_snapshots_frozen`: `CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id, selected_item_ids ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()`
 
 ## teacher_interventions

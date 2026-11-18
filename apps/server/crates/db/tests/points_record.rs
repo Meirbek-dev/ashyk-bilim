@@ -1,5 +1,6 @@
 //! REWRITE 5.8 item 10, *points as the record*: the data fix of `20261116075663_points_record` on rows the release
-//! before wrote (percentages, share-of-100 breakdowns), and its triggers on what that release still writes.
+//! before wrote (percentages, share-of-100 breakdowns), its triggers on what that release still writes, and the
+//! contract that makes the percentages generated.
 //!
 //! The database is migrated to the release before, seeded the way it wrote, then migrated on.
 #![allow(
@@ -364,4 +365,55 @@ async fn old_grades_become_points_of_their_version(test: PgPool) {
     )))
     .await
     .unwrap();
+}
+
+/// The contract (`20261116075664`): the percentages are generated from the points; no writer stores one.
+#[ab_testdb::test]
+async fn the_percentages_are_generated_from_the_points(pool: PgPool) {
+    let generated: Vec<(String, String)> = sqlx::query_as(
+        "SELECT c.relname::text, a.attname::text FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid
+          WHERE c.relname IN ('submissions', 'grading_entries') AND a.attgenerated = 's' AND NOT a.attisdropped
+          ORDER BY 1, 2",
+    )
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    let generated: Vec<(&str, &str)> = generated
+        .iter()
+        .map(|(t, c)| (t.as_str(), c.as_str()))
+        .collect();
+    assert_eq!(
+        generated,
+        [
+            ("grading_entries", "final_score"),
+            ("grading_entries", "raw_score"),
+            ("submissions", "auto_score"),
+            ("submissions", "final_score"),
+        ]
+    );
+    for (table, write) in [
+        ("submissions", "UPDATE submissions SET final_score = 50"),
+        (
+            "grading_entries",
+            "UPDATE grading_entries SET raw_score = 50",
+        ),
+    ] {
+        let err = sqlx::query(AssertSqlSafe(write.to_owned()))
+            .execute(&pool)
+            .await
+            .expect_err(table);
+        assert!(
+            err.to_string().contains("can only be updated to DEFAULT"),
+            "{table}: {err}"
+        );
+    }
+    let leftovers: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM pg_proc WHERE proname IN ('submissions_points', 'grading_entries_points',
+                'breakdown_in_points', 'entry_override_points', 'breakdown_item_percent', 'submission_item_points',
+                'submission_max_points', 'json_number')",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(leftovers, 0, "the switch's conversion helpers are gone");
 }

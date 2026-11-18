@@ -225,11 +225,11 @@ async fn grading_ledger_is_append_only(pool: PgPool) {
     tx.commit().await.unwrap();
 
     // Scores are frozen; only publication may change.
-    let frozen = sqlx::query("UPDATE grading_entries SET raw_score = 99 WHERE id = $1")
+    let frozen = sqlx::query("UPDATE grading_entries SET raw_points = 99 WHERE id = $1")
         .bind(entry.0)
         .execute(&pool)
         .await;
-    assert!(frozen.is_err(), "raw_score must be immutable");
+    assert!(frozen.is_err(), "raw_points must be immutable");
     sqlx::query("UPDATE grading_entries SET published_at = now() WHERE id = $1")
         .bind(entry.0)
         .execute(&pool)
