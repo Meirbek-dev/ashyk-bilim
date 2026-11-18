@@ -1314,6 +1314,34 @@ pub async fn get_override(
     Ok(row)
 }
 
+/// One learner's overrides on several assessments (one read instead of one per assessment).
+pub async fn list_user_overrides(
+    pool: &PgPool,
+    user_id: UserId,
+    ids: &[AssessmentId],
+) -> Result<Vec<OverrideRow>> {
+    let ids: Vec<uuid::Uuid> = ids.iter().map(|id| id.0).collect();
+    let rows = sqlx::query_as!(
+        OverrideRow,
+        r#"SELECT id, assessment_id AS "assessment_id: AssessmentId",
+                  user_id AS "user_id: UserId", max_attempts_override,
+                  (extract(epoch FROM due_at_override))::bigint AS "due_at_override?",
+                  waive_late_penalty, note,
+                  (extract(epoch FROM expires_at))::bigint AS "expires_at?", due_extended,
+                  granted_by AS "granted_by: UserId", version,
+                  (SELECT u.display_name FROM users u WHERE u.id = o.user_id) AS "user_display_name?",
+                  (SELECT u.display_name FROM users u WHERE u.id = o.granted_by) AS "granted_by_name?",
+                  (extract(epoch FROM created_at))::bigint AS "created_at!",
+                  (extract(epoch FROM updated_at))::bigint AS "updated_at!"
+           FROM assessment_overrides o WHERE user_id = $1 AND assessment_id = ANY($2)"#,
+        user_id.0,
+        &ids
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 pub async fn list_overrides(pool: &PgPool, id: AssessmentId) -> Result<Vec<OverrideRow>> {
     let rows = sqlx::query_as!(
         OverrideRow,

@@ -615,12 +615,16 @@ async fn closed_hand_ins(
     if past.is_empty() {
         return Ok(closed);
     }
-    for assessment in ab_db::assessments::list_assessments_for_course(pool, course_id).await? {
-        if !past.iter().any(|s| s.id == assessment.activity_id) {
-            continue;
-        }
-        let policy =
-            AssessmentsService::effective_policy_for(pool, &assessment, user_id, false).await?;
+    let assessments: Vec<_> = ab_db::assessments::list_assessments_for_course(pool, course_id)
+        .await?
+        .into_iter()
+        .filter(|a| past.iter().any(|s| s.id == a.activity_id))
+        .collect();
+    let ids: Vec<_> = assessments.iter().map(|a| a.id).collect();
+    let overrides = ab_db::assessments::list_user_overrides(pool, user_id, &ids).await?;
+    for assessment in &assessments {
+        let own = overrides.iter().find(|o| o.assessment_id == assessment.id);
+        let policy = AssessmentsService::policy_at(assessment, own, false, now);
         if policy.hand_in_at().is_some_and(|at| now > at) {
             closed.push(assessment.activity_id);
         }
