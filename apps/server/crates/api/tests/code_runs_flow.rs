@@ -505,7 +505,8 @@ async fn busy_runner_at_the_deadline_hands_the_submit_in_for_review(pool: PgPool
     let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
     // The test runner's poll budget is 3 s: the busy answer comes after it.
     sqlx::query(
-        "UPDATE assessments SET allow_late = false, due_at = now() + interval '2 seconds' WHERE id = $1",
+        "SELECT assessment_version_save($1, jsonb_build_object('allow_late', false,
+                                                    'due_at', extract(epoch FROM now() + interval '2 seconds')))",
     )
     .bind(uuid::Uuid::parse_str(&id).unwrap())
     .execute(&app.pool)

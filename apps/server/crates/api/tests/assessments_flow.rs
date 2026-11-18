@@ -1454,14 +1454,16 @@ async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
     assert_eq!(detail.json()["title"], "Timed", "{}", detail.text());
 
     // The world moves: the schedule is now due and after the due date.
-    sqlx::query(
-        "UPDATE assessments SET scheduled_at = now() - interval '1 minute',
-                                due_at = now() - interval '1 hour' WHERE id = $1",
-    )
-    .bind(uuid::Uuid::parse_str(&id).unwrap())
-    .execute(&app.pool)
-    .await
-    .unwrap();
+    for sql in [
+        "UPDATE assessments SET scheduled_at = now() - interval '1 minute' WHERE id = $1",
+        "SELECT assessment_version_save($1, jsonb_build_object('due_at', extract(epoch FROM now() - interval '1 hour')))",
+    ] {
+        sqlx::query(sql)
+            .bind(uuid::Uuid::parse_str(&id).unwrap())
+            .execute(&app.pool)
+            .await
+            .unwrap();
+    }
     let published = ab_domain::assessments::AssessmentsService::publish_due(&app.pool)
         .await
         .unwrap();
@@ -1481,7 +1483,7 @@ async fn scheduled_assessments_are_read_only_and_publish_due_rechecks_readiness(
     );
 
     // Ready again → the sweep publishes it.
-    sqlx::query("UPDATE assessments SET due_at = NULL WHERE id = $1")
+    sqlx::query("SELECT assessment_version_save($1, '{\"due_at\": null}')")
         .bind(uuid::Uuid::parse_str(&id).unwrap())
         .execute(&app.pool)
         .await

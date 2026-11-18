@@ -55,15 +55,22 @@ async fn a_certificate_keeps_what_it_was_issued_with(pool: PgPool) {
                                             position, published)
                     SELECT ch.id, $1, 'Quiz ' || n, 'dynamic', 'dynamic_page', n, true
                     FROM ch, generate_series(1, 2) n RETURNING id, position),
-              s AS (INSERT INTO assessments (activity_id, course_id, grading_mode, grade_release_mode,
-                                             completion_rule, weight)
-                    SELECT a.id, $1, 'auto', 'immediate', 'submitted', CASE a.position WHEN 1 THEN 1 ELSE 3 END
+              s AS (INSERT INTO assessments (activity_id, course_id, weight)
+                    SELECT a.id, $1, CASE a.position WHEN 1 THEN 1 ELSE 3 END
                     FROM a RETURNING activity_id)
          INSERT INTO activity_progress (course_id, activity_id, user_id, status, score)
          SELECT $1, a.id, $2, 'released', CASE a.position WHEN 1 THEN 80 ELSE 90 END FROM a",
     )
     .bind(course)
     .bind(learner)
+    .execute(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "SELECT assessment_version_save(id, '{\"completion_rule\": \"submitted\"}') FROM assessments
+         WHERE course_id = $1",
+    )
+    .bind(course)
     .execute(&pool)
     .await
     .unwrap();

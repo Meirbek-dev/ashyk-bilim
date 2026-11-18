@@ -159,12 +159,24 @@ async fn world(pool: &PgPool) -> World {
     .fetch_one(pool)
     .await
     .unwrap();
-    let assessment: Uuid = sqlx::query_scalar(
+    // A database migrated to an earlier release still has the policy columns, three without a default.
+    let columns: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT FROM information_schema.columns
+                         WHERE table_name = 'assessments' AND column_name = 'grading_mode')",
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap();
+    let assessment: Uuid = sqlx::query_scalar(if columns {
         "INSERT INTO assessments (activity_id, course_id, status, published_at,
                                   grading_mode, grade_release_mode, completion_rule)
          VALUES ($1, $2, 'published', now(), 'auto', 'immediate', 'passed')
-         RETURNING id",
-    )
+         RETURNING id"
+    } else {
+        "INSERT INTO assessments (activity_id, course_id, status, published_at)
+         VALUES ($1, $2, 'published', now())
+         RETURNING id"
+    })
     .bind(activity)
     .bind(course)
     .fetch_one(pool)
@@ -2425,7 +2437,6 @@ async fn scores_are_exact_numerics_behind_domains(pool: PgPool) {
          FROM information_schema.columns
          WHERE (table_name, column_name) IN (('submissions', 'final_score'),
                                              ('grading_entries', 'raw_score'),
-                                             ('assessments', 'passing_score'),
                                              ('assessments', 'weight'),
                                              ('assessment_items', 'max_score'),
                                              ('code_run_cases', 'weight'))
@@ -2442,7 +2453,6 @@ async fn scores_are_exact_numerics_behind_domains(pool: PgPool) {
         columns,
         [
             ("assessment_items", "max_score", "score_points"),
-            ("assessments", "passing_score", "percent"),
             ("assessments", "weight", "score_weight"),
             ("code_run_cases", "weight", "score_weight"),
             ("grading_entries", "raw_score", "percent"),
@@ -2463,19 +2473,25 @@ async fn scores_are_exact_numerics_behind_domains(pool: PgPool) {
     assert_eq!(double, 0, "no score column is left in double precision");
 
     let w = world(&pool).await;
+    let saved: Uuid =
+        sqlx::query_scalar("SELECT assessment_version_save($1, '{\"passing_score\": 33.333}')")
+            .bind(w.assessment)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
     let stored: f64 = sqlx::query_scalar(
-        "UPDATE assessments SET passing_score = 33.333 WHERE id = $1 RETURNING passing_score::float8",
+        "SELECT (policy ->> 'passing_score')::float8 FROM assessment_versions WHERE id = $1",
     )
-    .bind(w.assessment)
+    .bind(saved)
     .fetch_one(&pool)
     .await
     .unwrap();
     assert!(
         (stored - 33.33).abs() < 1e-9,
-        "rounded to the column scale: {stored}"
+        "rounded to two decimals: {stored}"
     );
     for bad in [
-        "UPDATE assessments SET passing_score = 100.01 WHERE id = $1",
+        "SELECT assessment_version_save($1, '{\"passing_score\": 100.01}')",
         "UPDATE assessments SET weight = -1 WHERE id = $1",
         "UPDATE assessments SET weight = 'NaN' WHERE id = $1",
     ] {
@@ -2545,10 +2561,8 @@ async fn a_row_cannot_point_at_someone_elses_work(pool: PgPool) {
         .await
         .unwrap();
         let assessment: Uuid = sqlx::query_scalar(
-            "INSERT INTO assessments (activity_id, course_id, status, published_at,
-                                      grading_mode, grade_release_mode, completion_rule)
-             SELECT $1, course_id, status, published_at, grading_mode, grade_release_mode, completion_rule
-             FROM assessments WHERE id = $2 RETURNING id",
+            "INSERT INTO assessments (activity_id, course_id, status, published_at)
+             SELECT $1, course_id, status, published_at FROM assessments WHERE id = $2 RETURNING id",
         )
         .bind(activity)
         .bind(w.assessment)
@@ -2968,20 +2982,8 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("assessment_items_upload_ids", "derived"),
         ("assessment_versions_points", "derived"),
         (
-            "assessments_policy_in_step",
-            "derived; the previous release's columns, a contract drops it",
-        ),
-        (
-            "assessments_version_created",
-            "derived; the previous release's inserts, a contract drops it",
-        ),
-        (
-            "assessments_version_items",
-            "derived; the previous release's item edits, a contract drops it",
-        ),
-        (
-            "submissions_base_version",
-            "derived; the previous release's drafts, a contract drops it",
+            "assessments_first_version",
+            "derived; an assessment always has a current version",
         ),
         ("assessment_versions_upload_ids", "derived"),
         ("blocks_upload_ids", "derived"),
@@ -3409,7 +3411,7 @@ async fn assessment_shapes_hold_at_the_database(pool: PgPool) {
     // A version's hash is derived (a generated column): the writer sends none.
     let derived: bool = sqlx::query_scalar(
         "INSERT INTO assessment_versions (assessment_id, number, items, policy)
-         VALUES ($1, 2, '{\"items\": []}', '{}')
+         VALUES ($1, 2, '{\"items\": []}', assessment_policy_default() || '{\"rubric\": []}')
          RETURNING content_sha256 = assessment_content_sha256(items, policy)",
     )
     .bind(w.assessment)
@@ -3426,7 +3428,7 @@ async fn assessment_shapes_hold_at_the_database(pool: PgPool) {
     .await;
     assert!(kindless.is_err(), "an item body names its kind");
 
-    let strata = "UPDATE assessments SET draw_strata = $2::jsonb WHERE id = $1";
+    let strata = "SELECT assessment_version_save($1, jsonb_build_object('draw_strata', $2::jsonb))";
     for good in [
         r#"[{"group": "1", "count": 3}]"#,
         r#"[{"group": "1", "count": 3}, {"group": "101", "count": 200}]"#,
@@ -3499,8 +3501,7 @@ async fn assessment_shapes_hold_at_the_database(pool: PgPool) {
     .await
     .unwrap();
     let other: Uuid = sqlx::query_scalar(
-        "INSERT INTO assessments (activity_id, course_id, grading_mode, grade_release_mode, completion_rule)
-         VALUES ($1, $2, 'auto', 'immediate', 'passed') RETURNING id",
+        "INSERT INTO assessments (activity_id, course_id) VALUES ($1, $2) RETURNING id",
     )
     .bind(activity)
     .bind(w.course)
@@ -3620,13 +3621,15 @@ async fn a_file_task_is_an_assessment(pool: PgPool) {
         .await;
     assert!(rewritten.is_err(), "the journal keeps what a save did");
 
-    // 50 attempts is a file task's range; the column refuses more for any kind.
+    // 50 attempts is a file task's range; the version refuses more for any kind.
     for (cap, allowed) in [(50, true), (51, false)] {
-        let set = sqlx::query("UPDATE assessments SET max_attempts = $2 WHERE id = $1")
-            .bind(w.assessment)
-            .bind(cap)
-            .execute(&pool)
-            .await;
+        let set = sqlx::query(
+            "SELECT assessment_version_save($1, jsonb_build_object('max_attempts', $2::int))",
+        )
+        .bind(w.assessment)
+        .bind(cap)
+        .execute(&pool)
+        .await;
         assert_eq!(set.is_ok(), allowed, "max_attempts = {cap}");
     }
 }
@@ -4272,12 +4275,13 @@ async fn durations_are_seconds(pool: PgPool) {
 
     // An insert that names no grace period has none.
     let w = world(&pool).await;
-    let grace: i32 =
-        sqlx::query_scalar("SELECT grace_period_seconds FROM assessments WHERE id = $1")
-            .bind(w.assessment)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+    let grace: i32 = sqlx::query_scalar(
+        "SELECT grace_period_seconds FROM assessment_policy_v WHERE assessment_id = $1",
+    )
+    .bind(w.assessment)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
     assert_eq!(grace, 0);
 }
 

@@ -1011,7 +1011,7 @@ An assessment's items + policy as saved (every save; the current one is assessme
 - Check `assessment_versions_items_sha256_check`: `CHECK ((octet_length(items_sha256) = 32))`
 - Check `assessment_versions_max_points_check`: `CHECK ((max_points >= (0)::numeric))`
 - Check `assessment_versions_number_check`: `CHECK ((number >= 1))`
-- Check `assessment_versions_policy_check`: `CHECK (((NOT (policy ?& assessment_policy_keys())) OR assessment_policy_ok(policy)))`
+- Check `assessment_versions_policy_check`: `CHECK (((policy ?& assessment_policy_keys()) AND assessment_policy_ok(policy)))`
 - Index `assessment_versions_content_sha256_key`: `CREATE UNIQUE INDEX assessment_versions_content_sha256_key ON learning.assessment_versions USING btree (assessment_id, content_sha256)`
 - Index `assessment_versions_id_assessment_key`: `CREATE UNIQUE INDEX assessment_versions_id_assessment_key ON learning.assessment_versions USING btree (id, assessment_id)`
 - Trigger `assessment_versions_frozen`: `CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()`
@@ -1036,39 +1036,11 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 | grading_kind | text |  | `'percentage'::text` |  |
 | content_version | integer |  | `1` |  |
 | policy_version | integer |  | `1` |  |
-| grading_mode | text |  | `'auto'::text` |  |
-| grade_release_mode | text |  | `'immediate'::text` |  |
-| completion_rule | text |  | `'passed'::text` |  |
-| passing_score | percent |  | `60` |  |
-| max_attempts | integer | null |  |  |
-| time_limit_seconds | integer | null |  |  |
-| due_at | timestamp with time zone | null |  |  |
-| allow_late | boolean |  | `true` |  |
-| late_policy_kind | text |  | `'none'::text` |  |
-| late_penalty_percent_per_day | percent | null |  |  |
-| late_penalty_max_days | integer | null |  |  |
-| late_cutoff_at | timestamp with time zone | null |  |  |
-| required | boolean |  | `false` |  |
-| review_visibility | text |  | `'score_only'::text` |  |
-| randomize_questions | boolean |  | `false` |  |
-| randomize_options | boolean |  | `false` |  |
-| partial_credit | boolean |  | `true` |  |
-| negative_marking_percent | percent |  | `0` |  |
-| copy_paste_protection | boolean |  | `false` |  |
-| tab_switch_detection | boolean |  | `false` |  |
-| devtools_detection | boolean |  | `false` |  |
-| right_click_disabled | boolean |  | `false` |  |
-| fullscreen_required | boolean |  | `false` |  |
-| violation_threshold | integer |  | `3` |  |
 | access_mode | text |  | `'all_course_learners'::text` |  |
 | created_by | uuid | null |  |  |
 | created_at | timestamp with time zone |  | `now()` |  |
 | updated_at | timestamp with time zone |  | `now()` |  |
-| attempt_penalty_percent | percent |  | `0` |  |
 | version | integer |  | `1` |  |
-| draw_count | integer | null |  | Questions drawn at random for each attempt; NULL: every question. |
-| draw_strata | jsonb | null |  | Draw quotas `[{group, count}]` taken first from items with that `draw_group`; NULL: none. |
-| grace_period_seconds | integer |  | `0` | How long after the time limit a timed attempt is still accepted. |
 | current_version_id | uuid | null |  | The version in force: its policy is the assessment's (assessment_policy_v), its items the ones saved last. |
 
 - Primary key `assessments_pkey`: `PRIMARY KEY (id)`
@@ -1080,32 +1052,15 @@ The graded part of a quiz, exam or code challenge activity: lifecycle, attempt a
 - Foreign key `assessments_current_version_fkey`: `FOREIGN KEY (current_version_id, id) REFERENCES assessment_versions(id, assessment_id)`
 - Check `assessments_access_mode_check`: `CHECK ((access_mode = ANY (ARRAY['all_course_learners'::text, 'restricted'::text])))`
 - Check `assessments_archived_at_check`: `CHECK (((status <> 'archived'::text) OR (archived_at IS NOT NULL)))`
-- Check `assessments_completion_rule_check`: `CHECK ((completion_rule = ANY (ARRAY['viewed'::text, 'submitted'::text, 'graded'::text, 'passed'::text, 'teacher_verified'::text])))`
 - Check `assessments_description_check`: `CHECK ((char_length(description) <= 20000))`
-- Check `assessments_draw_count_check`: `CHECK (((draw_count IS NULL) OR ((draw_count >= 1) AND (draw_count <= 200))))`
-- Check `assessments_draw_strata_check`: `CHECK (((draw_strata IS NULL) OR (jsonb_typeof(draw_strata) = 'array'::text)))`
-- Check `assessments_draw_strata_shape`: `CHECK (((draw_strata IS NULL) OR draw_strata_ok(draw_strata)))`
-- Check `assessments_grace_period_seconds_check`: `CHECK ((grace_period_seconds >= 0))`
-- Check `assessments_grade_release_mode_check`: `CHECK ((grade_release_mode = ANY (ARRAY['immediate'::text, 'batch'::text])))`
-- Check `assessments_grading_mode_check`: `CHECK ((grading_mode = ANY (ARRAY['auto'::text, 'manual'::text, 'auto_then_manual'::text])))`
 - Check `assessments_grading_type_check`: `CHECK ((grading_kind = ANY (ARRAY['numeric'::text, 'percentage'::text])))`
-- Check `assessments_late_penalty_max_days_check`: `CHECK (((late_penalty_max_days IS NULL) OR (late_penalty_max_days >= 1)))`
-- Check `assessments_late_policy_kind_check`: `CHECK ((late_policy_kind = ANY (ARRAY['none'::text, 'penalty'::text, 'cutoff'::text])))`
-- Check `assessments_late_policy_shape`: `CHECK ((((late_policy_kind = 'none'::text) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'penalty'::text) AND (late_penalty_percent_per_day IS NOT NULL) AND (late_penalty_max_days IS NOT NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'cutoff'::text) AND (late_cutoff_at IS NOT NULL) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL))))`
 - Check `assessments_lifecycle_check`: `CHECK ((status = ANY (ARRAY['draft'::text, 'scheduled'::text, 'published'::text, 'archived'::text])))`
-- Check `assessments_max_attempts_cap`: `CHECK (((max_attempts IS NULL) OR (max_attempts <= 50)))`
-- Check `assessments_max_attempts_check`: `CHECK (((max_attempts IS NULL) OR (max_attempts >= 1)))`
 - Check `assessments_published_at_check`: `CHECK (((status <> 'published'::text) OR (published_at IS NOT NULL)))`
-- Check `assessments_review_visibility_check`: `CHECK ((review_visibility = ANY (ARRAY['none'::text, 'score_only'::text, 'full'::text])))`
 - Check `assessments_scheduled_needs_time`: `CHECK (((status <> 'scheduled'::text) OR (scheduled_at IS NOT NULL)))`
-- Check `assessments_time_limit_seconds_check`: `CHECK (((time_limit_seconds IS NULL) OR (time_limit_seconds >= 1)))`
-- Check `assessments_violation_threshold_check`: `CHECK ((violation_threshold >= 1))`
 - Index `assessments_course_idx`: `CREATE INDEX assessments_course_idx ON learning.assessments USING btree (course_id)`
 - Index `assessments_current_version_idx`: `CREATE INDEX assessments_current_version_idx ON learning.assessments USING btree (current_version_id)`
 - Index `assessments_due_publish_idx`: `CREATE INDEX assessments_due_publish_idx ON learning.assessments USING btree (scheduled_at) WHERE (status = 'scheduled'::text)`
-- Trigger `assessments_policy_in_step`: `CREATE TRIGGER assessments_policy_in_step BEFORE UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION assessments_policy_in_step()`
-- Trigger `assessments_version_created`: `CREATE CONSTRAINT TRIGGER assessments_version_created AFTER INSERT ON learning.assessments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION assessments_version_sync()`
-- Trigger `assessments_version_items`: `CREATE CONSTRAINT TRIGGER assessments_version_items AFTER UPDATE OF content_version ON learning.assessments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((old.content_version IS DISTINCT FROM new.content_version)) EXECUTE FUNCTION assessments_version_sync()`
+- Trigger `assessments_first_version`: `CREATE CONSTRAINT TRIGGER assessments_first_version AFTER INSERT OR UPDATE OF current_version_id ON learning.assessments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION assessments_first_version()`
 
 ## auth_audit_log
 
@@ -2674,7 +2629,6 @@ An attempt at an assessment by a learner: answers, frozen items/policy snapshots
 - Index `submissions_review_idx`: `CREATE INDEX submissions_review_idx ON learning.submissions USING btree (assessment_id, status, submitted_at DESC)`
 - Index `submissions_timer_idx`: `CREATE INDEX submissions_timer_idx ON learning.submissions USING btree (started_at) WHERE ((status = 'draft'::text) AND (started_at IS NOT NULL))`
 - Index `submissions_user_idx`: `CREATE INDEX submissions_user_idx ON learning.submissions USING btree (user_id)`
-- Trigger `submissions_base_version`: `CREATE TRIGGER submissions_base_version BEFORE INSERT OR UPDATE OF content_version ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_base_version()`
 - Trigger `submissions_current_grade`: `CREATE CONSTRAINT TRIGGER submissions_current_grade AFTER UPDATE OF final_points ON learning.submissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.final_points)::numeric IS DISTINCT FROM (new.final_points)::numeric)) EXECUTE FUNCTION submissions_current_grade_check()`
 - Trigger `submissions_snapshots_frozen`: `CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id, selected_item_ids ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()`
 

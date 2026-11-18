@@ -1065,11 +1065,13 @@ async fn a_late_rule_change_settles_every_file_hand_in(pool: PgPool) {
             &serde_json::json!({ "due_at_unix": now_unix() - 2 * 86_400 - 60 }),
         ),
         async || {
-            sqlx::query_scalar::<_, bool>("SELECT due_at < now() FROM assessments WHERE id = $1")
-                .bind(fs)
-                .fetch_one(&app.pool)
-                .await
-                .unwrap()
+            sqlx::query_scalar::<_, bool>(
+                "SELECT due_at < now() FROM assessment_policy_v WHERE assessment_id = $1",
+            )
+            .bind(fs)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap()
         },
         |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
     )
@@ -2183,8 +2185,9 @@ async fn a_file_task_lives_in_the_assessment_pipeline(pool: PgPool) {
     let task = uuid::Uuid::parse_str(&id).unwrap();
     let (kind, lifecycle, grading_mode, max_attempts): (String, String, String, i32) =
         sqlx::query_as(
-            "SELECT act.kind, a.status, a.grading_mode, a.max_attempts
+            "SELECT act.kind, a.status, p.grading_mode, p.max_attempts
              FROM file_submissions f JOIN assessments a ON a.id = f.id
+             JOIN assessment_policy_v p ON p.assessment_id = a.id
              JOIN activities act ON act.id = a.activity_id WHERE f.id = $1",
         )
         .bind(task)
@@ -2400,8 +2403,9 @@ async fn a_file_task_lives_in_the_assessment_pipeline(pool: PgPool) {
     assert_eq!(copied.status, StatusCode::CREATED, "{}", copied.text());
     let copy = uuid::Uuid::parse_str(copied.json()["id"].as_str().unwrap()).unwrap();
     let tasks: Vec<(String, i32, String)> = sqlx::query_as(
-        "SELECT a.status, a.max_attempts, f.instructions
+        "SELECT a.status, p.max_attempts, f.instructions
          FROM file_submissions f JOIN assessments a ON a.id = f.id AND a.activity_id = f.activity_id
+         JOIN assessment_policy_v p ON p.assessment_id = a.id
          WHERE f.course_id = $1",
     )
     .bind(copy)

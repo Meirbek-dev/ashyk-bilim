@@ -257,8 +257,7 @@ async fn seed_code_challenge_on(
         "INSERT INTO assessments (activity_id, course_id, kind, title, grading_mode, grade_release_mode, completion_rule)
          VALUES ($1, $2, 'code_challenge', 'Hello', 'auto', 'immediate', 'submitted') RETURNING id"
     } else {
-        "INSERT INTO assessments (activity_id, course_id, grading_mode, grade_release_mode, completion_rule)
-         VALUES ($1, $2, 'auto', 'immediate', 'submitted') RETURNING id"
+        "INSERT INTO assessments (activity_id, course_id) VALUES ($1, $2) RETURNING id"
     })
     .bind(activity)
     .bind(course)

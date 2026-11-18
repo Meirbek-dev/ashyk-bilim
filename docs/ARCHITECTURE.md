@@ -634,7 +634,7 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   (`activities_keep_assessment_type`). The copies `assessments.title` / `kind` are gone (contract
   `20261103020100`).
 - **Assessment versions** (`20261102020600_assessment_versions`; policy in versions: switch
-  `20261116075666_policy_in_versions`, REWRITE 5.8 item 10): an assessment's items and policy as saved or as handed
+  `20261116075666_policy_in_versions`, contract `20261116075669`, REWRITE 5.8 item 10): an assessment's items and policy as saved or as handed
   in, one `assessment_versions` row each, numbered per assessment, content-addressed (`content_sha256` over the
   text, generated) and frozen; `max_points` is the items' total `max_score`. Every save writes one, drafts too
   (`assessment_version_save(id, patch, cosmetic)`, `ab_db::assessment_versions::save`, on the save's transaction):
@@ -651,8 +651,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   is then write-once like the snapshots. A learner's own cap or due date is an `assessment_overrides` row, never
   a version. Versions the release before wrote held nine effective fields; the switch rebuilt each as the
   assessment's policy apart from the overrides (a value no override or preview explains is kept as the policy at
-  that time) and merged the ones that became equal. The policy columns of `assessments`, kept in step for the
-  release before by triggers, wait for the contract (pending-contracts.tsv).
+  that time) and merged the ones that became equal; its contract `20261116075669` dropped the policy columns of
+  `assessments` and the triggers that kept them in step for the release before. An assessment always has a
+  current version: one committed without a save gets the presets' base (`assessments_first_version`).
 - **A grade is points; its percentage is derived** (`20261102070100_grading_points`, switch
   `20261116075663_points_record`, contract `20261116075664`, REWRITE 5.8 item 10): a hand-in is out of `submissions.max_points` (its version's
   `assessment_versions.max_points`, written at hand-in; a hand-in without a version is out of its assessment's

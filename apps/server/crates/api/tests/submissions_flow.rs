@@ -755,7 +755,7 @@ async fn strict_due_date_sweep_hands_in_open_drafts(pool: PgPool) {
     backdate_deadline_sweep(&app).await;
 
     // The due date passes (one minute ago).
-    sqlx::query("UPDATE assessments SET due_at = now() - interval '1 minute' WHERE id = $1")
+    sqlx::query("SELECT assessment_version_save($1, jsonb_build_object('due_at', extract(epoch FROM now() - interval '1 minute')))")
         .bind(uuid::Uuid::parse_str(&id).unwrap())
         .execute(&app.pool)
         .await
@@ -858,7 +858,7 @@ async fn strict_due_date_counts_down_and_the_page_hands_in_at_it(pool: PgPool) {
     let carol_sub = carols.json()["id"].as_str().unwrap().to_owned();
 
     // The due date passed 3 s ago: the page's hand-in at zero lands now.
-    sqlx::query("UPDATE assessments SET due_at = now() - interval '3 seconds' WHERE id = $1")
+    sqlx::query("SELECT assessment_version_save($1, jsonb_build_object('due_at', extract(epoch FROM now() - interval '3 seconds')))")
         .bind(uuid::Uuid::parse_str(&id).unwrap())
         .execute(&app.pool)
         .await
@@ -874,7 +874,7 @@ async fn strict_due_date_counts_down_and_the_page_hands_in_at_it(pool: PgPool) {
     assert!(submitted < unix_now(), "at the due date: {submitted}");
 
     // Two minutes past it a submit is refused (the sweep hands it in).
-    sqlx::query("UPDATE assessments SET due_at = now() - interval '2 minutes' WHERE id = $1")
+    sqlx::query("SELECT assessment_version_save($1, jsonb_build_object('due_at', extract(epoch FROM now() - interval '2 minutes')))")
         .bind(uuid::Uuid::parse_str(&id).unwrap())
         .execute(&app.pool)
         .await
@@ -963,7 +963,7 @@ async fn late_cutoff_sweep_hands_in_open_drafts(pool: PgPool) {
     let sweep = || ab_domain::grading::SubmissionsService::sweep_expired_drafts(&runner, None, 10);
 
     // Past the due date, before the cutoff: late work is still open.
-    sqlx::query("UPDATE assessments SET due_at = now() - interval '2 hours' WHERE id = $1")
+    sqlx::query("SELECT assessment_version_save($1, jsonb_build_object('due_at', extract(epoch FROM now() - interval '2 hours')))")
         .bind(uuid::Uuid::parse_str(&id).unwrap())
         .execute(&app.pool)
         .await
@@ -984,7 +984,7 @@ async fn late_cutoff_sweep_hands_in_open_drafts(pool: PgPool) {
 
     // The cutoff passes (one minute ago): alice only.
     sqlx::query(
-        "UPDATE assessments SET late_cutoff_at = now() - interval '1 minute' WHERE id = $1",
+        "SELECT assessment_version_save($1, jsonb_build_object('late_cutoff_at', extract(epoch FROM now() - interval '1 minute')))",
     )
     .bind(uuid::Uuid::parse_str(&id).unwrap())
     .execute(&app.pool)
@@ -1086,7 +1086,7 @@ async fn deadline_sweep_ignores_dates_before_it_went_live(pool: PgPool) {
     };
 
     // Due two hours ago, live for one: an old draft - left as it is.
-    sqlx::query("UPDATE assessments SET due_at = now() - interval '2 hours' WHERE id = $1")
+    sqlx::query("SELECT assessment_version_save($1, jsonb_build_object('due_at', extract(epoch FROM now() - interval '2 hours')))")
         .bind(uuid::Uuid::parse_str(&id).unwrap())
         .execute(&app.pool)
         .await
@@ -1377,7 +1377,7 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
         .await;
     assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
     let bob_sub = draft.json()["id"].as_str().unwrap().to_owned();
-    sqlx::query("UPDATE assessments SET due_at = now() - interval '1 minute' WHERE id = $1")
+    sqlx::query("SELECT assessment_version_save($1, jsonb_build_object('due_at', extract(epoch FROM now() - interval '1 minute')))")
         .bind(uuid::Uuid::parse_str(&id).unwrap())
         .execute(&app.pool)
         .await
@@ -1420,7 +1420,7 @@ async fn submit_guards_stale_version_races_rate_and_deadline(pool: PgPool) {
         .await;
     assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
     let preview = draft.json()["id"].as_str().unwrap().to_owned();
-    sqlx::query("UPDATE assessments SET time_limit_seconds = 60 WHERE id = $1")
+    sqlx::query("SELECT assessment_version_save($1, '{\"time_limit_seconds\": 60}')")
         .bind(uuid::Uuid::parse_str(&id).unwrap())
         .execute(&app.pool)
         .await
@@ -2241,7 +2241,7 @@ async fn timer_sweep_closes_a_late_preview_without_penalty(pool: PgPool) {
         .await;
     assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
     let sub = uuid::Uuid::parse_str(draft.json()["id"].as_str().unwrap()).unwrap();
-    sqlx::query("UPDATE assessments SET due_at = now() - interval '1 hour' WHERE id = $1")
+    sqlx::query("SELECT assessment_version_save($1, jsonb_build_object('due_at', extract(epoch FROM now() - interval '1 hour')))")
         .bind(uuid::Uuid::parse_str(&id).unwrap())
         .execute(&app.pool)
         .await
@@ -2301,7 +2301,7 @@ async fn timer_sweep_judges_lateness_when_the_clock_ran_out(pool: PgPool) {
     assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
     let sub = uuid::Uuid::parse_str(draft.json()["id"].as_str().unwrap()).unwrap();
     // Clock out 2 minutes ago, due 1 minute ago, the sweep only now.
-    sqlx::query("UPDATE assessments SET due_at = now() - interval '1 minute' WHERE id = $1")
+    sqlx::query("SELECT assessment_version_save($1, jsonb_build_object('due_at', extract(epoch FROM now() - interval '1 minute')))")
         .bind(uuid::Uuid::parse_str(&id).unwrap())
         .execute(&app.pool)
         .await
@@ -2497,7 +2497,7 @@ async fn a_counted_draft_keeps_its_gates_after_promotion(pool: PgPool) {
     assert_eq!(draft.status, StatusCode::CREATED, "{}", draft.text());
     let sub_id = draft.json()["id"].as_str().unwrap().to_owned();
     set_maintainer(&app, &teacher, &course_id, &lena, true).await;
-    sqlx::query("UPDATE assessments SET due_at = now() - interval '1 minute' WHERE id = $1")
+    sqlx::query("SELECT assessment_version_save($1, jsonb_build_object('due_at', extract(epoch FROM now() - interval '1 minute')))")
         .bind(uuid::Uuid::parse_str(&id).unwrap())
         .execute(&app.pool)
         .await

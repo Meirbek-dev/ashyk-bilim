@@ -712,3 +712,26 @@ async fn only_new_items_stale_a_draft(pool: PgPool) {
         "a cosmetic save moves only the drafts that were current"
     );
 }
+
+/// Readers join the current version: an assessment a writer left without a save gets the presets' base at commit.
+#[ab_testdb::test]
+async fn an_assessment_always_has_a_version(pool: PgPool) {
+    let c = course(&pool).await;
+    let quiz = activity(&pool, &c, 1).await;
+    let assessment: Uuid = sqlx::query_scalar(
+        "INSERT INTO assessments (activity_id, course_id) VALUES ($1, $2) RETURNING id",
+    )
+    .bind(quiz)
+    .bind(c.id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    let saved = versions(&pool, assessment).await;
+    assert_eq!(saved.len(), 1);
+    assert_eq!(current(&pool, assessment).await, Some(saved[0].0));
+    let default: Value = sqlx::query_scalar("SELECT assessment_policy_default()")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(saved[0].2, default);
+}

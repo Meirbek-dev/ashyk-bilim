@@ -1224,6 +1224,12 @@ Queue, in order:
       has; 40 of 60 assessments had no version and got one, the other 20 found theirs; 2 drafts named their base.
       Rollback hazard: a hand-in the release before writes after the switch is versioned in its nine-field shape
       (never current, read as before); the contract rebuilds those the same way.
+      Its contract `20261116075669_policy_in_versions_contract` (a data fix past the frozen versions' guard, as
+      the switch) rebuilt the hand-ins the previous release versioned after the switch, dropped the four triggers,
+      their functions, the rebuild's helpers and the 28 policy columns of `assessments` (their checks with them;
+      `assessment_versions_policy_check` now holds for every version), and made sure an assessment always has a
+      current version: one a writer left without a save gets the presets' base at commit
+      (`assessments_first_version`); `assessments_touch` skips `current_version_id` alone.
 
 ## 6. Auth
 

@@ -413,20 +413,15 @@ constraint assessment_versions assessment_versions_max_points_not_null NOT NULL 
 constraint assessment_versions assessment_versions_number_check CHECK ((number >= 1))
 constraint assessment_versions assessment_versions_number_not_null NOT NULL number
 constraint assessment_versions assessment_versions_pkey PRIMARY KEY (id)
-constraint assessment_versions assessment_versions_policy_check CHECK (((NOT (policy ?& assessment_policy_keys())) OR assessment_policy_ok(policy)))
+constraint assessment_versions assessment_versions_policy_check CHECK (((policy ?& assessment_policy_keys()) AND assessment_policy_ok(policy)))
 constraint assessment_versions assessment_versions_policy_not_null NOT NULL policy
 constraint assessments assessments_access_mode_check CHECK ((access_mode = ANY (ARRAY['all_course_learners'::text, 'restricted'::text])))
 constraint assessments assessments_access_mode_not_null NOT NULL access_mode
 constraint assessments assessments_activity_id_fkey FOREIGN KEY (activity_id, course_id) REFERENCES activities(id, course_id) ON UPDATE RESTRICT ON DELETE CASCADE
 constraint assessments assessments_activity_id_key UNIQUE (activity_id)
 constraint assessments assessments_activity_id_not_null NOT NULL activity_id
-constraint assessments assessments_allow_late_not_null NOT NULL allow_late
 constraint assessments assessments_archived_at_check CHECK (((status <> 'archived'::text) OR (archived_at IS NOT NULL)))
-constraint assessments assessments_attempt_penalty_percent_not_null NOT NULL attempt_penalty_percent
-constraint assessments assessments_completion_rule_check CHECK ((completion_rule = ANY (ARRAY['viewed'::text, 'submitted'::text, 'graded'::text, 'passed'::text, 'teacher_verified'::text])))
-constraint assessments assessments_completion_rule_not_null NOT NULL completion_rule
 constraint assessments assessments_content_version_not_null NOT NULL content_version
-constraint assessments assessments_copy_paste_protection_not_null NOT NULL copy_paste_protection
 constraint assessments assessments_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 constraint assessments assessments_course_id_not_null NOT NULL course_id
 constraint assessments assessments_created_at_not_null NOT NULL created_at
@@ -434,50 +429,19 @@ constraint assessments assessments_creator_id_fkey FOREIGN KEY (created_by) REFE
 constraint assessments assessments_current_version_fkey FOREIGN KEY (current_version_id, id) REFERENCES assessment_versions(id, assessment_id)
 constraint assessments assessments_description_check CHECK ((char_length(description) <= 20000))
 constraint assessments assessments_description_not_null NOT NULL description
-constraint assessments assessments_devtools_detection_not_null NOT NULL devtools_detection
-constraint assessments assessments_draw_count_check CHECK (((draw_count IS NULL) OR ((draw_count >= 1) AND (draw_count <= 200))))
-constraint assessments assessments_draw_strata_check CHECK (((draw_strata IS NULL) OR (jsonb_typeof(draw_strata) = 'array'::text)))
-constraint assessments assessments_draw_strata_shape CHECK (((draw_strata IS NULL) OR draw_strata_ok(draw_strata)))
-constraint assessments assessments_fullscreen_required_not_null NOT NULL fullscreen_required
-constraint assessments assessments_grace_period_seconds_check CHECK ((grace_period_seconds >= 0))
-constraint assessments assessments_grace_period_seconds_not_null NOT NULL grace_period_seconds
-constraint assessments assessments_grade_release_mode_check CHECK ((grade_release_mode = ANY (ARRAY['immediate'::text, 'batch'::text])))
-constraint assessments assessments_grade_release_mode_not_null NOT NULL grade_release_mode
-constraint assessments assessments_grading_mode_check CHECK ((grading_mode = ANY (ARRAY['auto'::text, 'manual'::text, 'auto_then_manual'::text])))
-constraint assessments assessments_grading_mode_not_null NOT NULL grading_mode
+constraint assessments assessments_first_version TRIGGER DEFERRABLE INITIALLY DEFERRED
 constraint assessments assessments_grading_type_check CHECK ((grading_kind = ANY (ARRAY['numeric'::text, 'percentage'::text])))
 constraint assessments assessments_grading_type_not_null NOT NULL grading_kind
 constraint assessments assessments_id_course_key UNIQUE (id, course_id)
 constraint assessments assessments_id_not_null NOT NULL id
-constraint assessments assessments_late_penalty_max_days_check CHECK (((late_penalty_max_days IS NULL) OR (late_penalty_max_days >= 1)))
-constraint assessments assessments_late_policy_kind_check CHECK ((late_policy_kind = ANY (ARRAY['none'::text, 'penalty'::text, 'cutoff'::text])))
-constraint assessments assessments_late_policy_kind_not_null NOT NULL late_policy_kind
-constraint assessments assessments_late_policy_shape CHECK ((((late_policy_kind = 'none'::text) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'penalty'::text) AND (late_penalty_percent_per_day IS NOT NULL) AND (late_penalty_max_days IS NOT NULL) AND (late_cutoff_at IS NULL)) OR ((late_policy_kind = 'cutoff'::text) AND (late_cutoff_at IS NOT NULL) AND (late_penalty_percent_per_day IS NULL) AND (late_penalty_max_days IS NULL))))
 constraint assessments assessments_lifecycle_check CHECK ((status = ANY (ARRAY['draft'::text, 'scheduled'::text, 'published'::text, 'archived'::text])))
 constraint assessments assessments_lifecycle_not_null NOT NULL status
-constraint assessments assessments_max_attempts_cap CHECK (((max_attempts IS NULL) OR (max_attempts <= 50)))
-constraint assessments assessments_max_attempts_check CHECK (((max_attempts IS NULL) OR (max_attempts >= 1)))
-constraint assessments assessments_negative_marking_percent_not_null NOT NULL negative_marking_percent
-constraint assessments assessments_partial_credit_not_null NOT NULL partial_credit
-constraint assessments assessments_passing_score_not_null NOT NULL passing_score
 constraint assessments assessments_pkey PRIMARY KEY (id)
 constraint assessments assessments_policy_version_not_null NOT NULL policy_version
 constraint assessments assessments_published_at_check CHECK (((status <> 'published'::text) OR (published_at IS NOT NULL)))
-constraint assessments assessments_randomize_options_not_null NOT NULL randomize_options
-constraint assessments assessments_randomize_questions_not_null NOT NULL randomize_questions
-constraint assessments assessments_required_not_null NOT NULL required
-constraint assessments assessments_review_visibility_check CHECK ((review_visibility = ANY (ARRAY['none'::text, 'score_only'::text, 'full'::text])))
-constraint assessments assessments_review_visibility_not_null NOT NULL review_visibility
-constraint assessments assessments_right_click_disabled_not_null NOT NULL right_click_disabled
 constraint assessments assessments_scheduled_needs_time CHECK (((status <> 'scheduled'::text) OR (scheduled_at IS NOT NULL)))
-constraint assessments assessments_tab_switch_detection_not_null NOT NULL tab_switch_detection
-constraint assessments assessments_time_limit_seconds_check CHECK (((time_limit_seconds IS NULL) OR (time_limit_seconds >= 1)))
 constraint assessments assessments_updated_at_not_null NOT NULL updated_at
-constraint assessments assessments_version_created TRIGGER DEFERRABLE INITIALLY DEFERRED
-constraint assessments assessments_version_items TRIGGER DEFERRABLE INITIALLY DEFERRED
 constraint assessments assessments_version_not_null NOT NULL version
-constraint assessments assessments_violation_threshold_check CHECK ((violation_threshold >= 1))
-constraint assessments assessments_violation_threshold_not_null NOT NULL violation_threshold
 constraint assessments assessments_weight_not_null NOT NULL weight
 constraint auth_audit_log auth_audit_log_created_at_not_null NOT NULL created_at
 constraint auth_audit_log auth_audit_log_event_not_null NOT NULL event
@@ -1669,12 +1633,6 @@ function CREATE OR REPLACE FUNCTION public.assessment_items_sha256(items jsonb)
  IMMUTABLE PARALLEL SAFE
  SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
 RETURN sha256(convert_to((items)::text, 'UTF8'::name))
-function CREATE OR REPLACE FUNCTION public.assessment_policy_columns(a assessments)
- RETURNS jsonb
- LANGUAGE sql
- STABLE
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-RETURN assessment_policy_doc((to_jsonb(a) || jsonb_build_object('due_at', EXTRACT(epoch FROM (a).due_at), 'late_cutoff_at', EXTRACT(epoch FROM (a).late_cutoff_at))))
 function CREATE OR REPLACE FUNCTION public.assessment_policy_default()
  RETURNS jsonb
  LANGUAGE sql
@@ -1699,12 +1657,6 @@ function CREATE OR REPLACE FUNCTION public.assessment_policy_ok(p jsonb)
  IMMUTABLE PARALLEL SAFE
  SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
 RETURN COALESCE((((p ->> 'grading_mode'::text) = ANY (ARRAY['auto'::text, 'manual'::text, 'auto_then_manual'::text])) AND ((p ->> 'grade_release_mode'::text) = ANY (ARRAY['immediate'::text, 'batch'::text])) AND ((p ->> 'completion_rule'::text) = ANY (ARRAY['viewed'::text, 'submitted'::text, 'graded'::text, 'passed'::text, 'teacher_verified'::text])) AND ((p ->> 'review_visibility'::text) = ANY (ARRAY['none'::text, 'score_only'::text, 'full'::text])) AND ((((p ->> 'passing_score'::text))::numeric >= (0)::numeric) AND (((p ->> 'passing_score'::text))::numeric <= (100)::numeric)) AND ((((p ->> 'negative_marking_percent'::text))::numeric >= (0)::numeric) AND (((p ->> 'negative_marking_percent'::text))::numeric <= (100)::numeric)) AND ((((p ->> 'attempt_penalty_percent'::text))::numeric >= (0)::numeric) AND (((p ->> 'attempt_penalty_percent'::text))::numeric <= (100)::numeric)) AND (((p ->> 'grace_period_seconds'::text))::integer >= 0) AND (((p ->> 'violation_threshold'::text))::integer >= 1) AND COALESCE(((((p ->> 'max_attempts'::text))::integer >= 1) AND (((p ->> 'max_attempts'::text))::integer <= 50)), true) AND COALESCE((((p ->> 'time_limit_seconds'::text))::integer >= 1), true) AND COALESCE(((((p ->> 'draw_count'::text))::integer >= 1) AND (((p ->> 'draw_count'::text))::integer <= 200)), true) AND (((p -> 'draw_strata'::text) = 'null'::jsonb) OR draw_strata_ok((p -> 'draw_strata'::text))) AND (SELECT bool_and((jsonb_typeof((assessment_policy_ok.p -> k.k)) = 'boolean'::text)) AS bool_and FROM unnest(ARRAY['allow_late'::text, 'required'::text, 'randomize_questions'::text, 'randomize_options'::text, 'partial_credit'::text, 'copy_paste_protection'::text, 'tab_switch_detection'::text, 'devtools_detection'::text, 'right_click_disabled'::text, 'fullscreen_required'::text]) k(k)) AND CASE (p ->> 'late_policy_kind'::text) WHEN 'none'::text THEN (((p -> 'late_penalty_percent_per_day'::text) = 'null'::jsonb) AND ((p -> 'late_penalty_max_days'::text) = 'null'::jsonb) AND ((p -> 'late_cutoff_at'::text) = 'null'::jsonb)) WHEN 'penalty'::text THEN (((((p ->> 'late_penalty_percent_per_day'::text))::numeric >= (0)::numeric) AND (((p ->> 'late_penalty_percent_per_day'::text))::numeric <= (100)::numeric)) AND (((p ->> 'late_penalty_max_days'::text))::integer >= 1) AND ((p -> 'late_cutoff_at'::text) = 'null'::jsonb)) WHEN 'cutoff'::text THEN (((p -> 'late_cutoff_at'::text) <> 'null'::jsonb) AND ((p -> 'late_penalty_percent_per_day'::text) = 'null'::jsonb) AND ((p -> 'late_penalty_max_days'::text) = 'null'::jsonb)) ELSE NULL::boolean END), false)
-function CREATE OR REPLACE FUNCTION public.assessment_snapshot_value_ok(k text, v jsonb)
- RETURNS boolean
- LANGUAGE sql
- IMMUTABLE
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-RETURN CASE k WHEN 'max_attempts'::text THEN ((v = 'null'::jsonb) OR ((jsonb_typeof(v) = 'number'::text) AND ((((v)::text)::numeric >= (1)::numeric) AND (((v)::text)::numeric <= (50)::numeric)) AND (((v)::text)::numeric = trunc(((v)::text)::numeric)))) WHEN 'time_limit_seconds'::text THEN ((v = 'null'::jsonb) OR ((jsonb_typeof(v) = 'number'::text) AND ((((v)::text)::numeric >= (1)::numeric) AND (((v)::text)::numeric <= (2147483647)::numeric)) AND (((v)::text)::numeric = trunc(((v)::text)::numeric)))) WHEN 'due_at'::text THEN ((v = 'null'::jsonb) OR (jsonb_typeof(v) = 'number'::text)) WHEN 'allow_late'::text THEN (jsonb_typeof(v) = 'boolean'::text) WHEN 'passing_score'::text THEN ((jsonb_typeof(v) = 'number'::text) AND ((((v)::text)::numeric >= (0)::numeric) AND (((v)::text)::numeric <= (100)::numeric))) WHEN 'attempt_penalty_percent'::text THEN ((jsonb_typeof(v) = 'number'::text) AND ((((v)::text)::numeric >= (0)::numeric) AND (((v)::text)::numeric <= (100)::numeric))) WHEN 'grading_mode'::text THEN ((jsonb_typeof(v) = 'string'::text) AND ((v #>> '{}'::text[]) = ANY (ARRAY['auto'::text, 'manual'::text, 'auto_then_manual'::text]))) WHEN 'grade_release_mode'::text THEN ((jsonb_typeof(v) = 'string'::text) AND ((v #>> '{}'::text[]) = ANY (ARRAY['immediate'::text, 'batch'::text]))) WHEN 'completion_rule'::text THEN ((jsonb_typeof(v) = 'string'::text) AND ((v #>> '{}'::text[]) = ANY (ARRAY['viewed'::text, 'submitted'::text, 'graded'::text, 'passed'::text, 'teacher_verified'::text]))) ELSE false END
 function CREATE OR REPLACE FUNCTION public.assessment_version_for(p_assessment uuid, p_items jsonb, p_policy jsonb)
  RETURNS uuid
  LANGUAGE plpgsql
@@ -1793,134 +1745,14 @@ BEGIN
     RETURN NEW;
 END;
 $function$
-function CREATE OR REPLACE FUNCTION public.assessment_versions_rebuild(OUT rebuilt integer, OUT merged integer, OUT differ integer)
- RETURNS record
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    CREATE TEMP TABLE version_rebuild ON COMMIT DROP AS
-    WITH v AS (
-        SELECT v.id, v.assessment_id, v.number, v.items, v.policy AS snapshot,
-               assessment_policy_columns(a) AS stored
-          FROM assessment_versions v JOIN assessments a ON a.id = v.assessment_id
-         WHERE NOT v.policy ?& assessment_policy_keys()
-    ), kept AS (
-        SELECT v.id, coalesce(jsonb_object_agg(s.k, s.val) FILTER (WHERE s.k IS NOT NULL), '{}'::jsonb) AS at_the_time
-          FROM v
-          LEFT JOIN LATERAL (
-              SELECT e.key AS k, e.value AS val FROM jsonb_each(v.snapshot) e
-               WHERE e.key IN ('max_attempts', 'time_limit_seconds', 'due_at', 'allow_late', 'passing_score',
-                               'grading_mode', 'grade_release_mode', 'completion_rule', 'attempt_penalty_percent')
-                 AND assessment_snapshot_value_ok(e.key, e.value)
-                 AND e.value IS DISTINCT FROM v.stored -> e.key
-                 -- An attempt cap an override or a preview explains is not the assessment's.
-                 AND NOT (e.key = 'max_attempts'
-                          AND ((e.value = 'null' AND EXISTS (SELECT 1 FROM submissions s
-                                                              WHERE s.assessment_version_id = v.id AND s.preview))
-                               OR EXISTS (SELECT 1 FROM submissions s
-                                            JOIN assessment_overrides o ON o.assessment_id = s.assessment_id
-                                                                       AND o.user_id = s.user_id
-                                           WHERE s.assessment_version_id = v.id
-                                             AND o.max_attempts_override IS NOT NULL
-                                             AND to_jsonb(o.max_attempts_override) = e.value)))
-                 -- Nor is a due date an override explains.
-                 AND NOT (e.key = 'due_at' AND jsonb_typeof(e.value) = 'number'
-                          AND EXISTS (SELECT 1 FROM submissions s
-                                        JOIN assessment_overrides o ON o.assessment_id = s.assessment_id
-                                                                   AND o.user_id = s.user_id
-                                       WHERE s.assessment_version_id = v.id AND o.due_at_override IS NOT NULL
-                                         AND extract(epoch FROM o.due_at_override)::bigint
-                                             = round(e.value::text::numeric)::bigint))
-          ) s ON true
-         GROUP BY v.id
-    )
-    SELECT v.id, v.assessment_id, v.number, v.items,
-           assessment_policy_doc(v.stored || k.at_the_time) || (v.snapshot - assessment_policy_keys()) AS policy,
-           k.at_the_time <> '{}'::jsonb AS differs
-      FROM v JOIN kept k USING (id);
-
-    CREATE TEMP TABLE version_merge ON COMMIT DROP AS
-    WITH candidates AS (
-        SELECT r.id, r.assessment_id, r.number, r.items, r.policy, true AS rebuilt FROM version_rebuild r
-        UNION ALL
-        SELECT v.id, v.assessment_id, v.number, v.items, v.policy, false FROM assessment_versions v
-         WHERE v.policy ?& assessment_policy_keys()
-           AND v.assessment_id IN (SELECT r.assessment_id FROM version_rebuild r)
-    )
-    SELECT r.id AS dup, k.id AS keeper
-      FROM version_rebuild r
-      JOIN LATERAL (SELECT c.id FROM candidates c
-                     WHERE c.assessment_id = r.assessment_id AND c.items = r.items AND c.policy = r.policy
-                     ORDER BY c.rebuilt, c.number LIMIT 1) k ON k.id <> r.id;
-
-    ALTER TABLE submissions DISABLE TRIGGER submissions_snapshots_frozen;
-    UPDATE submissions s SET assessment_version_id = m.keeper
-      FROM version_merge m WHERE s.assessment_version_id = m.dup;
-    ALTER TABLE submissions ENABLE TRIGGER submissions_snapshots_frozen;
-    UPDATE submissions s SET base_version_id = m.keeper FROM version_merge m WHERE s.base_version_id = m.dup;
-    DELETE FROM assessment_versions v USING version_merge m WHERE v.id = m.dup;
-
-    ALTER TABLE assessment_versions DISABLE TRIGGER assessment_versions_frozen;
-    UPDATE assessment_versions v SET policy = r.policy
-      FROM version_rebuild r
-     WHERE v.id = r.id AND v.policy::text IS DISTINCT FROM r.policy::text;
-    ALTER TABLE assessment_versions ENABLE TRIGGER assessment_versions_frozen;
-
-    SELECT count(*), count(*) FILTER (WHERE r.differs) INTO rebuilt, differ FROM version_rebuild r;
-    SELECT count(*) INTO merged FROM version_merge;
-END $function$
-function CREATE OR REPLACE FUNCTION public.assessments_policy_in_step()
+function CREATE OR REPLACE FUNCTION public.assessments_first_version()
  RETURNS trigger
  LANGUAGE plpgsql
  SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
 AS $function$
-DECLARE
-    p jsonb;
-    doc jsonb;
-    cur_items jsonb;
-    cur_policy jsonb;
 BEGIN
-    IF NEW.current_version_id IS DISTINCT FROM OLD.current_version_id THEN
-        IF NEW.current_version_id IS NOT NULL THEN
-            SELECT v.policy INTO p FROM assessment_versions v WHERE v.id = NEW.current_version_id;
-            NEW := jsonb_populate_record(NEW, (p - 'due_at' - 'late_cutoff_at') || jsonb_build_object(
-                'due_at', to_timestamp((p ->> 'due_at')::float8),
-                'late_cutoff_at', to_timestamp((p ->> 'late_cutoff_at')::float8)));
-        END IF;
-    ELSIF NEW.current_version_id IS NOT NULL THEN
-        doc := assessment_policy_columns(NEW);
-        SELECT v.items, v.policy INTO cur_items, cur_policy FROM assessment_versions v
-         WHERE v.id = NEW.current_version_id;
-        IF doc IS DISTINCT FROM cur_policy THEN
-            NEW.current_version_id := assessment_version_for(NEW.id, cur_items, doc);
-            -- Its policy write moves `version` (If-Match) as it did; `assessments_touch` leaves these columns out.
-            IF NEW.version = OLD.version THEN
-                NEW.version := OLD.version + 1;
-            END IF;
-        END IF;
-    END IF;
-    RETURN NEW;
-END $function$
-function CREATE OR REPLACE FUNCTION public.assessments_version_sync()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-DECLARE
-    a assessments;
-    saved uuid;
-BEGIN
-    SELECT * INTO a FROM assessments WHERE id = NEW.id;
-    IF NOT FOUND THEN
-        RETURN NULL;
-    END IF;
-    saved := assessment_version_save(a.id, CASE WHEN a.current_version_id IS NULL
-                                                THEN assessment_policy_columns(a) END);
-    IF saved IS DISTINCT FROM a.current_version_id THEN
-        UPDATE submissions SET base_version_id = saved
-         WHERE assessment_id = a.id AND status = 'draft' AND content_version = a.content_version
-           AND base_version_id IS DISTINCT FROM saved;
+    IF EXISTS (SELECT 1 FROM assessments WHERE id = NEW.id AND current_version_id IS NULL) THEN
+        PERFORM assessment_version_save(NEW.id, NULL);
     END IF;
     RETURN NULL;
 END $function$
@@ -2431,26 +2263,6 @@ AS $function$
              WHERE v.submission_id = p_submission
              ORDER BY v.created_at DESC, v.id DESC LIMIT 200) e
 $function$
-function CREATE OR REPLACE FUNCTION public.submissions_base_version()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-DECLARE
-    unset boolean;
-BEGIN
-    IF TG_OP = 'INSERT' THEN
-        unset := NEW.base_version_id IS NULL;
-    ELSE
-        unset := NEW.base_version_id IS NOT DISTINCT FROM OLD.base_version_id;
-    END IF;
-    IF NEW.status = 'draft' AND unset THEN
-        NEW.base_version_id := coalesce((SELECT a.current_version_id FROM assessments a
-                                          WHERE a.id = NEW.assessment_id AND a.content_version = NEW.content_version),
-                                        NEW.base_version_id);
-    END IF;
-    RETURN NEW;
-END $function$
 function CREATE OR REPLACE FUNCTION public.submissions_current_grade_check()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -3677,49 +3489,21 @@ table learning.assessment_versions number integer NOT NULL DEFAULT -
 table learning.assessment_versions policy jsonb NOT NULL DEFAULT -
 table learning.assessments access_mode text NOT NULL DEFAULT 'all_course_learners'::text
 table learning.assessments activity_id uuid NOT NULL DEFAULT -
-table learning.assessments allow_late boolean NOT NULL DEFAULT true
 table learning.assessments archived_at timestamp with time zone DEFAULT -
-table learning.assessments attempt_penalty_percent percent NOT NULL DEFAULT 0
-table learning.assessments completion_rule text NOT NULL DEFAULT 'passed'::text
 table learning.assessments content_version integer NOT NULL DEFAULT 1
-table learning.assessments copy_paste_protection boolean NOT NULL DEFAULT false
 table learning.assessments course_id uuid NOT NULL DEFAULT -
 table learning.assessments created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.assessments created_by uuid DEFAULT -
 table learning.assessments current_version_id uuid DEFAULT -
 table learning.assessments description text NOT NULL DEFAULT ''::text
-table learning.assessments devtools_detection boolean NOT NULL DEFAULT false
-table learning.assessments draw_count integer DEFAULT -
-table learning.assessments draw_strata jsonb DEFAULT -
-table learning.assessments due_at timestamp with time zone DEFAULT -
-table learning.assessments fullscreen_required boolean NOT NULL DEFAULT false
-table learning.assessments grace_period_seconds integer NOT NULL DEFAULT 0
-table learning.assessments grade_release_mode text NOT NULL DEFAULT 'immediate'::text
 table learning.assessments grading_kind text NOT NULL DEFAULT 'percentage'::text
-table learning.assessments grading_mode text NOT NULL DEFAULT 'auto'::text
 table learning.assessments id uuid NOT NULL DEFAULT uuidv7()
-table learning.assessments late_cutoff_at timestamp with time zone DEFAULT -
-table learning.assessments late_penalty_max_days integer DEFAULT -
-table learning.assessments late_penalty_percent_per_day percent DEFAULT -
-table learning.assessments late_policy_kind text NOT NULL DEFAULT 'none'::text
-table learning.assessments max_attempts integer DEFAULT -
-table learning.assessments negative_marking_percent percent NOT NULL DEFAULT 0
-table learning.assessments partial_credit boolean NOT NULL DEFAULT true
-table learning.assessments passing_score percent NOT NULL DEFAULT 60
 table learning.assessments policy_version integer NOT NULL DEFAULT 1
 table learning.assessments published_at timestamp with time zone DEFAULT -
-table learning.assessments randomize_options boolean NOT NULL DEFAULT false
-table learning.assessments randomize_questions boolean NOT NULL DEFAULT false
-table learning.assessments required boolean NOT NULL DEFAULT false
-table learning.assessments review_visibility text NOT NULL DEFAULT 'score_only'::text
-table learning.assessments right_click_disabled boolean NOT NULL DEFAULT false
 table learning.assessments scheduled_at timestamp with time zone DEFAULT -
 table learning.assessments status text NOT NULL DEFAULT 'draft'::text
-table learning.assessments tab_switch_detection boolean NOT NULL DEFAULT false
-table learning.assessments time_limit_seconds integer DEFAULT -
 table learning.assessments updated_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.assessments version integer NOT NULL DEFAULT 1
-table learning.assessments violation_threshold integer NOT NULL DEFAULT 3
 table learning.assessments weight score_weight NOT NULL DEFAULT 1.0
 table learning.bulk_actions affected_count integer NOT NULL DEFAULT 0
 table learning.bulk_actions assessment_id uuid NOT NULL DEFAULT -
@@ -4030,8 +3814,7 @@ table ops.schema_skipped_checks expr text NOT NULL DEFAULT -
 table ops.schema_skipped_checks name text NOT NULL DEFAULT -
 table ops.schema_skipped_checks skipped_at timestamp with time zone NOT NULL DEFAULT now()
 table ops.schema_skipped_checks table_name text NOT NULL DEFAULT -
-trigger CREATE CONSTRAINT TRIGGER assessments_version_created AFTER INSERT ON learning.assessments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION assessments_version_sync()
-trigger CREATE CONSTRAINT TRIGGER assessments_version_items AFTER UPDATE OF content_version ON learning.assessments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN ((old.content_version IS DISTINCT FROM new.content_version)) EXECUTE FUNCTION assessments_version_sync()
+trigger CREATE CONSTRAINT TRIGGER assessments_first_version AFTER INSERT OR UPDATE OF current_version_id ON learning.assessments DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION assessments_first_version()
 trigger CREATE CONSTRAINT TRIGGER grading_entries_current AFTER INSERT ON learning.grading_entries DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION grading_entries_current_check()
 trigger CREATE CONSTRAINT TRIGGER submissions_current_grade AFTER UPDATE OF final_points ON learning.submissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.final_points)::numeric IS DISTINCT FROM (new.final_points)::numeric)) EXECUTE FUNCTION submissions_current_grade_check()
 trigger CREATE TRIGGER activities_keep_assessment_type BEFORE UPDATE OF kind ON core.activities FOR EACH ROW WHEN ((old.kind IS DISTINCT FROM new.kind)) EXECUTE FUNCTION activities_keep_assessment_type()
@@ -4051,8 +3834,7 @@ trigger CREATE TRIGGER assessment_overrides_touch BEFORE UPDATE ON learning.asse
 trigger CREATE TRIGGER assessment_versions_frozen BEFORE UPDATE ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_frozen()
 trigger CREATE TRIGGER assessment_versions_points BEFORE INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_versions_points()
 trigger CREATE TRIGGER assessment_versions_upload_ids AFTER INSERT ON learning.assessment_versions FOR EACH ROW EXECUTE FUNCTION assessment_version_uploads_sync()
-trigger CREATE TRIGGER assessments_policy_in_step BEFORE UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION assessments_policy_in_step()
-trigger CREATE TRIGGER assessments_touch BEFORE UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION touch_row('version', '-current_version_id', '-grading_mode', '-grade_release_mode', '-completion_rule', '-passing_score', '-max_attempts', '-time_limit_seconds', '-due_at', '-allow_late', '-late_policy_kind', '-late_penalty_percent_per_day', '-late_penalty_max_days', '-late_cutoff_at', '-required', '-review_visibility', '-randomize_questions', '-randomize_options', '-partial_credit', '-negative_marking_percent', '-grace_period_seconds', '-copy_paste_protection', '-tab_switch_detection', '-devtools_detection', '-right_click_disabled', '-fullscreen_required', '-violation_threshold', '-attempt_penalty_percent', '-draw_count', '-draw_strata')
+trigger CREATE TRIGGER assessments_touch BEFORE UPDATE ON learning.assessments FOR EACH ROW EXECUTE FUNCTION touch_row('version', '-current_version_id')
 trigger CREATE TRIGGER blocks_touch BEFORE UPDATE ON core.blocks FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER blocks_upload_ids AFTER INSERT OR UPDATE OF content, claimed ON core.blocks FOR EACH ROW EXECUTE FUNCTION block_uploads_sync()
 trigger CREATE TRIGGER certificate_users_frozen BEFORE UPDATE ON learning.certificates FOR EACH ROW EXECUTE FUNCTION certificate_users_frozen()
@@ -4083,7 +3865,6 @@ trigger CREATE TRIGGER jobs_touch BEFORE UPDATE ON ops.jobs FOR EACH ROW EXECUTE
 trigger CREATE TRIGGER platforms_touch BEFORE UPDATE ON core.platforms FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER platforms_upload_ids BEFORE INSERT OR UPDATE OF logo_key, thumbnail_key ON core.platforms FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('logo_key', 'logo_upload_id', 'thumbnail_key', 'thumbnail_upload_id')
 trigger CREATE TRIGGER roles_touch BEFORE UPDATE ON core.roles FOR EACH ROW EXECUTE FUNCTION touch_row('version')
-trigger CREATE TRIGGER submissions_base_version BEFORE INSERT OR UPDATE OF content_version ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_base_version()
 trigger CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id, selected_item_ids ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()
 trigger CREATE TRIGGER submissions_touch BEFORE UPDATE ON learning.submissions FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER teacher_interventions_touch BEFORE UPDATE ON learning.teacher_interventions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
