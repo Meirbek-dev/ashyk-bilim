@@ -567,11 +567,8 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   `maintenance:reconcile`) records a completion it finds and pays nothing. The column was backfilled from the stored
   `course_progress.completed_at`, so no completion noticed before it is noticed again. The certificate is issued
   whenever the view says eligible (idempotent), dated by the view's `completed_at`.
-  `course_progress`, the stored rollup, is the previous release's only (the server neither reads nor writes it):
-  that release writes it and reads its `certificate_eligible` to notice a completion, so two triggers carry a
-  completion across (`course_progress_completion`: a stored completion reaches an empty `enrolments.completed_at`;
-  `enrolments_completion`: a recorded completion marks the stored row complete). Left: the contract dropping the
-  table, the triggers and their functions (`just contracts-pending`).
+  The stored rollup `course_progress` and the two triggers that carried a completion between the switch and the
+  release before it went in the contract `20261116075660_drop_course_progress`.
 - **Projections and rollups are keyed by what they describe** (REWRITE 5.6 n12): `(activity_id, user_id)`,
   `(course_id, user_id)`, `user_id`, `(metric_date, ...)` are the primary keys and they have no `id` column;
   the platform aggregate is `daily_platform_metrics (metric_date)`. `daily_teacher_metrics` keeps its surrogate key

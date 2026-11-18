@@ -82,7 +82,6 @@ DELETE FROM submissions WHERE user_id = :'uid';
 DELETE FROM certificates WHERE user_id = :'uid';
 DELETE FROM trail_legacy_marks WHERE user_id = :'uid';
 DELETE FROM activity_progress WHERE user_id = :'uid';
-DELETE FROM course_progress WHERE user_id = :'uid';
 DELETE FROM xp_transactions WHERE user_id = :'uid';
 DELETE FROM gamification_completions WHERE user_id = :'uid';
 DELETE FROM gamification_profiles WHERE user_id = :'uid';

@@ -2430,10 +2430,10 @@ async fn a_course_completion_is_recorded_once_and_kept(pool: PgPool) {
     assert_completions_recorded(&pool).await;
 }
 
-/// REWRITE 5.8 item 10: the switch backfills `enrolments.completed_at` from
-/// the stored `course_progress.completed_at`, so a completion the previous
-/// release noticed is never noticed again: a recalculation of the completed
-/// member pays nothing.
+/// REWRITE 5.8 item 10: a completion recorded without the hook (what the
+/// switch backfilled from the old rollup, for a learner whose journal may
+/// have none) is never noticed again: a recalculation of the completed member
+/// pays nothing and keeps its date.
 #[ab_testdb::test]
 async fn a_backfilled_completion_pays_nothing(pool: PgPool) {
     let app = TestApp::spawn(pool.clone()).await;
@@ -2443,30 +2443,17 @@ async fn a_backfilled_completion_pays_nothing(pool: PgPool) {
     let alice = learner(&app, "alice").await;
     join(&app, &alice, &course_id).await;
     mark(&app, &alice, &a1).await;
-    // The database before the switch: the previous release stored the
-    // completion in its rollup, the enrolment had no column for it.
+    // As the switch (20261116075659) left it: the completion dated by the
+    // old rollup, no journal row.
     let stored: i64 = sqlx::query_scalar(
-        "UPDATE course_progress SET completed_at = now() - interval '3 days'
+        "UPDATE enrolments SET completed_at = now() - interval '3 days'
           WHERE user_id = $1 RETURNING extract(epoch FROM completed_at)::bigint",
     )
     .bind(alice.user_id.0)
     .fetch_one(&pool)
     .await
     .unwrap();
-    sqlx::query("UPDATE enrolments SET completed_at = NULL")
-        .execute(&pool)
-        .await
-        .unwrap();
     forget_completion_journal(&pool, &alice).await;
-    // The migration's backfill (20261116075659_enrolment_completion).
-    sqlx::query(
-        "UPDATE enrolments e SET completed_at = p.completed_at
-           FROM course_progress p
-          WHERE p.course_id = e.course_id AND p.user_id = e.user_id AND p.completed_at IS NOT NULL",
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
 
     mark(&app, &alice, &a1).await;
     ab_domain::progress::ProgressProjector::new(pool.clone())
@@ -2482,87 +2469,12 @@ async fn a_backfilled_completion_pays_nothing(pool: PgPool) {
     );
 }
 
-/// REWRITE 5.8 item 10, the switch release beside the previous one (the
-/// rollback image): a completion either release notices is noticed once.
-/// The previous release writes `course_progress` and reads its
-/// `certificate_eligible` to notice the transition; this release writes
-/// `enrolments.completed_at` alone, and a trigger on each side carries it.
-#[ab_testdb::test]
-async fn either_release_notices_a_completion_once(pool: PgPool) {
-    let app = TestApp::spawn(pool.clone()).await;
-    let teacher = instructor(&app, "teacher").await;
-    let (course_id, chapter_id) = public_course(&app, &teacher, "Two releases").await;
-    let a1 = lesson(&app, &teacher, &chapter_id, "Only").await;
-    let alice = learner(&app, "alice").await;
-    let bob = learner(&app, "bob").await;
-    join(&app, &alice, &course_id).await;
-    join(&app, &bob, &course_id).await;
-
-    // The previous release completes alice: her completion row and its
-    // rollup upsert (`upsert_course_progress`), which pays the hook there.
-    sqlx::query("INSERT INTO completions (activity_id, user_id) VALUES ($1::uuid, $2)")
-        .bind(&a1)
-        .bind(alice.user_id.0)
-        .execute(&pool)
-        .await
-        .unwrap();
-    sqlx::query(
-        "INSERT INTO course_progress
-             (course_id, user_id, completed_required_count, total_required_count,
-              grade_average, weighted_grade_average, missing_required_count,
-              needs_grading_count, last_activity_at, completed_at)
-         VALUES ($1::uuid, $2, 1, 1, NULL, NULL, 0, 0, now(), now())
-         ON CONFLICT (course_id, user_id) DO UPDATE SET
-             completed_required_count = EXCLUDED.completed_required_count,
-             total_required_count = EXCLUDED.total_required_count,
-             missing_required_count = EXCLUDED.missing_required_count,
-             last_activity_at = EXCLUDED.last_activity_at,
-             completed_at = EXCLUDED.completed_at",
-    )
-    .bind(&course_id)
-    .bind(alice.user_id.0)
-    .execute(&pool)
-    .await
-    .unwrap();
-    let (recorded, ..) = completion_facts(&pool, &course_id, &alice).await;
-    assert!(
-        recorded.is_some(),
-        "the previous release's completion is recorded"
-    );
-    // This release (rolled forward) re-projects her: no transition, no pay.
-    mark(&app, &alice, &a1).await;
-    assert_eq!(
-        completion_facts(&pool, &course_id, &alice).await,
-        (recorded, 0, 0)
-    );
-
-    // This release completes bob and pays; the previous release (rolled
-    // back) reads his stored rollup as completed, so it sees no transition.
-    mark(&app, &bob, &a1).await;
-    let (bob_at, xp, counted) = completion_facts(&pool, &course_id, &bob).await;
-    assert!(bob_at.is_some());
-    assert_eq!((xp, counted), (1, 1));
-    let stored_completed: bool = sqlx::query_scalar(
-        "SELECT certificate_eligible FROM course_progress
-          WHERE course_id = $1::uuid AND user_id = $2",
-    )
-    .bind(&course_id)
-    .bind(bob.user_id.0)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert!(stored_completed, "the previous release would pay bob again");
-    assert_completions_recorded(&pool).await;
-}
-
 /// REWRITE 5.8 item 8: readers take a member's progress from
-/// `course_progress_v` (enrolments, completions, `activity_progress`), not
-/// the stored rollup the projector still writes for the previous release:
-/// with the rollup wiped, the trail, learner-state and the roster show the
-/// completed lesson. The batch query takes an empty id list (a trail whose
+/// `course_progress_v` (enrolments, completions, `activity_progress`): the
+/// trail, learner-state and the roster show the completed lesson. The batch query takes an empty id list (a trail whose
 /// runs are all hidden).
 #[ab_testdb::test]
-async fn progress_readers_read_the_view_not_the_rollup(pool: PgPool) {
+async fn progress_readers_read_the_view(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let teacher = instructor(&app, "teacher").await;
     let (course_id, chapter_id) = public_course(&app, &teacher, "No projection").await;
@@ -2585,11 +2497,6 @@ async fn progress_readers_read_the_view_not_the_rollup(pool: PgPool) {
         )
         .await;
     assert_eq!(marked.status, StatusCode::OK, "{}", marked.text());
-    sqlx::query("DELETE FROM course_progress WHERE user_id = $1")
-        .bind(alice.user_id.0)
-        .execute(&app.pool)
-        .await
-        .unwrap();
     let trail = app.get_as(&alice, "/api/v2/trail").await;
     assert_eq!(trail.status, StatusCode::OK, "{}", trail.text());
     assert_eq!(trail.json()["runs"][0]["course"]["id"], course_id.as_str());
@@ -2616,7 +2523,7 @@ async fn progress_readers_read_the_view_not_the_rollup(pool: PgPool) {
 }
 
 /// UX-274: `GET /courses?sort=progress` puts the caller's in-progress
-/// courses first (by `course_progress.progress_pct`), then the rest by
+/// courses first (by `course_progress_v.progress_pct`), then the rest by
 /// progress and newest update - one keyset across pages, so an in-progress
 /// course never hides on page 2 behind courses the learner never opened.
 #[ab_testdb::test]
@@ -3074,12 +2981,10 @@ async fn a_lesson_completion_is_the_completions_row(pool: PgPool) {
     let (completions, completed, xp) = facts().await;
     assert_eq!((completions, completed), (1, 1));
 
-    for sql in [
-        "DELETE FROM activity_progress",
-        "DELETE FROM course_progress",
-    ] {
-        sqlx::query(sql).execute(&pool).await.unwrap();
-    }
+    sqlx::query("DELETE FROM activity_progress")
+        .execute(&pool)
+        .await
+        .unwrap();
     let report = ab_domain::progress::ProgressProjector::new(pool.clone())
         .backfill(None)
         .await

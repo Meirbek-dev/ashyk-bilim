@@ -80,7 +80,6 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("concept_tags", "decided_by", ACTOR),
     ("course_concepts", "decided_by", ACTOR),
     ("discussion_posts", "user_id", ACTOR),
-    ("course_progress", "user_id", RECORD),
     ("course_staff", "user_id", SETTING),
     ("course_updates", "created_by", ACTOR),
     ("courses", "archived_by", ACTOR),

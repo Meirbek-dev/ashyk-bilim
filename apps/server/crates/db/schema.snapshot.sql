@@ -739,21 +739,6 @@ constraint course_concepts course_concepts_slug_not_null NOT NULL slug
 constraint course_concepts course_concepts_status_check CHECK ((status = ANY (ARRAY['suggested'::text, 'approved'::text, 'rejected'::text])))
 constraint course_concepts course_concepts_status_not_null NOT NULL status
 constraint course_concepts course_concepts_updated_at_not_null NOT NULL updated_at
-constraint course_progress course_progress_certificate_eligible_not_null NOT NULL certificate_eligible
-constraint course_progress course_progress_completed_at_check CHECK (((completed_at IS NULL) OR ((total_required_count > 0) AND (completed_required_count >= total_required_count))))
-constraint course_progress course_progress_completed_required_count_not_null NOT NULL completed_required_count
-constraint course_progress course_progress_counts_check CHECK (((completed_required_count >= 0) AND (completed_required_count <= total_required_count)))
-constraint course_progress course_progress_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
-constraint course_progress course_progress_course_id_not_null NOT NULL course_id
-constraint course_progress course_progress_created_at_not_null NOT NULL created_at
-constraint course_progress course_progress_missing_required_count_not_null NOT NULL missing_required_count
-constraint course_progress course_progress_needs_grading_count_not_null NOT NULL needs_grading_count
-constraint course_progress course_progress_pkey PRIMARY KEY (course_id, user_id)
-constraint course_progress course_progress_progress_pct_not_null NOT NULL progress_pct
-constraint course_progress course_progress_total_required_count_not_null NOT NULL total_required_count
-constraint course_progress course_progress_updated_at_not_null NOT NULL updated_at
-constraint course_progress course_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
-constraint course_progress course_progress_user_id_not_null NOT NULL user_id
 constraint course_staff course_staff_authorship_check CHECK ((authorship = ANY (ARRAY['creator'::text, 'contributor'::text, 'maintainer'::text, 'reporter'::text])))
 constraint course_staff course_staff_authorship_not_null NOT NULL authorship
 constraint course_staff course_staff_course_id_fkey FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
@@ -1798,16 +1783,6 @@ AS $function$
                OR (v ? 'emoji' AND (jsonb_typeof(v -> 'emoji') IS DISTINCT FROM 'string'
                                     OR char_length(v ->> 'emoji') > 16)))
 $function$
-function CREATE OR REPLACE FUNCTION public.course_progress_completion()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    UPDATE enrolments SET completed_at = NEW.completed_at
-     WHERE course_id = NEW.course_id AND user_id = NEW.user_id AND completed_at IS NULL;
-    RETURN NULL;
-END $function$
 function CREATE OR REPLACE FUNCTION public.course_shared_with(p_course uuid, p_viewer uuid, p_archived boolean)
  RETURNS boolean
  LANGUAGE sql
@@ -1878,31 +1853,6 @@ AS $function$
        AND (SELECT count(DISTINCT v ->> 'group') FROM jsonb_array_elements(strata) AS s (v))
            = jsonb_array_length(strata)
 $function$
-function CREATE OR REPLACE FUNCTION public.enrolments_completion()
- RETURNS trigger
- LANGUAGE plpgsql
- SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
-AS $function$
-BEGIN
-    INSERT INTO course_progress (course_id, user_id, total_required_count, completed_required_count,
-                                 missing_required_count, needs_grading_count, last_activity_at, grade_average,
-                                 weighted_grade_average, completed_at)
-    SELECT v.course_id, v.user_id, greatest(v.total_required_count, 1), greatest(v.total_required_count, 1),
-           0, v.needs_grading_count, v.last_activity_at, v.grade_average, v.weighted_grade_average,
-           NEW.completed_at
-      FROM course_progress_v v
-     WHERE v.course_id = NEW.course_id AND v.user_id = NEW.user_id
-    ON CONFLICT (course_id, user_id) DO UPDATE SET
-        total_required_count = EXCLUDED.total_required_count,
-        completed_required_count = EXCLUDED.completed_required_count,
-        missing_required_count = 0,
-        needs_grading_count = EXCLUDED.needs_grading_count,
-        last_activity_at = EXCLUDED.last_activity_at,
-        grade_average = EXCLUDED.grade_average,
-        weighted_grade_average = EXCLUDED.weighted_grade_average,
-        completed_at = EXCLUDED.completed_at;
-    RETURN NULL;
-END $function$
 function CREATE OR REPLACE FUNCTION public.ensure_app_search_path()
  RETURNS text
  LANGUAGE plpgsql
@@ -2525,7 +2475,6 @@ index CREATE INDEX course_concepts_decided_by_idx ON learning.course_concepts US
 index CREATE INDEX course_concepts_run_idx ON learning.course_concepts USING btree (run_id)
 index CREATE INDEX course_discussions_course_idx ON core.discussion_posts USING btree (course_id, created_at DESC)
 index CREATE INDEX course_discussions_parent_idx ON core.discussion_posts USING btree (parent_id)
-index CREATE INDEX course_progress_user_idx ON learning.course_progress USING btree (user_id)
 index CREATE INDEX course_staff_user_idx ON core.course_staff USING btree (user_id, course_id)
 index CREATE INDEX course_update_activities_activity_idx ON core.course_update_activities USING btree (activity_id)
 index CREATE INDEX course_updates_course_idx ON core.course_updates USING btree (course_id, created_at DESC)
@@ -2694,7 +2643,6 @@ index CREATE UNIQUE INDEX course_concepts_id_course_id_key ON learning.course_co
 index CREATE UNIQUE INDEX course_concepts_pkey ON learning.course_concepts USING btree (id)
 index CREATE UNIQUE INDEX course_discussions_id_course_key ON core.discussion_posts USING btree (id, course_id)
 index CREATE UNIQUE INDEX course_discussions_pkey ON core.discussion_posts USING btree (id)
-index CREATE UNIQUE INDEX course_progress_pkey ON learning.course_progress USING btree (course_id, user_id)
 index CREATE UNIQUE INDEX course_staff_one_creator_idx ON core.course_staff USING btree (course_id) WHERE (authorship = 'creator'::text)
 index CREATE UNIQUE INDEX course_staff_pkey ON core.course_staff USING btree (course_id, user_id)
 index CREATE UNIQUE INDEX course_update_activities_pkey ON core.course_update_activities USING btree (update_id, activity_id)
@@ -3610,24 +3558,6 @@ table learning.course_concepts run_id uuid DEFAULT -
 table learning.course_concepts slug text NOT NULL DEFAULT -
 table learning.course_concepts status text NOT NULL DEFAULT -
 table learning.course_concepts updated_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.course_progress certificate_eligible boolean NOT NULL GENERATED ((total_required_count > 0) AND (completed_required_count >= total_required_count) AND (completed_at IS NOT NULL))
-table learning.course_progress completed_at timestamp with time zone DEFAULT -
-table learning.course_progress completed_required_count integer NOT NULL DEFAULT 0
-table learning.course_progress course_id uuid NOT NULL DEFAULT -
-table learning.course_progress created_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.course_progress grade_average percent DEFAULT -
-table learning.course_progress last_activity_at timestamp with time zone DEFAULT -
-table learning.course_progress missing_required_count integer NOT NULL DEFAULT 0
-table learning.course_progress needs_grading_count integer NOT NULL DEFAULT 0
-table learning.course_progress progress_pct double precision NOT NULL GENERATED 
-CASE
-    WHEN (total_required_count > 0) THEN (round((((completed_required_count)::numeric * 100.0) / (total_required_count)::numeric), 2))::double precision
-    ELSE (0)::double precision
-END
-table learning.course_progress total_required_count integer NOT NULL DEFAULT 0
-table learning.course_progress updated_at timestamp with time zone NOT NULL DEFAULT now()
-table learning.course_progress user_id uuid NOT NULL DEFAULT -
-table learning.course_progress weighted_grade_average percent DEFAULT -
 table learning.enrolment_events completions jsonb DEFAULT -
 table learning.enrolment_events course_id uuid NOT NULL DEFAULT -
 table learning.enrolment_events created_at timestamp with time zone NOT NULL DEFAULT now()
@@ -3857,14 +3787,11 @@ trigger CREATE TRIGGER course_concepts_touch BEFORE UPDATE ON learning.course_co
 trigger CREATE TRIGGER course_discussions_recount_replies AFTER INSERT OR DELETE OR UPDATE OF status, parent_id, deleted_at ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION course_discussions_recount_replies()
 trigger CREATE TRIGGER course_discussions_touch BEFORE UPDATE ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION touch_row('version', 'status', 'content')
 trigger CREATE TRIGGER course_discussions_upload_ids AFTER INSERT OR UPDATE OF content ON core.discussion_posts FOR EACH ROW EXECUTE FUNCTION post_uploads_sync()
-trigger CREATE TRIGGER course_progress_completion AFTER INSERT OR UPDATE OF completed_at ON learning.course_progress FOR EACH ROW WHEN ((new.completed_at IS NOT NULL)) EXECUTE FUNCTION course_progress_completion()
-trigger CREATE TRIGGER course_progress_touch BEFORE UPDATE ON learning.course_progress FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER course_staff_touch BEFORE UPDATE ON core.course_staff FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER course_updates_touch BEFORE UPDATE ON core.course_updates FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER courses_touch BEFORE UPDATE ON core.courses FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER courses_upload_ids BEFORE INSERT OR UPDATE OF thumbnail_image_key, thumbnail_video_key ON core.courses FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('thumbnail_image_key', 'thumbnail_image_upload_id', 'thumbnail_video_key', 'thumbnail_video_upload_id')
 trigger CREATE TRIGGER discussion_reactions_recount AFTER INSERT OR DELETE OR UPDATE ON core.discussion_reactions FOR EACH ROW EXECUTE FUNCTION discussion_reactions_recount()
-trigger CREATE TRIGGER enrolments_completion AFTER UPDATE OF completed_at ON learning.enrolments FOR EACH ROW WHEN (((old.completed_at IS NULL) AND (new.completed_at IS NOT NULL))) EXECUTE FUNCTION enrolments_completion()
 trigger CREATE TRIGGER file_submissions_touch BEFORE UPDATE ON learning.file_submissions FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER gamification_profiles_touch BEFORE UPDATE ON learning.gamification_profiles FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER grading_entries_append_only BEFORE DELETE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_no_delete()

@@ -140,7 +140,6 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
         "discussion_posts",
         "a post others replied to stays as a tombstone (2026-10-14); only its author's own replies cascade",
     ),
-    ("course_progress", "course_id", "courses", COURSE_DELETE),
     (
         "discussion_reactions",
         "discussion_id",

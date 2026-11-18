@@ -61,7 +61,6 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`core.conversations`](#conversations): A personal conversation of two people (kind direct); created with its first message
 - [`learning.course_concepts`](#course_concepts): A concept (skill) of a course, proposed by AI or a teacher and decided by staff
 - [`learning.course_members`](#course_members): Learners of a course: enrolments without its staff, whose stale rows stay in enrolments
-- [`learning.course_progress`](#course_progress): Projection: a learner's totals in a course (counts, percentage, grade averages, completion)
 - [`core.course_progress_v`](#course_progress_v): A member's course completion computed from enrolments, published activities and completions; compared with the course_progress projection by maintenance:reconcile until it replaces it (REWRITE 5.6 n8)
 - [`core.course_staff`](#course_staff): Staff of a course: creator, maintainer, contributor or reporter, with a status
 - [`core.course_update_activities`](#course_update_activities): Activities a course update links to, in order; a deleted activity leaves the update
@@ -1598,35 +1597,6 @@ Learners of a course: enrolments without its staff, whose stale rows stay in enr
 | user_id | uuid | null |  |
 | enrolled_at | timestamp with time zone | null |  |
 
-## course_progress
-
-Projection: a learner's totals in a course (counts, percentage, grade averages, completion).
-
-| Column | Type | Null | Default |
-| --- | --- | --- | --- |
-| course_id | uuid |  |  |
-| user_id | uuid |  |  |
-| completed_required_count | integer |  | `0` |
-| total_required_count | integer |  | `0` |
-| grade_average | percent | null |  |
-| weighted_grade_average | percent | null |  |
-| missing_required_count | integer |  | `0` |
-| needs_grading_count | integer |  | `0` |
-| last_activity_at | timestamp with time zone | null |  |
-| completed_at | timestamp with time zone | null |  |
-| created_at | timestamp with time zone |  | `now()` |
-| updated_at | timestamp with time zone |  | `now()` |
-| progress_pct | double precision |  | `CASE WHEN (total_required_count > 0) THEN (round((((completed_required_count)::numeric * 100.0) / (total_required_count)::numeric), 2))::double precision ELSE (0)::double precision END` |
-| certificate_eligible | boolean |  | `((total_required_count > 0) AND (completed_required_count >= total_required_count) AND (completed_at IS NOT NULL))` |
-
-- Primary key `course_progress_pkey`: `PRIMARY KEY (course_id, user_id)`
-- Foreign key `course_progress_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
-- Foreign key `course_progress_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
-- Check `course_progress_completed_at_check`: `CHECK (((completed_at IS NULL) OR ((total_required_count > 0) AND (completed_required_count >= total_required_count))))`
-- Check `course_progress_counts_check`: `CHECK (((completed_required_count >= 0) AND (completed_required_count <= total_required_count)))`
-- Index `course_progress_user_idx`: `CREATE INDEX course_progress_user_idx ON learning.course_progress USING btree (user_id)`
-- Trigger `course_progress_completion`: `CREATE TRIGGER course_progress_completion AFTER INSERT OR UPDATE OF completed_at ON learning.course_progress FOR EACH ROW WHEN ((new.completed_at IS NOT NULL)) EXECUTE FUNCTION course_progress_completion()`
-
 ## course_progress_v (view)
 
 A member's course completion computed from enrolments, published activities and completions; compared with the course_progress projection by maintenance:reconcile until it replaces it (REWRITE 5.6 n8).
@@ -2005,7 +1975,6 @@ Course membership (a learner joined or was enrolled). The course's staff are nev
 - Foreign key `enrolments_course_id_fkey`: `FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`
 - Foreign key `enrolments_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
 - Index `enrolments_user_idx`: `CREATE INDEX enrolments_user_idx ON learning.enrolments USING btree (user_id)`
-- Trigger `enrolments_completion`: `CREATE TRIGGER enrolments_completion AFTER UPDATE OF completed_at ON learning.enrolments FOR EACH ROW WHEN (((old.completed_at IS NULL) AND (new.completed_at IS NOT NULL))) EXECUTE FUNCTION enrolments_completion()`
 
 ## file_submission_files
 

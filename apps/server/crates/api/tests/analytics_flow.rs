@@ -266,30 +266,15 @@ async fn grade_and_publish(
     assert_eq!(released.json()["published_count"], 1);
 }
 
-/// Enrol straight into the tables: the enrolment (what `enrolled` means,
-/// UX-150) plus a course-progress row at `pct`.
-async fn enrol(pool: &PgPool, course_id: &str, user_id: ab_core::id::UserId, pct: f64) {
+/// Enrol straight into the table: the enrolment (what `enrolled` means,
+/// UX-150); progress is the view's, over the course's activities.
+async fn enrol(pool: &PgPool, course_id: &str, user_id: ab_core::id::UserId) {
     let course_uuid = uuid::Uuid::parse_str(course_id).unwrap();
     sqlx::query(
         "INSERT INTO enrolments (course_id, user_id) VALUES ($1::uuid, $2) ON CONFLICT DO NOTHING",
     )
     .bind(course_uuid)
     .bind(user_id.0)
-    .execute(pool)
-    .await
-    .unwrap();
-    // progress_pct is derived from the counts: `pct` of 100 required.
-    #[allow(clippy::cast_possible_truncation)]
-    let (done, total) = (pct.round() as i32, if pct > 0.0 { 100 } else { 0 });
-    sqlx::query(
-        "INSERT INTO course_progress (course_id, user_id, completed_required_count,
-                                      total_required_count)
-         VALUES ($1, $2, $3, $4)",
-    )
-    .bind(course_uuid)
-    .bind(user_id.0)
-    .bind(done)
-    .bind(total)
     .execute(pool)
     .await
     .unwrap();
@@ -1246,14 +1231,10 @@ async fn at_risk_scope_sort_and_intervention_idempotency(pool: PgPool) {
     let alice = learner(&app, "alice").await;
     let bob = learner(&app, "bob").await;
 
-    // Progress rows straight into the table: the teacher enrolled in his
-    // own course, alice at 0 % (score 30 + 30 idle), bob at 40 % (18 + 30).
-    for (user, pct) in [
-        (teacher.user_id, 0.0),
-        (alice.user_id, 0.0),
-        (bob.user_id, 40.0),
-    ] {
-        enrol(&pool, &course_id, user, pct).await;
+    // Enrolments straight into the table: the teacher enrolled in his own
+    // course, alice and bob at no progress (the course has no activity).
+    for user in [teacher.user_id, alice.user_id, bob.user_id] {
+        enrol(&pool, &course_id, user).await;
     }
     // Both last posted 15 days ago (+30): at risk, so listed (UX-240).
     for user in [alice.user_id, bob.user_id] {
@@ -1444,7 +1425,7 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
     let (course_id, chapter_id) = public_course(&app, &teacher, "Analytics 101").await;
     let alice = learner(&app, "alice").await;
     let outsider = learner(&app, "outsider").await;
-    enrol(&pool, &course_id, alice.user_id, 0.0).await;
+    enrol(&pool, &course_id, alice.user_id).await;
 
     let not_enrolled = app
         .post_as(
@@ -1499,7 +1480,7 @@ async fn interventions_need_enrolled_learners_and_belong_to_the_actor(pool: PgPo
     // enrolled anywhere - not at risk, not counted, not a valid target.
     // UX-155: nor active - only members' activity counts.
     let bob = learner(&app, "bob").await;
-    enrol(&pool, &course_id, bob.user_id, 0.0).await;
+    enrol(&pool, &course_id, bob.user_id).await;
     for user in [alice.user_id, bob.user_id] {
         sqlx::query(
             "INSERT INTO analytics_events (event, course_id, user_id) VALUES ('activity.completed', $1, $2)",
@@ -1675,7 +1656,7 @@ async fn impersonation_is_read_only_interventions_page_and_reporters_are_out(poo
     let teacher = instructor(&app, "teacher").await;
     let (course_id, _) = public_course(&app, &teacher, "Analytics 101").await;
     let alice = learner(&app, "alice").await;
-    enrol(&pool, &course_id, alice.user_id, 0.0).await;
+    enrol(&pool, &course_id, alice.user_id).await;
 
     let saved = app
         .post_as(
@@ -2061,7 +2042,7 @@ async fn at_risk_code_challenge_outcome_is_the_released_score(pool: PgPool) {
     let code_id = uuid::Uuid::parse_str(created.json()["id"].as_str().unwrap()).unwrap();
     let bob = learner(&app, "bob").await;
     let course_uuid = uuid::Uuid::parse_str(&course_id).unwrap();
-    enrol(&pool, &course_id, bob.user_id, 100.0).await;
+    enrol(&pool, &course_id, bob.user_id).await;
     // Submitted 20 days ago: idle enough to be at risk and listed (UX-240).
     let submission_id: uuid::Uuid = sqlx::query_scalar(
         "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number, final_score,
@@ -2117,8 +2098,8 @@ async fn exam_and_code_challenge_common_failures_use_the_catalogued_codes(pool: 
     let course_uuid = uuid::Uuid::parse_str(&course_id).unwrap();
     let bob = learner(&app, "bob").await;
     let ann = learner(&app, "ann").await;
-    enrol(&pool, &course_id, bob.user_id, 50.0).await;
-    enrol(&pool, &course_id, ann.user_id, 50.0).await;
+    enrol(&pool, &course_id, bob.user_id).await;
+    enrol(&pool, &course_id, ann.user_id).await;
     for kind in ["exam", "code_challenge"] {
         let created = app
             .post_as(
@@ -2210,7 +2191,7 @@ async fn leavers_drop_from_course_funnels_certificates_and_bottlenecks(pool: PgP
     let bob = learner(&app, "bob").await;
     let carol = learner(&app, "carol").await;
     for (who, answer, score) in [(&alice, "a", 90), (&bob, "a", 90), (&carol, "b", 20)] {
-        enrol(&pool, &course_id, who.user_id, 0.0).await;
+        enrol(&pool, &course_id, who.user_id).await;
         let sub =
             submit_attempt_answering(&app, who, &quiz_id, &choice_id, &essay_id, answer).await;
         let graded = app
@@ -2322,7 +2303,7 @@ async fn completion_funnel_share_never_exceeds_100_pct(pool: PgPool) {
     let mut learners = Vec::new();
     for name in ["alice", "bob", "carol"] {
         let who = learner(&app, name).await;
-        enrol(&pool, &course_id, who.user_id, 100.0).await;
+        enrol(&pool, &course_id, who.user_id).await;
         learners.push(who);
     }
     // Eligibility is course_progress_v's: every required activity has a completion.
@@ -2434,7 +2415,7 @@ async fn interventions_racing_a_leave_are_not_in_course(pool: PgPool) {
     let teacher = instructor(&app, "teacher").await;
     let (course_id, _) = public_course(&app, &teacher, "Race 101").await;
     let alice = learner(&app, "alice").await;
-    enrol(&pool, &course_id, alice.user_id, 0.0).await;
+    enrol(&pool, &course_id, alice.user_id).await;
     let mut leave = pool.begin().await.unwrap();
     sqlx::query(
         "SELECT pg_advisory_xact_lock(hashtextextended($1::uuid::text || $2::uuid::text, 0))",
@@ -2543,7 +2524,7 @@ async fn staff_never_enrol_nor_count_as_members(pool: PgPool) {
     assert_eq!(runs, 0, "a staff member got a trail run");
 
     // A staff run from before the fix is in no member set.
-    enrol(&pool, &course_id, boss, 0.0).await;
+    enrol(&pool, &course_id, boss).await;
     let gradebook = app
         .get_as(&admin, &format!("/api/v2/courses/{course_id}/gradebook"))
         .await;
@@ -2579,7 +2560,7 @@ async fn data_quality_counts_excluded_attempts_and_audit_skips_previews(pool: Pg
     let alice = learner(&app, "alice").await;
     let bob = learner(&app, "bob").await;
     for who in [&alice, &bob] {
-        enrol(&pool, &course_id, who.user_id, 0.0).await;
+        enrol(&pool, &course_id, who.user_id).await;
     }
     let learner_sub = submit_attempt(&app, &alice, &quiz_id, &choice_id, &essay_id).await;
     submit_attempt(&app, &bob, &quiz_id, &choice_id, &essay_id).await;
@@ -2654,7 +2635,7 @@ async fn cohort_retention_and_excluded_attempts_count_the_member_set(pool: PgPoo
     let bob = learner(&app, "bob").await;
     let carol = learner(&app, "carol").await;
     for who in [&alice, &bob, &carol] {
-        enrol(&pool, &course_id, who.user_id, 0.0).await;
+        enrol(&pool, &course_id, who.user_id).await;
         sqlx::query("INSERT INTO usergroup_members (usergroup_id, user_id) VALUES ($1, $2)")
             .bind(trio)
             .bind(who.user_id.0)
@@ -2664,7 +2645,7 @@ async fn cohort_retention_and_excluded_attempts_count_the_member_set(pool: PgPoo
     }
     // Dave learns in the course as a member of Other only.
     let dave = learner(&app, "dave").await;
-    enrol(&pool, &course_id, dave.user_id, 0.0).await;
+    enrol(&pool, &course_id, dave.user_id).await;
     sqlx::query("INSERT INTO usergroup_members (usergroup_id, user_id) VALUES ($1, $2)")
         .bind(other)
         .bind(dave.user_id.0)
@@ -2784,7 +2765,7 @@ async fn exam_common_failures_name_the_missed_questions(pool: PgPool) {
     let (hard, easy) = (uuid::Uuid::now_v7(), uuid::Uuid::now_v7());
     for (i, hard_correct) in [false, true, true].into_iter().enumerate() {
         let who = learner(&app, &format!("l{i}")).await;
-        enrol(&pool, &course_id, who.user_id, 50.0).await;
+        enrol(&pool, &course_id, who.user_id).await;
         let grading = serde_json::json!({ "items": [
             { "item_id": hard, "item_text": "Hard one", "score": if hard_correct { 50.0 } else { 0.0 },
               "max_score": 50.0, "correct": hard_correct },

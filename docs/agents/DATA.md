@@ -32,7 +32,7 @@ Every table, column, key and foreign key with the table's purpose: `docs/agents/
 | lesson media                      | `activities.content->>'filename'` (video, PDF), `blocks.content` (page blocks)       |
 | role, permission                  | `user_roles` -> `roles` (`slug`); permissions in `role_permissions`                 |
 | group                             | `usergroups`, `usergroup_members`, `usergroup_courses`                               |
-| course progress, completion       | `course_progress_v` (`progress_pct`, `certificate_eligible`: the course as it is now); a member's completion: `enrolments.completed_at` (set once, kept when the course later gains an activity); `course_progress` is the previous release's copy, nothing reads it |
+| course progress, completion       | `course_progress_v` (`progress_pct`, `certificate_eligible`: the course as it is now); a member's completion: `enrolments.completed_at` (set once, kept when the course later gains an activity) |
 | personal message ("Диалоги")      | `conversations` (`last_message_id`), `conversation_members` (`user_id`, `peer_id`, `last_read_message_id`), `messages` (`deleted_at` a tombstone, context `course_id` / `activity_id`); files `message_uploads` (`upload_id` -> `uploads`, purpose `message-attachment`; a bulk send names one upload from each copy); a `message_sent` intervention from analytics has `payload.message_id`; reports `message_reports`, bans `message_bans`. The text (`messages.body`, file names, report and ban free text) is not readable as `ashyq_ro` |
 
 A learner sees an activity when it is `published`; an assessment (a file task too) needs

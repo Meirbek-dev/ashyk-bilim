@@ -720,8 +720,8 @@ in the order it can be done, each step a forward migration on the current schema
       view (`20261116075642`), which now also reads `activity_progress` (score, needs-grading, last activity),
       while the projector kept writing the table and `maintenance:reconcile` compared both until step 5.
    5. The projector stopped writing `course_progress` (5.8 item 10, `20261116075659`): a member's completion is
-      `enrolments.completed_at`, the totals are the view's. Left: the contract dropping the table. The view keeps
-      its name `course_progress_v` (5.8 item 10 says why). `activity_progress` stays a table (score, attempts,
+      `enrolments.completed_at`, the totals are the view's; its contract `20261116075660` dropped the table. The
+      view keeps its name `course_progress_v` (5.8 item 10 says why). `activity_progress` stays a table (score, attempts,
       lateness are its own facts until 5.6 n6 folds submissions into `attempts`).
    Gamification: compute the totals from the journals in the leaderboard query (an index on
    `xp_transactions (user_id)` already exists), dropping the counters, under the same month-of-zero rule.
@@ -1165,9 +1165,10 @@ Queue, in order:
       it again) and `enrolments_completion` (a completion this release records marks the stored row complete, its
       counts made equal and the rest from the view: rolled back, the previous release sees no transition). The
       stored row's other columns go stale until the previous release re-projects the member; it reads no other.
-      Left: the contract dropping `course_progress`, both triggers and their functions. The view keeps its name:
-      this release reads `course_progress_v`, so a rename in the contract would break it (a rename needs a
-      release that reads the new name first, one more release for a name).
+      Its contract `20261116075660_drop_course_progress` dropped `course_progress`, both triggers and their
+      functions; `maintenance:reconcile` had nothing left over the table. The view keeps its name: the switch
+      release reads `course_progress_v`, so a rename in the contract would break it (a rename needs a release that
+      reads the new name first, one more release for a name).
     - *Code language by name*: short slugs (`python`, `cpp`, `java`, ...; the runner image fixes the version) replace
       Judge0's ids everywhere; one data-fix rewrites stored and frozen bodies; the API's `language_id` becomes
       `language`; `AB__CODE__ALLOWED_LANGUAGES` replaces `AB__CODE__ALLOWED_LANGUAGE_IDS` (the old name read for one

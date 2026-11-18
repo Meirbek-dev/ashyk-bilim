@@ -55,9 +55,6 @@
 //!   midnight of the zone the pool passes as `ab.time_zone`, and a `Day`
 //!   binds as `date`.
 //! - lane C, item 11: membership is an `enrolments` row.
-//! - lane C, items 14/15: course_progress derives its percent and the
-//!   certificate flag from the counts and completed_at (generated columns,
-//!   not writable); the counts cohere.
 //! - lane C, item 40: projections and rollups are keyed by their natural key.
 //! - lane C, item 38: the event prune removes events past 400 days and
 //!   keeps the rest, whether or not analytics_events is partitioned.
@@ -1504,67 +1501,6 @@ async fn the_platform_day_is_almatys(pool: PgPool) {
 }
 
 #[ab_testdb::test]
-async fn course_progress_derives_percent_and_eligibility(pool: PgPool) {
-    let w = world(&pool).await;
-    let derived = || async {
-        sqlx::query_as::<_, (f64, bool)>(
-            "SELECT progress_pct, certificate_eligible FROM course_progress
-             WHERE course_id = $1 AND user_id = $2",
-        )
-        .bind(w.course)
-        .bind(w.user)
-        .fetch_one(&pool)
-        .await
-        .unwrap()
-    };
-    sqlx::query(
-        "INSERT INTO course_progress (course_id, user_id, completed_required_count,
-                                      total_required_count)
-         VALUES ($1, $2, 1, 32)",
-    )
-    .bind(w.course)
-    .bind(w.user)
-    .execute(&pool)
-    .await
-    .unwrap();
-    // 3.125 rounds away from zero, as the projector's round2.
-    assert_eq!(derived().await, (3.13, false));
-    let set = |sql: &'static str| {
-        let pool = pool.clone();
-        async move {
-            sqlx::query(sql)
-                .bind(w.course)
-                .bind(w.user)
-                .execute(&pool)
-                .await
-        }
-    };
-    // All done but no completion stamp (a leaver): not eligible.
-    set("UPDATE course_progress SET completed_required_count = 32
-         WHERE course_id = $1 AND user_id = $2")
-    .await
-    .unwrap();
-    assert_eq!(derived().await, (100.0, false));
-    set("UPDATE course_progress SET completed_at = now() WHERE course_id = $1 AND user_id = $2")
-        .await
-        .unwrap();
-    assert_eq!(derived().await, (100.0, true));
-    // More done than required, or a completion before the end, is refused.
-    let over = set("UPDATE course_progress SET completed_required_count = 33
-                    WHERE course_id = $1 AND user_id = $2")
-    .await;
-    assert!(over.is_err(), "completed <= total");
-    let early = set("UPDATE course_progress SET completed_required_count = 31
-                     WHERE course_id = $1 AND user_id = $2")
-    .await;
-    assert!(early.is_err(), "completed_at only on a completed course");
-    let written = set("UPDATE course_progress SET progress_pct = 50
-                       WHERE course_id = $1 AND user_id = $2")
-    .await;
-    assert!(written.is_err(), "the percent is generated, never written");
-}
-
-#[ab_testdb::test]
 async fn projections_and_rollups_are_keyed_by_what_they_describe(pool: PgPool) {
     let keys: Vec<(String, String)> = sqlx::query_as(
         "SELECT c.conrelid::regclass::text,
@@ -1573,7 +1509,7 @@ async fn projections_and_rollups_are_keyed_by_what_they_describe(pool: PgPool) {
          CROSS JOIN LATERAL unnest(c.conkey) WITH ORDINALITY k(attnum, ord)
          JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum
          WHERE c.contype = 'p'
-           AND c.conrelid::regclass::text IN ('activity_progress', 'course_progress',
+           AND c.conrelid::regclass::text IN ('activity_progress',
                'gamification_profiles', 'daily_course_metrics', 'daily_course_engagement',
                'daily_assessment_metrics', 'daily_user_course_progress', 'learner_risk_snapshots')
          GROUP BY 1 ORDER BY 1",
@@ -1586,7 +1522,6 @@ async fn projections_and_rollups_are_keyed_by_what_they_describe(pool: PgPool) {
         keys,
         [
             ("activity_progress", "activity_id,user_id"),
-            ("course_progress", "course_id,user_id"),
             ("daily_assessment_metrics", "metric_date,assessment_id"),
             ("daily_course_engagement", "metric_date,activity_id"),
             ("daily_course_metrics", "metric_date,course_id"),
@@ -2999,16 +2934,6 @@ async fn triggers_guard_or_derive(pool: PgPool) {
             "derived; reads count on read, a contract drops it",
         ),
         ("course_discussions_upload_ids", "derived"),
-        // Compatibility with the previous release (REWRITE 5.8 item 10): a course completion either release
-        // notices reaches the other's record; the contract dropping `course_progress` drops both.
-        (
-            "course_progress_completion",
-            "compat; a contract drops it with course_progress",
-        ),
-        (
-            "enrolments_completion",
-            "compat; a contract drops it with course_progress",
-        ),
         ("courses_upload_ids", "derived"),
         (
             "discussion_reactions_recount",
