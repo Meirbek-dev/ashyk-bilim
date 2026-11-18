@@ -449,7 +449,9 @@ async fn seed_e2e(config: Config, learners: u16) -> anyhow::Result<()> {
 
 async fn serve(config: Config) -> anyhow::Result<()> {
     let addr = format!("{}:{}", config.server.host, config.server.port);
-    let router = ab_api::build_router(build_state(config, ab_db::Process::Serve).await?)?;
+    let state = build_state(config, ab_db::Process::Serve).await?;
+    let shutdown = state.shutdown.clone();
+    let router = ab_api::build_router(state)?;
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!(%addr, "ashyq serving");
     // The TCP peer is the last-resort client address (`ClientIp`, BUG-147).
@@ -457,7 +459,11 @@ async fn serve(config: Config) -> anyhow::Result<()> {
         listener,
         router.into_make_service_with_connect_info::<std::net::SocketAddr>(),
     )
-    .with_graceful_shutdown(shutdown_signal())
+    .with_graceful_shutdown(async move {
+        shutdown_signal().await;
+        // SSE streams never end on their own; without this the drain waits for the container's kill.
+        shutdown.cancel();
+    })
     .await?;
     tracing::info!("server drained and stopped");
     Ok(())

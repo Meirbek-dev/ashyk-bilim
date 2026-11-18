@@ -69,6 +69,9 @@ pub struct AppState {
     pub ai: AiService,
     /// The run event streams (`sse:ai:{run}`) the SSE tail reads.
     pub ai_events: AiEvents,
+    /// Cancelled when the server starts shutting down: open SSE streams end
+    /// (clients reconnect with `Last-Event-ID`) so the graceful drain finishes.
+    pub shutdown: tokio_util::sync::CancellationToken,
 }
 
 impl AppState {
@@ -104,6 +107,7 @@ impl AppState {
         Ok(Self {
             ai,
             ai_events,
+            shutdown: tokio_util::sync::CancellationToken::new(),
             // Loopback destinations only outside production (wiremock, the
             // local web app); production rejects every non-public address.
             link_preview: LinkPreviewService::new(

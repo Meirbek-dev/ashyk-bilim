@@ -97,6 +97,7 @@ async fn open_stream(
         base.extend(extra.clone());
     }
 
+    let shutdown = state.shutdown.clone();
     let state = state.clone();
     let out = async_stream::stream! {
         // Moved in so the slot is released when the client goes away.
@@ -162,6 +163,7 @@ async fn open_stream(
             }
         }
     };
+    let out = out.take_until(shutdown.cancelled_owned());
     Ok(Sse::new(out.boxed()).keep_alive(
         KeepAlive::new()
             .interval(Duration::from_secs(25))

@@ -233,6 +233,7 @@ pub async fn stream_run(
     let events = state.ai_events.clone();
     let mut subscriber = events.subscriber().await?;
 
+    let shutdown = state.shutdown.clone();
     let stream = async_stream::stream! {
         let _slot: ConnectionSlot = slot;
         yield Ok(run_sse("run-started", &serde_json::json!({
@@ -287,6 +288,7 @@ pub async fn stream_run(
             }
         }
     };
+    let stream = futures::StreamExt::take_until(stream, shutdown.cancelled_owned());
     Ok(Sse::new(stream).keep_alive(KeepAlive::new().interval(KEEPALIVE).text("keepalive")))
 }
 

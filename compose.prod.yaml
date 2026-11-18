@@ -135,6 +135,8 @@ services:
     # edge-net: nginx alias + internet egress (AI providers, email, OTLP).
     networks: [edge-net, data-net, exec-net]
     depends_on: *app-depends
+    # The drain lets requests in flight finish (their own limit is 30 s); SSE streams end at once.
+    stop_grace_period: 35s
     security_opt:
       - no-new-privileges:true
     cap_drop:
