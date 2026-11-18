@@ -33,6 +33,7 @@ use crate::events::GradingEvents;
 use crate::grading::answers::{Answers, parse_answers};
 use crate::grading::breakdown::{GradedItem, GradingBreakdown, round2};
 use crate::grading::penalties::{apply_late, attempt_cap};
+use crate::grading::score::{percent_of_points, round_points};
 use crate::grading::submissions::{ReleaseState, release_state};
 use crate::identity::Actor;
 use crate::progress::ProgressProjector;
@@ -130,6 +131,9 @@ pub struct ReviewItem {
     pub attempt_number: i32,
     pub auto_score: Option<f64>,
     pub final_score: Option<f64>,
+    pub max_points: Option<f64>,
+    pub auto_points: Option<f64>,
+    pub final_points: Option<f64>,
     pub is_late: bool,
     pub submitted_at: Option<i64>,
     pub graded_at: Option<i64>,
@@ -204,10 +208,14 @@ pub struct TeacherSubmission {
     pub attempt_number: i32,
     pub answers: Answers,
     pub grading: GradingBreakdown,
+    /// The derived percentages of `auto_points` / `final_points`.
     pub auto_score: Option<f64>,
     pub final_score: Option<f64>,
-    /// The latest entry's raw score when it is a manual override (differs
-    /// from the item-derived one) - the grade form reopens with the
+    /// What the attempt is out of (its version's points) and its points.
+    pub max_points: Option<f64>,
+    pub auto_points: Option<f64>,
+    pub final_points: Option<f64>,
+    /// The raw points of record when they are a manual override - the grade form reopens with the
     /// override switch on (BUG-174).
     pub score_override: Option<f64>,
     pub is_late: bool,
@@ -269,11 +277,11 @@ pub struct ItemGrade {
 
 pub struct GradeInput {
     pub action: GradeAction,
-    /// Raw 0..100 before the late penalty (a manual override). Absent =
+    /// Raw points `0..=max_points` before the penalties (a manual override). Absent =
     /// keep a stored override / annulled 0, else derive from the item scores
-    /// (earned / possible × 100); `Some(None)` = drop the override and
+    /// (the sum of their points); `Some(None)` = drop the override and
     /// derive (BUG-174).
-    pub final_score: Option<Option<f64>>,
+    pub final_points: Option<Option<f64>>,
     /// Overall feedback; `None` keeps the stored one (publish-only saves).
     pub feedback: Option<String>,
     pub item_grades: Vec<ItemGrade>,
@@ -287,10 +295,14 @@ pub struct GradeInput {
 pub struct GradingEntry {
     pub id: GradingEntryId,
     pub graded_by: Option<UserId>,
+    /// The derived percentages of `raw_points` / `final_points`.
     pub raw_score: f64,
     pub penalty_pct: f64,
     /// `None` = a draft save that left the attempt pending.
     pub final_score: Option<f64>,
+    pub max_points: f64,
+    pub raw_points: f64,
+    pub final_points: Option<f64>,
     pub overall_feedback: String,
     pub published_at: Option<i64>,
     pub created_at: i64,
@@ -345,6 +357,9 @@ pub struct GradebookCell {
     /// UX-146: `pending` (owed a grade) or `graded` (owed a release).
     pub pending_attempt_status: Option<SubmissionStatus>,
     pub final_score: Option<f64>,
+    /// The grade of record in points, out of `max_points` (a file task is out of 100).
+    pub final_points: Option<f64>,
+    pub max_points: Option<f64>,
     pub is_late: bool,
     /// UX-113: the learner's active due-date override (the gradebook's
     /// «overdue» reads this before the assessment due).
@@ -1045,6 +1060,9 @@ impl GradingService {
                 attempt_number: r.attempt_number,
                 auto_score: r.auto_score,
                 final_score: r.final_score,
+                max_points: r.max_points,
+                auto_points: r.auto_points,
+                final_points: r.final_points,
                 is_late: r.is_late,
                 submitted_at: r.submitted_at,
                 graded_at: r.graded_at,
@@ -1220,25 +1238,13 @@ impl GradingService {
         for row in rows {
             let user = user_or_placeholder(&users, row.user_id);
             let breakdown = GradingBreakdown::from_value(&row.grading);
-            // Item columns on the item's own scale (the breakdown holds
-            // share-of-100 points).
+            // Item columns in the item's points (the breakdown holds them).
             let by_item: BTreeMap<AssessmentItemId, f64> = breakdown
                 .items
                 .iter()
                 // An item still awaiting its manual score has no score yet.
                 .filter(|gi| !gi.needs_manual_review)
-                .map(|gi| {
-                    let item_scale = items
-                        .iter()
-                        .find(|i| i.id == gi.item_id)
-                        .map_or(gi.max_score, |i| i.max_score);
-                    let score = if gi.max_score > 0.0 && item_scale > 0.0 {
-                        round2(gi.score / gi.max_score * item_scale)
-                    } else {
-                        gi.score
-                    };
-                    (gi.item_id, score)
-                })
+                .map(|gi| (gi.item_id, gi.score))
                 .collect();
             let mut fields = vec![
                 if user.display_name.is_empty() {
@@ -1308,7 +1314,7 @@ impl GradingService {
         let grading = GradingBreakdown::from_value(&row.grading);
         let latest_raw = ab_db::submissions::latest_grading_entry(&self.pool, row.id)
             .await?
-            .map(|e| e.raw_score);
+            .map(|e| e.raw_points);
         let score_override = override_of(&grading, latest_raw, is_annulled(&row));
         Ok(TeacherSubmission {
             id: row.id,
@@ -1321,6 +1327,9 @@ impl GradingService {
             grading,
             auto_score: row.auto_score,
             final_score: row.final_score,
+            max_points: row.max_points,
+            auto_points: row.auto_points,
+            final_points: row.final_points,
             score_override,
             is_late: row.is_late,
             late_penalty_pct: row.late_penalty_pct,
@@ -1361,6 +1370,9 @@ impl GradingService {
                 raw_score: e.raw_score,
                 penalty_pct: e.penalty_pct,
                 final_score: e.final_score,
+                max_points: e.max_points,
+                raw_points: e.raw_points,
+                final_points: e.final_points,
                 overall_feedback: e.overall_feedback,
                 published_at: e.published_at,
                 created_at: e.created_at,
@@ -1443,13 +1455,15 @@ impl GradingService {
                 message: format!("cannot move a {} submission to {}", row.status, target),
             }]));
         }
-        if let Some(Some(score)) = input.final_score
-            && !(0.0..=100.0).contains(&score)
+        // A handed-in attempt always knows what it is out of (`submissions_points_check`).
+        let max = row.max_points.unwrap_or(0.0);
+        if let Some(Some(points)) = input.final_points
+            && !(0.0..=max).contains(&points)
         {
             return Err(Error::validation(vec![FieldError {
-                field: "final_score".into(),
+                field: "final_points".into(),
                 code: "range".into(),
-                message: "final_score must be within 0..=100".into(),
+                message: format!("final_points must be within 0..={max}"),
             }]));
         }
 
@@ -1496,7 +1510,6 @@ impl GradingService {
         let answers = parse_answers(&row.answers)?;
         let previous = row.grading.clone();
         let mut breakdown = GradingBreakdown::from_value(&row.grading);
-        let before = breakdown.clone();
         merge_item_grades(&mut breakdown, &input.item_grades, &items, &answers);
         breakdown.needs_manual_review = breakdown.items.iter().any(|i| i.needs_manual_review);
         if let Some(feedback) = &input.feedback {
@@ -1510,19 +1523,19 @@ impl GradingService {
         // attempt keeps its 0, and re-sending the penalised final would
         // penalise twice. Dropping an override takes an explicit `null`.
         let annulled = is_annulled(&row);
-        let stored_raw = match input.final_score {
+        let stored_raw = match input.final_points {
             Some(_) => None,
             None => ab_db::submissions::latest_grading_entry(&self.pool, id)
                 .await?
-                .map(|e| e.raw_score),
+                .map(|e| e.raw_points),
         };
-        // BUG-205: an explicit `final_score` is the score of record even when
+        // BUG-205: an explicit `final_points` is the score of record even when
         // it equals the derived one - the intent is stored on the breakdown
         // (`score_override`), never inferred from equality.
-        let (raw, overridden) = match input.final_score {
-            Some(Some(score)) => {
-                breakdown.score_override = Some(round2(score));
-                (round2(score), true)
+        let (raw, overridden) = match input.final_points {
+            Some(Some(points)) => {
+                breakdown.score_override = Some(round_points(points));
+                (round_points(points), true)
             }
             // BUG-224 nit: dropping the override on an annulled attempt
             // returns it to the annulled 0, never to the derived score.
@@ -1540,14 +1553,11 @@ impl GradingService {
             }
             Some(None) => {
                 breakdown.score_override = None;
-                (derived_raw(&breakdown), false)
+                (derived_raw(&breakdown, max), false)
             }
-            None => match override_of_before(&breakdown, stored_raw, &before) {
-                Some(stored) => {
-                    breakdown.score_override = Some(stored);
-                    (stored, true)
-                }
-                None => (derived_raw(&breakdown), false),
+            None => match breakdown.score_override {
+                Some(stored) => (stored, true),
+                None => (derived_raw(&breakdown, max), false),
             },
         };
         // BUG-197: without a score of record - an item still awaiting manual
@@ -1563,16 +1573,22 @@ impl GradingService {
             other => other,
         };
         // Same order as the auto path (`penalties::apply`): cap, then late.
-        let final_score = apply_late(
-            attempt_cap(raw, assessment.attempt_penalty_percent, row.attempt_number),
+        let final_points = apply_late(
+            attempt_cap(
+                raw,
+                max,
+                assessment.attempt_penalty_percent,
+                row.attempt_number,
+            ),
             row.late_penalty_pct,
         );
+        let final_score = percent_of_points(final_points, max);
         // BUG-202 / BUG-206: no score of record while the attempt stays
         // pending - neither the row nor its ledger entry carries a final.
         // Nor does one returned before its manual items were scored: its
         // derived total is not a grade (it exported as «0»).
         let score_of_record =
-            (target != SubmissionStatus::Pending && !unscored).then_some(final_score);
+            (target != SubmissionStatus::Pending && !unscored).then_some(final_points);
         let effective = breakdown.to_value();
         // The row update and its ledger (entry, item feedback, audit) land
         // together or not at all.
@@ -1599,7 +1615,8 @@ impl GradingService {
             LedgerEntry {
                 target,
                 raw,
-                final_score: score_of_record,
+                final_points: score_of_record,
+                max,
                 feedback: &feedback,
                 previous: &previous,
                 effective: &effective,
@@ -1615,6 +1632,7 @@ impl GradingService {
                 actor.user_id,
                 &input.item_grades,
                 raw,
+                max,
             )
             .await?;
         }
@@ -1674,9 +1692,9 @@ impl GradingService {
             NewGradingEntry {
                 submission_id: row.id,
                 graded_by: Some(actor.user_id),
-                raw_score: ledger.raw,
+                raw_points: ledger.raw,
                 penalty_pct: row.late_penalty_pct,
-                final_score: ledger.final_score,
+                final_points: ledger.final_points,
                 raw_breakdown: ledger.previous,
                 effective_breakdown: ledger.effective,
                 overall_feedback: ledger.feedback,
@@ -1712,8 +1730,11 @@ impl GradingService {
             Some(actor.user_id),
             ab_core::assessments::AuditEventKind::GradeSaved,
             serde_json::json!({
-                "submission_id": row.id, "status": ledger.target, "raw_score": ledger.raw,
-                "final_score": ledger.final_score, "learner_id": row.user_id,
+                // The audit keeps the percentages it always held.
+                "submission_id": row.id, "status": ledger.target,
+                "raw_score": percent_of_points(ledger.raw, ledger.max),
+                "final_score": ledger.final_points.map(|p| percent_of_points(p, ledger.max)),
+                "learner_id": row.user_id,
                 "audit_note": input.audit_note.as_deref().map(str::trim).filter(|n| !n.is_empty()),
             }),
         )
@@ -1756,7 +1777,7 @@ impl GradingService {
             };
             let input = GradeInput {
                 action: GradeAction::Return,
-                final_score: None,
+                final_points: None,
                 feedback: None,
                 item_grades: Vec::new(),
                 audit_note: None,
@@ -1805,26 +1826,27 @@ impl GradingService {
                 continue;
             }
             let latest = ab_db::submissions::latest_grading_entry(&self.pool, row.id).await?;
-            let fallback_score = row.final_score.or(row.auto_score).unwrap_or(0.0);
+            let max = row.max_points.unwrap_or(0.0);
+            let fallback_points = row.final_points.or(row.auto_points).unwrap_or(0.0);
             let breakdown = GradingBreakdown::from_value(&row.grading);
-            if unscored(&row, &breakdown, latest.as_ref().map(|e| e.raw_score)) {
+            if unscored(&row, &breakdown, latest.as_ref().map(|e| e.raw_points)) {
                 needs_grading += 1;
                 continue;
             }
-            let (raw_score, penalty_pct, final_score, feedback, raw_breakdown, effective) =
+            let (raw_points, penalty_pct, final_points, feedback, raw_breakdown, effective) =
                 match &latest {
                     Some(e) => (
-                        e.raw_score,
+                        e.raw_points,
                         e.penalty_pct,
-                        e.final_score.unwrap_or(fallback_score),
+                        e.final_points.unwrap_or(fallback_points),
                         e.overall_feedback.clone(),
                         e.raw_breakdown.clone(),
                         e.effective_breakdown.clone(),
                     ),
                     None => (
-                        fallback_score,
+                        fallback_points,
                         row.late_penalty_pct,
-                        fallback_score,
+                        fallback_points,
                         breakdown.feedback.clone(),
                         row.grading.clone(),
                         row.grading.clone(),
@@ -1839,9 +1861,9 @@ impl GradingService {
                 NewGradingEntry {
                     submission_id: row.id,
                     graded_by: Some(actor.user_id),
-                    raw_score,
+                    raw_points,
                     penalty_pct,
-                    final_score: Some(final_score),
+                    final_points: Some(final_points),
                     raw_breakdown: &raw_breakdown,
                     effective_breakdown: &effective,
                     overall_feedback: &feedback,
@@ -1850,12 +1872,13 @@ impl GradingService {
                 },
             )
             .await?;
-            if !ab_db::submissions::mark_published(&mut *tx, row.id, row.version, final_score)
+            if !ab_db::submissions::mark_published(&mut *tx, row.id, row.version, final_points)
                 .await?
             {
                 skipped += 1;
                 continue;
             }
+            let final_score = percent_of_points(final_points, max);
             // The released grade becomes mastery evidence (docs/AI-FIRST.md 3.3).
             crate::mastery::owe_ingest(&mut tx, crate::mastery::SOURCE_ITEM, row.id.0).await?;
             let projector = ProgressProjector::new(self.pool.clone());
@@ -2052,6 +2075,8 @@ impl GradingService {
                     pending_attempt_id: r.pending_attempt_id,
                     pending_attempt_status: r.pending_attempt_status,
                     final_score: r.final_score,
+                    final_points: r.final_points,
+                    max_points: r.max_points,
                     is_late: r.is_late,
                     due_at_override: r.due_at_override,
                     submitted_at: r.submitted_at,
@@ -2199,8 +2224,10 @@ pub const fn course_event_name(target: SubmissionStatus) -> &'static str {
 /// What one save writes to the grading ledger.
 struct LedgerEntry<'a> {
     target: SubmissionStatus,
+    /// Points, out of `max`.
     raw: f64,
-    final_score: Option<f64>,
+    final_points: Option<f64>,
+    max: f64,
     feedback: &'a str,
     previous: &'a serde_json::Value,
     effective: &'a serde_json::Value,
@@ -2259,12 +2286,18 @@ fn parse_gradebook_cursor(cursor: &str) -> Result<UserId> {
     })
 }
 
-/// Legacy merge: a score sets the item and clears manual review; feedback
-/// replaces the item feedback; items not yet in the breakdown are appended
-/// with their real max score (`save_grade` refuses ids outside the assessment).
-/// Earned / possible × 100 over the breakdown items (0 without items).
-fn derived_raw(breakdown: &GradingBreakdown) -> f64 {
-    round2(breakdown.item_percent())
+/// The item-derived raw: the items' earned points. BUG-217: an item graded after the attempt's version was
+/// taken (added between an unpublish and a republish) is outside the version's `max` - the set is then
+/// scaled to `max`, so the raw stays a share of what the attempt is out of.
+fn derived_raw(breakdown: &GradingBreakdown, max: f64) -> f64 {
+    let total: f64 = breakdown.items.iter().map(|i| i.max_score).sum();
+    let earned = breakdown.item_points();
+    let raw = if total > 0.0 && (total - max).abs() >= 0.005 {
+        earned * max / total
+    } else {
+        earned
+    };
+    round_points(raw).clamp(0.0, max.max(0.0))
 }
 
 /// BUG-197: no score of record yet - an item still awaits its manual score
@@ -2278,28 +2311,16 @@ fn is_annulled(row: &SubmissionRow) -> bool {
     row.auto_submit_reason == Some(AutoSubmitReason::IntegrityViolation)
 }
 
-/// The stored override (BUG-205), or - for rows written before the flag
-/// existed - a latest ledger raw that differs from the item-derived one
-/// (`differs_from_items`, BUG-329); an integrity-annulled attempt's 0
-/// counts as one (BUG-215).
+/// The stored override in points (BUG-205; rows adjusted before the flag existed got it in
+/// 20261116075663, BUG-329); an integrity-annulled attempt's ledger raw (0) counts as one (BUG-215).
 fn override_of(
     breakdown: &GradingBreakdown,
     ledger_raw: Option<f64>,
     annulled: bool,
 ) -> Option<f64> {
-    override_of_before(breakdown, ledger_raw, breakdown)
-        .or_else(|| annulled.then(|| ledger_raw.unwrap_or(0.0)))
-}
-
-/// `override_of` against the items as they were before an item merge.
-fn override_of_before(
-    breakdown: &GradingBreakdown,
-    ledger_raw: Option<f64>,
-    before: &GradingBreakdown,
-) -> Option<f64> {
     breakdown
         .score_override
-        .or_else(|| ledger_raw.filter(|raw| before.differs_from_items(*raw)))
+        .or_else(|| annulled.then(|| ledger_raw.unwrap_or(0.0)))
 }
 
 fn merge_item_grades(
@@ -2308,7 +2329,6 @@ fn merge_item_grades(
     items: &[Item],
     answers: &Answers,
 ) {
-    let mut pushed = false;
     for grade in grades {
         let item = items.iter().find(|i| i.id == grade.item_id);
         if let Some(existing) = breakdown
@@ -2317,11 +2337,11 @@ fn merge_item_grades(
             .find(|i| i.item_id == grade.item_id)
         {
             if let Some(score) = grade.score {
-                // Teachers score on the item's own scale; the breakdown keeps
-                // points as a share of 100 (the auto-grader's unit).
+                // Teachers score on the item's current scale; the breakdown keeps the attempt
+                // version's points (the same unless the item was re-weighted since).
                 existing.score = match item {
                     Some(i) if i.max_score > 0.0 && existing.max_score > 0.0 => {
-                        round2(score / i.max_score * existing.max_score)
+                        round_points(score / i.max_score * existing.max_score)
                     }
                     // BUG-225: a 0-max item or a 0 share earns nothing - the
                     // raw score used to land here (500 on a 43.48 share → 556 %).
@@ -2337,9 +2357,8 @@ fn merge_item_grades(
             }
             continue;
         }
-        // On the item's own scale for now - the reweighting below turns the
-        // whole set into shares of 100 (BUG-217).
-        pushed = true;
+        // In the item's own points; `derived_raw` scales a set outside the
+        // version's total (BUG-217).
         breakdown.items.push(GradedItem {
             item_id: grade.item_id,
             item_text: item.map_or_default(|i| i.title.clone()),
@@ -2357,40 +2376,6 @@ fn merge_item_grades(
             correct_answer: serde_json::Value::Null,
             explanation: None,
         });
-    }
-    if pushed {
-        reweight(breakdown, items);
-    }
-}
-
-/// BUG-217: an item graded after the auto-grader ran (added between an
-/// unpublish and a republish) joins the set - every breakdown item's
-/// `max_score` becomes its share of 100 over the set's assessment max
-/// scores (`grader::item_points`), the earned ratio carried along.
-/// Items no longer on the assessment keep their stored share.
-fn reweight(breakdown: &mut GradingBreakdown, items: &[Item]) {
-    let known: Vec<(usize, &Item)> = breakdown
-        .items
-        .iter()
-        .enumerate()
-        .filter_map(|(i, g)| items.iter().find(|it| it.id == g.item_id).map(|it| (i, it)))
-        .collect();
-    let total: f64 = known.iter().map(|(_, it)| it.max_score).sum();
-    let equal = 100.0 / count(known.len().max(1));
-    for (i, item) in known {
-        let share = if total > 0.0 && total.is_finite() {
-            round2(item.max_score / total * 100.0)
-        } else {
-            equal
-        };
-        let graded = &mut breakdown.items[i];
-        let ratio = if graded.max_score > 0.0 {
-            graded.score / graded.max_score
-        } else {
-            0.0
-        };
-        graded.max_score = share;
-        graded.score = round2(ratio * share);
     }
 }
 
@@ -2434,6 +2419,8 @@ mod tests {
             pending_attempt_id: None,
             pending_attempt_status: None,
             final_score: score,
+            final_points: score,
+            max_points: Some(100.0),
             is_late: false,
             due_at_override: None,
             submitted_at: None,

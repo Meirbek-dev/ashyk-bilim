@@ -178,6 +178,19 @@ async fn world(pool: &PgPool) -> World {
     }
 }
 
+/// The version of a test with one 100-point item.
+async fn hundred_points(pool: &PgPool, assessment: Uuid) -> Uuid {
+    ab_db::assessment_versions::ensure(
+        pool,
+        ab_core::id::AssessmentId(assessment),
+        &serde_json::json!({ "items": [{ "max_score": 100 }] }),
+        &serde_json::json!({}),
+    )
+    .await
+    .unwrap()
+    .0
+}
+
 /// The version of an empty test (what [`submission`] hands in against).
 async fn empty_version(pool: &PgPool, assessment: Uuid) -> Uuid {
     let empty = serde_json::json!({});
@@ -1677,7 +1690,16 @@ async fn a_handed_in_attempt_keeps_its_snapshots(pool: PgPool) {
 #[ab_testdb::test]
 async fn the_current_grade_is_the_latest_journal_entry(pool: PgPool) {
     let w = world(&pool).await;
-    let sub = submission(&pool, &w, 1, false).await.unwrap();
+    // Out of 100 points: an empty version is out of 0, where every percentage is 0 % of nothing.
+    let sub = handed_in(
+        &pool,
+        &w,
+        1,
+        false,
+        hundred_points(&pool, w.assessment).await,
+    )
+    .await
+    .unwrap();
     // No entry yet: the current value is free (a hand-in awaiting review).
     sqlx::query("UPDATE submissions SET final_score = 40 WHERE id = $1")
         .bind(sub)
@@ -1879,9 +1901,9 @@ async fn a_grade_entry_keeps_its_points(pool: PgPool) {
         ab_db::submissions::NewGradingEntry {
             submission_id: ab_core::id::SubmissionId(sub),
             graded_by: None,
-            raw_score: 100.0,
+            raw_points: 3.0,
             penalty_pct: 0.0,
-            final_score: Some(33.333),
+            final_points: Some(1.0),
             raw_breakdown: &breakdown,
             effective_breakdown: &breakdown,
             overall_feedback: "",
@@ -1891,7 +1913,7 @@ async fn a_grade_entry_keeps_its_points(pool: PgPool) {
     )
     .await
     .unwrap();
-    sqlx::query("UPDATE submissions SET final_score = 33.33 WHERE id = $1")
+    sqlx::query("UPDATE submissions SET final_points = 1 WHERE id = $1")
         .bind(sub)
         .execute(&mut *tx)
         .await
@@ -1900,8 +1922,16 @@ async fn a_grade_entry_keeps_its_points(pool: PgPool) {
     assert_eq!(
         entry(1).await,
         (1, 3.0, 3.0, 1.0),
-        "round(33.33 * 3 / 100, 2) = 1.00"
+        "out of the version's 3 points"
     );
+    let percent: (f64, f64) = sqlx::query_as(
+        "SELECT raw_score::float8, final_score::float8 FROM grading_entries WHERE submission_id = $1",
+    )
+    .bind(sub)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(percent, (100.0, 33.33), "the percentages are derived");
 
     // Round trip: within 0.5 / max_points percentage points.
     for (percent, max_points) in [(33.33, 3.0), (66.67, 3.0), (12.34, 7.0), (99.99, 1.0)] {
@@ -1927,7 +1957,7 @@ async fn a_grade_entry_keeps_its_points(pool: PgPool) {
         "0.0125 rounds half away from zero"
     );
 
-    // An entry of a legacy hand-in (before versions, so without one) has no points.
+    // A legacy hand-in (before versions, so without one) is out of its assessment's items now, 100 without items.
     let legacy: Uuid = sqlx::query_scalar(
         "INSERT INTO submissions (assessment_id, course_id, user_id, status, attempt_number,
                                   submitted_at, created_at)
@@ -1945,9 +1975,9 @@ async fn a_grade_entry_keeps_its_points(pool: PgPool) {
         ab_db::submissions::NewGradingEntry {
             submission_id: ab_core::id::SubmissionId(legacy),
             graded_by: None,
-            raw_score: 80.0,
+            raw_points: 80.0,
             penalty_pct: 0.0,
-            final_score: Some(80.0),
+            final_points: Some(80.0),
             raw_breakdown: &breakdown,
             effective_breakdown: &breakdown,
             overall_feedback: "",
@@ -1957,13 +1987,14 @@ async fn a_grade_entry_keeps_its_points(pool: PgPool) {
     )
     .await
     .unwrap();
-    let none: Option<f64> =
-        sqlx::query_scalar("SELECT final_points::float8 FROM grading_entries WHERE id = $1")
-            .bind(written.0)
-            .fetch_one(&mut *tx)
-            .await
-            .unwrap();
-    assert_eq!(none, None);
+    let legacy_points: (f64, Option<f64>) = sqlx::query_as(
+        "SELECT max_points::float8, final_points::float8 FROM grading_entries WHERE id = $1",
+    )
+    .bind(written.0)
+    .fetch_one(&mut *tx)
+    .await
+    .unwrap();
+    assert_eq!(legacy_points, (100.0, Some(80.0)));
     tx.rollback().await.unwrap();
 }
 
@@ -2668,7 +2699,15 @@ async fn item_feedback_belongs_to_its_entry_and_is_frozen(pool: PgPool) {
 #[ab_testdb::test]
 async fn the_journal_numbers_entries_per_attempt(pool: PgPool) {
     let w = world(&pool).await;
-    let attempt = submission(&pool, &w, 1, false).await.unwrap();
+    let attempt = handed_in(
+        &pool,
+        &w,
+        1,
+        false,
+        hundred_points(&pool, w.assessment).await,
+    )
+    .await
+    .unwrap();
     let breakdown = serde_json::json!({});
     let mut numbers = vec![];
     for score in [70.0, 80.0, 90.0] {
@@ -2678,9 +2717,9 @@ async fn the_journal_numbers_entries_per_attempt(pool: PgPool) {
             ab_db::submissions::NewGradingEntry {
                 submission_id: ab_core::id::SubmissionId(attempt),
                 graded_by: None,
-                raw_score: score,
+                raw_points: score,
                 penalty_pct: 0.0,
-                final_score: Some(score),
+                final_points: Some(score),
                 raw_breakdown: &breakdown,
                 effective_breakdown: &breakdown,
                 overall_feedback: "",
@@ -2691,7 +2730,7 @@ async fn the_journal_numbers_entries_per_attempt(pool: PgPool) {
         .await
         .unwrap();
         let revision: i32 = sqlx::query_scalar(
-            "WITH current AS (UPDATE submissions SET final_score = $2::numeric WHERE id = $1)
+            "WITH current AS (UPDATE submissions SET final_points = $2::numeric WHERE id = $1)
              SELECT revision FROM grading_entries WHERE id = $3",
         )
         .bind(attempt)
@@ -2926,6 +2965,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ("assessment_items_upload_ids", "derived"),
         ("assessment_versions_points", "derived"),
         ("assessment_versions_upload_ids", "derived"),
+        (
+            "grading_entries_points",
+            "derived: the percentages of the points (REWRITE 5.8 item 10), a contract makes them generated",
+        ),
         ("blocks_upload_ids", "derived"),
         ("chapters_upload_ids", "derived"),
         ("collections_upload_ids", "derived"),
@@ -2941,6 +2984,10 @@ async fn triggers_guard_or_derive(pool: PgPool) {
         ),
         ("item_feedback_upload_ids", "derived"),
         ("platforms_upload_ids", "derived"),
+        (
+            "submissions_points",
+            "derived: the percentages of the points (REWRITE 5.8 item 10), a contract makes them generated",
+        ),
         ("translations_touch_platform", "derived"),
         ("users_upload_ids", "derived"),
         // Business steps, known debts: move to the code that issues and renames. The renaming writers re-issue

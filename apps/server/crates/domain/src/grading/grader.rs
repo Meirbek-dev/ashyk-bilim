@@ -1,7 +1,7 @@
 //! Auto-grading math, ported from `quiz_grader.py` / `code_grader.py`.
 //!
-//! Every item's points are its share of `max_score` (100) by `max_score`
-//! weight, an even split when no weights are defined. Choice items score
+//! Every item scores in its own points (`max_score`, the version's points; REWRITE 5.8 item 10): the attempt is
+//! out of the items' total, its percentage derived (`score::percent_of_points`). Choice items score
 //! partial credit with a hardcoded half-weight penalty per wrong pick and
 //! optional negative marking on a full miss; matching scores the fraction
 //! of exact pairs; open text and forms always go to manual review.
@@ -14,7 +14,8 @@ use serde::Serialize;
 use crate::assessments::items::ItemBody;
 use crate::assessments::service::Item;
 use crate::grading::answers::{Answers, ItemAnswer};
-use crate::grading::breakdown::{FeedbackCode, GradedItem, GradingBreakdown, round2};
+use crate::grading::breakdown::{FeedbackCode, GradedItem, GradingBreakdown};
+use crate::grading::score::round_points;
 
 /// Knobs the grader reads from the policy.
 #[derive(Debug, Clone, Copy)]
@@ -25,9 +26,19 @@ pub struct GraderPolicy {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AutoGrade {
-    /// 0..100 (never negative - the legacy could go below zero).
-    pub auto_score: f64,
+    /// Points earned, 0..=`max_points` (never negative - the legacy could go below zero).
+    pub auto_points: f64,
+    /// What the attempt is out of: the items' points.
+    pub max_points: f64,
     pub breakdown: GradingBreakdown,
+}
+
+impl AutoGrade {
+    /// The derived percentage.
+    #[must_use]
+    pub fn percent(&self) -> f64 {
+        crate::grading::score::percent_of_points(self.auto_points, self.max_points)
+    }
 }
 
 /// Counts are small; the cast is exact far beyond any assessment size.
@@ -76,15 +87,12 @@ impl Verdict {
     }
 }
 
-/// Points per item as its `max_score` share of 100, or an even split.
-fn item_points(items: &[Item]) -> Vec<f64> {
-    let total: f64 = items.iter().map(|i| i.max_score).sum();
-    // BUG-208: an overflowed total (inf) would zero every share.
-    if total > 0.0 && total.is_finite() {
-        items.iter().map(|i| i.max_score / total * 100.0).collect()
+/// An item's points: its `max_score` (a negative or non-finite one earns nothing).
+fn item_points(item: &Item) -> f64 {
+    if item.max_score.is_finite() {
+        round_points(item.max_score.max(0.0))
     } else {
-        let each = 100.0 / count(items.len().max(1));
-        items.iter().map(|_| each).collect()
+        0.0
     }
 }
 
@@ -116,7 +124,7 @@ fn grade_choice(
     let hits = chosen.iter().filter(|c| correct_ids.contains(c)).count();
     let misses = chosen.len() - hits;
     if misses == 0 && hits == correct_ids.len() {
-        return Verdict::new(round2(points), true, FeedbackCode::Correct, "Correct");
+        return Verdict::new(round_points(points), true, FeedbackCode::Correct, "Correct");
     }
     // A single-answer question takes one pick: several (only the API can
     // send them) are a wrong answer, not partial credit for "pick them all".
@@ -132,7 +140,7 @@ fn grade_choice(
         let partial = count(hits) / count(correct_ids.len()) * points;
         let penalty = count(misses) / count(body.options.len().max(1)) * points * 0.5;
         return Verdict::ratio(
-            round2((partial - penalty).max(0.0)),
+            round_points((partial - penalty).max(0.0)),
             false,
             FeedbackCode::PartiallyCorrect,
             (hits, correct_ids.len()),
@@ -141,7 +149,7 @@ fn grade_choice(
     }
     let deduction = policy.negative_marking_percent / 100.0 * points;
     Verdict::new(
-        round2(-deduction.min(points)),
+        round_points(-deduction.min(points)),
         false,
         FeedbackCode::Incorrect,
         "Incorrect",
@@ -177,7 +185,7 @@ fn grade_matching(
         })
         .count();
     let all = correct == body.pairs.len();
-    let score = round2(count(correct) / count(expected) * points);
+    let score = round_points(count(correct) / count(expected) * points);
     if all {
         Verdict::new(score, true, FeedbackCode::Correct, "Correct")
     } else {
@@ -236,7 +244,7 @@ fn grade_short_answer(
         .iter()
         .any(|a| short_answer_matches(text, a, body.case_sensitive))
     {
-        Verdict::new(round2(points), true, FeedbackCode::Correct, "Correct")
+        Verdict::new(round_points(points), true, FeedbackCode::Correct, "Correct")
     } else {
         Verdict::new(0.0, false, FeedbackCode::Incorrect, "Incorrect")
     }
@@ -279,12 +287,12 @@ fn explanation(body: &ItemBody) -> Option<String> {
 /// them in code challenges).
 #[must_use]
 pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> AutoGrade {
-    let points = item_points(items);
     let mut graded = Vec::with_capacity(items.len());
     let mut earned = 0.0;
     let mut possible = 0.0;
     let mut manual = false;
-    for (item, pts) in items.iter().zip(points) {
+    for item in items {
+        let pts = item_points(item);
         let answer = answers.get(&item.id);
         let user_answer = serde_json::to_value(answer).unwrap_or_default();
         let verdict = match (&item.body, answer) {
@@ -308,8 +316,8 @@ pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> Au
         };
         let needs_manual_review = verdict.is_none();
         manual |= needs_manual_review;
-        let max_score = round2(pts);
-        // Never above the item's share (negative marking may go below 0).
+        let max_score = pts;
+        // Never above the item's points (negative marking may go below 0).
         let score = verdict.as_ref().map_or(0.0, |v| v.score).min(max_score);
         earned += score;
         possible += max_score;
@@ -328,16 +336,11 @@ pub fn grade_quiz(items: &[Item], answers: &Answers, policy: GraderPolicy) -> Au
             explanation: explanation(&item.body),
         });
     }
-    // BUG-169: one normalisation over the rounded breakdown (same formula as
-    // the teacher path) - summing per-item round2 gave 100.02 / 99.99 for
-    // 6 / 3 equal items, so `passing_score: 100` failed a perfect attempt.
-    let auto_score = if possible > 0.0 {
-        round2((earned / possible * 100.0).clamp(0.0, 100.0))
-    } else {
-        0.0
-    };
+    // BUG-169: the items' points add up to the total exactly (whole hundredths), so a perfect attempt is 100 %.
+    let max_points = round_points(possible);
     AutoGrade {
-        auto_score,
+        auto_points: round_points(earned).clamp(0.0, max_points),
+        max_points,
         breakdown: GradingBreakdown {
             items: graded,
             needs_manual_review: manual,
@@ -356,8 +359,8 @@ pub struct CaseOutcome {
     pub passed: bool,
 }
 
-/// Code challenge score from the final run: weighted share of passed
-/// tests, or all-or-nothing when the item says so.
+/// Code challenge score from the final run: the item's points times the weighted share of passed tests, or
+/// all-or-nothing when the item says so.
 #[must_use]
 pub fn grade_code(item: &Item, cases: &[CaseOutcome], answer: Option<&ItemAnswer>) -> AutoGrade {
     let all_or_nothing = matches!(
@@ -370,25 +373,27 @@ pub fn grade_code(item: &Item, cases: &[CaseOutcome], answer: Option<&ItemAnswer
         if sum > 0.0 { sum } else { count(cases.len()) }
     };
     let earned: f64 = cases.iter().filter(|c| c.passed).map(|c| c.weight).sum();
-    let raw = if total_weight > 0.0 {
-        earned / total_weight * 100.0
+    let share = if total_weight > 0.0 {
+        earned / total_weight
     } else {
         0.0
     };
-    let auto_score = if all_or_nothing {
-        if raw >= 100.0 { 100.0 } else { 0.0 }
+    let max_points = item_points(item);
+    let auto_points = if all_or_nothing {
+        if share >= 1.0 { max_points } else { 0.0 }
     } else {
-        round2(raw)
+        round_points(share * max_points).clamp(0.0, max_points)
     };
     let passed = cases.iter().filter(|c| c.passed).count();
     AutoGrade {
-        auto_score,
+        auto_points,
+        max_points,
         breakdown: GradingBreakdown {
             items: vec![GradedItem {
                 item_id: item.id,
                 item_text: item.title.clone(),
-                score: auto_score,
-                max_score: 100.0,
+                score: auto_points,
+                max_score: max_points,
                 correct: Some(!cases.is_empty() && passed == cases.len()),
                 feedback: format!("{passed}/{} tests passed", cases.len()),
                 feedback_code: Some(FeedbackCode::TestsPassed.as_str().into()),
@@ -498,15 +503,15 @@ mod tests {
             1.0,
         );
         let mut answers = Answers::new();
-        // One hit, one miss out of {a,b} among 4 options → 75-point item:
-        // partial 37.5 − penalty (1/4 × 75 × 0.5 = 9.375) = 28.125 → 28.12.
+        // One hit, one miss out of {a,b} among 4 options → a 3-point item:
+        // partial 1.5 − penalty (1/4 × 3 × 0.5 = 0.375) = 1.125 → 1.13 (half away from zero).
         answers.insert(
             q1.id,
             ItemAnswer::Choice {
                 selected: vec!["a".into(), "c".into()],
             },
         );
-        // One of two pairs → 12.5 of 25.
+        // One of two pairs → 0.5 of 1.
         answers.insert(
             q2.id,
             ItemAnswer::Matching {
@@ -517,10 +522,12 @@ mod tests {
             },
         );
         let grade = grade_quiz(&[q1, q2], &answers, POLICY);
-        assert_eq!(grade.breakdown.items[0].max_score, 75.0);
-        assert_eq!(grade.breakdown.items[0].score, 28.12);
-        assert_eq!(grade.breakdown.items[1].score, 12.5);
-        assert_eq!(grade.auto_score, 40.62);
+        assert_eq!(grade.breakdown.items[0].max_score, 3.0);
+        assert_eq!(grade.breakdown.items[0].score, 1.13);
+        assert_eq!(grade.breakdown.items[1].score, 0.5);
+        // 1.63 of 4 points.
+        assert_eq!(grade.max_points, 4.0);
+        assert_eq!(grade.percent(), 40.75);
         assert!(!grade.breakdown.needs_manual_review);
         // The verdict travels as a code + params next to the English text.
         assert_eq!(
@@ -580,7 +587,7 @@ mod tests {
                 );
             }
             let grade = grade_quiz(&items, &answers, POLICY);
-            assert_eq!(grade.auto_score, 100.0, "{n} items");
+            assert_eq!(grade.percent(), 100.0, "{n} items");
         }
     }
 
@@ -603,7 +610,7 @@ mod tests {
         )
         .unwrap();
         let grade = grade_quiz(&[q], &answers, POLICY);
-        assert_eq!(grade.auto_score, 100.0);
+        assert_eq!(grade.percent(), 100.0);
     }
 
     /// BUG-193: duplicate picks / several rights per left count once, and
@@ -652,17 +659,17 @@ mod tests {
         let [s, m, x] = grade.breakdown.items.as_slice() else {
             panic!("three items");
         };
-        assert_eq!((s.score, s.correct), (33.33, Some(true)));
+        assert_eq!((s.score, s.correct), (10.0, Some(true)));
         assert_eq!(
             (m.score, m.feedback_code.as_deref()),
-            (16.67, Some("partially-correct"))
+            (5.0, Some("partially-correct"))
         );
         // Last right per left is r3: only "3" -> "r3" matches.
         assert_eq!(
             (x.score, x.feedback_params.clone()),
-            (11.11, Some(serde_json::json!({ "correct": 1, "total": 3 })))
+            (3.33, Some(serde_json::json!({ "correct": 1, "total": 3 })))
         );
-        assert!(grade.auto_score <= 100.0);
+        assert!(grade.percent() <= 100.0);
         assert!(grade.breakdown.items.iter().all(|g| g.score <= g.max_score));
     }
 
@@ -681,12 +688,12 @@ mod tests {
         let grade = grade_quiz(&[q], &answers, POLICY);
         assert_eq!(grade.breakdown.items[0].score, 0.0);
         assert_eq!(grade.breakdown.items[0].correct, Some(false));
-        assert_eq!(grade.auto_score, 0.0);
+        assert_eq!(grade.percent(), 0.0);
     }
 
     #[test]
     fn negative_marking_floors_the_total_at_zero() {
-        let q = item(choice(&["a"], &["b"], false), 0.0);
+        let q = item(choice(&["a"], &["b"], false), 2.0);
         let mut answers = Answers::new();
         answers.insert(
             q.id,
@@ -702,8 +709,9 @@ mod tests {
                 negative_marking_percent: 50.0,
             },
         );
-        assert_eq!(grade.breakdown.items[0].score, -50.0);
-        assert_eq!(grade.auto_score, 0.0);
+        // Half of the item's 2 points taken away, the total floored at 0.
+        assert_eq!(grade.breakdown.items[0].score, -1.0);
+        assert_eq!(grade.percent(), 0.0);
     }
 
     #[test]
@@ -721,7 +729,7 @@ mod tests {
         assert!(grade.breakdown.needs_manual_review);
         assert_eq!(grade.breakdown.items[0].correct, None);
         assert_eq!(grade.breakdown.items[0].feedback_code, None);
-        assert_eq!(grade.auto_score, 0.0);
+        assert_eq!(grade.percent(), 0.0);
     }
 
     #[test]
@@ -753,10 +761,10 @@ mod tests {
             },
         ];
         let weighted = grade_code(&item(ItemBody::Code(code.clone()), 100.0), &cases, None);
-        assert_eq!(weighted.auto_score, 25.0);
+        assert_eq!(weighted.percent(), 25.0);
         code.scoring_strategy = crate::assessments::items::ScoringStrategy::AllOrNothing;
         let strict = grade_code(&item(ItemBody::Code(code), 100.0), &cases, None);
-        assert_eq!(strict.auto_score, 0.0);
+        assert_eq!(strict.percent(), 0.0);
     }
 
     /// Property tests (gate 9d): the grader's invariants over random
@@ -854,7 +862,7 @@ mod tests {
             ) {
                 let items = build(&spec);
                 let grade = grade_quiz(&items, &answers(&items, &masks), policy(partial, negative));
-                prop_assert!((0.0..=100.0).contains(&grade.auto_score), "{}", grade.auto_score);
+                prop_assert!((0.0..=100.0).contains(&grade.percent()), "{}", grade.percent());
                 for g in &grade.breakdown.items {
                     prop_assert!(
                         g.score <= g.max_score && g.score >= -g.max_score,
@@ -876,7 +884,7 @@ mod tests {
                 prop_assume!(picks.count_ones() >= 2);
                 let grade = grade_quiz(&items, &answers(&items, &[picks]), policy(partial, 0));
                 prop_assert_eq!(grade.breakdown.items[0].score, 0.0);
-                prop_assert_eq!(grade.auto_score, 0.0);
+                prop_assert_eq!(grade.percent(), 0.0);
             }
 
             /// Partial credit is monotone: one more right pick never lowers
@@ -946,24 +954,24 @@ mod tests {
                     })
                     .collect();
                 let moved = grade_quiz(&shuffled, &reversed, p);
-                prop_assert_eq!(plain.auto_score, moved.auto_score);
+                prop_assert_eq!(plain.percent(), moved.percent());
                 for item in &items {
                     prop_assert_eq!(score_of(&plain, item.id), score_of(&moved, item.id));
                 }
             }
 
-            /// The item shares add up to 100, and the right answers to every
-            /// item score exactly 100.
+            /// The items' points add up to the attempt's total, and the right answers to every
+            /// item score exactly 100 % (0 % when there is nothing to earn).
             #[test]
             fn max_score_is_the_sum_and_all_right_is_100(spec in quiz(), negative in any::<u8>()) {
                 let items = build(&spec);
                 let right: Vec<u8> = items.iter().map(right_mask).collect();
                 let grade = grade_quiz(&items, &answers(&items, &right), policy(false, negative));
                 let sum: f64 = grade.breakdown.items.iter().map(|g| g.max_score).sum();
-                prop_assert!((sum - 100.0).abs() <= 0.01 * count(items.len()), "shares sum to {}", sum);
+                prop_assert!((sum - grade.max_points).abs() < 1e-9, "points sum to {} of {}", sum, grade.max_points);
                 let earned: f64 = grade.breakdown.items.iter().map(|g| g.score).sum();
                 prop_assert!((earned - sum).abs() < 1e-9);
-                prop_assert_eq!(grade.auto_score, 100.0);
+                prop_assert_eq!(grade.percent(), if grade.max_points > 0.0 { 100.0 } else { 0.0 });
             }
 
             /// A code score is the passed share in 0..=100; all-or-nothing is
@@ -1000,7 +1008,7 @@ mod tests {
                         crate::assessments::items::ScoringStrategy::PartialCredit
                     },
                 };
-                let score = grade_code(&item(ItemBody::Code(body), 100.0), &outcomes, None).auto_score;
+                let score = grade_code(&item(ItemBody::Code(body), 100.0), &outcomes, None).percent();
                 prop_assert!((0.0..=100.0).contains(&score), "{}", score);
                 if all_or_nothing {
                     prop_assert!(score == 0.0 || score == 100.0, "{}", score);
@@ -1035,7 +1043,7 @@ mod tests {
             ("", 0.0),
         ] {
             let grade = grade_quiz(std::slice::from_ref(&q), &text_answer(&q, given), POLICY);
-            assert_eq!(grade.auto_score, score, "{given:?}");
+            assert_eq!(grade.percent(), score, "{given:?}");
             assert!(!grade.breakdown.needs_manual_review);
         }
         let q = item(short(&["Hello  World"], false), 1.0);
@@ -1044,7 +1052,7 @@ mod tests {
             &text_answer(&q, "hello world"),
             POLICY,
         );
-        assert_eq!(grade.auto_score, 100.0);
+        assert_eq!(grade.percent(), 100.0);
         assert_eq!(
             grade.breakdown.items[0].correct_answer,
             serde_json::json!(["Hello  World"])
@@ -1101,7 +1109,7 @@ mod tests {
             )])
         };
         let score = |pairs: &[(&str, &str)]| {
-            grade_quiz(std::slice::from_ref(&q), &answer(pairs), POLICY).auto_score
+            grade_quiz(std::slice::from_ref(&q), &answer(pairs), POLICY).percent()
         };
         assert_eq!(score(&[("a", "1")]), 100.0);
         assert_eq!(score(&[("a", "1"), ("b", "")]), 100.0);

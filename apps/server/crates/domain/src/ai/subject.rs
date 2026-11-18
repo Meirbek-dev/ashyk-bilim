@@ -23,6 +23,10 @@ const TEXT_FILE_BYTES: usize = 16 * 1024;
 const TEXT_TOTAL_BYTES: usize = 48 * 1024;
 
 #[derive(Debug, Clone)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "one per AI request, never held in bulk"
+)]
 pub enum Subject {
     Submission(SubmissionRow),
     FileAttempt(AttemptRow),

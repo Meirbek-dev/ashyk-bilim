@@ -622,6 +622,7 @@ pub async fn submit_attempt(
                assessment_version_id = COALESCE(s.assessment_version_id, v.id),
                items_snapshot = COALESCE(s.items_snapshot, v.items),
                policy_snapshot = COALESCE(s.policy_snapshot, v.policy),
+               max_points = COALESCE(s.max_points, v.max_points),
                version = s.version + 1
            FROM assessment_versions v
            WHERE s.id = $1 AND s.version = $2 AND s.status IN ('draft', 'returned') AND v.id = $5"#,
@@ -636,11 +637,12 @@ pub async fn submit_attempt(
     Ok(updated.rows_affected() == 1)
 }
 
-/// What a grader writes.
+/// What a grader writes: points of the hand-in's version, which is out of 100 (`ensure_version`), so a file
+/// grade's points are its percentage.
 pub struct GradeWrite<'a> {
     pub status: FileAttemptStatus,
-    pub raw_score: Option<f64>,
-    pub final_score: Option<f64>,
+    pub raw_points: Option<f64>,
+    pub final_points: Option<f64>,
     /// `None` keeps the stored feedback.
     pub feedback: Option<&'a str>,
     /// `None` keeps the stored rubric scores.
@@ -665,31 +667,29 @@ pub async fn grade_attempt(
     let updated = sqlx::query!(
         r#"WITH u AS (
                UPDATE submissions SET
-                   status = $3, final_score = $4::float8, graded_at = now(), version = version + 1
+                   status = $3, final_points = $4::float8, graded_at = now(), version = version + 1
                WHERE id = $1 AND version = $2
-               RETURNING id, late_penalty_pct)
+               RETURNING id, late_penalty_pct, max_points)
            INSERT INTO grading_entries
-               (submission_id, revision, graded_by, raw_score, penalty_pct, final_score, max_points, raw_points,
-                final_points, overall_feedback, effective_breakdown, published_at, returned)
-           SELECT u.id, COALESCE(p.revision, 0) + 1, $7, COALESCE($8::float8, 0), u.late_penalty_pct, $4::float8,
-                  v.max_points, points_of_percent(COALESCE($8::float8, 0)::percent, v.max_points),
-                  points_of_percent(($4::float8)::percent, v.max_points),
+               (submission_id, revision, graded_by, penalty_pct, max_points, raw_points, final_points,
+                overall_feedback, effective_breakdown, published_at, returned)
+           SELECT u.id, COALESCE(p.revision, 0) + 1, $7, u.late_penalty_pct, u.max_points, COALESCE($8::float8, 0),
+                  $4::float8,
                   COALESCE($5, CASE WHEN s.status = 'submitted' THEN '' ELSE p.overall_feedback END, ''),
                   COALESCE($6, p.effective_breakdown, '{}'::jsonb),
                   CASE WHEN $3 = 'released' THEN now() END, $3 = 'returned'
            FROM u JOIN submissions s ON s.id = u.id
-           LEFT JOIN assessment_versions v ON v.id = s.assessment_version_id
            LEFT JOIN LATERAL (SELECT g.revision, g.overall_feedback, g.effective_breakdown
                               FROM grading_entries g WHERE g.submission_id = u.id
                               ORDER BY g.revision DESC LIMIT 1) p ON true"#,
         id.0,
         expected_version,
         grade.status.stored(),
-        grade.final_score,
+        grade.final_points,
         grade.feedback,
         grade.rubric_scores,
         grade.graded_by.0,
-        grade.raw_score
+        grade.raw_points
     )
     .execute(db)
     .await?;
@@ -726,27 +726,26 @@ pub async fn set_attempt_lateness(
     id: FileAttemptId,
     is_late: bool,
     late_penalty_pct: f64,
-    final_score: Option<f64>,
+    final_points: Option<f64>,
 ) -> Result<()> {
     sqlx::query!(
         r#"WITH u AS (
                UPDATE submissions SET is_late = $2, late_penalty_pct = $3::float8,
-                   final_score = $4::float8, version = version + 1
+                   final_points = $4::float8, version = version + 1
                WHERE id = $1 RETURNING id)
            INSERT INTO grading_entries
-               (submission_id, revision, graded_by, raw_score, penalty_pct, final_score, max_points, raw_points,
-                final_points, overall_feedback, effective_breakdown, published_at, returned)
-           SELECT u.id, p.revision + 1, p.graded_by, p.raw_score, $3::float8, $4::float8, p.max_points, p.raw_points,
-                  points_of_percent(($4::float8)::percent, p.max_points),
+               (submission_id, revision, graded_by, penalty_pct, max_points, raw_points, final_points,
+                overall_feedback, effective_breakdown, published_at, returned)
+           SELECT u.id, p.revision + 1, p.graded_by, $3::float8, p.max_points, p.raw_points, $4::float8,
                   p.overall_feedback, p.effective_breakdown,
                   CASE WHEN p.published_at IS NOT NULL THEN now() END, p.returned
            FROM u CROSS JOIN LATERAL (SELECT g.* FROM grading_entries g WHERE g.submission_id = u.id
                                       ORDER BY g.revision DESC LIMIT 1) p
-           WHERE p.final_score IS DISTINCT FROM ($4::float8)::percent"#,
+           WHERE p.final_points IS DISTINCT FROM ($4::float8)::score_points"#,
         id.0,
         is_late,
         late_penalty_pct,
-        final_score
+        final_points
     )
     .execute(conn)
     .await?;

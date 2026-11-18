@@ -2,35 +2,45 @@
 //! `progress.py`:
 //!
 //! 1. an integrity violation zeroes everything;
-//! 2. the attempt cap: max score for attempt n is `100 − pct × (n − 1)`;
-//! 3. the late penalty on the capped score (percent per day up to a cap,
+//! 2. the attempt cap: attempt n earns at most `100 − pct × (n − 1)` percent of the attempt's points;
+//! 3. the late penalty on the capped points (percent per day up to a cap,
 //!    or 100% past a cutoff), unless waived.
+//!
+//! Scores are points of the attempt's version (REWRITE 5.8 item 10); the cap and the penalties stay percentages,
+//! applied to the points.
 //!
 //! Unlike the legacy, a late penalty is computed even when the work needs
 //! manual review, so the teacher's grade can apply it (the legacy stored 0
 //! and never penalised essays).
 
 use crate::assessments::service::LatePolicy;
-use crate::grading::breakdown::round2;
+use crate::grading::score::round_points;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PenaltyOutcome {
     pub late_penalty_pct: f64,
-    /// Score after cap and late penalty.
-    pub final_score: f64,
+    /// Points after cap and late penalty.
+    pub final_points: f64,
     pub violation_zeroed: bool,
 }
 
-/// Cap on the maximum score for a later attempt.
+/// Cap on the points of a later attempt: `100 − pct × (n − 1)` percent of `max_points`.
 #[must_use]
-pub fn attempt_cap(score: f64, attempt_penalty_percent: f64, attempt_number: i32) -> f64 {
+pub fn attempt_cap(
+    points: f64,
+    max_points: f64,
+    attempt_penalty_percent: f64,
+    attempt_number: i32,
+) -> f64 {
     if attempt_penalty_percent <= 0.0 || attempt_number <= 1 {
-        return score;
+        return points;
     }
-    let cap = attempt_penalty_percent
+    let cap_pct = attempt_penalty_percent
         .mul_add(-f64::from(attempt_number - 1), 100.0)
         .max(0.0);
-    score.min(cap)
+    points.min(crate::grading::score::points_of_percent(
+        cap_pct, max_points,
+    ))
 }
 
 /// Percent deducted for lateness (0 when on time, no due date, or late
@@ -71,7 +81,8 @@ pub fn late_penalty_pct(
 }
 
 pub struct PenaltyInput {
-    pub auto_score: f64,
+    pub auto_points: f64,
+    pub max_points: f64,
     pub needs_manual_review: bool,
     pub violation_exceeded: bool,
     pub attempt_number: i32,
@@ -85,7 +96,7 @@ pub fn apply(input: &PenaltyInput) -> PenaltyOutcome {
     if input.violation_exceeded {
         return PenaltyOutcome {
             late_penalty_pct: 0.0,
-            final_score: 0.0,
+            final_points: 0.0,
             violation_zeroed: true,
         };
     }
@@ -98,26 +109,27 @@ pub fn apply(input: &PenaltyInput) -> PenaltyOutcome {
         // No auto score yet; the teacher's grade applies `late` later.
         return PenaltyOutcome {
             late_penalty_pct: late,
-            final_score: 0.0,
+            final_points: 0.0,
             violation_zeroed: false,
         };
     }
     let capped = attempt_cap(
-        input.auto_score,
+        input.auto_points,
+        input.max_points,
         input.attempt_penalty_percent,
         input.attempt_number,
     );
     PenaltyOutcome {
         late_penalty_pct: late,
-        final_score: apply_late(capped, late),
+        final_points: apply_late(capped, late),
         violation_zeroed: false,
     }
 }
 
-/// `round(score × (1 − pct/100), 2)` - shared with the teacher path.
+/// `round(points × (1 − pct/100), 2)`, half away from zero - shared with the teacher path.
 #[must_use]
-pub fn apply_late(score: f64, late_penalty_pct: f64) -> f64 {
-    round2(score * (1.0 - late_penalty_pct.clamp(0.0, 100.0) / 100.0))
+pub fn apply_late(points: f64, late_penalty_pct: f64) -> f64 {
+    round_points(points * (1.0 - late_penalty_pct.clamp(0.0, 100.0) / 100.0))
 }
 
 #[cfg(test)]
@@ -147,7 +159,8 @@ mod tests {
     #[test]
     fn ordering_violation_then_manual_then_cap_then_late() {
         let base = PenaltyInput {
-            auto_score: 90.0,
+            auto_points: 9.0,
+            max_points: 10.0,
             needs_manual_review: false,
             violation_exceeded: false,
             attempt_number: 3,
@@ -155,8 +168,8 @@ mod tests {
             late_pct: 10.0,
             waive_late_penalty: false,
         };
-        // Cap for attempt 3 = 80 → late 10% → 72.
-        assert_eq!(apply(&base).final_score, 72.0);
+        // Cap for attempt 3 = 80 % of 10 points = 8 → late 10% → 7.2.
+        assert_eq!(apply(&base).final_points, 7.2);
         assert!(
             apply(&PenaltyInput {
                 violation_exceeded: true,
@@ -168,15 +181,15 @@ mod tests {
             needs_manual_review: true,
             ..base
         });
-        assert_eq!(manual.final_score, 0.0);
+        assert_eq!(manual.final_points, 0.0);
         assert_eq!(manual.late_penalty_pct, 10.0, "kept for the teacher path");
         assert_eq!(
             apply(&PenaltyInput {
                 waive_late_penalty: true,
                 ..base
             })
-            .final_score,
-            80.0
+            .final_points,
+            8.0
         );
     }
 }

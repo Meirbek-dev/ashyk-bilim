@@ -1,22 +1,28 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT final_score::float8 AS \"final_score?\", late_penalty_pct::float8 AS \"late_penalty_pct!\", is_late FROM submissions WHERE id = $1 FOR UPDATE",
+  "query": "SELECT final_points::float8 AS \"final_points?\", max_points::float8 AS \"max_points?\",\n                  late_penalty_pct::float8 AS \"late_penalty_pct!\", is_late\n           FROM submissions WHERE id = $1 FOR UPDATE",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "final_score?",
+        "name": "final_points?",
         "type_info": "Float8",
         "origin": "Expression"
       },
       {
         "ordinal": 1,
-        "name": "late_penalty_pct!",
+        "name": "max_points?",
         "type_info": "Float8",
         "origin": "Expression"
       },
       {
         "ordinal": 2,
+        "name": "late_penalty_pct!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
         "name": "is_late",
         "type_info": "Bool",
         "origin": {
@@ -35,8 +41,9 @@
     "nullable": [
       null,
       null,
+      null,
       false
     ]
   },
-  "hash": "dadbcf28440b75597003019382cb483d7fd3b7a02413e8dad8305d4a94382898"
+  "hash": "b3f189fd7df389ab231886eab1f793f7250cf7dc663d6341b2c9a1e63a9dd5c7"
 }

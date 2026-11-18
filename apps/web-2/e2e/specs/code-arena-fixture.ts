@@ -203,7 +203,10 @@ export const gradedAttempt = (made: Made, id: string): StudentSubmission => ({
   answered_count: 1,
   total_items: 1,
   final_score: 50,
+  final_points: 50,
   auto_score: 50,
+  auto_points: 50,
+  max_points: 100,
   grading: {
     items: [
       {

@@ -527,9 +527,9 @@ pub async fn draft_counts(
                   count(*) FILTER (WHERE agreement = 'adjusted') AS "applied_adjusted!",
                   count(*) FILTER (WHERE status = 'discarded') AS "discarded!",
                   count(*) FILTER (WHERE status = 'failed') AS "failed!",
-                  (avg(abs(final_score - calibrated_score))
+                  (avg(abs(final_score - calibrated_score) * 100 / max_score)
                       FILTER (WHERE status = 'applied' AND final_score IS NOT NULL
-                              AND calibrated_score IS NOT NULL))::float8 AS "mean_abs_delta?"
+                              AND calibrated_score IS NOT NULL AND max_score > 0))::float8 AS "mean_abs_delta?"
            FROM ai_grade_drafts
            WHERE course_id = $1 AND status <> 'superseded'
              AND created_at >= to_timestamp($2::bigint)"#,

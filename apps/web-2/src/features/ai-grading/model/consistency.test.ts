@@ -7,12 +7,15 @@ import { disagreementGap, driftPoints, labelsFromDrafts } from './consistency'
 const draft = (is_file: boolean): GradeDraftView => ({
   activity_id: 'a1',
   agreement: null,
+  ai_percent: 50,
   ai_score: 50,
+  calibrated_percent: 50,
   calibrated_score: 50,
   confidence: 0.8,
   created_at: 1,
   decided_at: null,
   error_code: null,
+  final_percent: null,
   final_score: null,
   flags: [],
   id: is_file ? 'd2' : 'd1',
@@ -76,14 +79,15 @@ describe('B-AIG-07 B-AIG-08 gaps', () => {
   test('B-AIG-07 a teacher grade above the draft is a positive gap', () => {
     expect(
       disagreementGap({
-        ai_score: 40,
-        final_score: 75,
+        ai_score: 4,
+        final_score: 7.5,
+        max_score: 10,
         draft_id: 'd',
         learner_id: 'u',
         learner_name: 'L',
         subject_id: 's',
       }),
-    ).toBe(35)
+    ).toBeCloseTo(35)
   })
 
   test('B-AIG-08 drift offset is shown in percentage points, negative when the AI grades higher', () => {

@@ -63,6 +63,7 @@
   "attempt_score_label": "Your result",
   "attempt_question_of": "Question {number} of {total}",
   "attempt_points": "Points: {points}",
+  "attempt_points_of": "Points: {points} of {max}",
   "attempt_prev": "Previous",
   "attempt_next": "Next",
   "attempt_questions_nav": "Questions",

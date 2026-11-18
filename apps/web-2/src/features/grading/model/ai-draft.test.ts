@@ -48,12 +48,15 @@ const proposal: Proposal = {
 const draft = (patch: Partial<GradeDraftView> = {}): GradeDraftView => ({
   activity_id: 'a1',
   agreement: null,
+  ai_percent: 86,
   ai_score: 86,
+  calibrated_percent: 82.5,
   calibrated_score: 82.5,
   confidence: 0.8,
   created_at: 10,
   decided_at: null,
   error_code: null,
+  final_percent: null,
   final_score: null,
   flags: [],
   id: 'd1',
@@ -70,7 +73,8 @@ const draft = (patch: Partial<GradeDraftView> = {}): GradeDraftView => ({
 })
 
 const form: GradeForm = {
-  final_score: '',
+  max_points: 5,
+  final_points: '',
   feedback: 'Моё начало.',
   items: [
     { item_id: 'q0', max: 1, score: '1', feedback: '' },
@@ -113,7 +117,7 @@ describe('B-GRD-44 «Перенести в форму»', () => {
     expect(next.items[1]).toEqual({ item_id: 'q1', max: 4, score: '2.5', feedback: 'Нет условия выхода.' })
     expect(next.items[0]).toEqual(form.items[0])
     expect(next.feedback).toBe('Моё начало.\n\nХорошо, но без примера.')
-    expect(next.final_score).toBe('')
+    expect(next.final_points).toBe('')
   })
 
   test('B-GRD-44 a question whose maximum changed since the draft is rescaled', () => {

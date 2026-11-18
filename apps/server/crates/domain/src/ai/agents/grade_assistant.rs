@@ -143,7 +143,7 @@ pub struct TaskPart {
     pub rubric: String,
     pub criteria: Vec<TaskCriterion>,
     pub max_score: f64,
-    /// Work points (the auto-grader's 0..100 shares) per point of this part.
+    /// Work points per point of this part (1: an item's points are the work's points).
     pub scale: f64,
     pub answer: String,
 }
@@ -156,6 +156,8 @@ pub struct GradeTask {
     /// Work points of the auto-graded items (submissions) and their maximum.
     pub auto_points: f64,
     pub auto_max: f64,
+    /// What the work is out of: the submission's version points, 100 for a hand-in.
+    pub max_points: f64,
     pub is_file: bool,
     pub no_text: bool,
 }
@@ -546,7 +548,7 @@ pub fn build_proposal<S: std::hash::BuildHasher>(
     }
 }
 
-/// The work-level percentages `(ai, calibrated, max = 100)`.
+/// The work's points `(ai, calibrated, max)`, out of `task.max_points` (REWRITE 5.8 item 10).
 #[must_use]
 pub fn totals(task: &GradeTask, proposal: &Proposal) -> (f64, f64, f64) {
     let scale = |part_id: &str| {
@@ -561,10 +563,15 @@ pub fn totals(task: &GradeTask, proposal: &Proposal) -> (f64, f64, f64) {
             .iter()
             .map(|p| p.max_score * scale(&p.part_id))
             .sum::<f64>();
+    let out_of = task.max_points;
     if max <= 0.0 {
-        return (0.0, 0.0, 100.0);
+        return (0.0, 0.0, out_of);
     }
-    let pct = |points: f64| ((task.auto_points + points) / max * 100.0 * 100.0).round() / 100.0;
+    // The parts' total is the version's unless an item was re-weighted since the hand-in.
+    let pct = |points: f64| {
+        crate::grading::score::round_points((task.auto_points + points) * out_of / max)
+            .clamp(0.0, out_of)
+    };
     (
         pct(proposal
             .parts
@@ -576,7 +583,7 @@ pub fn totals(task: &GradeTask, proposal: &Proposal) -> (f64, f64, f64) {
             .iter()
             .map(|p| p.calibrated_score * scale(&p.part_id))
             .sum()),
-        100.0,
+        out_of,
     )
 }
 
@@ -691,15 +698,7 @@ impl AiService {
                     .and_then(Value::as_array)
                     .cloned()
                     .unwrap_or_default();
-                // The auto-grader's shares of 100 (`grading/grader.rs`), so drafted and auto points add up.
-                let total: f64 = items.iter().map(|i| i.max_score).sum();
-                let share = |max: f64| {
-                    if total > 0.0 {
-                        max / total * 100.0
-                    } else {
-                        100.0 / f64::from(u32::try_from(items.len().max(1)).unwrap_or(u32::MAX))
-                    }
-                };
+                // Items in their own points, like the auto-grader's breakdown (`grading/grader.rs`).
                 let mut parts = Vec::new();
                 let (mut auto_points, mut auto_max) = (0.0, 0.0);
                 for item in &items {
@@ -727,7 +726,7 @@ impl AiService {
                             criteria: criteria_from_markdown(&rubric, item.max_score),
                             rubric,
                             max_score: item.max_score,
-                            scale: share(item.max_score) / item.max_score,
+                            scale: 1.0,
                             answer,
                         });
                     } else {
@@ -737,14 +736,16 @@ impl AiService {
                             .and_then(|g| g.get("score"))
                             .and_then(Value::as_f64)
                             .unwrap_or(0.0);
-                        auto_max += share(item.max_score);
+                        auto_max += item.max_score.max(0.0);
                     }
                 }
+                let total = auto_max + parts.iter().map(|p| p.max_score).sum::<f64>();
                 Ok(GradeTask {
                     activity_id: assessment.activity_id,
                     parts,
                     auto_points,
                     auto_max,
+                    max_points: s.max_points.unwrap_or(total),
                     is_file: false,
                     no_text: false,
                 })
@@ -848,6 +849,7 @@ impl AiService {
                     }],
                     auto_points: 0.0,
                     auto_max: 0.0,
+                    max_points: 100.0,
                     is_file: true,
                     no_text,
                 })
@@ -1020,6 +1022,7 @@ mod tests {
             parts: vec![p],
             auto_points: 0.0,
             auto_max: 0.0,
+            max_points: 100.0,
             is_file,
             no_text: false,
         }

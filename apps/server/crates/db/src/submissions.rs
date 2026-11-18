@@ -25,8 +25,14 @@ pub struct SubmissionRow {
     pub attempt_number: i32,
     pub answers: serde_json::Value,
     pub grading: serde_json::Value,
+    /// The derived percentages of `auto_points` / `final_points` (`percent_of_points`).
     pub auto_score: Option<f64>,
     pub final_score: Option<f64>,
+    /// What the attempt is out of (its version's points); `None` on a draft.
+    pub max_points: Option<f64>,
+    pub auto_points: Option<f64>,
+    /// The grade of record in points.
+    pub final_points: Option<f64>,
     pub is_late: bool,
     pub late_penalty_pct: f64,
     pub violation_count: i32,
@@ -239,7 +245,9 @@ pub async fn get_submission<'e>(
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   status AS "status: SubmissionStatus", attempt_number, answers,
                   submission_breakdown(id, auto_breakdown) AS "grading!",
-                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
+                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?",
+                  max_points::float8 AS "max_points?", auto_points::float8 AS "auto_points?",
+                  final_points::float8 AS "final_points?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, submission_violation_log(id) AS "violations!",
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
                   (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
@@ -276,7 +284,9 @@ pub async fn open_draft(
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   status AS "status: SubmissionStatus", attempt_number, answers,
                   submission_breakdown(id, auto_breakdown) AS "grading!",
-                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
+                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?",
+                  max_points::float8 AS "max_points?", auto_points::float8 AS "auto_points?",
+                  final_points::float8 AS "final_points?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, submission_violation_log(id) AS "violations!",
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
                   (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
@@ -317,7 +327,9 @@ pub async fn list_user_submissions<'e>(
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   status AS "status: SubmissionStatus", attempt_number, answers,
                   submission_breakdown(id, auto_breakdown) AS "grading!",
-                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
+                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?",
+                  max_points::float8 AS "max_points?", auto_points::float8 AS "auto_points?",
+                  final_points::float8 AS "final_points?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, submission_violation_log(id) AS "violations!",
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
                   (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
@@ -403,8 +415,9 @@ pub struct SubmitOutcome<'a> {
     /// The auto-grader's breakdown of this hand-in; the current breakdown
     /// is the latest grade entry's once there is one.
     pub auto_breakdown: &'a serde_json::Value,
-    pub auto_score: Option<f64>,
-    pub final_score: Option<f64>,
+    /// Points of the version's `max_points` (the percentages are derived by the database).
+    pub auto_points: Option<f64>,
+    pub final_points: Option<f64>,
     pub is_late: bool,
     pub late_penalty_pct: f64,
     pub violation_count: i32,
@@ -438,7 +451,9 @@ pub async fn persist_submit<'e>(
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE submissions SET
-               status = $2, answers = $3, auto_breakdown = $4, auto_score = $5::float8, final_score = $6::float8,
+               status = $2, answers = $3, auto_breakdown = $4, auto_points = $5::float8, final_points = $6::float8,
+               max_points = (SELECT v.max_points FROM assessment_versions v
+                             WHERE v.id = COALESCE(submissions.assessment_version_id, $18)),
                is_late = $7, late_penalty_pct = $8::float8, violation_count = $9,
                auto_submit_reason = $10,
                auto_submitted_at = CASE WHEN $10::text IS NULL THEN NULL ELSE now() END,
@@ -454,8 +469,8 @@ pub async fn persist_submit<'e>(
         o.status.stored(),
         o.answers,
         o.auto_breakdown,
-        o.auto_score,
-        o.final_score,
+        o.auto_points,
+        o.final_points,
         o.is_late,
         o.late_penalty_pct,
         o.violation_count,
@@ -482,16 +497,16 @@ pub async fn teacher_save<'e, E: sqlx::PgExecutor<'e>>(
     id: SubmissionId,
     expected_version: i64,
     status: SubmissionStatus,
-    final_score: Option<f64>,
+    final_points: Option<f64>,
 ) -> Result<bool> {
     let updated = sqlx::query!(
         r#"UPDATE submissions SET
-               status = $2, final_score = $3::float8,
+               status = $2, final_points = $3::float8,
                graded_at = now(), version = version + 1
            WHERE id = $1 AND version = $4"#,
         id.0,
         status.stored(),
-        final_score,
+        final_points,
         expected_version
     )
     .execute(executor)
@@ -499,20 +514,20 @@ pub async fn teacher_save<'e, E: sqlx::PgExecutor<'e>>(
     Ok(updated.rows_affected() == 1)
 }
 
-/// Bulk release: flip graded → released carrying the entry's final score.
+/// Bulk release: flip graded → released carrying the entry's final points.
 /// `false` = the row moved on since the snapshot (BUG-226: a concurrent
 /// save or return wins; the caller skips the row).
 pub async fn mark_published<'e, E: sqlx::PgExecutor<'e>>(
     executor: E,
     id: SubmissionId,
     expected_version: i64,
-    final_score: f64,
+    final_points: f64,
 ) -> Result<bool> {
     let updated = sqlx::query!(
-        r#"UPDATE submissions SET status = 'released', final_score = $2::float8, version = version + 1
+        r#"UPDATE submissions SET status = 'released', final_points = $2::float8, version = version + 1
            WHERE id = $1 AND version = $3"#,
         id.0,
-        final_score,
+        final_points,
         expected_version
     )
     .execute(executor)
@@ -524,7 +539,8 @@ pub async fn mark_published<'e, E: sqlx::PgExecutor<'e>>(
 /// grade save contends for (BUG-216); `None` when the row is gone.
 #[derive(Debug, Clone, Copy)]
 pub struct LatenessRow {
-    pub final_score: Option<f64>,
+    pub final_points: Option<f64>,
+    pub max_points: Option<f64>,
     pub late_penalty_pct: f64,
     pub is_late: bool,
 }
@@ -537,7 +553,9 @@ pub async fn lock_for_lateness(
 ) -> Result<Option<LatenessRow>> {
     let row = sqlx::query_as!(
         LatenessRow,
-        r#"SELECT final_score::float8 AS "final_score?", late_penalty_pct::float8 AS "late_penalty_pct!", is_late FROM submissions WHERE id = $1 FOR UPDATE"#,
+        r#"SELECT final_points::float8 AS "final_points?", max_points::float8 AS "max_points?",
+                  late_penalty_pct::float8 AS "late_penalty_pct!", is_late
+           FROM submissions WHERE id = $1 FOR UPDATE"#,
         id.0
     )
     .fetch_optional(tx)
@@ -547,24 +565,24 @@ pub async fn lock_for_lateness(
 
 /// Recompute lateness after a deadline change.
 ///
-/// A cleared penalty carries the recomputed final score (`None` keeps the
-/// stored one). BUG-216: the version bumps either way - a save that priced
+/// A cleared penalty carries the recomputed final points (`None` keeps the
+/// stored ones). BUG-216: the version bumps either way - a save that priced
 /// the penalty before the change is stale (412).
 pub async fn set_lateness<'e, E: sqlx::PgExecutor<'e>>(
     executor: E,
     id: SubmissionId,
     is_late: bool,
     late_penalty_pct: f64,
-    final_score: Option<f64>,
+    final_points: Option<f64>,
 ) -> Result<()> {
     sqlx::query!(
         r#"UPDATE submissions SET is_late = $2, late_penalty_pct = $3::float8,
-               final_score = COALESCE($4::float8, final_score), version = version + 1
+               final_points = COALESCE($4::float8, final_points), version = version + 1
            WHERE id = $1"#,
         id.0,
         is_late,
         late_penalty_pct,
-        final_score
+        final_points
     )
     .execute(executor)
     .await?;
@@ -582,7 +600,9 @@ pub async fn list_non_draft(
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   status AS "status: SubmissionStatus", attempt_number, answers,
                   submission_breakdown(id, auto_breakdown) AS "grading!",
-                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
+                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?",
+                  max_points::float8 AS "max_points?", auto_points::float8 AS "auto_points?",
+                  final_points::float8 AS "final_points?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, submission_violation_log(id) AS "violations!",
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
                   (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
@@ -687,6 +707,8 @@ pub struct GradebookCellRow {
     /// UX-146: `pending` (owed a grade) or `graded` (owed a release).
     pub pending_attempt_status: Option<SubmissionStatus>,
     pub final_score: Option<f64>,
+    pub final_points: Option<f64>,
+    pub max_points: Option<f64>,
     pub is_late: bool,
     /// The learner's active (unexpired) per-assessment due-date override, if any.
     pub due_at_override: Option<i64>,
@@ -786,7 +808,7 @@ pub async fn gradebook_cells(
                       CASE WHEN f.id IS NULL THEN s.id END AS submission_id,
                       f.id AS file_submission_id,
                       CASE WHEN f.id IS NOT NULL THEN s.id END AS attempt_id,
-                      s.status, s.attempt_number, s.final_score, s.is_late,
+                      s.status, s.attempt_number, s.final_score, s.final_points, s.max_points, s.is_late,
                       CASE WHEN f.id IS NULL THEN o.due_at_override END AS due_at_override,
                       s.submitted_at, s.graded_at
                FROM submissions s JOIN assessments a ON a.id = s.assessment_id
@@ -809,7 +831,8 @@ pub async fn gradebook_cells(
                        THEN COALESCE(c.submission_id, c.attempt_id) END AS "pending_attempt_id?",
                   CASE WHEN c.status IN ('submitted', 'graded') THEN c.status END
                       AS "pending_attempt_status?: SubmissionStatus",
-                  c.final_score::float8 AS "final_score?", c.is_late AS "is_late!",
+                  c.final_score::float8 AS "final_score?", c.final_points::float8 AS "final_points?",
+                  c.max_points::float8 AS "max_points?", c.is_late AS "is_late!",
                   (extract(epoch FROM c.due_at_override))::bigint AS "due_at_override?",
                   (extract(epoch FROM c.submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM c.graded_at))::bigint AS "graded_at?"
@@ -897,6 +920,9 @@ pub struct ReviewRow {
     pub attempt_number: i32,
     pub auto_score: Option<f64>,
     pub final_score: Option<f64>,
+    pub max_points: Option<f64>,
+    pub auto_points: Option<f64>,
+    pub final_points: Option<f64>,
     pub is_late: bool,
     pub submitted_at: Option<i64>,
     pub graded_at: Option<i64>,
@@ -934,7 +960,9 @@ pub async fn list_for_review(
         ReviewRow,
         r#"SELECT s.id AS "id: SubmissionId", s.user_id AS "user_id: UserId",
                   u.username, u.display_name, s.status AS "status: SubmissionStatus",
-                  s.attempt_number, s.auto_score::float8 AS "auto_score?", s.final_score::float8 AS "final_score?", s.is_late,
+                  s.attempt_number, s.auto_score::float8 AS "auto_score?", s.final_score::float8 AS "final_score?",
+                  s.max_points::float8 AS "max_points?", s.auto_points::float8 AS "auto_points?",
+                  s.final_points::float8 AS "final_points?", s.is_late,
                   (extract(epoch FROM s.submitted_at))::bigint AS "submitted_at?",
                   (extract(epoch FROM s.graded_at))::bigint AS "graded_at?",
                   s.version,
@@ -1044,7 +1072,9 @@ pub async fn list_releasable(
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   status AS "status: SubmissionStatus", attempt_number, answers,
                   submission_breakdown(id, auto_breakdown) AS "grading!",
-                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
+                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?",
+                  max_points::float8 AS "max_points?", auto_points::float8 AS "auto_points?",
+                  final_points::float8 AS "final_points?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, submission_violation_log(id) AS "violations!",
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
                   (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
@@ -1082,7 +1112,9 @@ pub async fn list_submitted_for_user(
                   course_id AS "course_id: CourseId", user_id AS "user_id: UserId",
                   status AS "status: SubmissionStatus", attempt_number, answers,
                   submission_breakdown(id, auto_breakdown) AS "grading!",
-                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
+                  auto_score::float8 AS "auto_score?", final_score::float8 AS "final_score?",
+                  max_points::float8 AS "max_points?", auto_points::float8 AS "auto_points?",
+                  final_points::float8 AS "final_points?", is_late, late_penalty_pct::float8 AS "late_penalty_pct!",
                   violation_count, submission_violation_log(id) AS "violations!",
                   auto_submit_reason AS "auto_submit_reason: AutoSubmitReason",
                   (extract(epoch FROM rules_accepted_at))::bigint AS "rules_accepted_at?",
@@ -1205,10 +1237,15 @@ pub struct GradingEntryRow {
     pub id: GradingEntryId,
     pub submission_id: SubmissionId,
     pub graded_by: Option<UserId>,
+    /// The derived percentages of `raw_points` / `final_points`.
     pub raw_score: f64,
     pub penalty_pct: f64,
     /// `None` = the save left the attempt pending (no score of record, BUG-206).
     pub final_score: Option<f64>,
+    /// What the attempt is out of, the raw points before the penalties and the points of record.
+    pub max_points: f64,
+    pub raw_points: f64,
+    pub final_points: Option<f64>,
     pub raw_breakdown: serde_json::Value,
     pub effective_breakdown: serde_json::Value,
     pub overall_feedback: String,
@@ -1221,9 +1258,10 @@ pub struct GradingEntryRow {
 pub struct NewGradingEntry<'a> {
     pub submission_id: SubmissionId,
     pub graded_by: Option<UserId>,
-    pub raw_score: f64,
+    /// Points of the attempt's `max_points` (the percentages are derived by the database).
+    pub raw_points: f64,
     pub penalty_pct: f64,
-    pub final_score: Option<f64>,
+    pub final_points: Option<f64>,
     pub raw_breakdown: &'a serde_json::Value,
     pub effective_breakdown: &'a serde_json::Value,
     pub overall_feedback: &'a str,
@@ -1235,8 +1273,7 @@ pub struct NewGradingEntry<'a> {
 /// Append a grade entry, numbered and priced by the server.
 ///
 /// The number is the submission's highest plus one, read under its row lock (two graders saving at once take
-/// turns); the points are the stored percentages of the attempt's version (`points_of_percent`, no version = no
-/// points).
+/// turns); the points are out of the attempt's `max_points`, the percentages derived.
 pub async fn insert_grading_entry(
     conn: &mut sqlx::PgConnection,
     e: NewGradingEntry<'_>,
@@ -1249,21 +1286,19 @@ pub async fn insert_grading_entry(
     .await?;
     let id = sqlx::query_scalar!(
         r#"INSERT INTO grading_entries
-               (submission_id, revision, graded_by, raw_score, penalty_pct, final_score, max_points, raw_points,
-                final_points, raw_breakdown, effective_breakdown, overall_feedback, published_at, returned)
+               (submission_id, revision, graded_by, penalty_pct, max_points, raw_points, final_points,
+                raw_breakdown, effective_breakdown, overall_feedback, published_at, returned)
            SELECT $1, (SELECT COALESCE(max(g.revision), 0) + 1 FROM grading_entries g WHERE g.submission_id = $1),
-                  $2, $3::float8, $4::float8, $5::float8, v.max_points,
-                  points_of_percent(($3::float8)::percent, v.max_points),
-                  points_of_percent(($5::float8)::percent, v.max_points),
+                  $2, $4::float8, s.max_points, $3::float8, $5::float8,
                   $6, $7, $8, CASE WHEN $9 THEN now() ELSE NULL END, $10
-           FROM submissions s LEFT JOIN assessment_versions v ON v.id = s.assessment_version_id
+           FROM submissions s
            WHERE s.id = $1
            RETURNING id AS "id: GradingEntryId""#,
         e.submission_id.0,
         e.graded_by.map(|u| u.0),
-        e.raw_score,
+        e.raw_points,
         e.penalty_pct,
-        e.final_score,
+        e.final_points,
         e.raw_breakdown,
         e.effective_breakdown,
         e.overall_feedback,
@@ -1283,6 +1318,8 @@ pub async fn latest_grading_entry<'e, E: sqlx::PgExecutor<'e>>(
         GradingEntryRow,
         r#"SELECT id AS "id: GradingEntryId", submission_id AS "submission_id: SubmissionId",
                   graded_by AS "graded_by: UserId", raw_score::float8 AS "raw_score!", penalty_pct::float8 AS "penalty_pct!", final_score::float8 AS "final_score?",
+                  COALESCE(max_points, 0)::float8 AS "max_points!", COALESCE(raw_points, 0)::float8 AS "raw_points!",
+                  final_points::float8 AS "final_points?",
                   raw_breakdown, effective_breakdown, overall_feedback,
                   (extract(epoch FROM published_at))::bigint AS "published_at?", returned,
                   (extract(epoch FROM created_at))::bigint AS "created_at!"
@@ -1302,6 +1339,8 @@ pub async fn list_grading_entries(
         GradingEntryRow,
         r#"SELECT id AS "id: GradingEntryId", submission_id AS "submission_id: SubmissionId",
                   graded_by AS "graded_by: UserId", raw_score::float8 AS "raw_score!", penalty_pct::float8 AS "penalty_pct!", final_score::float8 AS "final_score?",
+                  COALESCE(max_points, 0)::float8 AS "max_points!", COALESCE(raw_points, 0)::float8 AS "raw_points!",
+                  final_points::float8 AS "final_points?",
                   raw_breakdown, effective_breakdown, overall_feedback,
                   (extract(epoch FROM published_at))::bigint AS "published_at?", returned,
                   (extract(epoch FROM created_at))::bigint AS "created_at!"

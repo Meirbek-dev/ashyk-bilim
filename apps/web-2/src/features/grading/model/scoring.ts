@@ -30,8 +30,8 @@ export function roundScoreInput(value: string): string {
 }
 
 /**
- * The breakdown keeps item points as a share of 100 while a grade save takes them on the item's own `max_score`
- * scale (a 3-question exam: share 33.33, item max 1). Unknown scale: as given.
+ * The breakdown keeps item points of the attempt's version while a grade save takes them on the item's current
+ * `max_score` (the same unless the item was re-weighted since). Unknown scale: as given.
  */
 export const toItemScale = (score: number, breakdownMax: number, itemMax: number | undefined): number =>
   itemMax !== undefined && itemMax > 0 && breakdownMax > 0 ? (score / breakdownMax) * itemMax : score
@@ -52,6 +52,16 @@ export function typedItemsPercent(rows: readonly { score: string; max: number }[
   const scores = rows.map(row => parseScoreInput(row.score, row.max))
   if (scores.every(score => score === null)) return null
   return itemsPercent(rows.map((row, index) => ({ score: scores[index] ?? 0, max: row.max })))
+}
+
+/** The points of the typed item scores out of the items' maximum; null as for {@link typedItemsPercent}. */
+export function typedItemsPoints(
+  rows: readonly { score: string; max: number }[],
+): { points: number; max: number } | null {
+  if (rows.some(row => isScoreInputInvalid(row.score, row.max))) return null
+  const scores = rows.map(row => parseScoreInput(row.score, row.max))
+  if (scores.every(score => score === null)) return null
+  return { points: sumScores(scores.map(score => score ?? 0)), max: sumScores(rows.map(row => row.max)) }
 }
 
 /** The score after a late penalty, as the server applies it (`apply_late`, B-GRD-32): hundredths, penalty 0..100. */

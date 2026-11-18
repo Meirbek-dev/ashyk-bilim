@@ -47,10 +47,9 @@ fn valid_optional_weight(value: &Option<f32>, ctx: &()) -> garde::Result {
 
 #[allow(clippy::ref_option, clippy::trivially_copy_pass_by_ref)]
 fn valid_optional_score(value: &Option<f64>, _ctx: &()) -> garde::Result {
+    // The upper bound is the draft's `max_score`, checked against the draft.
     match value {
-        Some(v) if !(0.0..=100.0).contains(v) => {
-            Err(garde::Error::new("score must be within 0..=100"))
-        }
+        Some(v) if !v.is_finite() || *v < 0.0 => Err(garde::Error::new("score must be at least 0")),
         _ => Ok(()),
     }
 }
@@ -174,8 +173,9 @@ pub struct QueueDraftsRequest {
 pub struct ApproveDraftItem {
     #[garde(skip)]
     pub draft_id: GradeDraftId,
-    /// A work-level percentage instead of the draft's.
+    /// The work's raw points (`0..=max_score` of the draft) instead of the draft's.
     #[garde(custom(valid_optional_score))]
+    #[schema(minimum = 0.0)]
     pub score: Option<f64>,
     /// Overall feedback instead of the draft's.
     #[garde(inner(length(max = 20_000)))]

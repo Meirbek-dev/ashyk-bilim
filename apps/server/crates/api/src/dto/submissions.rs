@@ -23,8 +23,14 @@ pub struct StudentSubmission {
     /// `{ "<item_id>": ItemAnswer }`.
     pub answers: BTreeMap<AssessmentItemId, ItemAnswer>,
     pub grading: Option<GradingBreakdown>,
+    /// Percentages of `max_points`, derived from `auto_points` / `final_points`.
     pub auto_score: Option<f64>,
     pub final_score: Option<f64>,
+    /// What the attempt is out of (its version's points; absent on a draft) and its points, released like
+    /// the percentages.
+    pub max_points: Option<f64>,
+    pub auto_points: Option<f64>,
+    pub final_points: Option<f64>,
     pub is_late: bool,
     pub late_penalty_pct: Option<f64>,
     pub started_at_unix: Option<i64>,
@@ -71,6 +77,9 @@ impl From<DomainSubmission> for StudentSubmission {
             grading: s.grading,
             auto_score: s.auto_score,
             final_score: s.final_score,
+            max_points: s.max_points,
+            auto_points: s.auto_points,
+            final_points: s.final_points,
             is_late: s.is_late,
             late_penalty_pct: s.late_penalty_pct,
             started_at_unix: s.started_at,

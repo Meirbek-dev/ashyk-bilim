@@ -1,6 +1,6 @@
 //! Teacher-side grading DTOs: review queue, stats, the grader's view of a
 //! submission, grade saves, releases, bulk actions, the course gradebook.
-// A grade save's `final_score` has three states: absent (keep), `null` (drop
+// A grade save's `final_points` has three states: absent (keep), `null` (drop
 // the override), value.
 #![allow(clippy::option_option)]
 
@@ -78,8 +78,13 @@ pub struct ReviewItem {
     pub user: UserSummary,
     pub status: SubmissionStatus,
     pub attempt_number: i32,
+    /// Percentages of `max_points`, derived from `auto_points` / `final_points`.
     pub auto_score: Option<f64>,
     pub final_score: Option<f64>,
+    /// What the attempt is out of: its version's points.
+    pub max_points: Option<f64>,
+    pub auto_points: Option<f64>,
+    pub final_points: Option<f64>,
     pub is_late: bool,
     pub submitted_at_unix: Option<i64>,
     pub graded_at_unix: Option<i64>,
@@ -115,6 +120,9 @@ impl From<domain::ReviewPage> for ReviewPage {
                     attempt_number: i.attempt_number,
                     auto_score: i.auto_score,
                     final_score: i.final_score,
+                    max_points: i.max_points,
+                    auto_points: i.auto_points,
+                    final_points: i.final_points,
                     is_late: i.is_late,
                     submitted_at_unix: i.submitted_at,
                     graded_at_unix: i.graded_at,
@@ -182,11 +190,17 @@ pub struct TeacherSubmission {
     pub release_state: ReleaseState,
     pub attempt_number: i32,
     pub answers: BTreeMap<AssessmentItemId, ItemAnswer>,
+    /// Item scores in points of the attempt's version.
     pub grading: GradingBreakdown,
+    /// Percentages of `max_points`, derived from `auto_points` / `final_points`.
     pub auto_score: Option<f64>,
     pub final_score: Option<f64>,
-    /// The raw score of the latest grading entry when it is a manual
-    /// override (differs from the item-derived one); `null` otherwise.
+    /// What the attempt is out of: its version's points.
+    pub max_points: Option<f64>,
+    pub auto_points: Option<f64>,
+    pub final_points: Option<f64>,
+    /// The raw points of record when they are a manual override (`final_points` of a grade save);
+    /// `null` when they are derived from the items.
     pub score_override: Option<f64>,
     pub is_late: bool,
     pub late_penalty_pct: f64,
@@ -220,6 +234,9 @@ impl From<domain::TeacherSubmission> for TeacherSubmission {
             grading: s.grading,
             auto_score: s.auto_score,
             final_score: s.final_score,
+            max_points: s.max_points,
+            auto_points: s.auto_points,
+            final_points: s.final_points,
             score_override: s.score_override,
             is_late: s.is_late,
             late_penalty_pct: s.late_penalty_pct,
@@ -290,15 +307,15 @@ pub struct ItemGradeRequest {
 pub struct GradeRequest {
     #[garde(skip)]
     pub action: GradeAction,
-    /// Raw 0..100 before the late penalty (a manual override). Omitted: the
+    /// Raw points `0..=max_points` before the penalties (a manual override). Omitted: the
     /// stored override (or the 0 of an integrity-annulled attempt) is kept,
-    /// otherwise the raw is computed from the item scores (earned / possible
-    /// × 100). An explicit `null` drops the override and recomputes (BUG-174).
-    #[garde(range(min = 0.0, max = 100.0))]
+    /// otherwise the raw is the sum of the item scores. An explicit `null` drops the override and
+    /// recomputes (BUG-174). Above the attempt's `max_points` is 422.
+    #[garde(range(min = 0.0))]
     #[serde(default, deserialize_with = "double_option")]
     #[schema(value_type = Option<f64>)]
-    #[schema(minimum = 0.0, maximum = 100.0)]
-    pub final_score: Option<Option<f64>>,
+    #[schema(minimum = 0.0)]
+    pub final_points: Option<Option<f64>>,
     /// Overall feedback shown to the learner; omitted = keep the stored one.
     #[garde(length(chars, max = 10_000))]
     #[schema(max_length = 10_000)]
@@ -317,10 +334,14 @@ pub struct GradingEntry {
     pub id: GradingEntryId,
     /// `null` = the auto-grader.
     pub graded_by: Option<UserId>,
+    /// Percentages of `max_points`, derived from `raw_points` / `final_points`.
     pub raw_score: f64,
     pub penalty_pct: f64,
     /// Absent for a draft save that left the attempt pending.
     pub final_score: Option<f64>,
+    pub max_points: f64,
+    pub raw_points: f64,
+    pub final_points: Option<f64>,
     pub overall_feedback: String,
     pub published_at_unix: Option<i64>,
     pub created_at_unix: i64,
@@ -334,6 +355,9 @@ impl From<domain::GradingEntry> for GradingEntry {
             raw_score: e.raw_score,
             penalty_pct: e.penalty_pct,
             final_score: e.final_score,
+            max_points: e.max_points,
+            raw_points: e.raw_points,
+            final_points: e.final_points,
             overall_feedback: e.overall_feedback,
             published_at_unix: e.published_at,
             created_at_unix: e.created_at,
@@ -450,7 +474,11 @@ pub struct GradebookCell {
     /// UX-146: what that attempt waits for - `pending` (a grade) or
     /// `graded` (a release) - so the gradebook counts and labels the two apart.
     pub pending_attempt_status: Option<SubmissionStatus>,
+    /// Percentage of `max_points`, derived from `final_points`.
     pub final_score: Option<f64>,
+    /// The grade of record in points, out of `max_points` (a file task is out of 100).
+    pub final_points: Option<f64>,
+    pub max_points: Option<f64>,
     pub is_late: bool,
     /// The learner's active due-date override for this assessment (UX-113):
     /// «overdue» is judged against it, not the assessment `due_at_unix`.
@@ -546,6 +574,8 @@ impl From<domain::GradebookPage> for GradebookPage {
                     pending_attempt_id: c.pending_attempt_id,
                     pending_attempt_status: c.pending_attempt_status,
                     final_score: c.final_score,
+                    final_points: c.final_points,
+                    max_points: c.max_points,
                     is_late: c.is_late,
                     due_at_override_unix: c.due_at_override,
                     submitted_at_unix: c.submitted_at,

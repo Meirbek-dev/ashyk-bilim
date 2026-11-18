@@ -1746,7 +1746,7 @@ export const vGradeDraftId = v.pipe(v.string(), v.uuid());
 export const vApproveDraftItem = v.strictObject({
     draft_id: vGradeDraftId,
     feedback: v.optional(v.pipe(v.string(), v.maxLength(20000))),
-    score: v.optional(v.number())
+    score: v.optional(v.pipe(v.number(), v.minValue(0)))
 });
 
 export const vApproveDraftsRequest = v.strictObject({
@@ -2015,7 +2015,7 @@ export const vGradeRequest = v.strictObject({
     action: vGradeAction,
     audit_note: v.optional(v.pipe(v.string(), v.maxLength(1000))),
     feedback: v.optional(v.pipe(v.string(), v.maxLength(10000))),
-    final_score: v.nullish(v.pipe(v.number(), v.minValue(0), v.maxValue(100))),
+    final_points: v.nullish(v.pipe(v.number(), v.minValue(0))),
     item_grades: v.optional(v.array(vItemGradeRequest))
 });
 
@@ -4932,9 +4932,11 @@ export const vStudentSubmission = v.object({
     answers: v.object({}),
     assessment_id: vAssessmentId,
     attempt_number: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    auto_points: v.nullable(v.number()),
     auto_score: v.nullable(v.number()),
     auto_submit_reason: v.nullable(vAutoSubmitReason),
     draft_version: v.pipe(v.number(), v.integer()),
+    final_points: v.nullable(v.number()),
     final_score: v.nullable(v.number()),
     graded_at_unix: v.nullable(vUnixTime),
     grading: v.nullable(vGradingBreakdown),
@@ -4942,6 +4944,7 @@ export const vStudentSubmission = v.object({
     is_late: v.boolean(),
     item_ids: v.optional(v.array(vAssessmentItemId)),
     late_penalty_pct: v.nullable(v.number()),
+    max_points: v.nullable(v.number()),
     release_state: vReleaseState,
     rules_accepted_at_unix: v.optional(vUnixTime),
     started_at_unix: v.nullable(vUnixTime),
@@ -5575,6 +5578,7 @@ export const vDisagreementView = v.object({
     final_score: v.number(),
     learner_id: vUserId,
     learner_name: v.string(),
+    max_score: v.number(),
     subject_id: v.pipe(v.string(), v.uuid())
 });
 
@@ -5676,12 +5680,15 @@ export const vCourseAnalysis = v.object({
 export const vGradeDraftView = v.object({
     activity_id: vActivityId,
     agreement: v.nullable(v.string()),
+    ai_percent: v.nullable(v.number()),
     ai_score: v.nullable(v.number()),
+    calibrated_percent: v.nullable(v.number()),
     calibrated_score: v.nullable(v.number()),
     confidence: v.nullable(v.number()),
     created_at: v.pipe(v.number(), v.integer()),
     decided_at: v.nullable(v.pipe(v.number(), v.integer())),
     error_code: v.nullable(v.string()),
+    final_percent: v.nullable(v.number()),
     final_score: v.nullable(v.number()),
     flags: v.array(v.string()),
     id: vGradeDraftId,
@@ -5712,9 +5719,11 @@ export const vGradebookCell = v.object({
     attempts: v.pipe(v.number(), v.integer()),
     due_at_override_unix: v.nullable(vUnixTime),
     file_submission_id: v.nullable(vFileSubmissionId),
+    final_points: v.nullable(v.number()),
     final_score: v.nullable(v.number()),
     graded_at_unix: v.nullable(vUnixTime),
     is_late: v.boolean(),
+    max_points: v.nullable(v.number()),
     pending_attempt: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     pending_attempt_id: v.nullable(v.pipe(v.string(), v.uuid())),
     pending_attempt_status: v.nullable(vSubmissionStatus),
@@ -5739,12 +5748,15 @@ export const vGradebookTotal = v.object({
 
 export const vGradingEntry = v.object({
     created_at_unix: vUnixTime,
+    final_points: v.nullable(v.number()),
     final_score: v.nullable(v.number()),
     graded_by: v.nullable(vUserId),
     id: vGradingEntryId,
+    max_points: v.number(),
     overall_feedback: v.string(),
     penalty_pct: v.number(),
     published_at_unix: v.nullable(vUnixTime),
+    raw_points: v.number(),
     raw_score: v.number()
 });
 
@@ -6518,12 +6530,15 @@ export const vGradebookPage = v.object({
 export const vReviewItem = v.object({
     allowed_actions: v.array(vGradeAction),
     attempt_number: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    auto_points: v.nullable(v.number()),
     auto_score: v.nullable(v.number()),
     enrolled: v.boolean(),
+    final_points: v.nullable(v.number()),
     final_score: v.nullable(v.number()),
     graded_at_unix: v.nullable(vUnixTime),
     id: vSubmissionId,
     is_late: v.boolean(),
+    max_points: v.nullable(v.number()),
     staff: v.boolean(),
     status: vSubmissionStatus,
     submitted_at_unix: v.nullable(vUnixTime),
@@ -6745,17 +6760,20 @@ export const vTeacherSubmission = v.object({
     answers: v.object({}),
     assessment_id: vAssessmentId,
     attempt_number: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    auto_points: v.nullable(v.number()),
     auto_score: v.nullable(v.number()),
     auto_submit_reason: v.nullable(vAutoSubmitReason),
     content_version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     duration_seconds: v.nullable(v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647'))),
     feedback: v.array(vItemFeedbackView),
+    final_points: v.nullable(v.number()),
     final_score: v.nullable(v.number()),
     graded_at_unix: v.nullable(vUnixTime),
     grading: vGradingBreakdown,
     id: vSubmissionId,
     is_late: v.boolean(),
     late_penalty_pct: v.number(),
+    max_points: v.nullable(v.number()),
     policy_version: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     release_state: vReleaseState,
     score_override: v.nullable(v.number()),

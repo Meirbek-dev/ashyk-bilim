@@ -98,7 +98,7 @@ test('B-GRD-15 a grade saved meanwhile by a colleague opens the conflict dialog;
 })
 
 test('B-GRD-17 the folded history lists each grading entry', async ({ page, signInAs, graded }) => {
-  await graded.grade(graded.ana.submissionId, { action: 'save', final_score: 50, feedback: 'Черновой отзыв' })
+  await graded.grade(graded.ana.submissionId, { action: 'save', final_points: 5.5, feedback: 'Черновой отзыв' })
   await signInAs('teacher')
   await page.goto(review(graded, graded.ana.submissionId))
   await page.getByText(m.grading_history({}, ru)).click()
@@ -113,7 +113,7 @@ test('B-GRD-07 publish-all asks with the count of held grades and reports what w
   graded,
 }) => {
   for (const learner of [graded.ana, graded.boris])
-    await graded.grade(learner.submissionId, { action: 'save', final_score: 80 })
+    await graded.grade(learner.submissionId, { action: 'save', final_points: 8.8 })
   await signInAs('teacher')
   await page.goto(queue(graded))
   await page.getByRole('button', { name: m.grading_publish_all({}, ru) }).click()

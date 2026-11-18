@@ -29,6 +29,7 @@ use crate::ai::runs::RunSpec;
 use crate::assessments::AssessmentsService;
 use crate::catalog::courses::Course;
 use crate::files::submissions::{FileGradeAction, FileGradeInput, FileSubmissionsService};
+use crate::grading::score::{percent_of_points, round_points};
 use crate::grading::teacher::{GradeAction, GradeInput, GradingService, ItemGrade};
 use crate::identity::Actor;
 
@@ -56,16 +57,21 @@ pub struct GradeDraftView {
     /// `queued`, `ready`, `applied`, `discarded`, `superseded` or `failed`.
     pub status: String,
     pub subject_version: i64,
-    /// Work-level percentages (0..100) as proposed and after calibration.
+    /// The work's points as proposed and after calibration, out of `max_score` (the submission's
+    /// version points, 100 for a hand-in); `*_percent` are their derived percentages.
     pub ai_score: Option<f64>,
     pub calibrated_score: Option<f64>,
     pub max_score: Option<f64>,
+    pub ai_percent: Option<f64>,
+    pub calibrated_percent: Option<f64>,
+    pub final_percent: Option<f64>,
     pub confidence: Option<f32>,
     pub flags: Vec<String>,
     pub model_name: Option<String>,
     pub error_code: Option<String>,
     /// `exact` or `adjusted` once applied.
     pub agreement: Option<String>,
+    /// The raw points of record the teacher saved.
     pub final_score: Option<f64>,
     pub decided_at: Option<i64>,
     pub created_at: i64,
@@ -77,7 +83,15 @@ fn draft_view(d: DraftRow) -> GradeDraftView {
     let proposal = (d.status != "queued" && d.status != "failed")
         .then(|| serde_json::from_value::<Proposal>(d.proposal.clone()).ok())
         .flatten();
+    let percent = |points: Option<f64>| {
+        points
+            .zip(d.max_score)
+            .map(|(p, max)| percent_of_points(p, max))
+    };
     GradeDraftView {
+        ai_percent: percent(d.ai_score),
+        calibrated_percent: percent(d.calibrated_score),
+        final_percent: percent(d.final_score),
         subject_id: d.subject_id(),
         is_file: d.file_attempt_id.is_some(),
         id: d.id,
@@ -112,7 +126,7 @@ pub struct QueueReport {
 #[derive(Debug, Clone)]
 pub struct ApproveItem {
     pub draft_id: GradeDraftId,
-    /// A work-level percentage to save instead of the draft's.
+    /// The work's raw points (`0..=max_score` of the draft) to save instead of the draft's.
     pub score: Option<f64>,
     /// Overall feedback instead of the draft's.
     pub feedback: Option<String>,
@@ -193,8 +207,10 @@ pub struct DisagreementView {
     pub subject_id: uuid::Uuid,
     pub learner_id: UserId,
     pub learner_name: String,
+    /// Points, out of `max_score`.
     pub ai_score: f64,
     pub final_score: f64,
+    pub max_score: f64,
 }
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -238,10 +254,10 @@ fn round2(x: f64) -> f64 {
     (x * 100.0).round() / 100.0
 }
 
-/// `exact` when the grade of record is within 0.5% of the maximum from the proposal.
+/// `exact` when the grade of record (points) is within 0.5% of the maximum from the proposal.
 #[must_use]
-pub fn agreement(proposed_pct: f64, final_pct: f64) -> &'static str {
-    if (proposed_pct - final_pct).abs() <= 100.0 * EXACT_SHARE {
+pub fn agreement(proposed: f64, final_points: f64, max: f64) -> &'static str {
+    if (proposed - final_points).abs() <= max.mul_add(EXACT_SHARE, 1e-9) {
         "exact"
     } else {
         "adjusted"
@@ -257,7 +273,8 @@ pub(crate) async fn settle_submission_draft(
     submission: SubmissionId,
     teacher: UserId,
     item_grades: &[ItemGrade],
-    raw_pct: f64,
+    raw_points: f64,
+    max_points: f64,
 ) -> Result<()> {
     let Some(draft) = ab_db::grade_drafts::live_for_subject(conn, submission.0).await? else {
         return Ok(());
@@ -300,8 +317,8 @@ pub(crate) async fn settle_submission_draft(
         conn,
         draft.id,
         teacher,
-        agreement(proposed, raw_pct),
-        Some(raw_pct),
+        agreement(proposed, raw_points, draft.max_score.unwrap_or(max_points)),
+        Some(raw_points),
     )
     .await
 }
@@ -373,7 +390,8 @@ pub(crate) async fn settle_file_draft(
         conn,
         draft.id,
         teacher,
-        agreement(proposed, raw_pct),
+        // A hand-in is out of 100 points.
+        agreement(proposed, raw_pct, 100.0),
         Some(raw_pct),
     )
     .await
@@ -675,19 +693,22 @@ impl AiService {
                 format!("at most {MAX_QUEUE} drafts at once"),
             ));
         }
-        if let Some(bad) = items
-            .iter()
-            .find(|i| i.score.is_some_and(|s| !(0.0..=100.0).contains(&s)))
-        {
-            return Err(invalid(
-                "items",
-                "range",
-                format!("score of draft {} must be within 0..=100", bad.draft_id),
-            ));
-        }
-        let mut out = Vec::with_capacity(items.len());
+        let mut drafts = Vec::with_capacity(items.len());
         for item in items {
             let draft = self.accessible_draft(actor, item.draft_id).await?;
+            // Points of what the work is out of (the draft's maximum).
+            let max = draft.max_score.unwrap_or(100.0);
+            if item.score.is_some_and(|s| !(0.0..=max).contains(&s)) {
+                return Err(invalid(
+                    "items",
+                    "range",
+                    format!("score of draft {} must be within 0..={max}", item.draft_id),
+                ));
+            }
+            drafts.push(draft);
+        }
+        let mut out = Vec::with_capacity(items.len());
+        for (item, draft) in items.iter().zip(drafts) {
             // The route names the activity; a draft of another one is not found there.
             let result = if draft.activity_id == activity_id {
                 self.approve_one(actor, grading, files, action, item, &draft)
@@ -754,7 +775,7 @@ impl AiService {
                             ApproveAction::Save => GradeAction::Save,
                             ApproveAction::Publish => GradeAction::Publish,
                         },
-                        final_score: item.score.map(|s| Some(round2(s))),
+                        final_points: item.score.map(|s| Some(round_points(s))),
                         feedback: Some(overall),
                         item_grades,
                         audit_note: Some(format!("AI draft {}", draft.id)),
@@ -790,7 +811,7 @@ impl AiService {
                             ApproveAction::Save => FileGradeAction::Save,
                             ApproveAction::Publish => FileGradeAction::Publish,
                         },
-                        final_score: Some(round2(score)),
+                        final_score: Some(round_points(score)),
                         feedback: Some(overall),
                         rubric_scores: (!criteria.is_empty())
                             .then(|| json!({ "criteria": criteria })),
@@ -915,7 +936,7 @@ impl AiService {
             .iter()
             .filter(|d| d.status == "applied")
             .filter(|d| match (d.calibrated_score, d.final_score) {
-                (Some(ai), Some(fin)) => (ai - fin).abs() > 100.0 * DISAGREE,
+                (Some(ai), Some(fin)) => (ai - fin).abs() > d.max_score.unwrap_or(100.0) * DISAGREE,
                 _ => false,
             })
             .collect();
@@ -930,6 +951,7 @@ impl AiService {
                 learner_name: names.get(&d.learner_id).cloned().unwrap_or_default(),
                 ai_score: d.calibrated_score.unwrap_or_default(),
                 final_score: d.final_score.unwrap_or_default(),
+                max_score: d.max_score.unwrap_or(100.0),
             })
             .collect();
         let corrections =
@@ -1072,8 +1094,11 @@ mod tests {
 
     #[test]
     fn agreement_is_exact_within_half_a_percent() {
-        assert_eq!(agreement(72.0, 72.4), "exact");
-        assert_eq!(agreement(72.0, 73.0), "adjusted");
+        assert_eq!(agreement(72.0, 72.4, 100.0), "exact");
+        assert_eq!(agreement(72.0, 73.0, 100.0), "adjusted");
+        // Points of a 10-point work: 0.05 is half a percent of it.
+        assert_eq!(agreement(7.2, 7.25, 10.0), "exact");
+        assert_eq!(agreement(7.2, 7.3, 10.0), "adjusted");
     }
 
     #[test]

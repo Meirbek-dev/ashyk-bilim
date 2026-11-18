@@ -10,7 +10,7 @@ import { formatDateTime } from '#/shared/i18n/format'
 
 import { lastCheck } from '../model/scoring'
 import { activityOptions, type Work } from '../queries'
-import { scoreText, statusMeta } from './labels'
+import { pointsText, scoreText, statusMeta } from './labels'
 import { FeedbackDraft } from './feedback-draft'
 import type { ReviewAside } from './review-aside'
 import { ReviewActions } from './review-actions'
@@ -20,8 +20,10 @@ import { StatusText } from './status-text'
 
 const ROUTE = '/_authed/teach/courses/$courseId_/activities/$activityId_/submissions/$submissionId'
 
-const scoreLine = (score: number | null) =>
-  score === null ? scoreText(null) : m.grading_score_label({ score: scoreText(score) })
+const scoreLine = (head: ReviewFrameProps['head']) =>
+  head.final_score === null
+    ? scoreText(null)
+    : m.grading_score_label({ score: pointsText(head.final_points, head.max_points, head.final_score) })
 
 type ReviewFrameProps = {
   work: Work
@@ -36,6 +38,9 @@ type ReviewFrameProps = {
     is_late: boolean
     late_penalty_pct: number | null
     final_score: number | null
+    /** An assessment attempt's grade in points, out of `max_points` (a file attempt has the percentage only). */
+    final_points?: number | null
+    max_points?: number | null
   }
   aside?: ReviewAside | undefined
   children: ReactNode
@@ -112,7 +117,7 @@ export function ReviewFrame({ work, head, aside, children }: ReviewFrameProps) {
                       date: formatDateTime(check.at),
                     }),
                 head.late_penalty_pct ? m.grading_penalty({ percent: scoreText(head.late_penalty_pct) }) : null,
-                scoreLine(head.final_score),
+                scoreLine(head),
               ]
                 .filter(fact => fact !== null)
                 .join(' · ')}

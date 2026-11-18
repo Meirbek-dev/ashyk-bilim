@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE submissions s SET\n               status = 'submitted', submitted_at = now(), is_late = $3, late_penalty_pct = $4::float8,\n               assessment_version_id = COALESCE(s.assessment_version_id, v.id),\n               items_snapshot = COALESCE(s.items_snapshot, v.items),\n               policy_snapshot = COALESCE(s.policy_snapshot, v.policy),\n               max_points = COALESCE(s.max_points, v.max_points),\n               version = s.version + 1\n           FROM assessment_versions v\n           WHERE s.id = $1 AND s.version = $2 AND s.status IN ('draft', 'returned') AND v.id = $5",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Bool",
+        "Float8",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e3f65c5524f8e567fd51a8941b593765ca198ec527af7625a9d61a8941b4f0a3"
+}

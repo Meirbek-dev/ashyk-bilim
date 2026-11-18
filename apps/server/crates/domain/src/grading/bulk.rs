@@ -320,14 +320,15 @@ async fn settle_lateness(
     // not a grade; the teacher's save applies the stored penalty. BUG-316:
     // the whole deduction is recomputed, so a policy change that only moves
     // `attempt_penalty_percent` re-scores too.
-    let entry = match locked.final_score {
+    let entry = match locked.final_points {
         Some(_) => ab_db::submissions::latest_grading_entry(&mut *tx, submission.id).await?,
         None => None,
     };
     let rescored = entry.as_ref().map(|entry| {
         apply_late(
             attempt_cap(
-                entry.raw_score,
+                entry.raw_points,
+                entry.max_points,
                 assessment.attempt_penalty_percent,
                 submission.attempt_number,
             ),
@@ -335,12 +336,12 @@ async fn settle_lateness(
         )
     });
     let score_changed = rescored
-        .zip(locked.final_score)
+        .zip(locked.final_points)
         .is_some_and(|(new, old)| (new - old).abs() > f64::EPSILON);
     if late == locked.is_late && !penalty_changed && !score_changed {
         return Ok(());
     }
-    let final_score = if (penalty_changed || score_changed)
+    let final_points = if (penalty_changed || score_changed)
         && let (Some(entry), Some(rescored)) = (entry, rescored)
     {
         ab_db::submissions::insert_grading_entry(
@@ -348,9 +349,9 @@ async fn settle_lateness(
             NewGradingEntry {
                 submission_id: submission.id,
                 graded_by: granted_by,
-                raw_score: entry.raw_score,
+                raw_points: entry.raw_points,
                 penalty_pct,
-                final_score: Some(rescored),
+                final_points: Some(rescored),
                 raw_breakdown: &entry.raw_breakdown,
                 effective_breakdown: &entry.effective_breakdown,
                 overall_feedback: &entry.overall_feedback,
@@ -363,7 +364,7 @@ async fn settle_lateness(
     } else {
         None
     };
-    ab_db::submissions::set_lateness(&mut *tx, submission.id, late, penalty_pct, final_score)
+    ab_db::submissions::set_lateness(&mut *tx, submission.id, late, penalty_pct, final_points)
         .await?;
     tx.commit().await?;
     Ok(())

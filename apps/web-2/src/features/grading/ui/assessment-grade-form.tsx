@@ -4,9 +4,10 @@ import { m } from '#/paraglide/messages'
 import type { AssessmentItem, TeacherSubmission } from '#/shared/api/gen/types.gen'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
+import { formatNumber } from '#/shared/i18n/format'
 
 import { transferToGradeForm } from '../model/ai-draft'
-import { typedItemsPercent } from '../model/scoring'
+import { typedItemsPercent, typedItemsPoints } from '../model/scoring'
 import type { ReviewIds } from '../mutations'
 import { AiDraft } from './ai-draft'
 import { GRADE_LINE } from './field-look'
@@ -14,7 +15,7 @@ import { GradeActions } from './grade-actions'
 import { ItemCard } from './item-card'
 import { ItemFields } from './item-fields'
 import { attentionOf, QuestionFilter, type QuestionView } from './question-filter'
-import { scoreText } from './labels'
+import { pointsText } from './labels'
 import { useAssessmentGrade } from './use-assessment-grade'
 
 type AssessmentGradeFormProps = { ids: ReviewIds; submission: TeacherSubmission; items: readonly AssessmentItem[] }
@@ -63,8 +64,13 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
           <form.AppField name="feedback">{field => <field.TextareaField label={m.grading_feedback()} />}</form.AppField>
         </div>
         <div className={`${GRADE_LINE} @3xl/review:order-last`}>
-          <form.AppField name="final_score">
-            {field => <field.TextField label={m.grading_override()} inputMode="decimal" />}
+          <form.AppField name="final_points">
+            {field => (
+              <field.TextField
+                label={m.grading_override({ max: formatNumber(form.state.values.max_points) })}
+                inputMode="decimal"
+              />
+            )}
           </form.AppField>
         </div>
       </div>
@@ -74,11 +80,14 @@ export function AssessmentGradeForm({ ids, submission, items }: AssessmentGradeF
       {/* The next step stays in sight down a long work; on a phone it closes the page (three rows would fill the screen). */}
       <div className="-mx-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t bg-background px-4 py-3 @3xl/review:sticky @3xl/review:bottom-0 @3xl/review:z-10 @3xl/review:mx-0 @3xl/review:px-0">
         <form.Subscribe selector={state => state.values.items}>
-          {rows => (
-            <p className="font-heading text-lg tabular-nums">
-              {m.grading_items_total({ percent: scoreText(typedItemsPercent(rows)) })}
-            </p>
-          )}
+          {rows => {
+            const typed = typedItemsPoints(rows)
+            return (
+              <p className="font-heading text-lg tabular-nums">
+                {m.grading_items_total({ score: pointsText(typed?.points, typed?.max, typedItemsPercent(rows)) })}
+              </p>
+            )
+          }}
         </form.Subscribe>
         <GradeActions
           allowed={submission.allowed_actions}

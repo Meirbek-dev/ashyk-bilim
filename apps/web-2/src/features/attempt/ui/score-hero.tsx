@@ -1,6 +1,6 @@
 import { m } from '#/paraglide/messages'
 import type { AttemptState, StudentSubmission } from '#/shared/api/gen/types.gen'
-import { formatPercent } from '#/shared/i18n/format'
+import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
 import { resultVerdict } from '../model/attempt'
 import { ToneWord } from './tone-word'
@@ -19,6 +19,11 @@ export function ScoreHero({ attempt, state, released }: HeroProps) {
       <div className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground">{m.attempt_score_label()}</p>
         <p className="font-heading text-display font-semibold tabular-nums">{formatPercent(attempt.final_score)}</p>
+        {attempt.final_points === null || attempt.max_points === null ? null : (
+          <p className="text-sm text-muted-foreground tabular-nums">
+            {m.attempt_points_of({ points: formatNumber(attempt.final_points), max: formatNumber(attempt.max_points) })}
+          </p>
+        )}
       </div>
       {released ? (
         <div className="flex flex-col gap-1 pb-1.5 @3xl:items-end">

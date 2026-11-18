@@ -687,7 +687,7 @@ export type ApproveDraftItem = {
      */
     feedback?: string;
     /**
-     * A work-level percentage instead of the draft's.
+     * The work's raw points (`0..=max_score` of the draft) instead of the draft's.
      */
     score?: number;
 };
@@ -2963,11 +2963,15 @@ export type Direction = 'up' | 'down' | 'flat';
 export type DisabledReason = 'NOT_PUBLISHED' | 'SCHEDULED_NOT_OPEN' | 'ARCHIVED' | 'COURSE_ARCHIVED' | 'PAST_DUE' | 'MAX_ATTEMPTS_REACHED' | 'TIME_LIMIT_EXPIRED' | 'REMEDIATION_REQUIRED' | 'ACCESS_RESTRICTED' | 'NOT_ENROLLED';
 
 export type DisagreementView = {
+    /**
+     * Points, out of `max_score`.
+     */
     ai_score: number;
     draft_id: GradeDraftId;
     final_score: number;
     learner_id: UserId;
     learner_name: string;
+    max_score: number;
     subject_id: string;
 };
 
@@ -3824,15 +3828,22 @@ export type GradeDraftView = {
      * `exact` or `adjusted` once applied.
      */
     agreement: string | null;
+    ai_percent: number | null;
     /**
-     * Work-level percentages (0..100) as proposed and after calibration.
+     * The work's points as proposed and after calibration, out of `max_score` (the submission's
+     * version points, 100 for a hand-in); `*_percent` are their derived percentages.
      */
     ai_score: number | null;
+    calibrated_percent: number | null;
     calibrated_score: number | null;
     confidence: number | null;
     created_at: number;
     decided_at: number | null;
     error_code: string | null;
+    final_percent: number | null;
+    /**
+     * The raw points of record the teacher saved.
+     */
     final_score: number | null;
     flags: Array<string>;
     id: GradeDraftId;
@@ -3874,12 +3885,12 @@ export type GradeRequest = {
      */
     feedback?: string;
     /**
-     * Raw 0..100 before the late penalty (a manual override). Omitted: the
+     * Raw points `0..=max_points` before the penalties (a manual override). Omitted: the
      * stored override (or the 0 of an integrity-annulled attempt) is kept,
-     * otherwise the raw is computed from the item scores (earned / possible
-     * × 100). An explicit `null` drops the override and recomputes (BUG-174).
+     * otherwise the raw is the sum of the item scores. An explicit `null` drops the override and
+     * recomputes (BUG-174). Above the attempt's `max_points` is 422.
      */
-    final_score?: number | null;
+    final_points?: number | null;
     item_grades?: Array<ItemGradeRequest>;
 };
 
@@ -3916,9 +3927,17 @@ export type GradebookCell = {
      */
     due_at_override_unix: UnixTime | null;
     file_submission_id: FileSubmissionId | null;
+    /**
+     * The grade of record in points, out of `max_points` (a file task is out of 100).
+     */
+    final_points: number | null;
+    /**
+     * Percentage of `max_points`, derived from `final_points`.
+     */
     final_score: number | null;
     graded_at_unix: UnixTime | null;
     is_late: boolean;
+    max_points: number | null;
     /**
      * The newest attempt still awaiting grading (`pending`), if any - set
      * even when the grade of record is an older published attempt (BUG-175).
@@ -4068,23 +4087,30 @@ export type GradingBreakdown = {
     items?: Array<GradedItem>;
     needs_manual_review?: boolean;
     /**
-     * BUG-205: the teacher's explicit raw override - the score of record
-     * regardless of whether it equals the item-derived one. `None` = derived.
+     * BUG-205: the teacher's explicit raw override in points - the score of record
+     * regardless of whether it equals the item-derived one. `None` = derived (a raw a teacher adjusted before
+     * the flag existed got it in 20261116075663).
      */
     score_override?: number;
 };
 
 export type GradingEntry = {
     created_at_unix: UnixTime;
+    final_points: number | null;
     /**
      * Absent for a draft save that left the attempt pending.
      */
     final_score: number | null;
     graded_by: UserId | null;
     id: GradingEntryId;
+    max_points: number;
     overall_feedback: string;
     penalty_pct: number;
     published_at_unix: UnixTime | null;
+    raw_points: number;
+    /**
+     * Percentages of `max_points`, derived from `raw_points` / `final_points`.
+     */
     raw_score: number;
 };
 
@@ -6388,16 +6414,25 @@ export type ReviewItem = {
      */
     allowed_actions: Array<GradeAction>;
     attempt_number: number;
+    auto_points: number | null;
+    /**
+     * Percentages of `max_points`, derived from `auto_points` / `final_points`.
+     */
     auto_score: number | null;
     /**
      * The learner is a course member (trail run); a leaver's row is not a
      * target for per-learner actions such as a deadline extension (UX-167).
      */
     enrolled: boolean;
+    final_points: number | null;
     final_score: number | null;
     graded_at_unix: UnixTime | null;
     id: SubmissionId;
     is_late: boolean;
+    /**
+     * What the attempt is out of: its version's points.
+     */
+    max_points: number | null;
     /**
      * The learner is on the course staff - never a member (BUG-287), so
      * named as staff rather than as a leaver (UX-199).
@@ -7168,12 +7203,17 @@ export type StudentSubmission = {
     };
     assessment_id: AssessmentId;
     attempt_number: number;
+    auto_points: number | null;
+    /**
+     * Percentages of `max_points`, derived from `auto_points` / `final_points`.
+     */
     auto_score: number | null;
     auto_submit_reason: AutoSubmitReason | null;
     /**
      * Send back as `If-Match` on draft saves and submits.
      */
     draft_version: number;
+    final_points: number | null;
     final_score: number | null;
     graded_at_unix: UnixTime | null;
     grading: GradingBreakdown | null;
@@ -7185,6 +7225,11 @@ export type StudentSubmission = {
      */
     item_ids?: Array<AssessmentItemId>;
     late_penalty_pct: number | null;
+    /**
+     * What the attempt is out of (its version's points; absent on a draft) and its points, released like
+     * the percentages.
+     */
+    max_points: number | null;
     release_state: ReleaseState;
     /**
      * EXAM-CONSENT: when the learner accepted the exam rules; absent if never.
@@ -7498,22 +7543,34 @@ export type TeacherSubmission = {
     };
     assessment_id: AssessmentId;
     attempt_number: number;
+    auto_points: number | null;
+    /**
+     * Percentages of `max_points`, derived from `auto_points` / `final_points`.
+     */
     auto_score: number | null;
     auto_submit_reason: AutoSubmitReason | null;
     content_version: number;
     duration_seconds: number | null;
     feedback: Array<ItemFeedbackView>;
+    final_points: number | null;
     final_score: number | null;
     graded_at_unix: UnixTime | null;
+    /**
+     * Item scores in points of the attempt's version.
+     */
     grading: GradingBreakdown;
     id: SubmissionId;
     is_late: boolean;
     late_penalty_pct: number;
+    /**
+     * What the attempt is out of: its version's points.
+     */
+    max_points: number | null;
     policy_version: number;
     release_state: ReleaseState;
     /**
-     * The raw score of the latest grading entry when it is a manual
-     * override (differs from the item-derived one); `null` otherwise.
+     * The raw points of record when they are a manual override (`final_points` of a grade save);
+     * `null` when they are derived from the items.
      */
     score_override: number | null;
     started_at_unix: UnixTime | null;

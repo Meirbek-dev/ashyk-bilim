@@ -97,7 +97,8 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
 
     // Submit happens once; the second attempt sees no draft.
     let grading = serde_json::json!({ "items": [], "needs_manual_review": false });
-    let snapshot = serde_json::json!({});
+    // One 100-point item: the attempt is out of 100 points (`assessment_versions.max_points`).
+    let snapshot = serde_json::json!({ "items": [{ "id": "q1", "max_score": 100 }] });
     let version = ab_db::assessment_versions::ensure(&pool, assessment, &snapshot, &snapshot)
         .await
         .unwrap();
@@ -105,8 +106,8 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
         status: SubmissionStatus::Published,
         answers: &answers,
         auto_breakdown: &grading,
-        auto_score: Some(80.0),
-        final_score: Some(80.0),
+        auto_points: Some(80.0),
+        final_points: Some(80.0),
         is_late: false,
         late_penalty_pct: 0.0,
         violation_count: 0,
@@ -129,8 +130,8 @@ async fn one_open_draft_per_learner_and_submit_flow(pool: PgPool) {
         status: SubmissionStatus::Published,
         answers: &answers,
         auto_breakdown: &grading,
-        auto_score: Some(1.0),
-        final_score: Some(1.0),
+        auto_points: Some(1.0),
+        final_points: Some(1.0),
         is_late: false,
         late_penalty_pct: 0.0,
         violation_count: 0,
@@ -181,6 +182,21 @@ async fn grading_ledger_is_append_only(pool: PgPool) {
         .await
         .unwrap()
         .unwrap();
+    // Handed in against a 100-point version.
+    let snapshot = serde_json::json!({ "items": [{ "id": "q1", "max_score": 100 }] });
+    let version = ab_db::assessment_versions::ensure(&pool, assessment, &snapshot, &snapshot)
+        .await
+        .unwrap();
+    sqlx::query(
+        "UPDATE submissions SET status = 'submitted', submitted_at = now(), assessment_version_id = $2,
+                                items_snapshot = $3, policy_snapshot = $3, max_points = 100 WHERE id = $1",
+    )
+    .bind(submission.0)
+    .bind(version.0)
+    .bind(&snapshot)
+    .execute(&pool)
+    .await
+    .unwrap();
     let breakdown = serde_json::json!({ "items": [] });
     // The submission shows its latest entry (checked at commit).
     let mut tx = pool.begin().await.unwrap();
@@ -189,9 +205,9 @@ async fn grading_ledger_is_append_only(pool: PgPool) {
         NewGradingEntry {
             submission_id: submission,
             graded_by: None,
-            raw_score: 70.0,
+            raw_points: 70.0,
             penalty_pct: 10.0,
-            final_score: Some(63.0),
+            final_points: Some(63.0),
             raw_breakdown: &breakdown,
             effective_breakdown: &breakdown,
             overall_feedback: "ok",
@@ -201,7 +217,7 @@ async fn grading_ledger_is_append_only(pool: PgPool) {
     )
     .await
     .unwrap();
-    sqlx::query("UPDATE submissions SET final_score = 63 WHERE id = $1")
+    sqlx::query("UPDATE submissions SET final_points = 63 WHERE id = $1")
         .bind(submission.0)
         .execute(&mut *tx)
         .await
@@ -506,8 +522,8 @@ async fn hand_ins_read_their_version_and_the_violation_journal(pool: PgPool) {
                 status: SubmissionStatus::Pending,
                 answers: &answers,
                 auto_breakdown: &breakdown,
-                auto_score: None,
-                final_score: None,
+                auto_points: None,
+                final_points: None,
                 is_late: false,
                 late_penalty_pct: 0.0,
                 violation_count: 203,

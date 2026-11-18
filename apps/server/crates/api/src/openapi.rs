@@ -29,7 +29,7 @@ const NULL_CLEARS: &[(&str, &str)] = &[
     ("PreferencesPatch", "privacy"),
     ("PreferencesPatch", "notifications"),
     ("PreferencesPatch", "display"),
-    ("GradeRequest", "final_score"),
+    ("GradeRequest", "final_points"),
     ("UpdatePlatformRequest", "label"),
     ("UpdateInterventionRequest", "outcome"),
     ("UpdateInterventionRequest", "outcome_code"),

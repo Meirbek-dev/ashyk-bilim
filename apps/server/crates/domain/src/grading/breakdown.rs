@@ -1,5 +1,7 @@
-//! The grading breakdown stored on submissions and grading entries
-//! (legacy `GradingBreakdown`).
+//! The grading breakdown stored on submissions and grading entries (legacy `GradingBreakdown`).
+//!
+//! Item scores and the override are points of the attempt's version (REWRITE 5.8 item 10; they were shares of
+//! 100 before 20261116075663).
 
 use ab_core::id::AssessmentItemId;
 use serde::{Deserialize, Serialize};
@@ -105,8 +107,9 @@ pub struct GradingBreakdown {
     /// Teacher's overall comment.
     #[serde(default)]
     pub feedback: String,
-    /// BUG-205: the teacher's explicit raw override - the score of record
-    /// regardless of whether it equals the item-derived one. `None` = derived.
+    /// BUG-205: the teacher's explicit raw override in points - the score of record
+    /// regardless of whether it equals the item-derived one. `None` = derived (a raw a teacher adjusted before
+    /// the flag existed got it in 20261116075663).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schema(nullable = false)]
     pub score_override: Option<f64>,
@@ -124,25 +127,10 @@ impl GradingBreakdown {
         serde_json::from_value(value.clone()).unwrap_or_default()
     }
 
-    /// The earned share of the items' points in percent, unrounded (0
-    /// without points) - the item-derived raw before `round2`.
+    /// The items' earned points (unrounded) - the item-derived raw.
     #[must_use]
-    pub fn item_percent(&self) -> f64 {
-        let possible: f64 = self.items.iter().map(|i| i.max_score).sum();
-        let earned: f64 = self.items.iter().map(|i| i.score).sum();
-        if possible > 0.0 {
-            earned / possible * 100.0
-        } else {
-            0.0
-        }
-    }
-
-    /// BUG-329: a stored raw is a manual adjustment only when it differs
-    /// from the item-derived percent by a hundredth or more - a smaller gap
-    /// is the drift of 2-decimal storage, not a grader's decision.
-    #[must_use]
-    pub fn differs_from_items(&self, raw: f64) -> bool {
-        (raw - self.item_percent()).abs() >= 0.01
+    pub fn item_points(&self) -> f64 {
+        self.items.iter().map(|i| i.score).sum()
     }
 }
 
@@ -227,42 +215,7 @@ mod tests {
             feedback: String::new(),
         };
         assert_eq!(GradingBreakdown::from_value(&b.to_value()), b);
-        assert!((b.item_percent() - 75.0).abs() < 1e-9);
-    }
-
-    #[test]
-    fn rounding_drift_is_not_an_adjustment() {
-        let item = |score: f64| GradedItem {
-            item_id: AssessmentItemId::new(),
-            item_text: String::new(),
-            score,
-            max_score: 100.0 / 3.0,
-            correct: None,
-            feedback: String::new(),
-            feedback_code: None,
-            feedback_params: None,
-            needs_manual_review: false,
-            user_answer: serde_json::Value::Null,
-            correct_answer: serde_json::Value::Null,
-            explanation: None,
-        };
-        let b = GradingBreakdown {
-            items: vec![item(100.0 / 3.0), item(0.0), item(0.0)],
-            ..GradingBreakdown::default()
-        };
-        // 33.333…: the stored 33.33 / 33.34 are rounding, 33.35 is a choice.
-        assert!(!b.differs_from_items(33.33));
-        assert!(!b.differs_from_items(33.34));
-        assert!(b.differs_from_items(33.35));
-        // BUG-329's migrated Java exam: 99.83 stored over 99.333 of items.
-        let exam = GradingBreakdown {
-            items: std::iter::repeat_n(item(100.0 / 3.0), 149)
-                .chain([item(0.0)])
-                .collect(),
-            ..GradingBreakdown::default()
-        };
-        assert!(exam.differs_from_items(99.83));
-        assert!(!exam.differs_from_items(99.33));
+        assert!((b.item_points() - 1.5).abs() < 1e-9);
     }
 
     #[test]

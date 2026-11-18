@@ -5,7 +5,7 @@ import { formatNumber } from '#/shared/i18n/format'
 
 import { calibrated } from '../model/ai-draft'
 import { confidenceText, flagText } from './ai-labels'
-import { scoreText } from './labels'
+import { pointsText } from './labels'
 
 /**
  * The head of the «Черновик ИИ» card (B-GRD-43): the calibrated score, the raw AI score when calibration moved it, the
@@ -19,11 +19,13 @@ export function DraftSummary({ draft }: { draft: GradeDraftView }) {
         {m.grading_ai_draft_title()}
       </h2>
       <p className="text-sm tabular-nums">
-        {m.grading_ai_proposed({ score: scoreText(draft.calibrated_score) })}
+        {m.grading_ai_proposed({
+          score: pointsText(draft.calibrated_score, draft.max_score, draft.calibrated_percent),
+        })}
         {calibrated(draft.ai_score, draft.calibrated_score) ? (
           <span className="text-muted-foreground">
             {' · '}
-            {m.grading_ai_raw({ score: scoreText(draft.ai_score) })}
+            {m.grading_ai_raw({ score: pointsText(draft.ai_score, draft.max_score, draft.ai_percent) })}
           </span>
         ) : null}
         {draft.confidence === null ? null : (

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id AS \"id: GradingEntryId\", submission_id AS \"submission_id: SubmissionId\",\n                  graded_by AS \"graded_by: UserId\", raw_score::float8 AS \"raw_score!\", penalty_pct::float8 AS \"penalty_pct!\", final_score::float8 AS \"final_score?\",\n                  raw_breakdown, effective_breakdown, overall_feedback,\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\", returned,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM grading_entries WHERE submission_id = $1 ORDER BY revision DESC",
+  "query": "SELECT id AS \"id: GradingEntryId\", submission_id AS \"submission_id: SubmissionId\",\n                  graded_by AS \"graded_by: UserId\", raw_score::float8 AS \"raw_score!\", penalty_pct::float8 AS \"penalty_pct!\", final_score::float8 AS \"final_score?\",\n                  COALESCE(max_points, 0)::float8 AS \"max_points!\", COALESCE(raw_points, 0)::float8 AS \"raw_points!\",\n                  final_points::float8 AS \"final_points?\",\n                  raw_breakdown, effective_breakdown, overall_feedback,\n                  (extract(epoch FROM published_at))::bigint AS \"published_at?\", returned,\n                  (extract(epoch FROM created_at))::bigint AS \"created_at!\"\n           FROM grading_entries WHERE submission_id = $1 ORDER BY revision DESC LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -56,6 +56,24 @@
       },
       {
         "ordinal": 6,
+        "name": "max_points!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 7,
+        "name": "raw_points!",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 8,
+        "name": "final_points?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
         "name": "raw_breakdown",
         "type_info": "Jsonb",
         "origin": {
@@ -66,7 +84,7 @@
         }
       },
       {
-        "ordinal": 7,
+        "ordinal": 10,
         "name": "effective_breakdown",
         "type_info": "Jsonb",
         "origin": {
@@ -77,7 +95,7 @@
         }
       },
       {
-        "ordinal": 8,
+        "ordinal": 11,
         "name": "overall_feedback",
         "type_info": "Text",
         "origin": {
@@ -88,13 +106,13 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 12,
         "name": "published_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 10,
+        "ordinal": 13,
         "name": "returned",
         "type_info": "Bool",
         "origin": {
@@ -105,7 +123,7 @@
         }
       },
       {
-        "ordinal": 11,
+        "ordinal": 14,
         "name": "created_at!",
         "type_info": "Int8",
         "origin": "Expression"
@@ -123,6 +141,9 @@
       null,
       null,
       null,
+      null,
+      null,
+      null,
       false,
       false,
       false,
@@ -131,5 +152,5 @@
       null
     ]
   },
-  "hash": "eaae8c2d6c981b16c54b8a7388310e128fd4db661bf0be175f1f991749a81bbc"
+  "hash": "07cafffb16efbc4692e64e4917026d49fee1156dd85a0657123e5b84022333e4"
 }

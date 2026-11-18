@@ -232,7 +232,7 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
         app.patch_as(
             &alice,
             &format!("/api/v2/submissions/{bob_sub}/grade"),
-            &serde_json::json!({ "action": "save", "final_score": 100 }),
+            &serde_json::json!({ "action": "save", "final_points": 20 }),
         )
         .await
         .status,
@@ -410,7 +410,7 @@ async fn review_grade_publish_return_and_release(pool: PgPool) {
             &teacher,
             &alice_sub,
             Some("2"),
-            &serde_json::json!({ "action": "publish", "final_score": 95 }),
+            &serde_json::json!({ "action": "publish", "final_points": 19 }),
         ))
         .await;
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
@@ -754,7 +754,7 @@ async fn teacher_grade_applies_the_attempt_cap(pool: PgPool) {
             &teacher,
             &first,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+            &serde_json::json!({ "action": "publish", "final_points": 20 }),
         ))
         .await;
     assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
@@ -765,7 +765,7 @@ async fn teacher_grade_applies_the_attempt_cap(pool: PgPool) {
             &teacher,
             &second,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+            &serde_json::json!({ "action": "publish", "final_points": 20 }),
         ))
         .await;
     assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
@@ -797,7 +797,7 @@ async fn gradebook_reports_the_best_published_attempt(pool: PgPool) {
                 &teacher,
                 &sub,
                 Some("1"),
-                &serde_json::json!({ "action": "publish", "final_score": score }),
+                &serde_json::json!({ "action": "publish", "final_points": f64::from(score) / 5.0 }),
             ))
             .await;
         assert_eq!(published.status, StatusCode::OK, "{}", published.text());
@@ -862,7 +862,7 @@ async fn review_queue_sorts_across_cursor_pages(pool: PgPool) {
                     &teacher,
                     &sub,
                     Some("1"),
-                    &serde_json::json!({ "action": "publish", "final_score": score }),
+                    &serde_json::json!({ "action": "publish", "final_points": f64::from(score) / 5.0 }),
                 ))
                 .await;
             assert_eq!(published.status, StatusCode::OK, "{}", published.text());
@@ -1023,16 +1023,17 @@ async fn override_survives_a_feedback_only_republish(pool: PgPool) {
             &teacher,
             &sub,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 55, "item_grades": items(2) }),
+            &serde_json::json!({ "action": "publish", "final_points": 11, "item_grades": items(2) }),
         ))
         .await;
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
     assert_eq!(published.json()["final_score"], 55.0);
-    assert_eq!(published.json()["score_override"], 55.0);
+    // The override is points of the quiz's 20: 11 is 55 %.
+    assert_eq!(published.json()["score_override"], 11.0);
     let view = app
         .get_as(&teacher, &format!("/api/v2/submissions/{sub}/review"))
         .await;
-    assert_eq!(view.json()["score_override"], 55.0, "{}", view.text());
+    assert_eq!(view.json()["score_override"], 11.0, "{}", view.text());
 
     // Feedback-only republish, every item re-sent unchanged: 55 stays.
     let republished = app
@@ -1053,7 +1054,7 @@ async fn override_survives_a_feedback_only_republish(pool: PgPool) {
             &teacher,
             &sub,
             Some("3"),
-            &serde_json::json!({ "action": "publish", "final_score": null, "item_grades": items(2) }),
+            &serde_json::json!({ "action": "publish", "final_points": null, "item_grades": items(2) }),
         ))
         .await;
     assert_eq!(dropped.status, StatusCode::OK, "{}", dropped.text());
@@ -1138,7 +1139,7 @@ async fn annulled_attempt_keeps_zero_unless_overridden(pool: PgPool) {
             &teacher,
             &sub,
             Some("2"),
-            &serde_json::json!({ "action": "publish", "feedback": "ещё", "final_score": null, "item_grades": items }),
+            &serde_json::json!({ "action": "publish", "feedback": "ещё", "final_points": null, "item_grades": items }),
         ))
         .await;
     assert_eq!(again.status, StatusCode::OK, "{}", again.text());
@@ -1148,7 +1149,7 @@ async fn annulled_attempt_keeps_zero_unless_overridden(pool: PgPool) {
             &teacher,
             &sub,
             Some("3"),
-            &serde_json::json!({ "action": "publish", "final_score": 40 }),
+            &serde_json::json!({ "action": "publish", "final_points": 8 }),
         ))
         .await;
     assert_eq!(overridden.status, StatusCode::OK, "{}", overridden.text());
@@ -1263,7 +1264,7 @@ async fn gradebook_flags_a_pending_attempt_behind_the_grade_of_record(pool: PgPo
             &teacher,
             &first,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 80 }),
+            &serde_json::json!({ "action": "publish", "final_points": 16 }),
         ))
         .await;
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
@@ -1308,7 +1309,7 @@ async fn pending_retake_never_outranks_the_released_grade(pool: PgPool) {
                 &teacher,
                 &first,
                 Some("1"),
-                &serde_json::json!({ "action": "publish", "final_score": score }),
+                &serde_json::json!({ "action": "publish", "final_points": f64::from(score) / 5.0 }),
             ))
             .await;
         assert_eq!(published.status, StatusCode::OK, "{}", published.text());
@@ -1376,16 +1377,16 @@ async fn returned_or_unreleased_retake_never_outranks_the_released_grade(pool: P
     for (sub, body) in [
         (
             &first,
-            serde_json::json!({ "action": "publish", "final_score": 30 }),
+            serde_json::json!({ "action": "publish", "final_points": 6 }),
         ),
         (
             &second,
-            serde_json::json!({ "action": "return", "final_score": 60, "feedback": "  
+            serde_json::json!({ "action": "return", "final_points": 12, "feedback": "  
  " }),
         ),
         (
             &third,
-            serde_json::json!({ "action": "save", "final_score": 100 }),
+            serde_json::json!({ "action": "save", "final_points": 20 }),
         ),
     ] {
         let graded = app.send(grade(&teacher, sub, Some("1"), &body)).await;
@@ -1460,7 +1461,7 @@ async fn publish_only_keeps_the_stored_raw_score_and_feedback(pool: PgPool) {
             &teacher,
             &alice_sub,
             Some("1"),
-            &serde_json::json!({ "action": "save", "final_score": 95, "feedback": "скрытая" }),
+            &serde_json::json!({ "action": "save", "final_points": 19, "feedback": "скрытая" }),
         ))
         .await;
     assert_eq!(saved.status, StatusCode::OK, "{}", saved.text());
@@ -1526,7 +1527,7 @@ async fn publish_only_keeps_the_stored_raw_score_and_feedback(pool: PgPool) {
             &teacher,
             &draft_id,
             Some("1"),
-            &serde_json::json!({ "action": "save", "final_score": 10 }),
+            &serde_json::json!({ "action": "save", "final_points": 2 }),
         ))
         .await;
     assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.text());
@@ -1560,7 +1561,7 @@ async fn deadline_extension_clears_the_late_penalty_of_graded_work(pool: PgPool)
             &teacher,
             &alice_sub,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+            &serde_json::json!({ "action": "publish", "final_points": 20 }),
         ))
         .await;
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
@@ -1658,7 +1659,7 @@ async fn override_waiver_settles_late_work(pool: PgPool) {
             &teacher,
             &alice_sub,
             Some(&version),
-            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+            &serde_json::json!({ "action": "publish", "final_points": 20 }),
         ))
         .await;
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
@@ -1687,7 +1688,7 @@ async fn revoked_or_deleted_waiver_reapplies_the_late_penalty(pool: PgPool) {
             &teacher,
             &alice_sub,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+            &serde_json::json!({ "action": "publish", "final_points": 20 }),
         ))
         .await;
     assert_eq!(
@@ -1762,7 +1763,7 @@ async fn waived_late_hand_in(
             teacher,
             &sub,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+            &serde_json::json!({ "action": "publish", "final_points": 20 }),
         ))
         .await;
     assert_eq!(
@@ -1939,7 +1940,7 @@ async fn a_policy_change_settles_every_hand_in(pool: PgPool) {
                 &teacher,
                 &sub,
                 Some("1"),
-                &serde_json::json!({ "action": "publish", "final_score": 100 }),
+                &serde_json::json!({ "action": "publish", "final_points": 20 }),
             ))
             .await;
         assert_eq!(
@@ -2052,7 +2053,7 @@ async fn an_attempt_penalty_change_rescores_hand_ins(pool: PgPool) {
                 &teacher,
                 &sub,
                 Some("1"),
-                &serde_json::json!({ "action": "publish", "final_score": 100 }),
+                &serde_json::json!({ "action": "publish", "final_points": 20 }),
             ))
             .await;
         assert_eq!(
@@ -2200,7 +2201,7 @@ async fn a_grader_may_not_grade_their_own_attempt(pool: PgPool) {
             &lena,
             &own,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+            &serde_json::json!({ "action": "publish", "final_points": 20 }),
         ))
         .await;
     assert_eq!(graded.status, StatusCode::FORBIDDEN, "{}", graded.text());
@@ -2209,7 +2210,7 @@ async fn a_grader_may_not_grade_their_own_attempt(pool: PgPool) {
             &teacher,
             &own,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 60 }),
+            &serde_json::json!({ "action": "publish", "final_points": 12 }),
         ))
         .await;
     assert_eq!(by_teacher.status, StatusCode::OK, "{}", by_teacher.text());
@@ -2786,7 +2787,7 @@ async fn gradebook_carries_file_submission_cells_and_exports_csv(pool: PgPool) {
             &teacher,
             &sub_id,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 95 }),
+            &serde_json::json!({ "action": "publish", "final_points": 19 }),
         ))
         .await;
     assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
@@ -2992,12 +2993,16 @@ async fn grade_path_edges_over_http(pool: PgPool) {
             &teacher,
             &first,
             Some("1"),
-            &serde_json::json!({ "action": "save", "final_score": 101 }),
+            &serde_json::json!({ "action": "save", "final_points": 20.2 }),
         ))
         .await;
     assert_eq!(over_final.status, StatusCode::UNPROCESSABLE_ENTITY);
-    assert_eq!(over_final.json()["field_errors"][0]["field"], "final_score");
-    assert_eq!(over_final.json()["field_errors"][0]["code"], "invalid");
+    // Points above the attempt's 20.
+    assert_eq!(
+        over_final.json()["field_errors"][0]["field"],
+        "final_points"
+    );
+    assert_eq!(over_final.json()["field_errors"][0]["code"], "range");
 
     let due = now_unix() + 86_400;
     let no_users = app
@@ -3073,7 +3078,7 @@ async fn grade_path_edges_over_http(pool: PgPool) {
             &teacher,
             &second,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+            &serde_json::json!({ "action": "publish", "final_points": 20 }),
         ))
         .await;
     assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
@@ -3200,13 +3205,13 @@ async fn override_equal_to_the_derived_score_is_a_score_of_record(pool: PgPool) 
             &teacher,
             &alice_sub,
             Some("1"),
-            &serde_json::json!({ "action": "save", "final_score": 50 }),
+            &serde_json::json!({ "action": "save", "final_points": 10 }),
         ))
         .await;
     assert_eq!(overridden.status, StatusCode::OK, "{}", overridden.text());
     assert_eq!(overridden.json()["status"], "graded");
     assert_eq!(overridden.json()["final_score"], 50.0);
-    assert_eq!(overridden.json()["score_override"], 50.0);
+    assert_eq!(overridden.json()["score_override"], 10.0);
     assert_eq!(overridden.json()["grading"]["needs_manual_review"], true);
 
     let feedback_only = app
@@ -3225,7 +3230,7 @@ async fn override_equal_to_the_derived_score_is_a_score_of_record(pool: PgPool) 
     );
     assert_eq!(feedback_only.json()["status"], "graded");
     assert_eq!(feedback_only.json()["final_score"], 50.0);
-    assert_eq!(feedback_only.json()["score_override"], 50.0);
+    assert_eq!(feedback_only.json()["score_override"], 10.0);
 
     let released = app
         .post_as(
@@ -3634,7 +3639,7 @@ async fn grader_actions_never_enrol_a_leaver(pool: PgPool) {
             &teacher,
             &alice_sub,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 80 }),
+            &serde_json::json!({ "action": "publish", "final_points": 16 }),
         ))
         .await;
     assert_eq!(published.status, StatusCode::OK, "{}", published.text());
@@ -3894,7 +3899,7 @@ async fn annulled_attempt_is_a_score_of_record(pool: PgPool) {
             &teacher,
             sub,
             Some(&review.json()["version"].to_string()),
-            &serde_json::json!({ "action": "publish", "final_score": 40 }),
+            &serde_json::json!({ "action": "publish", "final_points": 8 }),
         ))
         .await;
     assert_eq!(overridden.status, StatusCode::OK, "{}", overridden.text());
@@ -3904,7 +3909,7 @@ async fn annulled_attempt_is_a_score_of_record(pool: PgPool) {
             &teacher,
             sub,
             Some(&overridden.json()["version"].to_string()),
-            &serde_json::json!({ "action": "publish", "final_score": null }),
+            &serde_json::json!({ "action": "publish", "final_points": null }),
         ))
         .await;
     assert_eq!(cleared.status, StatusCode::OK, "{}", cleared.text());
@@ -3951,7 +3956,7 @@ async fn deadline_extension_racing_a_publish_settles_on_the_unpenalised_score(po
                 &teacher,
                 &sub,
                 Some("1"),
-                &serde_json::json!({ "action": "publish", "final_score": 80 }),
+                &serde_json::json!({ "action": "publish", "final_points": 16 }),
             );
             let saved = if worker_first {
                 let (extended, saved) = tokio::join!(extend, app.send(publish));
@@ -3972,7 +3977,7 @@ async fn deadline_extension_racing_a_publish_settles_on_the_unpenalised_score(po
                         &teacher,
                         &sub,
                         Some(&version),
-                        &serde_json::json!({ "action": "publish", "final_score": 80 }),
+                        &serde_json::json!({ "action": "publish", "final_points": 16 }),
                     ))
                     .await;
                 assert_eq!(retried.status, StatusCode::OK, "{}", retried.text());
@@ -4042,7 +4047,9 @@ async fn item_added_after_a_republish_is_weighted_into_the_set(pool: PgPool) {
         .await;
     assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
     let body = graded.json();
-    assert_eq!(body["final_score"], 83.33, "{body}");
+    // 25 of the set's 30 points, scaled to the version's 20: 16.67 points, 83.35 %.
+    assert_eq!(body["final_points"], 16.67, "{body}");
+    assert_eq!(body["final_score"], 83.35, "{body}");
     let late = body["grading"]["items"]
         .as_array()
         .unwrap()
@@ -4050,8 +4057,8 @@ async fn item_added_after_a_republish_is_weighted_into_the_set(pool: PgPool) {
         .find(|i| i["item_id"] == late_id)
         .unwrap()
         .clone();
-    assert_eq!(late["max_score"], 33.33, "{late}");
-    assert_eq!(late["score"], 16.66, "{late}");
+    assert_eq!(late["max_score"], 10.0, "{late}");
+    assert_eq!(late["score"], 5.0, "{late}");
 }
 
 /// BUG-225: an item whose `max_score` was set to 0 while the quiz was
@@ -4159,12 +4166,12 @@ async fn publish_all_racing_a_save_or_return_never_releases_the_stale_row(pool: 
                     &teacher,
                     &sub,
                     Some("1"),
-                    &serde_json::json!({ "action": "save", "final_score": 57 }),
+                    &serde_json::json!({ "action": "save", "final_points": 11.4 }),
                 ))
                 .await;
             assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
             let body = if action == "save" {
-                serde_json::json!({ "action": "save", "final_score": 80 })
+                serde_json::json!({ "action": "save", "final_points": 16 })
             } else {
                 serde_json::json!({ "action": "return", "feedback": "redo" })
             };
@@ -4258,7 +4265,7 @@ async fn publish_dropped_after_the_commit_still_projects(pool: PgPool) {
             &teacher,
             &single,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 80 }),
+            &serde_json::json!({ "action": "publish", "final_points": 16 }),
         )),
         async || row_published(&single).await,
         |response| assert_eq!(response.status, StatusCode::OK, "{}", response.text()),
@@ -4276,7 +4283,7 @@ async fn publish_dropped_after_the_commit_still_projects(pool: PgPool) {
             &teacher,
             &bulk,
             Some("1"),
-            &serde_json::json!({ "action": "save", "final_score": 57 }),
+            &serde_json::json!({ "action": "save", "final_points": 11.4 }),
         ))
         .await;
     assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
@@ -4444,7 +4451,7 @@ async fn staff_attempts_are_previews(pool: PgPool) {
         .execute(&app.pool)
         .await
         .unwrap();
-    let body = serde_json::json!({ "action": "save", "final_score": 50 });
+    let body = serde_json::json!({ "action": "save", "final_points": 10 });
     let graded = app.send(grade(&teacher, &preview, Some("1"), &body)).await;
     assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());
     let projected: i64 = sqlx::query_scalar(
@@ -4613,7 +4620,7 @@ async fn dropped_override_writes_still_settle_and_audit(pool: PgPool) {
             &teacher,
             &sub,
             Some("1"),
-            &serde_json::json!({ "action": "publish", "final_score": 100 }),
+            &serde_json::json!({ "action": "publish", "final_points": 20 }),
         ))
         .await;
     assert_eq!(
@@ -4713,7 +4720,7 @@ async fn failed_quiz_with_attempts_left_offers_the_retake(pool: PgPool) {
                 &teacher,
                 &attempt,
                 Some("1"),
-                &serde_json::json!({ "action": "publish", "final_score": 30 }),
+                &serde_json::json!({ "action": "publish", "final_points": 6 }),
             ))
             .await;
         assert_eq!(published.status, StatusCode::OK, "{}", published.text());

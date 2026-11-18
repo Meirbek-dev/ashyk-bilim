@@ -72,7 +72,7 @@ Compilation uses the committed SQLx cache by default; `prepare` and `sqlx-check`
   (UX-311). Every `ON DELETE CASCADE` onto someone's work is listed with its reason in
   `crates/db/tests/cascade_audit.rs`. New routes and cascades fail until classified there.
 - Grading math keeps its property tests (`crates/domain/src/grading/grader.rs`, proptest) green: bounds,
-  single-answer multi-pick = 0, monotone partial credit, shuffle invariance, shares sum to 100.
+  single-answer multi-pick = 0, monotone partial credit, shuffle invariance, points sum to the version's total.
 - Upload caps live only in `policy` of `crates/domain/src/files/uploads.rs`; the contract exports them
   (`x-upload-policy`) and `just contract` regenerates the web's constants.
 - Static SQL uses `query!`/`query_as!`; dynamic SQL uses `QueryBuilder`. `AssertSqlSafe` needs

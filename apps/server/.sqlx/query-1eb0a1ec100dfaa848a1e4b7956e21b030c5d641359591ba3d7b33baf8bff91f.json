@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT count(*) AS \"total!\",\n                  count(*) FILTER (WHERE status = 'ready') AS \"ready!\",\n                  count(*) FILTER (WHERE agreement = 'exact') AS \"applied_exact!\",\n                  count(*) FILTER (WHERE agreement = 'adjusted') AS \"applied_adjusted!\",\n                  count(*) FILTER (WHERE status = 'discarded') AS \"discarded!\",\n                  count(*) FILTER (WHERE status = 'failed') AS \"failed!\",\n                  (avg(abs(final_score - calibrated_score))\n                      FILTER (WHERE status = 'applied' AND final_score IS NOT NULL\n                              AND calibrated_score IS NOT NULL))::float8 AS \"mean_abs_delta?\"\n           FROM ai_grade_drafts\n           WHERE course_id = $1 AND status <> 'superseded'\n             AND created_at >= to_timestamp($2::bigint)",
+  "query": "SELECT count(*) AS \"total!\",\n                  count(*) FILTER (WHERE status = 'ready') AS \"ready!\",\n                  count(*) FILTER (WHERE agreement = 'exact') AS \"applied_exact!\",\n                  count(*) FILTER (WHERE agreement = 'adjusted') AS \"applied_adjusted!\",\n                  count(*) FILTER (WHERE status = 'discarded') AS \"discarded!\",\n                  count(*) FILTER (WHERE status = 'failed') AS \"failed!\",\n                  (avg(abs(final_score - calibrated_score) * 100 / max_score)\n                      FILTER (WHERE status = 'applied' AND final_score IS NOT NULL\n                              AND calibrated_score IS NOT NULL AND max_score > 0))::float8 AS \"mean_abs_delta?\"\n           FROM ai_grade_drafts\n           WHERE course_id = $1 AND status <> 'superseded'\n             AND created_at >= to_timestamp($2::bigint)",
   "describe": {
     "columns": [
       {
@@ -62,5 +62,5 @@
       null
     ]
   },
-  "hash": "1aabc85328b725459b43cdb91ba507c70d01d4768343ac630318e1c4318fb01c"
+  "hash": "1eb0a1ec100dfaa848a1e4b7956e21b030c5d641359591ba3d7b33baf8bff91f"
 }

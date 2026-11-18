@@ -528,7 +528,10 @@ async fn grade_drafts_are_verified_approved_and_calibrated(pool: PgPool) {
         .await,
     );
     assert_eq!(draft["status"], "ready", "{draft}");
-    assert_eq!(draft["ai_score"], 80.0);
+    // Points of the 10-point work, the percentage beside (REWRITE 5.8 item 10).
+    assert_eq!(draft["ai_score"], 8.0);
+    assert_eq!(draft["max_score"], 10.0);
+    assert_eq!(draft["ai_percent"], 80.0);
     let criterion = &draft["proposal"]["parts"][0]["criteria"][0];
     assert_eq!(criterion["ai_score"], 8.0);
     // Only the quote that is really in the answer counts.
@@ -580,12 +583,19 @@ async fn grade_drafts_are_verified_approved_and_calibrated(pool: PgPool) {
     );
     assert_eq!(draft["status"], "applied");
     assert_eq!(draft["agreement"], "exact");
-    assert_eq!(draft["final_score"], 80.0);
+    assert_eq!(draft["final_score"], 8.0);
+    assert_eq!(draft["final_percent"], 80.0);
     let review = created(
         &app.get_as(&teacher, &format!("/api/v2/submissions/{sub_id}/review"))
             .await,
     );
     assert_eq!(review["status"], "published", "{review}");
+    // The accepted draft is the grade in points: 8 of 10, 80 %.
+    assert_eq!(review["max_points"], 10.0, "{review}");
+    assert_eq!(review["final_points"], 8.0, "{review}");
+    assert_eq!(review["final_score"], 80.0, "{review}");
+    assert_eq!(review["grading"]["items"][0]["score"], 8.0, "{review}");
+    assert_eq!(review["grading"]["items"][0]["max_score"], 10.0, "{review}");
     let corrections: i64 =
         sqlx::query_scalar("SELECT count(*) FROM ai_grade_corrections WHERE teacher_score = 8")
             .fetch_one(&app.pool)

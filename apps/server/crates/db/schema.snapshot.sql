@@ -1220,6 +1220,7 @@ constraint submissions submissions_is_late_not_null NOT NULL is_late
 constraint submissions submissions_items_snapshot_check CHECK (((items_snapshot IS NULL) OR (jsonb_typeof(items_snapshot) = 'object'::text)))
 constraint submissions submissions_late_penalty_pct_not_null NOT NULL late_penalty_pct
 constraint submissions submissions_pkey PRIMARY KEY (id)
+constraint submissions submissions_points_check CHECK ((((status = 'draft'::text) OR (max_points IS NOT NULL)) AND ((auto_points IS NULL) OR ((auto_points)::numeric <= (max_points)::numeric)) AND ((final_points IS NULL) OR ((final_points)::numeric <= (max_points)::numeric))))
 constraint submissions submissions_policy_snapshot_check CHECK (((policy_snapshot IS NULL) OR (jsonb_typeof(policy_snapshot) = 'object'::text)))
 constraint submissions submissions_preview_not_null NOT NULL preview
 constraint submissions submissions_selected_item_ids_check CHECK (((selected_item_ids IS NULL) OR uuid_list_ok(selected_item_ids, 200)))
@@ -1701,6 +1702,45 @@ BEGIN
     END IF;
     RETURN NULL;
 END $function$
+function CREATE OR REPLACE FUNCTION public.breakdown_in_points(breakdown jsonb, points jsonb, override_points numeric)
+ RETURNS jsonb
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+    SELECT CASE
+        WHEN breakdown IS NULL OR jsonb_typeof(breakdown) <> 'object' THEN breakdown
+        ELSE (CASE WHEN override_points IS NULL THEN breakdown - 'score_override'
+                   ELSE breakdown || jsonb_build_object('score_override', override_points) END)
+             || CASE WHEN jsonb_typeof(breakdown->'items') = 'array' THEN jsonb_build_object('items', COALESCE((
+                    SELECT jsonb_agg(CASE
+                        WHEN NOT points ? (e.item->>'item_id') OR jsonb_typeof(e.item->'max_score') <> 'number'
+                            THEN e.item
+                        ELSE e.item || jsonb_build_object(
+                            'max_score', (points->>(e.item->>'item_id'))::numeric,
+                            'score', CASE WHEN (e.item->>'max_score')::numeric > 0
+                                               AND jsonb_typeof(e.item->'score') = 'number'
+                                          THEN round((e.item->>'score')::numeric
+                                                     * (points->>(e.item->>'item_id'))::numeric
+                                                     / (e.item->>'max_score')::numeric, 2)
+                                          ELSE 0 END)
+                        END ORDER BY e.n)
+                      FROM jsonb_array_elements(breakdown->'items') WITH ORDINALITY AS e(item, n)), '[]'::jsonb))
+                ELSE '{}'::jsonb END
+    END
+$function$
+function CREATE OR REPLACE FUNCTION public.breakdown_item_percent(breakdown jsonb)
+ RETURNS numeric
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+    SELECT CASE WHEN sum(m) > 0 THEN sum(s) / sum(m) * 100 ELSE 0 END
+      FROM (SELECT CASE WHEN jsonb_typeof(i->'score') = 'number' THEN (i->>'score')::numeric ELSE 0 END AS s,
+                   CASE WHEN jsonb_typeof(i->'max_score') = 'number' THEN (i->>'max_score')::numeric ELSE 0 END AS m
+              FROM jsonb_array_elements(CASE WHEN jsonb_typeof(breakdown->'items') = 'array'
+                                             THEN breakdown->'items' ELSE '[]'::jsonb END) i) t
+$function$
 function CREATE OR REPLACE FUNCTION public.certificate_users_frozen()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1877,6 +1917,12 @@ BEGIN
     RETURN level;
 END
 $function$
+function CREATE OR REPLACE FUNCTION public.entry_override_points(breakdown jsonb, raw_percent numeric, max numeric)
+ RETURNS numeric
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+RETURN CASE WHEN (json_number((breakdown -> 'score_override'::text)) IS NOT NULL) THEN points_of_percent(json_number((breakdown -> 'score_override'::text)), max) WHEN ((jsonb_typeof((breakdown -> 'items'::text)) = 'array'::text) AND (jsonb_array_length((breakdown -> 'items'::text)) > 0) AND (abs((raw_percent - breakdown_item_percent(breakdown))) >= 0.01)) THEN points_of_percent(raw_percent, max) ELSE NULL::numeric END
 function CREATE OR REPLACE FUNCTION public.grading_entries_current_check()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -1913,6 +1959,31 @@ BEGIN
     RETURN OLD;
 END;
 $function$
+function CREATE OR REPLACE FUNCTION public.grading_entries_points()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+DECLARE
+    sub record;
+BEGIN
+    IF NEW.raw_score IS NOT NULL THEN
+        -- The release before: percentages of the attempt and a share-of-100 breakdown.
+        SELECT COALESCE(s.max_points, submission_max_points(s.assessment_version_id, s.assessment_id)) AS max,
+               submission_item_points(s.assessment_version_id, s.assessment_id) AS points
+          INTO sub FROM submissions s WHERE s.id = NEW.submission_id;
+        NEW.max_points := sub.max;
+        NEW.raw_points := points_of_percent(NEW.raw_score, sub.max);
+        NEW.final_points := points_of_percent(NEW.final_score, sub.max);
+        NEW.raw_breakdown := breakdown_in_points(NEW.raw_breakdown, sub.points,
+            points_of_percent(json_number(NEW.raw_breakdown->'score_override'), sub.max));
+        NEW.effective_breakdown := breakdown_in_points(NEW.effective_breakdown, sub.points,
+            entry_override_points(NEW.effective_breakdown, NEW.raw_score, sub.max));
+    END IF;
+    NEW.raw_score := COALESCE(percent_of_points(NEW.raw_points, NEW.max_points), 0);
+    NEW.final_score := percent_of_points(NEW.final_points, NEW.max_points);
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.has_course_role(p_course uuid, p_user uuid)
  RETURNS boolean
  LANGUAGE sql
@@ -1968,11 +2039,16 @@ BEGIN
     RETURN NEW;
 END;
 $function$
+function CREATE OR REPLACE FUNCTION public.json_number(value jsonb)
+ RETURNS numeric
+ LANGUAGE sql
+ IMMUTABLE PARALLEL SAFE
+RETURN CASE WHEN (jsonb_typeof(value) = 'number'::text) THEN ((value #>> '{}'::text[]))::numeric ELSE NULL::numeric END
 function CREATE OR REPLACE FUNCTION public.percent_of_points(points numeric, max_points numeric)
  RETURNS numeric
  LANGUAGE sql
  IMMUTABLE PARALLEL SAFE
-RETURN CASE WHEN (max_points > (0)::numeric) THEN round(((points * (100)::numeric) / max_points), 2) ELSE NULL::numeric END
+RETURN CASE WHEN (max_points > (0)::numeric) THEN round(((points * (100)::numeric) / max_points), 2) WHEN (max_points = (0)::numeric) THEN (points * (0)::numeric) ELSE NULL::numeric END
 function CREATE OR REPLACE FUNCTION public.pin_function_search_paths()
  RETURNS integer
  LANGUAGE plpgsql
@@ -2162,27 +2238,51 @@ DECLARE
     sub record;
     entry record;
 BEGIN
-    SELECT final_score INTO sub FROM submissions WHERE id = p_submission;
+    SELECT final_points INTO sub FROM submissions WHERE id = p_submission;
     IF NOT FOUND THEN
         RETURN;
     END IF;
-    SELECT final_score INTO entry FROM grading_entries
-    WHERE submission_id = p_submission ORDER BY revision DESC LIMIT 1;
+    SELECT final_points INTO entry FROM grading_entries
+    WHERE submission_id = p_submission ORDER BY id DESC LIMIT 1;
     IF NOT FOUND THEN
         RETURN;
     END IF;
-    IF sub.final_score IS DISTINCT FROM entry.final_score THEN
-        RAISE EXCEPTION 'submission % final_score % differs from its latest grade entry (%)',
-            p_submission, sub.final_score, entry.final_score
+    IF sub.final_points IS DISTINCT FROM entry.final_points THEN
+        RAISE EXCEPTION 'submission % final_points % differs from its latest grade entry (%)',
+            p_submission, sub.final_points, entry.final_points
             USING ERRCODE = 'check_violation';
     END IF;
-END;
-$function$
+END $function$
 function CREATE OR REPLACE FUNCTION public.submission_is_file_hand_in(p_submission uuid)
  RETURNS boolean
  LANGUAGE sql
  STABLE PARALLEL SAFE
 RETURN (EXISTS (SELECT 1 FROM (submissions s JOIN file_submissions f ON ((f.id = s.assessment_id))) WHERE (s.id = submission_is_file_hand_in.p_submission)))
+function CREATE OR REPLACE FUNCTION public.submission_item_points(p_version uuid, p_assessment uuid)
+ RETURNS jsonb
+ LANGUAGE sql
+ STABLE PARALLEL SAFE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+    SELECT COALESCE(jsonb_object_agg(id, points), '{}'::jsonb)
+      FROM (SELECT DISTINCT ON (id) id, points
+              FROM (SELECT i->>'id' AS id, greatest((i->>'max_score')::numeric, 0) AS points, 0 AS rank
+                      FROM assessment_versions v,
+                           jsonb_array_elements(CASE WHEN jsonb_typeof(v.items->'items') = 'array'
+                                                     THEN v.items->'items' ELSE '[]'::jsonb END) i
+                     WHERE v.id = p_version AND jsonb_typeof(i->'max_score') = 'number'
+                       AND jsonb_typeof(i->'id') = 'string'
+                    UNION ALL
+                    SELECT i.id::text, greatest(i.max_score, 0), 1 FROM assessment_items i
+                     WHERE i.assessment_id = p_assessment) s
+             ORDER BY id, rank) d
+$function$
+function CREATE OR REPLACE FUNCTION public.submission_max_points(p_version uuid, p_assessment uuid)
+ RETURNS numeric
+ LANGUAGE sql
+ STABLE PARALLEL SAFE
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+RETURN COALESCE((SELECT v.max_points FROM assessment_versions v WHERE (v.id = submission_max_points.p_version)), NULLIF((SELECT round(sum(GREATEST((i.max_score)::numeric, (0)::numeric)), 2) AS round FROM assessment_items i WHERE (i.assessment_id = submission_max_points.p_assessment)), (0)::numeric), (100)::numeric)
 function CREATE OR REPLACE FUNCTION public.submission_violation_log(p_submission uuid)
  RETURNS jsonb
  LANGUAGE sql
@@ -2204,6 +2304,44 @@ BEGIN
     RETURN NULL;
 END;
 $function$
+function CREATE OR REPLACE FUNCTION public.submissions_points()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'core', 'learning', 'ai', 'analytics', 'ops', 'extensions', 'pg_temp'
+AS $function$
+DECLARE
+    points_set boolean;
+    percent_set boolean;
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        points_set := NEW.auto_points IS NOT NULL OR NEW.final_points IS NOT NULL;
+        percent_set := NEW.auto_score IS NOT NULL OR NEW.final_score IS NOT NULL;
+    ELSE
+        points_set := NEW.auto_points IS DISTINCT FROM OLD.auto_points
+                      OR NEW.final_points IS DISTINCT FROM OLD.final_points;
+        percent_set := NEW.auto_score IS DISTINCT FROM OLD.auto_score
+                       OR NEW.final_score IS DISTINCT FROM OLD.final_score;
+        IF NOT points_set AND NOT percent_set AND NEW.status = OLD.status
+           AND NEW.max_points IS NOT DISTINCT FROM OLD.max_points THEN
+            RETURN NEW;
+        END IF;
+    END IF;
+    IF NEW.status <> 'draft' AND NEW.max_points IS NULL THEN
+        NEW.max_points := submission_max_points(NEW.assessment_version_id, NEW.assessment_id);
+    END IF;
+    IF percent_set AND NOT points_set THEN
+        NEW.auto_points := points_of_percent(NEW.auto_score, NEW.max_points);
+        NEW.final_points := points_of_percent(NEW.final_score, NEW.max_points);
+        IF TG_OP = 'INSERT' OR NEW.auto_breakdown IS DISTINCT FROM OLD.auto_breakdown THEN
+            NEW.auto_breakdown := breakdown_in_points(
+                NEW.auto_breakdown, submission_item_points(NEW.assessment_version_id, NEW.assessment_id),
+                points_of_percent(json_number(NEW.auto_breakdown->'score_override'), NEW.max_points));
+        END IF;
+    END IF;
+    NEW.auto_score := percent_of_points(NEW.auto_points, NEW.max_points);
+    NEW.final_score := percent_of_points(NEW.final_points, NEW.max_points);
+    RETURN NEW;
+END $function$
 function CREATE OR REPLACE FUNCTION public.submissions_snapshots_frozen()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -3662,6 +3800,7 @@ table learning.submissions assessment_id uuid NOT NULL DEFAULT -
 table learning.submissions assessment_version_id uuid DEFAULT -
 table learning.submissions attempt_number integer NOT NULL DEFAULT -
 table learning.submissions auto_breakdown jsonb DEFAULT -
+table learning.submissions auto_points score_points DEFAULT -
 table learning.submissions auto_score percent DEFAULT -
 table learning.submissions auto_submit_attempts integer NOT NULL DEFAULT 0
 table learning.submissions auto_submit_reason text DEFAULT -
@@ -3672,12 +3811,14 @@ table learning.submissions course_id uuid NOT NULL DEFAULT -
 table learning.submissions created_at timestamp with time zone NOT NULL DEFAULT now()
 table learning.submissions draft_version bigint NOT NULL DEFAULT 1
 table learning.submissions duration_seconds integer DEFAULT -
+table learning.submissions final_points score_points DEFAULT -
 table learning.submissions final_score percent DEFAULT -
 table learning.submissions graded_at timestamp with time zone DEFAULT -
 table learning.submissions id uuid NOT NULL DEFAULT uuidv7()
 table learning.submissions is_late boolean NOT NULL DEFAULT false
 table learning.submissions items_snapshot jsonb DEFAULT -
 table learning.submissions late_penalty_pct percent NOT NULL DEFAULT 0
+table learning.submissions max_points score_points DEFAULT -
 table learning.submissions policy_snapshot jsonb DEFAULT -
 table learning.submissions preview boolean NOT NULL DEFAULT false
 table learning.submissions rules_accepted_at timestamp with time zone DEFAULT -
@@ -3760,7 +3901,7 @@ table ops.schema_skipped_checks name text NOT NULL DEFAULT -
 table ops.schema_skipped_checks skipped_at timestamp with time zone NOT NULL DEFAULT now()
 table ops.schema_skipped_checks table_name text NOT NULL DEFAULT -
 trigger CREATE CONSTRAINT TRIGGER grading_entries_current AFTER INSERT ON learning.grading_entries DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION grading_entries_current_check()
-trigger CREATE CONSTRAINT TRIGGER submissions_current_grade AFTER UPDATE OF final_score ON learning.submissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.final_score)::numeric IS DISTINCT FROM (new.final_score)::numeric)) EXECUTE FUNCTION submissions_current_grade_check()
+trigger CREATE CONSTRAINT TRIGGER submissions_current_grade AFTER UPDATE OF final_score, final_points ON learning.submissions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (((old.final_points)::numeric IS DISTINCT FROM (new.final_points)::numeric)) EXECUTE FUNCTION submissions_current_grade_check()
 trigger CREATE TRIGGER activities_keep_assessment_type BEFORE UPDATE OF kind ON core.activities FOR EACH ROW WHEN ((old.kind IS DISTINCT FROM new.kind)) EXECUTE FUNCTION activities_keep_assessment_type()
 trigger CREATE TRIGGER activities_required_from_settings BEFORE INSERT OR UPDATE OF settings ON core.activities FOR EACH ROW EXECUTE FUNCTION activities_required_from_settings()
 trigger CREATE TRIGGER activities_touch BEFORE UPDATE ON core.activities FOR EACH ROW EXECUTE FUNCTION touch_row()
@@ -3802,6 +3943,7 @@ trigger CREATE TRIGGER file_submissions_touch BEFORE UPDATE ON learning.file_sub
 trigger CREATE TRIGGER gamification_profiles_touch BEFORE UPDATE ON learning.gamification_profiles FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER grading_entries_append_only BEFORE DELETE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_no_delete()
 trigger CREATE TRIGGER grading_entries_immutable BEFORE UPDATE ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_guard()
+trigger CREATE TRIGGER grading_entries_points BEFORE INSERT ON learning.grading_entries FOR EACH ROW EXECUTE FUNCTION grading_entries_points()
 trigger CREATE TRIGGER item_feedback_frozen BEFORE UPDATE ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION item_feedback_frozen()
 trigger CREATE TRIGGER item_feedback_upload_ids BEFORE INSERT OR UPDATE OF annotation_key ON learning.item_feedback FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('annotation_key', 'annotation_upload_id')
 trigger CREATE TRIGGER job_schedules_touch BEFORE UPDATE ON ops.job_schedules FOR EACH ROW EXECUTE FUNCTION touch_row()
@@ -3809,6 +3951,7 @@ trigger CREATE TRIGGER jobs_touch BEFORE UPDATE ON ops.jobs FOR EACH ROW EXECUTE
 trigger CREATE TRIGGER platforms_touch BEFORE UPDATE ON core.platforms FOR EACH ROW EXECUTE FUNCTION touch_row('version')
 trigger CREATE TRIGGER platforms_upload_ids BEFORE INSERT OR UPDATE OF logo_key, thumbnail_key ON core.platforms FOR EACH ROW EXECUTE FUNCTION upload_ids_from_keys('logo_key', 'logo_upload_id', 'thumbnail_key', 'thumbnail_upload_id')
 trigger CREATE TRIGGER roles_touch BEFORE UPDATE ON core.roles FOR EACH ROW EXECUTE FUNCTION touch_row('version')
+trigger CREATE TRIGGER submissions_points BEFORE INSERT OR UPDATE ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_points()
 trigger CREATE TRIGGER submissions_snapshots_frozen BEFORE UPDATE OF items_snapshot, policy_snapshot, assessment_version_id, selected_item_ids ON learning.submissions FOR EACH ROW EXECUTE FUNCTION submissions_snapshots_frozen()
 trigger CREATE TRIGGER submissions_touch BEFORE UPDATE ON learning.submissions FOR EACH ROW EXECUTE FUNCTION touch_row()
 trigger CREATE TRIGGER teacher_interventions_touch BEFORE UPDATE ON learning.teacher_interventions FOR EACH ROW EXECUTE FUNCTION touch_row('version')

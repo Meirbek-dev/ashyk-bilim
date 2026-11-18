@@ -6,6 +6,7 @@ import { linkVariants } from '#/shared/components/link-variants'
 import { formatNumber } from '#/shared/i18n/format'
 
 import { reviewTarget, waitingNote } from '../model/gradebook'
+import { roundScore } from '../model/scoring'
 import { statusMeta } from './labels'
 import { ScoreFigure } from './score-figure'
 import { StatusText } from './status-text'
@@ -41,6 +42,15 @@ export function GradebookCell({ courseId, cell, learner, activity, slot = false 
         <ScoreFigure score={cell.final_score} slot={slot} />
       </span>
       <span className="flex flex-col items-end text-xs empty:hidden">
+        {/* The points of record under the percentage; a file task is out of 100, its percentage says it all. */}
+        {cell.assessment_id && cell.final_points !== null && cell.max_points !== null ? (
+          <span className="text-muted-foreground tabular-nums">
+            {m.grading_cell_points({
+              points: formatNumber(roundScore(cell.final_points)),
+              max: formatNumber(roundScore(cell.max_points)),
+            })}
+          </span>
+        ) : null}
         {cell.status === 'published' ? (
           <span className="sr-only">{status.label()}</span>
         ) : (

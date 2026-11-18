@@ -210,7 +210,7 @@ pub async fn save_grade(
     let expected_version = if_match(&headers)?;
     let input = GradeInput {
         action: request.action.into(),
-        final_score: request.final_score,
+        final_points: request.final_points,
         feedback: request.feedback,
         audit_note: request.audit_note,
         item_grades: request

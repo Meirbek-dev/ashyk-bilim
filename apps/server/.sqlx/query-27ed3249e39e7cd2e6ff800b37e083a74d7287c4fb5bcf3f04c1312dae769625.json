@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH u AS (\n               UPDATE submissions SET is_late = $2, late_penalty_pct = $3::float8,\n                   final_points = $4::float8, version = version + 1\n               WHERE id = $1 RETURNING id)\n           INSERT INTO grading_entries\n               (submission_id, revision, graded_by, penalty_pct, max_points, raw_points, final_points,\n                overall_feedback, effective_breakdown, published_at, returned)\n           SELECT u.id, p.revision + 1, p.graded_by, $3::float8, p.max_points, p.raw_points, $4::float8,\n                  p.overall_feedback, p.effective_breakdown,\n                  CASE WHEN p.published_at IS NOT NULL THEN now() END, p.returned\n           FROM u CROSS JOIN LATERAL (SELECT g.* FROM grading_entries g WHERE g.submission_id = u.id\n                                      ORDER BY g.revision DESC LIMIT 1) p\n           WHERE p.final_points IS DISTINCT FROM ($4::float8)::score_points",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool",
+        "Float8",
+        "Float8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "27ed3249e39e7cd2e6ff800b37e083a74d7287c4fb5bcf3f04c1312dae769625"
+}

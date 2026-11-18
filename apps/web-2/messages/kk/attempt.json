@@ -63,6 +63,7 @@
   "attempt_score_label": "Сіздің нәтижеңіз",
   "attempt_question_of": "{total} сұрақтың {number}-сі",
   "attempt_points": "Ұпай: {points}",
+  "attempt_points_of": "Ұпай: {max} ішінен {points}",
   "attempt_prev": "Артқа",
   "attempt_next": "Келесі",
   "attempt_questions_nav": "Сұрақтар",

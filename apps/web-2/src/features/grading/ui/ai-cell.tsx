@@ -3,7 +3,7 @@ import type { GradeDraftView } from '#/shared/api/gen/types.gen'
 import { StatusBadge } from '#/shared/components/status-badge'
 
 import { confidenceText, draftStatus, flagText } from './ai-labels'
-import { scoreText } from './labels'
+import { pointsText } from './labels'
 
 /**
  * The queue's «ИИ» cell (B-GRD-40): a ready or applied draft's proposed (calibrated) score, its confidence and flags;
@@ -18,7 +18,11 @@ export function AiCell({ draft }: { draft: GradeDraftView | undefined }) {
   }
   return (
     <span className="flex flex-col gap-1">
-      <span className="tabular-nums">{m.grading_ai_proposed({ score: scoreText(draft.calibrated_score) })}</span>
+      <span className="tabular-nums">
+        {m.grading_ai_proposed({
+          score: pointsText(draft.calibrated_score, draft.max_score, draft.calibrated_percent),
+        })}
+      </span>
       {draft.confidence === null ? null : (
         <span className="text-xs text-muted-foreground tabular-nums">{confidenceText(draft.confidence)}</span>
       )}

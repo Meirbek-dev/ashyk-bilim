@@ -4,7 +4,7 @@ import type { DataColumn } from '#/shared/components/data-columns'
 import { Link } from '#/shared/components/link'
 import { formatNumber, formatPercent } from '#/shared/i18n/format'
 
-import { disagreementGap, driftPoints, type Labels } from '../model/consistency'
+import { disagreementGap, disagreementPercent, driftPoints, type Labels } from '../model/consistency'
 import { oneDecimal } from '../model/metrics'
 
 // The three tables of an activity's consistency page (B-AIG-06..08).
@@ -66,7 +66,10 @@ export const disagreementColumns = (ids: Ids): DataColumn<DisagreementView>[] =>
     priority: 2,
     cell: row => (
       <span className="tabular-nums">
-        {m.ai_grading_scores({ ai: percent(row.ai_score), teacher: percent(row.final_score) })}
+        {m.ai_grading_scores({
+          ai: percent(disagreementPercent(row, row.ai_score)),
+          teacher: percent(disagreementPercent(row, row.final_score)),
+        })}
       </span>
     ),
   },

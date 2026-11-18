@@ -96,7 +96,7 @@ export function transferToFileForm(draft: GradeDraftView, form: FileGradeForm): 
   return {
     feedback: withText(form.feedback, feedbackOf(draft)),
     final_score:
-      scores && draft.calibrated_score !== null ? String(roundScore(draft.calibrated_score)) : form.final_score,
+      scores && draft.calibrated_percent !== null ? String(roundScore(draft.calibrated_percent)) : form.final_score,
     criteria: form.criteria.map(row => {
       const criterion = criteria.get(row.criterion_id)
       return criterion && scores

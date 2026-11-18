@@ -6,7 +6,7 @@ import type { StatusTone } from '#/shared/components/status-badge'
 import { formatDateTime } from '#/shared/i18n/format'
 
 import { historyOptions, type Work } from '../queries'
-import { scoreText, statusMeta } from './labels'
+import { pointsText, scoreText, statusMeta } from './labels'
 import { StatusText } from './status-text'
 
 /**
@@ -33,7 +33,15 @@ export function HistoryList({ work, id }: { work: Work; id: string }) {
           <li key={entry.id} className="flex flex-col gap-1 py-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="tabular-nums">{formatDateTime(entry.created_at_unix)}</span>
-              <span className="font-medium tabular-nums">{scoreText(entry.final_score ?? entry.raw_score)}</span>
+              <span className="font-medium tabular-nums">
+                {'status' in entry
+                  ? scoreText(entry.final_score ?? entry.raw_score)
+                  : pointsText(
+                      entry.final_points ?? entry.raw_points,
+                      entry.max_points,
+                      entry.final_score ?? entry.raw_score,
+                    )}
+              </span>
               {entry.penalty_pct > 0 ? (
                 <span className="text-muted-foreground">
                   {m.grading_penalty({ percent: scoreText(entry.penalty_pct) })}

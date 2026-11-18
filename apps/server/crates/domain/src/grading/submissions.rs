@@ -122,8 +122,9 @@ pub struct ViolationState {
 struct Verdict {
     status: SubmissionStatus,
     manual: bool,
-    auto_score: f64,
-    final_score: Option<f64>,
+    /// Points of the attempt's version.
+    auto_points: f64,
+    final_points: Option<f64>,
     auto_submit_reason: Option<AutoSubmitReason>,
 }
 
@@ -150,12 +151,12 @@ impl Verdict {
         Self {
             status,
             manual,
-            auto_score: if penalty.violation_zeroed {
+            auto_points: if penalty.violation_zeroed {
                 0.0
             } else {
-                grade.auto_score
+                grade.auto_points
             },
-            final_score: (!manual).then_some(penalty.final_score),
+            final_points: (!manual).then_some(penalty.final_points),
             auto_submit_reason: if penalty.violation_zeroed {
                 Some(AutoSubmitReason::IntegrityViolation)
             } else {
@@ -165,10 +166,11 @@ impl Verdict {
     }
 }
 
-/// No automatic grade: a teacher must score this attempt.
-const fn manual_review() -> AutoGrade {
+/// No automatic grade: a teacher must score this attempt (out of `max_points`).
+const fn manual_review(max_points: f64) -> AutoGrade {
     AutoGrade {
-        auto_score: 0.0,
+        auto_points: 0.0,
+        max_points,
         breakdown: GradingBreakdown {
             items: Vec::new(),
             needs_manual_review: true,
@@ -177,6 +179,22 @@ const fn manual_review() -> AutoGrade {
             score_override: None,
         },
     }
+}
+
+/// What an attempt at these items is out of: their points (the version's `max_points`).
+fn item_total(items: &[Item]) -> f64 {
+    crate::grading::score::round_points(
+        items
+            .iter()
+            .map(|i| {
+                if i.max_score.is_finite() {
+                    i.max_score.max(0.0)
+                } else {
+                    0.0
+                }
+            })
+            .sum(),
+    )
 }
 
 /// Every test failed - a blank answer or one no runner will accept.
@@ -320,8 +338,13 @@ pub struct StudentSubmission {
     pub release_state: ReleaseState,
     pub answers: Answers,
     pub grading: Option<GradingBreakdown>,
+    /// The derived percentages of the points below.
     pub auto_score: Option<f64>,
     pub final_score: Option<f64>,
+    /// What the attempt is out of and its points (REWRITE 5.8 item 10).
+    pub max_points: Option<f64>,
+    pub auto_points: Option<f64>,
+    pub final_points: Option<f64>,
     pub is_late: bool,
     pub late_penalty_pct: Option<f64>,
     pub started_at: Option<i64>,
@@ -501,6 +524,9 @@ impl SubmissionsService {
                 .and_then(|g| redact_grading(g, effective.review_visibility)),
             auto_score: visible.then_some(submission.auto_score).flatten(),
             final_score: visible.then_some(submission.final_score).flatten(),
+            max_points: submission.max_points,
+            auto_points: visible.then_some(submission.auto_points).flatten(),
+            final_points: visible.then_some(submission.final_points).flatten(),
             is_late: submission.is_late,
             late_penalty_pct: visible.then_some(submission.late_penalty_pct),
             started_at: submission.started_at,
@@ -1066,8 +1092,10 @@ impl SubmissionsService {
                 )
                 .await?
             }
-            None => manual_review(),
+            None => manual_review(item_total(&items)),
         };
+        // The attempt is out of its version's points: every item handed in (a code grade scores its one item).
+        grade.max_points = item_total(&items);
         // BUG-237: a draft behind the assessment's content never publishes
         // an auto score - items it never showed would score `no-answer`.
         // `submit` refuses it earlier (409, reopen); the timer sweep, which
@@ -1083,7 +1111,8 @@ impl SubmissionsService {
             effective.allow_late,
         );
         let penalty = penalties::apply(&PenaltyInput {
-            auto_score: grade.auto_score,
+            auto_points: grade.auto_points,
+            max_points: grade.max_points,
             needs_manual_review: grade.breakdown.needs_manual_review,
             violation_exceeded,
             attempt_number: submission.attempt_number,
@@ -1129,8 +1158,8 @@ impl SubmissionsService {
                 status: verdict.status,
                 answers: &answers_value,
                 auto_breakdown: &breakdown,
-                auto_score: Some(verdict.auto_score),
-                final_score: verdict.final_score,
+                auto_points: Some(verdict.auto_points),
+                final_points: verdict.final_points,
                 is_late: effective.is_late(at),
                 late_penalty_pct: penalty.late_penalty_pct,
                 violation_count: opts.violation_count,
@@ -1164,9 +1193,9 @@ impl SubmissionsService {
                 NewGradingEntry {
                     submission_id: submission.id,
                     graded_by: None,
-                    raw_score: verdict.auto_score,
+                    raw_points: verdict.auto_points,
                     penalty_pct: penalty.late_penalty_pct,
-                    final_score: Some(penalty.final_score),
+                    final_points: Some(penalty.final_points),
                     raw_breakdown: &breakdown,
                     effective_breakdown: &breakdown,
                     overall_feedback: "",
@@ -1304,10 +1333,10 @@ impl SubmissionsService {
             ));
         }
         let Some(item) = items.iter().find(|i| i.kind == ItemKind::Code) else {
-            return Ok(manual_review());
+            return Ok(manual_review(item_total(items)));
         };
         let ItemBody::Code(body) = &item.body else {
-            return Ok(manual_review());
+            return Ok(manual_review(item_total(items)));
         };
         let answer = answers.get(&item.id);
         let (language, source) = match answer {
@@ -1331,7 +1360,7 @@ impl SubmissionsService {
             Err(err) if lenient => {
                 tracing::error!(submission_id = %submission.id, %err,
                     "final code run failed; handing the attempt to manual review");
-                return Ok(manual_review());
+                return Ok(manual_review(item_total(items)));
             }
             Err(err) => return Err(err),
         };
@@ -1342,7 +1371,7 @@ impl SubmissionsService {
                     || run.verdict == Some(RunVerdict::InternalError)
                 {
                     if lenient {
-                        return Ok(manual_review());
+                        return Ok(manual_review(item_total(items)));
                     }
                     return Err(Error::app_with_details(
                         ErrorCode::CodeRunnerDegraded,
@@ -1376,7 +1405,7 @@ impl SubmissionsService {
                 // PAST_DUE on the retry - the hand-in lands for review.
                 tracing::warn!(submission_id = %submission.id, %message,
                     "final code run degraded; handing the attempt to manual review");
-                return Ok(manual_review());
+                return Ok(manual_review(item_total(items)));
             }
             FinalRun::LanguageNotAllowed { allowed } => {
                 if !lenient {

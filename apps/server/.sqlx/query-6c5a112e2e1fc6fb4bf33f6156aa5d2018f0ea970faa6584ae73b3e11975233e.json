@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "WITH c AS (\n               SELECT s.user_id, a.activity_id,\n                      CASE WHEN f.id IS NULL THEN s.assessment_id END AS assessment_id,\n                      CASE WHEN f.id IS NULL THEN s.id END AS submission_id,\n                      f.id AS file_submission_id,\n                      CASE WHEN f.id IS NOT NULL THEN s.id END AS attempt_id,\n                      s.status, s.attempt_number, s.final_score, s.is_late,\n                      CASE WHEN f.id IS NULL THEN o.due_at_override END AS due_at_override,\n                      s.submitted_at, s.graded_at\n               FROM submissions s JOIN assessments a ON a.id = s.assessment_id\n               LEFT JOIN file_submissions f ON f.id = s.assessment_id\n               LEFT JOIN assessment_overrides o ON o.assessment_id = s.assessment_id\n                    AND o.user_id = s.user_id\n                    AND (o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended)\n               WHERE s.course_id = $1 AND s.status <> 'draft' AND NOT s.preview\n           )\n           SELECT c.user_id AS \"user_id!: UserId\", c.activity_id AS \"activity_id!: ActivityId\",\n                  c.assessment_id AS \"assessment_id?: AssessmentId\",\n                  c.submission_id AS \"submission_id?: SubmissionId\",\n                  c.file_submission_id AS \"file_submission_id?: FileSubmissionId\",\n                  c.attempt_id AS \"attempt_id?: FileAttemptId\",\n                  c.status AS \"status!: SubmissionStatus\", c.attempt_number AS \"attempt_number!\",\n                  1::bigint AS \"attempts!\",\n                  CASE WHEN c.status IN ('submitted', 'graded') THEN c.attempt_number END\n                      AS \"pending_attempt?\",\n                  CASE WHEN c.status IN ('submitted', 'graded')\n                       THEN COALESCE(c.submission_id, c.attempt_id) END AS \"pending_attempt_id?\",\n                  CASE WHEN c.status IN ('submitted', 'graded') THEN c.status END\n                      AS \"pending_attempt_status?: SubmissionStatus\",\n                  c.final_score::float8 AS \"final_score?\", c.is_late AS \"is_late!\",\n                  (extract(epoch FROM c.due_at_override))::bigint AS \"due_at_override?\",\n                  (extract(epoch FROM c.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM c.graded_at))::bigint AS \"graded_at?\"\n           FROM c WHERE c.user_id = ANY($2)\n           ORDER BY c.user_id, c.activity_id, c.attempt_number",
+  "query": "WITH c AS (\n               SELECT s.user_id, a.activity_id,\n                      CASE WHEN f.id IS NULL THEN s.assessment_id END AS assessment_id,\n                      CASE WHEN f.id IS NULL THEN s.id END AS submission_id,\n                      f.id AS file_submission_id,\n                      CASE WHEN f.id IS NOT NULL THEN s.id END AS attempt_id,\n                      s.status, s.attempt_number, s.final_score, s.final_points, s.max_points, s.is_late,\n                      CASE WHEN f.id IS NULL THEN o.due_at_override END AS due_at_override,\n                      s.submitted_at, s.graded_at\n               FROM submissions s JOIN assessments a ON a.id = s.assessment_id\n               LEFT JOIN file_submissions f ON f.id = s.assessment_id\n               LEFT JOIN assessment_overrides o ON o.assessment_id = s.assessment_id\n                    AND o.user_id = s.user_id\n                    AND (o.expires_at IS NULL OR o.expires_at > now() OR o.due_extended)\n               WHERE s.course_id = $1 AND s.status <> 'draft' AND NOT s.preview\n           )\n           SELECT c.user_id AS \"user_id!: UserId\", c.activity_id AS \"activity_id!: ActivityId\",\n                  c.assessment_id AS \"assessment_id?: AssessmentId\",\n                  c.submission_id AS \"submission_id?: SubmissionId\",\n                  c.file_submission_id AS \"file_submission_id?: FileSubmissionId\",\n                  c.attempt_id AS \"attempt_id?: FileAttemptId\",\n                  c.status AS \"status!: SubmissionStatus\", c.attempt_number AS \"attempt_number!\",\n                  1::bigint AS \"attempts!\",\n                  CASE WHEN c.status IN ('submitted', 'graded') THEN c.attempt_number END\n                      AS \"pending_attempt?\",\n                  CASE WHEN c.status IN ('submitted', 'graded')\n                       THEN COALESCE(c.submission_id, c.attempt_id) END AS \"pending_attempt_id?\",\n                  CASE WHEN c.status IN ('submitted', 'graded') THEN c.status END\n                      AS \"pending_attempt_status?: SubmissionStatus\",\n                  c.final_score::float8 AS \"final_score?\", c.final_points::float8 AS \"final_points?\",\n                  c.max_points::float8 AS \"max_points?\", c.is_late AS \"is_late!\",\n                  (extract(epoch FROM c.due_at_override))::bigint AS \"due_at_override?\",\n                  (extract(epoch FROM c.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM c.graded_at))::bigint AS \"graded_at?\"\n           FROM c WHERE c.user_id = ANY($2)\n           ORDER BY c.user_id, c.activity_id, c.attempt_number",
   "describe": {
     "columns": [
       {
@@ -108,6 +108,18 @@
       },
       {
         "ordinal": 13,
+        "name": "final_points?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 14,
+        "name": "max_points?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 15,
         "name": "is_late!",
         "type_info": "Bool",
         "origin": {
@@ -118,19 +130,19 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 16,
         "name": "due_at_override?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 15,
+        "ordinal": 17,
         "name": "submitted_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 16,
+        "ordinal": 18,
         "name": "graded_at?",
         "type_info": "Int8",
         "origin": "Expression"
@@ -156,11 +168,13 @@
       null,
       null,
       null,
+      null,
+      null,
       false,
       null,
       null,
       null
     ]
   },
-  "hash": "34f9affebf5b37b25e1374da415a8feeb0b57baff34df633368b966605b55469"
+  "hash": "6c5a112e2e1fc6fb4bf33f6156aa5d2018f0ea970faa6584ae73b3e11975233e"
 }

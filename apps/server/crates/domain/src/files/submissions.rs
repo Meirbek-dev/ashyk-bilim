@@ -1667,8 +1667,9 @@ impl FileSubmissionsService {
         let raw_score = input.final_score.map(round2);
         let write = GradeWrite {
             status,
-            raw_score,
-            final_score: raw_score.map(|s| apply_late(s, attempt.late_penalty_pct)),
+            // A hand-in is out of 100 points: its points are its percentage.
+            raw_points: raw_score,
+            final_points: raw_score.map(|s| apply_late(s, attempt.late_penalty_pct)),
             feedback: input.feedback.as_deref().map(str::trim),
             rubric_scores: input.rubric_scores.as_ref(),
             graded_by: actor.user_id,

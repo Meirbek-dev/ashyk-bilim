@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT s.id AS \"id: SubmissionId\", s.user_id AS \"user_id: UserId\",\n                  u.username, u.display_name, s.status AS \"status: SubmissionStatus\",\n                  s.attempt_number, s.auto_score::float8 AS \"auto_score?\", s.final_score::float8 AS \"final_score?\", s.is_late,\n                  (extract(epoch FROM s.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM s.graded_at))::bigint AS \"graded_at?\",\n                  s.version,\n                  EXISTS (SELECT 1 FROM course_members r\n                          WHERE r.course_id = s.course_id AND r.user_id = s.user_id) AS \"enrolled!\",\n                  is_course_staff(s.course_id, s.user_id) AS \"staff!\",\n                  k.key AS \"sort_key!\"\n           FROM submissions s JOIN users u ON u.id = s.user_id\n           CROSS JOIN LATERAL (SELECT $8::float8 * CASE $7::text\n                  WHEN 'final_score' THEN coalesce(s.final_score, -1)\n                  WHEN 'attempt_number' THEN s.attempt_number::float8\n                  ELSE coalesce(extract(epoch FROM s.submitted_at)::float8, 0) END AS key) k\n           WHERE s.assessment_id = $1 AND s.status <> 'draft' AND NOT s.preview\n             AND ($2::text[] IS NULL OR s.status = ANY($2))\n             AND (NOT $3 OR s.is_late)\n             AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\\' OR u.display_name ILIKE $4 ESCAPE '\\')\n             AND ($5::uuid IS NULL OR (k.key, s.id) < ($9::float8, $5))\n             AND ($10::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m\n                  WHERE m.usergroup_id = $10 AND m.user_id = s.user_id))\n           ORDER BY k.key DESC, s.id DESC\n           LIMIT $6",
+  "query": "SELECT s.id AS \"id: SubmissionId\", s.user_id AS \"user_id: UserId\",\n                  u.username, u.display_name, s.status AS \"status: SubmissionStatus\",\n                  s.attempt_number, s.auto_score::float8 AS \"auto_score?\", s.final_score::float8 AS \"final_score?\",\n                  s.max_points::float8 AS \"max_points?\", s.auto_points::float8 AS \"auto_points?\",\n                  s.final_points::float8 AS \"final_points?\", s.is_late,\n                  (extract(epoch FROM s.submitted_at))::bigint AS \"submitted_at?\",\n                  (extract(epoch FROM s.graded_at))::bigint AS \"graded_at?\",\n                  s.version,\n                  EXISTS (SELECT 1 FROM course_members r\n                          WHERE r.course_id = s.course_id AND r.user_id = s.user_id) AS \"enrolled!\",\n                  is_course_staff(s.course_id, s.user_id) AS \"staff!\",\n                  k.key AS \"sort_key!\"\n           FROM submissions s JOIN users u ON u.id = s.user_id\n           CROSS JOIN LATERAL (SELECT $8::float8 * CASE $7::text\n                  WHEN 'final_score' THEN coalesce(s.final_score, -1)\n                  WHEN 'attempt_number' THEN s.attempt_number::float8\n                  ELSE coalesce(extract(epoch FROM s.submitted_at)::float8, 0) END AS key) k\n           WHERE s.assessment_id = $1 AND s.status <> 'draft' AND NOT s.preview\n             AND ($2::text[] IS NULL OR s.status = ANY($2))\n             AND (NOT $3 OR s.is_late)\n             AND ($4::text IS NULL OR u.username ILIKE $4 ESCAPE '\\' OR u.display_name ILIKE $4 ESCAPE '\\')\n             AND ($5::uuid IS NULL OR (k.key, s.id) < ($9::float8, $5))\n             AND ($10::uuid IS NULL OR EXISTS (SELECT 1 FROM usergroup_members m\n                  WHERE m.usergroup_id = $10 AND m.user_id = s.user_id))\n           ORDER BY k.key DESC, s.id DESC\n           LIMIT $6",
   "describe": {
     "columns": [
       {
@@ -83,6 +83,24 @@
       },
       {
         "ordinal": 8,
+        "name": "max_points?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 9,
+        "name": "auto_points?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 10,
+        "name": "final_points?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 11,
         "name": "is_late",
         "type_info": "Bool",
         "origin": {
@@ -93,19 +111,19 @@
         }
       },
       {
-        "ordinal": 9,
+        "ordinal": 12,
         "name": "submitted_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 10,
+        "ordinal": 13,
         "name": "graded_at?",
         "type_info": "Int8",
         "origin": "Expression"
       },
       {
-        "ordinal": 11,
+        "ordinal": 14,
         "name": "version",
         "type_info": "Int8",
         "origin": {
@@ -116,19 +134,19 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 15,
         "name": "enrolled!",
         "type_info": "Bool",
         "origin": "Expression"
       },
       {
-        "ordinal": 13,
+        "ordinal": 16,
         "name": "staff!",
         "type_info": "Bool",
         "origin": "Expression"
       },
       {
-        "ordinal": 14,
+        "ordinal": 17,
         "name": "sort_key!",
         "type_info": "Float8",
         "origin": "Expression"
@@ -157,6 +175,9 @@
       false,
       null,
       null,
+      null,
+      null,
+      null,
       false,
       null,
       null,
@@ -166,5 +187,5 @@
       null
     ]
   },
-  "hash": "d702ef170e50babcc21c7b9d48fe7736a326827e06f26cf0bd4ec7efafce70f9"
+  "hash": "1a9a51e9a615b09536def0c0c7ccc9440dfd85941562ece3b53901e9d1974d7b"
 }

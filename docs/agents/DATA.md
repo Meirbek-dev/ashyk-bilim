@@ -26,7 +26,7 @@ Every table, column, key and foreign key with the table's purpose: `docs/agents/
 | code statement, tests, languages  | `assessment_items.body`: `prompt`, `tests[]`, `languages[]` (slugs: `python`, `cpp`, ...), `time_limit_seconds` |
 | attempt (quiz, exam, code)        | `submissions` (`status` draft / submitted / graded / released / returned) |
 | what an attempt answered against  | `submissions.items_snapshot` / `policy_snapshot`, `assessment_version_id` -> `assessment_versions` |
-| a grade and its history           | `grading_entries` (journal, highest `revision` = current) = `submissions.final_score`; breakdown `submission_breakdown(id, auto_breakdown)` (latest entry's, else the hand-in's) |
+| a grade and its history           | `grading_entries` (journal, highest `revision` = current) = `submissions.final_points`, out of `submissions.max_points` (the version's points); `final_score` / `raw_score` are the derived percentages; breakdown `submission_breakdown(id, auto_breakdown)` (latest entry's, else the hand-in's), item `score` / `max_score` in points |
 | code "Run"                        | `code_runs` (`status`, `verdict`, `language` slug; + `code_run_cases`, `verdict`) |
 | file task, its hand-ins           | `assessments` (policy, `status`) + `file_submissions` (same `id`: `instructions`, rubric, file caps); hand-ins are `submissions`, their files `file_submission_files` (`attempt_id` = the submission) |
 | lesson media                      | `activities.content->>'filename'` (video, PDF), `blocks.content` (page blocks)       |
@@ -78,6 +78,45 @@ update activities set published = true where id = '<activity>';
 update assessments set status = 'published', published_at = now(), due_at = now() + interval '3 days'
   where activity_id = '<activity>';
 update file_submissions set instructions = 'Ответьте на вопросы.', max_files = 2 where activity_id = '<activity>';
+```
+
+Before deploying points as the record (`20261116075663`, REWRITE 5.8 item 10), on the release before it: handed-in
+attempts (previews left out) whose percentage the conversion changes and whose `passed` flips each way. Counts only,
+read-only; the migration prints the same counts (NOTICE). The maximum is the one the migration takes: the version's
+points, else (a hand-in before versions) the items its breakdown graded at their points now, else the items now, else 100.
+
+```sql
+with s as (
+  select s.id, s.final_score, s.auto_score, a.passing_score,
+         coalesce(v.max_points,
+                  nullif((select round(sum(coalesce(case when i.id is not null then greatest(i.max_score, 0) end,
+                                                    case when jsonb_typeof(b->'max_score') = 'number'
+                                                         then (b->>'max_score')::numeric end, 0)), 2)
+                            from jsonb_array_elements(case when jsonb_typeof(g.breakdown->'items') = 'array'
+                                                           then g.breakdown->'items' else '[]'::jsonb end) b
+                            left join assessment_items i on i.assessment_id = s.assessment_id
+                                                        and i.id::text = b->>'item_id'), 0),
+                  nullif((select round(sum(greatest(i.max_score, 0)), 2) from assessment_items i
+                           where i.assessment_id = s.assessment_id), 0),
+                  100) as m
+  from submissions s
+  join assessments a on a.id = s.assessment_id
+  left join assessment_versions v on v.id = s.assessment_version_id
+  cross join lateral (select submission_breakdown(s.id, s.auto_breakdown) as breakdown) g
+  where s.status <> 'draft' and not s.preview
+), d as (
+  select *,
+         case when m > 0 then round(round(final_score * m / 100, 2) * 100 / m, 2) else final_score * 0 end as final_after,
+         case when m > 0 then round(round(auto_score * m / 100, 2) * 100 / m, 2) else auto_score * 0 end as auto_after
+  from s
+)
+select count(*) as attempts,
+       count(*) filter (where final_after is distinct from final_score) as percent_changes,
+       count(*) filter (where auto_after is distinct from auto_score) as auto_percent_changes,
+       count(*) filter (where final_score < passing_score and final_after >= passing_score) as passed_to_true,
+       count(*) filter (where final_score >= passing_score and final_after < passing_score) as passed_to_false,
+       max(abs(final_after - final_score)) as largest_shift
+from d
 ```
 
 Media referenced by the database but missing from local storage: `just restore-media --slot N` copies them from

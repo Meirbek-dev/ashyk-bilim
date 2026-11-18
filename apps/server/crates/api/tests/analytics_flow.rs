@@ -1810,15 +1810,15 @@ async fn analytics_score_only_the_released_grade_of_record(pool: PgPool) {
     for (sub, body) in [
         (
             &first,
-            serde_json::json!({ "action": "publish", "final_score": 30 }),
+            serde_json::json!({ "action": "publish", "final_points": 6 }),
         ),
         (
             &second,
-            serde_json::json!({ "action": "return", "final_score": 60 }),
+            serde_json::json!({ "action": "return", "final_points": 12 }),
         ),
         (
             &third,
-            serde_json::json!({ "action": "save", "final_score": 100 }),
+            serde_json::json!({ "action": "save", "final_points": 20 }),
         ),
     ] {
         let graded = app.send(grade(&teacher, sub, &body)).await;
@@ -2198,7 +2198,7 @@ async fn leavers_drop_from_course_funnels_certificates_and_bottlenecks(pool: PgP
             .send(grade(
                 &teacher,
                 &sub,
-                &serde_json::json!({ "action": "publish", "final_score": score }),
+                &serde_json::json!({ "action": "publish", "final_points": f64::from(score) / 5.0 }),
             ))
             .await;
         assert_eq!(graded.status, StatusCode::OK, "{}", graded.text());

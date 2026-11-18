@@ -12,7 +12,9 @@ import type {
   TeacherSubmission,
 } from '#/shared/api/gen/types.gen'
 
-import { isScoreInputInvalid, parseScoreInput, roundScoreInput, toItemScale } from './scoring'
+import { formatNumber } from '#/shared/i18n/format'
+
+import { isScoreInputInvalid, parseScoreInput, roundScoreInput, sumScores, toItemScale } from './scoring'
 
 // The grade forms keep scores as typed text (blank = "not scored" / "no override") and become a request on save.
 // Ranges per score come from the item or criterion maximum; lengths are the server's (422 under the field).
@@ -41,14 +43,34 @@ const itemRow = v.pipe(
     ['score'],
   ),
 )
-export const gradeFormSchema = v.object({ final_score: percentField, feedback: v.string(), items: v.array(itemRow) })
+// The override is points of what the attempt is out of (`max_points`, REWRITE 5.8 item 10), carried in the form.
+const gradeObject = v.object({
+  max_points: v.number(),
+  final_points: v.string(),
+  feedback: v.string(),
+  items: v.array(itemRow),
+})
+export const gradeFormSchema = v.pipe(
+  gradeObject,
+  v.forward(
+    v.check(
+      (form: v.InferOutput<typeof gradeObject>) => !isScoreInputInvalid(form.final_points, form.max_points),
+      issue => m.grading_score_range({ max: formatNumber(issue.input.max_points) }),
+    ),
+    ['final_points'],
+  ),
+)
 export type GradeForm = v.InferOutput<typeof gradeFormSchema>
 
-/** The form of a submission: item scores on each item's own scale, at hundredths; the stored override and feedback. */
+/**
+ * The form of a submission: item scores on each item's own scale, at hundredths; the stored override (points of the
+ * attempt's `max_points`) and feedback.
+ */
 export function gradeForm(submission: TeacherSubmission, items: readonly AssessmentItem[]): GradeForm {
   const graded = new Map((submission.grading.items ?? []).map(item => [item.item_id, item]))
   return {
-    final_score: roundScoreInput(seedText(submission.score_override)),
+    max_points: submission.max_points ?? sumScores(items.map(item => item.max_score)),
+    final_points: roundScoreInput(seedText(submission.score_override)),
     feedback: submission.grading.feedback ?? '',
     items: items.map(item => {
       const done = graded.get(item.id)
@@ -82,14 +104,18 @@ export function gradeRequest(form: GradeForm, seed: GradeForm, action: GradeActi
       },
     ]
   })
-  const override = form.final_score.trim()
-  const final_score =
-    override === seed.final_score.trim() ? undefined : override === '' ? null : parseScoreInput(override)
+  const override = form.final_points.trim()
+  const final_points =
+    override === seed.final_points.trim()
+      ? undefined
+      : override === ''
+        ? null
+        : parseScoreInput(override, form.max_points)
   return {
     action,
     feedback: form.feedback,
     ...(item_grades.length > 0 ? { item_grades } : {}),
-    ...(final_score === undefined ? {} : { final_score }),
+    ...(final_points === undefined ? {} : { final_points }),
   }
 }
 

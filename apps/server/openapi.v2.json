@@ -1923,8 +1923,9 @@
             "type": "string"
           },
           "score": {
-            "description": "A work-level percentage instead of the draft's.",
+            "description": "The work's raw points (`0..=max_score` of the draft) instead of the draft's.",
             "format": "double",
+            "minimum": 0,
             "type": "number"
           }
         },
@@ -8133,6 +8134,7 @@
       "DisagreementView": {
         "properties": {
           "ai_score": {
+            "description": "Points, out of `max_score`.",
             "format": "double",
             "type": "number"
           },
@@ -8149,6 +8151,10 @@
           "learner_name": {
             "type": "string"
           },
+          "max_score": {
+            "format": "double",
+            "type": "number"
+          },
           "subject_id": {
             "format": "uuid",
             "type": "string"
@@ -8160,7 +8166,8 @@
           "learner_id",
           "learner_name",
           "ai_score",
-          "final_score"
+          "final_score",
+          "max_score"
         ],
         "type": "object"
       },
@@ -10525,8 +10532,22 @@
               "null"
             ]
           },
+          "ai_percent": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
           "ai_score": {
-            "description": "Work-level percentages (0..100) as proposed and after calibration.",
+            "description": "The work's points as proposed and after calibration, out of `max_score` (the submission's\nversion points, 100 for a hand-in); `*_percent` are their derived percentages.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "calibrated_percent": {
             "format": "double",
             "type": [
               "number",
@@ -10562,7 +10583,15 @@
               "null"
             ]
           },
+          "final_percent": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
           "final_score": {
+            "description": "The raw points of record the teacher saved.",
             "format": "double",
             "type": [
               "number",
@@ -10642,11 +10671,14 @@
           "flags",
           "created_at",
           "agreement",
+          "ai_percent",
           "ai_score",
+          "calibrated_percent",
           "calibrated_score",
           "confidence",
           "decided_at",
           "error_code",
+          "final_percent",
           "final_score",
           "max_score",
           "model_name",
@@ -10695,10 +10727,9 @@
             "maxLength": 10000,
             "type": "string"
           },
-          "final_score": {
-            "description": "Raw 0..100 before the late penalty (a manual override). Omitted: the\nstored override (or the 0 of an integrity-annulled attempt) is kept,\notherwise the raw is computed from the item scores (earned / possible\n× 100). An explicit `null` drops the override and recomputes (BUG-174).",
+          "final_points": {
+            "description": "Raw points `0..=max_points` before the penalties (a manual override). Omitted: the\nstored override (or the 0 of an integrity-annulled attempt) is kept,\notherwise the raw is the sum of the item scores. An explicit `null` drops the override and\nrecomputes (BUG-174). Above the attempt's `max_points` is 422.",
             "format": "double",
-            "maximum": 100,
             "minimum": 0,
             "type": [
               "number",
@@ -10817,7 +10848,16 @@
               }
             ]
           },
+          "final_points": {
+            "description": "The grade of record in points, out of `max_points` (a file task is out of 100).",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
           "final_score": {
+            "description": "Percentage of `max_points`, derived from `final_points`.",
             "format": "double",
             "type": [
               "number",
@@ -10836,6 +10876,13 @@
           },
           "is_late": {
             "type": "boolean"
+          },
+          "max_points": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "pending_attempt": {
             "description": "The newest attempt still awaiting grading (`pending`), if any - set\neven when the grade of record is an older published attempt (BUG-175).",
@@ -10902,8 +10949,10 @@
           "attempt_id",
           "due_at_override_unix",
           "file_submission_id",
+          "final_points",
           "final_score",
           "graded_at_unix",
+          "max_points",
           "pending_attempt",
           "pending_attempt_id",
           "pending_attempt_status",
@@ -11255,7 +11304,7 @@
             "type": "boolean"
           },
           "score_override": {
-            "description": "BUG-205: the teacher's explicit raw override - the score of record\nregardless of whether it equals the item-derived one. `None` = derived.",
+            "description": "BUG-205: the teacher's explicit raw override in points - the score of record\nregardless of whether it equals the item-derived one. `None` = derived (a raw a teacher adjusted before\nthe flag existed got it in 20261116075663).",
             "format": "double",
             "type": "number"
           }
@@ -11266,6 +11315,13 @@
         "properties": {
           "created_at_unix": {
             "$ref": "#/components/schemas/UnixTime"
+          },
+          "final_points": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "final_score": {
             "description": "Absent for a draft save that left the attempt pending.",
@@ -11289,6 +11345,10 @@
           "id": {
             "$ref": "#/components/schemas/GradingEntryId"
           },
+          "max_points": {
+            "format": "double",
+            "type": "number"
+          },
           "overall_feedback": {
             "type": "string"
           },
@@ -11306,7 +11366,12 @@
               }
             ]
           },
+          "raw_points": {
+            "format": "double",
+            "type": "number"
+          },
           "raw_score": {
+            "description": "Percentages of `max_points`, derived from `raw_points` / `final_points`.",
             "format": "double",
             "type": "number"
           }
@@ -11315,8 +11380,11 @@
           "id",
           "raw_score",
           "penalty_pct",
+          "max_points",
+          "raw_points",
           "overall_feedback",
           "created_at_unix",
+          "final_points",
           "final_score",
           "graded_by",
           "published_at_unix"
@@ -17981,7 +18049,15 @@
             "format": "int32",
             "type": "integer"
           },
+          "auto_points": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
           "auto_score": {
+            "description": "Percentages of `max_points`, derived from `auto_points` / `final_points`.",
             "format": "double",
             "type": [
               "number",
@@ -17991,6 +18067,13 @@
           "enrolled": {
             "description": "The learner is a course member (trail run); a leaver's row is not a\ntarget for per-learner actions such as a deadline extension (UX-167).",
             "type": "boolean"
+          },
+          "final_points": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "final_score": {
             "format": "double",
@@ -18014,6 +18097,14 @@
           },
           "is_late": {
             "type": "boolean"
+          },
+          "max_points": {
+            "description": "What the attempt is out of: its version's points.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "staff": {
             "description": "The learner is on the course staff - never a member (BUG-287), so\nnamed as staff rather than as a leaver (UX-199).",
@@ -18050,9 +18141,12 @@
           "enrolled",
           "staff",
           "allowed_actions",
+          "auto_points",
           "auto_score",
+          "final_points",
           "final_score",
           "graded_at_unix",
+          "max_points",
           "submitted_at_unix"
         ],
         "type": "object"
@@ -20033,7 +20127,15 @@
             "format": "int32",
             "type": "integer"
           },
+          "auto_points": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
           "auto_score": {
+            "description": "Percentages of `max_points`, derived from `auto_points` / `final_points`.",
             "format": "double",
             "type": [
               "number",
@@ -20054,6 +20156,13 @@
           "draft_version": {
             "description": "Send back as `If-Match` on draft saves and submits.",
             "type": "integer"
+          },
+          "final_points": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
           },
           "final_score": {
             "format": "double",
@@ -20096,6 +20205,14 @@
             "type": "array"
           },
           "late_penalty_pct": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "max_points": {
+            "description": "What the attempt is out of (its version's points; absent on a draft) and its points, released like\nthe percentages.",
             "format": "double",
             "type": [
               "number",
@@ -20171,12 +20288,15 @@
           "violation_count",
           "answered_count",
           "total_items",
+          "auto_points",
           "auto_score",
           "auto_submit_reason",
+          "final_points",
           "final_score",
           "graded_at_unix",
           "grading",
           "late_penalty_pct",
+          "max_points",
           "started_at_unix",
           "submitted_at_unix",
           "time_remaining_reason",
@@ -21379,7 +21499,15 @@
             "format": "int32",
             "type": "integer"
           },
+          "auto_points": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
           "auto_score": {
+            "description": "Percentages of `max_points`, derived from `auto_points` / `final_points`.",
             "format": "double",
             "type": [
               "number",
@@ -21413,6 +21541,13 @@
             },
             "type": "array"
           },
+          "final_points": {
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
           "final_score": {
             "format": "double",
             "type": [
@@ -21431,7 +21566,8 @@
             ]
           },
           "grading": {
-            "$ref": "#/components/schemas/GradingBreakdown"
+            "$ref": "#/components/schemas/GradingBreakdown",
+            "description": "Item scores in points of the attempt's version."
           },
           "id": {
             "$ref": "#/components/schemas/SubmissionId"
@@ -21443,6 +21579,14 @@
             "format": "double",
             "type": "number"
           },
+          "max_points": {
+            "description": "What the attempt is out of: its version's points.",
+            "format": "double",
+            "type": [
+              "number",
+              "null"
+            ]
+          },
           "policy_version": {
             "format": "int32",
             "type": "integer"
@@ -21451,7 +21595,7 @@
             "$ref": "#/components/schemas/ReleaseState"
           },
           "score_override": {
-            "description": "The raw score of the latest grading entry when it is a manual\noverride (differs from the item-derived one); `null` otherwise.",
+            "description": "The raw points of record when they are a manual override (`final_points` of a grade save);\n`null` when they are derived from the items.",
             "format": "double",
             "type": [
               "number",
@@ -21517,11 +21661,14 @@
           "policy_version",
           "feedback",
           "allowed_actions",
+          "auto_points",
           "auto_score",
           "auto_submit_reason",
           "duration_seconds",
+          "final_points",
           "final_score",
           "graded_at_unix",
+          "max_points",
           "score_override",
           "started_at_unix",
           "submitted_at_unix"

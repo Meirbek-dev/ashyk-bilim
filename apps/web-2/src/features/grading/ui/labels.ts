@@ -69,6 +69,23 @@ export const violationLabels = {
 export const scoreText = (score: number | null): string =>
   score === null ? m.grading_no_score() : m.grading_percent({ value: formatNumber(roundScore(score)) })
 
+/**
+ * A grade in points of what the work is out of, its percentage beside (REWRITE 5.8 item 10): «15 из 20 (75 %)». Without
+ * points (a file attempt, an older payload) the percentage alone.
+ */
+export function pointsText(
+  points: number | null | undefined,
+  max: number | null | undefined,
+  percent: number | null | undefined,
+): string {
+  if (points === null || points === undefined || max === null || max === undefined) return scoreText(percent ?? null)
+  return m.grading_points_of({
+    points: formatNumber(roundScore(points)),
+    max: formatNumber(roundScore(max)),
+    percent: scoreText(percent ?? null),
+  })
+}
+
 type Counts = { correct: string; total: string }
 const verdicts: Record<FeedbackCode, (counts: Counts) => string> = {
   'no-answer': () => m.grading_verdict_no_answer(),

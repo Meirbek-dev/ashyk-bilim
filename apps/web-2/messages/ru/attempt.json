@@ -63,6 +63,7 @@
   "attempt_score_label": "Ваш результат",
   "attempt_question_of": "Вопрос {number} из {total}",
   "attempt_points": "Баллы: {points}",
+  "attempt_points_of": "Баллы: {points} из {max}",
   "attempt_prev": "Назад",
   "attempt_next": "Далее",
   "attempt_questions_nav": "Вопросы",

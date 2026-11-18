@@ -6,6 +6,7 @@ pub mod breakdown;
 pub mod bulk;
 pub mod grader;
 pub mod penalties;
+pub mod score;
 pub mod submissions;
 pub mod teacher;
 

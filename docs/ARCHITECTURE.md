@@ -622,9 +622,9 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   submission's `assessment_versions` row (the same items and policy, `20261108000200`); the hand-in still writes the
   columns for the previous release.
 - **One current grade** (`20261102020300_current_grade_matches_journal`): `grading_entries` is the journal,
-  `submissions.final_score` its one current value. At COMMIT a submission with entries has its
-  latest entry's (highest id) `final_score`; checked when an entry is appended or the
-  submission's score changes. A write that changes one without the other fails the transaction. The breakdown
+  `submissions.final_points` its one current value. At COMMIT a submission with entries has its
+  latest entry's (highest id) `final_points` (`final_score` until `20261116075663`); checked when an entry is
+  appended or the submission's grade changes. A write that changes one without the other fails the transaction. The breakdown
   has no copy (`20261102070200`): readers call `submission_breakdown(id, auto_breakdown)`, the latest entry's
   `effective_breakdown`, else `submissions.auto_breakdown` (the auto-grader's breakdown written at hand-in, the
   teacher's starting point while no entry exists), else `{}`; `submissions.grading` is gone (`20261103070100`).
@@ -640,13 +640,23 @@ The database enforces these itself; `crates/db/tests/schema_review.rs` holds one
   before the hand-in's (`assessment_versions::ensure`, per-assessment advisory lock for the number) and names
   it in the hand-in UPDATE; `submissions.assessment_version_id` is then write-once like the snapshots. Readers
   take items and policy from the version (`20261108000200`); the snapshot columns wait for a contract.
-- **A grade entry keeps its points** (`20261102070100_grading_points`): `grading_entries.max_points` (the
-  attempt's `assessment_versions.max_points`), `raw_points`, `final_points` (`score_points`) are written by the server from the stored
-  percentages, and frozen with the row. The rule
-  is `points_of_percent(pct, max) = round(pct × max / 100, 2)` and back `percent_of_points(points, max) =
-  round(points × 100 / max, 2)` (numeric, half away from zero; NULL for max 0): a percentage that passes through
-  points returns within 0.5 / max_points percentage points. A hand-in without a version has no points. The
-  percentage is still what the code writes and reads.
+- **A grade is points; its percentage is derived** (`20261102070100_grading_points`, switch
+  `20261116075663_points_record`, REWRITE 5.8 item 10): a hand-in is out of `submissions.max_points` (its version's
+  `assessment_versions.max_points`, written at hand-in; a hand-in without a version is out of its assessment's
+  items now, 100 without items; a file task is out of 100). The grader scores each item in its own points
+  (`max_score` of the version's item), the breakdown's `score` / `max_score` and a teacher's `score_override` are
+  points, and the server writes `submissions.auto_points` / `final_points` and the journal's `max_points` /
+  `raw_points` / `final_points`; the attempt cap and the late penalty are percentages taken of the points. A
+  teacher's override (`final_points` of a grade save) and an AI draft (`ai_score` / `calibrated_score` /
+  `final_score` of `max_score`) are points too. The percentage (`auto_score`, `final_score`, `raw_score`, what the
+  pass, the projection, the statistics, events and notifications read) is `percent_of_points(points, max) =
+  round(points × 100 / max, 2)`: numeric, half away from zero, 0 for max 0; `ab_domain::grading::score` is the same
+  rule on whole hundredths, so the percentage a response carries is the one stored (a test pins both on the x.xx5
+  cases). `points_of_percent(pct, max) = round(pct × max / 100, 2)` converted the stored percentages once
+  (a shift of at most `0.5 / max_points`). Until the contract `20261116075664` the percentages are columns that
+  BEFORE triggers derive from the points (`submissions_points`, `grading_entries_points`), which also turn what
+  the previous release writes (percentages, share-of-100 breakdowns) into points; the contract makes them
+  generated columns.
 - **One attempt status vocabulary** (`20261102070000_attempt_status_vocabulary`, contract `20261103070000`):
   submissions and file attempts are `draft → submitted → graded → released → returned` in storage, and the CHECKs
   refuse anything else. The API keeps `pending` / `published` (`attempt_status_enum!` in ab-core: serde and `as_str`

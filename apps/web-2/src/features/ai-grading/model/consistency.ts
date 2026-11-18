@@ -25,8 +25,13 @@ export function labelsFromDrafts(drafts: readonly GradeDraftView[]): Labels {
   }
 }
 
+/** A disagreement's points (`ai_score`, `final_score`) as a percentage of the work's `max_score`. */
+export const disagreementPercent = (row: DisagreementView, points: number): number =>
+  row.max_score > 0 ? (points / row.max_score) * 100 : 0
+
 /** How far the teacher's grade went from the draft, in percentage points (B-AIG-07): positive = above the AI. */
-export const disagreementGap = (row: DisagreementView): number => row.final_score - row.ai_score
+export const disagreementGap = (row: DisagreementView): number =>
+  disagreementPercent(row, row.final_score) - disagreementPercent(row, row.ai_score)
 
 /** A drift offset (mean (teacher - ai) / max) as percentage points: negative = the AI grades higher (B-AIG-08). */
 export const driftPoints = (offset: number): number => Math.round(offset * 1000) / 10

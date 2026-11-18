@@ -786,7 +786,8 @@ async fn matching_items_have_a_learner_shape_and_grade_by_id(pool: PgPool) {
         .get_as(&teacher, &format!("/api/v2/submissions/{sub_id}/review"))
         .await;
     let graded = &review.json()["grading"]["items"][0];
-    assert_eq!(graded["score"], 66.67);
+    // Points of the item: 4 of its 6 pairs.
+    assert_eq!(graded["score"], 4.0);
     assert_eq!(graded["correct"], false);
     assert_eq!(graded["feedback_code"], "pairs-matched");
     assert_eq!(
@@ -888,7 +889,9 @@ async fn duplicate_picks_do_not_inflate_grades(pool: PgPool) {
         .await;
     assert_eq!(submitted.status, StatusCode::OK, "{}", submitted.text());
     let body = submitted.json();
-    assert_eq!(body["auto_score"], 61.12, "{body}");
+    // 10 + 5 + 3.33 of 30 points.
+    assert_eq!(body["auto_points"], 18.33, "{body}");
+    assert_eq!(body["auto_score"], 61.1, "{body}");
     assert_eq!(
         body["answers"][&item_ids[0]]["selected"],
         serde_json::json!(["a"])
@@ -904,11 +907,12 @@ async fn duplicate_picks_do_not_inflate_grades(pool: PgPool) {
         .get_as(&teacher, &format!("/api/v2/submissions/{sub_id}/review"))
         .await;
     let items = review.json()["grading"]["items"].clone();
-    assert_eq!(items[0]["score"], 33.33);
+    // Each item in its own points (10 each).
+    assert_eq!(items[0]["score"], 10.0);
     assert_eq!(items[0]["correct"], true);
-    assert_eq!(items[1]["score"], 16.67);
+    assert_eq!(items[1]["score"], 5.0);
     assert_eq!(items[1]["feedback_code"], "partially-correct");
-    assert_eq!(items[2]["score"], 11.11);
+    assert_eq!(items[2]["score"], 3.33);
     assert_eq!(
         items[2]["feedback_params"],
         serde_json::json!({ "correct": 1, "total": 3 })

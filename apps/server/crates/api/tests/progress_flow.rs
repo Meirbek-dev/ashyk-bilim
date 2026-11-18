@@ -1552,7 +1552,7 @@ async fn publish_full_marks(app: &TestApp, teacher: &MintedSession, sub_id: &str
                 .header(axum::http::header::COOKIE, &teacher.cookie)
                 .header(axum::http::header::IF_MATCH, "1")
                 .body(axum::body::Body::from(
-                    serde_json::json!({ "action": "publish", "final_score": 100 }).to_string(),
+                    serde_json::json!({ "action": "publish", "final_points": 10 }).to_string(),
                 ))
                 .unwrap(),
         )

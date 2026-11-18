@@ -31,24 +31,27 @@ const submission = (extra: Partial<TeacherSubmission> = {}): TeacherSubmission =
   answers: {},
   assessment_id: 'as',
   attempt_number: 1,
+  auto_points: null,
   auto_score: null,
   auto_submit_reason: null,
   content_version: 1,
   duration_seconds: null,
   feedback: [],
+  final_points: null,
   final_score: null,
   graded_at_unix: null,
-  // A 3-item exam: shares of 100 are 33.33 each; item `b` was half right (16.665 of 33.33).
+  // A 16-point exam in its version's points: item `b` was half right (5 of 10).
   grading: {
     feedback: 'Хорошо',
     items: [
-      { item_id: 'a', max_score: 33.33, score: 33.33, correct: true, correct_answer: null, user_answer: null },
-      { item_id: 'b', max_score: 33.33, score: 16.665, correct: null, correct_answer: null, user_answer: null },
+      { item_id: 'a', max_score: 1, score: 1, correct: true, correct_answer: null, user_answer: null },
+      { item_id: 'b', max_score: 10, score: 5, correct: null, correct_answer: null, user_answer: null },
     ],
   },
   id: 'sub',
   is_late: false,
   late_penalty_pct: 0,
+  max_points: 16,
   policy_version: 1,
   release_state: 'hidden',
   score_override: null,
@@ -73,17 +76,18 @@ describe('assessment grade form', () => {
       ['c', '', 5],
     ])
     expect(form.feedback).toBe('Хорошо')
-    expect(form.final_score).toBe('')
+    expect(form.final_points).toBe('')
+    expect(form.max_points).toBe(16)
   })
 
   test('B-GRD-15 an answer awaiting manual review is blank, not its placeholder 0, and blocks publishing until scored', () => {
     const awaiting = submission({
       grading: {
         items: [
-          { item_id: 'a', max_score: 33.33, score: 33.33, correct: true, correct_answer: null, user_answer: null },
+          { item_id: 'a', max_score: 1, score: 1, correct: true, correct_answer: null, user_answer: null },
           {
             item_id: 'b',
-            max_score: 33.33,
+            max_score: 10,
             score: 0,
             needs_manual_review: true,
             correct: null,
@@ -116,12 +120,19 @@ describe('assessment grade form', () => {
   })
 
   test('B-GRD-13 the override is omitted when untouched, a number when typed, null when cleared (BUG-174)', () => {
-    const stored = gradeForm(submission({ score_override: 72.456 }), items)
-    expect(stored.final_score).toBe('72.46')
-    expect(gradeRequest(stored, stored, 'save')).not.toHaveProperty('final_score')
-    expect(gradeRequest({ ...stored, final_score: '' }, stored, 'save').final_score).toBeNull()
-    expect(gradeRequest({ ...stored, final_score: '90' }, stored, 'save').final_score).toBe(90)
-    expect(v.safeParse(gradeFormSchema, { ...stored, final_score: '120' }).success).toBe(false)
+    const stored = gradeForm(submission({ score_override: 7.456 }), items)
+    expect(stored.final_points).toBe('7.46')
+    expect(gradeRequest(stored, stored, 'save')).not.toHaveProperty('final_points')
+    expect(gradeRequest({ ...stored, final_points: '' }, stored, 'save').final_points).toBeNull()
+    expect(gradeRequest({ ...stored, final_points: '9,5' }, stored, 'save').final_points).toBe(9.5)
+    expect(gradeRequest({ ...stored, final_points: '16' }, stored, 'save').final_points).toBe(16)
+  })
+
+  test('B-GRD-13 the override is points of the attempt: above its maximum is a field error', () => {
+    const stored = gradeForm(submission(), items)
+    const issues = v.safeParse(gradeFormSchema, { ...stored, final_points: '16.01' }).issues ?? []
+    expect(issues.map(issue => v.getDotPath(issue))).toEqual(['final_points'])
+    expect(v.safeParse(gradeFormSchema, { ...stored, final_points: '-1' }).success).toBe(false)
   })
 })
 

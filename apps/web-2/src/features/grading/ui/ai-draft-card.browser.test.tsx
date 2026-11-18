@@ -14,17 +14,20 @@ import { AiCell } from './ai-cell'
 import { AiDraft } from './ai-draft'
 import { DraftCard } from './ai-draft-card'
 import { confidenceText, draftPoints } from './ai-labels'
-import { scoreText } from './labels'
+import { pointsText } from './labels'
 
 const draft: GradeDraftView = {
   activity_id: '0190a5d2-0000-7000-8000-000000000001',
   agreement: null,
+  ai_percent: 86,
   ai_score: 86,
+  calibrated_percent: 82.5,
   calibrated_score: 82.5,
   confidence: 0.8,
   created_at: 10,
   decided_at: null,
   error_code: null,
+  final_percent: null,
   final_score: null,
   flags: ['unsupported', 'new_flag'],
   id: '0190a5d2-0000-7000-8000-000000000002',
@@ -72,6 +75,9 @@ const draft: GradeDraftView = {
   subject_version: 3,
 }
 
+/** The raw AI score as the card writes it: points of the work's 100, with the percentage. */
+const raw = pointsText(86, 100, 86)
+
 const card = (props: { onTransfer?: () => void; onDiscard?: () => void } = {}) =>
   renderInRouter(
     <DraftCard
@@ -88,7 +94,7 @@ afterEach(() => vi.unstubAllGlobals())
 describe('the queue «ИИ» cell', () => {
   test('B-GRD-40 a ready draft shows the proposed score, the confidence and the flags in words (unknown as sent)', async () => {
     const screen = await renderInRouter(<AiCell draft={draft} />)
-    await expect.element(screen.getByText(m.grading_ai_proposed({ score: scoreText(82.5) }))).toBeVisible()
+    await expect.element(screen.getByText(m.grading_ai_proposed({ score: pointsText(82.5, 100, 82.5) }))).toBeVisible()
     await expect.element(screen.getByText(confidenceText(0.8))).toBeVisible()
     await expect.element(screen.getByText(m.grading_ai_flag_unsupported())).toBeVisible()
     await expect.element(screen.getByText('new_flag')).toBeVisible()
@@ -106,7 +112,7 @@ describe('the review «Черновик ИИ» card', () => {
   test('B-GRD-43 the draft shows calibrated and raw scores, the calibration, criteria with quotes, marks and feedback', async () => {
     const screen = await card()
     await expect.element(screen.getByRole('heading', { name: m.grading_ai_draft_title() })).toBeVisible()
-    await expect.element(screen.getByText(m.grading_ai_raw({ score: scoreText(86) }), { exact: false })).toBeVisible()
+    await expect.element(screen.getByText(m.grading_ai_raw({ score: raw }), { exact: false })).toBeVisible()
     await expect.element(screen.getByText(m.grading_ai_calibrated_by({ count: '3' }))).toBeVisible()
     await expect.element(screen.getByRole('heading', { name: 'Опишите цикл' })).toBeVisible()
     await expect.element(screen.getByText(draftPoints(2.5, 4)).first()).toBeVisible()

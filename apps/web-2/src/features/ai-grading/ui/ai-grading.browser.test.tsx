@@ -157,6 +157,7 @@ describe('an activity’s grading consistency', () => {
     const row = {
       ai_score: 40,
       final_score: 75,
+      max_score: 100,
       draft_id: 'd',
       learner_id: 'u',
       learner_name: 'Дана',
