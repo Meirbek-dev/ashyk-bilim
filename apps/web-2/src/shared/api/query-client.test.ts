@@ -118,3 +118,38 @@ test('a failed mutation still reads its declared queries again (the change may h
   await mutation.execute(undefined).catch(() => {})
   expect(client.getQueryState(key)?.isInvalidated).toBe(true)
 })
+
+test('a refused mutation (4xx) reads nothing again: the change did not land', async () => {
+  const client = createQueryClient(async () => {})
+  const key = ['course', 'c']
+  client.setQueryData(key, 'before')
+  const refused = new ApiError({
+    status: 422,
+    code: 'validation-failed',
+    fieldErrors: [],
+    requestId: null,
+    retryAfter: null,
+  })
+  const mutation = client.getMutationCache().build(client, {
+    mutationFn: () => Promise.reject(refused),
+    meta: { invalidates: [key] },
+  })
+  await mutation.execute(undefined).catch(() => {})
+  expect(client.getQueryState(key)?.isInvalidated).toBe(false)
+})
+
+test('the declared reads are invalidated before the mutation’s own onSuccess runs', async () => {
+  const client = createQueryClient(async () => {})
+  const key = ['course', 'c']
+  client.setQueryData(key, 'before')
+  let seen: boolean | undefined
+  const mutation = client.getMutationCache().build(client, {
+    mutationFn: async () => 'ok',
+    meta: { invalidates: [key] },
+    onSuccess: () => {
+      seen = client.getQueryState(key)?.isInvalidated
+    },
+  })
+  await mutation.execute(undefined)
+  expect(seen).toBe(true)
+})

@@ -58,6 +58,9 @@ export function createQueryClient(onSessionLost: () => Promise<void>): QueryClie
     noteSessionExpired()
     void queryClient.invalidateQueries({ queryKey: sessionOptions().queryKey, refetchType: 'none' })
   }
+  const invalidateDeclared = async (keys: QueryKey[] | undefined) => {
+    if (keys) await Promise.all(keys.map(queryKey => queryClient.invalidateQueries({ queryKey })))
+  }
   const queryClient: QueryClient = new QueryClient({
     // 'always': offline, a read or a save fails at once with «Нет соединения с сервером» and its Retry. Query's
     // default ('online') paused them instead: a Save spun forever and a page stayed a skeleton with no word why
@@ -74,13 +77,16 @@ export function createQueryClient(onSessionLost: () => Promise<void>): QueryClie
     },
     queryCache: new QueryCache({ onError: loseSession }),
     mutationCache: new MutationCache({
-      onError: loseSession,
-      // Failed too: a timeout or a conflict may follow a change that did land (the server finishes a write the
-      // client stopped waiting for), so the declared reads are taken again either way.
-      onSettled: async (_data, _error, _variables, _context, mutation) => {
-        const keys = mutation.meta?.invalidates
-        if (keys) await Promise.all(keys.map(queryKey => queryClient.invalidateQueries({ queryKey })))
+      // A timeout, 5xx or lost connection may follow a change that did land (the server finishes a write the client
+      // stopped waiting for), so the declared reads are taken again. A 4xx refused the change: nothing to read.
+      onError: async (error, _variables, _context, mutation) => {
+        loseSession(error)
+        if (error instanceof ApiError && error.status < 500) return
+        await invalidateDeclared(mutation.meta?.invalidates)
       },
+      // onSuccess, not onSettled: the cache's onSuccess runs before the mutation's own, its onSettled after it (a
+      // logout navigates away in its own onSuccess, and a refetch after that lands on the sign-in guard).
+      onSuccess: async (_data, _variables, _context, mutation) => invalidateDeclared(mutation.meta?.invalidates),
     }),
   })
   // A session that goes away or changes hands (401 anywhere, sign-out, another account signed in from another tab and
