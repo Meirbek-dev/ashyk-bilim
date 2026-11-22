@@ -312,11 +312,35 @@ jobs:
         with:
           context: ${{ matrix.image == 'runner' && 'infra/runner' || '.' }}
           file: ${{ matrix.image == 'runner' && 'infra/runner/Dockerfile' || format('apps/{0}/Dockerfile', matrix.image) }}
+          pull: true
+          # Refresh distro packages even when the base digest and application sources are unchanged.
+          no-cache-filters: runtime,fetch
+          sbom: true
+          provenance: mode=max
           push: true
           tags: ${{ env.IMAGE_REPO }}/ashyq-${{ matrix.image }}:ci-${{ needs.changes.outputs.sha }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           cache-from: type=gha,scope=${{ matrix.image }}-image
           cache-to: type=gha,scope=${{ matrix.image }}-image,mode=max
+
+      - name: Reject fixable critical and high image vulnerabilities
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          SCAN_IMAGE: ${{ env.IMAGE_REPO }}/ashyq-${{ matrix.image }}:ci-${{ needs.changes.outputs.sha }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/security"
+          docker run --rm -e TRIVY_USERNAME -e TRIVY_PASSWORD \
+            -v "$RUNNER_TEMP/security:/out" ghcr.io/aquasecurity/trivy:0.76.2 image \
+            --scanners vuln --severity CRITICAL,HIGH --ignore-unfixed --exit-code 1 \
+            --format json --output /out/image.json "$SCAN_IMAGE"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: image-security-${{ matrix.image }}
+          path: ${{ runner.temp }}/security/image.json
+          retention-days: 30
 
   # success() is false when ANY ancestor was skipped (a path-filtered gate),
   # so the jobs after `images` test their direct dependency explicitly.

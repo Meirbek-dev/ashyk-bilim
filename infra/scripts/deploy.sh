@@ -40,6 +40,10 @@ set_tag() {
 
 # Chained with && so it stays correct when called from an `if` (no errexit there).
 up_and_smoke() {
+  if [[ -f /etc/server-hardening/grading-cutover-complete ]]; then
+    log "scanning and staging the grading release inside the isolated VM"
+    sudo -n /usr/local/sbin/grading-vm-image-update prod "$IMAGE_REPO/ashyq-runner:$IMAGE_TAG" || return 1
+  fi
   compose up -d --no-build --wait --remove-orphans &&
     # The config files are single-file bind mounts and git replaces files (new
     # inode): only a recreated container sees a changed config. CI ran nginx -t.

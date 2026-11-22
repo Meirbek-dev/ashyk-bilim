@@ -27,6 +27,8 @@ test('the restore stand keeps its own server configuration beside the e2e stand'
     assert.equal(result.status, 0, result.stderr)
     assert.equal(result.stdout.replaceAll('\r\n', '\n'), 'ashyq-restore\ntemplate\nold-stand\n')
     writeFileSync(join(dir, 'docker'), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
+    // A maintained production host routes Compose through its installed policy wrapper.
+    writeFileSync(join(dir, 'hardened-compose'), '#!/bin/sh\nexit 0\n', { mode: 0o755 })
     const stopped = run(shell, ['infra/scripts/restore-test.sh', 'down'], options)
     assert.equal(stopped.status, 0, stopped.stderr)
     assert.equal(existsSync(join(dir, 'tmp/restore-test/server.env')), false)

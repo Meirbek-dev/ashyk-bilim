@@ -23,7 +23,12 @@ elif command -v podman >/dev/null 2>&1; then
 fi
 compose() {
   [[ -n $CTR ]] || die "neither docker nor podman is installed"
-  "$CTR" compose "$@"
+  if [[ $CTR == docker && -f /etc/server-hardening/enabled ]]; then
+    command -v hardened-compose >/dev/null 2>&1 || die "host hardening policy is enabled but hardened-compose is missing"
+    hardened-compose "$@"
+  else
+    "$CTR" compose "$@"
+  fi
 }
 
 # Pin Podman's shared-volume owner: mounting an empty Redis volume into the root-owned backup otherwise chowns it.

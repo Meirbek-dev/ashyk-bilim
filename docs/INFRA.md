@@ -88,6 +88,19 @@ makes it non-internal to publish ports), `exec-net` (`internal`; same in dev).
 | runner | shared, profile `runner` | exec-net | `ashyq-runner` (go-judge `criyle/go-judge` + toolchains, `infra/runner`), privileged, `shm_size` 256m, `ES_AUTH_TOKEN`; stateless, nothing to back up |
 | backup | prod, profile `backup` | none | `restic/restic`: run by `infra/scripts/backup.sh` and `just restic`, never by `up`; no Docker socket |
 
+On the maintained production host, `/etc/server-hardening/enabled` makes the normal
+`compose` helper use the root-owned `hardened-compose` policy. It keeps reviewed image aliases,
+resource budgets and no-new-privileges, and appends the grading VM override. A missing wrapper
+fails deployment. CI and ordinary developer machines retain the portable Compose stack.
+
+On that host, the `runner` container is a non-root, read-only nginx proxy to a protected Unix
+socket. Code execution takes place in separate production/development KVM guests with no host
+filesystem shares and blocked guest-initiated network access. The privileged container in the
+portable base definition is used only inside that VM or an ephemeral CI machine. Production
+`just deploy` scans the release, loads it into the guest and runs synthetic language checks;
+failure restores the previous guest image before the application deployment proceeds. Guest
+OS updates need a controlled maintenance window because guest internet access stays blocked.
+
 Trust zones:
 
 - Internet: only nginx. Zitadel, Postgres, Redis and the runner have no public route.

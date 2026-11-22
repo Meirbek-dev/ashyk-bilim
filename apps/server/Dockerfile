@@ -23,6 +23,7 @@ RUN cargo build --locked --release -p ashyq-server \
 
 FROM docker.io/library/debian:trixie-slim AS runtime
 RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd -g 10001 ashyq \

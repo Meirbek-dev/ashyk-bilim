@@ -15,7 +15,8 @@ RUN bun run build
 FROM deps AS runtime-deps
 RUN rm -rf node_modules && bun install --frozen-lockfile --production --ignore-scripts
 
-FROM node:26.13.1-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5
+FROM node:26.13.1-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS runtime
+RUN apk upgrade --no-cache --available && rm -rf /usr/local/lib/node_modules/npm
 # The heap is capped for the 512m container (compose WEB_MEMORY): V8 sized it from the host (2 GiB) and collects
 # lazily, so RSS reached ~480 MiB at 50 rps; capped, it stayed under 300 MiB (docs/DECISIONS.md).
 ENV NODE_ENV=production \
@@ -24,6 +25,8 @@ ENV NODE_ENV=production \
     PORT=3000
 WORKDIR /app
 COPY --from=runtime-deps /app/node_modules ./node_modules
+# Native TypeScript is a build tool; Node strips serve.ts types itself.
+RUN rm -rf node_modules/@typescript node_modules/typescript
 COPY --from=build /app/dist ./dist
 COPY apps/web-2/package.json apps/web-2/serve.ts ./
 USER node

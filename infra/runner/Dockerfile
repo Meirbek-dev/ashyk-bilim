@@ -2,6 +2,19 @@
 # apps/server/crates/clients/src/gojudge/languages.rs. A language added there is installed here, and
 # `ashyq admin runner-check` runs hello world in every allowed one against this image.
 
+FROM golang:1.27.4-trixie AS native-tools
+# Rebuild native tools with the patched Go toolchain and explicit security dependency pins.
+ADD --checksum=sha256:e1c4e775a74f5196e1b94464d12b6b8464e73adc39a824be31d53c27d3ec7249 https://codeload.github.com/criyle/go-judge/tar.gz/refs/tags/v1.14.1 /tmp/go-judge.tgz
+ADD --checksum=sha256:5ccb47dbb3f68cd0da58b71e6f445eee36a50bd3e9f9f330cc23a97b88500119 https://codeload.github.com/microsoft/typescript-go/tar.gz/2bd066d87f5bafd315be9f40889d0a60b9e58e0b /tmp/typescript.tgz
+RUN mkdir /judge /typescript /out && tar xzf /tmp/go-judge.tgz -C /judge --strip-components=1 \
+    && tar xzf /tmp/typescript.tgz -C /typescript --strip-components=1
+WORKDIR /judge
+RUN go get golang.org/x/net@v0.63.0 golang.org/x/sys@v0.50.0 golang.org/x/text@v0.44.0 \
+    && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/go-judge ./cmd/go-judge
+WORKDIR /typescript
+RUN go get golang.org/x/net@v0.63.0 golang.org/x/text@v0.44.0 \
+    && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/tsc ./cmd/tsgo
+
 FROM docker.io/library/debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS fetch
 ARG KOTLIN_VERSION=2.4.21
 ARG KOTLIN_SHA256=7cc140e76daf416a0424a5557f99afd7ca89ebd463ea1101261e3e01c33e75cd
@@ -12,23 +25,15 @@ ARG TYPES_NODE_VERSION=20.19.43
 ARG TYPES_NODE_SHA256=9963f2cb96d2b26dbf9cf86262c698815cbec9503af73c7ce75209d1d0658f3d
 ARG UNDICI_TYPES_VERSION=6.21.0
 ARG UNDICI_TYPES_SHA256=cfa1a9a5e18988850e548f4f6b629c58da32dc32bebb116e58ea301e516fd16d
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl unzip \
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && apt-get install -y --no-install-recommends ca-certificates curl unzip \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /fetch
-# Official release binaries and published SHA-256 digests; no mutable image tag.
+# Official compiler archives are digest checked; native executables are rebuilt above.
 ARG TARGETARCH
-ARG GOJUDGE_VERSION=1.14.1
-RUN case "$TARGETARCH" in \
-      amd64) gojudge_sha=9fae8eb5d47503cdd26bd01df5fe1857d9c001e68f6e2e48e0c7b0f93720327e;; \
-      arm64) gojudge_sha=b8dfa8d70cc301f78eaf7be4813e1806c2c502f9f095cb682ba619c0d4868d9a;; \
-      *) echo "Unsupported go-judge architecture: $TARGETARCH" >&2; exit 1;; \
-    esac \
-    && curl -fsSLo go-judge "https://github.com/criyle/go-judge/releases/download/v${GOJUDGE_VERSION}/go-judge_${GOJUDGE_VERSION}_linux_${TARGETARCH}" \
-    && echo "$gojudge_sha  go-judge" | sha256sum -c - \
-    && chmod 0755 go-judge
+COPY --from=native-tools /out/go-judge /fetch/go-judge
 RUN curl -fsSLo kotlin.zip "https://github.com/JetBrains/kotlin/releases/download/v${KOTLIN_VERSION}/kotlin-compiler-${KOTLIN_VERSION}.zip" \
     && echo "${KOTLIN_SHA256}  kotlin.zip" | sha256sum -c - \
-    && unzip -q kotlin.zip && mv kotlinc kotlin \
+    && unzip -q kotlin.zip && mv kotlinc kotlin && rm -f kotlin/lib/kotlin-main-kts.jar \
     && curl -fsSLo typescript.tgz "https://registry.npmjs.org/typescript/-/typescript-${TYPESCRIPT_VERSION}.tgz" \
     && echo "${TYPESCRIPT_SHA256}  typescript.tgz" | sha256sum -c - \
     && tar xzf typescript.tgz && mv package typescript \
@@ -47,8 +52,11 @@ RUN curl -fsSLo kotlin.zip "https://github.com/JetBrains/kotlin/releases/downloa
     && echo "${UNDICI_TYPES_SHA256}  undici-types.tgz" | sha256sum -c - \
     && tar xzf undici-types.tgz && mv package node_modules/undici-types
 
-FROM docker.io/library/debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2
-RUN apt-get update && apt-get install -y --no-install-recommends \
+COPY --from=native-tools /out/tsc /fetch/tsc
+RUN find /fetch/node_modules/@typescript -path "*/lib/tsc" -type f -exec cp /fetch/tsc {} \;
+
+FROM docker.io/library/debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS runtime
+RUN apt-get update && apt-get upgrade -y --no-install-recommends && apt-get install -y --no-install-recommends \
         gcc g++ libc6-dev \
         python3 \
         openjdk-21-jdk-headless \
