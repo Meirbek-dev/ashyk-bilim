@@ -31,6 +31,12 @@ const retryOnce = (failureCount: number, error: Error): boolean =>
 const refetchUnlessHeld = (query: Query): boolean =>
   !sessionHeld() || query.queryHash === hashKey(sessionOptions().queryKey)
 
+/** No answer to go by: a 5xx, a fetch that failed (`TypeError`) or ran out of time (`TimeoutError`). */
+const outcomeUnknown = (error: Error): boolean =>
+  error instanceof ApiError
+    ? error.status >= 500
+    : error instanceof TypeError || (error instanceof DOMException && error.name === 'TimeoutError')
+
 /** The sign-in page's «session ended» note (B-AUTH-16): set when a signed-in tab's session went away, cleared by a
  * new one. Storage may refuse (private mode, quota): the note is then just not shown. */
 function noteSessionEnded(ended: boolean) {
@@ -77,12 +83,12 @@ export function createQueryClient(onSessionLost: () => Promise<void>): QueryClie
     },
     queryCache: new QueryCache({ onError: loseSession }),
     mutationCache: new MutationCache({
-      // A timeout, 5xx or lost connection may follow a change that did land (the server finishes a write the client
-      // stopped waiting for), so the declared reads are taken again. A 4xx refused the change: nothing to read.
+      // A 5xx, a timeout or a lost connection may follow a change that did land (the server finishes a write the client
+      // stopped waiting for), so the declared reads are taken again. Any other failure is an answer that refused the
+      // change (a 4xx, an AI run's own error event): nothing to read.
       onError: async (error, _variables, _context, mutation) => {
         loseSession(error)
-        if (error instanceof ApiError && error.status < 500) return
-        await invalidateDeclared(mutation.meta?.invalidates)
+        if (outcomeUnknown(error)) await invalidateDeclared(mutation.meta?.invalidates)
       },
       // onSuccess, not onSettled: the cache's onSuccess runs before the mutation's own, its onSettled after it (a
       // logout navigates away in its own onSuccess, and a refetch after that lands on the sign-in guard).

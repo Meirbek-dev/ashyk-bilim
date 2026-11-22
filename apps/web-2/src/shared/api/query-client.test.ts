@@ -112,7 +112,7 @@ test('a failed mutation still reads its declared queries again (the change may h
   const key = ['course', 'c']
   client.setQueryData(key, 'before')
   const mutation = client.getMutationCache().build(client, {
-    mutationFn: () => Promise.reject(new Error('timeout')),
+    mutationFn: () => Promise.reject(new TypeError('Failed to fetch')),
     meta: { invalidates: [key] },
   })
   await mutation.execute(undefined).catch(() => {})
@@ -152,4 +152,16 @@ test('the declared reads are invalidated before the mutation’s own onSuccess r
   })
   await mutation.execute(undefined)
   expect(seen).toBe(true)
+})
+
+test('a failure the app raised from an answer (an AI run error event) reads nothing again', async () => {
+  const client = createQueryClient(async () => {})
+  const key = ['course', 'c']
+  client.setQueryData(key, 'before')
+  const mutation = client.getMutationCache().build(client, {
+    mutationFn: () => Promise.reject(new Error('ai-budget-exhausted')),
+    meta: { invalidates: [key] },
+  })
+  await mutation.execute(undefined).catch(() => {})
+  expect(client.getQueryState(key)?.isInvalidated).toBe(false)
 })
