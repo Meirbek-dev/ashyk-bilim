@@ -172,7 +172,7 @@ test('compiler versions match Docker and local CI executes the backend suite onc
   const rust = read('apps/server/rust-toolchain.toml').match(/channel = "([\d.]+)"/)?.[1]
   const node = read('.node-version').trim()
   assert.ok(rust)
-  assert.ok(read('apps/server/Dockerfile').includes(`rust:${rust}-slim-trixie`))
+  assert.ok(read('apps/server/Dockerfile').includes(`rust:${rust}-alpine`))
   assert.ok(read('apps/web-2/Dockerfile').includes(`node:${node}-alpine`))
   const result = run(just, ['--justfile', 'apps/server/justfile', '--dry-run', 'ci'], { cwd: root })
   assert.equal(result.status, 0, result.stderr)

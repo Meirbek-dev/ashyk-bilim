@@ -8,6 +8,8 @@ use ab_core::config::Config;
 use clap::{Parser, Subcommand};
 use tokio_util::sync::CancellationToken;
 
+mod probe;
+
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
@@ -28,6 +30,20 @@ enum Command {
     Migrate,
     /// Print the OpenAPI 3.1 document to stdout (no config/DB needed).
     Openapi,
+    /// Container healthcheck without a shell (the image is distroless; no config/DB needed): request
+    /// `URL`, print its status code and exit non-zero unless it is 2xx; or, with `--fresh <file>`, exit
+    /// non-zero unless the file changed within `--max-age-secs`.
+    Probe {
+        #[arg(required_unless_present = "fresh", conflicts_with = "fresh")]
+        url: Option<String>,
+        /// POST `{}` instead of GET (the smoke's request to the runner without a token).
+        #[arg(long)]
+        post: bool,
+        #[arg(long)]
+        fresh: Option<std::path::PathBuf>,
+        #[arg(long, default_value_t = 120)]
+        max_age_secs: u64,
+    },
     /// Operational commands.
     Admin {
         #[command(subcommand)]
@@ -173,6 +189,19 @@ async fn main() -> anyhow::Result<()> {
         writeln!(std::io::stdout(), "{}", serde_json::to_string_pretty(&doc)?)?;
         return Ok(());
     }
+    if let Command::Probe {
+        url,
+        post,
+        fresh,
+        max_age_secs,
+    } = &cli.command
+    {
+        return match (url, fresh) {
+            (_, Some(path)) => probe::fresh(path, std::time::Duration::from_secs(*max_age_secs)),
+            (Some(url), None) => probe::http(url, *post),
+            (None, None) => anyhow::bail!("probe needs a URL or --fresh <file>"),
+        };
+    }
 
     let config = Config::load()?;
     ab_core::links::init(config.server.web_links);
@@ -190,7 +219,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     match cli.command {
-        Command::Openapi => unreachable!("handled above"),
+        Command::Openapi | Command::Probe { .. } => unreachable!("handled above"),
         Command::Serve => serve(config).await,
         Command::Worker => worker(config).await,
         Command::Migrate => migrate(config).await,

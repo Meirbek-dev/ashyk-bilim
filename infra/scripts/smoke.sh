@@ -58,7 +58,8 @@ fi
 
 use_stack
 if grep -qx runner <<<"$(compose ps --status running --services 2>/dev/null)"; then
-  got=$(compose exec -T server curl -sS -o /dev/null -w '%{http_code}' -X POST -d '{}' http://runner:5050/run || true)
+  # The server image has no curl: `ashyq probe` prints the status code.
+  got=$(compose exec -T server ashyq probe --post http://runner:5050/run 2>/dev/null || true)
   if [[ $got == 401 ]]; then log "ok   401 runner without token"; else
     log "FAIL runner without token: expected 401, got ${got:-no response}"
     failed=1

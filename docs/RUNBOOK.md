@@ -460,12 +460,15 @@ consistent). `ALTER ROLE` uses the helper from section 0.
 ### 3.9 Zitadel PAT expiry
 
 preflight warns 30 days before `ZITADEL_PAT_EXPIRATION` and fails after it.
-Mint a new PAT for the provisioner with the current one, from inside the
-server container (Zitadel has no public route):
+Mint a new PAT for the provisioner with the current one, from a throwaway curl
+container in the server container's network namespace (Zitadel has no public
+route; the server image is distroless, without a shell or curl):
 
 ```bash
-dc exec -T server sh -c 'curl -fsS -H "Authorization: Bearer $AB__ZITADEL__PAT" http://zitadel:8080/auth/v1/users/me'   # note user.id
-dc exec -T server sh -c 'curl -fsS -X POST -H "Authorization: Bearer $AB__ZITADEL__PAT" -H "Content-Type: application/json" \
+zcurl() { docker run --rm --network "container:$(dc ps -q server)" --env-file "${SERVER_ENV_FILE:-server.env}" \
+  --entrypoint sh docker.io/curlimages/curl:8.11.1 -c "$1"; }
+zcurl 'curl -fsS -H "Authorization: Bearer $AB__ZITADEL__PAT" http://zitadel:8080/auth/v1/users/me'   # note user.id
+zcurl 'curl -fsS -X POST -H "Authorization: Bearer $AB__ZITADEL__PAT" -H "Content-Type: application/json" \
   -d "{\"expirationDate\":\"2028-12-31T00:00:00Z\"}" http://zitadel:8080/management/v1/users/<user id>/pats'   # returns "token"
 ```
 
@@ -657,7 +660,7 @@ skipped).
 | FAIL | Action |
 | --- | --- |
 | every check `no response` | nginx down (`dc ps`, `dc logs nginx`), or the cert is not valid for the domain (smoke verifies TLS on 127.0.0.1): retry with `SMOKE_INSECURE=1` to tell them apart |
-| `/api/v2/health/ready` | readiness pings Postgres and Redis (503 names the one down; RustFS and Zitadel are not probed): `dc exec -T server curl -sS http://127.0.0.1:8000/api/v2/health/ready`, `dc logs --tail 100 server` |
+| `/api/v2/health/ready` | readiness pings Postgres and Redis (503 names the one down; RustFS and Zitadel are not probed): `dc exec -T server ashyq probe http://127.0.0.1:8000/api/v2/health/ready` (the status code; the image has no curl), `dc logs --tail 100 server` |
 | `/` | web: `dc logs web`; a 301 loop = the proxy sends no `X-Forwarded-Proto: https` to port 80, or `TRUSTED_PROXY_CIDR` does not cover it (fix either, or `FORCE_HTTPS=0`) |
 | `response headers of /...: N bytes (limit 3500 ...)` | the web added response headers; the university proxy answers 502 above 4k (FINDINGS 31). Fix the web, never raise the limit |
 | `/content/_probe/smoke.txt` | `dc run --rm -T storage-init` (bucket, policy, probe) |

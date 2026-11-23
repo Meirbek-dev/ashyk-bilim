@@ -73,8 +73,8 @@ makes it non-internal to publish ports), `exec-net` (`internal`; same in dev).
 | --- | --- | --- | --- |
 | nginx | prod | edge-net, alias `${NGINX_SERVER_NAME}` | the only published ports (`HTTP_PORT`/`HTTPS_PORT`, 80/443) |
 | web | prod | edge-net | `ashyq-web-2` (`apps/web-2/Dockerfile`; `WEB_IMAGE` swaps it), env `PUBLIC_ORIGIN`, `INTERNAL_API_URL=http://server:8000`; healthcheck from the image |
-| server | prod | edge-net, data-net, exec-net | `env_file: server.env` + `x-server-env`; liveness healthcheck from the image |
-| worker | prod | edge-net, data-net, exec-net | same env; healthcheck `true`; `stop_grace_period: 60s` |
+| server | prod | edge-net, data-net, exec-net | `ashyq-server` (`apps/server/Dockerfile`: static musl binary on distroless static, uid 10001, no shell or curl), `env_file: server.env` + `x-server-env`; liveness healthcheck from the image (`ashyq probe`) |
+| worker | prod | edge-net, data-net, exec-net | same image and env; healthcheck `ashyq probe --fresh /tmp/ashyq-worker-alive` (the job loop touches it every 15 s); `stop_grace_period: 60s` |
 | server-migrate | prod, profile `maintenance` | data-net | one-shot `ashyq migrate` |
 | db | shared | data-net | `pgvector/pgvector:0.8.7-pg18-trixie` by digest (trixie = glibc collation of the prod cluster); prod adds the `db_dumps` volume |
 | zitadel-db | shared | data-net | Zitadel's own instance, same image and superuser; holds `zitadel` once `ZITADEL_DB_HOST=zitadel-db` (RUNBOOK 3.14), else idles empty; prod adds WAL archiving into `${BACKUP_DIR}/pitr-zitadel` and `db_dumps` |

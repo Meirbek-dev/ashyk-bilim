@@ -156,10 +156,11 @@ services:
     environment: *server-env
     networks: [edge-net, data-net, exec-net]
     depends_on: *app-depends
-    # No HTTP port (the image's HEALTHCHECK curls :8000): the job loop touches
+    # No HTTP port (the image's HEALTHCHECK probes :8000): the job loop touches
     # /tmp/ashyq-worker-alive every 15 s, so a loop that stopped turning is unhealthy.
+    # The image has no shell: the binary reads the file's age.
     healthcheck:
-      test: ['CMD-SHELL', 'test -n "$(find /tmp/ashyq-worker-alive -mmin -2 2>/dev/null)"']
+      test: ['CMD', '/usr/local/bin/ashyq', 'probe', '--fresh', '/tmp/ashyq-worker-alive', '--max-age-secs', '120']
       interval: 30s
       start_period: 30s
     stop_grace_period: 60s
