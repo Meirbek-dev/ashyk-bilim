@@ -541,6 +541,10 @@ export type AiEffectiveConfig = {
     openrouter_timeout_secs: number;
     remediation_enabled: boolean;
     remediation_requests_per_hour_per_user: number;
+    /**
+     * The reranker after fusion (`voyage` embeddings with a key only); empty = off.
+     */
+    rerank_model: string;
     semantic_memory_enabled: boolean;
     semantic_search_enabled: boolean;
     /**
@@ -6911,6 +6915,9 @@ export type SearchHit = {
      * Where it is: activity and heading path.
      */
     label: string;
+    /**
+     * Relevance, higher first: the reranker's score when it ran, else the Reciprocal Rank Fusion sum.
+     */
     score: number;
     source_id: string;
     /**

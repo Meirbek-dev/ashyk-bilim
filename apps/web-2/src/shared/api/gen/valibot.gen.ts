@@ -188,6 +188,7 @@ export const vAiEffectiveConfig = v.object({
     openrouter_timeout_secs: v.number(),
     remediation_enabled: v.boolean(),
     remediation_requests_per_hour_per_user: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
+    rerank_model: v.string(),
     semantic_memory_enabled: v.boolean(),
     semantic_search_enabled: v.boolean(),
     status: v.string(),
