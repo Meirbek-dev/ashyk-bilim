@@ -188,6 +188,7 @@ test(
       const citations = JSON.stringify({
         citations: [{ citation_id: 'c1', label: 'Страница 1', source_type: 'activity' }],
       })
+      const result = { thread_id: THREAD, message_id: '0190a5d2-0000-7000-8000-00000000a021' } // QaRunResult: both ids
       return fulfillSse(route, [
         { data: { type: 'RUN_STARTED', threadId: THREAD, runId: 'r1' } },
         { data: { type: 'TEXT_MESSAGE_START', messageId: 'm1', role: 'assistant' } },
@@ -199,15 +200,7 @@ test(
         },
         { data: { type: 'TOOL_CALL_RESULT', messageId: 'm2', toolCallId: 't1', content: citations } },
         { data: { type: 'TOOL_CALL_END', toolCallId: 't1' } },
-        // The contract's `QaRunResult` (events are checked against it): the saved answer's id is required.
-        {
-          data: {
-            type: 'RUN_FINISHED',
-            threadId: THREAD,
-            runId: 'r1',
-            result: { thread_id: THREAD, message_id: '0190a5d2-0000-7000-8000-00000000a021' },
-          },
-        },
+        { data: { type: 'RUN_FINISHED', threadId: THREAD, runId: 'r1', result } },
       ])
     })
     await page.goto(`/courses/${course.id}/about?ai=chat`)
