@@ -6,15 +6,19 @@ import {
   changeEmailMutation,
   changePasswordMutation,
   confirmEmailChangeMutation,
+  createAccessTokenMutation,
   currentSessionQueryKey,
   dashboardOptions,
   dashboardQueryKey,
   deleteAccountMutation,
+  listAccessTokensOptions,
+  listAccessTokensQueryKey,
   listSessionsOptions,
   listSessionsQueryKey,
   myProfileOptions,
   myProfileQueryKey,
   publicProfileOptions as generatedPublicProfileOptions,
+  revokeAccessTokenMutation,
   revokeSessionMutation,
   totpEnrollMutation,
   totpRemoveMutation,
@@ -25,8 +29,10 @@ import {
 } from '#/shared/api/gen/@tanstack/react-query.gen'
 import { revokeSession, updateMyProfile, userCourses } from '#/shared/api/gen/sdk.gen'
 import type {
+  AccessToken,
   CourseId,
   CoursePage,
+  CreatedAccessToken,
   Dashboard,
   Profile,
   SessionInfo,
@@ -219,3 +225,20 @@ export const userCoursesListOptions = (username: string) => {
     getNextPageParam: page => page.next_cursor ?? undefined,
   })
 }
+
+export const accessTokensOptions = () => listAccessTokensOptions()
+
+/** The new token heads the cached list (the secret stays with the caller only, never in the cache). */
+export const createAccessTokenOptions = (queryClient: QueryClient) => ({
+  ...createAccessTokenMutation(),
+  onSuccess: (created: CreatedAccessToken) =>
+    queryClient.setQueryData(listAccessTokensQueryKey(), (list: AccessToken[] | undefined) =>
+      list ? [created.access_token, ...list] : list,
+    ),
+})
+
+/** A revoked token stays listed, marked: the list is read again (204 has no body). */
+export const revokeAccessTokenOptions = () => ({
+  ...revokeAccessTokenMutation(),
+  meta: { invalidates: [listAccessTokensQueryKey()] },
+})

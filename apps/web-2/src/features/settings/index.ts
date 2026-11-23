@@ -1,4 +1,5 @@
 export {
+  accessTokensOptions,
   ensurePublicProfile,
   gamificationOptions,
   profileOptions,
