@@ -13,8 +13,11 @@
 //   tables      the largest tables with their index size, live and dead rows
 //   statements  the app database's statements by total execution time since the last stats reset
 //               (pg_stat_statements; their text has parameters as $n, never values)
+//   plans       plans auto_explain logged in the db container for statements over 500 ms, grouped by
+//               database and statement, with the head of the slowest one's plan (infra/postgres/postgresql.conf)
 //
-// User ids, emails, IPs and tokens are redacted; each section prints at most 15 rows.
+// User ids, emails, IPs and tokens are redacted; each section prints at most 15 rows (plans: 15 statements,
+// four plan lines each).
 import { spawnSync } from 'node:child_process'
 
 const args = process.argv.slice(2)
@@ -158,16 +161,20 @@ function nginx(names: string[]): string[] {
   return [`  ${failed} of ${total} requests answered 5xx (${share} %)`, ...table([...rows.values()])]
 }
 
+/** `<project>-<service>-<n>`: `-db-1` alone would also match zitadel-db. */
+function serviceContainer(names: string[], service: string): string | undefined {
+  return names.find(
+    n => n.startsWith(`${project}-${service}-`) && /^\d+$/.test(n.slice(project.length + service.length + 2)),
+  )
+}
+
 function psql(
   names: string[],
   sql: string,
   database = 'ashyq',
   service = 'db',
 ): { rows: string[] } | { error: string } {
-  // `<project>-<service>-<n>`: `-db-1` alone would also match zitadel-db.
-  const db = names.find(
-    n => n.startsWith(`${project}-${service}-`) && /^\d+$/.test(n.slice(project.length + service.length + 2)),
-  )
+  const db = serviceContainer(names, service)
   if (!db) return { error: `  no ${service} container` }
   const out = docker(
     'exec',
@@ -302,6 +309,88 @@ function statements(names: string[]): string[] {
     : ['  none']
 }
 
+const PLAN_LINES = 4
+
+/** Literals folded, so one statement run with different constants (simple protocol, psql) groups as one. */
+const statementKey = (text: string) =>
+  redact(text)
+    .replace(/'(?:[^']|'')*'/g, "'?'")
+    .replace(/\b\d+(\.\d+)?\b/g, '?')
+    .trim()
+
+/**
+ * auto_explain entries in a Postgres log (text format): a `duration: <ms> ms  plan:` line, then tab-indented
+ * `Query Text:` and plan lines. Grouped by database and statement, slowest total first; each group shows the root
+ * of its slowest plan and the first nodes that usually explain it (scans, spills, filters dropping rows).
+ */
+export function slowPlans(log: string): string[] {
+  type Group = { db: string; query: string; count: number; total: number; max: number; last: string; plan: string[] }
+  const groups = new Map<string, Group>()
+  let current: { db: string; ms: number; at: string; query: string; plan: string[] } | undefined
+  const finish = () => {
+    if (!current) return
+    const key = `${current.db} ${statementKey(current.query)}`
+    const group = groups.get(key) ?? {
+      db: current.db,
+      query: statementKey(current.query),
+      count: 0,
+      total: 0,
+      max: 0,
+      last: '',
+      plan: [],
+    }
+    group.count += 1
+    group.total += current.ms
+    if (current.ms >= group.max) {
+      group.max = current.ms
+      group.plan = current.plan
+    }
+    if (current.at > group.last) group.last = current.at
+    groups.set(key, group)
+    current = undefined
+  }
+  for (const line of log.split('\n')) {
+    const head = /^(\S+ \S+).* db=(\S*) .*LOG: {2}duration: ([\d.]+) ms {2}plan:/.exec(line)
+    if (head) {
+      finish()
+      current = { at: head[1]!, db: head[2] || '?', ms: Number(head[3]), query: '', plan: [] }
+      continue
+    }
+    if (!current) continue
+    if (!line.startsWith('\t')) {
+      finish()
+      continue
+    }
+    // stderr logging puts a tab after every newline of a message, so a multi-line statement continues on
+    // tab-indented lines too; the plan starts at its root node, the first line with a cost.
+    const body = line.slice(1).trimEnd()
+    if (!current.plan.length && !body.includes('(cost=')) current.query += ` ${body.replace(/^Query Text: /, '')}`
+    else current.plan.push(body)
+  }
+  finish()
+  if (!groups.size) return ['  none']
+  return [...groups.values()]
+    .sort((a, b) => b.total - a.total)
+    .slice(0, ROWS)
+    .flatMap(g => {
+      const [root, ...rest] = g.plan
+      const telling = rest.filter(l => /Seq Scan|external|Disk:|Rows Removed by|Batches: [2-9]|Heap Fetches/.test(l))
+      const lines = [root, ...telling, ...rest.filter(l => !telling.includes(l))]
+        .filter((l): l is string => !!l)
+        .slice(0, PLAN_LINES)
+      return [
+        `  ${String(g.count).padStart(6)}  ${g.db}: ${g.query.slice(0, 160)}  (max ${Math.round(g.max)} ms, last ${g.last.slice(0, 16)})`,
+        ...lines.map(l => `          ${/^ */.exec(l)![0]}${redact(l.trimStart()).slice(0, 160)}`),
+      ]
+    })
+}
+
+/** The db container's log: auto_explain writes there. No db container is a finding of its own (containers). */
+function dbLog(names: string[]): string {
+  const db = serviceContainer(names, 'db')
+  return db ? readLogs(db, since) : ''
+}
+
 if (import.meta.main) {
   const names = containers()
   if (!names.length) {
@@ -327,6 +416,7 @@ if (import.meta.main) {
     ['indexes with no scan since the stats reset', unusedIndexes(names)],
     ['largest tables', tables(names)],
     ['top statements by total time (pg_stat_statements)', statements(names)],
+    [`slow plans (auto_explain), last ${since}`, slowPlans(dbLog(names))],
   ] as const)
     console.log(`${title}\n${lines.join('\n')}\n`)
 }
