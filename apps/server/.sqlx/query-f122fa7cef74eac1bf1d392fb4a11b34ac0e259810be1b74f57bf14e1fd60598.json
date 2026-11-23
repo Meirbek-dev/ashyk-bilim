@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, bucket, key, multipart_id FROM uploads\n           WHERE id = $1\n             AND expires_at IS NOT NULL AND expires_at < now()\n             AND (status = 'pending'\n                  OR (status = 'finalized' AND NOT upload_referenced(uploads.id)))\n           FOR UPDATE SKIP LOCKED",
+  "query": "SELECT id, purpose, bucket, key, multipart_id FROM uploads\n           WHERE id = $1\n             AND expires_at IS NOT NULL AND expires_at < now()\n             AND (status = 'pending'\n                  OR (status = 'finalized' AND NOT upload_referenced(uploads.id)))\n           FOR UPDATE SKIP LOCKED",
   "describe": {
     "columns": [
       {
@@ -16,6 +16,17 @@
       },
       {
         "ordinal": 1,
+        "name": "purpose",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "uploads",
+            "name": "purpose"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
         "name": "bucket",
         "type_info": "Text",
         "origin": {
@@ -26,7 +37,7 @@
         }
       },
       {
-        "ordinal": 2,
+        "ordinal": 3,
         "name": "key",
         "type_info": "Text",
         "origin": {
@@ -37,7 +48,7 @@
         }
       },
       {
-        "ordinal": 3,
+        "ordinal": 4,
         "name": "multipart_id",
         "type_info": "Text",
         "origin": {
@@ -57,8 +68,9 @@
       false,
       false,
       false,
+      false,
       true
     ]
   },
-  "hash": "4cc9950b6a7d31227e846c2f39071307aaf331d9b840a806fe85e88d57beb79e"
+  "hash": "f122fa7cef74eac1bf1d392fb4a11b34ac0e259810be1b74f57bf14e1fd60598"
 }

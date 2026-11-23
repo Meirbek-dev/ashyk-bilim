@@ -288,6 +288,16 @@ async fn full_upload_finalize_download_flow(pool: PgPool) {
     let finalized = finalize().await;
     assert_eq!(finalized.status, StatusCode::OK, "{}", finalized.text());
     assert_eq!(finalized.json()["size_bytes"], payload.len());
+    // The finalize transaction owes the avatar's WebP previews (ARCHITECTURE §11).
+    let owed: Vec<serde_json::Value> =
+        sqlx::query_scalar("SELECT payload FROM jobs WHERE kind = 'uploads:previews'")
+            .fetch_all(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        owed,
+        [serde_json::json!({ "v": 1, "key": body["key"], "purpose": "avatar" })]
+    );
     let replayed = finalize().await;
     assert_eq!(replayed.status, StatusCode::OK, "{}", replayed.text());
     assert_eq!(replayed.json(), finalized.json());

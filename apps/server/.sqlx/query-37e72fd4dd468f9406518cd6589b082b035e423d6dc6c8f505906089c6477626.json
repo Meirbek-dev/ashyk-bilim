@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, bucket, key, multipart_id FROM uploads\n           WHERE expires_at IS NOT NULL AND expires_at < now()\n             AND (status = 'pending'\n                  OR (status = 'finalized' AND NOT upload_referenced(uploads.id)))\n           ORDER BY expires_at\n           LIMIT $1",
+  "query": "SELECT id, purpose, bucket, key, multipart_id FROM uploads\n           WHERE expires_at IS NOT NULL AND expires_at < now()\n             AND (status = 'pending'\n                  OR (status = 'finalized' AND NOT upload_referenced(uploads.id)))\n           ORDER BY expires_at\n           LIMIT $1",
   "describe": {
     "columns": [
       {
@@ -16,6 +16,17 @@
       },
       {
         "ordinal": 1,
+        "name": "purpose",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "uploads",
+            "name": "purpose"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
         "name": "bucket",
         "type_info": "Text",
         "origin": {
@@ -26,7 +37,7 @@
         }
       },
       {
-        "ordinal": 2,
+        "ordinal": 3,
         "name": "key",
         "type_info": "Text",
         "origin": {
@@ -37,7 +48,7 @@
         }
       },
       {
-        "ordinal": 3,
+        "ordinal": 4,
         "name": "multipart_id",
         "type_info": "Text",
         "origin": {
@@ -57,8 +68,9 @@
       false,
       false,
       false,
+      false,
       true
     ]
   },
-  "hash": "d63361d7564ebac1a084e246dd713e7b8c676118b8805fe94c56d53fafe9c716"
+  "hash": "37e72fd4dd468f9406518cd6589b082b035e423d6dc6c8f505906089c6477626"
 }

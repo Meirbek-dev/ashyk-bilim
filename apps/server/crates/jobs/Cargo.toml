@@ -23,4 +23,5 @@ uuid = { workspace = true }
 
 [dev-dependencies]
 ab-testdb = { workspace = true }
+image = { workspace = true }
 secrecy.workspace = true

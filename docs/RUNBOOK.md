@@ -226,6 +226,19 @@ dev copy 16 MB of heap for 15 live rows after the prune). To give it back to the
 learning.code_runs;` in a quiet hour: it holds ACCESS EXCLUSIVE on the table while it copies the live rows, a
 moment for a table this small, but a hand-in that runs code waits for it.
 
+### 2.10 Image previews of stored pictures
+
+A finalized avatar, course thumbnail or collection cover gets WebP previews from the `uploads:previews` job
+(ARCHITECTURE 11). Pictures stored before the job existed (and legacy keys without an upload row) get them from the
+backfill, once after the deploy that adds the job; it only enqueues jobs (no backup needed) and a rerun fills gaps:
+
+```bash
+dc run --rm server admin image-previews --dry-run   # how many
+dc run --rm server admin image-previews             # enqueue; the worker writes them, two at a time
+```
+
+Until a preview exists the web shows the original. Failed jobs show in `just prod-report`.
+
 ## 3. Routine
 
 ### 3.1 Deploy

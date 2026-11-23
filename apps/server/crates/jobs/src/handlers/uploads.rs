@@ -49,3 +49,36 @@ impl JobHandler for UploadsReaper {
         .boxed()
     }
 }
+
+/// `uploads:previews` - WebP previews of one picture (`ab_domain::files::previews`),
+/// enqueued by finalize and by `ashyq admin image-previews`.
+pub const PREVIEWS_KIND: &str = ab_domain::files::previews::PREVIEWS_JOB;
+
+pub struct UploadPreviews {
+    pool: PgPool,
+    storage: Arc<StorageClient>,
+}
+
+impl UploadPreviews {
+    #[must_use]
+    pub const fn new(pool: PgPool, storage: Arc<StorageClient>) -> Self {
+        Self { pool, storage }
+    }
+}
+
+impl JobHandler for UploadPreviews {
+    fn kind(&self) -> &'static str {
+        PREVIEWS_KIND
+    }
+
+    fn handle(&self, payload: serde_json::Value) -> BoxFuture<'static, Result<()>> {
+        let pool = self.pool.clone();
+        let storage = Arc::clone(&self.storage);
+        async move {
+            let rendered = ab_domain::files::previews::render(&pool, &storage, payload).await?;
+            tracing::debug!(?rendered, "image previews");
+            Ok(())
+        }
+        .boxed()
+    }
+}

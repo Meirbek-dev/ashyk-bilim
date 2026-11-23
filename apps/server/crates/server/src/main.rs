@@ -158,6 +158,14 @@ enum AdminCommand {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Enqueue WebP previews (`uploads:previews`) of every stored avatar,
+    /// course thumbnail and collection cover; the worker writes the sizes that
+    /// are missing. Idempotent; prints counts.
+    ImagePreviews {
+        /// Count what would be enqueued; enqueue nothing.
+        #[arg(long)]
+        dry_run: bool,
+    },
     /// D-03: `users.locale` `ru-RU|kk-KZ|en-US` → `ru|kk|en` (needs
     /// migration 20261003000020; responses keep the legacy `locale`).
     MigrateLocales {
@@ -354,6 +362,13 @@ async fn main() -> anyhow::Result<()> {
             let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
             let report = ab_domain::maintenance::prune_superseded_code_runs(&pool, dry_run).await?;
             print_report("prune-superseded-code-runs", &report)
+        }
+        Command::Admin {
+            command: AdminCommand::ImagePreviews { dry_run },
+        } => {
+            let pool = ab_db::connect(&config.database, ab_db::Process::Admin).await?;
+            let report = ab_domain::files::previews::backfill(&pool, dry_run).await?;
+            print_report("image-previews", &report)
         }
         Command::Admin {
             command: AdminCommand::MigrateThemes { dry_run },
@@ -801,6 +816,10 @@ async fn worker(config: Config) -> anyhow::Result<()> {
     };
     let worker = ab_jobs::Worker::new(pool.clone(), worker_config)
         .register(ab_jobs::handlers::uploads::UploadsReaper::new(
+            pool.clone(),
+            std::sync::Arc::clone(&storage),
+        ))?
+        .register(ab_jobs::handlers::uploads::UploadPreviews::new(
             pool.clone(),
             storage,
         ))?

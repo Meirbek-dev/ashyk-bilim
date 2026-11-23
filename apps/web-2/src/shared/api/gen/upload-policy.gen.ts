@@ -5,19 +5,22 @@ import type { UploadPurpose } from './types.gen';
 /** Videos above one part are uploaded in parts of this size. */
 export const multipartPartBytes = 33554432;
 
-/** The server's cap and accepted types (exact match; empty = any) per purpose. */
-export const uploadPolicy: Record<UploadPurpose, { maxBytes: number; mimes: readonly string[] }> = {
-  'assessment-image': { maxBytes: 5242880, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
-  'assessment-import': { maxBytes: 20971520, mimes: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'] },
-  'avatar': { maxBytes: 5242880, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
-  'block-image': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
-  'block-pdf': { maxBytes: 52428800, mimes: ['application/pdf'] },
-  'block-video': { maxBytes: 2147483648, mimes: ['video/mp4','video/webm','video/x-matroska','video/quicktime','video/x-msvideo','video/x-flv'] },
-  'collection-cover': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
-  'course-thumbnail': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
-  'discussion-image': { maxBytes: 5242880, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
-  'file-submission': { maxBytes: 104857600, mimes: [] },
-  'message-attachment': { maxBytes: 20971520, mimes: [] },
-  'platform-logo': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
-  'platform-thumbnail': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'] },
+/**
+ * The server's cap and accepted types (exact match; empty = any) per purpose, and the widths of the WebP previews
+ * the server writes next to a stored picture (`<key>.w<width>`, smallest first; empty = none).
+ */
+export const uploadPolicy: Record<UploadPurpose, { maxBytes: number; mimes: readonly string[]; previewWidths: readonly number[] }> = {
+  'assessment-image': { maxBytes: 5242880, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'], previewWidths: [] },
+  'assessment-import': { maxBytes: 20971520, mimes: ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'], previewWidths: [] },
+  'avatar': { maxBytes: 5242880, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'], previewWidths: [64,192] },
+  'block-image': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'], previewWidths: [] },
+  'block-pdf': { maxBytes: 52428800, mimes: ['application/pdf'], previewWidths: [] },
+  'block-video': { maxBytes: 2147483648, mimes: ['video/mp4','video/webm','video/x-matroska','video/quicktime','video/x-msvideo','video/x-flv'], previewWidths: [] },
+  'collection-cover': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'], previewWidths: [320,640] },
+  'course-thumbnail': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'], previewWidths: [320,640] },
+  'discussion-image': { maxBytes: 5242880, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'], previewWidths: [] },
+  'file-submission': { maxBytes: 104857600, mimes: [], previewWidths: [] },
+  'message-attachment': { maxBytes: 20971520, mimes: [], previewWidths: [] },
+  'platform-logo': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'], previewWidths: [] },
+  'platform-thumbnail': { maxBytes: 10485760, mimes: ['image/jpeg','image/png','image/gif','image/webp','image/avif'], previewWidths: [] },
 };

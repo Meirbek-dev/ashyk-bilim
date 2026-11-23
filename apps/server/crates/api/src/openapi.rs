@@ -120,9 +120,11 @@ pub fn finalize(doc: &utoipa::openapi::OpenApi) -> Value {
 }
 
 /// `UploadPurpose` carries the server's upload policy (`x-upload-policy`):
-/// per purpose the cap and accepted types, plus the multipart part size. The
-/// webs' pre-upload checks are generated from it, so they cannot drift.
+/// per purpose the cap, accepted types and preview widths (`<key>.w<width>`,
+/// ARCHITECTURE §11), plus the multipart part size. The web's pre-upload
+/// checks and preview URLs are generated from it, so they cannot drift.
 fn upload_policy(doc: &mut Value) {
+    use ab_domain::files::previews::targets;
     use ab_domain::files::uploads::{MULTIPART_PART_BYTES, limits};
     let Some(schema) = doc
         .pointer_mut("/components/schemas/UploadPurpose")
@@ -140,7 +142,11 @@ fn upload_policy(doc: &mut Value) {
             let (max_bytes, mime_types) = limits(purpose)?;
             Some((
                 purpose.to_owned(),
-                json!({ "max_bytes": max_bytes, "mime_types": mime_types }),
+                json!({
+                    "max_bytes": max_bytes,
+                    "mime_types": mime_types,
+                    "preview_widths": targets(purpose).iter().map(|t| t.width).collect::<Vec<_>>(),
+                }),
             ))
         })
         .collect();

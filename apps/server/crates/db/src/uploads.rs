@@ -173,6 +173,7 @@ pub async fn release_references(
 
 pub struct ReapedUpload {
     pub id: Uuid,
+    pub purpose: String,
     pub bucket: String,
     pub key: String,
     pub multipart_id: Option<String>,
@@ -188,7 +189,7 @@ pub struct ReapedUpload {
 pub async fn expired(pool: &PgPool, limit: i64) -> Result<Vec<ReapedUpload>> {
     let rows = sqlx::query_as!(
         ReapedUpload,
-        r#"SELECT id, bucket, key, multipart_id FROM uploads
+        r#"SELECT id, purpose, bucket, key, multipart_id FROM uploads
            WHERE expires_at IS NOT NULL AND expires_at < now()
              AND (status = 'pending'
                   OR (status = 'finalized' AND NOT upload_referenced(uploads.id)))
@@ -206,7 +207,7 @@ pub async fn expired(pool: &PgPool, limit: i64) -> Result<Vec<ReapedUpload>> {
 pub async fn lock_expired(conn: &mut sqlx::PgConnection, id: Uuid) -> Result<Option<ReapedUpload>> {
     let row = sqlx::query_as!(
         ReapedUpload,
-        r#"SELECT id, bucket, key, multipart_id FROM uploads
+        r#"SELECT id, purpose, bucket, key, multipart_id FROM uploads
            WHERE id = $1
              AND expires_at IS NOT NULL AND expires_at < now()
              AND (status = 'pending'
@@ -350,4 +351,54 @@ pub async fn hold<'e>(db: impl sqlx::PgExecutor<'e>, ids: &[Uuid]) -> Result<()>
     .execute(db)
     .await?;
     Ok(())
+}
+
+/// Share-lock the upload row of `key` (if there is one) for the rest of the
+/// transaction: the reaper's `FOR UPDATE SKIP LOCKED` passes it by while
+/// image previews of it are written.
+pub async fn share_lock_by_key(conn: &mut sqlx::PgConnection, key: &str) -> Result<bool> {
+    let row = sqlx::query_scalar!("SELECT id FROM uploads WHERE key = $1 FOR SHARE", key)
+        .fetch_optional(&mut *conn)
+        .await?;
+    Ok(row.is_some())
+}
+
+/// A stored picture that should have previews (`ashyq admin image-previews`).
+pub struct PreviewSource {
+    pub purpose: String,
+    pub key: String,
+    /// An upload row records it; `false`: a legacy key a row names without one.
+    pub ledger: bool,
+}
+
+/// The pictures to give previews: finalized public uploads of `purposes`.
+///
+/// Plus the avatar, course thumbnail and collection cover keys that name no
+/// upload row (moved from the old platform), except absolute `http(s)` URLs
+/// (old Google photos).
+pub async fn preview_sources(pool: &PgPool, purposes: &[String]) -> Result<Vec<PreviewSource>> {
+    let rows = sqlx::query_as!(
+        PreviewSource,
+        r#"SELECT purpose AS "purpose!", key AS "key!", ledger AS "ledger!" FROM (
+               SELECT purpose, key, true AS ledger FROM uploads
+               WHERE status = 'finalized' AND bucket = 'public' AND purpose = ANY($1)
+               UNION
+               SELECT 'avatar', avatar_key, false FROM users
+               WHERE avatar_upload_id IS NULL AND avatar_key IS NOT NULL
+                 AND avatar_key !~* '^https?://'
+               UNION
+               SELECT 'course-thumbnail', thumbnail_image_key, false FROM courses
+               WHERE thumbnail_image_upload_id IS NULL AND thumbnail_image_key IS NOT NULL
+                 AND thumbnail_image_key !~* '^https?://'
+               UNION
+               SELECT 'collection-cover', cover_key, false FROM collections
+               WHERE cover_upload_id IS NULL AND cover_key IS NOT NULL
+                 AND cover_key !~* '^https?://'
+           ) sources
+           ORDER BY key"#,
+        purposes
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
 }

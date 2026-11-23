@@ -22609,13 +22609,15 @@ expression: json
                 "image/gif",
                 "image/webp",
                 "image/avif"
-              ]
+              ],
+              "preview_widths": []
             },
             "assessment-import": {
               "max_bytes": 20971520,
               "mime_types": [
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              ]
+              ],
+              "preview_widths": []
             },
             "avatar": {
               "max_bytes": 5242880,
@@ -22625,6 +22627,10 @@ expression: json
                 "image/gif",
                 "image/webp",
                 "image/avif"
+              ],
+              "preview_widths": [
+                64,
+                192
               ]
             },
             "block-image": {
@@ -22635,13 +22641,15 @@ expression: json
                 "image/gif",
                 "image/webp",
                 "image/avif"
-              ]
+              ],
+              "preview_widths": []
             },
             "block-pdf": {
               "max_bytes": 52428800,
               "mime_types": [
                 "application/pdf"
-              ]
+              ],
+              "preview_widths": []
             },
             "block-video": {
               "max_bytes": 2147483648,
@@ -22652,7 +22660,8 @@ expression: json
                 "video/quicktime",
                 "video/x-msvideo",
                 "video/x-flv"
-              ]
+              ],
+              "preview_widths": []
             },
             "collection-cover": {
               "max_bytes": 10485760,
@@ -22662,6 +22671,10 @@ expression: json
                 "image/gif",
                 "image/webp",
                 "image/avif"
+              ],
+              "preview_widths": [
+                320,
+                640
               ]
             },
             "course-thumbnail": {
@@ -22672,6 +22685,10 @@ expression: json
                 "image/gif",
                 "image/webp",
                 "image/avif"
+              ],
+              "preview_widths": [
+                320,
+                640
               ]
             },
             "discussion-image": {
@@ -22682,15 +22699,18 @@ expression: json
                 "image/gif",
                 "image/webp",
                 "image/avif"
-              ]
+              ],
+              "preview_widths": []
             },
             "file-submission": {
               "max_bytes": 104857600,
-              "mime_types": []
+              "mime_types": [],
+              "preview_widths": []
             },
             "message-attachment": {
               "max_bytes": 20971520,
-              "mime_types": []
+              "mime_types": [],
+              "preview_widths": []
             },
             "platform-logo": {
               "max_bytes": 10485760,
@@ -22700,7 +22720,8 @@ expression: json
                 "image/gif",
                 "image/webp",
                 "image/avif"
-              ]
+              ],
+              "preview_widths": []
             },
             "platform-thumbnail": {
               "max_bytes": 10485760,
@@ -22710,7 +22731,8 @@ expression: json
                 "image/gif",
                 "image/webp",
                 "image/avif"
-              ]
+              ],
+              "preview_widths": []
             }
           }
         }

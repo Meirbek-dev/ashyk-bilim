@@ -198,7 +198,8 @@ Add:
 
 - `lettre`: SMTP (the university relay) as the second email provider; Resend stays first and
   SMTP sends what Resend failed to (`AB__EMAIL__SMTP_*`, docs/INFRA.md).
-- `image` + `fast_image_resize`: a job writes WebP previews of avatars and image uploads.
+- `image` + `fast_image_resize`: a job writes WebP previews of avatars and image uploads (landed 2026-11-24:
+  ARCHITECTURE 11 "Previews"; avatars, course thumbnails, collection covers).
 - `rmcp`: the product MCP server (4.7).
 
 Postgres: `pgvector` stays (one Postgres, its extension); `pg_trgm` for typo-tolerant search

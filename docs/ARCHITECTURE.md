@@ -133,6 +133,7 @@ apps/server/
     ├── domain/        (ab-domain)        all business logic, module per bounded context
     ├── api/           (ab-api)           axum app: state, extractors, middleware, routes, DTOs, OpenAPI
     ├── jobs/          (ab-jobs)          worker runtime + job handlers
+    ├── images/        (ab-images)        image previews: decode, resize, WebP (pure; a leaf for incremental builds)
     ├── server/        (ashyq-server)     the `ashyq` binary: serve | worker | migrate | openapi | admin
     ├── testkit/       (ab-testkit)       app harness, wiremock stubs (dev-dep only)
     ├── testdb/        (ab-testdb)        per-test database cloned from a migrated template (dev-dep only)
@@ -152,7 +153,7 @@ Bounded contexts inside `ab-domain` (`crates/domain/src`):
 `identity` (users, sessions, auth, rbac admin, usergroups, capabilities) · `catalog` (courses, `CourseCtx`
 access, curriculum, contributors, collections, readiness, search, platform) · `progress` (trail, projector,
 learner state, agenda, work queue) · `assessments` (authoring, items, access) · `grading` (submissions,
-grader, teacher, bulk actions, penalties) · `files` (uploads, file submissions) · `code` (sandboxed runs in go-judge) ·
+grader, teacher, bulk actions, penalties) · `files` (uploads, previews, file submissions) · `code` (sandboxed runs in go-judge) ·
 `community` (discussions) · `certifications` · `gamification` · `analytics` · `ai` (runs, agents, budget) ·
 `notifications` · `events` (SSE fan-out) · `maintenance`, `rich_text`, `wire`, `link_preview`
 
@@ -752,7 +753,7 @@ CREATE TABLE jobs (                        -- migrations/20260816000001_jobs.sql
   `submissions:sweep-idempotency` (1 h), `uploads:reap` and `analytics:rollup` (6 h), `notifications:prune` and
   `maintenance:retention` (24 h), `maintenance:reconcile` (7 days), `retrieval:sweep` (1 min). On-demand kinds:
   `ai:execute_run`, `ai:grade-draft`, `grading:bulk-action`, `mastery:ingest`, `mastery:rebuild`, `progress:*`
-  follow-ups.
+  follow-ups, `uploads:previews` (§11).
 - Graceful shutdown: `CancellationToken` → stop claiming, finish in-flight, heartbeat until done (compose
   `stop_grace_period: 60s`).
 - Notifications: `notifications:deadline-reminders` sends one `deadline_approaching` per (learner, activity, due
@@ -811,6 +812,25 @@ Postgres work uses Postgres advisory locks and row locks.
      `file_submission_files.upload_id`). `uploads:reap` deletes an expired finalized upload only when
      `upload_referenced(id)` is still false, and pending ones after the 12 h claim window. Course purge, chapter,
      activity, block, file-attempt and post deletes release what their rows named.
+- Previews (`ab_domain::files::previews`, codecs in the leaf crate `ab-images`): finalizing an `avatar` (64, 192 px
+  boxes), `course-thumbnail` or `collection-cover` (320x180, 640x360) upload enqueues `uploads:previews` in the
+  finalize transaction (payload `{v: 1, key, purpose}`, dedupe `previews:<key>`); `ashyq admin image-previews`
+  enqueues it for what was stored earlier, legacy keys without an upload row included (RUNBOOK 2.10).
+  - The job decodes the original (JPEG, PNG, GIF, WebP sniffed from the bytes; at most 12 000 px a side and 50 MP,
+    checked from the header before any pixel is allocated; originals over 32 MB are not read), applies the EXIF
+    orientation, scales it with `fast_image_resize` (Lanczos3) until it covers each box, never up, and encodes
+    lossless WebP with the original's ICC profile: the `image` crate's pure-Rust encoder has no lossy mode, and at
+    these sizes lossless stays small. Decoding runs on the blocking pool, two pictures per process at a time.
+  - Each size is stored next to the original as `<key>.w<width>` in the same bucket through `StorageClient`, so
+    the move to disk (REWRITE 9.3) carries them along. A WebP not smaller than the original, an animated
+    picture, an AVIF (its decoder is C) or one over the limits gets a server-side copy of the original instead:
+    once the job ran, every size key exists. Largest first, so the smallest existing means all do.
+  - The job share-locks the upload row while it writes; the reaper's `FOR UPDATE SKIP LOCKED` passes it by, and
+    deletes the size keys before the original (`variant_keys(purpose, key)`), so no size outlives it.
+  - The widths are in the contract (`x-upload-policy` `preview_widths`); web-2 builds the URLs from them
+    (`contentPreviews`): avatars as `srcset` at the drawn size, covers with the original as the 1280w candidate
+    and `sizes="auto"`. A preview that is not there yet (the job runs a moment after the upload) falls back to the
+    original on error.
 
 ## 12. AI subsystem
 

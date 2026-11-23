@@ -435,6 +435,9 @@ impl UploadsService {
         {
             return Err(Error::conflict("upload is already finalized"));
         }
+        if bucket == Bucket::Public {
+            super::previews::owe(&mut tx, &row.purpose, &row.key).await?;
+        }
         tx.commit().await?;
         Ok(FinalizedUpload {
             id,
@@ -521,6 +524,10 @@ pub async fn reap_expired(pool: &PgPool, storage: &StorageClient) -> Result<u64>
                     .abort_multipart(bucket, &upload.key, multipart_id)
                     .await?;
             }
+            // Previews first: a failure keeps the row, and with it the way back to them.
+            for variant in super::previews::variant_keys(&upload.purpose, &upload.key) {
+                storage.delete(bucket, &variant).await?;
+            }
             storage.delete(bucket, &upload.key).await
         }
         .await;
@@ -572,6 +579,10 @@ mod tests {
             "assessment-image",
         ] {
             let (bucket, _, types) = policy(purpose).expect(purpose);
+            if !super::super::previews::targets(purpose).is_empty() {
+                // Previews are served by `/content/` beside their original.
+                assert_eq!(bucket, Bucket::Public, "{purpose} has previews");
+            }
             if bucket == Bucket::Public {
                 assert!(!types.is_empty(), "{purpose} accepts any type");
                 for t in types {

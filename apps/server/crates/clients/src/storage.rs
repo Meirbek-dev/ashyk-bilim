@@ -12,7 +12,9 @@ use hmac::{Hmac, KeyInit, Mac};
 use object_store::aws::{AmazonS3, AmazonS3Builder};
 use object_store::multipart::{MultipartStore, PartId};
 use object_store::path::Path as ObjectPath;
-use object_store::{Attribute, GetOptions, ObjectStore, ObjectStoreExt, PutMultipartOptions};
+use object_store::{
+    Attribute, GetOptions, ObjectStore, ObjectStoreExt, PutMultipartOptions, PutOptions,
+};
 use secrecy::{ExposeSecret, SecretString};
 use sha2::{Digest, Sha256};
 
@@ -368,6 +370,41 @@ impl StorageClient {
             .await
             .map_err(|e| Error::internal("object put", e))?;
         Ok(())
+    }
+
+    /// Server-side write stored with `content_type` (what `/content/` serves
+    /// it as): image previews.
+    pub async fn put_typed(
+        &self,
+        bucket: Bucket,
+        key: &str,
+        bytes: Vec<u8>,
+        content_type: &str,
+    ) -> Result<()> {
+        let mut options = PutOptions::default();
+        options
+            .attributes
+            .insert(Attribute::ContentType, content_type.to_owned().into());
+        self.store(bucket)
+            .put_opts(&ObjectPath::from(key), bytes.into(), options)
+            .await
+            .map_err(|e| Error::internal("object put", e))?;
+        Ok(())
+    }
+
+    /// Server-side copy inside one bucket (S3 `CopyObject`: the bytes never
+    /// leave storage, the content type goes along). `Ok(false)` when `from`
+    /// does not exist.
+    pub async fn copy(&self, bucket: Bucket, from: &str, to: &str) -> Result<bool> {
+        match self
+            .store(bucket)
+            .copy(&ObjectPath::from(from), &ObjectPath::from(to))
+            .await
+        {
+            Ok(()) => Ok(true),
+            Err(object_store::Error::NotFound { .. }) => Ok(false),
+            Err(e) => Err(Error::internal("object copy", e)),
+        }
     }
 
     /// Read an object for operational verification jobs.

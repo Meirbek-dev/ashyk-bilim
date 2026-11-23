@@ -30,7 +30,7 @@ pub struct Report {
 }
 
 impl Report {
-    fn add(&mut self, key: &'static str, n: i64) {
+    pub(crate) fn add(&mut self, key: &'static str, n: i64) {
         *self.counts.entry(key).or_default() += n;
     }
 }
