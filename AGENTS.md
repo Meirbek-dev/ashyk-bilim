@@ -79,6 +79,8 @@
 - Start with `just brief` when an overview helps: vcs state, running slots, the last check/e2e verdict, open owner
   questions, production health. Its environment errors do not block unrelated work. Real failures come first: `just prod-report [--since 24h]` (read-only, on the production host) lists server
   warnings/errors by message, 5xx by route, browser errors and dead jobs.
+- `.mcp.json` gives every agent Playwright (the setup's Chromium, output in `tmp/`), Postgres read-only as `ashyq_ro`
+  on the local dev database (`DEV_DB`, default `ashyq_dev`; never production) and context7.
 - Scaffold instead of copying a reference: `just new feature <name>` (web-2), `just new endpoint <tag> <op>` (server
   test plus a `file:line` checklist), `just new migration <name>`.
 - Models: exploration, QA sweeps and log triage suit a fast model (Sonnet/Haiku class); contract, auth, migrations
