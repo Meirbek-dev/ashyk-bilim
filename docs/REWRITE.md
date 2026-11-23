@@ -75,8 +75,8 @@ Goals:
 
 - Production keeps working after every phase; no single cutover day carries the rewrite.
 - Backups leave the host, are encrypted, and a restore is rehearsed monthly.
-- One Rust binary, one Postgres, one static frontend, nginx, the code runner (go-judge). Nothing
-  else, in its own VM.
+- One Rust binary, one Postgres, the web-2 SSR server, Zitadel, nginx, the code runner
+  (go-judge). Nothing else, in its own VM. (Owner decision 2026-11-23 kept SSR and Zitadel.)
 - Every course-scoped handler gets its access decision from one place, by construction.
 - Every write that must happen together happens in one transaction, jobs included.
 - Every JSONB column has a Rust type that is deserialized on write and on read.
@@ -106,7 +106,7 @@ browser ─► university proxy (TLS, 4 KiB response headers, ~100 MiB bodies)
                      ├─ /assets/*            static files (immutable, 1 year)
                      ├─ /media/_internal/*   internal; served after X-Accel-Redirect
                      ├─ /api/*               ashyq :8000
-                     └─ everything else      ashyq :8000 (index.html + page meta)
+                     └─ everything else      web (web-2 SSR on Node)
                    ashyq (one binary: HTTP, worker loop, scheduler, SSE fan-out)
                      ├─ Postgres 18  (app data, sessions, jobs, LISTEN/NOTIFY)
                      ├─ /data/ashyq/media  (local disk, nginx reads it)
@@ -120,8 +120,8 @@ browser ─► university proxy (TLS, 4 KiB response headers, ~100 MiB bodies)
 second machine (tailnet): restic repository, monthly restore drill, dead-man check
 ```
 
-Containers in VM `ashyq`: `nginx`, `ashyq`, `postgres`. No backup container, no Docker
-socket mounts, no init jobs (the binary runs `migrate`; Postgres roles come from the
+Containers in VM `ashyq`: `nginx`, `web` (web-2 SSR, section 7), `ashyq`, `postgres`, `zitadel` (section 6; its
+database in the same Postgres). No backup container, no Docker socket mounts, no init jobs (the binary runs `migrate`; Postgres roles come from the
 image's `docker-entrypoint-initdb.d`).
 
 LXD 5.21 is installed on `cs01` with no instances and `user` is in `lxd`, so both VMs cost
@@ -178,13 +178,38 @@ Rules:
 
 ### 4.2 Dependencies
 
-Keep: `axum`, `tokio`, `tower-http`, `sqlx` (Postgres, macros, offline cache), `serde`,
-`serde_json`, `utoipa`, `tracing`, `tracing-subscriber` (JSON), `reqwest`, `argon2`,
-`bcrypt` (legacy hash verification only), `rand`, `sha2`, `hmac`, `time`, `uuid`,
-`pdf-writer` + font subsetting (certificates), `thiserror`.
+Owner review 2026-11-23. A new dependency follows the policy in `AGENTS.md` (the fastest
+maintained modern option, no legacy tools).
 
-Drop: `redis`, `object_store`, the three `opentelemetry` crates, `tiktoken-rs`,
-the Zitadel client. Add nothing that one module could replace in under 200 lines.
+Keep: `axum`, `tokio`, `tower-http`, `sqlx` (Postgres, macros, offline cache), `serde`,
+`serde_json`, `utoipa`, `tracing`, `tracing-subscriber` (JSON), `reqwest`, `sha2`, `hmac`,
+`jiff` (the only time crate; `time` stays only as a transitive dependency), `uuid`, `garde`,
+`secrecy`, `mimalloc`, `pdf-writer` + `skrifa` + `subsetter` (certificates; no typst until
+teachers edit templates), `rust_xlsxwriter`, `zip` + `quick-xml`, `thiserror`, the Zitadel
+client (section 6). The job queue stays hand-rolled (4.3). `pdf-extract` stays as the
+fallback only: the Anthropic provider gets submitted PDFs as `document` blocks.
+
+Drop: `redis`, `object_store`, the three `opentelemetry` crates and `tiktoken-rs` (the budget
+ledger reads `usage` from responses; estimates before a call use `count_tokens` for Anthropic,
+chars / 3.5 otherwise), `figment` (replaced by ~150 lines of `AB__*` parsing with `std::env`
+and serde when the crates collapse). OTLP and tiktoken go now, the rest with their phases.
+
+Add:
+
+- `lettre`: SMTP (the university relay) as the second email provider; Resend stays first.
+- `image` + `fast_image_resize`: a job writes WebP previews of avatars and image uploads.
+- `rmcp`: the product MCP server (4.7).
+
+Postgres: `pgvector` stays (one Postgres, its extension); `pg_trgm` for typo-tolerant search
+next to the `simple` FTS (no `pg_search`); `auto_explain` (500 ms) next to
+`pg_stat_statements`, slow plans listed by `just prod-report`; `io_method = io_uring`; ids
+come from `DEFAULT uuidv7()` with `RETURNING id`, not `Uuid::now_v7()`, wherever the table has
+the default.
+
+Build: `wild` (or `mold`) as the Linux linker in CI, `lld` on Windows, cranelift for Linux
+dev builds; the image is a static musl binary on distroless, cached with `cargo-chef` and a
+BuildKit registry cache in GHCR. When the crates collapse (4.1), heavy leaf code (`xlsx`,
+certificate PDF, `testdb-macros`) stays in its own crates for incremental builds.
 
 ### 4.3 Transactions and jobs
 
@@ -233,6 +258,17 @@ own POST response.
   heartbeat, and the count of jobs that failed permanently in the last 24 h by kind), the
   paths `smoke.sh` already checks.
 - No metrics backend. Alerting is the dead-man check in section 11.5.
+
+### 4.7 MCP server
+
+Owner decision 2026-11-23: Ashyq is reachable from MCP clients (Claude and other agents) so
+teachers and agents work with their courses there.
+
+- `rmcp`, Streamable HTTP transport at `/api/v2/mcp`, in the same binary.
+- Personal access tokens stored hashed in Postgres; scopes `read` and `draft` (course and
+  grade drafts, never publishing or releasing). Tools call the same domain functions as the
+  REST handlers, so `CourseCtx`/`Caps` (6.3) decide access.
+- Every tool call writes an audit row.
 
 ## 5. Schema
 
@@ -1233,16 +1269,15 @@ Queue, in order:
 
 ## 6. Auth
 
-Lands in phase 4, inside the current server, replacing Zitadel and Redis sessions.
+Owner decision 2026-11-23: Zitadel stays the identity provider and keeps the passwords.
+Neither hand-rolled auth nor `axum-login`/`tower-sessions`. Phase 4 moves only the sessions
+and rate limits from Redis into Postgres, so Redis goes; 6.1's password storage and 9.2 are
+cancelled.
 
 ### 6.1 Passwords
 
-- argon2id (m=19 MiB, t=2, p=1), PHC string in `users.password_hash`.
-- The switch copies each user's latest Zitadel hash (section 9.2). At login, a
-  `$2a$`/`$2b$` hash is verified with bcrypt and replaced by argon2id in the same request;
-  an `$argon2…` hash is verified as is.
-- A user with no hash signs in with Google or uses password reset. This depends on email
-  delivery working (phase 0).
+- Zitadel stores and verifies passwords; `users.password_hash`, argon2 and bcrypt are not
+  added.
 - Lockout: 5 `login-failed` audit rows for the same account in 15 min returns
   `too-many-attempts` for 15 min. Per-IP limits stay in nginx (`auth_limit`).
 - Constant-time failure path: an unknown login verifies against a fixed dummy hash.
@@ -1309,16 +1344,12 @@ bitflags! { pub struct Caps: u32 {
 
 `apps/web-2` stays the codebase and becomes the only frontend in phase 1. Changes, in order:
 
-1. **SPA (phase 1, with the cutover).** Drop TanStack Start's server (`serve.ts`): build
-   static files, nginx serves `/assets/*` with `immutable`; the server answers every
-   page path with `index.html`. For public course and catalog paths the server fills
-   `<title>`, description and Open Graph tags from the database before sending it
-   (string replace on the file read at boot); `sitemap.xml` lists only routes that exist.
-   No Node container, no header forwarding, no `useHydrated` gates.
-2. **CSP** becomes static and is sent by nginx: the directives of
-   `src/shared/lib/csp.ts` with `script-src 'self'` in place of the nonce and
-   `strict-dynamic`. The university proxy adds a second `X-Frame-Options`, HSTS and a
-   conflicting `Referrer-Policy`; ask IT to stop adding them.
+1. **SSR stays (owner decision 2026-11-23).** web-2 keeps running on TanStack Start with
+   `srvx` (`serve.ts`) in the Node `web` container; the SPA build planned here is off until
+   the owner reopens it. Do not convert routes to SPA-only patterns.
+2. **CSP** keeps its per-request nonce from `src/shared/lib/csp.ts` (SSR). The university
+   proxy adds a second `X-Frame-Options`, HSTS and a conflicting `Referrer-Policy`; ask IT
+   to stop adding them.
 3. **Chunking.** The home page lists 128 `modulepreload` links; group vendor and route
    chunks so the first page loads a handful of files.
 4. **Cut features** follow the server (section 10): routes, queries, SPEC files and e2e
@@ -1327,11 +1358,26 @@ bitflags! { pub struct Caps: u32 {
    Keep the editor content-loss check and the contract/codegen gate. Drop the 300/80-line
    caps, one-component-per-file, the behaviour-id bookkeeping and the gates whose only job
    is process (keep: format, lint, typecheck, unit, contract, e2e).
-6. **Toolchain** pinned to stable releases of TypeScript, Vite and Vitest; no aliased
-   or pre-release build tools (`vite-plus`) and no loader shims (`gates/ts6-*.mjs`).
-7. **One markdown/rich-text path:** Tiptap renders read-only views too.
+6. **Toolchain** (owner review 2026-11-23): `vite-plus` (oxlint, oxfmt, rolldown) and
+   TypeScript 7 stay. `typescript-6` and `gates/ts6-*.mjs` remain only for codegen until
+   TypeScript 7 ships its JS API, then go. Scripts stay on Node; Bun is the package manager.
+7. **One markdown/rich-text path:** Tiptap renders read-only views and AI answers too
+   (`@tiptap/markdown`); `react-markdown`, `remark-gfm`, `remark-math`, `rehype-katex` and
+   `hast-util-to-jsx-runtime` go. Read-only code blocks are highlighted with
+   `@lezer/highlight` and the CodeMirror grammars the editor already loads; `shiki` goes.
+8. **Dependencies** (owner review 2026-11-23):
+   - `@ag-ui/client` is replaced by a small SSE reader (`fetch` + `ReadableStream`); the
+     `zod` override and `zod-jitless.ts` go with it. valibot is the only schema library;
+     lint bans `zod`.
+   - Fonts: Inter, Onest, Geologica, Literata, Geist Mono; the other `@fontsource-variable`
+     families go after a check that each kept one covers ә ғ қ ң ө ұ ү һ і.
+   - PWA: a manifest and a hand-written service worker (assets plus a queue for exam
+     autosaves), no new dependencies; courses are not readable offline.
+   - Kept: `cn`, the new `@dnd-kit/react` API, `@tanstack/charts`, React Compiler (babel
+     plugin until oxc supports it), `If-Match` instead of Yjs collaboration, Kazakh in
+     Cyrillic only. TanStack DB is not used.
 
-Items 4–7 land in phases 1–3 as they become possible.
+Items 3–8 land in phases 1–3 as they become possible.
 
 Kept as they are: generated client from OpenAPI (hey-api), loader prefetch +
 `useSuspenseQuery`, `meta.invalidates`, the routes → features → shared import rule,
@@ -1391,7 +1437,7 @@ Where each v2 table goes and in which phase:
 | --- | --- | --- |
 | tables of cut features (section 10) | dropped after a per-table dump | 3 |
 | `etl_*`, `legacy_uuid` columns, legacy setting keys | dropped | 3 |
-| Zitadel eventstore | `users.password_hash` (9.2) | 4 |
+| Zitadel eventstore | stays in Zitadel (section 6; 9.2 cancelled) | - |
 | `user_roles` | `users.role` (admin > instructor/legacy-grants → teacher > learner) | 4 |
 | `uploads` + RustFS objects | `media` (status `ready` only) + `/data/ashyq/media` (9.3) | 4 |
 | `resource_authors` | `course_staff` + `collection_staff` (review 2 item 21: same columns, PK (target, user); the old table dropped by `20261103040100`). Left: creator → owner, contributor → editor, active only | 5 |
@@ -1410,6 +1456,8 @@ Where each v2 table goes and in which phase:
 | `auth_audit_log`, `assessment_audit_events` | `audit_log` | 5 |
 
 ### 9.2 Password hashes
+
+Cancelled 2026-11-23: Zitadel stays (section 6). Kept for the record.
 
 Zitadel keeps hashes in `eventstore.events2` payloads (`encodedHash`). On 2026-10-20:
 23 `$2a$` (bcrypt, imported from the legacy system), 105 `$argon2…`, 109 `user.human.added`
@@ -1453,7 +1501,7 @@ plan (section 5 tables and phases) still shows the old proposal where it drops t
 | --- | --- | --- |
 | Old Next.js web (`apps/web`) | superseded by web-2 | deleted in phase 1 |
 | Dual web, `WEB_LINKS`, phase-9 operations | compatibility only | deleted in phase 1 |
-| Zitadel | 1 TOTP enrolment, never verified | own auth (section 6), phase 4 |
+| Zitadel | 1 TOTP enrolment, never verified | kept as the identity provider (owner decision 2026-11-23, section 6) |
 | Redis | sessions + rate limits | Postgres + nginx, phase 4 |
 | RustFS | 16 GB, 31 tracked uploads | local disk, phase 4 |
 | Gamification (XP, levels, streaks) | reset at cutover | kept |
@@ -1480,7 +1528,8 @@ score distribution, completion funnel by activity.
 
 ### 11.1 Host
 
-- VM `ashyq` (LXD on `cs01`): Docker + one `compose.yaml`, `/data/ashyq/{postgres,media}`
+- VM `ashyq` (LXD 5.21 LTS on `cs01`): Podman with systemd quadlets (owner decision
+  2026-11-23: the same runtime as the dev box, no daemon), `/data/ashyq/{postgres,media}`
   on a volume backed by `/data`. Nothing else runs in it: no editors, no agents, no
   checkout, no other tenants. SSH by key only.
 - VM `judge`: the go-judge runner (`ashyq-runner`, nothing stateful), with CPU and
@@ -1496,8 +1545,10 @@ score distribution, completion funnel by activity.
 - nginx: one static config directory mounted as a directory (no single-file bind mounts,
   no forced recreate), `server_name` the only templated value, no `COMPOSE_PROFILES`
   `map`, security headers and CSP in one include.
-- `.env` holds secrets only and is never edited by a script. The image tag lives in
-  `release.env`, written by `just deploy`.
+- `.env` holds secrets only and is never edited by a script. It lives in the repository
+  encrypted with sops + age; the age key exists only on the dev box and the VM, so
+  `just deploy` needs no hand copy. The image tag lives in `release.env`, written by
+  `just deploy`.
 
 ### 11.3 Deploy and rollback
 
@@ -1569,6 +1620,18 @@ and nothing else breaks.
   `skills-sync`) are deleted; project-written skills stay in `.agents/skills` (at most a
   few), third-party ones are installed per user.
 - One lockfile: web-2 joins the root workspace (or the root `package.json` goes).
+- Owner review 2026-11-23:
+  - ast-grep rules (YAML, Rust and TS) replace the structural checks in `apps/web-2/gates/*.ts`
+    and the pattern checks of `infra/dev/agent-guard.ts`; agents add a rule instead of a script.
+  - `cargo-shear` replaces `cargo-machete`.
+  - `.mcp.json` is committed with the dev MCP servers every agent gets: Playwright, Postgres
+    read-only as `ashyq_ro` (no columns with personal data), context7.
+  - `just setup` installs the pinned Playwright Chromium, so vitest's browser project runs
+    locally.
+  - CI stays on GitHub-hosted runners (no self-hosted, no paid runners); merged branches are
+    deleted after landing.
+  - Not adopted: mutation testing, fuzzing, visual regression, AI review digests, zizmor,
+    image signing, AI evals in CI, `pgroll`.
 - Housekeeping on the dev box: `git gc`; `temp-restore/` (a prod backup with secrets and
   personal data) deleted; restores come from the restic repository.
 - Agent workflow during the rewrite: one agent per phase item or module, landing with its
@@ -1617,8 +1680,8 @@ dual-web profile, `WEB_LINKS`, the deprecated operations, the Next CI jobs and t
 listed in section 14. Exit: no Node container in prod, `apps/web` gone from `main`.
 Done 2026-11-08: prod moved to web-2 through dual web (the new web the default); `apps/web`, the
 `web2` service, the dual-web profile and the Next CI jobs deleted from `main`; production runs
-without the old web since 2026-11-08 (`834909a3`). Left: the `web` container still runs web-2 on Node (SSR), so the SPA build of
-section 7, `WEB_LINKS`, the deprecated operations, `migrate-editor-docs --after-cutover` and the
+without the old web since 2026-11-08 (`834909a3`). Left: the `web` container runs web-2 on Node (SSR), which stays (owner decision
+2026-11-23, section 7 item 1: the SPA build is off); `WEB_LINKS`, the deprecated operations, `migrate-editor-docs --after-cutover` and the
 section 14 docs remain (`STAGE-2-CUTOVER.md`).
 
 **Phase 2 — host.** VMs `ashyq` and `judge` (11.1), stack moved with a dump/restore and a
@@ -1635,11 +1698,10 @@ lines, tables and operations recorded here; CI under 15 minutes.
 
 1. Worker folded into the server binary (one container).
 2. Media from RustFS to disk (9.3); RustFS stopped, volume kept.
-3. Own auth (section 6, 9.2), sessions and rate limits in Postgres; Zitadel and Redis
-   stopped, volumes kept. Users sign in once; announce it a week ahead, ship in a
-   low-traffic window, and keep Zitadel startable for 14 days as the rollback.
+3. Sessions and rate limits in Postgres (section 6.2); Redis stopped, volume kept. Zitadel
+   stays. Users sign in once; announce it a week ahead and ship in a low-traffic window.
 
-Exit: containers are `nginx`, `ashyq`, `postgres`.
+Exit: containers are `nginx`, `web`, `ashyq`, `postgres`, `zitadel`.
 
 **Phase 5 — restructure.** Module by module, in this order: catalog + content, media,
 progress, assessments + grading, code, certificates, announcements, reports, Q&A, admin.

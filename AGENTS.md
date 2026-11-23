@@ -35,6 +35,9 @@
 ## Rules
 
 - Work on `main` with direct commits, or on a `wt/<name>` worktree branch landed by `just wt land` (no PRs).
+- Dependencies: pick the fastest actively maintained modern option (Rust-native, oxc/rolldown class), pragmatically:
+  a pre-1.0 version is fine. No legacy tools: eslint, prettier, jest, webpack, babel (React Compiler excepted),
+  moment, lodash, axios, express. What the plan keeps, drops and adds: `docs/REWRITE.md` 4.2 and 7.
 - Never edit an applied migration; add a new one. Data fixes are `ashyq admin` commands, not migrations
   (`apps/server/AGENTS.md`).
 - Never commit `.env`, `server.env`, `temp-restore/`, keys or tokens.
