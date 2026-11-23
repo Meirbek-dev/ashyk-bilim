@@ -69,12 +69,13 @@ fn request(url: &str, post: bool) -> anyhow::Result<u16> {
     stream.set_read_timeout(Some(TIMEOUT))?;
     stream.set_write_timeout(Some(TIMEOUT))?;
     let (method, body) = if post { ("POST", "{}") } else { ("GET", "") };
-    write!(
-        stream,
+    // One buffer, one write: `write!` on an unbuffered stream sends each piece as its own segment.
+    let request = format!(
         "{method} {path} HTTP/1.1\r\nHost: {address}\r\nUser-Agent: ashyq-probe\r\n\
          Content-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
         body.len()
-    )?;
+    );
+    stream.write_all(request.as_bytes())?;
     let mut head = Vec::new();
     let mut reader = stream.take(HEAD_LIMIT);
     let mut chunk = [0_u8; 512];
@@ -124,10 +125,29 @@ mod tests {
         let url = format!("http://{}/probe", listener.local_addr().unwrap());
         let handle = std::thread::spawn(move || {
             let (mut socket, _) = listener.accept().unwrap();
+            // A request may arrive in several segments: read the head, then the body it announces.
+            let mut got = Vec::new();
             let mut buf = [0_u8; 1024];
-            let read = socket.read(&mut buf).unwrap();
+            loop {
+                let text = String::from_utf8_lossy(&got).into_owned();
+                if let Some(end) = text.find("\r\n\r\n") {
+                    let length = text[..end]
+                        .lines()
+                        .find_map(|line| line.strip_prefix("Content-Length: "))
+                        .and_then(|value| value.trim().parse::<usize>().ok())
+                        .unwrap_or(0);
+                    if got.len() >= end + 4 + length {
+                        break;
+                    }
+                }
+                let read = socket.read(&mut buf).unwrap();
+                if read == 0 {
+                    break;
+                }
+                got.extend_from_slice(&buf[..read]);
+            }
             socket.write_all(answer.as_bytes()).unwrap();
-            String::from_utf8_lossy(&buf[..read]).into_owned()
+            String::from_utf8_lossy(&got).into_owned()
         });
         (url, handle)
     }
