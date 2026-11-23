@@ -3011,7 +3011,7 @@ dependencies = [
  "pastey",
  "percent-encoding",
  "pin-project-lite",
- "rand 0.10.3",
+ "rand",
  "schemars",
  "serde",
  "serde_json",
