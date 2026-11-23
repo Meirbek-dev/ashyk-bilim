@@ -196,7 +196,8 @@ and serde, `config/env.rs`). OTLP, figment and tiktoken go now, the rest with th
 
 Add:
 
-- `lettre`: SMTP (the university relay) as the second email provider; Resend stays first.
+- `lettre`: SMTP (the university relay) as the second email provider; Resend stays first and
+  SMTP sends what Resend failed to (`AB__EMAIL__SMTP_*`, docs/INFRA.md).
 - `image` + `fast_image_resize`: a job writes WebP previews of avatars and image uploads.
 - `rmcp`: the product MCP server (4.7).
 

@@ -14,7 +14,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use ab_clients::resend::ResendClient;
+use ab_clients::email::Mailer;
 use ab_clients::zitadel::{
     NewHumanUser, PasswordSessionOutcome, PasswordSpec, SessionUser, TotpRegistration,
     ZitadelClient,
@@ -266,7 +266,7 @@ pub struct IdentityService {
     limiter: RateLimiter,
     limits: ab_core::config::AuthLimits,
     /// `None` = email delivery unconfigured (codes are logged, accounts work).
-    mailer: Option<Arc<ResendClient>>,
+    mailer: Option<Arc<Mailer>>,
     /// Public web origin for links in emails (`AB__SERVER__WEB_URL`).
     web_url: Option<String>,
 }
@@ -295,11 +295,7 @@ impl IdentityService {
 
     /// Wire email delivery for verification codes.
     #[must_use]
-    pub fn with_mailer(
-        mut self,
-        mailer: Option<Arc<ResendClient>>,
-        web_url: Option<String>,
-    ) -> Self {
+    pub fn with_mailer(mut self, mailer: Option<Arc<Mailer>>, web_url: Option<String>) -> Self {
         self.mailer = mailer;
         self.web_url = web_url;
         self
@@ -884,7 +880,7 @@ impl IdentityService {
     }
 
     /// Public self-registration (DECISIONS 2026-09-12). The verification
-    /// code goes out via Resend; without a mailer it is logged and the
+    /// code goes out by email (Resend, else SMTP); without a mailer it is logged and the
     /// account still works - the legacy never gated login on verification.
     pub async fn register(&self, account: NewAccount) -> Result<Profile> {
         let ip = account.ip.as_deref();
@@ -956,7 +952,7 @@ impl IdentityService {
                 user_id = %to.id,
                 email = %to.email,
                 code,
-                "resend not configured: {} code not delivered",
+                "email not configured: {} code not delivered",
                 mail.what()
             );
             return;

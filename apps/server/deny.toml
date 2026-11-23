@@ -34,6 +34,8 @@ allow = [
   "CDLA-Permissive-2.0",
   # Boost Software License (permissive, OSI-approved) — xxhash-rust via redis.
   "BSL-1.0",
+  # Zero-clause BSD (public-domain equivalent) — quoted_printable via lettre.
+  "0BSD",
 ]
 
 [bans]

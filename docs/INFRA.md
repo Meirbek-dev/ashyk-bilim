@@ -110,7 +110,7 @@ Trust zones:
   tmpfs, read-only toolchains, no network, cgroup limits per program).
 - Data stores (data-net): no egress.
 - server and worker: all three networks; internet egress (AI providers,
-  Resend, Google) through edge-net.
+  Resend, the SMTP relay, Google) through edge-net.
 - Inside the stack the public hostname resolves to nginx (network alias on
   edge-net). The server signs S3 URLs for the public origin and calls storage
   through it, without NAT loopback or `host-gateway`.
@@ -234,6 +234,7 @@ it), `DEV_PG_PORT`, `DEV_REDIS_PORT`, `DEV_ZITADEL_PORT`, `DEV_RUSTFS_PORT`,
 | `AB__ZITADEL__PAT` | appended by bootstrap from `zitadel_machinekey/pat.txt` |
 | `AB__GOOGLE__CLIENT_ID`, `AB__GOOGLE__CLIENT_SECRET`, `AB__GOOGLE__REDIRECT_URI` | optional, all or none |
 | `AB__RESEND__API_KEY`, `AB__RESEND__FROM` | optional, all or none (`FROM` has no default) |
+| `AB__EMAIL__SMTP_HOST`, `_PORT`, `_TLS`, `_USERNAME`, `_PASSWORD`, `_FROM` | optional SMTP relay, the second email provider: used alone, or for a message Resend failed to send. `FROM` is required with `HOST`; `TLS` is `starttls` (default, port 587), `tls` (465) or `none` (25, trusted network only; refused with a password in production); username and password both or neither |
 | `AB__AI__CLAUDE_API_KEY`, `AB__AI__OPENAI_API_KEY`, `AB__AI__OPENROUTER_API_KEY` | optional; tried in that order; models default in the server config |
 
 Compose sets these for server, worker and server-migrate (`x-server-env`,

@@ -357,7 +357,7 @@ impl IdentityService {
     /// One account mail; without a mailer the code is logged (dev, e2e).
     async fn mail(&self, to: &str, subject: &str, html: &str, code: &str) {
         let Some(mailer) = &self.mailer else {
-            tracing::warn!(email = %to, code, "resend not configured: \"{subject}\" not delivered");
+            tracing::warn!(email = %to, code, "email not configured: \"{subject}\" not delivered");
             return;
         };
         if let Err(err) = mailer.send(to, subject, html).await {

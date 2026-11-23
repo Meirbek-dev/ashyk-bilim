@@ -47,7 +47,7 @@ Companion documents:
                     │ server ◄─ exec-net ► runner       (code execution, profile runner)      │
                     │ worker  (ashyq worker: job queue consumers + schedule ticks)            │
                     └─────────────────────────────────────────────────────────────────────────┘
-                    External: Anthropic / OpenAI / OpenRouter (LLM), Resend (email), Google OAuth
+                    External: Anthropic / OpenAI / OpenRouter (LLM), Resend + SMTP relay (email), Google OAuth
 ```
 
 One Docker image. `ashyq serve` and `ashyq worker` are the same binary with different subcommands. Services,
@@ -130,7 +130,7 @@ apps/server/
 └── crates/
     ├── core/          (ab-core)          errors, config, ids, time, permission model, links, telemetry
     ├── db/            (ab-db)            pool, embedded migrations, queries/rows, queue, schedules
-    ├── clients/       (ab-clients)       zitadel, google, gojudge, resend, llm, storage, link_preview
+    ├── clients/       (ab-clients)       zitadel, google, gojudge, email (resend, smtp), llm, storage, link_preview
     ├── domain/        (ab-domain)        all business logic, module per bounded context
     ├── api/           (ab-api)           axum app: state, extractors, middleware, routes, DTOs, OpenAPI
     ├── jobs/          (ab-jobs)          worker runtime + job handlers

@@ -68,6 +68,7 @@ pub fn test_config() -> Config {
         zitadel: None,
         google: None,
         resend: None,
+        email: ab_core::config::EmailConfig::default(),
         storage: None,
         runner: None,
         telemetry: TelemetryConfig { json_logs: false },
@@ -162,9 +163,9 @@ impl TestApp {
             })
             .expect("test google client"),
         );
-        let mailer = config.resend.clone().map(|c| {
-            Arc::new(ab_clients::resend::ResendClient::new(c).expect("test resend client"))
-        });
+        let mailer = ab_clients::email::Mailer::from_config(config.resend.as_ref(), &config.email)
+            .expect("test mailer")
+            .map(Arc::new);
         let identity = IdentityService::new(pool.clone(), sessions.clone(), zitadel_client.clone())
             .with_mailer(mailer, config.server.web_url.clone())
             .with_limits(config.auth.limits);

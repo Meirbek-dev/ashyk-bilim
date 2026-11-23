@@ -500,20 +500,13 @@ async fn build_state(config: Config, process: ab_db::Process) -> anyhow::Result<
             pat: zitadel_config.pat,
         },
     )?);
-    // Compose passes the key through even when unset (empty string):
-    // treat that as "not configured" rather than sending doomed requests.
-    let resend = config.resend.clone().filter(|r| {
-        !secrecy::ExposeSecret::expose_secret(&r.api_key)
-            .trim()
-            .is_empty()
-    });
-    if resend.is_none() {
-        tracing::info!("email delivery not configured (AB__RESEND__* unset)");
+    let mailer = ab_clients::email::Mailer::from_config(config.resend.as_ref(), &config.email)?;
+    if let Some(mailer) = &mailer {
+        tracing::info!(providers = %mailer.providers(), "email delivery on");
+    } else {
+        tracing::info!("email delivery not configured (AB__RESEND__* and AB__EMAIL__SMTP_* unset)");
     }
-    let mailer = resend
-        .map(ab_clients::resend::ResendClient::new)
-        .transpose()?
-        .map(std::sync::Arc::new);
+    let mailer = mailer.map(std::sync::Arc::new);
     let identity =
         ab_domain::identity::IdentityService::new(pool.clone(), sessions.clone(), zitadel.clone())
             .with_mailer(mailer, config.server.web_url.clone())

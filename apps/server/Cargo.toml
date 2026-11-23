@@ -90,6 +90,16 @@ mimalloc = "0.1.52"
 
 # HTTP client
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "form", "rustls", "stream"] }
+# SMTP, the second email provider (university relay); rustls with ring like reqwest and sqlx (REWRITE 4.1).
+lettre = { version = "0.11.24", default-features = false, features = [
+  "builder",
+  "hostname",
+  "smtp-transport",
+  "tokio1",
+  "tokio1-rustls",
+  "ring",
+  "rustls-platform-verifier",
+] }
 
 # AI (P8): token estimates for the budget ledger; regex for secret redaction
 # of model output. The chat-completions client itself is hand-rolled on

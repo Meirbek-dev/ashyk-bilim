@@ -51,9 +51,13 @@ pub struct Config {
     pub zitadel: Option<ZitadelConfig>,
     /// Google login is optional (password login works without it).
     pub google: Option<GoogleOauthConfig>,
-    /// Transactional email (registration verification codes). Unset =
-    /// codes are logged at `warn` and accounts still work.
+    /// Transactional email, the first provider (account codes). With neither
+    /// Resend nor SMTP set, codes are logged at `warn` and accounts still work.
     pub resend: Option<ResendConfig>,
+    /// SMTP (`AB__EMAIL__SMTP_*`), the second provider: used alone, or when
+    /// Resend fails.
+    #[serde(default)]
+    pub email: EmailConfig,
     /// Required by `serve`/`worker` (uploads, media); optional elsewhere.
     pub storage: Option<StorageSettings>,
     /// Code execution (`AB__RUNNER__*`, go-judge). Unset = code runs answer
@@ -697,6 +701,100 @@ impl ResendConfig {
     }
 }
 
+/// SMTP delivery (the university relay). Off while `smtp_host` is unset or blank.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default)]
+pub struct EmailConfig {
+    pub smtp_host: Option<String>,
+    /// Unset = the mode's port: 587 `starttls`, 465 `tls`, 25 `none`.
+    pub smtp_port: Option<u16>,
+    /// Both or neither (blank = unset); neither = an unauthenticated relay.
+    pub smtp_username: Option<String>,
+    pub smtp_password: Option<SecretString>,
+    pub smtp_tls: SmtpTls,
+    /// Sender, e.g. `Ashyq Bilim <noreply@tou.edu.kz>`; required with `smtp_host`.
+    pub smtp_from: Option<String>,
+}
+
+impl EmailConfig {
+    /// The relay host when SMTP is on.
+    #[must_use]
+    pub fn smtp_host(&self) -> Option<&str> {
+        self.smtp_host
+            .as_deref()
+            .map(str::trim)
+            .filter(|h| !h.is_empty())
+    }
+
+    /// The configured port, else the TLS mode's.
+    #[must_use]
+    pub fn smtp_port(&self) -> u16 {
+        self.smtp_port.unwrap_or(match self.smtp_tls {
+            SmtpTls::Starttls => 587,
+            SmtpTls::Tls => 465,
+            SmtpTls::None => 25,
+        })
+    }
+
+    /// Username and password when both are set; a blank one counts as unset.
+    #[must_use]
+    pub fn smtp_credentials(&self) -> Option<(&str, &SecretString)> {
+        Some((self.smtp_username()?, self.smtp_password()?))
+    }
+
+    fn smtp_username(&self) -> Option<&str> {
+        self.smtp_username
+            .as_deref()
+            .map(str::trim)
+            .filter(|u| !u.is_empty())
+    }
+
+    fn smtp_password(&self) -> Option<&SecretString> {
+        self.smtp_password
+            .as_ref()
+            .filter(|p| !p.expose_secret().is_empty())
+    }
+
+    fn validate(&self, production: bool) -> Result<()> {
+        if self.smtp_host().is_none() {
+            return Ok(());
+        }
+        if self
+            .smtp_from
+            .as_deref()
+            .is_none_or(|f| f.trim().is_empty())
+        {
+            return Err(Error::config(
+                "AB__EMAIL__SMTP_FROM must be set with AB__EMAIL__SMTP_HOST",
+            ));
+        }
+        if self.smtp_username().is_some() != self.smtp_password().is_some() {
+            return Err(Error::config(
+                "AB__EMAIL__SMTP_USERNAME and AB__EMAIL__SMTP_PASSWORD go together",
+            ));
+        }
+        if production && self.smtp_tls == SmtpTls::None && self.smtp_credentials().is_some() {
+            return Err(Error::config(
+                "AB__EMAIL__SMTP_TLS=none would send the SMTP password in clear text in production",
+            ));
+        }
+        Ok(())
+    }
+}
+
+/// `AB__EMAIL__SMTP_TLS`: how the SMTP connection is secured.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SmtpTls {
+    /// Plain connect, then STARTTLS (required, never downgraded).
+    #[default]
+    Starttls,
+    /// TLS from the first byte (SMTPS).
+    Tls,
+    /// No encryption: only for a relay on a trusted network.
+    None,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct TelemetryConfig {
     /// JSON logs (prod) vs pretty logs (dev).
@@ -735,6 +833,7 @@ impl Config {
             return Err(Error::config("AB__DATABASE__URL must be set"));
         }
         self.server.zone()?;
+        self.email.validate(self.environment.is_production())?;
         let r = self.retention;
         if [
             r.jobs_succeeded_days,
@@ -796,6 +895,14 @@ impl Config {
                 "from": r.from,
                 "base_url": r.base_url,
             })),
+            "email": self.email.smtp_host().map(|host| serde_json::json!({
+                "smtp_host": host,
+                "smtp_port": self.email.smtp_port(),
+                "smtp_username": self.email.smtp_username,
+                "smtp_password": self.email.smtp_password.as_ref().map(|_| "[redacted]"),
+                "smtp_tls": self.email.smtp_tls,
+                "smtp_from": self.email.smtp_from,
+            })),
             "database": {
                 "url": "[redacted]",
                 "max_connections": self.database.max_connections,
@@ -854,6 +961,7 @@ mod tests {
             zitadel: None,
             google: None,
             resend: None,
+            email: EmailConfig::default(),
             storage: None,
             runner: None,
             ai: AiConfig::default(),
@@ -1012,6 +1120,54 @@ mod tests {
         // A blank runner URL turns the runner off (compose overlays cannot unset a key).
         let cfg = Config::from_vars(vars(&[db, ("AB__RUNNER__BASE_URL", "")])).unwrap();
         assert!(cfg.runner.is_none());
+    }
+
+    #[test]
+    fn smtp_settings_load_and_validate() {
+        let db = ("AB__DATABASE__URL", "postgres://x");
+        let cfg = Config::from_vars(vars(&[db])).unwrap();
+        assert!(cfg.email.smtp_host().is_none(), "SMTP is off by default");
+        let cfg = Config::from_vars(vars(&[
+            db,
+            ("AB__EMAIL__SMTP_HOST", "relay.tou.example"),
+            ("AB__EMAIL__SMTP_TLS", "tls"),
+            ("AB__EMAIL__SMTP_USERNAME", "ashyq"),
+            ("AB__EMAIL__SMTP_PASSWORD", "smtp-secret"),
+            ("AB__EMAIL__SMTP_FROM", "Ashyq Bilim <noreply@tou.example>"),
+        ]))
+        .unwrap();
+        assert_eq!(cfg.email.smtp_host(), Some("relay.tou.example"));
+        assert_eq!(cfg.email.smtp_port(), 465);
+        let redacted = cfg.redacted().to_string();
+        assert!(!redacted.contains("smtp-secret") && redacted.contains("relay.tou.example"));
+
+        let err = |pairs: &[(&str, &str)]| Config::from_vars(vars(pairs)).unwrap_err().to_string();
+        let host = ("AB__EMAIL__SMTP_HOST", "relay");
+        assert!(err(&[db, host]).contains("AB__EMAIL__SMTP_FROM must be set"));
+        let from = ("AB__EMAIL__SMTP_FROM", "a@b.example");
+        assert!(err(&[db, host, from, ("AB__EMAIL__SMTP_USERNAME", "u")]).contains("go together"));
+        assert!(
+            err(&[db, host, from, ("AB__EMAIL__SMTP_TLS", "ssl")]).contains("AB__EMAIL__SMTP_TLS")
+        );
+        let mut cfg = Config::from_vars(vars(&[
+            db,
+            host,
+            from,
+            ("AB__EMAIL__SMTP_TLS", "none"),
+            ("AB__EMAIL__SMTP_USERNAME", "u"),
+            ("AB__EMAIL__SMTP_PASSWORD", "p"),
+        ]))
+        .unwrap();
+        assert_eq!(cfg.email.smtp_port(), 25);
+        cfg.environment = Environment::Production;
+        cfg.server.cors_origins = vec!["https://app.example".into()];
+        cfg.telemetry.json_logs = true;
+        assert!(
+            cfg.validate()
+                .unwrap_err()
+                .to_string()
+                .contains("clear text")
+        );
     }
 
     #[test]

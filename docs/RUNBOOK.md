@@ -453,7 +453,7 @@ consistent). `ALTER ROLE` uses the helper from section 0.
   --wait` (rustfs, server, worker recreated; storage-init reruns). In-flight
   presigned URLs fail. Not exercised yet: take `just backup` first; rollback =
   the old values from that snapshot's `.env`.
-- **`server.env` integrations** (Google, Resend, AI keys): edit
+- **`server.env` integrations** (Google, Resend, SMTP, AI keys): edit
   `server.env`, `dc up -d --wait server worker`.
 - **TLS key**: 3.7.
 
