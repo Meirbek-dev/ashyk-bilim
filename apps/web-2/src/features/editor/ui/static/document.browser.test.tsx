@@ -203,7 +203,7 @@ test.each([720, 358])(
         </Suspense>
       </QueryClientProvider>,
     )
-    // KaTeX, shiki and the user card arrive on their own time in both.
+    // KaTeX, code colors and the user card arrive on their own time in both.
     await expect.poll(() => document.querySelectorAll('.katex').length, { timeout: 45_000 }).toBe(2)
     await document.fonts.ready
     await expect.poll(() => [...document.querySelectorAll('img')].every(image => image.complete)).toBe(true)

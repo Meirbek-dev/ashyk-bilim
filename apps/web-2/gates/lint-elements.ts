@@ -22,4 +22,11 @@ export const rendererOverrides: NonNullable<OxlintConfig['overrides']> = [
     files: ['src/features/editor/ui/static/inline.tsx'],
     rules: { 'react/forbid-elements': ['error', { forbid: forbiddenExceptA }] },
   },
+  // Markdown drawn as Tiptap's read-only view draws it: plain links and tables under `ab-prose`, as stored documents.
+  {
+    files: ['src/features/markdown/ui/rich-text.tsx'],
+    rules: {
+      'react/forbid-elements': ['error', { forbid: forbiddenExceptA.filter(entry => entry.element !== 'table') }],
+    },
+  },
 ]

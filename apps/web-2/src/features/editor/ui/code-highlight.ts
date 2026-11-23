@@ -5,28 +5,24 @@ import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view'
 
 import { loadHighlighter } from '#/features/markdown'
 
-type Shiki = Awaited<ReturnType<typeof loadHighlighter>>
-type Core = Awaited<ReturnType<Shiki['highlighter']>>
+type Highlighter = Awaited<ReturnType<typeof loadHighlighter>>
 
 const key = new PluginKey<DecorationSet>('codeHighlight')
 
-function decorate(doc: PMNode, shiki: Shiki | null, core: Core | null): DecorationSet {
-  if (!shiki || !core) return DecorationSet.empty
+function decorate(doc: PMNode, highlighter: Highlighter | null): DecorationSet {
+  if (!highlighter) return DecorationSet.empty
   const decorations: Decoration[] = []
   doc.descendants((node, pos) => {
     if (node.type.name !== 'codeBlock') return true
-    const lang = shiki.grammarOf(String(node.attrs['language'] ?? ''))
-    if (!lang || !core.getLoadedLanguages().includes(lang)) return false
+    const id = highlighter.languageOf(String(node.attrs['language'] ?? ''))
+    const highlight = id ? highlighter.loadedLanguage(id) : undefined
+    if (!highlight) return false
     let from = pos + 1
-    // `light-dark()`: shiki writes `color: light-dark(light, dark)` itself (no `.shiki` root here for prose.css).
-    const options = { lang, themes: shiki.THEMES, defaultColor: 'light-dark()' } as const
-    for (const line of core.codeToTokens(node.textContent, options).tokens) {
+    for (const line of highlight(node.textContent)) {
       for (const token of line) {
-        const style = Object.entries(token.htmlStyle ?? {})
-          .map(([name, value]) => `${name}:${value}`)
-          .join(';')
-        if (style) decorations.push(Decoration.inline(from, from + token.content.length, { style }))
-        from += token.content.length
+        if (token.className)
+          decorations.push(Decoration.inline(from, from + token.text.length, { class: token.className }))
+        from += token.text.length
       }
       from += 1
     }
@@ -35,12 +31,11 @@ function decorate(doc: PMNode, shiki: Shiki | null, core: Core | null): Decorati
   return DecorationSet.create(doc, decorations)
 }
 
-/** Shiki colors in editor code blocks: grammars load on first use, then the blocks are re-decorated. */
+/** Code colors in editor code blocks (the code editor's token classes): languages load on first use, then re-decorate. */
 export const CodeHighlight = Extension.create({
   name: 'codeHighlight',
   addProseMirrorPlugins() {
-    let shiki: Shiki | null = null
-    let core: Core | null = null
+    let highlighter: Highlighter | null = null
     const requested = new Set<string>()
     const load = (view: EditorView) => {
       const languages = new Set<string>()
@@ -52,10 +47,12 @@ export const CodeHighlight = Extension.create({
       if (missing.length === 0) return
       for (const language of missing) requested.add(language)
       void loadHighlighter().then(async module => {
-        shiki = module
-        const grammars = missing.map(language => module.grammarOf(language)).filter(grammar => grammar !== null)
-        for (const grammar of grammars) core = await module.highlighter(grammar)
-        if (!view.isDestroyed && grammars.length > 0) view.dispatch(view.state.tr.setMeta(key, true))
+        highlighter = module
+        const ids = missing.map(language => module.languageOf(language)).filter(id => id !== null)
+        // A grammar that fails to load leaves its blocks plain; the others still color.
+        const results = await Promise.allSettled(ids.map(id => module.loadLanguage(id)))
+        if (!view.isDestroyed && results.some(result => result.status === 'fulfilled'))
+          view.dispatch(view.state.tr.setMeta(key, true))
         return null
       })
     }
@@ -63,9 +60,9 @@ export const CodeHighlight = Extension.create({
       new Plugin({
         key,
         state: {
-          init: (_config, { doc }) => decorate(doc, shiki, core),
+          init: (_config, { doc }) => decorate(doc, highlighter),
           apply: (tr, set) =>
-            tr.docChanged || tr.getMeta(key) ? decorate(tr.doc, shiki, core) : set.map(tr.mapping, tr.doc),
+            tr.docChanged || tr.getMeta(key) ? decorate(tr.doc, highlighter) : set.map(tr.mapping, tr.doc),
         },
         props: { decorations: state => key.getState(state) },
         view: view => {

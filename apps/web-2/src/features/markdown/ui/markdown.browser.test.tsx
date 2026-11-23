@@ -7,13 +7,15 @@ import { renderInRouter } from '#/shared/components/testing'
 
 import { sanitize } from '../model/sanitize'
 import { MarkdownEditor, MarkdownView } from '../index'
-import { highlighter } from './shiki'
+import { loadLanguage } from './languages'
 
-// As in code-block.browser.test.tsx, load the grammar before the full suite competes for cold chunks.
-beforeAll(() => highlighter('python'), 120_000)
+// The renderer chunk (the Tiptap parser) and the grammar compile on first request under the dev server: warm both.
+beforeAll(() => Promise.all([loadLanguage('python'), import('./markdown-view')]), 120_000)
 
-const CODE = '```\nx = 1\n```'
+const FENCE = '```'
+const CODE = `${FENCE}\nx = 1\n${FENCE}`
 const render = (ui: ReactNode) => renderInRouter(<Suspense>{ui}</Suspense>)
+const tokens = () => document.querySelectorAll('.ab-code code span[class]')
 
 const TEXT = [
   '## Задача',
@@ -24,25 +26,34 @@ const TEXT = [
   '|---|---|',
   '| 1 | 2 |',
   '',
-  '```python',
+  `${FENCE}python`,
   'print(1)',
-  '```',
+  FENCE,
   '',
   '[docs](https://example.com) [local](/courses/1) [bad](javascript:alert(1))',
   '',
   '![chart](/content/c.png) ![pixel](https://tracker.example/p.gif)',
   '',
   '<b onclick="alert(1)">raw</b>',
+  '',
+  '<div onclick="alert(1)">block html</div>',
+  '',
+  '- [x] done',
+  '- [ ] todo',
 ].join('\n')
 
 describe('B-MD-01 renderer', () => {
-  test('B-MD-01 GFM, math and highlighted code', async () => {
+  test('B-MD-01 GFM, task lists, math and highlighted code', async () => {
     const screen = await render(<MarkdownView content={TEXT} />)
     await expect.element(screen.getByRole('heading', { level: 2, name: 'Задача' })).toBeVisible()
     await expect.element(screen.getByRole('table')).toBeVisible()
+    expect([...document.querySelectorAll('thead th')].map(cell => cell.textContent)).toEqual(['a', 'b'])
     await expect.poll(() => document.querySelector('.katex') !== null).toBe(true)
-    await expect.poll(() => document.querySelector('.shiki span[style*="--shiki-light"]') !== null).toBe(true)
+    await expect.poll(() => tokens().length > 0).toBe(true)
     await expect.element(screen.getByText('python')).toBeVisible()
+    expect(document.querySelector('del')?.textContent).toBe('не')
+    await expect.element(screen.getByRole('checkbox', { name: 'done' })).toBeChecked()
+    await expect.element(screen.getByRole('checkbox', { name: 'todo' })).not.toBeChecked()
   })
 
   test('B-MD-02 B-MD-03 B-MD-04 links, images and raw HTML are safe', async () => {
@@ -54,7 +65,10 @@ describe('B-MD-01 renderer', () => {
     await expect.element(screen.getByText('bad')).not.toHaveAttribute('href', 'javascript:alert(1)')
     await expect.element(screen.getByRole('img', { name: 'chart' })).toHaveAttribute('src', '/content/c.png')
     await expect.element(screen.getByText(m.markdown_image({ alt: 'pixel' }))).toBeVisible()
-    expect(document.querySelector('.ab-prose [onclick], .ab-prose b')).toBeNull()
+    expect(document.querySelector('.ab-prose [onclick], .ab-prose b, .ab-prose div div')).toBeNull()
+    // Inline tags are dropped, their text stays; a block of HTML is dropped whole.
+    await expect.element(screen.getByText('raw', { exact: true })).toBeVisible()
+    expect(document.querySelector('.ab-prose')?.textContent).not.toContain('block html')
   })
 
   test('B-MD-08 a code block copies its code', async () => {

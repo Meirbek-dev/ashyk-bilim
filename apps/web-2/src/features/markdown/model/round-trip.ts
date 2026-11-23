@@ -1,30 +1,51 @@
+import type { JSONContent } from '@tiptap/core'
+import { Mathematics } from '@tiptap/extension-mathematics'
 import { MarkdownManager } from '@tiptap/markdown'
-import type { Nodes } from 'mdast'
-import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import remarkParse from 'remark-parse'
-import { unified } from 'unified'
 
+import { markdownMarked, parseMarkdown } from './parser'
 import { hasRawHtml } from './sanitize'
 import { markdownSchema } from './schema'
 
-// G-14 for markdown (gates/corpus.ts, tests): text is "lossless" when the markdown editor's round trip
-// (parse into the Tiptap document, serialize back) renders the same tree in the one renderer (remark + GFM + math).
-const processor = unified().use(remarkParse).use(remarkGfm).use(remarkMath)
-const KEYS = new Set(['value', 'url', 'lang', 'depth', 'ordered', 'alt', 'checked'])
+// G-14 for markdown (gates/corpus.ts, tests): text is "lossless" when the markdown editor's round trip (parse into
+// the Tiptap document, serialize back) parses to the same document, which is what the one renderer draws.
+const MATH = [Mathematics]
+const ATTRS = ['level', 'start', 'language', 'latex', 'src', 'alt', 'href', 'checked', 'align', 'colspan', 'rowspan']
 
-/** The rendered structure of markdown: node types with their meaningful values, positions and spacing ignored. */
+/** The rendered structure of markdown: node types with their meaningful values, text runs merged, spacing ignored. */
 export function markdownShape(markdown: string): string[] {
   const out: string[] = []
-  const visit = (node: Nodes) => {
-    const fields = Object.entries(node).flatMap(([key, value]: [string, unknown]) => {
-      if (!KEYS.has(key) || value === undefined || value === null) return []
+  let text: { marks: string; value: string } | null = null
+  const flush = () => {
+    if (text && text.value.trim()) out.push(`text${text.marks} value=${text.value.replace(/\s+/g, ' ').trim()}`)
+    text = null
+  }
+  const visit = (node: JSONContent) => {
+    if (node.type === 'text') {
+      const marks = (node.marks ?? [])
+        .map(mark => [
+          mark.type,
+          ...ATTRS.flatMap(key => (mark.attrs?.[key] ? [`${key}=${String(mark.attrs[key])}`] : [])),
+        ])
+        .map(parts => ` ${parts.join(':')}`)
+        .toSorted()
+        .join('')
+      if (text?.marks !== marks) flush()
+      text = { marks, value: `${text?.value ?? ''}${node.text ?? ''}` }
+      return
+    }
+    flush()
+    // Extra blank lines (empty paragraphs) render as nothing.
+    if (node.type === 'paragraph' && !node.content?.length) return
+    const fields = ATTRS.flatMap(key => {
+      const value: unknown = node.attrs?.[key]
+      if (value === undefined || value === null) return []
       return [`${key}=${typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : JSON.stringify(value)}`]
     })
     out.push([node.type, ...fields].join(' '))
-    if ('children' in node) for (const child of node.children) visit(child)
+    for (const child of node.content ?? []) visit(child)
+    flush()
   }
-  visit(processor.parse(markdown))
+  visit(parseMarkdown(markdown, MATH))
   return out
 }
 
@@ -32,7 +53,7 @@ let manager: MarkdownManager | null = null
 
 /** Markdown -> editor document -> markdown, as opening and saving it in the markdown editor would. */
 export function roundTripMarkdown(markdown: string): string {
-  manager ??= new MarkdownManager({ extensions: markdownSchema() })
+  manager ??= new MarkdownManager({ marked: markdownMarked(), extensions: markdownSchema(MATH) })
   return manager.serialize(manager.parse(markdown))
 }
 

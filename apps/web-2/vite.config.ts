@@ -57,7 +57,7 @@ const chromium = {
   provider: playwright(),
   instances: [{ browser: 'chromium' as const }],
 }
-// 30 s: a file's first test loads lazy chunks (Tiptap, shiki) while other worktrees verify; 15 s timed out.
+// 30 s: a file's first test loads lazy chunks (Tiptap, code grammars) while other worktrees verify; 15 s timed out.
 const browser = { name: 'browser', include: ['src/**/*.browser.test.{ts,tsx}'], browser: chromium, testTimeout: 30_000 }
 const themes = { name: 'themes', include: ['src/**/*.themes.test.{ts,tsx}'], browser: chromium }
 const SDK = 'HTTP to the API goes through the generated SDK (#/shared/api/gen) on top of #/shared/api/client.ts.'

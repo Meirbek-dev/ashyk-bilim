@@ -1,17 +1,18 @@
 import type { AnyExtension } from '@tiptap/core'
 import { Image } from '@tiptap/extension-image'
-import { Mathematics } from '@tiptap/extension-mathematics'
+import { TaskItem, TaskList } from '@tiptap/extension-list'
 import { TableKit } from '@tiptap/extension-table'
 import { StarterKit } from '@tiptap/starter-kit'
 
 import { safeUrl } from './sanitize'
 
 /**
- * The markdown editor's document: the editor feature's text core (StarterKit with the same link rules, tables,
- * images) plus `$inline$` / `$$block$$` math, each with a markdown parser and serializer (@tiptap/markdown).
- * Code blocks keep their fence language; raw HTML is not part of the document.
+ * The markdown document of the editor and of the renderer: the editor feature's text core (StarterKit with the same
+ * link rules, tables, images), GFM task lists, plus `math` (`$inline$` / `$$block$$`: `Mathematics`, which carries
+ * KaTeX, so a view without `$` in its text parses without it). Every extension brings its markdown parser and
+ * serializer (@tiptap/markdown). Code blocks keep their fence language; raw HTML is not part of the document.
  */
-export const markdownSchema = (): AnyExtension[] => [
+export const markdownSchema = (math: AnyExtension[] = []): AnyExtension[] => [
   StarterKit.configure({
     link: {
       openOnClick: false,
@@ -23,5 +24,7 @@ export const markdownSchema = (): AnyExtension[] => [
   }),
   TableKit.configure({ table: { resizable: false } }),
   Image,
-  Mathematics,
+  TaskList,
+  TaskItem.configure({ nested: true }),
+  ...math,
 ]

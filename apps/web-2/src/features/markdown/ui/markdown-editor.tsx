@@ -1,9 +1,11 @@
+import { Mathematics } from '@tiptap/extension-mathematics'
 import { Placeholder } from '@tiptap/extensions'
 import { Markdown } from '@tiptap/markdown'
 import { EditorContent, useEditor } from '@tiptap/react'
 import katexCss from 'katex/dist/katex.min.css?url'
 import { useEffect } from 'react'
 
+import { markdownMarked } from '../model/parser'
 import { markdownSchema } from '../model/schema'
 import { MarkdownToolbar } from './markdown-toolbar'
 import proseCss from '#/styles/prose.css?url'
@@ -18,11 +20,16 @@ type MarkdownEditorProps = {
 
 /**
  * WYSIWYG editing of a markdown string on the Tiptap core: markdown in, markdown out (@tiptap/markdown).
- * What it saves renders the same in MarkdownView (G-14 round trip).
+ * One parser and schema with MarkdownView: what it saves renders the same (G-14 round trip).
  */
 export function MarkdownEditor({ value, onChange, label, placeholder = '' }: MarkdownEditorProps) {
   const editor = useEditor({
-    extensions: [...markdownSchema(), Markdown, Placeholder.configure({ placeholder })],
+    extensions: [
+      ...markdownSchema([Mathematics]),
+      // The renderer's tokenizer: what the editor opens is what MarkdownView shows (raw HTML dropped in both).
+      Markdown.configure({ marked: markdownMarked() }),
+      Placeholder.configure({ placeholder }),
+    ],
     content: value,
     contentType: 'markdown',
     immediatelyRender: false,

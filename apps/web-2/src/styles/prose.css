@@ -91,7 +91,7 @@
     margin-block: calc(var(--prose-gap) * 2);
   }
 
-  /* Code: inline and blocks; shiki dual theme follows the page mode through light-dark(). */
+  /* Code: inline and blocks; token colors are theme classes (code-style.ts), so they follow the page mode. */
   .ab-prose :not(pre) > code {
     padding: 0.125rem 0.25rem;
     font-size: 0.875em;
@@ -105,11 +105,6 @@
   .ab-prose .ab-code pre {
     margin: 0;
     border-radius: 0;
-  }
-  .ab-prose .shiki,
-  .ab-prose .shiki span {
-    background-color: transparent;
-    color: light-dark(var(--shiki-light), var(--shiki-dark));
   }
 
   /* Tables scroll inside themselves, never the page (390 px rule). */

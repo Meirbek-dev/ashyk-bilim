@@ -31,7 +31,7 @@ async function insert(screen: Awaited<ReturnType<typeof render>>, block: string)
   await screen.getByRole('option', { name: block }).click()
 }
 
-// The lazy editor chunk (Tiptap, shiki, KaTeX) compiles on first import: warm it outside the 15 s test timeout.
+// The lazy editor chunk (Tiptap, code grammars, KaTeX) compiles on first import: warm it outside the 15 s test timeout.
 beforeAll(() => Promise.all([import('./block-editor'), import('katex')]), 120_000)
 
 describe('authoring', () => {

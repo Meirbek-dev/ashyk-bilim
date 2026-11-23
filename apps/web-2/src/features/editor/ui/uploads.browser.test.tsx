@@ -67,7 +67,7 @@ async function renderEditor() {
   return { screen, onChange, textbox: textbox.element() }
 }
 
-// The lazy editor chunk (Tiptap, shiki, KaTeX) compiles on first import: warm it outside the 15 s test timeout.
+// The lazy editor chunk (Tiptap, code grammars, KaTeX) compiles on first import: warm it outside the 15 s test timeout.
 beforeAll(() => import('./block-editor'), 120_000)
 
 afterEach(() => {

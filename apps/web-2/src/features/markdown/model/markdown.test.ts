@@ -76,15 +76,36 @@ describe('B-MD-07 markdown editor round trip (G-14)', () => {
       expect(markdownLosses(markdown).losses).toEqual([])
     })
 
-  test('B-MD-07 raw HTML is not part of the editor document: the loss is reported', () => {
-    const { losses, rawHtml } = markdownLosses('<b>raw</b>')
+  const RAW = '<b>raw</b> text\n\n<div>block</div>'
+  test('B-MD-07 raw HTML is reported; neither the editor nor the renderer keeps its tags', () => {
+    const { losses, rawHtml } = markdownLosses(RAW)
     expect(rawHtml).toBe(true)
-    expect(losses.length).toBeGreaterThan(0)
+    expect(losses).toEqual([])
+    expect(markdownShape(RAW)).toEqual(['doc', 'paragraph', 'text value=raw text'])
+  })
+
+  test('B-MD-01 footnotes read as text; reference links resolve', () => {
+    const text = 'Note[^1], [site][r].\n\n[^1]: The source.\n\n[r]: https://r.kz'
+    expect(markdownShape(text)).toEqual([
+      'doc',
+      'paragraph',
+      'text value=Note[^1],',
+      'text link:href=https://r.kz value=site',
+      'text value=.',
+      'paragraph',
+      'text value=[^1]: The source.',
+    ])
+    expect(markdownLosses(text).losses).toEqual([])
+  })
+
+  test('B-MD-07 task lists keep their state', () => {
+    expect(markdownLosses('- [x] done\n- [ ] todo').losses).toEqual([])
+    expect(markdownShape('- [x] done')).toContain('taskItem checked=true')
   })
 
   test('B-MD-07 the round trip is stable', () => {
     const once = roundTripMarkdown('# A\n\n* x\n* y\n\n$$a+b$$')
     expect(roundTripMarkdown(once)).toBe(once)
-    expect(markdownShape(once)).toContain('math value=a+b')
+    expect(markdownShape(once)).toContain('blockMath latex=a+b')
   })
 })

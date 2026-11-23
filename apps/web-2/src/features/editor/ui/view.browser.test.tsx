@@ -72,9 +72,9 @@ describe('B-EDT-01 the real editor keeps every node', () => {
   })
 })
 
-/** The computed colour of the first shiki token and of its code block: null until a grammar has decorated one. */
+/** The computed colour of the first highlighted token and of its code block: null until a parser has decorated one. */
 function tokenColours(): [string, string] | null {
-  const token = document.querySelector('pre span[style*="--shiki-light"]')
+  const token = document.querySelector('pre span[class*="text-"]')
   const block = token?.closest('pre')
   return token && block ? [getComputedStyle(token).color, getComputedStyle(block).color] : null
 }
@@ -137,12 +137,12 @@ describe('B-EDT-09 view preset', () => {
     await expect.element(screen.getByTitle(m.editor_embed_title())).not.toBeInTheDocument()
   })
 
-  test('B-EDT-04 B-EDT-13 code is highlighted by shiki and formulas by KaTeX', { timeout: 30_000 }, async () => {
+  test('B-EDT-04 B-EDT-13 code is highlighted and formulas rendered by KaTeX', { timeout: 30_000 }, async () => {
     const screen = await render(<BlockViewer content={doc('codeBlock', 'math')} />)
     // Grammars and KaTeX load lazily (compiled on first request under a dev server): allow a cold start.
     const cold = { timeout: 15_000 }
     await expect.poll(tokenColours, cold).not.toBeNull()
-    // Coloured, not only annotated: shiki's `light-dark()` color applies without a `.shiki` root.
+    // Coloured, not only annotated: the token classes are theme colors.
     expect(tokenColours()?.[0]).not.toBe(tokenColours()?.[1])
     await expect.poll(() => document.querySelector('.katex'), cold).not.toBeNull()
     await expect.element(screen.getByText(m.editor_math_invalid())).not.toBeInTheDocument()

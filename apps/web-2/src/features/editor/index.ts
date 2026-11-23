@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 
-// Tiptap, KaTeX and shiki load behind these lazy boundaries only: wrap each in <Suspense>.
+// Tiptap, KaTeX and code grammars load behind these lazy boundaries only: wrap each in <Suspense>.
 export const BlockEditor = lazy(() => import('./ui/block-editor').then(module => ({ default: module.BlockEditor })))
 export const BlockViewer = lazy(() => import('./ui/block-viewer').then(module => ({ default: module.BlockViewer })))
 export const DiscussionEditor = lazy(() =>

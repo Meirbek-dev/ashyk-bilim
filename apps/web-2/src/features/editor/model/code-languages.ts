@@ -1,4 +1,4 @@
-/** Code block languages offered by the editor and highlighted by shiki (ported from the old web). */
+/** Code block languages offered by the editor and highlighted by the code editor's grammars (ported from the old web). */
 export const CODE_LANGUAGES = [
   'html',
   'css',
