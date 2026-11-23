@@ -22,7 +22,9 @@ Setup, `just check`, `just contract`, `just db`, commits and worktrees: root `AG
 
 Keep workspace builds: selecting a crate with `-p` changes TLS feature unification on Windows.
 Use nextest filters instead. Build jobs default to 4, 16 on a 24+ CPU host (`CARGO_BUILD_JOBS` overrides).
-Dev debuginfo is disabled. The cache is `apps/server/target` (Windows: `LOCALAPPDATA/ashyq-bilim/cargo-target`,
+Dev debuginfo is disabled. Windows links with the toolchain's `rust-lld` (`.cargo/config.toml`), CI's Linux jobs with
+`wild`; cranelift waits for a stable release. The image is a static musl binary on distroless (`ashyq probe` is its
+healthcheck). The cache is `apps/server/target` (Windows: `LOCALAPPDATA/ashyq-bilim/cargo-target`,
 off the checkout drive; `CARGO_TARGET_DIR` overrides), suffixed `-<name>` in a `just wt` worktree. Do not delete it
 routinely.
 Rust is pinned in `rust-toolchain.toml` and Docker; tools in `tools.env`. Upgrade together.

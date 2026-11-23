@@ -46,8 +46,8 @@ jobs:
           source apps/server/tools.env
           pw=$(jq -r '.devDependencies["@playwright/test"]' apps/web-2/package.json)
           {
-            echo "lint-tools=$LINT_TOOLS,$JUST_TOOL"
-            echo "test-tools=$TEST_TOOLS,$JUST_TOOL"
+            echo "lint-tools=$LINT_TOOLS,$JUST_TOOL,$LINK_TOOLS"
+            echo "test-tools=$TEST_TOOLS,$JUST_TOOL,$LINK_TOOLS"
             echo "just-tool=$JUST_TOOL"
             echo "playwright-image=mcr.microsoft.com/playwright:v$pw-noble"
           } >> "$GITHUB_OUTPUT"
@@ -94,6 +94,10 @@ jobs:
       SQLX_OFFLINE: 'true'
       CARGO_TERM_QUIET: 'true'
       CARGO_PROFILE_DEV_DEBUG: '0'
+      # wild links (docs/REWRITE.md 4.2; installed with the tools, LINK_TOOLS); clang, preinstalled on the runner,
+      # drives it. apps/server/.cargo/config.toml has the other platforms.
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: clang
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: -Clink-arg=--ld-path=wild
     steps:
       - uses: actions/checkout@v7
 
@@ -146,6 +150,10 @@ jobs:
       DEV_PG_ARGS: -c fsync=off -c synchronous_commit=off -c full_page_writes=off
       CARGO_TERM_QUIET: 'true'
       CARGO_PROFILE_DEV_DEBUG: '0'
+      # wild links (docs/REWRITE.md 4.2; installed with the tools, LINK_TOOLS); clang, preinstalled on the runner,
+      # drives it. apps/server/.cargo/config.toml has the other platforms.
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: clang
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: -Clink-arg=--ld-path=wild
       # Quiet on success: only failures, each with its output at the end.
       NEXTEST_STATUS_LEVEL: fail
       NEXTEST_FINAL_STATUS_LEVEL: fail
@@ -329,8 +337,12 @@ jobs:
           push: true
           tags: ${{ env.IMAGE_REPO }}/ashyq-${{ matrix.image }}:ci-${{ needs.changes.outputs.sha }}
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          cache-from: type=gha,scope=${{ matrix.image }}-image
-          cache-to: type=gha,scope=${{ matrix.image }}-image,mode=max
+          # BuildKit registry cache in GHCR (<image>:buildcache, every layer): main writes it, other branches
+          # read it. A failed cache export does not fail the build.
+          cache-from: type=registry,ref=${{ env.IMAGE_REPO }}/ashyq-${{ matrix.image }}:buildcache
+          cache-to: >-
+            ${{ github.ref == 'refs/heads/main' && format('type=registry,ref={0}/ashyq-{1}:buildcache,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true',
+            env.IMAGE_REPO, matrix.image) || '' }}
 
       - name: Reject fixable critical and high image vulnerabilities
         env:

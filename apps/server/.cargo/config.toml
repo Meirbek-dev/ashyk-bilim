@@ -1,0 +1,7 @@
+# Linkers (docs/REWRITE.md 4.2 "Build:"). Windows links with the toolchain's own rust-lld in its lld-link
+# flavor; rustc still finds the MSVC and Windows SDK libraries through vswhere, so the Build Tools stay required.
+# Linux: rustc already links x86_64-unknown-linux-gnu with rust-lld by default; CI swaps in wild through the
+# CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_* variables of the server jobs (.github/workflows/ci.yaml). The release image
+# is musl and links with rustc's default (apps/server/Dockerfile). Cranelift needs a nightly compiler: not used.
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld.exe"

@@ -82,7 +82,16 @@
       groupName: 'bun',
     },
     {
-      matchDepNames: ['cargo-deny', 'cargo-shear', 'cargo-nextest', 'cargo-llvm-cov', 'sqlx-cli', 'bacon', 'just'],
+      matchDepNames: [
+        'cargo-deny',
+        'cargo-shear',
+        'cargo-nextest',
+        'cargo-llvm-cov',
+        'sqlx-cli',
+        'bacon',
+        'just',
+        'wild-linker',
+      ],
       matchFileNames: ['apps/server/tools.env'],
       groupName: 'rust tools',
     },
