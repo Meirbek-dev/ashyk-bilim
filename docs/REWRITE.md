@@ -1363,10 +1363,17 @@ bitflags! { pub struct Caps: u32 {
 6. **Toolchain** (owner review 2026-11-23): `vite-plus` (oxlint, oxfmt, rolldown) and
    TypeScript 7 stay. `typescript-6` and `gates/ts6-*.mjs` remain only for codegen until
    TypeScript 7 ships its JS API, then go. Scripts stay on Node; Bun is the package manager.
-7. **One markdown/rich-text path:** Tiptap renders read-only views and AI answers too
-   (`@tiptap/markdown`); `react-markdown`, `remark-gfm`, `remark-math`, `rehype-katex` and
-   `hast-util-to-jsx-runtime` go. Read-only code blocks are highlighted with
-   `@lezer/highlight` and the CodeMirror grammars the editor already loads; `shiki` goes.
+7. **One markdown/rich-text path** (done 2026-11-24): markdown texts and AI answers are
+   parsed by the markdown editor's own parser and schema (`@tiptap/markdown`, one `marked`
+   configuration: GFM, task lists, `$math$`, raw HTML tags dropped) and drawn as Tiptap's
+   read-only view draws them, without loading the editor engine (`features/markdown`
+   `MarkdownView`; stored lesson documents already read this way, B-EDT-34). A streamed
+   answer re-parses per chunk at deferred priority. KaTeX and the math syntax load only for
+   texts with `$`. Code blocks everywhere (code editor, block editor, rendered markdown) are
+   colored by one `@lezer/highlight` tag highlighter with theme-token classes, so light and
+   dark follow the page; grammars are the CodeMirror language packages, loaded per language.
+   `react-markdown`, `remark-*`, `rehype-katex`, `unified`, `hast-util-to-jsx-runtime` and
+   `shiki` are gone. GFM footnotes (`[^1]`; marked has none) read as plain text.
 8. **Dependencies** (owner review 2026-11-23):
    - `@ag-ui/client` is replaced by a small SSE reader (`fetch` + `ReadableStream`); the
      `zod` override and `zod-jitless.ts` go with it. valibot is the only schema library;
