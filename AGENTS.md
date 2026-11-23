@@ -59,8 +59,10 @@
   staged `.rs`, no edits to migrations on origin/main. pre-push: `just check --fast` on the pushed commit (lint, types,
   clippy, unit tests; no database, browser or container gates; only CI skips it). Integration tests, browser tests,
   full gates and E2E run in CI. Never `--no-verify`.
-- Every red gate (check, hooks, web-2 gates) is logged to `tmp/gates/hits.jsonl`; `just metrics` lists the gates that
-  caught nothing in 30 days. Propose deleting such a gate to the owner instead of satisfying it mechanically.
+- A new check of one file's code (a pattern to ban or require, in TS/TSX, CSS, Rust or YAML) is an ast-grep rule in
+  `rules/` with valid/invalid cases in `rule-tests/` (`just ast-grep`), not a gate script.
+- Every red gate (check, hooks, web-2 gates, ast-grep rules) is logged to `tmp/gates/hits.jsonl`; `just metrics` lists
+  the gates and rules that caught nothing in 30 days. Propose deleting such a gate to the owner instead of satisfying it mechanically.
 - `just fmt <files>` formats exactly like the hook (root `vite.config.ts` holds the one web format config,
   same result from any cwd; rustfmt for `.rs`). `just eol` rewrites CRLF working copies (Windows) as LF.
 - Run focused checks for the changed behavior during an edit batch; do not repeat a green check on unchanged

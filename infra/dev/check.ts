@@ -40,6 +40,14 @@ const isInfra = (f: string) =>
   f.startsWith('infra/') || /^compose[^/]*\.yaml$/.test(f) || f === 'justfile' || f.startsWith('.github/')
 const isContract = (f: string) => f === 'apps/server/openapi.v2.json'
 const isTs = (f: string) => /\.(ts|tsx|mts|js|mjs|jsx)$/.test(f)
+// ast-grep (sgconfig.yml): the rules, their tests, the pinned CLI, and every file a rule can read.
+const isRules = (f: string) =>
+  f === 'sgconfig.yml' ||
+  f.startsWith('rules/') ||
+  f.startsWith('rule-tests/') ||
+  f === 'package.json' ||
+  f === 'bun.lock'
+const ruleSource = (f: string) => /\.(ts|tsx|mts|mjs|css|rs)$/.test(f)
 
 /** The gates per area for `files` (repo-relative, forward slashes); every gate when `all`. */
 export function plan(files: string[], all: boolean, fast = false): Record<string, Gate[]> {
@@ -136,6 +144,10 @@ export function plan(files: string[], all: boolean, fast = false): Record<string
       ...(!fast ? [{ name: 'web2:gates', cwd: web2, cmd: ['bun', 'gates/gates.ts', 'all'] }] : []),
     ]
   }
+
+  // Structural code rules: one scan of the tree, a few seconds; fast mode keeps it (pre-push).
+  if (all || files.some(f => isRules(f) || ruleSource(f)))
+    areas.rules = [{ name: 'rules:ast-grep', cwd: root, cmd: ['bun', 'infra/dev/ast-grep.ts'] }]
 
   if (all || files.some(isInfra)) {
     areas.infra = [

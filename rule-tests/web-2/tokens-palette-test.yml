@@ -1,0 +1,17 @@
+id: tokens-palette
+valid:
+  - |-
+    const c = 'bg-primary text-muted-foreground border-border'
+  - |-
+    const c = cn('bg-background', active && 'text-foreground')
+  - |-
+    const c = 'redirect-to-login'
+invalid:
+  - |-
+    const c = 'flex bg-red-500'
+  - |-
+    const c = `p-2 ${x} text-gray-400`
+  - |-
+    const c = <div className="border-white" />
+  - |-
+    // text-slate-700 is the old look

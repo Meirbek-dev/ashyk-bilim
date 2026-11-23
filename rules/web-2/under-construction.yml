@@ -1,0 +1,11 @@
+# The UnderConstruction stub is gone (phase 7, spec 12): no route may render a stub again.
+id: under-construction
+language: tsx
+severity: error
+message: 'build the slice and bind its component here'
+files: ['apps/web-2/src/routes/**']
+rule:
+  kind: pair
+  all:
+    - has: { field: key, regex: '^component$' }
+    - has: { field: value, kind: identifier, regex: '^UnderConstruction$' }

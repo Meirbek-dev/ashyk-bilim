@@ -1,0 +1,9 @@
+id: tokens-hex-css
+valid:
+  - |-
+    .a { color: var(--primary); }
+invalid:
+  - |-
+    .a { color: #fff; }
+  - |-
+    .a { border: 1px solid #12345678; }

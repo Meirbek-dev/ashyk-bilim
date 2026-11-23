@@ -85,8 +85,16 @@ const byGate = new Map<string, number>()
 for (const hit of hits) byGate.set(`${hit.source}: ${hit.gate}`, (byGate.get(`${hit.source}: ${hit.gate}`) ?? 0) + 1)
 const gatesSource = readFileSync(resolve(root, 'apps/web-2/gates/gates.ts'), 'utf8')
 const block = /const GATES[^{]*\{([\s\S]*?)\n\}/.exec(gatesSource)?.[1] ?? ''
+// ast-grep rule ids (rules/**/*.yml): a rule with no hit is as quiet as a gate.
+const astGrepRules = () =>
+  files
+    .filter(f => /^rules\/.+\.ya?ml$/.test(f))
+    .flatMap(f => /^id:\s*(\S+)/m.exec(readFileSync(resolve(root, f), 'utf8'))?.[1] ?? [])
 const web2Gates = [...block.matchAll(/^ {2}'?([a-z0-9-]+)'?[,:]/gm)].map(m => m[1]!)
-const quiet = web2Gates.filter(g => !hits.some(h => h.source === 'web2-gates' && h.gate === g))
+const quiet = [
+  ...web2Gates.filter(g => !hits.some(h => h.source === 'web2-gates' && h.gate === g)),
+  ...astGrepRules().filter(id => !hits.some(h => h.source === 'ast-grep' && h.gate === id)),
+]
 const since = hits[0]?.at.slice(0, 10)
 
 const runs = ciRuns(root)
@@ -99,7 +107,7 @@ else {
   console.log(`\ngate hits, last 30 days${since ? ` (ledger from ${since})` : ' (ledger empty so far)'}:`)
   for (const [gate, count] of [...byGate].sort((a, b) => b[1] - a[1]))
     console.log(`${String(count).padStart(9)}  ${gate}`)
-  console.log(`web-2 gates with no hit: ${quiet.join(', ') || 'none'}`)
+  console.log(`web-2 gates and ast-grep rules with no hit: ${quiet.join(', ') || 'none'}`)
   console.log(
     ci
       ? `ci on main, last 30 days: ${ci.runs} finished runs, ${ci.red} red, ${ci.rerun} re-run`

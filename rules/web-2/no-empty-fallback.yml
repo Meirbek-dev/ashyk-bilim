@@ -1,0 +1,28 @@
+# `data ?? []`, `query.data?.items || []`: an empty list hides loading, error and empty states.
+id: no-empty-fallback
+language: tsx
+severity: error
+message: 'Do not hide query state behind ?? []: render ListState (loading, empty, no match, error) from the query.'
+files: ['apps/web-2/**']
+ignores: ['apps/web-2/src/shared/api/gen*/**', 'apps/web-2/src/routeTree.*.ts']
+utils:
+  # `data`, `query.data`, `data?.items`, `data[0]`: a member chain (no calls) that reads a query result.
+  reads-data:
+    any:
+      - kind: identifier
+        regex: '^data$'
+      - kind: member_expression
+        any:
+          - has: { field: property, regex: '^data$' }
+          - has: { field: object, matches: reads-data }
+      - kind: subscript_expression
+        has: { field: object, matches: reads-data }
+      - kind: parenthesized_expression
+        has: { matches: reads-data }
+rule:
+  any:
+    - pattern: $LEFT ?? []
+    - pattern: $LEFT || []
+constraints:
+  LEFT:
+    matches: reads-data

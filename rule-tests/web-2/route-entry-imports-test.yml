@@ -1,0 +1,27 @@
+id: route-entry-imports
+valid:
+  - |-
+    import type { CourseSearch } from './model/search'
+  - |-
+    import * as v from 'valibot'
+  - |-
+    import { requireSession } from '#/shared/auth/session'
+  - |-
+    import type { Options } from '#/shared/api/gen/sdk.gen'
+  - |-
+    const ui = () => import('./ui/page')
+invalid:
+  - |-
+    import { CoursePage } from './ui/page'
+  - |-
+    import './styles.css'
+  - |-
+    import { type A, b } from './model'
+  - |-
+    import { listCourses } from '#/shared/api/gen/sdk.gen'
+  - |-
+    import { vCourse } from '#/shared/api/gen/valibot.gen'
+  - |-
+    import { listCoursesOptions } from '#/shared/api/gen/@tanstack/react-query.gen'
+  - |-
+    import { client } from '#/shared/api/client'

@@ -1,0 +1,13 @@
+id: tokens-dark-variant
+valid:
+  - |-
+    const modes = { dark: m.ui_mode_dark, light: m.ui_mode_light }
+  - |-
+    const c = 'bg-card'
+invalid:
+  - |-
+    const c = 'bg-card dark:bg-muted'
+  - |-
+    const c = <div className="dark:[&>svg]:opacity-50" />
+  - |-
+    const c = 'dark:!text-white'

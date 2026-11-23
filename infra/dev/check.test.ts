@@ -26,7 +26,7 @@ test('a contract change re-checks the web client', () => {
 
 test('docs alone run nothing; --all runs every area', () => {
   expect(gates(['docs/RUNBOOK.md'])).toEqual({})
-  expect(Object.keys(gates([], true)).sort()).toEqual(['infra', 'server', 'web2'])
+  expect(Object.keys(gates([], true)).sort()).toEqual(['infra', 'rules', 'server', 'web2'])
 })
 
 test('fast checks avoid database setup, browser suites and container gates while retaining unit checks', () => {
@@ -44,6 +44,13 @@ test('fast checks avoid database setup, browser suites and container gates while
   expect(web.cmd.join(' ')).toContain('--project unit')
   expect(areas.web2.some(g => g.name === 'web2:gates')).toBe(false)
   expect(areas.infra.map(g => g.name)).toEqual(['infra:test-dev'])
+})
+
+test('code and rule changes run the ast-grep rules, also in fast mode', () => {
+  for (const file of ['apps/web-2/src/routes/index.tsx', 'apps/server/crates/db/src/lib.rs', 'rules/web-2/x.yml'])
+    expect(Object.keys(plan([file], false, true))).toContain('rules')
+  expect(plan(['rule-tests/web-2/x-test.yml'], false).rules?.map(g => g.name)).toEqual(['rules:ast-grep'])
+  expect(plan(['apps/web-2/messages/ru/course.json'], false).rules).toBeUndefined()
 })
 
 test('documentation inside an app does not trigger compilation or tests', () => {

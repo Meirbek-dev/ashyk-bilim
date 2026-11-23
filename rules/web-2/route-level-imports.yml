@@ -1,0 +1,81 @@
+# validateSearch, search, beforeLoad, loaderDeps, head and staticData stay in the route tree (the entry chunk): they
+# may use a feature only through #/features/<name>/route. The feature's index (UI, queries) is for loader and the
+# components, which the router splits out (gates/bundle.ts ROUTE_SPLIT).
+id: route-level-imports
+language: tsx
+severity: error
+message: 'Route-level options are in the entry chunk: import $ID from #/features/$FEATURE/route (move it there).'
+files: ['apps/web-2/src/routes/**']
+utils:
+  # A top-level member of the options object of `createFileRoute(path)({...})`, other than the split options.
+  route-level-option:
+    all:
+      - any:
+          - kind: pair
+            not: { has: { field: key, regex: '^(loader|component|pendingComponent|errorComponent|notFoundComponent)$' } }
+          - kind: method_definition
+            not: { has: { field: name, regex: '^(loader|component|pendingComponent|errorComponent|notFoundComponent)$' } }
+          - kind: shorthand_property_identifier
+            not: { regex: '^(loader|component|pendingComponent|errorComponent|notFoundComponent)$' }
+      - inside:
+          kind: object
+          nthChild: 1
+          inside:
+            kind: arguments
+            inside:
+              kind: call_expression
+              has:
+                field: function
+                kind: call_expression
+                has: { field: function, kind: identifier, regex: '^createFileRoute$' }
+  # A runtime (not `type`) import of $ID from a feature's index, `#/features/<name>`.
+  feature-index-binding:
+    kind: program
+    has:
+      kind: import_statement
+      all:
+        - not: { regex: '^import\s+type\s' }
+        - has:
+            field: source
+            has:
+              kind: string_fragment
+              regex: '^#/features/[^/]+$'
+              pattern: $SOURCE
+        - has:
+            kind: import_clause
+            any:
+              - has: { kind: identifier, pattern: $ID }
+              - has: { kind: namespace_import, has: { kind: identifier, pattern: $ID } }
+              - has:
+                  kind: named_imports
+                  has:
+                    kind: import_specifier
+                    not: { regex: '^type\s' }
+                    any:
+                      - has: { field: alias, pattern: $ID }
+                      - all:
+                          - not: { has: { field: alias, regex: '.' } }
+                          - has: { field: name, pattern: $ID }
+rule:
+  # In order: $ID is bound by the used name first, then looked up among the imports.
+  all:
+    - any:
+        - kind: identifier
+        - kind: type_identifier
+        - kind: property_identifier
+        - kind: shorthand_property_identifier
+    - pattern: $ID
+    - not: { inside: { kind: pair, field: key } }
+    - not: { inside: { kind: method_definition, field: name } }
+    - any:
+        - matches: route-level-option
+        - inside: { stopBy: end, matches: route-level-option }
+    - inside:
+        stopBy: end
+        matches: feature-index-binding
+transform:
+  FEATURE:
+    replace:
+      source: $SOURCE
+      replace: '^#/features/'
+      by: ''

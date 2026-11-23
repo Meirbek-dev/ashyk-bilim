@@ -1,0 +1,15 @@
+id: no-dynamic-message
+valid:
+  - |-
+    const text = m.course_title()
+  - |-
+    const text = labels[status]()
+  - |-
+    const text = msgs[key]
+invalid:
+  - |-
+    const text = m[key]()
+  - |-
+    const text = m['course_title']()
+  - |-
+    const text = m?.[key]

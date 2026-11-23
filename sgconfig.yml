@@ -1,0 +1,9 @@
+# ast-grep (`just ast-grep`): structural rules for one file's code. Add a rule to rules/<area>/ and its valid/invalid
+# cases to rule-tests/<area>/ instead of a gate script; `// ast-grep-ignore: <rule> -- why` excepts one line.
+ruleDirs:
+  - rules
+testConfigs:
+  - testDir: rule-tests
+# Parse TypeScript and ES modules as TSX, so one rule covers .ts, .tsx and .mjs (oxlint lints them alike).
+languageGlobs:
+  tsx: ['*.ts', '*.mts', '*.mjs']

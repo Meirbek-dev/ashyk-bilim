@@ -1,0 +1,15 @@
+# G-11: A class variant (dark:bg-x), not an object key (dark: m.ui_mode_dark). Colors stay tokens (docs/web/DESIGN.md); stock shadcn output in src/shared/ui/ is the generator's and exempt.
+# Any text the class or color can be written in: strings, template parts, JSX text, comments, regexes.
+id: tokens-dark-variant
+language: tsx
+severity: error
+message: 'dark mode comes from light-dark() tokens: drop the dark: variant'
+files: ['apps/web-2/src/**/*.ts', 'apps/web-2/src/**/*.tsx']
+ignores: ['apps/web-2/src/shared/ui/**', 'apps/web-2/src/shared/api/gen*/**', 'apps/web-2/src/routeTree.*.ts']
+rule:
+  regex: '\bdark:[\w\[!-]'
+  any:
+    - kind: string_fragment
+    - kind: comment
+    - kind: jsx_text
+    - kind: regex_pattern

@@ -80,6 +80,10 @@ doctor:
 check *args:
     @bun infra/dev/check.ts "$@"
 
+# Structural code rules (sgconfig.yml, rules/, rule-tests/): rule tests, then the scan; `just ast-grep [paths]`.
+ast-grep *args:
+    @bun infra/dev/ast-grep.ts "$@"
+
 # Export openapi.v2.json, accept its snapshots, regenerate the web client, list the drift (tmp/contract/).
 contract:
     @bun infra/dev/contract.ts
@@ -106,6 +110,7 @@ ci-server:
 
 ci-web2:
     {{ just_bin }} web2 verify
+    {{ just_bin }} ast-grep
     {{ just_bin }} web2 g15
     {{ just_bin }} web2 build
 

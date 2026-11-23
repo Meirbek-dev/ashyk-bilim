@@ -59,6 +59,10 @@ jobs:
               - 'apps/server/**'
             web2:
               - 'apps/web-2/**'
+              # ast-grep: the structural rules for web-2 code
+              - 'sgconfig.yml'
+              - 'rules/**'
+              - 'rule-tests/**'
               - 'apps/server/openapi.v2.json'
               - '.node-version'
               # the e2e stand and this workflow
@@ -260,6 +264,11 @@ jobs:
       # The committed client and route tree are checked once, by verify's codegen gate (G-09).
       - name: Messages (gitignored paraglide output)
         run: bun run codegen messages
+
+      # Structural code rules (sgconfig.yml): the pinned CLI is a root dev dependency.
+      - name: ast-grep rules (tests, scan)
+        working-directory: .
+        run: bun install --frozen-lockfile && bun infra/dev/ast-grep.ts
 
       - name: Verify (check, tests, gates)
         run: bun run verify

@@ -1,0 +1,40 @@
+id: route-level-imports
+valid:
+  - |
+    import { courseSearch } from '#/features/course/route'
+    export const Route = createFileRoute('/c')({ validateSearch: courseSearch })
+  - |
+    import { CoursePage, courseOptions } from '#/features/course'
+    export const Route = createFileRoute('/c')({
+      loader: ({ context }) => context.queryClient.ensureQueryData(courseOptions({ x: 1 })),
+      component: CoursePage,
+    })
+  - |
+    import type { CourseSearch } from '#/features/course'
+    export const Route = createFileRoute('/c')({ validateSearch: (s: unknown): CourseSearch => s as CourseSearch })
+  - |
+    import { type CourseSearch } from '#/features/course'
+    export const Route = createFileRoute('/c')({ head: (): CourseSearch => ({}) })
+  - |
+    import { courseHead } from '#/features/course'
+    const other = make({ head: courseHead })
+  - |
+    import { courseHead } from '#/features/course'
+    import { other } from '#/shared/lib/other'
+    export const Route = createFileRoute('/c')({ head: () => other(), component: () => courseHead })
+invalid:
+  - |
+    import { courseSearch } from '#/features/course'
+    export const Route = createFileRoute('/c')({ validateSearch: courseSearch })
+  - |
+    import { courseTitle as title } from '#/features/course'
+    export const Route = createFileRoute('/c')({ head: () => ({ meta: [{ title: title() }] }) })
+  - |
+    import * as course from '#/features/course'
+    export const Route = createFileRoute('/c')({ beforeLoad() { return course.guard() } })
+  - |
+    import { validateSearch } from '#/features/course'
+    export const Route = createFileRoute('/c')({ validateSearch })
+  - |
+    import { CourseSearch } from '#/features/course'
+    export const Route = createFileRoute('/c')({ validateSearch: (s: unknown): CourseSearch => s as CourseSearch })

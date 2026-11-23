@@ -1,0 +1,27 @@
+# `disabled={x.isPending}` drops keyboard focus to <body> the moment the button is pressed (OPEN-E-1).
+id: pending-button-focus
+language: tsx
+severity: error
+message: 'A button disabled while a request runs drops keyboard focus: use SubmitButton pending={...} from #/shared/components/submit-button.'
+files: ['apps/web-2/**']
+ignores: ['apps/web-2/src/shared/api/gen*/**', 'apps/web-2/src/routeTree.*.ts']
+rule:
+  kind: jsx_attribute
+  all:
+    - has: { kind: property_identifier, regex: '^disabled$' }
+    - has:
+        stopBy: end
+        regex: '^(pending|isPending|submitting|isSubmitting)$'
+        any:
+          - kind: identifier
+          - kind: property_identifier
+          - kind: shorthand_property_identifier
+    - inside:
+        any:
+          - kind: jsx_opening_element
+          - kind: jsx_self_closing_element
+        has: { field: name, kind: identifier, regex: '^(Button|AlertDialogAction)$' }
+        not:
+          has:
+            kind: jsx_attribute
+            has: { kind: property_identifier, regex: '^focusableWhenDisabled$' }

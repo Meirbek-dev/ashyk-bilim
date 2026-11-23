@@ -1,0 +1,9 @@
+id: tokens-palette-css
+valid:
+  - |-
+    .a { @apply bg-primary text-foreground; }
+invalid:
+  - |-
+    .a { @apply bg-red-500; }
+  - |-
+    /* text-gray-400 */ .a { color: var(--x); }

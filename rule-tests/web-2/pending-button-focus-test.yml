@@ -1,0 +1,23 @@
+id: pending-button-focus
+valid:
+  - |-
+    const b = <SubmitButton pending={mutation.isPending} />
+  - |-
+    const b = <Button disabled={!valid}>{m.ui_save()}</Button>
+  - |-
+    const b = <Button disabled={mutation.isPending} focusableWhenDisabled />
+  - |-
+    const b = <Button disabled />
+  - |-
+    const b = <button disabled={isPending} />
+  - |-
+    const b = <Button loading={isPending} />
+invalid:
+  - |-
+    const b = <Button disabled={mutation.isPending}>{m.ui_save()}</Button>
+  - |-
+    const b = <Button disabled={!valid || pending} />
+  - |-
+    const b = <AlertDialogAction disabled={form.state.isSubmitting} />
+  - |-
+    const b = <Button type="submit" disabled={submitting}>{m.ui_save()}</Button>

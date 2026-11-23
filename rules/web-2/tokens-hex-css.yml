@@ -1,0 +1,24 @@
+# G-11: Colors stay tokens (docs/web/DESIGN.md); stock shadcn output in src/shared/ui/ is the generator's and exempt. CSS outside src/styles/.
+# Any text the class or color can be written in: values, selectors, strings, comments.
+id: tokens-hex-css
+language: css
+severity: error
+message: 'colors live in src/styles/ tokens and public/themes/'
+files: ['apps/web-2/src/**/*.css']
+ignores: ['apps/web-2/src/styles/**', 'apps/web-2/src/shared/ui/**']
+rule:
+  regex: '#[0-9a-fA-F]{3,8}\b'
+  any:
+    - kind: comment
+    - kind: js_comment
+    - kind: plain_value
+    - kind: color_value
+    - kind: string_content
+    - kind: identifier
+    - kind: property_name
+    - kind: tag_name
+    - kind: id_selector
+    - kind: attribute_name
+    - kind: keyword_query
+    - kind: feature_name
+    - kind: at_keyword

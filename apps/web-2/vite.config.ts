@@ -148,18 +148,14 @@ const restrictImports = (layer: keyof typeof layerPatterns): Rules['no-restricte
 
 const lint: OxlintConfig = {
   plugins: ['eslint', 'typescript', 'oxc', 'react', 'jsx-a11y', 'import', 'promise', 'unicorn', 'vitest'],
-  jsPlugins: [{ name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' }, './gates/lint-plugin.ts', '@shadcn/lint'],
+  jsPlugins: [{ name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' }, '@shadcn/lint'],
   categories: { correctness: 'error', suspicious: 'error' },
   options: { typeAware: true, typeCheck: true },
   ignorePatterns: ['src/shared/api/gen*/**', 'src/paraglide*/**', 'src/routeTree.*.ts', 'dist/**'],
   rules: {
     'vite-plus/prefer-vite-plus-imports': 'error',
     'react/react-in-jsx-scope': 'off',
-    'ab/no-jsx-literal': 'error',
-    'ab/no-empty-fallback': 'error',
-    'ab/no-literal-query-key': 'error',
-    'ab/no-dynamic-message': 'error',
-    'ab/pending-button-focus': 'error',
+    // Project rules oxlint has no built-in for (catalog text, query keys, entry chunk...): ast-grep, rules/web-2/.
     'max-lines': ['error', { max: 300 }],
     'max-lines-per-function': ['error', { max: 80 }],
     'typescript/no-floating-promises': 'error',
@@ -182,8 +178,8 @@ const lint: OxlintConfig = {
     'react/no-danger': 'error',
     'react/no-multi-comp': 'error',
     'react/forbid-elements': ['error', { forbid: forbiddenElements }],
-    // Colors stay tokens (G-11 scans the same in CSS and plain strings); geometry may be dynamic: arbitrary values
-    // and inline styles are allowed. Off: `no-restyle` (the kit's own files and 28 deliberate looks fail its
+    // Colors stay tokens (ast-grep tokens-* scan the same in CSS and plain strings); geometry may be dynamic: arbitrary
+    // values and inline styles are allowed. Off: `no-restyle` (the kit's own files and 28 deliberate looks fail its
     // contracts), `no-unknown-classes` (prose.css classes), `require-static-classes` (status tones come from a Record).
     'shadcn/no-raw-colors': 'error',
     'shadcn/no-arbitrary-values': 'off',
@@ -196,12 +192,10 @@ const lint: OxlintConfig = {
     { files: ['**/*.test.ts', '**/*.test.tsx'], rules: { 'max-lines': ['error', { max: 500 }] } },
     { files: ['src/shared/**'], rules: { 'no-restricted-imports': restrictImports('shared') } },
     { files: ['src/features/**'], rules: { 'no-restricted-imports': restrictImports('features') } },
-    { files: ['src/features/*/route.{ts,tsx}'], rules: { 'ab/route-entry-imports': 'error' } },
     {
       files: ['src/routes/**'],
       rules: {
         'no-restricted-imports': restrictImports('routes'),
-        'ab/route-level-imports': 'error',
         'unicorn/filename-case': 'off',
       },
     },
@@ -256,7 +250,6 @@ const lint: OxlintConfig = {
         'e2e/playwright.config.ts',
         'e2e/global-setup.ts',
         'src/server.ts',
-        'gates/lint-plugin.ts',
       ],
       rules: { 'import/no-default-export': 'off' },
     },

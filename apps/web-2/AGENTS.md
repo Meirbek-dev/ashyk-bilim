@@ -21,7 +21,7 @@ What is left of the cutover: `docs/STAGE-2-CUTOVER.md`; open work: `BACKLOG.md`.
 | `src/server.ts`                     | request chain: `/healthz`, `/_client-error`, locale, request id, CSP         |
 | `serve.ts`                          | production entry: srvx static files + the Start handler                      |
 | `messages/<locale>/<feature>.json`  | catalogs (ru base, kk, en); `glossary.json` = required terms                 |
-| `gates/`                            | `gates.ts` (checks lint cannot do), `allowlist.json`                         |
+| `gates/`                            | `gates.ts` (checks across files and tools), `allowlist.json`                 |
 | `e2e/`                              | Playwright: `specs/<feature>.spec.ts`, `fixtures/test.ts` (shared checks)    |
 
 Imports go one way: `routes -> features -> shared`. Another feature only via `#/features/<name>` (or `/route`);
@@ -36,7 +36,7 @@ inside a feature use relative paths; across layers use `#/`. Lint enforces all o
 | `vp check`                       | format + lint + types (G-01); run once after an edit batch                                                  |
 | `vp test run`                    | vitest: `unit` (node) and `browser` (Chromium) projects                                                     |
 | `bun run g15`                    | Kit contrast (axe) in all 63 themes x light/dark; required by CI and `just ci-web2`, separate from `verify` |
-| `bun gates/gates.ts <gate>`      | one gate: i18n knip under-construction contract codegen tokens; api-coverage is an optional report          |
+| `bun gates/gates.ts <gate>`      | one gate: i18n knip contract codegen; api-coverage is an optional report                                    |
 | `vp run verify`                  | check + test + all gates (the pre-push `just check` runs the parts the pushed change touches)               |
 | `bun run codegen`                | regenerate SDK (from `../server/openapi.v2.json`), route tree, messages; safe while `vp dev` runs           |
 | `bun run build`                  | `vp build`; `bun run start` serves `dist/`                                                                  |
@@ -44,8 +44,9 @@ inside a feature use relative paths; across layers use `#/`. Lint enforces all o
 
 ## Defaults and invariants
 
-Use these shared mechanisms; lint enforces most of them. Access checks, API contracts, upload limits and
-localization are invariants; where a read or an invalidation does not fit the default, say why next to the code.
+Use these shared mechanisms; lint and the ast-grep rules (`rules/web-2`, `just ast-grep` from the root) enforce most
+of them. Access checks, API contracts, upload limits and localization are invariants; where a read or an invalidation
+does not fit the default, say why next to the code.
 
 | Task            | The way                                                                                                                                                                                                                               |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -71,8 +72,8 @@ localization are invariants; where a read or an invalidation does not fit the de
 | Memoization     | none: React Compiler                                                                                                                                                                                                                  |
 
 A lint rule that is wrong for one line gets a line-scoped exception with its reason
-(`// oxlint-disable-next-line <rule> -- why`). `@ts-expect-error` needs a description; `@ts-ignore` and `it.only`
-fail lint. TODO/FIXME comments are allowed. A quarantined test gets its reason in place and a line in `BACKLOG.md`.
+(`// oxlint-disable-next-line <rule> -- why`; an ast-grep rule: `// ast-grep-ignore: <rule> -- why` on the line
+above). `@ts-expect-error` needs a description; `@ts-ignore` and `it.only` fail lint. TODO/FIXME comments are allowed. A quarantined test gets its reason in place and a line in `BACKLOG.md`.
 Timers: TanStack Pacer for debounce/throttle, Query + the event stream for freshness (`setInterval` fails lint);
 a one-shot `setTimeout` clears itself on unmount. Geometry may be dynamic (inline style, arbitrary value); colors
 stay tokens.

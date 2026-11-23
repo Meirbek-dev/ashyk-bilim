@@ -1,0 +1,13 @@
+id: no-literal-query-key
+valid:
+  - |-
+    useQuery({ queryKey: listCoursesQueryKey(), queryFn })
+  - |-
+    useQuery({ queryKey, queryFn })
+  - |-
+    const { queryKey: [first] } = options
+invalid:
+  - |-
+    useQuery({ queryKey: ['courses'], queryFn })
+  - |-
+    client.invalidateQueries({ queryKey: [] })

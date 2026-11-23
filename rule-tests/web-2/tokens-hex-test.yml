@@ -1,0 +1,13 @@
+id: tokens-hex
+valid:
+  - |-
+    const route = '#/features/course'
+  - |-
+    const c = 'var(--primary)'
+invalid:
+  - |-
+    const c = '#fff'
+  - |-
+    const c = `color: #1a2b3c`
+  - |-
+    const c = <rect fill="#00ff00" />

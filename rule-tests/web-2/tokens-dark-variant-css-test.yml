@@ -1,0 +1,7 @@
+id: tokens-dark-variant-css
+valid:
+  - |-
+    .a { @apply bg-card; }
+invalid:
+  - |-
+    .a { @apply dark:bg-muted; }

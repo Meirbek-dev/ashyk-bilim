@@ -1,0 +1,24 @@
+# User-visible text in JSX: JSX text, a string literal in {...}, or a string text attribute with a letter in it.
+# Escape sequences are not letters: an escaped no-break space in {...} passes.
+id: no-jsx-literal
+language: tsx
+severity: error
+message: 'User-visible text comes from the catalog: m.<feature>_<key>() (messages/<locale>/<feature>.json).'
+files: ['apps/web-2/**']
+ignores: ['apps/web-2/src/shared/api/gen*/**', 'apps/web-2/src/routeTree.*.ts']
+rule:
+  any:
+    - kind: jsx_text
+      regex: '\p{L}'
+    - kind: string
+      has: { kind: string_fragment, regex: '\p{L}' }
+      inside:
+        kind: jsx_expression
+    - kind: jsx_attribute
+      all:
+        - has:
+            kind: property_identifier
+            regex: '^(aria-label|aria-description|title|alt|placeholder|label)$'
+        - has:
+            kind: string
+            has: { kind: string_fragment, regex: '\p{L}' }

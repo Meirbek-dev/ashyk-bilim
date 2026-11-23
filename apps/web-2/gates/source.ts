@@ -1,10 +1,9 @@
-// API usage reporting, unfinished-route detection and theme color checks.
+// API usage reporting. Stub routes and theme colors are ast-grep rules (rules/web-2: under-construction, tokens-*).
 
 import {
   allowlist,
   type Finding,
   deprecatedOperations,
-  matches,
   read,
   sdkOperations,
   serverRemovals,
@@ -50,43 +49,4 @@ export function apiCoverage(): { findings: Finding[]; enforced: boolean; summary
   }
   const summary = `api-coverage: ${unused.length} of ${operations.length} operations without a consumer, ${removals.size} scheduled for server removal (${deprecated.size} deprecated skipped)`
   return { findings, enforced: false, summary }
-}
-
-/** Route files still rendering the shared UnderConstruction stub (phase 1.2b); each slice replaces its own. */
-export function underConstruction(phaseOverride?: number): { findings: Finding[]; enforced: boolean; summary: string } {
-  const policy = allowlist().underConstruction
-  const findings = walk('src/routes', CODE).flatMap(file =>
-    matches(read(file), /\bcomponent: UnderConstruction\b/).map(({ line }) => ({
-      file,
-      line,
-      rule: 'under-construction',
-      fix: 'build the slice and bind its component here',
-    })),
-  )
-  const phase = phaseOverride ?? policy.phase
-  const summary = `under-construction: ${findings.length} route(s) still stubbed (phase ${phase}, enforced from ${policy.enforceFromPhase})`
-  return { findings, enforced: phase >= policy.enforceFromPhase, summary }
-}
-
-const PALETTE =
-  /\b(?:bg|text|border|ring|fill|stroke|from|via|to|outline|decoration|shadow|accent|caret|divide|placeholder)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|black|white)(?:-\d{2,3})?\b/
-const TOKEN_RULES: [RegExp, string, string][] = [
-  [PALETTE, 'tokens-palette', 'use a token class (bg-primary, text-muted-foreground, border-border...)'],
-  // A class variant (`dark:bg-x`), not an object key (`dark: m.ui_mode_dark`).
-  [/\bdark:(?=[\w[!-])/, 'tokens-dark-variant', 'dark mode comes from light-dark() tokens: drop the dark: variant'],
-  [/#[0-9a-fA-F]{3,8}\b/, 'tokens-hex', 'colors live in src/styles/ tokens and public/themes/'],
-]
-
-// Stock shadcn output (`bunx shadcn add`) is exempt: its classes are the generator's; our code builds on it.
-const STOCK_KIT = 'src/shared/ui/'
-
-export function tokens(): Finding[] {
-  const files = [...walk('src', CODE), ...walk('src', /\.css$/).filter(file => !file.startsWith('src/styles/'))].filter(
-    file => !file.startsWith(STOCK_KIT),
-  )
-  return files.flatMap(file =>
-    TOKEN_RULES.flatMap(([pattern, rule, fix]) =>
-      matches(read(file), pattern).map(({ line }) => ({ file, line, rule, fix })),
-    ),
-  )
 }

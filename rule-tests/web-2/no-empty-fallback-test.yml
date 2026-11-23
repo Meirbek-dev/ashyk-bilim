@@ -1,0 +1,23 @@
+id: no-empty-fallback
+valid:
+  - |-
+    const items = query.data.items
+  - |-
+    const items = props.items ?? []
+  - |-
+    const items = getData().items ?? []
+  - |-
+    const items = data ?? [1]
+  - |-
+    const items = data && []
+invalid:
+  - |-
+    const items = data ?? []
+  - |-
+    const items = query.data ?? []
+  - |-
+    const items = query.data?.items || []
+  - |-
+    const items = data?.pages[0] ?? []
+  - |-
+    const items = (data) ?? []

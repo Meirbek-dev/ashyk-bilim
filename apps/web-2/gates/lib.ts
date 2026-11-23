@@ -44,7 +44,6 @@ const Allowlist = v.object({
     ...Reasoned.entries,
     serviceOperations: v.array(v.object({ ...Reasoned.entries, operation: v.string() })),
   }),
-  underConstruction: v.object({ ...Reasoned.entries, phase: v.number(), enforceFromPhase: v.number() }),
   contractReportOnly: v.optional(Reasoned),
   i18nSameAsRu: v.array(v.object({ ...Reasoned.entries, key: v.string() })),
 })

@@ -1,4 +1,5 @@
-// `bun gates/gates.ts <gate|all> [--phase N]`; api-coverage is an optional usage report.
+// `bun gates/gates.ts <gate|all>`; api-coverage is an optional usage report. A check of one file's code is an
+// ast-grep rule (rules/web-2, `just ast-grep`); these gates compare files, run tools or need the whole tree.
 // Output is errors only: `file:line rule - what to do`, at most 30 lines per gate plus a count (8.4).
 import { spawnSync } from 'node:child_process'
 import { appendFileSync, mkdirSync } from 'node:fs'
@@ -8,34 +9,14 @@ import { contract } from './contract.ts'
 import { i18n } from './i18n.ts'
 import { allowlist, type Finding } from './lib.ts'
 import { codegenDrift, knip } from './repo.ts'
-import { apiCoverage, tokens, underConstruction } from './source.ts'
+import { apiCoverage } from './source.ts'
 
 const MAX_LINES = 30
-const phaseFlag = process.argv.indexOf('--phase')
-const phase = phaseFlag > 0 ? Number(process.argv[phaseFlag + 1]) : undefined
 
 function coverage(): Finding[] {
   const result = apiCoverage()
   process.stdout.write(`${result.summary} - report only\n`)
   print('api-coverage (report only)', result.findings)
-  return []
-}
-
-// Report-only until phase 7: the summary always, the route list when the gate is run on its own.
-function stubs(): Finding[] {
-  const result = underConstruction(phase)
-  if (result.enforced) return result.findings
-  process.stdout.write(`${result.summary} - report only (gates/allowlist.json underConstruction)\n`)
-  // Run on its own, it lists every stubbed route (one line each), not just the first 30.
-  if (process.argv[2] === 'under-construction')
-    process.stdout.write(
-      result.findings
-        .map(
-          finding => `${finding.file}:${finding.line}
-`,
-        )
-        .join(''),
-    )
   return []
 }
 
@@ -51,10 +32,8 @@ function contractGate(): Finding[] {
 const GATES: Record<string, () => Finding[] | Promise<Finding[]>> = {
   i18n, // G-03
   knip, // G-04
-  'under-construction': stubs, // stub routes, enforced from phase 7
   contract: contractGate, // G-08
   codegen: codegenDrift, // G-09
-  tokens, // G-11
 }
 
 // One line per finding in <main checkout>/tmp/gates/hits.jsonl (infra/dev/ledger.ts): `just metrics` shows which gates

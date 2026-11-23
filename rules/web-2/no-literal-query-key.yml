@@ -1,0 +1,11 @@
+id: no-literal-query-key
+language: tsx
+severity: error
+message: 'Use the generated key: xQueryKey() from #/shared/api/gen/@tanstack/react-query.gen.'
+files: ['apps/web-2/**']
+ignores: ['apps/web-2/src/shared/api/gen*/**', 'apps/web-2/src/routeTree.*.ts']
+rule:
+  kind: pair
+  all:
+    - has: { field: key, kind: property_identifier, regex: '^queryKey$' }
+    - has: { field: value, kind: array }

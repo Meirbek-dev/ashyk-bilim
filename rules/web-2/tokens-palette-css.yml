@@ -1,0 +1,24 @@
+# G-11: Colors stay tokens (docs/web/DESIGN.md); stock shadcn output in src/shared/ui/ is the generator's and exempt. CSS outside src/styles/.
+# Any text the class or color can be written in: values, selectors, strings, comments.
+id: tokens-palette-css
+language: css
+severity: error
+message: 'use a token class (bg-primary, text-muted-foreground, border-border...)'
+files: ['apps/web-2/src/**/*.css']
+ignores: ['apps/web-2/src/styles/**', 'apps/web-2/src/shared/ui/**']
+rule:
+  regex: '\b(?:bg|text|border|ring|fill|stroke|from|via|to|outline|decoration|shadow|accent|caret|divide|placeholder)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|black|white)(?:-\d{2,3})?\b'
+  any:
+    - kind: comment
+    - kind: js_comment
+    - kind: plain_value
+    - kind: color_value
+    - kind: string_content
+    - kind: identifier
+    - kind: property_name
+    - kind: tag_name
+    - kind: id_selector
+    - kind: attribute_name
+    - kind: keyword_query
+    - kind: feature_name
+    - kind: at_keyword

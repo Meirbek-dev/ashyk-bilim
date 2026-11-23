@@ -1,0 +1,29 @@
+id: no-jsx-literal
+valid:
+  - |-
+    const a = <p>{m.course_title()}</p>
+  - |-
+    const a = <Icon aria-label={m.ui_close()} className="flex gap-2" />
+  - |-
+    const a = <span>{'\u00A0'}</span>
+  - |-
+    const a = <span> · 42 </span>
+  - |-
+    const a = <Input placeholder="" />
+  - |-
+    const a = label('Text outside JSX')
+invalid:
+  - |-
+    const a = <p>Course</p>
+  - |-
+    const a = <p>Курс</p>
+  - |-
+    const a = <p>{'Курс'}</p>
+  - |-
+    const a = <Icon aria-label="Close" />
+  - |-
+    const a = <img alt="Picture" />
+  - |-
+    const a = <Field label="Name" />
+  - |-
+    const a = <div title="Тема" />

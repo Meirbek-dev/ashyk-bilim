@@ -1,0 +1,16 @@
+# A feature's route.ts is in the entry chunk (docs/web/ROUTES.md "Entry chunk"): no static runtime import of the
+# feature itself or of the SDK runtime; `import type` is free.
+id: route-entry-imports
+language: tsx
+severity: error
+message: 'route.ts is in the entry chunk: define route-level code here (no static import of the feature or the SDK); load the rest with import().'
+files: ['apps/web-2/src/features/*/route.ts', 'apps/web-2/src/features/*/route.tsx']
+rule:
+  kind: import_statement
+  not:
+    regex: '^import\s+type\s'
+  has:
+    field: source
+    has:
+      kind: string_fragment
+      regex: '^(\.|#/shared/api/(gen/(sdk|valibot)\.gen|gen/@tanstack/|client$))'

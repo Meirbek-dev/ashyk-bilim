@@ -1,0 +1,9 @@
+id: under-construction
+valid:
+  - |-
+    export const Route = createFileRoute('/c')({ component: CoursePage })
+  - |-
+    const x = { stub: UnderConstruction }
+invalid:
+  - |-
+    export const Route = createFileRoute('/c')({ component: UnderConstruction })

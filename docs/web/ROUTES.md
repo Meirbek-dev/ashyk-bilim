@@ -23,7 +23,7 @@ Read before touching `src/routes/`, `shared/auth/`, the shell, live data or hydr
   `assessment-import`: a DOT .xlsx into a new test of `chapter`, or replaced/appended into the draft test of activity
   `test`; `import` is the previewed upload, kept 24 h). Its loader is the workspace guard (`ensureWorkspace`: authors
   only); entry points are the chapter's «Тест из Excel (DOT)» and the builder's «Excel» menu (also the export link).
-- No stub routes (gate `under-construction`). `bun gates/gates.ts api-coverage` reports API usage without
+- No stub routes (ast-grep rule `under-construction`). `bun gates/gates.ts api-coverage` reports API usage without
   blocking changes: operations may serve integrations or clients outside web-2.
 - Live data: `GET /me/events` (`shared/api/events.ts`) -> `shared/api/event-invalidations.ts` (event -> keys); the
   stream and skip rules are B-NOT-11..16 in `features/notifications/SPEC.md`. e2e: `expectReread(page, path)` when a
@@ -37,6 +37,6 @@ Read before touching `src/routes/`, `shared/auth/`, the shell, live data or hydr
   «Диалоги» with its unread badge, signed-in; `notifications`: bell, signed-in) assigns a component the slice's `route.ts` exports (it lazy-loads the UI); an unset slot renders nothing.
 - Entry chunk: only `loader` and the components are code-split; `validateSearch`, `search`, `beforeLoad`,
   `loaderDeps`, `head`, `staticData` and the root route (the shell) stay in the entry, which takes whole modules.
-  Those options use a feature only via `#/features/<name>/route` (lint `ab/route-level-imports`); `route.ts` holds
-  that code itself, no static import of its feature (`ab/route-entry-imports`; else `import()`). No generated SDK
+  Those options use a feature only via `#/features/<name>/route` (ast-grep `route-level-imports`); `route.ts` holds
+  that code itself, no static import of its feature (`route-entry-imports`; else `import()`). No generated SDK
   there (the session key is spelled out, pinned by `session.test.ts`).

@@ -2,6 +2,7 @@
   "name": "ashyq-bilim",
   "private": true,
   "devDependencies": {
+    "@ast-grep/cli": "0.51.3",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.6.0",
     "vite-plus": "1.6.0"
   },
@@ -11,5 +12,8 @@
   "engines": {
     "bun": ">=1.4.4"
   },
-  "packageManager": "bun@1.4.4"
+  "packageManager": "bun@1.4.4",
+  "trustedDependencies": [
+    "@ast-grep/cli"
+  ]
 }

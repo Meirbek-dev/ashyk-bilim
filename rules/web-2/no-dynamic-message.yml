@@ -1,0 +1,10 @@
+# `m[key]` / `m?.[key]`: a computed message lookup the compiler cannot check or tree-shake.
+id: no-dynamic-message
+language: tsx
+severity: error
+message: 'No dynamic message keys: map the value with a Record<Enum, () => string> of m.<key> functions.'
+files: ['apps/web-2/**']
+ignores: ['apps/web-2/src/shared/api/gen*/**', 'apps/web-2/src/routeTree.*.ts']
+rule:
+  kind: subscript_expression
+  has: { field: object, kind: identifier, regex: '^m$' }
