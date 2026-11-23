@@ -192,7 +192,7 @@ fallback only: the Anthropic provider gets submitted PDFs as `document` blocks.
 Drop: `redis`, `object_store`, the three `opentelemetry` crates and `tiktoken-rs` (the budget
 ledger reads `usage` from responses; estimates before a call use `count_tokens` for Anthropic,
 chars / 3.5 otherwise), `figment` (replaced by ~150 lines of `AB__*` parsing with `std::env`
-and serde, `config/env.rs`). OTLP, figment and tiktoken go now, the rest with their phases.
+and serde, `config/env.rs`). OTLP, figment and tiktoken are gone (2026-11-24); the rest go with their phases.
 
 Add:
 
