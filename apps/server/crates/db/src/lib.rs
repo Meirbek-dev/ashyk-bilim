@@ -5,6 +5,7 @@
 //! the committed `.sqlx` offline cache; `QueryBuilder` for dynamic SQL;
 //! `AssertSqlSafe` only with a `// SAFETY:` comment.
 
+pub mod access_tokens;
 pub mod ai;
 pub mod analytics;
 pub mod assessment_imports;

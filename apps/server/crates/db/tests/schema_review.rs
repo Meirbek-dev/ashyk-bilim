@@ -3220,7 +3220,7 @@ async fn hashes_say_what_they_hold(pool: PgPool) {
         .unwrap_or_else(|e| panic!("{name}: {e}"));
         assert!(check.contains("octet_length"), "{name}: {check}");
     }
-    assert_eq!(columns.len(), 8, "{columns:?}");
+    assert_eq!(columns.len(), 9, "{columns:?}");
     let score: String = sqlx::query_scalar(
         "SELECT format_type(atttypid, atttypmod) FROM pg_attribute
          WHERE attrelid = 'certificates'::regclass AND attname = 'score'",

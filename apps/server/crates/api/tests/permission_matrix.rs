@@ -717,6 +717,10 @@ const MATRIX: &[(&str, &str, u8)] = &[
     ("GET", "/api/v2/groups/{group_id}/members/page", TEACHER),
     ("GET", "/api/v2/health", ALL),
     ("GET", "/api/v2/health/ready", ALL),
+    // REWRITE 4.7: the caller's own MCP access tokens; the learner's token is revoked by the learner only.
+    ("GET", "/api/v2/me/access-tokens", SIGNED),
+    ("POST", "/api/v2/me/access-tokens", SIGNED),
+    ("DELETE", "/api/v2/me/access-tokens/{token_id}", LRN),
     ("GET", "/api/v2/me/agenda", SIGNED),
     ("GET", "/api/v2/me/certificates", SIGNED),
     ("GET", "/api/v2/me/certificates/page", SIGNED),
@@ -1457,6 +1461,19 @@ async fn world(app: &TestApp) -> World {
         .unwrap()
         .to_owned();
     ids.insert("handle", handle);
+    let token = ok(
+        &app.post_as(
+            &learner,
+            "/api/v2/me/access-tokens",
+            &json!({ "name": "probe", "scope": "read" }),
+        )
+        .await,
+        "access token",
+    );
+    ids.insert(
+        "token_id",
+        token["access_token"]["id"].as_str().unwrap().to_owned(),
+    );
 
     World { ids, sessions }
 }

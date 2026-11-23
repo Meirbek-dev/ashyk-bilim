@@ -10,6 +10,7 @@ pub mod detach;
 pub mod dto;
 pub mod error;
 pub mod extract;
+pub mod mcp;
 pub mod middleware;
 mod openapi;
 pub mod routes;

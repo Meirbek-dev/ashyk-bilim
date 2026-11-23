@@ -22,8 +22,8 @@ use ab_domain::gamification::GamificationService;
 use ab_domain::grading::{GradingService, SubmissionsService};
 use ab_domain::identity::rate_limit::RateLimiter;
 use ab_domain::identity::{
-    GoogleAuthService, IdentityService, RbacAdminService, SessionStore, UsergroupsService,
-    UsersService,
+    AccessTokensService, GoogleAuthService, IdentityService, RbacAdminService, SessionStore,
+    UsergroupsService, UsersService,
 };
 use ab_domain::link_preview::LinkPreviewService;
 use ab_domain::progress::{LearnerStateService, ProgressProjector, TrailService, WorkQueueService};
@@ -34,6 +34,8 @@ pub struct AppState {
     pub pool: PgPool,
     pub config: Arc<Config>,
     pub sessions: SessionStore,
+    /// Personal access tokens of MCP clients (REWRITE 4.7).
+    pub access_tokens: AccessTokensService,
     pub identity: IdentityService,
     pub users: UsersService,
     pub rbac: RbacAdminService,
@@ -163,6 +165,7 @@ impl AppState {
                 RateLimiter::new(sessions.redis()),
             ),
             users: UsersService::new(pool.clone()),
+            access_tokens: AccessTokensService::new(pool.clone()),
             rbac: RbacAdminService::new(pool.clone(), sessions.clone()),
             uploads: UploadsService::new(pool.clone(), Arc::clone(&storage)),
             curriculum: CurriculumService::new(pool.clone(), courses.clone()),

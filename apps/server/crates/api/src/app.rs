@@ -116,6 +116,11 @@ fn me_routes() -> OpenApiRouter<AppState> {
             routes::me::put_notification_preferences
         ))
         .routes(routes!(routes::me::agenda))
+        .routes(routes!(
+            routes::access_tokens::list_access_tokens,
+            routes::access_tokens::create_access_token
+        ))
+        .routes(routes!(routes::access_tokens::revoke_access_token))
 }
 
 fn analytics_routes() -> OpenApiRouter<AppState> {
@@ -582,6 +587,9 @@ pub fn build_router(state: AppState) -> Result<Router> {
             post(crate::routes::auth::dev_login),
         );
     }
+
+    // REWRITE 4.7: the MCP server (bearer tokens, not part of the OpenAPI contract).
+    let router = router.merge(crate::mcp::router(&state));
 
     let request_id = HeaderName::from_static(REQUEST_ID_HEADER);
     let router = router

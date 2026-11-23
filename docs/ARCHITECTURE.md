@@ -26,7 +26,8 @@ Companion documents:
   module.
 
 **Non-goals**
-- MCP tool surface (deferred; the thin-handler discipline keeps it cheap later).
+- A broad MCP tool surface: the product MCP server (REWRITE 4.7, `/api/v2/mcp`) adapts a few REST handlers;
+  a new tool is another adapter, never its own domain path.
 - Kubernetes, service mesh, microservices. One binary, one box, docker compose.
 
 ## 2. System overview

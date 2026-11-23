@@ -29,6 +29,9 @@ const AUTH_ONLY: &[(&str, &str)] = &[
     ("POST", "/api/v2/auth/email/confirm"),
     ("POST", "/api/v2/users/me/deletion"),
     ("DELETE", "/api/v2/auth/sessions/{handle}"),
+    // MCP access tokens (REWRITE 4.7): the caller's own rows.
+    ("POST", "/api/v2/me/access-tokens"),
+    ("DELETE", "/api/v2/me/access-tokens/{token_id}"),
     ("POST", "/api/v2/auth/mfa/totp"),
     ("POST", "/api/v2/auth/mfa/totp/verify"),
     ("DELETE", "/api/v2/auth/mfa/totp"),

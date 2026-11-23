@@ -87,6 +87,9 @@ utoipa = { version = "6.0.0", features = ["axum_extras", "uuid"] }
 utoipa-axum = "0.3.0"
 utoipa-scalar = { version = "0.4.0", features = ["axum"] }
 
+# Product MCP server (REWRITE 4.7): Streamable HTTP at /api/v2/mcp, stateless, JSON responses.
+rmcp = { version = "3.11.0", default-features = false, features = ["server", "transport-streamable-http-server"] }
+
 # Bin
 clap = { version = "4.6.7", features = ["derive", "env"] }
 dotenvy = "0.15.7"

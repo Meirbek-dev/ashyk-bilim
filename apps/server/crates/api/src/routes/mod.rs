@@ -1,6 +1,7 @@
 //! Route handlers, one module per API tag. Every handler carries a
 //! `#[utoipa::path]` annotation and is mounted via `routes!` in `app.rs`.
 
+pub mod access_tokens;
 pub mod ai;
 pub mod ai_agents;
 pub mod ai_first;

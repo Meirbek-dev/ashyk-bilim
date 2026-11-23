@@ -27,6 +27,78 @@
         ],
         "type": "string"
       },
+      "AccessToken": {
+        "description": "One of the caller's tokens (the secret is never listed).",
+        "properties": {
+          "created_at_unix": {
+            "$ref": "#/components/schemas/UnixTime"
+          },
+          "expires_at_unix": {
+            "description": "Null: never expires.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/AccessTokenId"
+          },
+          "last_used_at_unix": {
+            "description": "The latest call with it (to the minute); null: never used.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "revoked_at_unix": {
+            "description": "Null: not revoked.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UnixTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scope": {
+            "$ref": "#/components/schemas/AccessTokenScope"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "scope",
+          "created_at_unix",
+          "expires_at_unix",
+          "last_used_at_unix",
+          "revoked_at_unix"
+        ],
+        "type": "object"
+      },
+      "AccessTokenId": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "AccessTokenScope": {
+        "description": "What a token reaches: `read` the read tools; `draft` those plus the draft-only writes (content of\nunpublished activities, teacher-only grades). Neither publishes nor releases anything.",
+        "enum": [
+          "read",
+          "draft"
+        ],
+        "type": "string"
+      },
       "AccessUser": {
         "properties": {
           "avatar_key": {
@@ -7242,6 +7314,32 @@
         ],
         "type": "object"
       },
+      "CreateAccessTokenRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "expires_in_days": {
+            "description": "Days until the token stops working, 1..=365; omitted or null: it never expires.",
+            "format": "int32",
+            "maximum": 365,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "name": {
+            "description": "What the token is for (the client's name), 1..=100 characters.",
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/AccessTokenScope"
+          }
+        },
+        "required": [
+          "name",
+          "scope"
+        ],
+        "type": "object"
+      },
       "CreateActivityRequest": {
         "additionalProperties": false,
         "properties": {
@@ -7815,6 +7913,23 @@
         },
         "required": [
           "name"
+        ],
+        "type": "object"
+      },
+      "CreatedAccessToken": {
+        "description": "A token just created: `token` is shown this once and cannot be read again.",
+        "properties": {
+          "access_token": {
+            "$ref": "#/components/schemas/AccessToken"
+          },
+          "token": {
+            "description": "The secret: send it as `Authorization: Bearer <token>` to `/api/v2/mcp`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "access_token",
+          "token"
         ],
         "type": "object"
       },
@@ -40002,6 +40117,145 @@
         "summary": "Readiness: Postgres and Redis (sessions, rate limits, live events) answer.\nRustFS and Zitadel are not probed.",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v2/me/access-tokens": {
+      "get": {
+        "operationId": "list_access_tokens",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AccessToken"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "The caller's tokens"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          }
+        },
+        "summary": "The caller's access tokens, newest first; revoked and expired ones included.",
+        "tags": [
+          "me"
+        ]
+      },
+      "post": {
+        "description": "At most 20 live tokens per account (409 `conflict` past it).",
+        "operationId": "create_access_token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccessTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedAccessToken"
+                }
+              }
+            },
+            "description": "Created; `token` is shown this once"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Too many live tokens"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad name, scope or expiry"
+          }
+        },
+        "summary": "Create an access token for an MCP client; the response carries the secret, shown this once.",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v2/me/access-tokens/{token_id}": {
+      "delete": {
+        "operationId": "revoke_access_token",
+        "parameters": [
+          {
+            "description": "Access token id",
+            "in": "path",
+            "name": "token_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AccessTokenId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked (again: still revoked)"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "No live session"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unknown, or another user's"
+          }
+        },
+        "summary": "Revoke one of the caller's tokens: it authenticates nothing from now on.",
+        "tags": [
+          "me"
         ]
       }
     },

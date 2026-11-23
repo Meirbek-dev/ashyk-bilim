@@ -120,6 +120,8 @@ typed_id!(ContentChunkId);
 typed_id!(ConceptId);
 typed_id!(ConceptTagId);
 typed_id!(GradeDraftId);
+// REWRITE 4.7: MCP personal access tokens.
+typed_id!(AccessTokenId);
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]

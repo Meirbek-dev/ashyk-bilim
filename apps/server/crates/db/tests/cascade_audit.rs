@@ -179,6 +179,7 @@ const ALLOWED: &[(&str, &str, &str, &str)] = &[
     ),
     ("notifications", "course_id", "courses", NOTIFICATION_LINK),
     ("notifications", "user_id", "users", USER_ERASURE),
+    ("personal_access_tokens", "user_id", "users", USER_ERASURE),
     ("enrolments", "course_id", "courses", COURSE_DELETE),
     ("enrolment_events", "user_id", "users", USER_ERASURE),
     (

@@ -273,6 +273,28 @@ teachers and agents work with their courses there.
   REST handlers, so `CourseCtx`/`Caps` (6.3) decide access.
 - Every tool call writes an audit row.
 
+As built (2026-11-24, `crates/api/src/mcp.rs`):
+
+- Tokens: `personal_access_tokens` (sha256 of `abq_` + 64 hex, name, `scope` `read` | `draft`, created / last used
+  (to the minute) / expires (1..=365 days or never) / revoked; at most 20 live per account, the hash hidden from
+  `ashyq_ro`). `GET|POST /me/access-tokens` (the secret is in the create reply only), `DELETE
+  /me/access-tokens/{token_id}`. Settings → Security in web-2 creates, lists and revokes them and shows the endpoint
+  and a `mcpServers` snippet.
+- Transport: `POST /api/v2/mcp`, rmcp Streamable HTTP, stateless (no `Mcp-Session-Id`), JSON responses. A missing,
+  unknown, revoked or expired token (or a disabled owner) is 401 with `WWW-Authenticate: Bearer` before rmcp runs.
+  The caller is `Actor::current` of the owner (grants as of now). Not in the OpenAPI document.
+- Tools are adapters over the REST handlers (the handler is called with the caller's actor; the reply is its JSON
+  body, a refusal its problem+json as a tool error), so `CourseCtx`/`Caps` and `actor.require` decide.
+  `read`: `list_my_courses` (`teaching`: `GET /courses?mine=true`; `learning`: `GET /enrollments`),
+  `get_course_outline` (course + curriculum), `read_activity` (`GET /activities/{id}` plus the document as plain
+  text), `search_course` (the retrieval search), `get_submission` (the grader's view). `draft` adds
+  `save_activity_draft` (the content of an unpublished activity under `If-Match`; a published one is refused) and
+  `save_grade_draft` (`action: save`, teacher-only; a published or returned submission is refused). `tools/list`
+  shows a token only the tools of its scope.
+- Audit: `auth_audit_log` event `mcp-tool-called`, metadata `{tool, token_id, scope, ok, error, target}`, for
+  allowed and refused calls (unknown tool, insufficient scope); `access-token-created` / `access-token-revoked` for
+  the tokens.
+
 ## 5. Schema
 
 The target schema, reached by forward migrations on the existing `ashyq` database in

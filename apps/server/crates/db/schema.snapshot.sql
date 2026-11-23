@@ -1118,6 +1118,19 @@ constraint notifications notifications_pkey PRIMARY KEY (id)
 constraint notifications notifications_user_id_dedup_key_key UNIQUE (user_id, dedup_key)
 constraint notifications notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 constraint notifications notifications_user_id_not_null NOT NULL user_id
+constraint personal_access_tokens personal_access_tokens_created_at_not_null NOT NULL created_at
+constraint personal_access_tokens personal_access_tokens_expiry_check CHECK (((expires_at IS NULL) OR (expires_at > created_at)))
+constraint personal_access_tokens personal_access_tokens_id_not_null NOT NULL id
+constraint personal_access_tokens personal_access_tokens_name_check CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 100)))
+constraint personal_access_tokens personal_access_tokens_name_not_null NOT NULL name
+constraint personal_access_tokens personal_access_tokens_pkey PRIMARY KEY (id)
+constraint personal_access_tokens personal_access_tokens_scope_check CHECK ((scope = ANY (ARRAY['read'::text, 'draft'::text])))
+constraint personal_access_tokens personal_access_tokens_scope_not_null NOT NULL scope
+constraint personal_access_tokens personal_access_tokens_token_hash_check CHECK ((octet_length(token_hash) = 32))
+constraint personal_access_tokens personal_access_tokens_token_hash_key UNIQUE (token_hash)
+constraint personal_access_tokens personal_access_tokens_token_hash_not_null NOT NULL token_hash
+constraint personal_access_tokens personal_access_tokens_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+constraint personal_access_tokens personal_access_tokens_user_id_not_null NOT NULL user_id
 constraint platforms platforms_about_not_null NOT NULL about
 constraint platforms platforms_ai_features_booleans CHECK (((jsonb_typeof(ai_features) = 'object'::text) AND (NOT jsonb_path_exists(ai_features, '$.*?(@.type() != "boolean")'::jsonpath))))
 constraint platforms platforms_ai_features_not_null NOT NULL ai_features
@@ -1568,7 +1581,9 @@ BEGIN
             ('message_bans', ARRAY['reason']),
             ('message_uploads', ARRAY['name']),
             -- DOT imports (docs/XLSX-TEST-IMPORT.md): the file's name and text, as the uploads above.
-            ('assessment_imports', ARRAY['file_name', 'sheet_name', 'parsed', 'issues', 'error'])
+            ('assessment_imports', ARRAY['file_name', 'sheet_name', 'parsed', 'issues', 'error']),
+            -- MCP personal access tokens (REWRITE 4.7).
+            ('personal_access_tokens', ARRAY['token_hash'])
         ) AS x(name, hidden)
         JOIN pg_class c ON c.relname = x.name
          AND c.relnamespace::regnamespace::name = ANY (ARRAY['public']::name[] || app_schemas())
@@ -2616,6 +2631,7 @@ index CREATE INDEX notifications_created_idx ON core.notifications USING btree (
 index CREATE INDEX notifications_unread_idx ON core.notifications USING btree (user_id) WHERE (read_at IS NULL)
 index CREATE INDEX notifications_unread_work_idx ON core.notifications USING btree (user_id, activity_id) WHERE ((kind = 'work_submitted'::text) AND (read_at IS NULL))
 index CREATE INDEX notifications_user_idx ON core.notifications USING btree (user_id, id DESC)
+index CREATE INDEX personal_access_tokens_user_idx ON core.personal_access_tokens USING btree (user_id, created_at DESC)
 index CREATE INDEX platforms_logo_upload_id_idx ON core.platforms USING btree (logo_upload_id) WHERE (logo_upload_id IS NOT NULL)
 index CREATE INDEX platforms_thumbnail_upload_id_idx ON core.platforms USING btree (thumbnail_upload_id) WHERE (thumbnail_upload_id IS NOT NULL)
 index CREATE INDEX post_uploads_upload_idx ON core.post_uploads USING btree (upload_id)
@@ -2774,6 +2790,8 @@ index CREATE UNIQUE INDEX notification_kinds_pkey ON core.notification_kinds USI
 index CREATE UNIQUE INDEX notification_opt_outs_pkey ON core.notification_opt_outs USING btree (user_id, kind)
 index CREATE UNIQUE INDEX notifications_pkey ON core.notifications USING btree (id)
 index CREATE UNIQUE INDEX notifications_user_id_dedup_key_key ON core.notifications USING btree (user_id, dedup_key)
+index CREATE UNIQUE INDEX personal_access_tokens_pkey ON core.personal_access_tokens USING btree (id)
+index CREATE UNIQUE INDEX personal_access_tokens_token_hash_key ON core.personal_access_tokens USING btree (token_hash)
 index CREATE UNIQUE INDEX platforms_pkey ON core.platforms USING btree (id)
 index CREATE UNIQUE INDEX platforms_singleton_key ON core.platforms USING btree (singleton)
 index CREATE UNIQUE INDEX post_uploads_pkey ON core.post_uploads USING btree (discussion_id, upload_id)
@@ -3299,6 +3317,15 @@ table core.notifications kind text NOT NULL DEFAULT -
 table core.notifications payload jsonb NOT NULL DEFAULT -
 table core.notifications read_at timestamp with time zone DEFAULT -
 table core.notifications user_id uuid NOT NULL DEFAULT -
+table core.personal_access_tokens created_at timestamp with time zone NOT NULL DEFAULT now()
+table core.personal_access_tokens expires_at timestamp with time zone DEFAULT -
+table core.personal_access_tokens id uuid NOT NULL DEFAULT uuidv7()
+table core.personal_access_tokens last_used_at timestamp with time zone DEFAULT -
+table core.personal_access_tokens name text NOT NULL DEFAULT -
+table core.personal_access_tokens revoked_at timestamp with time zone DEFAULT -
+table core.personal_access_tokens scope text NOT NULL DEFAULT -
+table core.personal_access_tokens token_hash bytea NOT NULL DEFAULT -
+table core.personal_access_tokens user_id uuid NOT NULL DEFAULT -
 table core.platforms about text NOT NULL DEFAULT ''::text
 table core.platforms ai_features jsonb NOT NULL DEFAULT '{}'::jsonb
 table core.platforms created_at timestamp with time zone NOT NULL DEFAULT now()

@@ -29,6 +29,8 @@ tracing = { workspace = true }
 utoipa = { workspace = true }
 utoipa-axum = { workspace = true }
 utoipa-scalar = { workspace = true }
+rmcp = { workspace = true }
+http = { workspace = true }
 uuid = { workspace = true }
 ab-clients = { workspace = true }
 

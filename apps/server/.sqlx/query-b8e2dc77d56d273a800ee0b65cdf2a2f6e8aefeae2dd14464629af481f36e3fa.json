@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM personal_access_tokens WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b8e2dc77d56d273a800ee0b65cdf2a2f6e8aefeae2dd14464629af481f36e3fa"
+}

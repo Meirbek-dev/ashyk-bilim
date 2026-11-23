@@ -95,6 +95,7 @@ const CLASSIFIED: &[(&str, &str, &str)] = &[
     ("google_accounts", "user_id", GOOGLE),
     ("grading_entries", "graded_by", ACTOR),
     ("idempotency_keys", "user_id", ERASED),
+    ("personal_access_tokens", "user_id", ERASED),
     ("trail_legacy_marks", "user_id", RECORD),
     ("learner_risk_snapshots", "user_id", ERASED),
     ("mastery_evidence", "user_id", ERASED),

@@ -97,6 +97,7 @@ listed as `schema.table`; SQL names it unqualified (the search_path covers every
 - [`core.notification_kinds`](#notification_kinds): Lookup: the notification kinds the server sends
 - [`core.notification_opt_outs`](#notification_opt_outs): Notification kinds a user switched off (GET/PUT /me/notification-preferences); no row = on
 - [`core.notifications`](#notifications): An in-app notification of an account (typed payload; course_id/activity_id are generated from it)
+- [`core.personal_access_tokens`](#personal_access_tokens): Personal access tokens of MCP clients (REWRITE 4.7): sha256 of the token, scope read or draft
 - [`core.platforms`](#platforms): The platform's own settings and texts (one row, singleton)
 - [`core.post_uploads`](#post_uploads): The discussion-image uploads a post's content shows (kept by trigger from the content); the reaper keeps them
 - [`core.role_permissions`](#role_permissions): A permission grant of a role; resource/action/scope are generated from the grant string
@@ -2443,6 +2444,31 @@ An in-app notification of an account (typed payload; course_id/activity_id are g
 - Index `notifications_unread_idx`: `CREATE INDEX notifications_unread_idx ON core.notifications USING btree (user_id) WHERE (read_at IS NULL)`
 - Index `notifications_unread_work_idx`: `CREATE INDEX notifications_unread_work_idx ON core.notifications USING btree (user_id, activity_id) WHERE ((kind = 'work_submitted'::text) AND (read_at IS NULL))`
 - Index `notifications_user_idx`: `CREATE INDEX notifications_user_idx ON core.notifications USING btree (user_id, id DESC)`
+
+## personal_access_tokens
+
+Personal access tokens of MCP clients (REWRITE 4.7): sha256 of the token, scope read or draft.
+
+| Column | Type | Null | Default | Comment |
+| --- | --- | --- | --- | --- |
+| id | uuid |  | `uuidv7()` |  |
+| user_id | uuid |  |  |  |
+| name | text |  |  |  |
+| token_hash | bytea |  |  | sha256 of the token; the token itself is shown once. |
+| scope | text |  |  | read: read tools; draft: read plus draft-only writes. |
+| created_at | timestamp with time zone |  | `now()` |  |
+| last_used_at | timestamp with time zone | null |  | The latest authenticated call, written at most once a minute. |
+| expires_at | timestamp with time zone | null |  |  |
+| revoked_at | timestamp with time zone | null |  | Set by the owner; a revoked token authenticates nothing. |
+
+- Primary key `personal_access_tokens_pkey`: `PRIMARY KEY (id)`
+- Unique `personal_access_tokens_token_hash_key`: `UNIQUE (token_hash)`
+- Foreign key `personal_access_tokens_user_id_fkey`: `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`
+- Check `personal_access_tokens_expiry_check`: `CHECK (((expires_at IS NULL) OR (expires_at > created_at)))`
+- Check `personal_access_tokens_name_check`: `CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 100)))`
+- Check `personal_access_tokens_scope_check`: `CHECK ((scope = ANY (ARRAY['read'::text, 'draft'::text])))`
+- Check `personal_access_tokens_token_hash_check`: `CHECK ((octet_length(token_hash) = 32))`
+- Index `personal_access_tokens_user_idx`: `CREATE INDEX personal_access_tokens_user_idx ON core.personal_access_tokens USING btree (user_id, created_at DESC)`
 
 ## platforms
 

@@ -1015,6 +1015,11 @@ pub async fn erase_personal_data(tx: &mut sqlx::PgConnection, user_id: UserId) -
         .execute(&mut *tx)
         .await?
         .rows_affected();
+    // MCP access tokens (REWRITE 4.7): the hashes of the person's secrets go with them.
+    removed += sqlx::query!("DELETE FROM personal_access_tokens WHERE user_id = $1", uid)
+        .execute(&mut *tx)
+        .await?
+        .rows_affected();
     removed += erase_messages(tx, uid).await?;
     Ok(removed)
 }
