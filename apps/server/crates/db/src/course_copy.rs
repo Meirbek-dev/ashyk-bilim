@@ -116,15 +116,14 @@ pub async fn copy_activities(
     .fetch_all(&mut *conn)
     .await?;
     for block in blocks {
-        let new_block = Uuid::now_v7();
-        sqlx::query!(
-            r#"INSERT INTO blocks (id, activity_id, kind, content, claimed)
-               SELECT $2, $3, kind, content, claimed FROM blocks WHERE id = $1"#,
+        let new_block = sqlx::query_scalar!(
+            r#"INSERT INTO blocks (activity_id, kind, content, claimed)
+               SELECT $2, kind, content, claimed FROM blocks WHERE id = $1
+               RETURNING id"#,
             block.id,
-            new_block,
             block.activity_id
         )
-        .execute(&mut *conn)
+        .fetch_one(&mut *conn)
         .await?;
         for reference in std::iter::once(block.id.to_string()).chain(block.legacy_uuid) {
             sqlx::query!(

@@ -532,3 +532,59 @@ async fn course_and_collection_listings_run_every_shape(pool: PgPool) {
         }
     }
 }
+
+#[ab_testdb::test]
+async fn a_copied_block_gets_a_database_id_and_its_references_follow(pool: PgPool) {
+    use ab_core::id::{CourseId, UserId};
+    let (_course, _chapter, activity) = seed_course(&pool).await;
+    let creator = seed_user(&pool, "copier").await;
+    let block: uuid::Uuid = sqlx::query_scalar(
+        "INSERT INTO blocks (activity_id, kind, content) VALUES ($1, 'image', '{\"file_key\": \"k\"}') RETURNING id",
+    )
+    .bind(activity)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    sqlx::query(
+        "UPDATE activities SET content = jsonb_build_object('block_uuid', $2::text) WHERE id = $1",
+    )
+    .bind(activity)
+    .bind(block)
+    .execute(&pool)
+    .await
+    .unwrap();
+    // An empty chapter: the copy keeps the source's position.
+    let (target, into): (uuid::Uuid, uuid::Uuid) = sqlx::query_as(
+        "WITH c AS (INSERT INTO courses (name) VALUES ('Copy') RETURNING id)
+         INSERT INTO chapters (course_id, name) SELECT id, 'Intro' FROM c RETURNING course_id, id",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    // The caller mints activity ids: they map source to copy within one statement.
+    let copy = uuid::Uuid::now_v7();
+
+    let mut conn = pool.acquire().await.unwrap();
+    ab_db::course_copy::copy_activities(
+        &mut conn,
+        CourseId(target),
+        UserId(creator),
+        (&[activity], &[copy], &[into]),
+    )
+    .await
+    .unwrap();
+
+    let copied: uuid::Uuid = sqlx::query_scalar("SELECT id FROM blocks WHERE activity_id = $1")
+        .bind(copy)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_ne!(copied, block);
+    let content: serde_json::Value =
+        sqlx::query_scalar("SELECT content FROM activities WHERE id = $1")
+            .bind(copy)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(content["block_uuid"], copied.to_string());
+}
