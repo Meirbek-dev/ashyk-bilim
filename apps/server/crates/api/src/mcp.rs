@@ -27,7 +27,7 @@ use rmcp::model::{
     ToolAnnotations,
 };
 use rmcp::schemars::{self, JsonSchema};
-use rmcp::service::RequestContext;
+use rmcp::service::{MaybeSendFuture, RequestContext};
 use rmcp::transport::streamable_http_server::session::never::NeverSessionManager;
 use rmcp::transport::streamable_http_server::{StreamableHttpServerConfig, StreamableHttpService};
 use rmcp::{ErrorData, RoleServer, ServerHandler};
@@ -417,104 +417,19 @@ impl McpServer {
         let state = || axum::extract::State(self.state.clone());
         let actor = caller.actor.clone();
         match tool {
-            ToolName::ListMyCourses => {
-                let result = async {
-                    let a: ListMyCoursesArgs = args(arguments)?;
-                    match a.role {
-                        CourseRole::Teaching => {
-                            let cursor = a
-                                .cursor
-                                .map(|c| c.parse::<CourseId>())
-                                .transpose()
-                                .map_err(|e| ToolError::new("invalid-arguments", e.to_string()))?;
-                            let query = crate::dto::courses::CourseListQuery {
-                                cursor,
-                                limit: a.limit,
-                                mine: Some(true),
-                                ..Default::default()
-                            };
-                            reply(
-                                routes::courses::list_courses(
-                                    state(),
-                                    MaybeActor(actor),
-                                    Query(query),
-                                )
-                                .await,
-                            )
-                            .await
-                        }
-                        CourseRole::Learning => {
-                            let query = routes::progress::TrailQuery {
-                                cursor: a.cursor,
-                                limit: Some(a.limit.unwrap_or(20)),
-                            };
-                            reply(
-                                routes::progress::list_enrollments(
-                                    state(),
-                                    MaybeActor(actor),
-                                    Query(query),
-                                )
-                                .await,
-                            )
-                            .await
-                        }
-                    }
-                }
-                .await;
-                (result, Value::Null)
-            }
+            ToolName::ListMyCourses => (self.list_my_courses(actor, arguments).await, Value::Null),
             ToolName::GetCourseOutline => match args::<CourseArgs>(arguments) {
                 Err(e) => (Err(e), Value::Null),
                 Ok(a) => {
                     let target = json!({ "course_id": a.course_id });
-                    let result = async {
-                        let course = reply(
-                            routes::courses::get_course(
-                                state(),
-                                MaybeActor(actor.clone()),
-                                Path(a.course_id),
-                            )
-                            .await,
-                        )
-                        .await?;
-                        let outline = reply(
-                            routes::curriculum::get_curriculum(
-                                state(),
-                                MaybeActor(actor),
-                                Path(a.course_id),
-                            )
-                            .await,
-                        )
-                        .await?;
-                        Ok(json!({ "course": course, "chapters": outline.get("chapters") }))
-                    }
-                    .await;
-                    (result, target)
+                    (self.course_outline(actor, a).await, target)
                 }
             },
             ToolName::ReadActivity => match args::<ActivityArgs>(arguments) {
                 Err(e) => (Err(e), Value::Null),
                 Ok(a) => {
                     let target = json!({ "activity_id": a.activity_id });
-                    let result = async {
-                        let mut detail = reply(
-                            routes::curriculum::get_activity(
-                                state(),
-                                MaybeActor(actor),
-                                Path(a.activity_id),
-                            )
-                            .await,
-                        )
-                        .await?;
-                        let name = detail["name"].as_str().unwrap_or_default().to_owned();
-                        let text = plain_text(&name, &detail["content"]);
-                        if let Some(map) = detail.as_object_mut() {
-                            map.insert("text".into(), Value::String(text));
-                        }
-                        Ok(detail)
-                    }
-                    .await;
-                    (result, target)
+                    (self.read_activity(actor, a).await, target)
                 }
             },
             ToolName::SearchCourse => match args::<SearchArgs>(arguments) {
@@ -569,6 +484,79 @@ impl McpServer {
         }
     }
 
+    async fn list_my_courses(
+        &self,
+        actor: ab_domain::identity::Actor,
+        arguments: Option<serde_json::Map<String, Value>>,
+    ) -> Result<Value, ToolError> {
+        let state = || axum::extract::State(self.state.clone());
+        let a: ListMyCoursesArgs = args(arguments)?;
+        match a.role {
+            CourseRole::Teaching => {
+                let cursor = a
+                    .cursor
+                    .map(|c| c.parse::<CourseId>())
+                    .transpose()
+                    .map_err(|e| ToolError::new("invalid-arguments", e.to_string()))?;
+                let query = crate::dto::courses::CourseListQuery {
+                    cursor,
+                    limit: a.limit,
+                    mine: Some(true),
+                    ..Default::default()
+                };
+                reply(routes::courses::list_courses(state(), MaybeActor(actor), Query(query)).await)
+                    .await
+            }
+            CourseRole::Learning => {
+                let query = routes::progress::TrailQuery {
+                    cursor: a.cursor,
+                    limit: Some(a.limit.unwrap_or(20)),
+                };
+                reply(
+                    routes::progress::list_enrollments(state(), MaybeActor(actor), Query(query))
+                        .await,
+                )
+                .await
+            }
+        }
+    }
+
+    async fn course_outline(
+        &self,
+        actor: ab_domain::identity::Actor,
+        a: CourseArgs,
+    ) -> Result<Value, ToolError> {
+        let state = || axum::extract::State(self.state.clone());
+        let course = reply(
+            routes::courses::get_course(state(), MaybeActor(actor.clone()), Path(a.course_id))
+                .await,
+        )
+        .await?;
+        let outline = reply(
+            routes::curriculum::get_curriculum(state(), MaybeActor(actor), Path(a.course_id)).await,
+        )
+        .await?;
+        Ok(json!({ "course": course, "chapters": outline.get("chapters") }))
+    }
+
+    async fn read_activity(
+        &self,
+        actor: ab_domain::identity::Actor,
+        a: ActivityArgs,
+    ) -> Result<Value, ToolError> {
+        let state = || axum::extract::State(self.state.clone());
+        let mut detail = reply(
+            routes::curriculum::get_activity(state(), MaybeActor(actor), Path(a.activity_id)).await,
+        )
+        .await?;
+        let name = detail["name"].as_str().unwrap_or_default().to_owned();
+        let text = plain_text(&name, &detail["content"]);
+        if let Some(map) = detail.as_object_mut() {
+            map.insert("text".into(), Value::String(text));
+        }
+        Ok(detail)
+    }
+
     /// The content PATCH of `PATCH /activities/{id}`, only while the activity is unpublished.
     ///
     /// The published flag is read at `version`, and the write carries `If-Match: version`: a publish
@@ -584,7 +572,7 @@ impl McpServer {
             .curriculum
             .writable_activity(actor, a.activity_id)
             .await
-            .map_err(|err| problem(ApiError(err)))?;
+            .map_err(|err| problem(&err))?;
         let current = reply(
             routes::curriculum::get_activity(
                 state(),
@@ -673,9 +661,9 @@ impl McpServer {
 }
 
 /// A domain refusal in the REST problem shape.
-fn problem(err: ApiError) -> ToolError {
-    let code = err.0.code().as_str().to_owned();
-    let problem = crate::error::Problem::from_error(&err.0);
+fn problem(err: &ab_core::Error) -> ToolError {
+    let code = err.code().as_str().to_owned();
+    let problem = crate::error::Problem::from_error(err);
     ToolError {
         code,
         body: serde_json::to_value(problem).unwrap_or(Value::Null),
@@ -703,19 +691,20 @@ impl ServerHandler for McpServer {
             )
     }
 
-    async fn list_tools(
+    fn list_tools(
         &self,
         _request: Option<PaginatedRequestParams>,
         context: RequestContext<RoleServer>,
-    ) -> Result<ListToolsResult, ErrorData> {
-        let McpCaller { caller, .. } = caller_of(&context)?;
-        Ok(ListToolsResult::with_all_items(
-            ToolName::ALL
-                .into_iter()
-                .filter(|t| caller.scope.allows(t.scope()))
-                .map(ToolName::tool)
-                .collect(),
-        ))
+    ) -> impl Future<Output = Result<ListToolsResult, ErrorData>> + MaybeSendFuture + '_ {
+        std::future::ready(caller_of(&context).map(|McpCaller { caller, .. }| {
+            ListToolsResult::with_all_items(
+                ToolName::ALL
+                    .into_iter()
+                    .filter(|t| caller.scope.allows(t.scope()))
+                    .map(ToolName::tool)
+                    .collect(),
+            )
+        }))
     }
 
     async fn call_tool(

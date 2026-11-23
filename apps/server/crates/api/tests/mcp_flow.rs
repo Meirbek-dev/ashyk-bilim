@@ -78,7 +78,7 @@ async fn course_with_page(app: &TestApp, who: &MintedSession) -> (String, String
     )
 }
 
-fn rpc(id: i64, method: &str, params: Value) -> Value {
+fn rpc(id: i64, method: &str, params: &Value) -> Value {
     json!({ "jsonrpc": "2.0", "id": id, "method": method, "params": params })
 }
 
@@ -107,7 +107,7 @@ async fn call(app: &TestApp, bearer: &str, tool: &str, arguments: Value) -> (boo
         &rpc(
             7,
             "tools/call",
-            json!({ "name": tool, "arguments": arguments }),
+            &json!({ "name": tool, "arguments": arguments }),
         ),
     )
     .await;
@@ -134,7 +134,7 @@ async fn the_endpoint_needs_a_live_bearer_token(pool: PgPool) {
     let app = TestApp::spawn(pool).await;
     let me = teacher(&app, "teacher").await;
     let (secret, id) = token(&app, &me, "read").await;
-    let list = rpc(1, "tools/list", json!({}));
+    let list = rpc(1, "tools/list", &json!({}));
 
     for bearer in [None, Some("abq_not-a-token"), Some("garbage")] {
         let res = mcp(&app, bearer, &list).await;
@@ -190,7 +190,7 @@ async fn a_client_reads_its_courses_over_http(pool: PgPool) {
     let init = post(rpc(
         1,
         "initialize",
-        json!({ "protocolVersion": PROTOCOL, "capabilities": {},
+        &json!({ "protocolVersion": PROTOCOL, "capabilities": {},
                 "clientInfo": { "name": "test", "version": "1" } }),
     ))
     .await
@@ -199,7 +199,7 @@ async fn a_client_reads_its_courses_over_http(pool: PgPool) {
     let init: Value = init.json().await.unwrap();
     assert_eq!(init["result"]["serverInfo"]["name"], "ashyq");
 
-    let tools: Value = post(rpc(2, "tools/list", json!({})))
+    let tools: Value = post(rpc(2, "tools/list", &json!({})))
         .await
         .unwrap()
         .json()
@@ -225,7 +225,7 @@ async fn a_client_reads_its_courses_over_http(pool: PgPool) {
     let called: Value = post(rpc(
         3,
         "tools/call",
-        json!({ "name": "list_my_courses", "arguments": {} }),
+        &json!({ "name": "list_my_courses", "arguments": {} }),
     ))
     .await
     .unwrap()
@@ -319,7 +319,7 @@ async fn a_draft_save_writes_only_unpublished_activities(pool: PgPool) {
     let (_, activity_id) = course_with_page(&app, &me).await;
     let (secret, _) = token(&app, &me, "draft").await;
 
-    let tools = mcp(&app, Some(&secret), &rpc(1, "tools/list", json!({})))
+    let tools = mcp(&app, Some(&secret), &rpc(1, "tools/list", &json!({})))
         .await
         .json();
     assert_eq!(tools["result"]["tools"].as_array().unwrap().len(), 7);
