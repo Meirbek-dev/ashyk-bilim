@@ -89,7 +89,6 @@ base image matches it); `apps/server/tools.env` pins the cargo tools.
 | Concern | Implementation | Isolation seam |
 |---|---|---|
 | LLM | hand-rolled over `reqwest`: Anthropic Messages API + OpenAI-compatible chat completions | provider wire types appear **only** in `ab_clients::llm`; domain code sees `LlmClient`, `CompletionRequest`, `Completion`, `StreamChunk`, `LlmError` |
-| Tokenizing | `tiktoken-rs` | inside `ab_clients::llm` |
 | Job queue | **hand-rolled Postgres queue** (`ab_db::queue`, `ab-jobs`) | §9 |
 | SSE replay | Redis Streams | `ab_domain::events` + `crates/api/src/routes/sse.rs` |
 
@@ -830,7 +829,7 @@ Postgres work uses Postgres advisory locks and row locks.
 - Agents (`crates/domain/src/ai/agents`): course_analyst, course_qa, lecture_author,
   remediation_generator, study_companion, submission_analyst, concept_mapper, grade_assistant. Streaming QA/companion stream chunks over SSE.
   Without a reachable provider, agents answer with deterministic drafts (`ai_draft_mode_enabled`).
-- Budget (`ab_domain::ai::budget`): tiktoken-rs estimates, request-size cap, platform monthly token budget from
+- Budget (`ab_domain::ai::budget`): `count_tokens` (Anthropic) or chars / 3.5 estimates, request-size cap, platform monthly token budget from
   `ai_token_ledger` plus in-flight reservations, per-user hourly limits in Redis; `ai-budget-exhausted` /
   `ai-rate-limited` error codes.
 - Evals: `ashyq admin ai-eval` records outcomes in `ai_eval_results` (manual, never CI); today it records a

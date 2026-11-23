@@ -351,14 +351,35 @@ ai_course_settings (course_id pk, auto_grade_drafts bool, enabled_by null, updat
   `ttf-parser` помечена unmaintained (RUSTSEC-2026-0192), исключение с причиной - в
   `apps/server/deny.toml`.
 
-Решения владельца 2026-11-23 (не сделано):
+Решения владельца 2026-11-23 по провайдеру (сделано 2026-11-24, `ab-clients::llm`):
 
-- Провайдер Anthropic: prompt caching (`cache_control` на постоянном префиксе: system и контекст курса) в
-  `course_qa`, `study_companion`, `grade_assistant`; цитаты Q&A из Citations API (для OpenAI-совместимых -
-  прежний разбор якорей); PDF работ уходит блоком `document`, `pdf-extract` - запасной путь.
-- `grade_draft`, `concept_mapping` и анализ курса идут через Message Batches API, кроме явного «проверить
-  сейчас» преподавателя.
-- Модели: Sonnet 5.5 для `grade_assistant`, Haiku 5.5 для остальных агентов.
-- Учёт токенов без `tiktoken-rs`: `usage` ответа, оценка до вызова - `count_tokens` (Anthropic) или
-  символы / 3.5.
+- Prompt caching: запрос несёт постоянный префикс отдельно от вопроса (`CompletionRequest.context`). На
+  Anthropic это второй блок `system` с `cache_control: ephemeral` (первый - инструкции агента) в
+  `course_qa`, `study_companion` и `grade_assistant` (рубрика, критерии и примеры - префикс, ответы
+  студента - вопрос); OpenAI-совместимые получают его отдельным system-сообщением. Токены кеша
+  (`cache_read_input_tokens`, `cache_creation_input_tokens`) входят в `input_tokens` журнала, а по
+  отдельности пишутся в `ai_runs.metadata.prompt_cache` (`read_tokens`, `write_tokens`) и событие
+  `finished`: в журнале бюджета для них нет колонок.
+- Цитаты Q&A: на Anthropic найденные фрагменты уходят блоками `document` с `citations.enabled`, ответные
+  `citations` (и `citations_delta` в потоке) по `document_index` становятся прежней формой `Citation`
+  (уверенность 0.9, повторы склеены) и заменяют разобранные якоря. OpenAI-совместимые получают те же
+  фрагменты текстом в конце вопроса и остаются на разборе якорей.
+- PDF работ в `grade_draft` на Anthropic уходят блоками `document` (base64, до 20 МБ на работу);
+  текст из `pdf-extract` остаётся для проверки цитат и для других провайдеров.
+- Message Batches: `grade_draft` (постановка из очереди и авто-черновик при сдаче), `concept_mapping` и
+  фоновый анализ курса ставят в метаданные прогона `delivery: "batch"`. Исполнитель на Anthropic
+  отправляет запрос в batch (`custom_id` - id прогона, id batch в `metadata.batch`), прогон остаётся
+  `running`, а задание `ai:batch_poll` опрашивает batch (30 с, удваивая до 10 мин, до 200 раз). Когда
+  batch закончился, результат пишется в `metadata.batch.result`, прогон снова ставится в
+  `ai:execute_run` и читает его вместо вызова. Повтор задания batch не дублирует; ошибка отправки или
+  неуспешный результат - обычный синхронный вызов; отменённый прогон отменяет batch. «Проверить сейчас»
+  (`now: true` в `POST .../drafts/queue` и `.../concepts/suggest`, синхронный анализ курса) и другие
+  провайдеры вызывают модель сразу.
+- Модели: `AB__AI__CLAUDE_MODEL` (по умолчанию `claude-haiku-5-5`) для всех агентов, кроме
+  `grade_draft`; он идёт на `AB__AI__CLAUDE_GRADING_MODEL` (`claude-sonnet-5-5`).
+- Учёт токенов без `tiktoken-rs`: журнал пишет `usage` ответа; до вызова лимит размера запроса
+  проверяется по оценке символы / 3.5, а месячный резерв берёт `count_tokens` Anthropic (5 с), при его
+  ошибке и для других провайдеров - ту же оценку.
+- Пока нет: кнопки «проверить сейчас» в web-2 (API принимает `now`); фрагменты Q&A стоят после точки
+  кеша, кешируются только инструкции и обзор курса.
 - Не делаем: живые evals в CI, псевдонимизацию и согласия на отправку работ провайдеру.
