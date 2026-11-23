@@ -7,6 +7,8 @@
 //! - material search: the sweep indexes the course, a learner finds it, anonymous callers are refused;
 //!   what a learner finds is checked when they search: an unpublished lesson or an archived course is
 //!   gone before the sweep re-cuts, while the teacher still finds it;
+//! - reranking: with a Voyage reranker the fused candidates come back in its order and with its
+//!   scores; when it fails the RRF order stands;
 //! - pre-grading: a pending essay is queued, the worker drafts it (quotes not in the answer are
 //!   dropped and flagged), the teacher approves it through the ordinary grade save, the draft closes
 //!   as `applied` with a calibration row, and the metrics count it; a learner can neither queue nor
@@ -429,6 +431,84 @@ async fn material_search_answers_members_only(pool: PgPool) {
             .await
             .unwrap()
             .is_empty()
+    );
+}
+
+#[ab_testdb::test]
+async fn reranker_orders_the_fused_candidates_and_its_failure_keeps_rrf(pool: PgPool) {
+    use ab_clients::embed::{Embedder, Reranker};
+    use wiremock::matchers::{body_partial_json, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    let app = TestApp::spawn(pool).await;
+    let teacher = instructor(&app, "teacher").await;
+    let (course_id, _, _) = course(&app, &teacher, "Rerank").await;
+    app.ai_service().retrieval().sweep().await.unwrap();
+    let id = ab_core::id::CourseId(course_id.parse().unwrap());
+    let embedder = std::sync::Arc::new(Embedder::hash());
+    let plain = ab_domain::retrieval::Retrieval::new(app.pool.clone(), embedder.clone());
+    let rrf: Vec<_> = plain
+        .search(id, false, "Lesson recursion", 8)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|h| h.chunk_id)
+        .collect();
+    assert!(rrf.len() >= 2, "{rrf:?}");
+
+    let voyage = MockServer::start().await;
+    // The reranker reverses whatever it is sent, scoring the last document highest.
+    Mock::given(method("POST"))
+        .and(path("/v1/rerank"))
+        .and(body_partial_json(
+            json!({ "model": "rerank-2.5", "query": "Lesson recursion" }),
+        ))
+        .respond_with(|req: &wiremock::Request| {
+            let body: Value = serde_json::from_slice(&req.body).unwrap();
+            let n = body["documents"].as_array().unwrap().len();
+            let data: Vec<Value> = (0..n)
+                .rev()
+                .enumerate()
+                .map(|(rank, index)| json!({ "index": index, "relevance_score": 1.0 / (f64::from(u32::try_from(rank).unwrap()) + 1.0) }))
+                .collect();
+            ResponseTemplate::new(200).set_body_json(json!({ "object": "list", "data": data }))
+        })
+        .expect(1)
+        .mount(&voyage)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v1/rerank"))
+        .and(body_partial_json(json!({ "query": "call stack" })))
+        .respond_with(ResponseTemplate::new(503))
+        .mount(&voyage)
+        .await;
+    let config = ab_core::config::AiConfig {
+        embedding_provider: "voyage".into(),
+        embedding_base_url: format!("{}/v1", voyage.uri()),
+        embedding_api_key: Some(secrecy::SecretString::from("voyage-test-key")),
+        ..ab_core::config::AiConfig::default()
+    };
+    let reranked = ab_domain::retrieval::Retrieval::new(app.pool.clone(), embedder)
+        .with_reranker(Reranker::from_ai_config(&config));
+    let hits = reranked
+        .search(id, false, "Lesson recursion", 8)
+        .await
+        .unwrap();
+    let mut reversed = rrf.clone();
+    reversed.reverse();
+    assert_eq!(
+        hits.iter().map(|h| h.chunk_id).collect::<Vec<_>>(),
+        reversed
+    );
+    assert!((hits[0].score - 1.0).abs() < 1e-9, "{hits:?}");
+
+    // A failing reranker leaves the RRF order.
+    let order = |hits: Vec<ab_domain::retrieval::Hit>| -> Vec<_> {
+        hits.into_iter().map(|h| h.chunk_id).collect()
+    };
+    assert_eq!(
+        order(reranked.search(id, false, "call stack", 8).await.unwrap()),
+        order(plain.search(id, false, "call stack", 8).await.unwrap())
     );
 }
 

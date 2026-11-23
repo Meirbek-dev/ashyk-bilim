@@ -304,37 +304,58 @@ pub async fn vector_candidates(
     Ok(rows)
 }
 
-/// Lexical candidates for a `to_tsquery` expression over folded text (`a:* | b:*`), filtered as
-/// [`vector_candidates`].
+/// Lexical candidates, filtered as [`vector_candidates`], with typo tolerance.
+///
+/// A chunk matches when its folded text matches the
+/// `to_tsquery` expression (`a:* | b:*`) or holds a word close to one of `typo_words` (space-separated,
+/// pg_trgm `%>` with `word_similarity` of at least 0.5: one letter wrong, missing or extra in a word of
+/// six or more; unrelated words score near 0). `content_chunks_lexeme_idx` and `content_chunks_trgm_idx`
+/// answer both conditions where reading the course's rows would cost more. Ranked by cover density plus
+/// the `word_similarity` of the typo words, so an exact match leads and a misspelt query still finds its
+/// passage.
 pub async fn lexical_candidates(
     pool: &PgPool,
     course_id: CourseId,
     learner_only: bool,
     tsquery: &str,
+    typo_words: &str,
     limit: i64,
 ) -> Result<Vec<ChunkHit>> {
+    let mut tx = pool.begin().await?;
+    sqlx::query!(
+        r#"SELECT set_config('pg_trgm.word_similarity_threshold', '0.5', true) AS "threshold!""#
+    )
+    .fetch_one(&mut *tx)
+    .await?;
     let rows = sqlx::query_as!(
         ChunkHit,
         r#"SELECT ch.id AS "id: ContentChunkId", ch.source_type, ch.source_id,
                   ch.activity_id AS "activity_id: ActivityId", ch.label, ch.body, ch.anchor,
-                  ts_rank_cd(ch.lexeme, q)::float8 AS "score!"
+                  (ts_rank_cd(ch.lexeme, q)
+                   + word_similarity(search_fold($4), search_fold(ch.label || ' ' || ch.body)))::float8
+                    AS "score!"
            FROM content_chunks ch
            JOIN courses c ON c.id = ch.course_id
            LEFT JOIN activities a ON a.id = ch.activity_id
            CROSS JOIN to_tsquery('simple', search_fold($3)) q
-           WHERE ch.course_id = $1 AND ch.lexeme @@ q
+           WHERE ch.course_id = $1
+             AND (ch.lexeme @@ q
+                  OR search_fold(ch.label || ' ' || ch.body)
+                     %> ANY (string_to_array(search_fold($4), ' ')))
              AND (ch.activity_id IS NULL OR a.course_id = ch.course_id)
              AND (NOT $2 OR (ch.audience = 'learner' AND c.archived_at IS NULL
                              AND (ch.activity_id IS NULL OR a.published)))
-           ORDER BY ts_rank_cd(ch.lexeme, q) DESC, ch.id
-           LIMIT $4"#,
+           ORDER BY 8 DESC, ch.id
+           LIMIT $5"#,
         course_id.0,
         learner_only,
         tsquery,
+        typo_words,
         limit
     )
-    .fetch_all(pool)
+    .fetch_all(&mut *tx)
     .await?;
+    tx.commit().await?;
     Ok(rows)
 }
 

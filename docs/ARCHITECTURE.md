@@ -837,10 +837,10 @@ Postgres work uses Postgres advisory locks and row locks.
 - AI-first foundation (docs/AI-FIRST.md, the source of truth for its rules):
   - `ab-domain::retrieval`: course material cut into `content_chunks` (heading-path anchors,
     `halfvec(1024)` + a `simple` lexeme column), kept in step by the `retrieval:sweep` job (every
-    minute, version comparison, no write-path hooks); hybrid search = HNSW cosine + full text fused
-    by RRF. A learner's search checks visibility when it runs (the activity published, the course not
-    archived), not a flag copied at indexing. Embeddings come from `ab-clients::embed` (`AB__AI__EMBEDDING_*`; without a provider a
-    deterministic hashed n-gram embedder). `course_qa` and `study_companion` put the passages that
+    minute, version comparison, no write-path hooks); hybrid search = HNSW cosine + full text with pg_trgm
+    typo matches, fused by RRF and reranked by Voyage `rerank-2.5` when a Voyage key is set. A learner's search checks visibility when it runs (the activity published, the course not
+    archived), not a flag copied at indexing. Embeddings come from `ab-clients::embed` (`AB__AI__EMBEDDING_*`: Voyage `voyage-3.5`
+    by default; without its key a deterministic hashed n-gram embedder). `course_qa` and `study_companion` put the passages that
     answer the question in front of the course outline.
   - Concept graph (`course_concepts`, `concept_prerequisites`, `concept_tags`) curated by teachers
     over the `concept_mapping` agent's suggestions; `ab-domain::mastery` turns visible results

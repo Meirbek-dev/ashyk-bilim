@@ -455,6 +455,8 @@ pub struct AiEffectiveConfig {
     /// `"[redacted]"` when set.
     pub embedding_api_key: Option<String>,
     pub embedding_model: String,
+    /// The reranker after fusion (`voyage` embeddings with a key only); empty = off.
+    pub rerank_model: String,
     /// Minutes a teacher spends grading one work by hand: the base of the saved-hours metric.
     pub manual_grading_minutes: i32,
     pub analysis_requests_per_hour_per_user: i32,

@@ -1,11 +1,15 @@
-//! Text embeddings for semantic search (docs/AI-FIRST.md 1.3).
+//! Text embeddings and reranking for semantic search (docs/AI-FIRST.md 1.3, 1.6).
 //!
-//! Two providers behind one [`Embedder`]:
+//! Three providers behind one [`Embedder`]:
+//! - `voyage` (the default): Voyage AI `POST {base}/embeddings` with `output_dimension` [`DIMENSIONS`]
+//!   and `input_type` (`document` for indexed text, `query` for a search). Without a key it is `hash`,
+//!   so dev stands and tests stay offline.
 //! - `hash`: local and deterministic. Words and character 3-5-grams of the folded text are hashed into
-//!   [`DIMENSIONS`] signed buckets and L2-normalised. Lexical, but needs no network or key, so search
-//!   works on every stand and in tests.
+//!   [`DIMENSIONS`] signed buckets and L2-normalised. Lexical, but needs no network or key.
 //! - `openai_compatible`: `POST {base}/embeddings` with `dimensions` (OpenAI, OpenRouter, self-hosted
-//!   TEI/Infinity/Ollama).
+//!   TEI/Infinity/Ollama); base URL and model come from the config.
+//!
+//! [`Reranker`] is Voyage `POST {base}/rerank`, on when the embedder is Voyage with a key.
 //!
 //! Vectors cross into SQL as pgvector text literals ([`to_pg_vector`]), so no pgvector crate type leaks.
 
@@ -15,7 +19,7 @@ use ab_core::config::AiConfig;
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 
-/// Fixed width of every stored vector (`vector(1024)` in the migrations).
+/// Fixed width of every stored vector (`halfvec(1024)` in the migrations).
 pub const DIMENSIONS: usize = 1024;
 
 /// The `hash` provider's model name as stored beside its vectors.
@@ -40,11 +44,28 @@ impl std::fmt::Display for EmbedError {
 
 impl std::error::Error for EmbedError {}
 
+/// What the texts are: Voyage embeds a search query and the passages it should find differently
+/// (`input_type`); the other providers ignore it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InputKind {
+    /// Indexed material, and both sides of a text-to-text comparison.
+    Document,
+    /// A search query.
+    Query,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Wire {
+    OpenAi,
+    Voyage,
+}
+
 #[derive(Clone)]
 enum Provider {
     Hash,
     Remote {
         http: reqwest::Client,
+        wire: Wire,
         base_url: String,
         api_key: Option<SecretString>,
         model: String,
@@ -78,6 +99,23 @@ struct EmbeddingRow {
     embedding: Vec<f32>,
 }
 
+fn http_client(config: &AiConfig) -> reqwest::Client {
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs_f64(
+            config.embedding_timeout_secs.max(1.0),
+        ))
+        .build()
+        .unwrap_or_default()
+}
+
+/// The configured key, `None` when unset or blank.
+fn api_key(config: &AiConfig) -> Option<SecretString> {
+    config
+        .embedding_api_key
+        .clone()
+        .filter(|k| !k.expose_secret().trim().is_empty())
+}
+
 impl Embedder {
     /// The local hashing embedder.
     #[must_use]
@@ -87,34 +125,32 @@ impl Embedder {
         }
     }
 
-    /// From `AB__AI__EMBEDDING_*`; an unknown provider name falls back to `hash` with a warning.
+    /// From `AB__AI__EMBEDDING_*`. `voyage` without a key and an unknown provider name fall back to
+    /// `hash`.
     #[must_use]
     pub fn from_ai_config(config: &AiConfig) -> Self {
-        match config.embedding_provider.as_str() {
-            "openai_compatible" | "openai" => {
-                let timeout = Duration::from_secs_f64(config.embedding_timeout_secs.max(1.0));
-                let http = reqwest::Client::builder()
-                    .timeout(timeout)
-                    .build()
-                    .unwrap_or_default();
-                Self {
-                    provider: Provider::Remote {
-                        http,
-                        base_url: config.embedding_base_url.trim_end_matches('/').to_owned(),
-                        api_key: config
-                            .embedding_api_key
-                            .clone()
-                            .filter(|k| !k.expose_secret().trim().is_empty()),
-                        model: config.embedding_model.clone(),
-                        batch: usize::try_from(config.embedding_batch.clamp(1, 256)).unwrap_or(32),
-                    },
-                }
+        let wire = match config.embedding_provider.as_str() {
+            "voyage" if api_key(config).is_some() => Wire::Voyage,
+            "voyage" => {
+                tracing::info!("voyage embeddings without AB__AI__EMBEDDING_API_KEY; using hash");
+                return Self::hash();
             }
-            "hash" => Self::hash(),
+            "openai_compatible" | "openai" => Wire::OpenAi,
+            "hash" => return Self::hash(),
             other => {
                 tracing::warn!(provider = other, "unknown embedding provider; using hash");
-                Self::hash()
+                return Self::hash();
             }
+        };
+        Self {
+            provider: Provider::Remote {
+                http: http_client(config),
+                wire,
+                base_url: config.embedding_base_url.trim_end_matches('/').to_owned(),
+                api_key: api_key(config),
+                model: config.embedding_model.clone(),
+                batch: usize::try_from(config.embedding_batch.clamp(1, 256)).unwrap_or(32),
+            },
         }
     }
 
@@ -128,11 +164,16 @@ impl Embedder {
     }
 
     /// One unit vector of [`DIMENSIONS`] per input, in input order.
-    pub async fn embed(&self, texts: &[String]) -> Result<Vec<Vec<f32>>, EmbedError> {
+    pub async fn embed(
+        &self,
+        texts: &[String],
+        kind: InputKind,
+    ) -> Result<Vec<Vec<f32>>, EmbedError> {
         match &self.provider {
             Provider::Hash => Ok(texts.iter().map(|t| hash_embed(t)).collect()),
             Provider::Remote {
                 http,
+                wire,
                 base_url,
                 api_key,
                 model,
@@ -140,7 +181,11 @@ impl Embedder {
             } => {
                 let mut out = Vec::with_capacity(texts.len());
                 for chunk in texts.chunks(*batch) {
-                    out.extend(remote_embed(http, base_url, api_key.as_ref(), model, chunk).await?);
+                    let body = request_body(*wire, model, chunk, kind);
+                    let url = format!("{base_url}/embeddings");
+                    let response: EmbeddingsResponse =
+                        post_json(http, url, api_key.as_ref(), &body).await?;
+                    out.extend(vectors(response, chunk.len())?);
                 }
                 Ok(out)
             }
@@ -148,21 +193,37 @@ impl Embedder {
     }
 }
 
-async fn remote_embed(
-    http: &reqwest::Client,
-    base_url: &str,
-    api_key: Option<&SecretString>,
-    model: &str,
-    texts: &[String],
-) -> Result<Vec<Vec<f32>>, EmbedError> {
-    let mut request = http
-        .post(format!("{base_url}/embeddings"))
-        .json(&serde_json::json!({
+fn request_body(wire: Wire, model: &str, texts: &[String], kind: InputKind) -> serde_json::Value {
+    match wire {
+        Wire::OpenAi => serde_json::json!({
             "model": model,
             "input": texts,
             "dimensions": DIMENSIONS,
             "encoding_format": "float",
-        }));
+        }),
+        Wire::Voyage => serde_json::json!({
+            "model": model,
+            "input": texts,
+            "input_type": match kind {
+                InputKind::Document => "document",
+                InputKind::Query => "query",
+            },
+            "output_dimension": DIMENSIONS,
+            "output_dtype": "float",
+            "truncation": true,
+        }),
+    }
+}
+
+/// POST a JSON body: transport errors, 429 and 5xx are [`EmbedError::Unavailable`], any other
+/// failure [`EmbedError::Rejected`].
+async fn post_json<T: serde::de::DeserializeOwned>(
+    http: &reqwest::Client,
+    url: String,
+    api_key: Option<&SecretString>,
+    body: &serde_json::Value,
+) -> Result<T, EmbedError> {
+    let mut request = http.post(url).json(body);
     if let Some(key) = api_key {
         request = request.bearer_auth(key.expose_secret());
     }
@@ -177,15 +238,17 @@ async fn remote_embed(
     if !status.is_success() {
         return Err(EmbedError::Rejected(format!("status {status}")));
     }
-    let body: EmbeddingsResponse = response
+    response
         .json()
         .await
-        .map_err(|e| EmbedError::Rejected(e.to_string()))?;
-    if body.data.len() != texts.len() {
+        .map_err(|e| EmbedError::Rejected(e.to_string()))
+}
+
+fn vectors(body: EmbeddingsResponse, inputs: usize) -> Result<Vec<Vec<f32>>, EmbedError> {
+    if body.data.len() != inputs {
         return Err(EmbedError::Rejected(format!(
-            "{} vectors for {} inputs",
+            "{} vectors for {inputs} inputs",
             body.data.len(),
-            texts.len()
         )));
     }
     let mut rows = body.data;
@@ -202,6 +265,110 @@ async fn remote_embed(
             }
         })
         .collect()
+}
+
+/// One reranked document: its position in the input and the reranker's relevance (higher first).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Ranked {
+    pub index: usize,
+    pub score: f64,
+}
+
+#[derive(Deserialize)]
+struct RerankResponse {
+    #[serde(default)]
+    data: Vec<RerankRow>,
+}
+
+#[derive(Deserialize)]
+struct RerankRow {
+    index: usize,
+    relevance_score: f64,
+}
+
+/// Voyage `POST {base}/rerank`: orders candidate passages by relevance to a query (the key prints as
+/// redacted).
+#[derive(Clone, Debug)]
+pub struct Reranker {
+    http: reqwest::Client,
+    base_url: String,
+    api_key: SecretString,
+    model: String,
+}
+
+impl Reranker {
+    /// On when the embedder is Voyage with a key and `AB__AI__RERANK_MODEL` is not empty; it shares
+    /// the embedder's base URL, key and timeout.
+    #[must_use]
+    pub fn from_ai_config(config: &AiConfig) -> Option<Self> {
+        let model = config.rerank_model.trim();
+        if config.embedding_provider != "voyage" || model.is_empty() {
+            return None;
+        }
+        Some(Self {
+            http: http_client(config),
+            base_url: config.embedding_base_url.trim_end_matches('/').to_owned(),
+            api_key: api_key(config)?,
+            model: model.to_owned(),
+        })
+    }
+
+    #[must_use]
+    pub fn model(&self) -> &str {
+        &self.model
+    }
+
+    /// Every document once, most relevant first. An answer that leaves one out, repeats one or names
+    /// one that was not sent is [`EmbedError::Rejected`].
+    pub async fn rerank(
+        &self,
+        query: &str,
+        documents: &[String],
+    ) -> Result<Vec<Ranked>, EmbedError> {
+        if documents.is_empty() {
+            return Ok(Vec::new());
+        }
+        let body = serde_json::json!({
+            "model": self.model,
+            "query": query,
+            "documents": documents,
+            "return_documents": false,
+            "truncation": true,
+        });
+        let url = format!("{}/rerank", self.base_url);
+        let response: RerankResponse =
+            post_json(&self.http, url, Some(&self.api_key), &body).await?;
+        let mut seen = vec![false; documents.len()];
+        for row in &response.data {
+            match seen.get_mut(row.index) {
+                Some(s) if !*s => *s = true,
+                _ => {
+                    return Err(EmbedError::Rejected(format!(
+                        "rerank index {} of {} documents",
+                        row.index,
+                        documents.len()
+                    )));
+                }
+            }
+        }
+        if seen.iter().any(|s| !s) {
+            return Err(EmbedError::Rejected(format!(
+                "{} rerank results for {} documents",
+                response.data.len(),
+                documents.len()
+            )));
+        }
+        let mut ranked: Vec<Ranked> = response
+            .data
+            .into_iter()
+            .map(|r| Ranked {
+                index: r.index,
+                score: r.relevance_score,
+            })
+            .collect();
+        ranked.sort_by(|a, b| b.score.total_cmp(&a.score).then(a.index.cmp(&b.index)));
+        Ok(ranked)
+    }
 }
 
 fn normalised(mut v: Vec<f32>) -> Vec<f32> {

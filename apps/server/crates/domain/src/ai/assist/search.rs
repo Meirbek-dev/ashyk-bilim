@@ -28,6 +28,7 @@ pub struct SearchHit {
     pub excerpt: String,
     /// The place inside the source for a deep link.
     pub anchor: SearchAnchor,
+    /// Relevance, higher first: the reranker's score when it ran, else the Reciprocal Rank Fusion sum.
     pub score: f64,
 }
 

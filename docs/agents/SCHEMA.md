@@ -1493,7 +1493,9 @@ A searchable chunk of course material with its embedding (course material search
 - Index `content_chunks_course_audience_idx`: `CREATE INDEX content_chunks_course_audience_idx ON ai.content_chunks USING btree (course_id, audience)`
 - Index `content_chunks_embedding_hash_idx`: `CREATE INDEX content_chunks_embedding_hash_idx ON ai.content_chunks USING hnsw (embedding halfvec_cosine_ops) WHERE (embedding_model = 'hash-ngram-v1'::text)`
 - Index `content_chunks_embedding_te3_small_idx`: `CREATE INDEX content_chunks_embedding_te3_small_idx ON ai.content_chunks USING hnsw (embedding halfvec_cosine_ops) WHERE (embedding_model = 'text-embedding-3-small'::text)`
+- Index `content_chunks_embedding_voyage_3_5_idx`: `CREATE INDEX content_chunks_embedding_voyage_3_5_idx ON ai.content_chunks USING hnsw (embedding halfvec_cosine_ops) WHERE (embedding_model = 'voyage-3.5'::text)`
 - Index `content_chunks_lexeme_idx`: `CREATE INDEX content_chunks_lexeme_idx ON ai.content_chunks USING gin (lexeme)`
+- Index `content_chunks_trgm_idx`: `CREATE INDEX content_chunks_trgm_idx ON ai.content_chunks USING gin (search_fold(((label \|\| ' '::text) \|\| body)) gin_trgm_ops)`
 
 ## content_index_state
 

@@ -1467,6 +1467,10 @@
             "format": "int32",
             "type": "integer"
           },
+          "rerank_model": {
+            "description": "The reranker after fusion (`voyage` embeddings with a key only); empty = off.",
+            "type": "string"
+          },
           "semantic_memory_enabled": {
             "type": "boolean"
           },
@@ -1514,6 +1518,7 @@
           "embedding_provider",
           "embedding_base_url",
           "embedding_model",
+          "rerank_model",
           "manual_grading_minutes",
           "analysis_requests_per_hour_per_user",
           "remediation_requests_per_hour_per_user",
@@ -19451,6 +19456,7 @@
             "type": "string"
           },
           "score": {
+            "description": "Relevance, higher first: the reranker's score when it ran, else the Reciprocal Rank Fusion sum.",
             "format": "double",
             "type": "number"
           },

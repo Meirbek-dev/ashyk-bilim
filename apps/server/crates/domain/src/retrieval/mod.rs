@@ -1,7 +1,8 @@
 //! Semantic search over course material (docs/AI-FIRST.md 1).
 //!
 //! [`Retrieval::sweep`] (the worker's `retrieval:sweep`, every minute) re-cuts every source whose version
-//! moved; [`Retrieval::search`] fuses the vector and lexical candidates with Reciprocal Rank Fusion.
+//! moved; [`Retrieval::search`] fuses the vector and lexical (full text plus trigram typo) candidates
+//! with Reciprocal Rank Fusion and, with a Voyage key, reranks the fused top-40.
 //! Access to the course is the caller's business: the AI service checks it and passes `learner_only`;
 //! what a learner may see inside it (published activities, a course not archived) is checked by the
 //! search query itself.
@@ -11,7 +12,7 @@ pub mod chunker;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use ab_clients::embed::{Embedder, to_pg_vector};
+use ab_clients::embed::{Embedder, InputKind, Reranker, to_pg_vector};
 use ab_core::id::{ActivityId, ContentChunkId, CourseId};
 use ab_core::{Error, Result};
 use ab_db::retrieval::{ChunkHit, IndexedSource, NewChunk, StaleSource};
@@ -23,7 +24,8 @@ use chunker::{Piece, item_prompt, lesson_pieces, text_pieces};
 /// The worker job kind and how many sources one tick re-cuts.
 pub const SWEEP_JOB: &str = "retrieval:sweep";
 pub const SWEEP_BATCH: i64 = 50;
-/// Candidates per side before fusion, the RRF constant and the per-source cap of the fused list.
+/// Candidates per side before fusion (and fused candidates the reranker sees), the RRF constant and
+/// the per-source cap of the result.
 const CANDIDATES: i64 = 40;
 const RRF_K: f64 = 60.0;
 const PER_SOURCE: usize = 3;
@@ -32,6 +34,7 @@ const PER_SOURCE: usize = 3;
 pub struct Retrieval {
     pool: PgPool,
     embedder: Arc<Embedder>,
+    reranker: Option<Arc<Reranker>>,
 }
 
 /// One search result.
@@ -58,7 +61,18 @@ pub struct SweepReport {
 impl Retrieval {
     #[must_use]
     pub const fn new(pool: PgPool, embedder: Arc<Embedder>) -> Self {
-        Self { pool, embedder }
+        Self {
+            pool,
+            embedder,
+            reranker: None,
+        }
+    }
+
+    /// Rerank the fused candidates of every search (`None`: the RRF order stands).
+    #[must_use]
+    pub fn with_reranker(mut self, reranker: Option<Reranker>) -> Self {
+        self.reranker = reranker.map(Arc::new);
+        self
     }
 
     #[must_use]
@@ -224,7 +238,7 @@ impl Retrieval {
         let (vectors, error) = if texts.is_empty() {
             (Vec::new(), None)
         } else {
-            match self.embedder.embed(&texts).await {
+            match self.embedder.embed(&texts, InputKind::Document).await {
                 Ok(v) => (v, None),
                 Err(err) => (Vec::new(), Some(err.to_string())),
             }
@@ -263,7 +277,8 @@ impl Retrieval {
         Ok((chunks.len(), error.is_some()))
     }
 
-    /// Hybrid search inside one course. A failing embedder degrades to lexical search.
+    /// Hybrid search inside one course. A failing embedder degrades to lexical search, a failing
+    /// reranker to the RRF order.
     pub async fn search(
         &self,
         course_id: CourseId,
@@ -276,7 +291,11 @@ impl Retrieval {
             return Ok(Vec::new());
         }
         let mut lists = Vec::new();
-        match self.embedder.embed(&[query.to_owned()]).await {
+        match self
+            .embedder
+            .embed(&[query.to_owned()], InputKind::Query)
+            .await
+        {
             Ok(vectors) => {
                 if let Some(v) = vectors.first().filter(|v| v.iter().any(|x| *x != 0.0)) {
                     lists.push(
@@ -301,12 +320,33 @@ impl Retrieval {
                     course_id,
                     learner_only,
                     &tsquery,
+                    &typo_words(query),
                     CANDIDATES,
                 )
                 .await?,
             );
         }
-        Ok(fuse(lists, limit))
+        let mut ranked = rrf(lists);
+        ranked.truncate(usize::try_from(CANDIDATES).unwrap_or(40));
+        if let Some(reranker) = self.reranker.as_deref()
+            && ranked.len() > 1
+        {
+            let documents: Vec<String> = ranked
+                .iter()
+                .map(|(_, h)| {
+                    format!(
+                        "{}
+{}",
+                        h.label, h.body
+                    )
+                })
+                .collect();
+            match reranker.rerank(query, &documents).await {
+                Ok(order) => ranked = reorder(ranked, &order),
+                Err(err) => tracing::warn!(%err, "retrieval: rerank failed; RRF order"),
+            }
+        }
+        Ok(cap(ranked, limit))
     }
 
     /// Forget the course's index; the sweep re-cuts it within minutes.
@@ -348,9 +388,34 @@ pub fn fts_query(query: &str) -> Option<String> {
     })
 }
 
+/// Query words of four or more letters for the trigram typo match (`%>`), space-separated, at most
+/// eight: shorter words are mostly function words, and one wrong letter leaves them no trigram.
+#[must_use]
+pub fn typo_words(query: &str) -> String {
+    let mut words: Vec<String> = Vec::new();
+    for word in query
+        .split(|c: char| !c.is_alphanumeric())
+        .map(str::to_lowercase)
+        .filter(|w| w.chars().count() >= 4)
+    {
+        if !words.contains(&word) {
+            words.push(word);
+        }
+        if words.len() == 8 {
+            break;
+        }
+    }
+    words.join(" ")
+}
+
 /// Reciprocal Rank Fusion of ranked candidate lists, at most [`PER_SOURCE`] chunks per source.
 #[must_use]
 pub fn fuse(lists: Vec<Vec<ChunkHit>>, limit: usize) -> Vec<Hit> {
+    cap(rrf(lists), limit)
+}
+
+/// Reciprocal Rank Fusion of ranked candidate lists, best first.
+fn rrf(lists: Vec<Vec<ChunkHit>>) -> Vec<(f64, ChunkHit)> {
     let mut scores: HashMap<ContentChunkId, (f64, ChunkHit)> = HashMap::new();
     for list in lists {
         for (rank, hit) in list.into_iter().enumerate() {
@@ -364,6 +429,29 @@ pub fn fuse(lists: Vec<Vec<ChunkHit>>, limit: usize) -> Vec<Hit> {
     }
     let mut ranked: Vec<(f64, ChunkHit)> = scores.into_values().collect();
     ranked.sort_by(|a, b| b.0.total_cmp(&a.0).then_with(|| a.1.id.0.cmp(&b.1.id.0)));
+    ranked
+}
+
+/// The candidates in the reranker's order, scored by its relevance. `order` names every candidate
+/// once ([`Reranker::rerank`] checks it).
+fn reorder(
+    ranked: Vec<(f64, ChunkHit)>,
+    order: &[ab_clients::embed::Ranked],
+) -> Vec<(f64, ChunkHit)> {
+    let mut slots: Vec<Option<(f64, ChunkHit)>> = ranked.into_iter().map(Some).collect();
+    order
+        .iter()
+        .filter_map(|r| {
+            slots
+                .get_mut(r.index)
+                .and_then(Option::take)
+                .map(|(_, hit)| (r.score, hit))
+        })
+        .collect()
+}
+
+/// At most [`PER_SOURCE`] chunks per source, then the first `limit`.
+fn cap(ranked: Vec<(f64, ChunkHit)>, limit: usize) -> Vec<Hit> {
     let mut per_source: HashMap<uuid::Uuid, usize> = HashMap::new();
     ranked
         .into_iter()
@@ -425,6 +513,36 @@ mod tests {
         assert_eq!(fuse(vec![list], 10).len(), PER_SOURCE);
         let list: Vec<ChunkHit> = (1..=6).map(|i| hit(i, i)).collect();
         assert_eq!(fuse(vec![list], 2).len(), 2);
+    }
+
+    #[test]
+    fn reorder_follows_the_reranker_and_its_scores() {
+        let ranked = rrf(vec![vec![hit(1, 1), hit(2, 2), hit(3, 3)]]);
+        let order = [
+            ab_clients::embed::Ranked {
+                index: 2,
+                score: 0.9,
+            },
+            ab_clients::embed::Ranked {
+                index: 0,
+                score: 0.5,
+            },
+            ab_clients::embed::Ranked {
+                index: 1,
+                score: 0.1,
+            },
+        ];
+        let hits = cap(reorder(ranked, &order), 2);
+        assert_eq!(hits[0].chunk_id.0, uuid::Uuid::from_u128(3));
+        assert_eq!(hits[0].score, 0.9);
+        assert_eq!(hits[1].chunk_id.0, uuid::Uuid::from_u128(1));
+        assert_eq!(hits.len(), 2);
+    }
+
+    #[test]
+    fn typo_words_keep_long_words_once() {
+        assert_eq!(typo_words("Что такое рекурся? рекурся"), "такое рекурся");
+        assert_eq!(typo_words("a b c"), "");
     }
 
     #[test]

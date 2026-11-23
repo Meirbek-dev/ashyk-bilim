@@ -53,22 +53,30 @@
 ### 1.3 Эмбеддинги
 
 - `ab-clients::embed`: `Embedder` с провайдерами:
-  - `hash` (по умолчанию) - локальный детерминированный эмбеддер: хеширование символьных 3-5-грамм и слов
+  - `voyage` (по умолчанию) - Voyage AI `voyage-3.5`, `POST {base}/embeddings` (`model`, `input[]`,
+    `input_type`: `document` для индексируемых фрагментов и ответов в согласованности, `query` для запроса
+    поиска; `output_dimension: 1024`, `output_dtype: float`, `truncation: true`). Без ключа
+    (`..._API_KEY` не задан или пуст) работает как `hash`, так что стенды и тесты обходятся без сети.
+  - `hash` - локальный детерминированный эмбеддер: хеширование символьных 3-5-грамм и слов
     свёрнутого текста (`search_fold`-подобная свёртка kk -> ru, ё -> е), 1024 измерения, L2-нормировка.
     Лексический, но без сети и бесплатный.
   - `openai_compatible` - `POST {base}/embeddings` (`model`, `input[]`, `dimensions: 1024`): OpenAI,
-    OpenRouter, self-hosted TEI/Infinity/Ollama.
+    OpenRouter, self-hosted TEI/Infinity/Ollama; `..._BASE_URL` и `..._MODEL` задаются явно (умолчания -
+    Voyage).
 - Размерность фиксирована - `halfvec(1024)` (половинная точность: вдвое меньше таблица и индекс); у каждого
   фрагмента `embedding_model`. HNSW-индекс частичный, свой на каждую модель (`hash-ngram-v1`,
-  `text-embedding-3-small`); новая модель получает свой индекс миграцией (`CREATE INDEX CONCURRENTLY ... WHERE
+  `text-embedding-3-small`, `voyage-3.5`); новая модель получает свой индекс миграцией (`CREATE INDEX CONCURRENTLY ... WHERE
   embedding_model = '...'`), без него поиск по курсу идёт перебором его фрагментов. Смена модели помечает
   индекс устаревшим, переиндексация идёт фоном; поиск использует только векторы текущей модели (иначе -
   только лексическая часть).
-- Конфигурация: `AB__AI__EMBEDDING_PROVIDER` (`hash` | `openai_compatible`), `..._BASE_URL`,
-  `..._API_KEY`, `..._MODEL`, `..._TIMEOUT_SECS`, `..._BATCH` (по умолчанию 32).
-- Решение владельца 2026-11-23 (не сделано): провайдер по умолчанию - Voyage `voyage-3.5` с 1024 измерениями
-  (схема `halfvec(1024)` не меняется), со своим частичным HNSW-индексом; `hash` остаётся для работы без сети.
-  Своя установка моделей (TEI, bge-m3) не нужна.
+- Конфигурация: `AB__AI__EMBEDDING_PROVIDER` (`voyage` | `hash` | `openai_compatible`, по умолчанию
+  `voyage`), `..._BASE_URL` (по умолчанию `https://api.voyageai.com/v1`), `..._API_KEY`, `..._MODEL` (по
+  умолчанию `voyage-3.5`), `..._TIMEOUT_SECS`, `..._BATCH` (по умолчанию 32); `AB__AI__RERANK_MODEL` (по
+  умолчанию `rerank-2.5`, пусто - без переранжирования, см. 1.6).
+- Решение владельца 2026-11-23: Voyage `voyage-3.5` с 1024 измерениями (схема `halfvec(1024)` не меняется),
+  свой частичный HNSW-индекс (`content_chunks_embedding_voyage_3_5_idx`); `hash` остаётся для работы без
+  сети. Своя установка моделей (TEI, bge-m3) не нужна. Включение ключа на работающем стенде переиндексирует
+  все курсы фоном (`retrieval:sweep`, 50 источников в минуту); до того поиск идёт по лексической части.
 
 ### 1.4 Хранение
 
@@ -77,7 +85,8 @@ content_chunks (id uuid pk, course_id fk, activity_id fk null, source_type, sour
   ordinal int, audience ('learner'|'staff'), published bool (устарело, см. 1.6), label text, body text,
   anchor jsonb object, token_estimate int, embedding halfvec(1024) null, embedding_model text null,
   lexeme tsvector generated (simple, свёрнутый label+body), created_at)
-  индексы: (course_id, audience), HNSW (embedding halfvec_cosine_ops) WHERE embedding_model = <модель>, GIN (lexeme)
+  индексы: (course_id, audience), HNSW (embedding halfvec_cosine_ops) WHERE embedding_model = <модель>, GIN (lexeme),
+  GIN (search_fold(label || ' ' || body) gin_trgm_ops)
 content_index_state (source_type, source_id) pk, course_id, activity_id, source_version bigint,
   chunk_count, embedding_model, indexed_at, error text null
 ```
@@ -94,11 +103,21 @@ content_index_state (source_type, source_id) pk, course_id, activity_id, source_
 
 ### 1.6 Поиск
 
-- Гибрид: top-40 по косинусу (если есть вектор запроса той же модели) + top-40 по `ts_rank_cd` по
-  `websearch_to_tsquery('simple', свёртка запроса)` -> слияние Reciprocal Rank Fusion (k = 60) ->
-  не более 3 фрагментов на источник -> top-k (по умолчанию 8).
-- Решение владельца 2026-11-23 (не сделано): лексическая часть добавляет `pg_trgm` для опечаток; после RRF
-  top-40 переранжирует Voyage `rerank-2.5` (тот же провайдер, что и эмбеддинги), без нового сервиса.
+- Гибрид: top-40 по косинусу (если есть вектор запроса той же модели) + top-40 лексических -> слияние
+  Reciprocal Rank Fusion (k = 60) -> top-40 слияния переранжирует Voyage `rerank-2.5` -> не более 3
+  фрагментов на источник -> top-k (по умолчанию 8).
+- Лексическая часть: фрагмент подходит, если его свёрнутый текст совпал с `to_tsquery('simple', ...)` из
+  префиксов слов запроса (`рекурс:*`) или содержит слово, похожее на слово запроса из четырёх и более букв
+  (`pg_trgm`, `search_fold(label || ' ' || body) %> слово`, `word_similarity` не ниже 0.5: одна неверная,
+  пропущенная или лишняя буква в слове из шести и более; непохожие слова дают около 0). Оба условия
+  обслуживают GIN-индексы (`content_chunks_lexeme_idx`, `content_chunks_trgm_idx`), когда перебор
+  фрагментов курса дороже. Порядок - `ts_rank_cd`
+  плюс `word_similarity` слов запроса: точное совпадение впереди, запрос с опечаткой всё равно находит
+  фрагмент.
+- Переранжирование: только при провайдере `voyage` с ключом и непустом `AB__AI__RERANK_MODEL` (тот же ключ
+  и адрес, `POST {base}/rerank`, `query`, `documents` = подпись и текст фрагмента, `return_documents:
+  false`). `score` попадания - оценка переранжировщика; без него - сумма RRF. Ошибка или неполный ответ
+  переранжировщика пишется в лог, поиск отдаёт порядок RRF.
 - Фильтры: курс; для учащегося `audience = 'learner'`, курс не в архиве, активность фрагмента опубликована -
   по состоянию на момент запроса (снятие публикации и архив действуют сразу, до переиндексации); для
   преподавателя - все. Фрагмент активности, перенесённой в другой курс, не возвращается никому. Доступ к самому

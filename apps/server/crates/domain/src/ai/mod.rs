@@ -88,7 +88,8 @@ impl AiService {
         let config = Arc::new(config);
         let embedder = Arc::new(ab_clients::embed::Embedder::from_ai_config(&config));
         Self {
-            retrieval: crate::retrieval::Retrieval::new(pool.clone(), embedder),
+            retrieval: crate::retrieval::Retrieval::new(pool.clone(), embedder)
+                .with_reranker(ab_clients::embed::Reranker::from_ai_config(&config)),
             budget: TokenBudget::new(Arc::clone(&config), limiter),
             courses: CoursesService::new(pool.clone()),
             pool,

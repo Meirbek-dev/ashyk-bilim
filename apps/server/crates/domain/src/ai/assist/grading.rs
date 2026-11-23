@@ -6,7 +6,7 @@
 
 use std::collections::HashMap;
 
-use ab_clients::embed::to_pg_vector;
+use ab_clients::embed::{InputKind, to_pg_vector};
 use ab_core::ai::{AiFeature, AiRunKind, AiThreadRole};
 use ab_core::id::{
     ActivityId, AiRunId, AssessmentItemId, CourseId, FileAttemptId, GradeDraftId, SubmissionId,
@@ -1014,7 +1014,12 @@ impl AiService {
                 .iter()
                 .map(|p| p.text.chars().take(4000).collect())
                 .collect();
-            let vectors = match self.retrieval.embedder().embed(&texts).await {
+            let vectors = match self
+                .retrieval
+                .embedder()
+                .embed(&texts, InputKind::Document)
+                .await
+            {
                 Ok(v) => v,
                 Err(err) => {
                     tracing::warn!(%err, "consistency: answers not embedded");

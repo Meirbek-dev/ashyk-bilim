@@ -278,14 +278,18 @@ pub struct AiConfig {
     /// docs/AI-FIRST.md 4: rubric-based grade drafts.
     #[serde(default = "AiConfig::default_true")]
     pub grading_assistant_enabled: bool,
-    /// `hash` (local, deterministic, no network) or `openai_compatible` (`POST {base}/embeddings`).
+    /// `voyage` (`POST {base}/embeddings` of Voyage AI; `hash` while no key is set), `hash` (local,
+    /// deterministic, no network) or `openai_compatible` (`POST {base}/embeddings`, base and model set).
     #[serde(default = "AiConfig::default_embedding_provider")]
     pub embedding_provider: String,
-    #[serde(default = "AiConfig::default_openai_base_url")]
+    #[serde(default = "AiConfig::default_embedding_base_url")]
     pub embedding_base_url: String,
     pub embedding_api_key: Option<SecretString>,
     #[serde(default = "AiConfig::default_embedding_model")]
     pub embedding_model: String,
+    /// The Voyage reranker over the fused search candidates (same base URL and key); empty turns it off.
+    #[serde(default = "AiConfig::default_rerank_model")]
+    pub rerank_model: String,
     #[serde(default = "AiConfig::default_embedding_timeout_secs")]
     pub embedding_timeout_secs: f64,
     /// Texts per embeddings call.
@@ -344,10 +348,16 @@ impl AiConfig {
         true
     }
     fn default_embedding_provider() -> String {
-        "hash".into()
+        "voyage".into()
+    }
+    fn default_embedding_base_url() -> String {
+        "https://api.voyageai.com/v1".into()
     }
     fn default_embedding_model() -> String {
-        "text-embedding-3-small".into()
+        "voyage-3.5".into()
+    }
+    fn default_rerank_model() -> String {
+        "rerank-2.5".into()
     }
     const fn default_embedding_timeout_secs() -> f64 {
         20.0
@@ -447,6 +457,7 @@ impl AiConfig {
             "embedding_base_url": self.embedding_base_url,
             "embedding_api_key": self.embedding_api_key.as_ref().map(|_| "[redacted]"),
             "embedding_model": self.embedding_model,
+            "rerank_model": self.rerank_model,
             "manual_grading_minutes": self.manual_grading_minutes,
             "analysis_requests_per_hour_per_user": self.analysis_requests_per_hour_per_user,
             "remediation_requests_per_hour_per_user": self.remediation_requests_per_hour_per_user,
@@ -486,9 +497,10 @@ impl Default for AiConfig {
             concept_graph_enabled: true,
             grading_assistant_enabled: true,
             embedding_provider: Self::default_embedding_provider(),
-            embedding_base_url: Self::default_openai_base_url(),
+            embedding_base_url: Self::default_embedding_base_url(),
             embedding_api_key: None,
             embedding_model: Self::default_embedding_model(),
+            rerank_model: Self::default_rerank_model(),
             embedding_timeout_secs: Self::default_embedding_timeout_secs(),
             embedding_batch: Self::default_embedding_batch(),
             manual_grading_minutes: Self::default_manual_grading_minutes(),
