@@ -4,7 +4,7 @@
 
 Одна панель AI (`AiPanel`) в правом слоте плеера (`student-activity`) и студии активности (`teacher-studio`) и в
 листе страницы курса (`course-page`). Вкладки панели - из `GET /ai/capabilities/scope/{course_id}`. Вкладка и тред
-живут в URL (`?ai=`, `?aiThread=`). Потоки - POST + AG-UI через `@ag-ui/client` поверх fetch SDK (`transport.ts`),
+живут в URL (`?ai=`, `?aiThread=`). Потоки - POST + события AG-UI, свой SSE-читатель (`model/sse.ts`) поверх fetch SDK (`transport.ts`),
 без опросов и таймеров. Анализ курса - на вкладке `overview` рабочего места курса; анализ сдачи и барьер -
 экспорт `SubmissionAiPanel` для проверки работы (`grading`); `/admin/ai` - настройки, расход, запуски, оценки.
 

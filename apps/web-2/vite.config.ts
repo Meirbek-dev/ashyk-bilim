@@ -123,11 +123,13 @@ const restrictProperties = (...allowed: string[]): Rules['no-restricted-properti
 const paths = [
   { name: 'react', importNames: ['useMemo', 'useCallback', 'memo'], message: 'React Compiler memoizes: remove it.' },
   { name: '@tanstack/react-start', importNames: ['createServerFn'], message: `The web server serves no data. ${SDK}` },
-  { name: 'zod', message: 'Schemas are Valibot, generated from the contract: #/shared/api/gen/valibot.gen.ts.' },
   { name: 'date-fns', message: FORMAT },
 ]
 const layerPatterns = {
-  any: [{ regex: '^(\\.\\./)+(shared|features|routes)/', message: 'Cross-layer imports use the #/ alias.' }],
+  any: [
+    { regex: '^(\\.\\./)+(shared|features|routes)/', message: 'Cross-layer imports use the #/ alias.' },
+    { regex: '^zod(/|$)', message: 'Valibot is the one schema library: #/shared/api/gen/valibot.gen.ts.' },
+  ],
   shared: [
     {
       regex: '^#/(features|routes)/',
@@ -267,7 +269,7 @@ export default defineConfig({
   ...(plugins ? { plugins } : {}),
   staged: { '*.{ts,tsx,js,mjs,json,jsonc,css,md}': formatStaged },
   server: { host: '127.0.0.1', port: 3000, strictPort: true, proxy, fs },
-  resolve: { dedupe: ['zod'], alias: paraglideDir ? [{ find: /^#\/paraglide\//, replacement: paraglideDir }] : [] }, // one Zod: @ag-ui/client's own 3.25 copy hides its config from disableZodJit (CSP)
+  resolve: { alias: paraglideDir ? [{ find: /^#\/paraglide\//, replacement: paraglideDir }] : [] },
   build: {
     manifest: true,
     // CSP `font-src 'self'` refuses `data:` fonts (KaTeX's woff2 would be inlined).

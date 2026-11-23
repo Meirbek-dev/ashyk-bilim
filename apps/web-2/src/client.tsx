@@ -5,9 +5,7 @@ import { hydrateRoot } from 'react-dom/client'
 import { ApiError } from '#/shared/api/errors'
 import { definePrintedLocaleStrategy } from '#/shared/i18n/printed-locale'
 import { installClientErrorReporting, reportClientError } from '#/shared/lib/client-errors'
-import { disableZodJit } from '#/shared/lib/zod-jitless'
 
-disableZodJit()
 definePrintedLocaleStrategy()
 installClientErrorReporting()
 

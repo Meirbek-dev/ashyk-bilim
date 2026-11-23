@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'vite-plus/test'
 
 import { ApiError } from '#/shared/api/errors'
+import type { RunEventState } from '#/shared/api/gen/types.gen'
 
-import { follow, type Connect, type RunEvents } from './follow'
+import { follow, type Connect, type RunStreamMessage } from './follow'
 import { idleRun, isPending, MAX_DROPS, runReducer, STREAM_LOST, type RunAction, type RunState } from './run'
 
 const RUN = '0190a5d2-0000-7000-8000-0000000000aa'
@@ -50,41 +51,56 @@ describe('runReducer', () => {
   })
 })
 
-type Script = (subscriber: RunEvents, onId: (id: string) => void) => Promise<unknown>
+type Script = () => AsyncGenerator<RunStreamMessage>
 
 /** A fake stream: each connection plays the next script; records the cursor it was opened with. */
 function fakeConnect(scripts: Script[]) {
   const cursors: (string | null)[] = []
-  const connect: Connect = (_runId, cursor, onId) => {
+  const connect: Connect = (_runId, cursor) => {
     cursors.push(cursor)
     const script = scripts[cursors.length - 1]
-    return {
-      runAgent: async (_parameters, subscriber) => {
-        if (!script) throw new Error('no more connections expected')
-        return script(subscriber, onId)
-      },
-    }
+    if (!script) throw new Error('no more connections expected')
+    return script()
   }
   return { connect, cursors }
 }
 
-const custom = (subscriber: RunEvents, state: string) => subscriber.onCustomEvent({ event: { value: { state } } })
+const custom = (id: string | null, state: RunEventState): RunStreamMessage => ({
+  id,
+  event: { type: 'CUSTOM', name: 'progress', value: { state, message: null, payload: { state } } },
+})
+const finished: RunStreamMessage = { id: 'run-end', event: { type: 'RUN_FINISHED', threadId: RUN, runId: 'r' } }
 
 describe('follow', () => {
   test('B-AI-06 a dropped stream reconnects at once from the last stream id and reaches the end', async () => {
     const { connect, cursors } = fakeConnect([
-      async (subscriber, onId) => {
-        onId('1730000000000-1')
-        custom(subscriber, 'collecting_context')
+      async function* () {
+        yield custom('1730000000000-1', 'collecting_context')
         throw new TypeError('network error')
       },
-      async subscriber => subscriber.onRunFinishedEvent(),
+      async function* () {
+        yield finished
+      },
     ])
     const seen: RunAction[] = []
     const end = await follow(RUN, new AbortController(), action => seen.push(action), connect)
     expect(end.phase).toBe('succeeded')
     expect(cursors).toEqual([null, '1730000000000-1'])
     expect(seen).toContainEqual({ type: 'progress', step: 'collecting_context' })
+  })
+
+  test('B-AI-06 a stream that closes without an end resumes; RUN_ERROR ends with its code', async () => {
+    const { connect, cursors } = fakeConnect([
+      async function* () {
+        yield custom('1730000000000-2', 'checking_evidence')
+      },
+      async function* () {
+        yield { id: 'run-end', event: { type: 'RUN_ERROR', code: 'ai-budget-exhausted', message: 'no budget' } }
+      },
+    ])
+    const end = await follow(RUN, new AbortController(), () => undefined, connect)
+    expect(end).toMatchObject({ phase: 'failed', errorCode: 'ai-budget-exhausted' })
+    expect(cursors).toEqual([null, '1730000000000-2'])
   })
 
   test('B-AI-06 B-AI-08 a refused stream (ApiError) is final: no reconnect', async () => {
@@ -96,7 +112,8 @@ describe('follow', () => {
       retryAfter: null,
     })
     const { connect, cursors } = fakeConnect([
-      async () => {
+      // oxlint-disable-next-line require-yield -- a connection refused before its first event
+      async function* () {
         throw refused
       },
     ])
@@ -108,7 +125,8 @@ describe('follow', () => {
   test('B-AI-06 an abort (unmount, navigation) rejects and opens nothing more', async () => {
     const controller = new AbortController()
     const { connect, cursors } = fakeConnect([
-      async () => {
+      // oxlint-disable-next-line require-yield -- aborted before its first event
+      async function* () {
         controller.abort()
         throw new DOMException('aborted', 'AbortError')
       },
