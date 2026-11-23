@@ -118,8 +118,8 @@ jobs:
       - name: cargo-deny
         run: just deny
 
-      - name: cargo-machete
-        run: just machete
+      - name: cargo-shear
+        run: just shear
 
       - name: OpenAPI export is committed and current
         run: just openapi-check

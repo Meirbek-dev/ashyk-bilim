@@ -105,7 +105,7 @@ No outbox: follow-up work enqueues inside the transaction that records the trigg
 | `sqlx-cli` | migrations + `cargo sqlx prepare` (offline query cache) |
 | `cargo-llvm-cov` | coverage (floor enforced in CI) |
 | `cargo-deny` | advisories, license allowlist, duplicate-version bans |
-| `cargo-machete` | unused dependency detection |
+| `cargo-shear` | unused dependency detection |
 | `cargo-chef` | Docker layer caching (`apps/server/Dockerfile`) |
 | `bacon` | local watch loop (`just server dev`) |
 | `just` | task runner — **the only entry point agents use** (see AGENTS.md) |
@@ -879,7 +879,7 @@ Layered, all runnable via `just` (single source of truth; CI calls the same reci
 | HTTP | `ab_testkit::TestApp` (real router + test DB + test Redis + wiremock Zitadel; fakes for go-judge/LLM) | handlers, auth, RBAC, error envelopes |
 | Contract | `just openapi-check` + `insta` snapshot of the OpenAPI doc | every contract change visible in diff |
 | RBAC sweep | `crates/api/tests/rbac_sweep.rs` over the route list | no unclassified mutating endpoint |
-| Supply chain | `just deny`, `just machete` | advisories, licenses, dead deps |
+| Supply chain | `just server deny`, `just server shear` | advisories, licenses, dead deps |
 | Coverage | `just cov` (`cargo llvm-cov nextest`; CI: nightly `coverage.yaml`) | floor: 80% lines, workspace (`main.rs` excluded); ratchet up, never down |
 | E2E | web-2's Playwright suite (`just e2e`, CI `web2-e2e`) | real browser against a full stack |
 
@@ -890,7 +890,7 @@ go-judge, Resend and the LLM providers (`crates/clients/tests`, `crates/testkit/
 ### CI (`.github/workflows/ci.yaml`, jobs `server-lint` and `server-test`)
 
 Run on pushes to `main`, `ci/**` and `release/**` and on pull requests, when `apps/server/**` or infra files
-change (release branches run every gate). `server-lint`: `fmt-check -> clippy -> deny -> machete ->
+change (release branches run every gate). `server-lint`: `fmt-check -> clippy -> deny -> shear ->
 openapi-check` (offline `.sqlx`, no services). `server-test`: `just dev-up` (Postgres 18 + pgvector, Redis,
 Zitadel, RustFS), then `migrate -> sqlx-check -> test`, the suite split into two jobs (`--partition hash:N/2`, no
 instrumentation). The coverage floor runs nightly (`.github/workflows/coverage.yaml`, `just cov`), off the deploy path.

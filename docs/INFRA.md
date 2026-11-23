@@ -371,7 +371,7 @@ line floor (`just cov`) nightly.
 | Job | When | What |
 | --- | --- | --- |
 | changes | always | path filters `server`, `web2` (`apps/web-2/**`, `openapi.v2.json`, `.node-version`, `compose.web2.yaml`, `justfile`, `ci.yaml`), `infra`; all true on `main` and `release/**`; `sha` = first 8 chars of the commit |
-| server-lint | server or infra changed | `apps/server` recipes against the committed `.sqlx`: `fmt-check`, `clippy`, `deny`, `machete`, `openapi-check` |
+| server-lint | server or infra changed | `apps/server` recipes against the committed `.sqlx`: `fmt-check`, `clippy`, `deny`, `shear`, `openapi-check` |
 | server-test | server or infra changed | `just dev-up` (Postgres with `DEV_PG_ARGS`: fsync off), then `migrate`, `sqlx-check`, `test --partition hash:N/2` in two jobs (`sqlx-check` in the first only); nextest profile `ci`, JUnit report uploaded on failure. The line floor (`just cov`) runs nightly in `coverage.yaml` |
 | web2-gates | web2 changed | in the Playwright image, `apps/web-2`: `bun install`, `codegen messages`, `verify` (check, tests, gates; its codegen gate diffs the committed SDK and route tree), `build`, `g15` (contrast of every theme and mode) |
 | infra-gates | always | `just ci-infra` (compose config for dev/prod/smoke/web2/restore, `bash -n`, rollback rule, `nginx -t`, Redis persistence, Zitadel database move), `just test-dev`, shellcheck, actionlint, gitleaks |

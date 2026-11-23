@@ -104,11 +104,11 @@ cov *args:
 deny:
     cargo deny check
 
-machete:
-    cargo machete
+shear:
+    cargo shear
 
 # Everything CI runs, in CI order. Green here == green CI.
-ci: fmt-check clippy deny machete openapi-check sqlx-check cov
+ci: fmt-check clippy deny shear openapi-check sqlx-check cov
 
 # Web e2e fixtures (accounts + a published course; idempotent). Needs the
 # dev stack incl. Zitadel and E2E_PASSWORD; refuses AB__ENVIRONMENT=production.
