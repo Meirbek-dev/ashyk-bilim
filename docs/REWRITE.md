@@ -203,7 +203,8 @@ Add:
 
 Postgres: `pgvector` stays (one Postgres, its extension); `pg_trgm` for typo-tolerant search
 next to the `simple` FTS (no `pg_search`); `auto_explain` (500 ms) next to
-`pg_stat_statements`, slow plans listed by `just prod-report`; `io_method = io_uring`; ids
+`pg_stat_statements`, slow plans listed by `just prod-report`; `io_method = io_uring` (blocked by the
+container seccomp profile, `worker` until QUESTIONS.md Q-2026-11-24-1); ids
 come from `DEFAULT uuidv7()` with `RETURNING id`, not `Uuid::now_v7()`, wherever the table has
 the default.
 

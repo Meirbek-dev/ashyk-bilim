@@ -479,11 +479,11 @@ there is no scripted way in. Not exercised yet.
 ```bash
 dc ps
 dc logs -f --tail 100 server worker
-dc logs --since 1h db                         # slow queries (default >= 300 ms)
+dc logs --since 1h db                         # slow queries (default >= 300 ms), plans (auto_explain, >= 500 ms)
 dc logs --since 1h nginx | grep '"status":5'
 dc logs nginx server | grep <request id>       # nginx request_id = X-Request-ID upstream
 journalctl -u cs-mooc-backup.service -n 50     # nightly backup
-just prod-report --since 24h                   # warnings/errors by message, 5xx by route, dead jobs
+just prod-report --since 24h                   # warnings/errors by message, 5xx by route, dead jobs, slow plans
 ```
 
 Container logs rotate at 10 MB x 5 per container. The server writes JSON logs

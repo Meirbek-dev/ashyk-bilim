@@ -60,3 +60,14 @@ Agents stopped short of these on purpose; each changes much and fixes little at 
   and `ai_work_embeddings` are empty. Proposal: `ai_work_embeddings` gets its key with the file merge (REWRITE 5.6 n6), the
   rest stays.
 - 45, morphology by `courses.language`: nothing sets the language. It needs a field in the course form. Do you want one?
+
+## Q-2026-11-24-1: io_uring for Postgres needs a wider seccomp profile (REWRITE 4.2)
+
+The review chose `io_method = io_uring`. The image's Postgres 18 is built with liburing, but the default seccomp profile
+of Docker (25+) and Podman blocks the `io_uring_*` syscalls: with the setting Postgres refuses to start ("could not
+setup io_uring queue: Function not implemented"; it starts with `--security-opt seccomp=unconfined`). Enabling it
+means a custom seccomp profile for `db` (Docker's default plus the three syscalls, kept in the repo and updated with
+Docker), which reopens the kernel surface those profiles close on purpose after a run of io_uring privilege escalations.
+The data set fits in memory, so the gain over the PG 18 default `worker` (asynchronous reads by worker processes) is
+small. Until you decide, `postgresql.conf` sets `worker`. Proposal: stay on `worker`; revisit if `track_io_timing`
+shows reads dominating slow plans.

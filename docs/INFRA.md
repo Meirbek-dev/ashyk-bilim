@@ -133,7 +133,7 @@ The `db` service reads one settings file, `infra/postgres/postgresql.conf` (moun
 cluster's own file is included first, so initdb's locale and time zone stay). It sizes memory to the 1 GB
 container (`max_connections = 60`, `shared_buffers = 256MB`, `work_mem = 8MB`), sets `random_page_cost = 1.1` and
 `track_io_timing`, and logs to stderr (the rotating container log), with timestamp, PID, user, database and
-application: statements of 300 ms or more, lock waits, autovacuum runs of 1 s or more, every temp file.
+application: statements of 300 ms or more, plans of statements of 500 ms or more, lock waits, autovacuum runs of 1 s or more, every temp file.
 `PG_LOG_MIN_DURATION_STATEMENT` overrides the slow-query threshold in milliseconds (`-1` disables it; `0` logs
 every statement). Bound parameter values are suppressed; SQL text, including any inline literals, is still
 logged. Command-line flags win over the file: the threshold, WAL archiving (`compose.prod.yaml`), and in dev/CI
@@ -143,6 +143,12 @@ container on the next deploy. `zitadel-db` keeps its own flags (512 MB, default 
 still shares `db` (`ZITADEL_DB_HOST=db`), its role is limited to 20 connections (`init.sql`).
 `pg_stat_statements` is preloaded (top-level statements only) and created in the `postgres` database by
 db-init when loaded; `just prod-report` lists the app database's statements by total time from there.
+`auto_explain` is preloaded too: a statement of 500 ms or more also logs its plan with actual rows and buffers but
+no per-node timing (`log_timing = off`: the instrumentation runs on every statement, and clock reads per node are
+what make it expensive) and no parameter values; `just prod-report` groups those plans per statement.
+Asynchronous I/O uses `io_method = worker`: the image is built with liburing, but `io_uring` needs syscalls the
+default seccomp profile of Docker and Podman blocks (Postgres then refuses to start), so it waits on
+QUESTIONS.md Q-2026-11-24-1.
 db-init also creates an empty `extensions` schema (`USAGE` to `PUBLIC`) in template1 and every app database:
 pgvector still lives in `public` until the superuser step of RUNBOOK 2.6 (`vector-to-extensions.sql`) moves it.
 
