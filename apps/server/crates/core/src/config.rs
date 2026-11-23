@@ -2,17 +2,29 @@
 //!
 //! Convention: `AB__SECTION__KEY` (nested via `__`), e.g. `AB__DATABASE__URL`.
 //! List values use TOML array syntax: `AB__SERVER__CORS_ORIGINS=["https://a"]`.
+//! The parser is `config/env.rs` (std::env + serde).
 //! Startup is fail-fast: a config that parses but violates posture rules
 //! (see [`Config::validate`]) refuses to boot.
 
-use figment::Figment;
-use figment::providers::{Env, Serialized};
 use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 
 use crate::error::{Error, Result};
 
+mod env;
+
 pub const ENV_PREFIX: &str = "AB__";
+
+/// Embedded defaults, as `AB__`-less variable names; the environment overrides them.
+const DEFAULTS: &[(&str, &str)] = &[
+    ("ENVIRONMENT", "development"),
+    ("SERVER__HOST", "0.0.0.0"),
+    ("SERVER__PORT", "8000"),
+    ("SERVER__CORS_ORIGINS", "[]"),
+    ("DATABASE__MAX_CONNECTIONS", "10"),
+    ("DATABASE__MIN_CONNECTIONS", "0"),
+    ("TELEMETRY__JSON_LOGS", "false"),
+];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -33,6 +45,7 @@ pub struct Config {
     pub environment: Environment,
     pub server: ServerConfig,
     pub database: DatabaseConfig,
+    #[serde(default)]
     pub redis: RedisConfig,
     /// Required by `serve` (authentication); optional for other subcommands.
     pub zitadel: Option<ZitadelConfig>,
@@ -634,7 +647,7 @@ impl Default for DatabaseLimits {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub struct RedisConfig {
     /// Required by `serve` (sessions); optional for other subcommands.
     pub url: Option<SecretString>,
@@ -694,17 +707,18 @@ impl Config {
     /// Load from defaults + environment, then validate. Errors are precise and
     /// name the offending key - a misconfigured server must not limp.
     pub fn load() -> Result<Self> {
-        let defaults = serde_json::json!({
-            "environment": "development",
-            "server": { "host": "0.0.0.0", "port": 8000, "cors_origins": [] },
-            "database": { "max_connections": 10, "min_connections": 0 },
-            "redis": {},
-            "ai": {},
-            "telemetry": { "json_logs": false },
+        let vars = std::env::vars_os().map(|(k, v)| {
+            (
+                k.to_string_lossy().into_owned(),
+                v.to_string_lossy().into_owned(),
+            )
         });
-        let mut config: Self = Figment::from(Serialized::defaults(defaults))
-            .merge(Env::prefixed(ENV_PREFIX).split("__"))
-            .extract()
+        Self::from_vars(vars)
+    }
+
+    /// [`Config::load`] over the given variables instead of the process environment.
+    pub fn from_vars(vars: impl IntoIterator<Item = (String, String)>) -> Result<Self> {
+        let mut config: Self = env::from_vars(ENV_PREFIX, DEFAULTS, vars)
             .map_err(|e| Error::config(format!("failed to load configuration: {e}")))?;
         // A blank `AB__RUNNER__BASE_URL` turns the runner off: a compose overlay can
         // blank a key but not unset it (the e2e stand runs without a runner).
@@ -916,6 +930,88 @@ mod tests {
             ..AuthLimits::default()
         };
         cfg.validate().unwrap();
+    }
+
+    fn vars(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
+        pairs
+            .iter()
+            .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
+            .collect()
+    }
+
+    #[test]
+    fn loads_the_production_compose_environment() {
+        let cfg = Config::from_vars(vars(&[
+            ("AB__ENVIRONMENT", "production"),
+            ("AB__SERVER__PORT", "8000"),
+            ("AB__SERVER__CORS_ORIGINS", r#"["https://cs-mooc.example"]"#),
+            ("AB__SERVER__WEB_URL", "https://cs-mooc.example"),
+            ("AB__SERVER__WEB_LINKS", "v2"),
+            ("AB__DATABASE__URL", "postgres://ashyq_app:pw@db:5432/ashyq"),
+            ("AB__DATABASE__LIMITS__LOCK_TIMEOUT_SECS", "10"),
+            ("AB__REDIS__URL", "redis://:pw@redis:6379/2"),
+            ("AB__ZITADEL__BASE_URL", "http://zitadel:8080"),
+            ("AB__ZITADEL__PAT", "pat-secret"),
+            ("AB__TELEMETRY__JSON_LOGS", "true"),
+            ("AB__RUNNER__BASE_URL", "http://runner:5050"),
+            (
+                "AB__RUNNER__LIMITS__ALLOWED_LANGUAGES",
+                r#"["python","cpp","java"]"#,
+            ),
+            ("AB__RESEND__API_KEY", "re_secret"),
+            ("AB__RESEND__FROM", "Ashyq Bilim <noreply@cs-mooc.example>"),
+            ("AB__AI__CLAUDE_TIMEOUT_SECS", "90"),
+            ("AB__AI__COURSE_QA_ENABLED", "false"),
+            ("AB__RETENTION__MESSAGES_DAYS", "30"),
+            // Ignored: another program's variables and keys the config does not have.
+            (
+                "AB__TELEMETRY__OTLP_ENDPOINT",
+                "https://old.example/v1/traces",
+            ),
+            ("PATH", "/usr/bin"),
+        ]))
+        .unwrap();
+        assert!(cfg.environment.is_production());
+        assert_eq!(cfg.server.host, "0.0.0.0", "default kept");
+        assert_eq!(cfg.server.cors_origins, ["https://cs-mooc.example"]);
+        assert_eq!(cfg.server.web_links, crate::links::LinkScheme::V2);
+        assert_eq!(cfg.database.max_connections, 10);
+        assert_eq!(cfg.database.limits.lock_timeout_secs, 10);
+        assert_eq!(cfg.database.limits.statement_timeout_secs, 120);
+        assert_eq!(cfg.zitadel.unwrap().pat.expose_secret(), "pat-secret");
+        let runner = cfg.runner.unwrap();
+        assert_eq!(runner.limits.allowed_languages, ["python", "cpp", "java"]);
+        assert_eq!(runner.max_concurrency, 4);
+        assert!((cfg.ai.claude_timeout_secs - 90.0).abs() < f64::EPSILON);
+        assert!(!cfg.ai.course_qa_enabled);
+        assert!(cfg.ai.ai_enabled);
+        assert_eq!(cfg.retention.messages_days, 30);
+        assert_eq!(cfg.retention.auth_audit_days, 365);
+        assert_eq!(cfg.resend.unwrap().base_url, "https://api.resend.com");
+        assert!(cfg.google.is_none() && cfg.storage.is_none());
+    }
+
+    #[test]
+    fn load_errors_name_the_variable() {
+        let err = |pairs: &[(&str, &str)]| Config::from_vars(vars(pairs)).unwrap_err().to_string();
+        let db = ("AB__DATABASE__URL", "postgres://x");
+        assert!(err(&[]).contains("AB__DATABASE__URL must be set"));
+        assert!(
+            err(&[db, ("AB__ZITADEL__BASE_URL", "http://z")])
+                .contains("AB__ZITADEL__PAT must be set")
+        );
+        assert!(
+            err(&[db, ("AB__SERVER__PORT", "eighty")]).contains("AB__SERVER__PORT: invalid value")
+        );
+        assert!(
+            err(&[db, ("AB__ENVIRONMENT", "staging")]).contains("AB__ENVIRONMENT: unknown variant")
+        );
+        assert!(
+            err(&[db, ("AB__AUTH__LIMITS__LOGIN_IP", "-1")]).contains("AB__AUTH__LIMITS__LOGIN_IP")
+        );
+        // A blank runner URL turns the runner off (compose overlays cannot unset a key).
+        let cfg = Config::from_vars(vars(&[db, ("AB__RUNNER__BASE_URL", "")])).unwrap();
+        assert!(cfg.runner.is_none());
     }
 
     #[test]

@@ -69,7 +69,6 @@ serde_json = "1.0.154"
 garde = { version = "0.23.0", features = ["derive", "email", "url"] }
 
 # Config, secrets, errors
-figment = { version = "0.10.19", features = ["env"] }
 secrecy = { version = "0.10.3", features = ["serde"] }
 thiserror = "2.0.21"
 unicode-properties = "0.1.5"

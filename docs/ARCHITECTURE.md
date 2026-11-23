@@ -71,7 +71,7 @@ base image matches it); `apps/server/tools.env` pins the cargo tools.
 | Redis | `redis` 1.x (tokio-comp, connection-manager) | |
 | Serialization | `serde`, `serde_json` | |
 | Validation | `garde` (derive, email, url) | serde parses, garde enforces business rules |
-| Config | `figment` (env) + `secrecy` | `AB__*` namespace, §16 |
+| Config | own `AB__*` env parser (std::env + serde) + `secrecy` | `AB__*` namespace, §16 |
 | Errors | `thiserror` (libs) / `anyhow` (bin edges only) | one `Error` enum, §5 |
 | Time | `jiff` | `ab_core::time`; columns are `timestamptz`, rows carry epoch seconds |
 | IDs | `uuid` v7 | Postgres 18 native `uuidv7()` as column default |
@@ -907,10 +907,13 @@ contract. Server compatibility kept for the deleted old web waits for phase 9 (`
 
 ## 16. Configuration & secrets
 
-- figment: embedded defaults → env `AB__SECTION__KEY` (nested `__`; lists in TOML array syntax), no config files
-  (`crates/core/src/config.rs`). Locally `dotenvy` also reads a `.env` from the working directory (template
-  `apps/server/.env.example`). Prod: secrets in the host's `server.env` (`env_file` of server/worker), topology
-  keys set by `compose.prod.yaml` from `.env` (`docs/INFRA.md`, "Secrets and config").
+- Embedded defaults → env `AB__SECTION__KEY` (nested `__`, keys case-insensitive; lists as `["a","b"]`), no config
+  files, parsed by `crates/core/src/config/env.rs` (std::env + serde, typed by the target field: strings verbatim,
+  so a numeric password stays a string). Errors name the variable (`AB__SERVER__PORT: invalid value ...`,
+  `AB__DATABASE__URL must be set`); unknown `AB__*` keys are ignored (`crates/core/src/config.rs`). Locally
+  `dotenvy` also reads a `.env` from the working directory (template `apps/server/.env.example`). Prod: secrets
+  in the host's `server.env` (`env_file` of server/worker), topology keys set by `compose.prod.yaml` from `.env`
+  (`docs/INFRA.md`, "Secrets and config").
 - All secrets are `secrecy::SecretString` — they cannot Debug/Display into a log.
 - **Startup is fail-fast and loud**: config parses into typed structs, then `Config::validate` checks posture
   (`AB__DATABASE__URL` set; in production a non-empty, non-wildcard CORS allowlist, JSON logs, auth limits not
