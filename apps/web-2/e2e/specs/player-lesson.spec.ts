@@ -55,7 +55,7 @@ test('B-EDT-34 a lesson page with formulas, code, a table and a flip card loads 
 
   await expect(page.getByText(TEXT)).toBeVisible()
   await expect(page.locator('.katex').first()).toBeVisible() // KaTeX and the code grammars load lazily: wait for both
-  await expect(page.locator('pre span[style]').first()).toBeAttached()
+  await expect(page.locator('pre span[class]').first()).toBeAttached()
   await expect(page.getByRole('cell', { name: 'Частица' })).toBeVisible()
   await page.getByRole('button', { name: m.editor_flipcard_show_answer({}, ru) }).click()
   await expect(page.getByText('Частица вещества.')).toBeVisible()
