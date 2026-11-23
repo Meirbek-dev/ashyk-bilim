@@ -185,7 +185,9 @@ async fn main() -> anyhow::Result<()> {
             command: AdminCommand::SeedE2e { .. }
         }
     );
-    let _telemetry = (!quiet).then(|| ab_core::telemetry::init(&config.telemetry));
+    if !quiet {
+        ab_core::telemetry::init(&config.telemetry);
+    }
 
     match cli.command {
         Command::Openapi => unreachable!("handled above"),

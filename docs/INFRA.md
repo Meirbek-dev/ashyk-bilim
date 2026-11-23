@@ -110,7 +110,7 @@ Trust zones:
   tmpfs, read-only toolchains, no network, cgroup limits per program).
 - Data stores (data-net): no egress.
 - server and worker: all three networks; internet egress (AI providers,
-  Resend, OTLP, Google) through edge-net.
+  Resend, Google) through edge-net.
 - Inside the stack the public hostname resolves to nginx (network alias on
   edge-net). The server signs S3 URLs for the public origin and calls storage
   through it, without NAT loopback or `host-gateway`.
@@ -183,8 +183,7 @@ backup snapshot (restic-encrypted with `BACKUP_PASSWORD`, local only):
 - `./.env` (template `infra/env/prod.env.example`): read only by compose for
   `${VAR}` interpolation. No service has `env_file: .env`.
 - `./server.env` (template `infra/env/server.env.example`): `env_file` of
-  server, worker and server-migrate. Only `AB__*` plus
-  `OTEL_EXPORTER_OTLP_HEADERS`.
+  server, worker and server-migrate. Only `AB__*`.
 
 Secrets embedded in URLs are hex (`openssl rand -hex 32`).
 
@@ -236,7 +235,6 @@ it), `DEV_PG_PORT`, `DEV_REDIS_PORT`, `DEV_ZITADEL_PORT`, `DEV_RUSTFS_PORT`,
 | `AB__GOOGLE__CLIENT_ID`, `AB__GOOGLE__CLIENT_SECRET`, `AB__GOOGLE__REDIRECT_URI` | optional, all or none |
 | `AB__RESEND__API_KEY`, `AB__RESEND__FROM` | optional, all or none (`FROM` has no default) |
 | `AB__AI__CLAUDE_API_KEY`, `AB__AI__OPENAI_API_KEY`, `AB__AI__OPENROUTER_API_KEY` | optional; tried in that order; models default in the server config |
-| `AB__TELEMETRY__OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS` | optional |
 
 Compose sets these for server, worker and server-migrate (`x-server-env`,
 wins over `server.env`): `AB__ENVIRONMENT`, `AB__SERVER__HOST`,

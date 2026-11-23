@@ -453,7 +453,7 @@ consistent). `ALTER ROLE` uses the helper from section 0.
   --wait` (rustfs, server, worker recreated; storage-init reruns). In-flight
   presigned URLs fail. Not exercised yet: take `just backup` first; rollback =
   the old values from that snapshot's `.env`.
-- **`server.env` integrations** (Google, Resend, AI keys, OTLP header): edit
+- **`server.env` integrations** (Google, Resend, AI keys): edit
   `server.env`, `dc up -d --wait server worker`.
 - **TLS key**: 3.7.
 
@@ -486,8 +486,8 @@ journalctl -u cs-mooc-backup.service -n 50     # nightly backup
 just prod-report --since 24h                   # warnings/errors by message, 5xx by route, dead jobs
 ```
 
-Container logs rotate at 10 MB x 5 per container. Server traces go to OTLP
-when `AB__TELEMETRY__OTLP_ENDPOINT` is set.
+Container logs rotate at 10 MB x 5 per container. The server writes JSON logs
+only; there is no trace export.
 
 ### 3.11 Disk pressure
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One-off host migration to the two-file env layout (docs/INFRA.md, Secrets and config):
-#   AB__*, OTEL_* -> server.env        (mode 600; the server reads both)
+#   AB__* -> server.env               (mode 600)
 #   PLATFORM_* -> .env.legacy-removed  (mode 600)
 #   the rest stays in .env, plus COMPOSE_PROJECT_NAME=cs-mooc if absent.
 # The original is kept as .env.pre-split. Usage: split-env.sh [--dry-run] [path/to/.env]
@@ -14,7 +14,7 @@ dir=$(dirname "$src")
 server=$dir/server.env legacy=$dir/.env.legacy-removed backup=$dir/.env.pre-split
 
 names() { grep -E "$1" "$src" | cut -d= -f1 | paste -sd' ' - || true; }
-ab=$(names '^(AB__|OTEL_)')
+ab=$(names '^AB__')
 platform=$(names '^PLATFORM_')
 grep -q '^COMPOSE_PROJECT_NAME=' "$src" && add_project=0 || add_project=1
 
@@ -32,14 +32,14 @@ fi
 umask 077
 [[ -e $backup ]] || cp -p "$src" "$backup" # never overwrite the first original
 chmod 600 "$backup"
-[[ -z $ab ]] || grep -E '^(AB__|OTEL_)' "$src" >"$server"
+[[ -z $ab ]] || grep -E '^AB__' "$src" >"$server"
 # The legacy compose file supplied this default; the server needs it with a Resend key.
 if [[ -e $server ]] && grep -q '^AB__RESEND__API_KEY=.' "$server" && ! grep -q '^AB__RESEND__FROM=' "$server"; then
   domain=$(sed -n 's/^NGINX_SERVER_NAME=//p' "$src" | tail -n 1)
   echo "AB__RESEND__FROM=Ashyq Bilim <noreply@$domain>" >>"$server"
 fi
 [[ -z $platform ]] || grep -E '^PLATFORM_' "$src" >>"$legacy"
-grep -vE '^(AB__|OTEL_|PLATFORM_)' "$src" >"$src.tmp" || true
+grep -vE '^(AB__|PLATFORM_)' "$src" >"$src.tmp" || true
 if ((add_project)); then
   [[ -z $(tail -c 1 "$src.tmp") ]] || echo >>"$src.tmp"
   echo 'COMPOSE_PROJECT_NAME=cs-mooc' >>"$src.tmp"

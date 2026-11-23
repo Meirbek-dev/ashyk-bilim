@@ -46,7 +46,6 @@ Companion documents:
                     │ server ◄───────────► rustfs       (S3 API: uploads, media, artifacts)   │
                     │ server ◄─ exec-net ► runner       (code execution, profile runner)      │
                     │ worker  (ashyq worker: job queue consumers + schedule ticks)            │
-                    │ server ── otlp ────► optional (AB__TELEMETRY__OTLP_ENDPOINT)            │
                     └─────────────────────────────────────────────────────────────────────────┘
                     External: Anthropic / OpenAI / OpenRouter (LLM), Resend (email), Google OAuth
 ```
@@ -77,7 +76,7 @@ base image matches it); `apps/server/tools.env` pins the cargo tools.
 | Time | `jiff` | `ab_core::time`; columns are `timestamptz`, rows carry epoch seconds |
 | IDs | `uuid` v7 | Postgres 18 native `uuidv7()` as column default |
 | OpenAPI | `utoipa` 6, `utoipa-axum`, `utoipa-scalar` | routes and schemas registered together — no drift |
-| Observability | `tracing`, `tracing-subscriber`, `tracing-opentelemetry`, `opentelemetry-otlp` (traces, HTTP) | §13 |
+| Observability | `tracing`, `tracing-subscriber` (JSON logs) | §13 |
 | HTTP client | `reqwest` (rustls, json, form, stream) | retries and circuit breakers per client |
 | Object storage | `object_store` (aws) | S3 API against RustFS; provider swap = config |
 | Passwords | *none* | Zitadel owns credentials |
@@ -857,10 +856,8 @@ Postgres work uses Postgres advisory locks and row locks.
 
 ## 13. Observability
 
-- `tracing` everywhere; JSON logs (required in production) or pretty in dev. With `AB__TELEMETRY__OTLP_ENDPOINT`
-  set (the full traces URL; headers from `OTEL_EXPORTER_OTLP_HEADERS`), spans are exported over OTLP/HTTP with
-  `service.name=ashyq-server` (`crates/core/src/telemetry.rs`); an exporter that fails to build is logged loudly
-  and export stays off. No metrics are exported. Production has no external monitoring or alerting
+- `tracing` everywhere; JSON logs on stdout (required in production) or pretty in dev
+  (`crates/core/src/telemetry.rs`). No span or metrics export. Production has no external monitoring or alerting
   (`docs/FINDINGS.md` #9).
 - HTTP spans come from `TraceLayer` and carry `request_id`, the same id as the `x-request-id` response header and
   the problem+json `request_id`, so `grep <id>` finds the request.

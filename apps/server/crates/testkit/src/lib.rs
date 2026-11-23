@@ -70,10 +70,7 @@ pub fn test_config() -> Config {
         resend: None,
         storage: None,
         runner: None,
-        telemetry: TelemetryConfig {
-            json_logs: false,
-            otlp_endpoint: None,
-        },
+        telemetry: TelemetryConfig { json_logs: false },
         ai: AiConfig::default(),
         auth: ab_core::config::AuthConfig::default(),
         retention: ab_core::config::RetentionConfig::default(),

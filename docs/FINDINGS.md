@@ -23,7 +23,7 @@ controls (owner decision 16.4 there).
 ## Medium
 
 ### 9. No monitoring or alerting in production (accepted risk)
-The server exports OTLP (`AB__TELEMETRY__OTLP_ENDPOINT`) but nothing alerts.
+The server writes JSON logs only (no trace export) and nothing alerts.
 **Owner decision 2026-10-02: no external monitoring services** (no uptime
 check, no dead-man ping). Covered at deploy time only: `preflight` warns on
 Zitadel PAT expiry (30 days), TLS certificate expiry (14 days) and disk over

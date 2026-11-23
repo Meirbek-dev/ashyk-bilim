@@ -688,8 +688,6 @@ impl ResendConfig {
 pub struct TelemetryConfig {
     /// JSON logs (prod) vs pretty logs (dev).
     pub json_logs: bool,
-    /// OTLP endpoint (Logfire). None = local logging only.
-    pub otlp_endpoint: Option<String>,
 }
 
 impl Config {
@@ -811,10 +809,7 @@ impl Config {
             })),
             "ai": self.ai.redacted(),
             "auth": { "limits": self.auth.limits },
-            "telemetry": {
-                "json_logs": self.telemetry.json_logs,
-                "otlp_endpoint": self.telemetry.otlp_endpoint,
-            },
+            "telemetry": { "json_logs": self.telemetry.json_logs },
         })
     }
 }
@@ -850,10 +845,7 @@ mod tests {
             ai: AiConfig::default(),
             auth: AuthConfig::default(),
             retention: RetentionConfig::default(),
-            telemetry: TelemetryConfig {
-                json_logs: false,
-                otlp_endpoint: None,
-            },
+            telemetry: TelemetryConfig { json_logs: false },
         }
     }
 

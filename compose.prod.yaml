@@ -132,7 +132,7 @@ services:
     restart: unless-stopped
     env_file: ${SERVER_ENV_FILE:-./server.env}
     environment: *server-env
-    # edge-net: nginx alias + internet egress (AI providers, email, OTLP).
+    # edge-net: nginx alias + internet egress (AI providers, email).
     networks: [edge-net, data-net, exec-net]
     depends_on: *app-depends
     # The drain lets requests in flight finish (their own limit is 30 s); SSE streams end at once.
