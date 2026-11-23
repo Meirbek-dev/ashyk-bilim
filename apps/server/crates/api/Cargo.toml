@@ -17,7 +17,6 @@ axum-extra = { workspace = true }
 futures = { workspace = true }
 garde = { workspace = true }
 secrecy = { workspace = true }
-time = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
 serde = { workspace = true }

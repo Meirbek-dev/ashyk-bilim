@@ -31,13 +31,17 @@ pub(crate) fn user_agent(headers: &HeaderMap) -> Option<String> {
 }
 
 fn session_cookie(state: &AppState, value: String) -> Cookie<'static> {
-    Cookie::build((SESSION_COOKIE, value))
+    let builder = Cookie::build((SESSION_COOKIE, value))
         .http_only(true)
         .same_site(SameSite::Lax)
         .secure(state.config.environment.is_production())
-        .path("/")
-        .max_age(time::Duration::days(14))
-        .build()
+        .path("/");
+    // Max-Age follows the idle TTL. The conversion into the cookie crate's duration fails only
+    // past i64::MAX seconds; then the cookie would last for the browser session.
+    match ab_domain::identity::sessions::IDLE_TTL.try_into() {
+        Ok(max_age) => builder.max_age(max_age).build(),
+        Err(_) => builder.build(),
+    }
 }
 
 fn removal_cookie(state: &AppState) -> Cookie<'static> {

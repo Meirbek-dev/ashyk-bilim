@@ -63,6 +63,14 @@ async fn full_login_logout_flow(pool: PgPool) {
         .await;
     assert_eq!(login.status, StatusCode::OK);
     let cookie = login.session_cookie().expect("session cookie set");
+    assert!(
+        login
+            .headers
+            .get_all(header::SET_COOKIE)
+            .iter()
+            .any(|c| c.to_str().unwrap().contains("Max-Age=1209600")),
+        "the session cookie lives for the 14-day idle TTL"
+    );
     let body = login.json();
     assert_eq!(body["roles"], serde_json::json!(["instructor"]));
     assert!(
