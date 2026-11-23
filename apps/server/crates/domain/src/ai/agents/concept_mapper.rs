@@ -381,6 +381,7 @@ impl AiService {
         actor: &Actor,
         course_id: CourseId,
         chapter: Option<ChapterId>,
+        now: bool,
     ) -> Result<RunRow> {
         self.require_feature(AiFeature::ConceptGraph).await?;
         self.require_course_updater(actor, course_id).await?;
@@ -396,7 +397,11 @@ impl AiService {
                     queued: true,
                     course_id: Some(course_id),
                     activity_id: None,
-                    metadata: json!({ "course_id": course_id, "chapter_id": chapter }),
+                    metadata: json!({
+                        "course_id": course_id,
+                        "chapter_id": chapter,
+                        "delivery": super::delivery(now),
+                    }),
                     thread: None,
                     title: None,
                 },

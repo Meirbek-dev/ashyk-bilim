@@ -25,7 +25,6 @@ jiff = { workspace = true }
 http.workspace = true
 futures.workspace = true
 async-stream = { workspace = true }
-tiktoken-rs = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

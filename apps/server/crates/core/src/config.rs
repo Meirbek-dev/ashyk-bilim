@@ -210,8 +210,12 @@ impl AuthLimits {
 pub struct AiConfig {
     /// Anthropic Messages API, the primary provider when its key is set.
     pub claude_api_key: Option<SecretString>,
+    /// Every agent but grading (docs/AI-FIRST.md: Haiku 5.5).
     #[serde(default = "AiConfig::default_claude_model")]
     pub claude_model: String,
+    /// `grade_assistant` / `grade_draft` (Sonnet 5.5).
+    #[serde(default = "AiConfig::default_claude_grading_model")]
+    pub claude_grading_model: String,
     /// Origin + version prefix, no trailing slash. Tests point it at a fake.
     #[serde(default = "AiConfig::default_claude_base_url")]
     pub claude_base_url: String,
@@ -298,6 +302,9 @@ pub struct AiConfig {
 
 impl AiConfig {
     fn default_claude_model() -> String {
+        "claude-haiku-5-5".into()
+    }
+    fn default_claude_grading_model() -> String {
         "claude-sonnet-5-5".into()
     }
     fn default_claude_base_url() -> String {
@@ -410,6 +417,7 @@ impl AiConfig {
             "status": status,
             "claude_api_key": self.claude_api_key.as_ref().map(|_| "[redacted]"),
             "claude_model": self.claude_model,
+            "claude_grading_model": self.claude_grading_model,
             "claude_base_url": self.claude_base_url,
             "claude_timeout_secs": self.claude_timeout_secs,
             "openai_api_key": self.openai_api_key.as_ref().map(|_| "[redacted]"),
@@ -451,6 +459,7 @@ impl Default for AiConfig {
         Self {
             claude_api_key: None,
             claude_model: Self::default_claude_model(),
+            claude_grading_model: Self::default_claude_grading_model(),
             claude_base_url: Self::default_claude_base_url(),
             claude_timeout_secs: Self::default_claude_timeout_secs(),
             openai_api_key: None,

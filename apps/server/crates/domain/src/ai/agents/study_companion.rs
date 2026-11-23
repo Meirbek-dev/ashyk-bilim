@@ -187,16 +187,15 @@ impl AiService {
         let bundle = context::course_bundle(&self.pool, course_id, false, None).await?;
         let bundle = self.with_retrieved(bundle, course_id, true, question).await;
         let locale = self.user_locale(user_id).await?;
-        self.admit(
+        // The course context follows the system prompt (the cached prefix); the question is the user turn.
+        self.admit_split(
             bundle,
             load_prompt(Prompt::StudyCompanion, locale.as_deref()),
             &[],
             run,
-            |context| {
-                format!(
-                    "Mode: {mode}\nLanguage: {language}\nStudent question: {question}\n\nCourse context:\n{context}"
-                )
-            },
+            "Course context:\n",
+            format!("Mode: {mode}\nLanguage: {language}\nStudent question: {question}"),
+            Vec::new(),
         )
         .await
     }

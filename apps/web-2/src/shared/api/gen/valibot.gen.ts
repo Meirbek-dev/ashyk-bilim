@@ -162,6 +162,7 @@ export const vAiEffectiveConfig = v.object({
     analysis_requests_per_hour_per_user: v.pipe(v.number(), v.integer(), v.minValue(-2147483648, 'Invalid value: Expected int32 to be >= -2147483648'), v.maxValue(2147483647, 'Invalid value: Expected int32 to be <= 2147483647')),
     claude_api_key: v.nullable(v.string()),
     claude_base_url: v.string(),
+    claude_grading_model: v.string(),
     claude_model: v.string(),
     claude_timeout_secs: v.number(),
     concept_graph_enabled: v.boolean(),
@@ -2957,6 +2958,7 @@ export const vQuestionDifficultyRow = v.object({
 });
 
 export const vQueueDraftsRequest = v.strictObject({
+    now: v.optional(v.boolean()),
     subject_ids: v.optional(v.pipe(v.array(v.pipe(v.string(), v.uuid())), v.maxLength(200)))
 });
 
@@ -4040,7 +4042,8 @@ export const vSubmitRequest = v.strictObject({
 });
 
 export const vSuggestConceptsRequest = v.strictObject({
-    chapter_id: v.optional(vChapterId)
+    chapter_id: v.optional(vChapterId),
+    now: v.optional(v.boolean())
 });
 
 export const vSupportAlertCode = v.picklist([

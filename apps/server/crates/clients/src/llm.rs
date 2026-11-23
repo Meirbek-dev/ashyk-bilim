@@ -10,12 +10,27 @@
 //! retrying once with the parse error fed back (the legacy pydantic-ai
 //! behaviour). Every call has a hard per-provider timeout; a provider that
 //! fails before producing output hands over to the next one in the chain.
+//!
+//! One request renders per provider (docs/AI-FIRST.md, owner decisions 2026-11-23):
+//! - [`CompletionRequest::context`] is the stable prefix after the system prompt: on Anthropic a second system
+//!   block marked `cache_control` (prompt caching), elsewhere a system message.
+//! - [`CompletionRequest::documents`] are the citable sources: with `cite_documents` on Anthropic they go as
+//!   `document` blocks with the Citations API on and the reply's citations come back in
+//!   [`Completion::citations`]; otherwise they are listed as text after the last user turn (the model cites them
+//!   by id in its JSON, the anchors the domain validates).
+//! - [`CompletionRequest::attachments`] (submitted PDFs) go to Anthropic as `document` blocks; other providers get
+//!   their extracted text in place of the placeholder.
+//! - [`ModelTier::Grading`] picks the provider's grading model (Sonnet on Anthropic).
+//!
+//! Message Batches ([`LlmClient::submit_batch`] / [`LlmClient::poll_batch`]) run on the Anthropic provider only.
 //! Fixtures in `tests/llm.rs` pin the shapes.
 
 use std::pin::Pin;
+use std::sync::Arc;
 use std::time::Duration;
 
 use ab_core::{Error, ErrorCode};
+use base64::Engine as _;
 use futures::{Stream, StreamExt};
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
@@ -27,6 +42,13 @@ pub const ANTHROPIC: &str = "anthropic";
 /// Messages API version header.
 const ANTHROPIC_VERSION: &str = "2023-06-01";
 
+/// `count_tokens` is an estimate before the call; a slow one is skipped, not waited for.
+const COUNT_TOKENS_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Header of the text list of citable sources (the anchors the model cites by id).
+const SOURCES_HEADER: &str =
+    "Citation sources:\nUse only these authoritative sources for the selected scope.";
+
 /// One provider in the chain. `name` is the operator-facing label used in
 /// `model_name` strings (`openai:gpt-…`), logs and admin filters.
 #[derive(Clone)]
@@ -36,10 +58,21 @@ pub struct ProviderConfig {
     pub base_url: String,
     pub api_key: SecretString,
     pub model: String,
+    /// The model for [`ModelTier::Grading`] requests; `None` = `model`.
+    pub grading_model: Option<String>,
     /// Hard timeout for one HTTP call: connect + full body for
     /// non-streaming; connect, then each read (headers, every chunk) for
     /// streaming, so a long answer that keeps arriving is not cut.
     pub timeout: Duration,
+}
+
+impl ProviderConfig {
+    fn model_for(&self, tier: ModelTier) -> &str {
+        match tier {
+            ModelTier::Standard => &self.model,
+            ModelTier::Grading => self.grading_model.as_deref().unwrap_or(&self.model),
+        }
+    }
 }
 
 impl std::fmt::Debug for ProviderConfig {
@@ -48,6 +81,7 @@ impl std::fmt::Debug for ProviderConfig {
             .field("name", &self.name)
             .field("base_url", &self.base_url)
             .field("model", &self.model)
+            .field("grading_model", &self.grading_model)
             .field("timeout", &self.timeout)
             .finish_non_exhaustive()
     }
@@ -108,31 +142,90 @@ pub struct OutputSchema {
     pub schema: serde_json::Value,
 }
 
+/// Which of the provider's models answers (docs/AI-FIRST.md: Sonnet grades, Haiku does the rest).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum ModelTier {
+    #[default]
+    Standard,
+    /// `grade_assistant` / `grade_draft`.
+    Grading,
+}
+
+/// One citable source. `title` is its header line (`[id] type | ref | label`), `text` its excerpt.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Document {
+    pub id: String,
+    pub title: String,
+    pub text: String,
+}
+
+/// A submitted file the last user turn refers to by `placeholder`.
+#[derive(Debug, Clone)]
+pub struct Attachment {
+    /// Replaced in the message text: by `text` for providers that cannot read the file, by a reference to the
+    /// attached document on Anthropic.
+    pub placeholder: String,
+    pub name: String,
+    /// `application/pdf` (the only kind sent as a file).
+    pub media_type: String,
+    pub data: Arc<Vec<u8>>,
+    /// The extracted text (the fallback).
+    pub text: String,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct CompletionRequest {
     pub messages: Vec<ChatMessage>,
+    /// The stable context after the system prompt (course outline, rubric): cached on Anthropic.
+    pub context: Option<String>,
+    /// Citable sources, listed after the last user turn (or Citations API documents, see `cite_documents`).
+    pub documents: Vec<Document>,
+    /// Anthropic: send `documents` as `document` blocks with citations on.
+    pub cite_documents: bool,
+    pub attachments: Vec<Attachment>,
     pub output_schema: Option<OutputSchema>,
     pub max_output_tokens: Option<u32>,
     pub temperature: Option<f32>,
+    pub tier: ModelTier,
 }
 
 /// Provider-reported token usage (absent when the provider omits it).
+/// `input_tokens` counts every prompt token, cached ones included.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Usage {
     pub input_tokens: Option<u32>,
     pub output_tokens: Option<u32>,
+    /// Prompt tokens read from the prompt cache (Anthropic).
+    pub cache_read_tokens: Option<u32>,
+    /// Prompt tokens written to the prompt cache (Anthropic).
+    pub cache_write_tokens: Option<u32>,
 }
 
 impl Usage {
-    /// Two calls' usage together; a count either call omitted stays absent.
+    /// Two calls' usage together; a count either call omitted stays absent
+    /// (cache counts: the one that reported).
     #[must_use]
     pub fn plus(self, other: Self) -> Self {
         let add = |a: Option<u32>, b: Option<u32>| Some(a?.saturating_add(b?));
+        let either = |a: Option<u32>, b: Option<u32>| match (a, b) {
+            (Some(a), Some(b)) => Some(a.saturating_add(b)),
+            (a, b) => a.or(b),
+        };
         Self {
             input_tokens: add(self.input_tokens, other.input_tokens),
             output_tokens: add(self.output_tokens, other.output_tokens),
+            cache_read_tokens: either(self.cache_read_tokens, other.cache_read_tokens),
+            cache_write_tokens: either(self.cache_write_tokens, other.cache_write_tokens),
         }
     }
+}
+
+/// A span of the reply the provider attributes to one of the request's documents (Citations API).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Cited {
+    /// [`Document::id`].
+    pub document_id: String,
+    pub cited_text: String,
 }
 
 #[derive(Debug, Clone)]
@@ -143,6 +236,8 @@ pub struct Completion {
     pub model_name: String,
     pub provider: String,
     pub usage: Usage,
+    /// Citations API spans, in reply order (empty without `cite_documents` or off Anthropic).
+    pub citations: Vec<Cited>,
 }
 
 /// A parsed structured reply plus the completion that produced it.
@@ -160,7 +255,11 @@ pub enum StreamChunk {
     /// A piece of the reply text, in order.
     Delta(String),
     /// The stream ended cleanly.
-    Done { model_name: String, usage: Usage },
+    Done {
+        model_name: String,
+        usage: Usage,
+        citations: Vec<Cited>,
+    },
 }
 
 /// Why a call failed. `Unavailable`/`Rejected` are per-provider and drive
@@ -205,6 +304,18 @@ impl From<LlmError> for Error {
         tracing::warn!(%err, "llm call failed");
         Self::app(ErrorCode::AiProviderUnavailable, message)
     }
+}
+
+/// A submitted batch's state ([`LlmClient::poll_batch`]).
+#[derive(Debug, Clone)]
+pub enum BatchPoll {
+    /// Still processing.
+    Pending,
+    /// The request's result: the raw Messages response, kept by the caller across restarts and turned into a
+    /// [`Completion`] with [`LlmClient::batch_completion`].
+    Succeeded(serde_json::Value),
+    /// The request errored, expired or was canceled.
+    Failed(String),
 }
 
 struct Provider {
@@ -262,6 +373,7 @@ impl From<WireUsage> for Usage {
         Self {
             input_tokens: u.prompt_tokens,
             output_tokens: u.completion_tokens,
+            ..Self::default()
         }
     }
 }
@@ -281,12 +393,24 @@ struct ContentBlock {
     #[serde(rename = "type")]
     kind: String,
     text: Option<String>,
+    #[serde(default)]
+    citations: Option<Vec<WireCitation>>,
+}
+
+/// One Citations API location (`char_location`, `page_location`, ...): only the document and the quote matter.
+#[derive(Deserialize)]
+struct WireCitation {
+    document_index: Option<usize>,
+    cited_text: Option<String>,
 }
 
 #[derive(Deserialize, Default, Clone, Copy)]
+#[allow(clippy::struct_field_names, reason = "the provider's field names")]
 struct MessagesUsage {
     input_tokens: Option<u32>,
     output_tokens: Option<u32>,
+    cache_read_input_tokens: Option<u32>,
+    cache_creation_input_tokens: Option<u32>,
 }
 
 /// One Messages streaming event (`message_start`, `content_block_delta`,
@@ -307,6 +431,32 @@ struct MessagesDelta {
     kind: Option<String>,
     text: Option<String>,
     stop_reason: Option<String>,
+    citation: Option<WireCitation>,
+}
+
+#[derive(Deserialize)]
+struct CountTokensResponse {
+    input_tokens: u32,
+}
+
+#[derive(Deserialize)]
+struct BatchResponse {
+    id: String,
+    processing_status: String,
+}
+
+#[derive(Deserialize)]
+struct BatchResultLine {
+    custom_id: String,
+    result: BatchResult,
+}
+
+#[derive(Deserialize)]
+struct BatchResult {
+    #[serde(rename = "type")]
+    kind: String,
+    message: Option<serde_json::Value>,
+    error: Option<serde_json::Value>,
 }
 
 impl LlmConfig {
@@ -333,6 +483,7 @@ impl LlmConfig {
                 base_url: config.claude_base_url.trim_end_matches('/').to_owned(),
                 api_key,
                 model: config.claude_model.clone(),
+                grading_model: Some(config.claude_grading_model.clone()),
                 timeout: Duration::from_secs_f64(config.claude_timeout_secs.max(0.1)),
             });
         }
@@ -342,6 +493,7 @@ impl LlmConfig {
                 base_url: config.openai_base_url.trim_end_matches('/').to_owned(),
                 api_key,
                 model: config.openai_model.clone(),
+                grading_model: None,
                 timeout: Duration::from_secs_f64(config.openai_timeout_secs.max(0.1)),
             });
         }
@@ -351,6 +503,7 @@ impl LlmConfig {
                 base_url: config.openrouter_base_url.trim_end_matches('/').to_owned(),
                 api_key,
                 model: config.openrouter_model.clone(),
+                grading_model: None,
                 timeout: Duration::from_secs_f64(config.openrouter_timeout_secs.max(0.1)),
             });
         }
@@ -395,6 +548,19 @@ impl LlmClient {
     #[must_use]
     pub const fn is_enabled(&self) -> bool {
         !self.providers.is_empty()
+    }
+
+    /// The primary provider when it is Anthropic (batches, token counting).
+    fn anthropic(&self) -> Option<&Provider> {
+        self.providers
+            .first()
+            .filter(|p| p.config.name == ANTHROPIC)
+    }
+
+    /// Whether requests can go through Message Batches (the primary provider is Anthropic).
+    #[must_use]
+    pub fn supports_batches(&self) -> bool {
+        self.anthropic().is_some()
     }
 
     /// Legacy `selected_model_name()`: `openai:m` or `openai:m with
@@ -486,6 +652,179 @@ impl LlmClient {
         }
     }
 
+    /// The prompt's token count from Anthropic `count_tokens` when the primary provider is Anthropic; `None`
+    /// otherwise or when the call fails (the caller falls back to [`tokens::estimate`]).
+    pub async fn count_tokens(&self, request: &CompletionRequest) -> Option<u32> {
+        let provider = self.anthropic()?;
+        let mut body = self.messages_body(provider, request, false);
+        if let Some(map) = body.as_object_mut() {
+            for key in ["max_tokens", "stream", "output_config"] {
+                map.remove(key);
+            }
+        }
+        let response =
+            Self::anthropic_request(provider, reqwest::Method::POST, "/messages/count_tokens")
+                .json(&body)
+                .timeout(COUNT_TOKENS_TIMEOUT.min(provider.config.timeout))
+                .send()
+                .await;
+        let counted = match response {
+            Ok(response) if response.status().is_success() => {
+                response.json::<CountTokensResponse>().await.ok()
+            }
+            Ok(response) => {
+                tracing::info!(status = %response.status(), "count_tokens refused; estimating");
+                None
+            }
+            Err(err) => {
+                tracing::info!(%err, "count_tokens failed; estimating");
+                None
+            }
+        };
+        counted.map(|c| c.input_tokens)
+    }
+
+    /// Submit one request as a Message Batch of one (Anthropic primary only). Returns the batch id.
+    pub async fn submit_batch(
+        &self,
+        custom_id: &str,
+        request: &CompletionRequest,
+    ) -> Result<String, LlmError> {
+        let provider = self.anthropic().ok_or(LlmError::Disabled)?;
+        let mut params = self.messages_body(provider, request, false);
+        if let Some(map) = params.as_object_mut() {
+            map.remove("stream");
+        }
+        let body = serde_json::json!({
+            "requests": [{ "custom_id": custom_id, "params": params }]
+        });
+        let response =
+            Self::anthropic_request(provider, reqwest::Method::POST, "/messages/batches")
+                .json(&body)
+                .timeout(provider.config.timeout)
+                .send()
+                .await
+                .map_err(|e| transport_error(&e))?;
+        let status = response.status();
+        let text = response
+            .text()
+            .await
+            .map_err(|e| LlmError::Unavailable(format!("reading batch body: {e}")))?;
+        if !status.is_success() {
+            return Err(classify(status, &text));
+        }
+        let batch: BatchResponse = serde_json::from_str(&text)
+            .map_err(|e| LlmError::Unavailable(format!("batch shape: {e}")))?;
+        Ok(batch.id)
+    }
+
+    /// The state of a submitted batch; once it ended, the result of `custom_id`.
+    pub async fn poll_batch(&self, batch_id: &str, custom_id: &str) -> Result<BatchPoll, LlmError> {
+        let provider = self.anthropic().ok_or(LlmError::Disabled)?;
+        let response = Self::anthropic_request(
+            provider,
+            reqwest::Method::GET,
+            &format!("/messages/batches/{batch_id}"),
+        )
+        .timeout(provider.config.timeout)
+        .send()
+        .await
+        .map_err(|e| transport_error(&e))?;
+        let status = response.status();
+        let text = response
+            .text()
+            .await
+            .map_err(|e| LlmError::Unavailable(format!("reading batch body: {e}")))?;
+        if !status.is_success() {
+            return Err(classify(status, &text));
+        }
+        let batch: BatchResponse = serde_json::from_str(&text)
+            .map_err(|e| LlmError::Unavailable(format!("batch shape: {e}")))?;
+        if batch.processing_status != "ended" {
+            return Ok(BatchPoll::Pending);
+        }
+        // Always our own origin: `results_url` comes from the response, the key must not follow it elsewhere.
+        let response = Self::anthropic_request(
+            provider,
+            reqwest::Method::GET,
+            &format!("/messages/batches/{batch_id}/results"),
+        )
+        .timeout(provider.config.timeout)
+        .send()
+        .await
+        .map_err(|e| transport_error(&e))?;
+        let status = response.status();
+        let text = response
+            .text()
+            .await
+            .map_err(|e| LlmError::Unavailable(format!("reading batch results: {e}")))?;
+        if !status.is_success() {
+            return Err(classify(status, &text));
+        }
+        for line in text.lines().filter(|l| !l.trim().is_empty()) {
+            let parsed: BatchResultLine = serde_json::from_str(line)
+                .map_err(|e| LlmError::Unavailable(format!("batch result shape: {e}")))?;
+            if parsed.custom_id != custom_id {
+                continue;
+            }
+            return Ok(match (parsed.result.kind.as_str(), parsed.result.message) {
+                ("succeeded", Some(message)) => BatchPoll::Succeeded(message),
+                (kind, _) => {
+                    let detail = parsed.result.error.map_or_default(|e| e.to_string());
+                    BatchPoll::Failed(format!(
+                        "{kind}: {}",
+                        detail.chars().take(300).collect::<String>()
+                    ))
+                }
+            });
+        }
+        Ok(BatchPoll::Failed(
+            "the batch has no result for this request".into(),
+        ))
+    }
+
+    /// Cancel a batch (best effort: a run aborted while its batch is in flight).
+    pub async fn cancel_batch(&self, batch_id: &str) {
+        let Some(provider) = self.anthropic() else {
+            return;
+        };
+        let sent = Self::anthropic_request(
+            provider,
+            reqwest::Method::POST,
+            &format!("/messages/batches/{batch_id}/cancel"),
+        )
+        .timeout(provider.config.timeout)
+        .send()
+        .await;
+        if let Err(err) = sent {
+            tracing::info!(%batch_id, %err, "batch cancel failed");
+        }
+    }
+
+    /// A batch result ([`BatchPoll::Succeeded`]) as a completion of the Anthropic provider.
+    pub fn batch_completion(
+        &self,
+        tier: ModelTier,
+        message: &serde_json::Value,
+    ) -> Result<Completion, LlmError> {
+        let provider = self.anthropic().ok_or(LlmError::Disabled)?;
+        let parsed: MessagesResponse = serde_json::from_value(message.clone())
+            .map_err(|e| LlmError::Unavailable(format!("batch message shape: {e}")))?;
+        messages_completion(&provider.config, tier, parsed, &[])
+    }
+
+    fn anthropic_request(
+        provider: &Provider,
+        method: reqwest::Method,
+        path: &str,
+    ) -> reqwest::RequestBuilder {
+        provider
+            .http
+            .request(method, format!("{}{path}", provider.config.base_url))
+            .header("x-api-key", provider.config.api_key.expose_secret())
+            .header("anthropic-version", ANTHROPIC_VERSION)
+    }
+
     fn body(
         &self,
         provider: &Provider,
@@ -496,8 +835,8 @@ impl LlmClient {
             return self.messages_body(provider, request, stream);
         }
         let mut body = serde_json::json!({
-            "model": provider.config.model,
-            "messages": request.messages,
+            "model": provider.config.model_for(request.tier),
+            "messages": chat_messages(request),
             "stream": stream,
         });
         let cap = request.max_output_tokens.unwrap_or(self.max_output_tokens);
@@ -524,44 +863,104 @@ impl LlmClient {
         body
     }
 
-    /// The Messages API body. System messages join into `system`; the
-    /// schema goes there as an instruction (the agents' schemas are not
-    /// strict-mode schemas), the reply is parsed leniently and repaired once.
-    /// No `temperature`: Claude Sonnet 5.5 rejects non-default sampling.
-    /// Effort `low` keeps adaptive thinking short for interactive calls.
+    /// The Messages API body. System messages join into the first `system`
+    /// block; the schema goes there as an instruction (the agents' schemas
+    /// are not strict-mode schemas), the reply is parsed leniently and
+    /// repaired once. The context is a second system block marked
+    /// `cache_control`: instructions + context are the cached prefix.
+    /// Cited documents and attachments are `document` blocks of the last
+    /// user turn. No `temperature`: Claude Sonnet 5.5 rejects non-default
+    /// sampling. Effort `low` keeps adaptive thinking short.
     fn messages_body(
         &self,
         provider: &Provider,
         request: &CompletionRequest,
         stream: bool,
     ) -> serde_json::Value {
-        let mut system: Vec<String> = request
+        let mut instructions: Vec<String> = request
             .messages
             .iter()
             .filter(|m| m.role == Role::System)
             .map(|m| m.content.clone())
             .collect();
         if let Some(schema) = &request.output_schema {
-            system.push(format!(
+            instructions.push(format!(
                 "Reply with only a JSON object (no prose, no code fences) that matches \
                  the JSON schema \"{}\":\n{}",
                 schema.name, schema.schema
             ));
         }
-        let messages: Vec<&ChatMessage> = request
+        let mut system = Vec::new();
+        if !instructions.is_empty() {
+            system.push(serde_json::json!({ "type": "text", "text": instructions.join("\n\n") }));
+        }
+        if let Some(context) = request.context.as_deref().filter(|c| !c.is_empty()) {
+            system.push(serde_json::json!({
+                "type": "text", "text": context, "cache_control": { "type": "ephemeral" }
+            }));
+        }
+        let cite = request.cite_documents && !request.documents.is_empty();
+        let turns: Vec<&ChatMessage> = request
             .messages
             .iter()
             .filter(|m| m.role != Role::System)
             .collect();
+        let last_user = turns.iter().rposition(|m| m.role == Role::User);
+        let messages: Vec<serde_json::Value> = turns
+            .iter()
+            .enumerate()
+            .map(|(i, m)| {
+                let mut text = m.content.clone();
+                for attachment in &request.attachments {
+                    text = text.replace(
+                        &attachment.placeholder,
+                        &format!("(the attached document «{}»)", attachment.name),
+                    );
+                }
+                if Some(i) != last_user {
+                    return serde_json::json!({ "role": m.role, "content": text });
+                }
+                if !cite {
+                    append_sources(&mut text, &request.documents);
+                }
+                if !cite && request.attachments.is_empty() {
+                    return serde_json::json!({ "role": m.role, "content": text });
+                }
+                let mut blocks = Vec::new();
+                if cite {
+                    for doc in &request.documents {
+                        blocks.push(serde_json::json!({
+                            "type": "document",
+                            "source": { "type": "text", "media_type": "text/plain", "data": doc.text },
+                            "title": doc.title,
+                            "citations": { "enabled": true },
+                        }));
+                    }
+                }
+                for attachment in &request.attachments {
+                    blocks.push(serde_json::json!({
+                        "type": "document",
+                        "source": {
+                            "type": "base64",
+                            "media_type": attachment.media_type,
+                            "data": base64::engine::general_purpose::STANDARD.encode(attachment.data.as_slice()),
+                        },
+                        "title": attachment.name,
+                    }));
+                }
+                blocks.push(serde_json::json!({ "type": "text", "text": text }));
+                serde_json::json!({ "role": m.role, "content": blocks })
+            })
+            .collect();
         let mut body = serde_json::json!({
-            "model": provider.config.model,
+            "model": provider.config.model_for(request.tier),
             "max_tokens": request.max_output_tokens.unwrap_or(self.max_output_tokens),
             "messages": messages,
             "output_config": { "effort": "low" },
             "stream": stream,
         });
         if !system.is_empty() {
-            body["system"] = system.join("\n\n").into();
+            body["system"] = system.into();
         }
         body
     }
@@ -573,18 +972,13 @@ impl LlmClient {
         stream: bool,
     ) -> reqwest::RequestBuilder {
         let body = self.body(provider, request, stream);
-        let key = provider.config.api_key.expose_secret();
         let builder = if provider.config.name == ANTHROPIC {
-            provider
-                .http
-                .post(format!("{}/messages", provider.config.base_url))
-                .header("x-api-key", key)
-                .header("anthropic-version", ANTHROPIC_VERSION)
+            Self::anthropic_request(provider, reqwest::Method::POST, "/messages")
         } else {
             provider
                 .http
                 .post(format!("{}/chat/completions", provider.config.base_url))
-                .bearer_auth(key)
+                .bearer_auth(provider.config.api_key.expose_secret())
         };
         let builder = builder.json(&body);
         // A stream is bounded per read (the client's read timeout), a whole reply by the total.
@@ -614,7 +1008,14 @@ impl LlmClient {
             return Err(classify(status, &text));
         }
         if provider.config.name == ANTHROPIC {
-            return messages_completion(&provider.config, &text);
+            let parsed: MessagesResponse = serde_json::from_str(&text)
+                .map_err(|e| LlmError::Unavailable(format!("completion shape: {e}")))?;
+            return messages_completion(
+                &provider.config,
+                request.tier,
+                parsed,
+                &cited_ids(request),
+            );
         }
         let parsed: ChatResponse = serde_json::from_str(&text)
             .map_err(|e| LlmError::Unavailable(format!("completion shape: {e}")))?;
@@ -627,9 +1028,10 @@ impl LlmClient {
             .ok_or_else(|| LlmError::Rejected("completion carried no message content".into()))?;
         Ok(Completion {
             text: content,
-            model_name: model_label(&provider.config, parsed.model.as_deref()),
+            model_name: model_label(&provider.config, request.tier, parsed.model.as_deref()),
             provider: provider.config.name.clone(),
             usage: parsed.usage.map_or_default(Into::into),
+            citations: Vec::new(),
         })
     }
 
@@ -649,8 +1051,9 @@ impl LlmClient {
             return Err(classify(status, &text));
         }
         let config = provider.config.clone();
+        let tier = request.tier;
         if config.name == ANTHROPIC {
-            return Ok(messages_stream(config, response));
+            return Ok(messages_stream(config, tier, cited_ids(request), response));
         }
         let mut bytes = response.bytes_stream();
         let stream = async_stream::stream! {
@@ -717,21 +1120,89 @@ impl LlmClient {
                 }
             }
             yield Ok(StreamChunk::Done {
-                model_name: model_label(&config, model.as_deref()),
+                model_name: model_label(&config, tier, model.as_deref()),
                 usage,
+                citations: Vec::new(),
             });
         };
         Ok(Box::pin(stream))
     }
 }
 
-impl From<MessagesUsage> for Usage {
-    fn from(u: MessagesUsage) -> Self {
-        Self {
-            input_tokens: u.input_tokens,
-            output_tokens: u.output_tokens,
+/// The OpenAI-compatible message list: the context as a system message after the instructions, attachments as
+/// their text, the sources listed after the last user turn.
+fn chat_messages(request: &CompletionRequest) -> Vec<ChatMessage> {
+    let mut messages: Vec<ChatMessage> = Vec::with_capacity(request.messages.len() + 1);
+    let leading = request
+        .messages
+        .iter()
+        .take_while(|m| m.role == Role::System)
+        .count();
+    messages.extend(request.messages[..leading].iter().cloned());
+    if let Some(context) = request.context.as_deref().filter(|c| !c.is_empty()) {
+        messages.push(ChatMessage::system(context));
+    }
+    messages.extend(request.messages[leading..].iter().cloned());
+    for message in &mut messages {
+        for attachment in &request.attachments {
+            message.content = message
+                .content
+                .replace(&attachment.placeholder, &attachment.text);
         }
     }
+    if let Some(last) = messages.iter_mut().rfind(|m| m.role == Role::User) {
+        append_sources(&mut last.content, &request.documents);
+    }
+    messages
+}
+
+/// The text list of citable sources (`[id] type | ref | label` / `Excerpt: ...`).
+fn append_sources(text: &mut String, documents: &[Document]) {
+    if documents.is_empty() {
+        return;
+    }
+    text.push_str("\n\n");
+    text.push_str(SOURCES_HEADER);
+    for doc in documents {
+        text.push('\n');
+        text.push_str(&doc.title);
+        text.push_str("\nExcerpt: ");
+        text.push_str(&doc.text);
+    }
+}
+
+/// The ids of the documents sent as Citations API blocks, by `document_index`.
+fn cited_ids(request: &CompletionRequest) -> Vec<String> {
+    if request.cite_documents {
+        request.documents.iter().map(|d| d.id.clone()).collect()
+    } else {
+        Vec::new()
+    }
+}
+
+impl From<MessagesUsage> for Usage {
+    /// Messages `input_tokens` excludes cached tokens; ours counts the whole prompt.
+    fn from(u: MessagesUsage) -> Self {
+        let cached = u
+            .cache_read_input_tokens
+            .unwrap_or(0)
+            .saturating_add(u.cache_creation_input_tokens.unwrap_or(0));
+        Self {
+            input_tokens: u.input_tokens.map(|n| n.saturating_add(cached)),
+            output_tokens: u.output_tokens,
+            cache_read_tokens: u.cache_read_input_tokens,
+            cache_write_tokens: u.cache_creation_input_tokens,
+        }
+    }
+}
+
+fn cited(citation: WireCitation, ids: &[String]) -> Option<Cited> {
+    let document_id = ids.get(citation.document_index?)?.clone();
+    let cited_text = citation.cited_text.filter(|t| !t.trim().is_empty())?;
+    Some(Cited {
+        document_id,
+        cited_text,
+    })
 }
 
 /// A refusal falls through the chain like any rejection.
@@ -739,18 +1210,29 @@ fn refused(stop_reason: Option<&str>) -> Option<LlmError> {
     (stop_reason == Some("refusal")).then(|| LlmError::Rejected("the model declined".into()))
 }
 
-fn messages_completion(config: &ProviderConfig, body: &str) -> Result<Completion, LlmError> {
-    let parsed: MessagesResponse = serde_json::from_str(body)
-        .map_err(|e| LlmError::Unavailable(format!("completion shape: {e}")))?;
+fn messages_completion(
+    config: &ProviderConfig,
+    tier: ModelTier,
+    parsed: MessagesResponse,
+    ids: &[String],
+) -> Result<Completion, LlmError> {
     if let Some(err) = refused(parsed.stop_reason.as_deref()) {
         return Err(err);
     }
-    let text: String = parsed
-        .content
-        .into_iter()
-        .filter(|b| b.kind == "text")
-        .filter_map(|b| b.text)
-        .collect();
+    let mut text = String::new();
+    let mut citations = Vec::new();
+    for block in parsed.content.into_iter().filter(|b| b.kind == "text") {
+        if let Some(t) = block.text {
+            text.push_str(&t);
+        }
+        citations.extend(
+            block
+                .citations
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|c| cited(c, ids)),
+        );
+    }
     if text.is_empty() {
         return Err(LlmError::Rejected(format!(
             "completion carried no text (stop_reason {:?})",
@@ -759,20 +1241,28 @@ fn messages_completion(config: &ProviderConfig, body: &str) -> Result<Completion
     }
     Ok(Completion {
         text,
-        model_name: model_label(config, parsed.model.as_deref()),
+        model_name: model_label(config, tier, parsed.model.as_deref()),
         provider: config.name.clone(),
         usage: parsed.usage.map_or_default(Into::into),
+        citations,
     })
 }
 
 /// Messages SSE: text deltas in order, usage from `message_start` (input)
-/// and `message_delta` (output, cumulative), done at `message_stop`.
-fn messages_stream(config: ProviderConfig, response: reqwest::Response) -> CompletionStream {
+/// and `message_delta` (output, cumulative), citations from
+/// `citations_delta`, done at `message_stop`.
+fn messages_stream(
+    config: ProviderConfig,
+    tier: ModelTier,
+    ids: Vec<String>,
+    response: reqwest::Response,
+) -> CompletionStream {
     let mut bytes = response.bytes_stream();
     Box::pin(async_stream::stream! {
         let mut buffer: Vec<u8> = Vec::new();
         let mut model: Option<String> = None;
         let mut usage = Usage::default();
+        let mut citations = Vec::new();
         loop {
             let event = match take_event(&mut buffer) {
                 Some(event) => event,
@@ -806,17 +1296,29 @@ fn messages_stream(config: ProviderConfig, response: reqwest::Response) -> Compl
                     if let Some(message) = parsed.message {
                         model = message.model.or(model);
                         if let Some(u) = message.usage {
-                            usage.input_tokens = u.input_tokens;
+                            let start = Usage::from(u);
+                            usage.input_tokens = start.input_tokens;
+                            usage.cache_read_tokens = start.cache_read_tokens;
+                            usage.cache_write_tokens = start.cache_write_tokens;
                         }
                     }
                 }
                 "content_block_delta" => {
-                    if let Some(delta) = parsed.delta
-                        && delta.kind.as_deref() == Some("text_delta")
-                        && let Some(text) = delta.text
-                        && !text.is_empty()
-                    {
-                        yield Ok(StreamChunk::Delta(text));
+                    let Some(delta) = parsed.delta else { continue };
+                    match delta.kind.as_deref() {
+                        Some("text_delta") => {
+                            if let Some(text) = delta.text
+                                && !text.is_empty()
+                            {
+                                yield Ok(StreamChunk::Delta(text));
+                            }
+                        }
+                        Some("citations_delta") => {
+                            if let Some(c) = delta.citation.and_then(|c| cited(c, &ids)) {
+                                citations.push(c);
+                            }
+                        }
+                        _ => {}
                     }
                 }
                 "message_delta" => {
@@ -838,14 +1340,19 @@ fn messages_stream(config: ProviderConfig, response: reqwest::Response) -> Compl
             }
         }
         yield Ok(StreamChunk::Done {
-            model_name: model_label(&config, model.as_deref()),
+            model_name: model_label(&config, tier, model.as_deref()),
             usage,
+            citations,
         });
     })
 }
 
-fn model_label(config: &ProviderConfig, reported: Option<&str>) -> String {
-    format!("{}:{}", config.name, reported.unwrap_or(&config.model))
+fn model_label(config: &ProviderConfig, tier: ModelTier, reported: Option<&str>) -> String {
+    format!(
+        "{}:{}",
+        config.name,
+        reported.unwrap_or_else(|| config.model_for(tier))
+    )
 }
 
 fn transport_error(err: &reqwest::Error) -> LlmError {
@@ -961,16 +1468,15 @@ pub fn parse_structured<T: DeserializeOwned>(text: &str) -> Result<(T, serde_jso
     Ok((value, raw))
 }
 
-/// Token estimates for the budget ledger (legacy `TokenBudgetService.estimate_tokens`):
-/// the model's tiktoken encoding, `cl100k_base` when the model is unknown.
+/// Token estimates where no provider count exists (docs/REWRITE.md 4.2).
+///
+/// The ledger reads `usage` from responses, Anthropic prompts are counted with
+/// [`LlmClient::count_tokens`], everything else is characters / 3.5.
 pub mod tokens {
-    /// Number of tokens `text` occupies for `model`.
+    /// Tokens `text` occupies, rounded up: characters / 3.5.
     #[must_use]
-    pub fn estimate(text: &str, model: &str) -> usize {
-        let bare = model.split_once(':').map_or(model, |(_, m)| m);
-        let bpe = tiktoken_rs::bpe_for_model(bare)
-            .unwrap_or_else(|_| tiktoken_rs::cl100k_base_singleton());
-        bpe.encode_ordinary(text).len()
+    pub fn estimate(text: &str) -> usize {
+        (text.chars().count() * 2).div_ceil(7)
     }
 }
 
@@ -1000,14 +1506,31 @@ mod tests {
     }
 
     #[test]
-    fn token_estimates_are_stable_and_model_tolerant() {
-        let n = tokens::estimate("hello world, this is a budget check", "gpt-6-luna");
-        assert!((5..=12).contains(&n), "got {n}");
-        assert_eq!(
-            tokens::estimate("same text", "openai:gpt-4o"),
-            tokens::estimate("same text", "gpt-4o")
-        );
-        assert_eq!(tokens::estimate("", "unknown-model"), 0);
+    fn token_estimates_are_chars_over_three_and_a_half() {
+        assert_eq!(tokens::estimate(""), 0);
+        assert_eq!(tokens::estimate("1234567"), 2);
+        assert_eq!(tokens::estimate("12345678"), 3);
+        // Characters, not bytes: Cyrillic counts once per letter.
+        assert_eq!(tokens::estimate("привет!"), 2);
+    }
+
+    #[test]
+    fn usage_counts_cached_prompt_tokens_as_input() {
+        let usage = Usage::from(MessagesUsage {
+            input_tokens: Some(10),
+            output_tokens: Some(5),
+            cache_read_input_tokens: Some(900),
+            cache_creation_input_tokens: None,
+        });
+        assert_eq!(usage.input_tokens, Some(910));
+        assert_eq!(usage.cache_read_tokens, Some(900));
+        let both = usage.plus(Usage {
+            input_tokens: Some(1),
+            output_tokens: Some(1),
+            ..Usage::default()
+        });
+        assert_eq!(both.input_tokens, Some(911));
+        assert_eq!(both.cache_read_tokens, Some(900));
     }
 
     #[test]
@@ -1019,6 +1542,7 @@ mod tests {
                     base_url: "http://x".into(),
                     api_key: SecretString::from("k"),
                     model: "gpt-6-luna".into(),
+                    grading_model: None,
                     timeout: Duration::from_secs(1),
                 },
                 ProviderConfig {
@@ -1026,6 +1550,7 @@ mod tests {
                     base_url: "http://y".into(),
                     api_key: SecretString::from("k"),
                     model: "deepseek/deepseek-v4-flash".into(),
+                    grading_model: None,
                     timeout: Duration::from_secs(1),
                 },
             ],
@@ -1037,5 +1562,55 @@ mod tests {
             "openai:gpt-6-luna with openrouter:deepseek/deepseek-v4-flash fallback"
         );
         assert!(!format!("{client:?}").contains("api_key: \"k\""));
+    }
+
+    #[test]
+    fn openai_messages_put_context_after_instructions_and_sources_last() {
+        let request = CompletionRequest {
+            messages: vec![
+                ChatMessage::system("rules"),
+                ChatMessage::user("old"),
+                ChatMessage::assistant("reply"),
+                ChatMessage::user("Q {{file}}"),
+            ],
+            context: Some("Course context:\nOutline".into()),
+            documents: vec![Document {
+                id: "s1".into(),
+                title: "[s1] activity | a | Lesson".into(),
+                text: "Body".into(),
+            }],
+            attachments: vec![Attachment {
+                placeholder: "{{file}}".into(),
+                name: "w.pdf".into(),
+                media_type: "application/pdf".into(),
+                data: Arc::new(vec![1]),
+                text: "extracted".into(),
+            }],
+            ..CompletionRequest::default()
+        };
+        let messages = chat_messages(&request);
+        let roles: Vec<Role> = messages.iter().map(|m| m.role).collect();
+        assert_eq!(
+            roles,
+            [
+                Role::System,
+                Role::System,
+                Role::User,
+                Role::Assistant,
+                Role::User
+            ]
+        );
+        assert_eq!(messages[1].content, "Course context:\nOutline");
+        assert_eq!(messages[2].content, "old");
+        assert!(
+            messages[4]
+                .content
+                .starts_with("Q extracted\n\nCitation sources:")
+        );
+        assert!(
+            messages[4]
+                .content
+                .ends_with("[s1] activity | a | Lesson\nExcerpt: Body")
+        );
     }
 }

@@ -140,6 +140,10 @@ pub struct SuggestConceptsRequest {
     /// Map one chapter only.
     #[garde(skip)]
     pub chapter_id: Option<ab_core::id::ChapterId>,
+    /// Call the model right away instead of the provider's batch (cheaper, done within hours, usually minutes).
+    #[serde(default)]
+    #[garde(skip)]
+    pub now: bool,
 }
 
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]
@@ -166,6 +170,11 @@ pub struct QueueDraftsRequest {
     #[garde(inner(length(max = 200)))]
     #[schema(max_items = 200)]
     pub subject_ids: Option<Vec<uuid::Uuid>>,
+    /// "Check now": call the model right away instead of the provider's batch (cheaper, done within hours,
+    /// usually minutes).
+    #[serde(default)]
+    #[garde(skip)]
+    pub now: bool,
 }
 
 #[derive(Debug, Deserialize, garde::Validate, ToSchema)]

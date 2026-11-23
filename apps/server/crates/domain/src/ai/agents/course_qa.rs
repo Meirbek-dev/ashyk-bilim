@@ -13,7 +13,8 @@ use std::pin::Pin;
 use std::time::Instant;
 
 use ab_clients::llm::{
-    ChatMessage, CompletionRequest, OutputSchema, StreamChunk, Usage, extract_json,
+    ChatMessage, Cited, CompletionRequest, Document, ModelTier, OutputSchema, StreamChunk, Usage,
+    extract_json,
 };
 use ab_core::ai::{AiFeature, AiRunKind, AiThreadRole, QaMessageRole};
 use ab_core::id::{ActivityId, AiMessageId, AiThreadId, CourseId, UserId};
@@ -31,7 +32,7 @@ use crate::ai::policy;
 use crate::ai::prompts::{Locale, Prompt, load_prompt, resolve_locale};
 use crate::ai::redact;
 use crate::ai::runs::{FinishSpec, RunSpec, cancelled_error, is_cancelled};
-use crate::ai::schemas::{CourseQaAnswer, Level};
+use crate::ai::schemas::{Citation, CourseQaAnswer, Level};
 use crate::identity::Actor;
 
 const ARTIFACT_KIND: &str = "course_qa";
@@ -115,8 +116,12 @@ pub struct QaSession {
     pub thread: ThreadRow,
     pub user_message: QaMessageRow,
     pub run: RunRow,
-    role: AiThreadRole,
-    rendered: String,
+    /// The user turn (role, language, question).
+    prompt: String,
+    /// The course context after the system prompt (the cached prefix).
+    request_context: Option<String>,
+    /// The sources: Citations API documents on Anthropic, a cited list elsewhere.
+    documents: Vec<Document>,
     sources: Vec<ContextSource>,
     language: String,
     locale: Option<String>,
@@ -155,10 +160,15 @@ enum Step {
         answer: CourseQaAnswer,
         model_name: String,
         usage: Usage,
+        /// Citations API spans (Anthropic); empty = the answer's own `citations` anchors.
+        cited: Vec<Cited>,
     },
 }
 
 type StepStream = Pin<Box<dyn Stream<Item = Result<Step>> + Send>>;
+
+/// A final answer with its model, usage and Citations API spans.
+type Answered = (CourseQaAnswer, String, Usage, Vec<Cited>);
 
 fn validate_question(question: &str) -> Result<&str> {
     let trimmed = question.trim();
@@ -172,11 +182,37 @@ fn validate_question(question: &str) -> Result<&str> {
     Ok(trimmed)
 }
 
-/// The user turn sent to the model; `context` is already fitted.
-fn qa_prompt(role: AiThreadRole, language: &str, question: &str, context: &str) -> String {
-    format!(
-        "Role: {role}\nLanguage: {language}\nQuestion: {question}\n\nCourse context:\n{context}"
-    )
+/// The user turn sent to the model; the course context goes before it (the cached prefix).
+fn qa_prompt(role: AiThreadRole, language: &str, question: &str) -> String {
+    format!("Role: {role}\nLanguage: {language}\nQuestion: {question}")
+}
+
+/// Citations API spans as the answer's citations: one per source and quote, labelled like the source; spans of
+/// unknown documents are dropped.
+fn cited_citations(cited: &[Cited], sources: &[ContextSource]) -> Vec<Citation> {
+    let mut out: Vec<Citation> = Vec::new();
+    for span in cited {
+        let Some(source) = sources.iter().find(|s| s.citation_id == span.document_id) else {
+            continue;
+        };
+        let excerpt = context::clean_excerpt(&span.cited_text);
+        if out
+            .iter()
+            .any(|c| c.citation_id == source.citation_id && c.excerpt == excerpt)
+        {
+            continue;
+        }
+        out.push(Citation {
+            citation_id: source.citation_id.clone(),
+            label: source.label.clone(),
+            source_type: source.source_type.clone(),
+            source_uuid: source.source_ref.clone(),
+            excerpt,
+            // The provider located the quote in the source itself.
+            confidence: 0.9,
+        });
+    }
+    out
 }
 
 fn turn_reused() -> Error {
@@ -375,12 +411,14 @@ impl AiService {
             .await?;
         let locale = self.user_locale(actor.user_id).await?;
         let admitted = self
-            .admit(
+            .admit_split(
                 bundle,
                 load_prompt(Prompt::CourseQa, locale.as_deref()),
                 &history,
                 None,
-                |context| qa_prompt(role, request.language, question, context),
+                "Course context:\n",
+                qa_prompt(role, request.language, question),
+                Vec::new(),
             )
             .await?;
         let sources = admitted.sources;
@@ -437,8 +475,9 @@ impl AiService {
             thread,
             user_message,
             run,
-            role,
-            rendered: admitted.context,
+            prompt: admitted.prompt,
+            request_context: admitted.request_context,
+            documents: admitted.documents,
             sources,
             language: request.language.to_owned(),
             locale,
@@ -579,33 +618,32 @@ impl AiService {
         let estimated_input_tokens = session.reservation.input_tokens;
         let draft_mode = self.config.ai_draft_mode_enabled;
         let draft = draft_course_answer(&session.language, session.locale.as_deref());
-        let prompt = qa_prompt(
-            session.role,
-            &session.language,
-            &session.user_message.content,
-            &session.rendered,
-        );
         let mut messages = Vec::with_capacity(session.history.len() + 2);
         messages.push(ChatMessage::system(load_prompt(
             Prompt::CourseQa,
             session.locale.as_deref(),
         )));
         messages.extend(session.history.iter().cloned());
-        messages.push(ChatMessage::user(prompt));
+        messages.push(ChatMessage::user(session.prompt.clone()));
         let request = CompletionRequest {
             messages,
+            context: session.request_context.clone(),
+            documents: session.documents.clone(),
+            cite_documents: true,
+            attachments: Vec::new(),
             output_schema: Some(OutputSchema {
                 name: CourseQaAnswer::SCHEMA_NAME.into(),
                 schema: CourseQaAnswer::json_schema(),
             }),
             max_output_tokens: Some(self.config.max_output_tokens),
             temperature: None,
+            tier: ModelTier::Standard,
         };
         Box::pin(async_stream::stream! {
             let Some(llm) = llm else {
                 if draft_mode {
                     yield Ok(Step::Delta(draft.answer_markdown.clone()));
-                    yield Ok(Step::Final { answer: draft, model_name: DRAFT_MODEL.into(), usage: Usage::default() });
+                    yield Ok(Step::Final { answer: draft, model_name: DRAFT_MODEL.into(), usage: Usage::default(), cited: Vec::new() });
                 } else {
                     yield Err(Error::app(ErrorCode::AiDisabled, "AI provider is not configured and draft mode is off"));
                 }
@@ -620,7 +658,7 @@ impl AiService {
                 Err(err) if draft_mode => {
                     tracing::warn!(%err, "qa provider unavailable; answering in draft mode");
                     yield Ok(Step::Delta(draft.answer_markdown.clone()));
-                    yield Ok(Step::Final { answer: draft, model_name: DRAFT_MODEL.into(), usage: Usage::default() });
+                    yield Ok(Step::Final { answer: draft, model_name: DRAFT_MODEL.into(), usage: Usage::default(), cited: Vec::new() });
                     return;
                 }
                 Err(err) => { yield Err(Error::from(err)); return; }
@@ -645,21 +683,21 @@ impl AiService {
                             yield Ok(Step::Delta(delta));
                         }
                     }
-                    Some(Ok(StreamChunk::Done { model_name, usage })) => {
-                        done = Some((model_name, usage));
+                    Some(Ok(StreamChunk::Done { model_name, usage, citations })) => {
+                        done = Some((model_name, usage, citations));
                         break;
                     }
                     Some(Err(err)) => { yield Err(Error::from(err)); return; }
                     None => break,
                 }
             }
-            let Some((model_name, usage)) = done else {
+            let Some((model_name, usage, cited)) = done else {
                 yield Err(Error::app(ErrorCode::AiProviderUnavailable, "stream ended before completion"));
                 return;
             };
             // BUG-349: the call is paid even if its reply proves unusable.
             if let Err(err) = service
-                .record_call(run_id, usage, estimated_input_tokens, &buffer, &model_name)
+                .record_call(run_id, usage, estimated_input_tokens, &buffer)
                 .await
             {
                 yield Err(err);
@@ -677,7 +715,7 @@ impl AiService {
             if answer.answer_markdown.len() > sent.len() && answer.answer_markdown.starts_with(&sent) {
                 yield Ok(Step::Delta(answer.answer_markdown[sent.len()..].to_owned()));
             }
-            yield Ok(Step::Final { answer, model_name, usage });
+            yield Ok(Step::Final { answer, model_name, usage, cited });
         })
     }
 
@@ -690,9 +728,15 @@ impl AiService {
         mut answer: CourseQaAnswer,
         model_name: &str,
         usage: Usage,
+        cited: &[Cited],
     ) -> Result<QaFinished> {
         let run_id = session.run.id;
         self.emit_validation_event(run_id).await?;
+        // Anthropic: the Citations API located the quotes; they replace the anchors the model wrote in its JSON.
+        let from_api = cited_citations(cited, &session.sources);
+        if !from_api.is_empty() {
+            answer.citations = from_api;
+        }
         for citation in &mut answer.citations {
             citation.normalize();
         }
@@ -773,7 +817,7 @@ impl AiService {
             }
             let mut steps = service.answer_steps(&session, watch.token.clone());
             let mut text = String::new();
-            let mut outcome: Option<Result<(CourseQaAnswer, String, Usage)>> = None;
+            let mut outcome: Option<Result<Answered>> = None;
             while let Some(step) = steps.next().await {
                 match step {
                     Ok(Step::Delta(delta)) => {
@@ -793,8 +837,8 @@ impl AiService {
                         session.guard.record(&text);
                         yield QaTurn::Delta(delta);
                     }
-                    Ok(Step::Final { answer, model_name, usage }) => {
-                        outcome = Some(Ok((answer, model_name, usage)));
+                    Ok(Step::Final { answer, model_name, usage, cited }) => {
+                        outcome = Some(Ok((answer, model_name, usage, cited)));
                         break;
                     }
                     Err(err) => {
@@ -805,8 +849,8 @@ impl AiService {
             }
             drop(steps);
             let result = match outcome {
-                Some(Ok((answer, model_name, usage))) => {
-                    service.qa_finish(&session, answer, &model_name, usage).await
+                Some(Ok((answer, model_name, usage, cited))) => {
+                    service.qa_finish(&session, answer, &model_name, usage, &cited).await
                 }
                 Some(Err(err)) => Err(err),
                 None => Err(Error::app(

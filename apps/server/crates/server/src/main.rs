@@ -820,6 +820,7 @@ async fn worker(config: Config) -> anyhow::Result<()> {
         ))?
         .register(ab_jobs::handlers::ai_first::MasteryRebuild::new(mastery))?
         .register(ab_jobs::handlers::ai_first::AutoGradeDraft::new(ai.clone()))?
+        .register(ab_jobs::handlers::ai::BatchPollHandler::new(ai.clone()))?
         .register(ab_jobs::handlers::ai::ExecuteRunHandler::new(ai))?;
     let cancel = CancellationToken::new();
     let mut handle = tokio::spawn(worker.run(cancel.clone()));

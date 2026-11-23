@@ -104,7 +104,6 @@ lettre = { version = "0.11.24", default-features = false, features = [
 # AI (P8): token estimates for the budget ledger; regex for secret redaction
 # of model output. The chat-completions client itself is hand-rolled on
 # reqwest (DECISIONS.md, "AI subsystem").
-tiktoken-rs = "=0.12.1"
 regex = "=1.13.1"
 # D-01: the new web's URL rules (WHATWG parsing, as `new URL()`)
 url = "2.5.8"

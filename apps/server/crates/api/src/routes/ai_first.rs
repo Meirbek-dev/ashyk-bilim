@@ -319,7 +319,7 @@ pub async fn suggest_concepts(
     detached(async move {
         let run = state
             .ai
-            .suggest_concepts(&actor, course_id, request.chapter_id)
+            .suggest_concepts(&actor, course_id, request.chapter_id, request.now)
             .await?;
         Ok((StatusCode::ACCEPTED, Json(run.into())))
     })
@@ -466,7 +466,12 @@ pub async fn queue_grade_drafts(
     detached(async move {
         let report = state
             .ai
-            .queue_grade_drafts(&actor, activity_id, request.subject_ids.as_deref())
+            .queue_grade_drafts(
+                &actor,
+                activity_id,
+                request.subject_ids.as_deref(),
+                request.now,
+            )
             .await?;
         Ok((StatusCode::ACCEPTED, Json(report)))
     })

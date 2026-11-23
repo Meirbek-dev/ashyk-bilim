@@ -422,6 +422,7 @@ pub struct AiEffectiveConfig {
     /// `"[redacted]"` when set.
     pub claude_api_key: Option<String>,
     pub claude_model: String,
+    pub claude_grading_model: String,
     pub claude_base_url: String,
     pub claude_timeout_secs: f64,
     /// `"[redacted]"` when set.

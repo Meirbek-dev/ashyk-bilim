@@ -44,8 +44,8 @@ pub use capabilities::{
     Surface,
 };
 pub use runs::{
-    AdminSettings, EXECUTE_RUN_JOB, EvalDashboard, EvalReport, FeatureState, RunDetail,
-    RunListQuery, UsageSummary,
+    AdminSettings, BATCH_POLL_JOB, EXECUTE_RUN_JOB, EvalDashboard, EvalReport, FeatureState,
+    RunDetail, RunListQuery, UsageSummary,
 };
 
 use crate::catalog::courses::CoursesService;

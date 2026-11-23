@@ -28,6 +28,13 @@ use crate::identity::Actor;
 
 /// The worker job kind that executes a queued run (payload `{run_id}`).
 pub const EXECUTE_RUN_JOB: &str = "ai:execute_run";
+/// The worker job kind that polls a run's Message Batch (payload `{run_id, polls}`).
+pub const BATCH_POLL_JOB: &str = "ai:batch_poll";
+/// First poll after 30 s, doubling to every 10 minutes; a batch ends within 24 h, so 200 polls (~33 h) is a
+/// batch the provider lost - the run is then called directly.
+const BATCH_POLL_FIRST: Duration = Duration::from_secs(30);
+const BATCH_POLL_MAX: Duration = Duration::from_mins(10);
+const BATCH_POLL_LIMIT: u32 = 200;
 
 /// How often an executing run re-reads its status to notice a cancel.
 const CANCEL_POLL: Duration = Duration::from_secs(1);
@@ -93,6 +100,27 @@ pub(crate) fn cancelled_error() -> Error {
 
 pub(crate) fn is_cancelled(err: &Error) -> bool {
     err.code() == ErrorCode::AiRunCancelled
+}
+
+/// The run waits for its Message Batch: not a failure. It travels as a cancellation (nothing marks the run
+/// failed, the worker job succeeds) that [`is_deferred`] tells apart.
+pub(crate) fn deferred() -> Error {
+    Error::app_with_details(
+        ErrorCode::AiRunCancelled,
+        "AI run waits for its provider batch",
+        serde_json::json!({ "deferred": true }),
+    )
+}
+
+pub(crate) fn is_deferred(err: &Error) -> bool {
+    matches!(err, Error::App { code: ErrorCode::AiRunCancelled, details: Some(d), .. }
+        if d.get("deferred").is_some())
+}
+
+fn batch_poll_delay(polls: u32) -> Duration {
+    BATCH_POLL_FIRST
+        .saturating_mul(1_u32 << polls.min(5))
+        .min(BATCH_POLL_MAX)
 }
 
 /// Run `fut` unless `token` fires first.
@@ -361,6 +389,10 @@ impl AiService {
     /// the caller commits with [`Self::commit_finish`] (BUG-348) -
     /// `running → succeeded`, the artifact + evidence, the token ledger
     /// (settling the run's budget reservation) and the `finished` event.
+    #[allow(
+        clippy::too_many_lines,
+        reason = "one transaction in order: run, artifact, evidence, ledger, event"
+    )]
     pub(crate) async fn finish_run(&self, spec: FinishSpec<'_>) -> Result<Completion> {
         let artifact = redact::redacted(spec.artifact);
         let citations: Vec<serde_json::Value> =
@@ -387,10 +419,16 @@ impl AiService {
         .await?;
         let reported = |n: Option<u32>| n.map(|n| i32::try_from(n).unwrap_or(i32::MAX));
         let input_tokens = reported(spec.usage.input_tokens).unwrap_or(spec.estimated_input_tokens);
-        let output_tokens = reported(spec.usage.output_tokens).unwrap_or_else(|| {
-            self.budget
-                .estimate_for(&artifact.to_string(), spec.model_name)
-        });
+        let output_tokens = reported(spec.usage.output_tokens)
+            .unwrap_or_else(|| self.budget.estimate(&artifact.to_string()));
+        let mut run_metadata = serde_json::json!({ "citation_validation": validation_meta });
+        // Prompt caching (Anthropic): the ledger has no column for it, the run keeps it.
+        if spec.usage.cache_read_tokens.is_some() || spec.usage.cache_write_tokens.is_some() {
+            run_metadata["prompt_cache"] = serde_json::json!({
+                "read_tokens": spec.usage.cache_read_tokens.unwrap_or(0),
+                "write_tokens": spec.usage.cache_write_tokens.unwrap_or(0),
+            });
+        }
         let mut tx = self.pool.begin().await?;
         let moved = ab_db::ai::finish_run(
             &mut *tx,
@@ -398,7 +436,7 @@ impl AiService {
             spec.model_name,
             input_tokens,
             output_tokens,
-            &serde_json::json!({ "citation_validation": validation_meta }),
+            &run_metadata,
         )
         .await?;
         if !moved {
@@ -448,6 +486,8 @@ impl AiService {
                 "model_name": spec.model_name,
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
+                "cache_read_tokens": spec.usage.cache_read_tokens,
+                "cache_write_tokens": spec.usage.cache_write_tokens,
                 "citations_valid": trusted.len(),
                 "citations_invalid": invalid_count,
             }),
@@ -482,12 +522,10 @@ impl AiService {
         usage: ab_clients::llm::Usage,
         estimated_input_tokens: i32,
         reply: &str,
-        model_name: &str,
     ) -> Result<()> {
         let reported = |n: Option<u32>| n.map(|n| i32::try_from(n).unwrap_or(i32::MAX));
         let input = reported(usage.input_tokens).unwrap_or(estimated_input_tokens);
-        let output = reported(usage.output_tokens)
-            .unwrap_or_else(|| self.budget.estimate_for(reply, model_name));
+        let output = reported(usage.output_tokens).unwrap_or_else(|| self.budget.estimate(reply));
         ab_db::ai::add_run_usage(&self.pool, run_id, input, output).await
     }
 
@@ -575,6 +613,79 @@ impl AiService {
             return Err(err);
         }
         Ok(())
+    }
+
+    /// Queue the next poll of a run's Message Batch (one job per poll: the running one holds its key).
+    pub(crate) async fn enqueue_batch_poll(&self, run_id: AiRunId, polls: u32) -> Result<()> {
+        let job = NewJob::new(
+            BATCH_POLL_JOB,
+            serde_json::json!({ "run_id": run_id, "polls": polls }),
+        )
+        .delayed(batch_poll_delay(polls))
+        .max_attempts(5)
+        .dedupe(format!("ai:batch:{run_id}:{polls}"));
+        ab_db::queue::enqueue(&self.pool, &job).await?;
+        Ok(())
+    }
+
+    /// Worker: poll a run's Message Batch. Pending: poll again later. Ended: the result (or the failure) goes into
+    /// the run's `batch` metadata and the run is executed again, which reads it instead of calling the model
+    /// (`agents::batched_call`); a failed batch is called directly. A run aborted meanwhile cancels its batch.
+    pub async fn poll_batch(&self, run_id: AiRunId, polls: u32) -> Result<()> {
+        let Some(llm) = self.provider() else {
+            return Ok(());
+        };
+        let Some(run) = ab_db::ai::get_run(&self.pool, run_id).await? else {
+            return Ok(());
+        };
+        let batch = run.metadata.get("batch").cloned().unwrap_or_default();
+        let (Some(batch_id), Some(custom_id)) = (
+            batch.get("id").and_then(serde_json::Value::as_str),
+            batch.get("custom_id").and_then(serde_json::Value::as_str),
+        ) else {
+            return Ok(());
+        };
+        if batch.get("result").is_some() || batch.get("failed").is_some() {
+            return Ok(());
+        }
+        if run.status.is_terminal() {
+            if run.status == AiRunStatus::Aborted {
+                llm.cancel_batch(batch_id).await;
+            }
+            return Ok(());
+        }
+        let outcome = match llm.poll_batch(batch_id, custom_id).await {
+            Ok(ab_clients::llm::BatchPoll::Pending) if polls < BATCH_POLL_LIMIT => {
+                return self.enqueue_batch_poll(run_id, polls + 1).await;
+            }
+            Ok(ab_clients::llm::BatchPoll::Pending) => {
+                Err("the batch did not end in time".to_owned())
+            }
+            Ok(ab_clients::llm::BatchPoll::Succeeded(message)) => Ok(message),
+            Ok(ab_clients::llm::BatchPoll::Failed(reason)) => Err(reason),
+            Err(err) if polls < BATCH_POLL_LIMIT => {
+                tracing::info!(%run_id, %err, "batch poll failed; polling again");
+                return self.enqueue_batch_poll(run_id, polls + 1).await;
+            }
+            Err(err) => Err(err.to_string()),
+        };
+        let mut patch = batch.clone();
+        match outcome {
+            Ok(message) => patch["result"] = message,
+            Err(reason) => {
+                tracing::warn!(%run_id, %reason, "batch failed; the run calls the model directly");
+                patch["failed"] = reason.into();
+            }
+        }
+        ab_db::ai::merge_run_metadata(&self.pool, run_id, &serde_json::json!({ "batch": patch }))
+            .await?;
+        self.emit(
+            run_id,
+            "batch_finished",
+            serde_json::json!({ "state": "running" }),
+        )
+        .await?;
+        self.enqueue_run(run_id).await
     }
 
     /// Worker entry point (legacy `execute_queued_ai_run`). Terminal runs
@@ -919,6 +1030,7 @@ impl AiService {
             }),
             max_output_tokens: Some(32),
             temperature: None,
+            ..ab_clients::llm::CompletionRequest::default()
         };
         let (model_name, passed, details) = match llm.complete_structured::<Probe>(&request).await {
             Ok(reply) => (

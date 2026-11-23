@@ -1369,6 +1369,9 @@
           "claude_base_url": {
             "type": "string"
           },
+          "claude_grading_model": {
+            "type": "string"
+          },
           "claude_model": {
             "type": "string"
           },
@@ -1484,6 +1487,7 @@
         "required": [
           "status",
           "claude_model",
+          "claude_grading_model",
           "claude_base_url",
           "claude_timeout_secs",
           "openai_model",
@@ -17151,6 +17155,10 @@
       "QueueDraftsRequest": {
         "additionalProperties": false,
         "properties": {
+          "now": {
+            "description": "\"Check now\": call the model right away instead of the provider's batch (cheaper, done within hours,\nusually minutes).",
+            "type": "boolean"
+          },
           "subject_ids": {
             "description": "Only these works (submission or file attempt ids); absent = every work waiting for a grade.",
             "items": {
@@ -20743,6 +20751,10 @@
           "chapter_id": {
             "$ref": "#/components/schemas/ChapterId",
             "description": "Map one chapter only."
+          },
+          "now": {
+            "description": "Call the model right away instead of the provider's batch (cheaper, done within hours, usually minutes).",
+            "type": "boolean"
           }
         },
         "type": "object"

@@ -2,6 +2,9 @@
 //! `/chat/completions` fake: request shape (bearer, model, messages, JSON
 //! schema response format), non-streaming and SSE streaming replies, the
 //! provider fallback chain, the structured-output repair round, timeouts.
+//! Against an Anthropic `/messages` fake: prompt caching of the context,
+//! Citations API documents and their spans (plain and streamed), PDF
+//! `document` blocks, the grading model, `count_tokens`, Message Batches.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use std::time::Duration;
@@ -22,6 +25,7 @@ fn provider(name: &str, server: &MockServer, model: &str, timeout: Duration) -> 
         base_url: format!("{}/v1", server.uri()),
         api_key: SecretString::from(format!("{name}-key")),
         model: model.into(),
+        grading_model: None,
         timeout,
     }
 }
@@ -61,6 +65,7 @@ fn request() -> CompletionRequest {
         }),
         max_output_tokens: Some(256),
         temperature: None,
+        ..CompletionRequest::default()
     }
 }
 
@@ -150,7 +155,9 @@ async fn streaming_yields_deltas_in_order_then_done_with_usage() {
     while let Some(chunk) = stream.next().await {
         match chunk.unwrap() {
             StreamChunk::Delta(delta) => text.push_str(&delta),
-            StreamChunk::Done { model_name, usage } => done = Some((model_name, usage)),
+            StreamChunk::Done {
+                model_name, usage, ..
+            } => done = Some((model_name, usage)),
         }
     }
     assert_eq!(text, "{\"answer_markdown\": \"Hello\"}");
@@ -412,7 +419,9 @@ async fn anthropic_completion_sends_the_messages_shape_and_falls_back_on_refusal
     let sent: serde_json::Value = server.received_requests().await.unwrap()[0]
         .body_json()
         .unwrap();
-    let system = sent["system"].as_str().unwrap();
+    let system = sent["system"][0]["text"].as_str().unwrap();
+    // No stable context: nothing is marked for caching.
+    assert!(sent["system"][0].get("cache_control").is_none());
     assert!(system.starts_with("You answer questions about a course."));
     assert!(system.contains("answer_markdown"));
     assert!(sent.get("temperature").is_none());
@@ -492,9 +501,366 @@ async fn anthropic_stream_yields_text_deltas_then_usage() {
                 model_name: "anthropic:claude-sonnet-5-5".into(),
                 usage: ab_clients::llm::Usage {
                     input_tokens: Some(12),
-                    output_tokens: Some(5)
+                    output_tokens: Some(5),
+                    ..ab_clients::llm::Usage::default()
                 },
+                citations: vec![],
             },
         ]
     );
+}
+
+fn anthropic(server: &MockServer) -> ProviderConfig {
+    ProviderConfig {
+        grading_model: Some("claude-sonnet-5-5".into()),
+        ..provider(
+            "anthropic",
+            server,
+            "claude-haiku-5-5",
+            Duration::from_secs(2),
+        )
+    }
+}
+
+fn source_doc() -> ab_clients::llm::Document {
+    ab_clients::llm::Document {
+        id: "chunk:1".into(),
+        title: "[chunk:1] activity | a1 | Lesson 1".into(),
+        text: "A monad is a monoid in the category of endofunctors.".into(),
+    }
+}
+
+fn cached_request() -> CompletionRequest {
+    CompletionRequest {
+        context: Some("Course context:\nFunctional programming".into()),
+        documents: vec![source_doc()],
+        cite_documents: true,
+        ..request()
+    }
+}
+
+#[allow(clippy::needless_pass_by_value, reason = "built inline at every call")]
+fn message(content: serde_json::Value) -> serde_json::Value {
+    serde_json::json!({
+        "id": "msg_1", "type": "message", "role": "assistant", "model": "claude-haiku-5-5",
+        "content": content, "stop_reason": "end_turn",
+        "usage": { "input_tokens": 20, "output_tokens": 9,
+                   "cache_read_input_tokens": 1000, "cache_creation_input_tokens": 0 }
+    })
+}
+
+#[tokio::test]
+async fn anthropic_caches_the_context_and_cites_documents() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .and(body_partial_json(serde_json::json!({
+            "model": "claude-haiku-5-5",
+            "system": [
+                { "type": "text" },
+                { "type": "text", "text": "Course context:\nFunctional programming",
+                  "cache_control": { "type": "ephemeral" } }
+            ],
+            "messages": [{ "role": "user", "content": [
+                { "type": "document",
+                  "source": { "type": "text", "media_type": "text/plain",
+                              "data": "A monad is a monoid in the category of endofunctors." },
+                  "title": "[chunk:1] activity | a1 | Lesson 1",
+                  "citations": { "enabled": true } },
+                { "type": "text", "text": "Role: student\nQuestion: what is a monad?" }
+            ] }]
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(message(serde_json::json!([
+            { "type": "text", "text": "{\"answer_markdown\": \"" },
+            { "type": "text", "text": "A monoid of endofunctors.",
+              "citations": [{ "type": "char_location", "document_index": 0,
+                              "document_title": "[chunk:1] activity | a1 | Lesson 1",
+                              "cited_text": "A monad is a monoid in the category of endofunctors.",
+                              "start_char_index": 0, "end_char_index": 52 }] },
+            { "type": "text", "text": "\"}" }
+        ]))))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let llm = client(vec![anthropic(&server)]);
+    let completion = llm.complete(&cached_request()).await.unwrap();
+    assert_eq!(
+        completion.text,
+        "{\"answer_markdown\": \"A monoid of endofunctors.\"}"
+    );
+    assert_eq!(completion.citations.len(), 1);
+    assert_eq!(completion.citations[0].document_id, "chunk:1");
+    assert!(completion.citations[0].cited_text.starts_with("A monad"));
+    // Cached tokens are prompt tokens: the ledger sees all of them.
+    assert_eq!(completion.usage.input_tokens, Some(1020));
+    assert_eq!(completion.usage.cache_read_tokens, Some(1000));
+    assert_eq!(completion.usage.cache_write_tokens, Some(0));
+}
+
+#[tokio::test]
+async fn openai_gets_the_context_as_system_and_the_sources_as_text() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(completion_body(
+            "{\"answer_markdown\": \"x\"}",
+            "gpt-6-luna",
+        )))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let llm = client(vec![provider(
+        "openai",
+        &server,
+        "gpt-6-luna",
+        Duration::from_secs(2),
+    )]);
+    let completion = llm.complete(&cached_request()).await.unwrap();
+    assert!(completion.citations.is_empty());
+    let sent: serde_json::Value = server.received_requests().await.unwrap()[0]
+        .body_json()
+        .unwrap();
+    let messages = sent["messages"].as_array().unwrap();
+    assert_eq!(messages[1]["role"], "system");
+    assert_eq!(
+        messages[1]["content"],
+        "Course context:\nFunctional programming"
+    );
+    let last = messages.last().unwrap()["content"].as_str().unwrap();
+    assert!(last.starts_with("Role: student\nQuestion: what is a monad?\n\nCitation sources:"));
+    assert!(last.contains("[chunk:1] activity | a1 | Lesson 1\nExcerpt: A monad is"));
+}
+
+#[tokio::test]
+async fn anthropic_stream_collects_citation_deltas() {
+    let server = MockServer::start().await;
+    let sse = concat!(
+        "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"model\":\"claude-haiku-5-5\",\"content\":[],\"usage\":{\"input_tokens\":12,\"cache_read_input_tokens\":800,\"cache_creation_input_tokens\":100,\"output_tokens\":1}}}\n\n",
+        "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Hi\"}}\n\n",
+        "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"citations_delta\",\"citation\":{\"type\":\"char_location\",\"document_index\":0,\"cited_text\":\"A monad is\",\"start_char_index\":0,\"end_char_index\":10}}}\n\n",
+        "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"citations_delta\",\"citation\":{\"type\":\"char_location\",\"document_index\":7,\"cited_text\":\"unknown\"}}}\n\n",
+        "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":5}}\n\n",
+        "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n",
+    );
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .and(body_partial_json(serde_json::json!({ "stream": true })))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .insert_header("content-type", "text/event-stream")
+                .set_body_string(sse),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+    let llm = client(vec![anthropic(&server)]);
+    let chunks: Vec<_> = llm
+        .stream(&cached_request())
+        .await
+        .unwrap()
+        .map(Result::unwrap)
+        .collect()
+        .await;
+    let Some(StreamChunk::Done {
+        usage, citations, ..
+    }) = chunks.last()
+    else {
+        panic!("Done last");
+    };
+    assert_eq!(usage.input_tokens, Some(912));
+    assert_eq!(usage.cache_read_tokens, Some(800));
+    assert_eq!(usage.cache_write_tokens, Some(100));
+    // A span of a document the request did not send is dropped.
+    assert_eq!(citations.len(), 1);
+    assert_eq!(citations[0].document_id, "chunk:1");
+    assert_eq!(citations[0].cited_text, "A monad is");
+}
+
+#[tokio::test]
+async fn grading_sends_pdfs_as_documents_on_the_grading_model() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .and(body_partial_json(serde_json::json!({
+            "model": "claude-sonnet-5-5",
+            "messages": [{ "role": "user", "content": [
+                { "type": "document", "title": "essay.pdf",
+                  "source": { "type": "base64", "media_type": "application/pdf", "data": "JVBERg==" } },
+                { "type": "text", "text": "Answer:\n(the attached document «essay.pdf»)" }
+            ] }]
+        })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(message(
+            serde_json::json!([{ "type": "text", "text": "{\"answer_markdown\": \"ok\"}" }]),
+        )))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let fallback = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/chat/completions"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(completion_body("{}", "gpt-6-luna")))
+        .mount(&fallback)
+        .await;
+    let pdf_request = CompletionRequest {
+        messages: vec![
+            ChatMessage::system("Grade."),
+            ChatMessage::user("Answer:\n{{file:1}}"),
+        ],
+        attachments: vec![ab_clients::llm::Attachment {
+            placeholder: "{{file:1}}".into(),
+            name: "essay.pdf".into(),
+            media_type: "application/pdf".into(),
+            data: std::sync::Arc::new(b"%PDF".to_vec()),
+            text: "the essay text".into(),
+        }],
+        tier: ab_clients::llm::ModelTier::Grading,
+        ..CompletionRequest::default()
+    };
+    let llm = client(vec![anthropic(&server)]);
+    let completion = llm.complete(&pdf_request).await.unwrap();
+    // The label is the model that answered.
+    assert_eq!(completion.model_name, "anthropic:claude-haiku-5-5");
+
+    // The OpenAI-compatible fallback reads the extracted text instead.
+    let llm = client(vec![provider(
+        "openai",
+        &fallback,
+        "gpt-6-luna",
+        Duration::from_secs(2),
+    )]);
+    llm.complete(&pdf_request).await.unwrap();
+    let sent: serde_json::Value = fallback.received_requests().await.unwrap()[0]
+        .body_json()
+        .unwrap();
+    assert_eq!(sent["messages"][1]["content"], "Answer:\nthe essay text");
+}
+
+#[tokio::test]
+async fn count_tokens_asks_anthropic_and_skips_others() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/messages/count_tokens"))
+        .and(header("x-api-key", "anthropic-key"))
+        .and(body_partial_json(
+            serde_json::json!({ "model": "claude-haiku-5-5" }),
+        ))
+        .respond_with(
+            ResponseTemplate::new(200).set_body_json(serde_json::json!({ "input_tokens": 321 })),
+        )
+        .expect(1)
+        .mount(&server)
+        .await;
+    let llm = client(vec![anthropic(&server)]);
+    assert_eq!(llm.count_tokens(&cached_request()).await, Some(321));
+    let sent: serde_json::Value = server.received_requests().await.unwrap()[0]
+        .body_json()
+        .unwrap();
+    // count_tokens takes the prompt only.
+    assert!(sent.get("max_tokens").is_none() && sent.get("stream").is_none());
+
+    let failing = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/messages/count_tokens"))
+        .respond_with(ResponseTemplate::new(500))
+        .mount(&failing)
+        .await;
+    assert_eq!(
+        client(vec![anthropic(&failing)])
+            .count_tokens(&cached_request())
+            .await,
+        None
+    );
+    let openai = client(vec![provider(
+        "openai",
+        &failing,
+        "gpt-6-luna",
+        Duration::from_secs(2),
+    )]);
+    assert_eq!(openai.count_tokens(&cached_request()).await, None);
+}
+
+#[tokio::test]
+async fn batches_submit_poll_and_read_the_result() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/v1/messages/batches"))
+        .and(header("x-api-key", "anthropic-key"))
+        .and(body_partial_json(serde_json::json!({ "requests": [{
+            "custom_id": "run-1",
+            "params": { "model": "claude-sonnet-5-5", "max_tokens": 256 }
+        }] })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "id": "msgbatch_1", "type": "message_batch", "processing_status": "in_progress"
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/v1/messages/batches/msgbatch_1"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "id": "msgbatch_1", "processing_status": "in_progress"
+        })))
+        .up_to_n_times(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/v1/messages/batches/msgbatch_1"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+            "id": "msgbatch_1", "processing_status": "ended",
+            "results_url": "https://elsewhere.example/results"
+        })))
+        .mount(&server)
+        .await;
+    let lines = format!(
+        "{}\n{}\n",
+        serde_json::json!({ "custom_id": "other", "result": { "type": "errored",
+                            "error": { "type": "invalid_request" } } }),
+        serde_json::json!({ "custom_id": "run-1", "result": { "type": "succeeded",
+                            "message": message(serde_json::json!([{ "type": "text", "text": "{}" }])) } }),
+    );
+    // Results come from our own origin, never the response's `results_url`.
+    Mock::given(method("GET"))
+        .and(path("/v1/messages/batches/msgbatch_1/results"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(lines))
+        .mount(&server)
+        .await;
+
+    let llm = client(vec![anthropic(&server)]);
+    assert!(llm.supports_batches());
+    let graded = CompletionRequest {
+        tier: ab_clients::llm::ModelTier::Grading,
+        ..request()
+    };
+    let id = llm.submit_batch("run-1", &graded).await.unwrap();
+    assert_eq!(id, "msgbatch_1");
+    let sent: serde_json::Value = server.received_requests().await.unwrap()[0]
+        .body_json()
+        .unwrap();
+    assert!(sent["requests"][0]["params"].get("stream").is_none());
+    assert!(matches!(
+        llm.poll_batch(&id, "run-1").await.unwrap(),
+        ab_clients::llm::BatchPoll::Pending
+    ));
+    let ab_clients::llm::BatchPoll::Succeeded(result) = llm.poll_batch(&id, "run-1").await.unwrap()
+    else {
+        panic!("the batch ended");
+    };
+    let completion = llm
+        .batch_completion(ab_clients::llm::ModelTier::Grading, &result)
+        .unwrap();
+    assert_eq!(completion.text, "{}");
+    assert_eq!(completion.usage.input_tokens, Some(1020));
+    assert!(matches!(
+        llm.poll_batch(&id, "other").await.unwrap(),
+        ab_clients::llm::BatchPoll::Failed(reason) if reason.starts_with("errored")
+    ));
+    // Batches are an Anthropic feature.
+    let openai = client(vec![provider(
+        "openai",
+        &server,
+        "gpt-6-luna",
+        Duration::from_secs(2),
+    )]);
+    assert!(!openai.supports_batches());
 }

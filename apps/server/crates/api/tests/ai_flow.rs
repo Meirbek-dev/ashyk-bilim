@@ -934,7 +934,7 @@ async fn course_qa_fits_a_large_course_into_the_request_cap(pool: PgPool) {
         .collect::<Vec<_>>()
         .join("\n");
     assert!(prompt.contains("Lesson 1"), "the leading sources are kept");
-    let tokens = ab_clients::llm::tokens::estimate(&prompt, MODEL);
+    let tokens = ab_clients::llm::tokens::estimate(&prompt);
     assert!(tokens <= CAP as usize, "{tokens} tokens sent");
     let kept: i64 = sqlx::query_scalar(
         "SELECT (metadata->>'context_source_count')::bigint FROM ai_runs ORDER BY created_at DESC LIMIT 1",
@@ -2608,15 +2608,24 @@ async fn monthly_budget_reserves_inflight_requests(pool: PgPool) {
         }),
         None,
     );
-    let first = budget.reserve(&app.pool, "Hello", None).await.unwrap();
-    let second = budget.reserve(&app.pool, "Hello", None).await.unwrap_err();
+    let first = budget
+        .reserve(&app.pool, "Hello", None, None)
+        .await
+        .unwrap();
+    let second = budget
+        .reserve(&app.pool, "Hello", None, None)
+        .await
+        .unwrap_err();
     assert_eq!(second.code(), ab_core::ErrorCode::AiBudgetExhausted);
     sqlx::query("DELETE FROM ai_token_reservations WHERE id = $1")
         .bind(first.id)
         .execute(&app.pool)
         .await
         .unwrap();
-    let third = budget.reserve(&app.pool, "Hello", None).await.unwrap();
+    let third = budget
+        .reserve(&app.pool, "Hello", None, None)
+        .await
+        .unwrap();
     sqlx::query(
         "UPDATE ai_token_reservations SET expires_at = now() - interval '1 second' WHERE id = $1",
     )
@@ -2625,7 +2634,7 @@ async fn monthly_budget_reserves_inflight_requests(pool: PgPool) {
     .await
     .unwrap();
     budget
-        .reserve(&app.pool, "Hello", None)
+        .reserve(&app.pool, "Hello", None, None)
         .await
         .expect("an expired lease frees its room");
 }
@@ -2653,7 +2662,7 @@ async fn study_request_cap_covers_the_system_prompt(pool: PgPool) {
             .filter_map(|m| m["content"].as_str())
             .collect::<Vec<_>>()
             .join("\n");
-        let tokens = ab_clients::llm::tokens::estimate(&prompt, ab_testkit::llm::TEST_MODEL);
+        let tokens = ab_clients::llm::tokens::estimate(&prompt);
         assert!(
             tokens <= CAP as usize,
             "{tokens} tokens sent past a cap of {CAP}"
@@ -2692,7 +2701,7 @@ fn sent_tokens(request: &wiremock::Request) -> usize {
         .filter_map(|m| m["content"].as_str())
         .collect::<Vec<_>>()
         .join("\n");
-    ab_clients::llm::tokens::estimate(&prompt, ab_testkit::llm::TEST_MODEL)
+    ab_clients::llm::tokens::estimate(&prompt)
 }
 
 /// BUG-349: a structured repair round is a second paid call — both calls'

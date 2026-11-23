@@ -34,7 +34,8 @@ fn is_docx(content_type: &str, name: &str) -> bool {
         || name.to_ascii_lowercase().ends_with(".docx")
 }
 
-fn is_pdf(content_type: &str, name: &str) -> bool {
+#[must_use]
+pub fn is_pdf(content_type: &str, name: &str) -> bool {
     media(content_type) == "application/pdf" || name.to_ascii_lowercase().ends_with(".pdf")
 }
 

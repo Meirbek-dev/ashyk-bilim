@@ -10,7 +10,8 @@
 //! - pre-grading: a pending essay is queued, the worker drafts it (quotes not in the answer are
 //!   dropped and flagged), the teacher approves it through the ordinary grade save, the draft closes
 //!   as `applied` with a calibration row, and the metrics count it; a learner can neither queue nor
-//!   approve.
+//!   approve; on Anthropic a queued draft goes through Message Batches (submit, poll, re-run on the result) on the
+//!   grading model with the rubric cached, and "check now" calls the model directly.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use ab_core::id::AiRunId;
@@ -656,4 +657,176 @@ async fn grade_drafts_are_verified_approved_and_calibrated(pool: PgPool) {
         )
         .await,
     );
+}
+
+/// The Anthropic provider on the fake: Haiku for most agents, Sonnet for grading.
+fn on_anthropic(config: &mut ab_core::config::Config) {
+    config.ai.claude_api_key = Some(secrecy::SecretString::from("claude-test-key"));
+    config.ai.claude_base_url = config.ai.openai_base_url.clone();
+    config.ai.openai_api_key = None;
+}
+
+fn draft_reply(item_id: &str) -> Value {
+    json!({
+        "parts": [{
+            "part_id": item_id,
+            "criteria": [{
+                "criterion_id": "overall", "score": 6,
+                "evidence": ["вызов функцией самой себя"], "rationale": "Correct."
+            }],
+            "feedback": "Хорошо."
+        }],
+        "overall_feedback": "Хорошая работа.", "confidence": 0.8, "flags": []
+    })
+}
+
+fn claude_message(text: &str) -> Value {
+    json!({
+        "id": "msg_1", "type": "message", "role": "assistant", "model": "claude-sonnet-5-5",
+        "content": [{ "type": "text", "text": text }], "stop_reason": "end_turn",
+        "usage": { "input_tokens": 40, "output_tokens": 12,
+                   "cache_read_input_tokens": 0, "cache_creation_input_tokens": 300 }
+    })
+}
+
+/// docs/AI-FIRST.md: on Anthropic a queued grade draft goes through Message Batches - the worker submits it (the
+/// run stays running, the draft queued), the poll job waits for the batch to end, stores the result and runs the
+/// draft again, which reads it instead of calling the model; the rubric prefix is marked for caching and the call
+/// runs on the grading model. "Check now" calls the model directly.
+#[ab_testdb::test]
+async fn grade_drafts_go_through_batches_unless_checked_now(pool: PgPool) {
+    use wiremock::matchers::{body_partial_json, method, path};
+    use wiremock::{Mock, ResponseTemplate};
+    let app = TestApp::spawn_with(pool, on_anthropic).await;
+    let llm = &app.llm;
+    let teacher = instructor(&app, "teacher").await;
+    let alice = learner(&app, "alice").await;
+    let (_, chapter_id, _) = course(&app, &teacher, "Batches").await;
+    let (activity_id, item_id, sub_id) = pending_essay(&app, &teacher, &alice, &chapter_id).await;
+    let reply = draft_reply(&item_id).to_string();
+
+    Mock::given(method("POST"))
+        .and(path("/v1/messages/count_tokens"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "input_tokens": 500 })))
+        .mount(llm)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/v1/messages/batches"))
+        .and(body_partial_json(json!({ "requests": [{ "params": {
+            "model": "claude-sonnet-5-5",
+            "system": [{ "type": "text" }, { "type": "text", "cache_control": { "type": "ephemeral" } }]
+        } }] })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(
+            json!({ "id": "msgbatch_1", "processing_status": "in_progress" }),
+        ))
+        .expect(1)
+        .mount(llm)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/v1/messages/batches/msgbatch_1"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({ "id": "msgbatch_1", "processing_status": "in_progress" })),
+        )
+        .up_to_n_times(1)
+        .mount(llm)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/v1/messages/batches/msgbatch_1"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({ "id": "msgbatch_1", "processing_status": "ended" })),
+        )
+        .mount(llm)
+        .await;
+
+    let queued = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/ai/grading/activities/{activity_id}/drafts/queue"),
+            &json!({}),
+        )
+        .await;
+    assert_eq!(queued.status, StatusCode::ACCEPTED, "{}", queued.text());
+    let draft_url = format!("/api/v2/ai/grading/drafts/subject/{sub_id}");
+    let draft = created(&app.get_as(&teacher, &draft_url).await);
+    let run_id = AiRunId(uuid::Uuid::parse_str(draft["run_id"].as_str().unwrap()).unwrap());
+    Mock::given(method("GET"))
+        .and(path("/v1/messages/batches/msgbatch_1/results"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(format!(
+            "{}\n",
+            json!({ "custom_id": run_id.to_string(),
+                    "result": { "type": "succeeded", "message": claude_message(&reply) } })
+        )))
+        .mount(llm)
+        .await;
+
+    // Submitted, not answered: the run waits, the draft is still being made.
+    app.ai_service().execute_queued(run_id).await.unwrap();
+    let draft = created(&app.get_as(&teacher, &draft_url).await);
+    assert_eq!(draft["status"], "queued", "{draft}");
+    let (status, metadata): (String, Value) =
+        sqlx::query_as("SELECT status, metadata FROM ai_runs WHERE id = $1")
+            .bind(run_id.0)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(status, "running");
+    assert_eq!(metadata["delivery"], "batch");
+    assert_eq!(metadata["batch"]["id"], "msgbatch_1");
+    // Submitting again (a retried job) finds the batch: still one submission.
+    app.ai_service().execute_queued(run_id).await.unwrap();
+
+    // Pending, then ended: the result is stored and the run queued again.
+    app.ai_service().poll_batch(run_id, 0).await.unwrap();
+    app.ai_service().poll_batch(run_id, 1).await.unwrap();
+    let requeued: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM jobs WHERE kind = 'ai:execute_run' AND payload->>'run_id' = $1 AND status = 'queued'",
+    )
+    .bind(run_id.to_string())
+    .fetch_one(&app.pool)
+    .await
+    .unwrap();
+    assert!(requeued >= 1, "the ended batch re-runs the draft");
+    app.ai_service().execute_queued(run_id).await.unwrap();
+    let draft = created(&app.get_as(&teacher, &draft_url).await);
+    assert_eq!(draft["status"], "ready", "{draft}");
+    assert_eq!(draft["ai_score"], 6.0);
+    let (model, cache): (Option<String>, Value) =
+        sqlx::query_as("SELECT model_name, metadata->'prompt_cache' FROM ai_runs WHERE id = $1")
+            .bind(run_id.0)
+            .fetch_one(&app.pool)
+            .await
+            .unwrap();
+    assert_eq!(model.as_deref(), Some("anthropic:claude-sonnet-5-5"));
+    assert_eq!(cache["write_tokens"], 300);
+
+    // "Check now": a plain Messages call, no batch.
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .and(body_partial_json(
+            json!({ "model": "claude-sonnet-5-5", "stream": false }),
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(claude_message(&reply)))
+        .expect(1)
+        .mount(llm)
+        .await;
+    sqlx::query("DELETE FROM ai_grade_drafts WHERE activity_id = $1")
+        .bind(uuid::Uuid::parse_str(&activity_id).unwrap())
+        .execute(&app.pool)
+        .await
+        .unwrap();
+    let now = app
+        .post_as(
+            &teacher,
+            &format!("/api/v2/ai/grading/activities/{activity_id}/drafts/queue"),
+            &json!({ "now": true }),
+        )
+        .await;
+    assert_eq!(now.status, StatusCode::ACCEPTED, "{}", now.text());
+    let draft = created(&app.get_as(&teacher, &draft_url).await);
+    let run_id = AiRunId(uuid::Uuid::parse_str(draft["run_id"].as_str().unwrap()).unwrap());
+    app.ai_service().execute_queued(run_id).await.unwrap();
+    let draft = created(&app.get_as(&teacher, &draft_url).await);
+    assert_eq!(draft["status"], "ready", "{draft}");
 }

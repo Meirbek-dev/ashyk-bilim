@@ -20,8 +20,10 @@ pub mod study_companion;
 pub mod submission_analyst;
 
 use ab_clients::llm::{
-    ChatMessage, CompletionRequest, LlmError, OutputSchema, Usage, parse_structured, repair_request,
+    Attachment, ChatMessage, CompletionRequest, Document, LlmClient, LlmError, ModelTier,
+    OutputSchema, Usage, parse_structured, repair_request,
 };
+use ab_core::ai::AiRunKind;
 use ab_core::id::{AiRunId, UserId};
 use ab_core::{Error, ErrorCode, Result};
 use ab_db::ai::RunRow;
@@ -33,7 +35,7 @@ use tokio_util::sync::CancellationToken;
 use super::AiService;
 use super::budget::Reservation;
 use super::context::{ContextBundle, ContextSource};
-use super::runs::{Completion, FinishSpec, with_cancel};
+use super::runs::{Completion, FinishSpec, deferred, with_cancel};
 use super::schemas::Citation;
 
 /// Legacy `model_name` for the deterministic fallbacks.
@@ -44,14 +46,35 @@ pub const DRAFT_MODEL: &str = "draft-mode";
 /// that estimate plus the output bound reserved against the month.
 pub(crate) struct Admitted {
     pub instructions: &'static str,
-    /// The fitted context rendering.
-    pub context: String,
-    /// The user turn, built around `context`.
+    /// The user turn: built around `context`, or (split layout) the question alone.
     pub prompt: String,
     /// The sources `context` lists - the only citable ones.
     pub sources: Vec<ContextSource>,
+    /// Split layout ([`AiService::admit_split`]): the stable context sent after the system prompt (cached on
+    /// Anthropic) and the sources as documents after the user turn.
+    pub request_context: Option<String>,
+    pub documents: Vec<Document>,
+    /// Submitted files the prompt refers to by placeholder.
+    pub attachments: Vec<Attachment>,
     pub reservation: Reservation,
     _lease: ReservationLease,
+}
+
+/// The model a run kind answers on (docs/AI-FIRST.md: grading on the grading model).
+pub(crate) const fn tier_for(kind: AiRunKind) -> ModelTier {
+    match kind {
+        AiRunKind::GradeDraft => ModelTier::Grading,
+        _ => ModelTier::Standard,
+    }
+}
+
+/// Run metadata `delivery`: `batch` sends the call through the provider's Message Batches
+/// (`grade_draft`, `concept_mapping`, queued course analysis); `now` is the teacher's explicit "check now".
+pub(crate) const DELIVERY_BATCH: &str = "batch";
+pub(crate) const DELIVERY_NOW: &str = "now";
+
+pub(crate) const fn delivery(now: bool) -> &'static str {
+    if now { DELIVERY_NOW } else { DELIVERY_BATCH }
 }
 
 /// Releases the reservation if it never got a run (BUG-356): the run's
@@ -152,21 +175,107 @@ impl AiService {
         let (context, sources) =
             bundle.fitted(|context| self.budget.fits(&format!("{head}\n{}", prompt(context))));
         let prompt = prompt(&context);
+        let mut messages = vec![ChatMessage::system(instructions)];
+        messages.extend(history.iter().cloned());
+        messages.push(ChatMessage::user(prompt.clone()));
+        let counted = self
+            .count_tokens(&CompletionRequest {
+                messages,
+                ..CompletionRequest::default()
+            })
+            .await;
         let reservation = self
             .budget
-            .reserve(&self.pool, &format!("{head}\n{prompt}"), run)
+            .reserve(&self.pool, &format!("{head}\n{prompt}"), counted, run)
             .await?;
-        Ok(Admitted {
+        Ok(self.admitted(instructions, prompt, sources, reservation))
+    }
+
+    /// [`Self::admit`] in the split layout prompt caching needs: `context_label` + the fitted context text go after
+    /// the system prompt (the stable prefix), the user turn is `question` alone and the sources follow it as
+    /// documents. Fitted and reserved on everything that is sent, like [`Self::admit`].
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the admit inputs plus the split layout's label and attachments"
+    )]
+    pub(crate) async fn admit_split(
+        &self,
+        bundle: ContextBundle,
+        instructions: &'static str,
+        history: &[ChatMessage],
+        run: Option<AiRunId>,
+        context_label: &str,
+        question: String,
+        attachments: Vec<Attachment>,
+    ) -> Result<Admitted> {
+        let head = std::iter::once(instructions)
+            .chain(history.iter().map(|m| m.content.as_str()))
+            .chain(std::iter::once(context_label))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let attached: String = attachments.iter().map(|a| a.text.as_str()).collect();
+        let (text, sources) = bundle.fitted_split(|rendered| {
+            self.budget
+                .fits(&format!("{head}\n{rendered}\n{question}\n{attached}"))
+        });
+        let request_context = format!("{context_label}{text}");
+        let documents: Vec<Document> = sources.iter().map(super::context::document).collect();
+        let mut messages = vec![ChatMessage::system(instructions)];
+        messages.extend(history.iter().cloned());
+        messages.push(ChatMessage::user(question.clone()));
+        let request = CompletionRequest {
+            messages,
+            context: Some(request_context.clone()),
+            documents: documents.clone(),
+            attachments: attachments.clone(),
+            ..CompletionRequest::default()
+        };
+        let counted = self.count_tokens(&request).await;
+        let sent = request
+            .messages
+            .iter()
+            .map(|m| m.content.as_str())
+            .chain(std::iter::once(request_context.as_str()))
+            .chain(documents.iter().map(|d| d.text.as_str()))
+            .chain(attachments.iter().map(|a| a.text.as_str()))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let reservation = self.budget.reserve(&self.pool, &sent, counted, run).await?;
+        let mut admitted = self.admitted(instructions, question, sources, reservation);
+        admitted.request_context = Some(request_context);
+        admitted.documents = documents;
+        admitted.attachments = attachments;
+        Ok(admitted)
+    }
+
+    fn admitted(
+        &self,
+        instructions: &'static str,
+        prompt: String,
+        sources: Vec<ContextSource>,
+        reservation: Reservation,
+    ) -> Admitted {
+        Admitted {
             instructions,
-            context,
             prompt,
             sources,
+            request_context: None,
+            documents: Vec::new(),
+            attachments: Vec::new(),
             reservation,
             _lease: ReservationLease {
                 pool: self.pool.clone(),
                 id: reservation.id,
             },
-        })
+        }
+    }
+
+    /// The provider's count of a prompt (Anthropic `count_tokens`), `None` without one.
+    pub(crate) async fn count_tokens(&self, request: &CompletionRequest) -> Option<u32> {
+        match self.provider() {
+            Some(llm) => llm.count_tokens(request).await,
+            None => None,
+        }
     }
 
     /// One structured completion, or the deterministic draft when no
@@ -202,27 +311,35 @@ impl AiService {
                 "AI provider is not configured and draft mode is off",
             ));
         };
+        let admitted = exec.admitted;
         let request = CompletionRequest {
             messages: vec![
-                ChatMessage::system(exec.admitted.instructions),
-                ChatMessage::user(exec.admitted.prompt.clone()),
+                ChatMessage::system(admitted.instructions),
+                ChatMessage::user(admitted.prompt.clone()),
             ],
+            context: admitted.request_context.clone(),
+            documents: admitted.documents.clone(),
+            cite_documents: false,
+            attachments: admitted.attachments.clone(),
             output_schema: Some(schema),
             max_output_tokens: Some(self.config.max_output_tokens),
             temperature: None,
+            tier: tier_for(exec.run.kind),
         };
         let complete = |request: CompletionRequest| {
             with_cancel(exec.token, async move {
                 llm.complete(&request).await.map_err(Error::from)
             })
         };
-        let first = complete(request.clone()).await?;
+        let first = match self.batched_call(exec, llm, &request).await? {
+            Some(first) => first,
+            None => complete(request.clone()).await?,
+        };
         self.record_call(
             exec.run.id,
             first.usage,
             exec.admitted.reservation.input_tokens,
             &first.text,
-            &first.model_name,
         )
         .await?;
         let parse_err = match parse_structured::<T>(&first.text) {
@@ -242,11 +359,14 @@ impl AiService {
             .messages
             .iter()
             .map(|m| m.content.as_str())
+            .chain(repair.context.as_deref())
+            .chain(repair.documents.iter().map(|d| d.text.as_str()))
             .collect::<Vec<_>>()
             .join("\n");
+        let counted = llm.count_tokens(&repair).await;
         let reservation = self
             .budget
-            .reserve(&self.pool, &sent, Some(exec.run.id))
+            .reserve(&self.pool, &sent, counted, Some(exec.run.id))
             .await?;
         let second = complete(repair).await?;
         self.record_call(
@@ -254,7 +374,6 @@ impl AiService {
             second.usage,
             reservation.input_tokens,
             &second.text,
-            &second.model_name,
         )
         .await?;
         let (value, _) = parse_structured::<T>(&second.text)
@@ -265,6 +384,57 @@ impl AiService {
             usage: first.usage.plus(second.usage),
             repair_input_tokens: reservation.input_tokens,
         })
+    }
+
+    /// The first call of a run whose `delivery` is `batch`, through the provider's Message Batches
+    /// (docs/AI-FIRST.md): the result the poll job stored, or - first time round - the batch is submitted, the
+    /// poll job queued and the run deferred ([`deferred`]: it stays `running`, the job succeeds). `None` = call
+    /// now: another delivery, a provider without batches, a refused submission or a failed batch.
+    async fn batched_call(
+        &self,
+        exec: &Execution<'_>,
+        llm: &LlmClient,
+        request: &CompletionRequest,
+    ) -> Result<Option<ab_clients::llm::Completion>> {
+        if metadata_str(exec.run, "delivery") != Some(DELIVERY_BATCH) || !llm.supports_batches() {
+            return Ok(None);
+        }
+        let run = self.reload_run(exec.run.id).await?;
+        let batch = run.metadata.get("batch").cloned().unwrap_or_default();
+        if let Some(message) = batch.get("result") {
+            return llm
+                .batch_completion(request.tier, message)
+                .map(Some)
+                .map_err(Error::from);
+        }
+        if batch.get("failed").is_some() {
+            return Ok(None);
+        }
+        if batch.get("id").is_none() {
+            let custom_id = run.id.to_string();
+            match llm.submit_batch(&custom_id, request).await {
+                Ok(id) => {
+                    ab_db::ai::merge_run_metadata(
+                        &self.pool,
+                        run.id,
+                        &serde_json::json!({ "batch": { "id": id, "custom_id": custom_id } }),
+                    )
+                    .await?;
+                    self.emit(
+                        run.id,
+                        "batch_submitted",
+                        serde_json::json!({ "state": "running" }),
+                    )
+                    .await?;
+                }
+                Err(err) => {
+                    tracing::warn!(run_id = %run.id, %err, "batch submission refused; calling now");
+                    return Ok(None);
+                }
+            }
+        }
+        self.enqueue_batch_poll(run.id, 0).await?;
+        Err(deferred())
     }
 
     /// The shared non-streaming pipeline around one structured completion.

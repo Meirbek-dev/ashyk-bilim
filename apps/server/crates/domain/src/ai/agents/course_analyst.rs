@@ -145,7 +145,12 @@ impl AiService {
                     queued: true,
                     course_id: Some(course_id),
                     activity_id: None,
-                    metadata: serde_json::json!({ "course_id": course_id, "language": language }),
+                    // The inline `analyze` is the "check now"; the queued one waits for a batch.
+                    metadata: serde_json::json!({
+                        "course_id": course_id,
+                        "language": language,
+                        "delivery": super::DELIVERY_BATCH,
+                    }),
                     thread: None,
                     title: None,
                 },

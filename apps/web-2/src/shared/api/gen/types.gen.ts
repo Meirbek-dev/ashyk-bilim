@@ -503,6 +503,7 @@ export type AiEffectiveConfig = {
      */
     claude_api_key: string | null;
     claude_base_url: string;
+    claude_grading_model: string;
     claude_model: string;
     claude_timeout_secs: number;
     concept_graph_enabled: boolean;
@@ -6085,6 +6086,11 @@ export type QuestionDifficultyRow = {
 
 export type QueueDraftsRequest = {
     /**
+     * "Check now": call the model right away instead of the provider's batch (cheaper, done within hours,
+     * usually minutes).
+     */
+    now?: boolean;
+    /**
      * Only these works (submission or file attempt ids); absent = every work waiting for a grade.
      */
     subject_ids?: Array<string>;
@@ -7375,6 +7381,10 @@ export type SuggestConceptsRequest = {
      * Map one chapter only.
      */
     chapter_id?: ChapterId;
+    /**
+     * Call the model right away instead of the provider's batch (cheaper, done within hours, usually minutes).
+     */
+    now?: boolean;
 };
 
 export type SupportAlertCode = 'grading_slo_breached' | 'grading_slo_warning' | 'suspicious_attempts' | 'missing_scores';

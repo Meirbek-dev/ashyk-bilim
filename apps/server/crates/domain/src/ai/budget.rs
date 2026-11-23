@@ -61,20 +61,10 @@ impl TokenBudget {
         Self { config, limiter }
     }
 
-    /// Token count of `text` for the configured primary model.
+    /// Token estimate of `text` (characters / 3.5): context fitting and the per-request cap.
     #[must_use]
     pub fn estimate(&self, text: &str) -> i32 {
-        i32::try_from(ab_clients::llm::tokens::estimate(
-            text,
-            &self.config.openai_model,
-        ))
-        .unwrap_or(i32::MAX)
-    }
-
-    /// Token count for the model that actually answered (output accounting).
-    #[must_use]
-    pub fn estimate_for(&self, text: &str, model_name: &str) -> i32 {
-        i32::try_from(ab_clients::llm::tokens::estimate(text, model_name)).unwrap_or(i32::MAX)
+        i32::try_from(ab_clients::llm::tokens::estimate(text)).unwrap_or(i32::MAX)
     }
 
     /// Whether `text` fits the per-request cap (context fitting, BUG-325).
@@ -96,10 +86,15 @@ impl TokenBudget {
     /// `max_output_tokens` after the ledger and every in-flight reservation.
     /// The room is reserved atomically (BUG-349); `run` ties it to a run
     /// that already exists.
+    ///
+    /// `counted` is the provider's own count of the prompt (Anthropic
+    /// `count_tokens`): it is what the month reserves when present; the cap
+    /// checks the character estimate the context was fitted with.
     pub async fn reserve(
         &self,
         pool: &PgPool,
         prompt: &str,
+        counted: Option<u32>,
         run: Option<AiRunId>,
     ) -> Result<Reservation> {
         let estimated = self.estimate(prompt);
@@ -113,6 +108,7 @@ impl TokenBudget {
                 }),
             ));
         }
+        let estimated = counted.map_or(estimated, |n| i32::try_from(n).unwrap_or(i32::MAX));
         let tokens = i64::from(estimated) + i64::from(self.config.max_output_tokens);
         let (id, used) = ab_db::ai::reserve_tokens(
             pool,

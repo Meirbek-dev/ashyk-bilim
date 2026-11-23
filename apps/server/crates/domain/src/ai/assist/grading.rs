@@ -468,12 +468,14 @@ impl AiService {
             .ensure_not_archived()
     }
 
-    /// Queue drafts for the activity's works waiting for a grade (or the listed ones).
+    /// Queue drafts for the activity's works waiting for a grade (or the listed ones). They go through the
+    /// provider's Message Batches unless the teacher asked to check `now` (docs/AI-FIRST.md).
     pub async fn queue_grade_drafts(
         &self,
         actor: &Actor,
         activity_id: ActivityId,
         subject_ids: Option<&[uuid::Uuid]>,
+        now: bool,
     ) -> Result<QueueReport> {
         self.require_feature(AiFeature::GradingAssistant).await?;
         let course = self.grading_course(actor, activity_id).await?;
@@ -502,7 +504,7 @@ impl AiService {
                 continue;
             }
             if let Some(id) = self
-                .queue_one(actor.user_id, course.id, activity_id, work)
+                .queue_one(actor.user_id, course.id, activity_id, work, now)
                 .await?
             {
                 queued.push(id);
@@ -520,6 +522,7 @@ impl AiService {
         course_id: CourseId,
         activity_id: ActivityId,
         work: &PendingWork,
+        now: bool,
     ) -> Result<Option<GradeDraftId>> {
         let mut tx = self.pool.begin().await?;
         let Some(draft_id) = ab_db::grade_drafts::insert_queued(
@@ -548,6 +551,7 @@ impl AiService {
             "grade_draft_id": draft_id,
             "course_id": course_id,
             "activity_id": activity_id,
+            "delivery": crate::ai::agents::delivery(now),
         });
         metadata[subject_key] = json!(work.subject_id);
         let run = match self
@@ -616,7 +620,7 @@ impl AiService {
         if work.work.learner_id == teacher {
             return Ok(());
         }
-        self.queue_one(teacher, work.course_id, work.activity_id, &work.work)
+        self.queue_one(teacher, work.course_id, work.activity_id, &work.work, false)
             .await
             .map(drop)
     }

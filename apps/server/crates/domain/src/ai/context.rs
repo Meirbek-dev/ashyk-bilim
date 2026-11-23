@@ -75,20 +75,48 @@ impl ContextBundle {
             limit = limit * 3 / 4;
         }
     }
+
+    /// [`Self::fitted`] split for prompt caching: the context text (the stable prefix) and the sources listed
+    /// after it, fitted together exactly like the rendering.
+    #[must_use]
+    pub fn fitted_split(self, fits: impl Fn(&str) -> bool) -> (String, Vec<ContextSource>) {
+        let text = self.text.clone();
+        let (rendered, sources) = self.fitted(fits);
+        // With a source kept the text is whole; without one the rendering is the (clipped) text alone.
+        if sources.is_empty() {
+            (rendered, sources)
+        } else {
+            (text, sources)
+        }
+    }
 }
 
 const CITATION_HEADER: &str =
     "\n\nCitation sources:\nUse only these authoritative sources for the selected scope.";
 
-fn source_entry(source: &ContextSource) -> String {
+fn source_title(source: &ContextSource) -> String {
     format!(
-        "[{}] {} | {} | {}\nExcerpt: {}",
+        "[{}] {} | {} | {}",
         source.citation_id,
         source.source_type,
         source.source_ref.as_deref().unwrap_or("untracked"),
         source.label,
-        source.excerpt
     )
+}
+
+fn source_entry(source: &ContextSource) -> String {
+    format!("{}\nExcerpt: {}", source_title(source), source.excerpt)
+}
+
+/// A source as the LLM client's document: listed like `source_entry` by text providers, a Citations API document
+/// on Anthropic.
+#[must_use]
+pub fn document(source: &ContextSource) -> ab_clients::llm::Document {
+    ab_clients::llm::Document {
+        id: source.citation_id.clone(),
+        title: source_title(source),
+        text: source.excerpt.clone(),
+    }
 }
 
 fn render_parts(text: &str, sources: &[ContextSource]) -> String {
