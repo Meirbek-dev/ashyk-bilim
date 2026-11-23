@@ -96,14 +96,13 @@ behind it; it never colors a title, a row or a card background.
 ## 4. Typography
 
 - Default set `inter`: Geologica (`font-heading`: every `h1`-`h3`, big numbers, at 600) and Inter (UI and
-  `font-reading`: lesson text); Geist Mono for code in every set. Others: `press` (Geologica at 500 + Commissioner, the
-  house set until 2026-11-08; the name is a stored cookie value), and one family each: `geist`, `google`, `plex`,
-  `inter-tight`, `sn-pro`, `rubik`, `ubuntu`, `onest` (no italic), `noto`,
-  `literata` (serif), `system`. Picked in /settings/appearance: cookie `ab_font`
-  (this browser), SSR `html[data-font]`, tokens.css maps it to `--typeface-*`. Each face: 18/18 Kazakh letters and
-  tabular digits checked in the shipped woff2 (fail: Manrope, Unbounded, Wix Madefor, Sofia Sans, JetBrains Mono).
+  `font-reading`: lesson text); Geist Mono for code in every set. Others, one family each: `onest` (no italic),
+  `literata` (serif), `system`; the owner review of 2026-11-23 cut the rest (an old cookie value reads as `inter`).
+  Picked in /settings/appearance: cookie `ab_font` (this browser), SSR `html[data-font]`, tokens.css maps it to
+  `--typeface-*`. Each face: 18/18 Kazakh letters and tabular digits checked in the shipped woff2 (fail: Manrope,
+  Unbounded, Wix Madefor, Sofia Sans, JetBrains Mono).
 - Weights: `font-normal` (body), `font-medium` (labels, buttons), `font-semibold` (headings, drawn at
-  `--heading-weight`: 600 by default, 500 in `press`). Bold never.
+  `--heading-weight`: 600). Bold never.
 - Numbers that line up (tables, scores, timers, counters) use `tabular-nums`.
 - Never all-caps or letter-spaced text. Width at most `max-w-prose` for reading and 80ch for forms.
 - The scale is a step larger than a typical web app's: many teachers are older and read at arm's length. Text size

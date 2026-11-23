@@ -274,7 +274,7 @@
 
 /* Typeface sets (DESIGN 4): html[data-font] from the user's choice, or a preview card in settings. No attribute =
    the house set: Inter for UI and lesson text, Geologica for headings and big numbers. Every face has all 18
-   Kazakh letters; all are OFL-1.1 except Ubuntu Sans (Ubuntu Font Licence 1.0, web embedding allowed). */
+   Kazakh letters (checked in the shipped woff2 2026-11-24); all are OFL-1.1. */
 :root,
 [data-font='inter'] {
   --typeface-sans: 'Inter Variable', system-ui, sans-serif;
@@ -289,58 +289,9 @@
   --heading-weight: 600;
 }
 
-/* The earlier house set: Geologica headings at 500 over Commissioner. */
-[data-font='press'] {
-  --typeface-sans: 'Commissioner Variable', system-ui, sans-serif;
-  --typeface-heading: 'Geologica Variable', system-ui, sans-serif;
-  --heading-weight: 500;
-}
-
-[data-font='geist'] {
-  --typeface-sans: 'Geist Variable', system-ui, sans-serif;
-  --typeface-heading: var(--typeface-sans);
-}
-
-/* Optical sizes: small UI text opens up, big headings tighten. */
-[data-font='google'] {
-  --typeface-sans: 'Google Sans Variable', system-ui, sans-serif;
-  --typeface-heading: var(--typeface-sans);
-}
-
-[data-font='plex'] {
-  --typeface-sans: 'IBM Plex Sans Variable', system-ui, sans-serif;
-  --typeface-heading: var(--typeface-sans);
-}
-
-/* Inter with tighter spacing: more fits in tables and long Kazakh words. */
-[data-font='inter-tight'] {
-  --typeface-sans: 'Inter Tight Variable', system-ui, sans-serif;
-  --typeface-heading: var(--typeface-sans);
-}
-
-[data-font='sn-pro'] {
-  --typeface-sans: 'SN Pro Variable', system-ui, sans-serif;
-  --typeface-heading: var(--typeface-sans);
-}
-
-[data-font='rubik'] {
-  --typeface-sans: 'Rubik Variable', system-ui, sans-serif;
-  --typeface-heading: var(--typeface-sans);
-}
-
-[data-font='ubuntu'] {
-  --typeface-sans: 'Ubuntu Sans Variable', system-ui, sans-serif;
-  --typeface-heading: var(--typeface-sans);
-}
-
 /* No italic face: the browser slants the roman for emphasis. */
 [data-font='onest'] {
   --typeface-sans: 'Onest Variable', system-ui, sans-serif;
-  --typeface-heading: var(--typeface-sans);
-}
-
-[data-font='noto'] {
-  --typeface-sans: 'Noto Sans Variable', system-ui, sans-serif;
   --typeface-heading: var(--typeface-sans);
 }
 

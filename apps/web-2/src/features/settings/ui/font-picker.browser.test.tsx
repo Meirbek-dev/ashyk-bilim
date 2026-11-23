@@ -16,9 +16,9 @@ describe('FontPicker', () => {
     const card = serif.element().closest('label')
     expect(card && getComputedStyle(card).fontFamily).toContain('Literata Variable')
     // The page's own set (html[data-font]) does not leak into the cards.
-    document.documentElement.dataset['font'] = 'geist'
+    document.documentElement.dataset['font'] = 'onest'
     try {
-      expect(getComputedStyle(document.body).fontFamily).toContain('Geist Variable')
+      expect(getComputedStyle(document.body).fontFamily).toContain('Onest Variable')
       expect(card && getComputedStyle(card).fontFamily).toContain('Literata Variable')
     } finally {
       delete document.documentElement.dataset['font']

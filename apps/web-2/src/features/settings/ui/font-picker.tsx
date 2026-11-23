@@ -8,32 +8,14 @@ import { RadioGroup, RadioGroupItem } from '#/shared/ui/radio-group'
 // Typeface names are brands and read the same in every language; the system face is described, not named.
 const names: Record<Font, () => string> = {
   inter: () => 'Inter + Geologica',
-  press: () => 'Geologica + Commissioner',
-  geist: () => 'Geist',
-  google: () => 'Google Sans',
-  plex: () => 'IBM Plex Sans',
-  'inter-tight': () => 'Inter Tight',
-  'sn-pro': () => 'SN Pro',
-  rubik: () => 'Rubik',
-  ubuntu: () => 'Ubuntu Sans',
   onest: () => 'Onest',
-  noto: () => 'Noto Sans',
   literata: () => 'Literata',
   system: m.settings_font_system,
 }
 
 const hints: Record<Font, () => string> = {
   inter: m.settings_font_inter_hint,
-  press: m.settings_font_press_hint,
-  geist: m.settings_font_geist_hint,
-  google: m.settings_font_google_hint,
-  plex: m.settings_font_plex_hint,
-  'inter-tight': m.settings_font_inter_tight_hint,
-  'sn-pro': m.settings_font_sn_pro_hint,
-  rubik: m.settings_font_rubik_hint,
-  ubuntu: m.settings_font_ubuntu_hint,
   onest: m.settings_font_onest_hint,
-  noto: m.settings_font_noto_hint,
   literata: m.settings_font_literata_hint,
   system: m.settings_font_system_hint,
 }

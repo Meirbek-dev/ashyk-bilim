@@ -16,9 +16,13 @@ test('the font set is kept in this browser and shown on <html> at once; the defa
   saveFont('literata')
   expect(readAppearance().font).toBe('literata')
   expect(document.documentElement.dataset['font']).toBe('literata')
-  saveFont('press')
-  expect(readAppearance().font).toBe('press')
-  expect(document.documentElement.dataset['font']).toBe('press')
+  saveFont('onest')
+  expect(readAppearance().font).toBe('onest')
+  expect(document.documentElement.dataset['font']).toBe('onest')
+  // A set cut on 2026-11-23, still in an old cookie: the default.
+  // oxlint-disable-next-line no-restricted-properties -- an older build wrote it; cookieItem only writes valid sets
+  document.cookie = 'ab_font=press; path=/'
+  expect(readAppearance().font).toBe('inter')
   saveFont('inter')
   expect(readAppearance().font).toBe('inter')
   expect(document.documentElement.dataset['font']).toBeUndefined()

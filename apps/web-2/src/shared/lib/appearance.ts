@@ -7,22 +7,11 @@ import { cookieItem } from './storage'
 export const MODES = ['system', 'light', 'dark'] as const
 export type Mode = (typeof MODES)[number]
 
-/** Typeface sets of tokens.css `[data-font]` (DESIGN 4); `inter` is the default and needs no attribute. */
-export const FONTS = [
-  'inter',
-  'press',
-  'geist',
-  'google',
-  'plex',
-  'inter-tight',
-  'sn-pro',
-  'rubik',
-  'ubuntu',
-  'onest',
-  'noto',
-  'literata',
-  'system',
-] as const
+/**
+ * Typeface sets of tokens.css `[data-font]` (DESIGN 4); `inter` is the default and needs no attribute. A cookie
+ * naming a set cut on 2026-11-23 (`press`, `geist`, `google`, ...) fails the picklist and reads as the default.
+ */
+export const FONTS = ['inter', 'onest', 'literata', 'system'] as const
 export type Font = (typeof FONTS)[number]
 
 /** Text size: every token is in rem, so `<html data-size>` scales the whole interface; `normal` needs no attribute. */
