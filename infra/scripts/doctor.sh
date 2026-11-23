@@ -27,6 +27,12 @@ bun_version=$(node -p 'JSON.parse(require("node:fs").readFileSync("package.json"
 [[ $(bun --version) == "$bun_version" ]] || { echo "doctor: bun requires $bun_version" >&2; exit 1; }
 [[ $(git config --get core.hooksPath) == .vite-hooks ]] || { echo "doctor: run just setup to enable the commit gate" >&2; exit 1; }
 [[ -d node_modules && -d apps/web-2/node_modules && -d .claude/skills ]] || { echo "doctor: run just setup for dependencies and skill copies" >&2; exit 1; }
+# The Chromium build of apps/web-2's pinned playwright (vitest's browser projects): every install location exists.
+pw_dirs=$(cd apps/web-2 && node_modules/.bin/playwright install --dry-run chromium | sed -n 's/^ *Install location: *//p')
+[[ -n $pw_dirs ]] || { echo "doctor: playwright install --dry-run listed no Chromium" >&2; exit 1; }
+while IFS= read -r dir; do
+  [[ -d $dir ]] || { echo "doctor: Playwright Chromium missing ($dir); run just setup-web2" >&2; exit 1; }
+done <<<"$pw_dirs"
 echo "doctor: pinned tools, dependencies and commit hook available"
 echo "Rust build jobs: $("$just_bin" --justfile apps/server/justfile --evaluate CARGO_BUILD_JOBS)"
 echo "Rust cache: $("$just_bin" --justfile apps/server/justfile --evaluate CARGO_TARGET_DIR)"

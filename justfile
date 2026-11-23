@@ -31,9 +31,10 @@ setup: setup-server setup-web2
 setup-server: _setup-repo
     {{ just_bin }} server setup
 
-# Chromium: the vitest browser project in verify (Playwright e2e may need more browsers).
+# Chromium of the pinned playwright (apps/web-2/node_modules): vitest's browser projects in verify run locally
+# (Playwright e2e may need more browsers; Linux may also need `playwright install-deps chromium`).
 setup-web2: _setup-repo
-    cd apps/web-2 && bun install --frozen-lockfile && bun run codegen messages && bunx playwright install chromium
+    cd apps/web-2 && bun install --frozen-lockfile && bun run codegen messages && node_modules/.bin/playwright install chromium
 
 # The root workspace holds only the formatter (vite.config.ts) the hooks and `just fmt` run.
 _setup-repo: skills-sync
