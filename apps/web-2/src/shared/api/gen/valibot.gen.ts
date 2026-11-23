@@ -4,6 +4,14 @@ import * as v from 'valibot';
 
 export const vAccessMode = v.picklist(['all_course_learners', 'restricted']);
 
+export const vAccessTokenId = v.pipe(v.string(), v.uuid());
+
+/**
+ * What a token reaches: `read` the read tools; `draft` those plus the draft-only writes (content of
+ * unpublished activities, teacher-only grades). Neither publishes nor releases anything.
+ */
+export const vAccessTokenScope = v.picklist(['read', 'draft']);
+
 export const vActionId = v.picklist([
     'enroll',
     'start',
@@ -1115,6 +1123,12 @@ export const vCourseUpdateId = v.pipe(v.string(), v.uuid());
 export const vCoursesSection = v.strictObject({
     id: v.string(),
     title: v.string()
+});
+
+export const vCreateAccessTokenRequest = v.strictObject({
+    expires_in_days: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(365))),
+    name: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
+    scope: vAccessTokenScope
 });
 
 export const vCreateActivityRequest = v.strictObject({
@@ -4319,6 +4333,19 @@ export const vUiLanguage = v.picklist([
 export const vUnixTime = v.pipe(v.number(), v.integer());
 
 /**
+ * One of the caller's tokens (the secret is never listed).
+ */
+export const vAccessToken = v.object({
+    created_at_unix: vUnixTime,
+    expires_at_unix: v.nullable(vUnixTime),
+    id: vAccessTokenId,
+    last_used_at_unix: v.nullable(vUnixTime),
+    name: v.string(),
+    revoked_at_unix: v.nullable(vUnixTime),
+    scope: vAccessTokenScope
+});
+
+/**
  * One run in the operations view (legacy `AIOperationRunRead`).
  */
 export const vAdminRun = v.object({
@@ -4466,6 +4493,14 @@ export const vCodeRun = v.object({
 export const vCourseListProgress = v.object({
     completed_at_unix: v.nullable(vUnixTime),
     progress_pct: v.number()
+});
+
+/**
+ * A token just created: `token` is shown this once and cannot be read again.
+ */
+export const vCreatedAccessToken = v.object({
+    access_token: vAccessToken,
+    token: v.string()
 });
 
 /**
@@ -10360,6 +10395,27 @@ export const vLiveResponse = vHealth;
  * Ready to serve traffic
  */
 export const vReadyResponse = vHealth;
+
+/**
+ * The caller's tokens
+ */
+export const vListAccessTokensResponse = v.array(vAccessToken);
+
+export const vCreateAccessTokenBody = vCreateAccessTokenRequest;
+
+/**
+ * Created; `token` is shown this once
+ */
+export const vCreateAccessTokenResponse = vCreatedAccessToken;
+
+export const vRevokeAccessTokenPath = v.object({
+    token_id: vAccessTokenId
+});
+
+/**
+ * Revoked (again: still revoked)
+ */
+export const vRevokeAccessTokenResponse = v.void();
 
 export const vAgendaQuery = v.object({
     days: v.optional(v.pipe(v.number(), v.integer()))

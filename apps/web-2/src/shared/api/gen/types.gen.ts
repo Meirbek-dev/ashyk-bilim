@@ -12,6 +12,36 @@ export type AccessGroup = {
 
 export type AccessMode = 'all_course_learners' | 'restricted';
 
+/**
+ * One of the caller's tokens (the secret is never listed).
+ */
+export type AccessToken = {
+    created_at_unix: UnixTime;
+    /**
+     * Null: never expires.
+     */
+    expires_at_unix: UnixTime | null;
+    id: AccessTokenId;
+    /**
+     * The latest call with it (to the minute); null: never used.
+     */
+    last_used_at_unix: UnixTime | null;
+    name: string;
+    /**
+     * Null: not revoked.
+     */
+    revoked_at_unix: UnixTime | null;
+    scope: AccessTokenScope;
+};
+
+export type AccessTokenId = string;
+
+/**
+ * What a token reaches: `read` the read tools; `draft` those plus the draft-only writes (content of
+ * unpublished activities, teacher-only grades). Neither publishes nor releases anything.
+ */
+export type AccessTokenScope = 'read' | 'draft';
+
 export type AccessUser = {
     avatar_key: string | null;
     display_name: string;
@@ -2579,6 +2609,18 @@ export type CoursesSection = {
     title: string;
 };
 
+export type CreateAccessTokenRequest = {
+    /**
+     * Days until the token stops working, 1..=365; omitted or null: it never expires.
+     */
+    expires_in_days?: number;
+    /**
+     * What the token is for (the client's name), 1..=100 characters.
+     */
+    name: string;
+    scope: AccessTokenScope;
+};
+
 export type CreateActivityRequest = {
     /**
      * One of the closed activity-type set (e.g. `video`, `exam`).
@@ -2832,6 +2874,17 @@ export type CreateUsergroupRequest = {
      * Blank → 422 `required` (trimmed in the service).
      */
     name: string;
+};
+
+/**
+ * A token just created: `token` is shown this once and cannot be read again.
+ */
+export type CreatedAccessToken = {
+    access_token: AccessToken;
+    /**
+     * The secret: send it as `Authorization: Bearer <token>` to `/api/v2/mcp`.
+     */
+    token: string;
 };
 
 export type CreatedUpload = {
@@ -17515,6 +17568,98 @@ export type ReadyResponses = {
 };
 
 export type ReadyResponse = ReadyResponses[keyof ReadyResponses];
+
+export type ListAccessTokensData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v2/me/access-tokens';
+};
+
+export type ListAccessTokensErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+};
+
+export type ListAccessTokensError = ListAccessTokensErrors[keyof ListAccessTokensErrors];
+
+export type ListAccessTokensResponses = {
+    /**
+     * The caller's tokens
+     */
+    200: Array<AccessToken>;
+};
+
+export type ListAccessTokensResponse = ListAccessTokensResponses[keyof ListAccessTokensResponses];
+
+export type CreateAccessTokenData = {
+    body: CreateAccessTokenRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v2/me/access-tokens';
+};
+
+export type CreateAccessTokenErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Too many live tokens
+     */
+    409: Problem;
+    /**
+     * Bad name, scope or expiry
+     */
+    422: Problem;
+};
+
+export type CreateAccessTokenError = CreateAccessTokenErrors[keyof CreateAccessTokenErrors];
+
+export type CreateAccessTokenResponses = {
+    /**
+     * Created; `token` is shown this once
+     */
+    201: CreatedAccessToken;
+};
+
+export type CreateAccessTokenResponse = CreateAccessTokenResponses[keyof CreateAccessTokenResponses];
+
+export type RevokeAccessTokenData = {
+    body?: never;
+    path: {
+        /**
+         * Access token id
+         */
+        token_id: AccessTokenId;
+    };
+    query?: never;
+    url: '/api/v2/me/access-tokens/{token_id}';
+};
+
+export type RevokeAccessTokenErrors = {
+    /**
+     * No live session
+     */
+    401: Problem;
+    /**
+     * Unknown, or another user's
+     */
+    404: Problem;
+};
+
+export type RevokeAccessTokenError = RevokeAccessTokenErrors[keyof RevokeAccessTokenErrors];
+
+export type RevokeAccessTokenResponses = {
+    /**
+     * Revoked (again: still revoked)
+     */
+    204: void;
+};
+
+export type RevokeAccessTokenResponse = RevokeAccessTokenResponses[keyof RevokeAccessTokenResponses];
 
 export type AgendaData = {
     body?: never;
