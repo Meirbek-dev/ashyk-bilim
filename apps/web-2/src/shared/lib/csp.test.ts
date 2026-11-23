@@ -8,3 +8,9 @@ test('video metadata probes can load picked blobs and hosted media without allow
   expect(policy).toContain("default-src 'self'")
   expect(policy).toContain("script-src 'self' 'nonce-test-nonce' 'strict-dynamic'")
 })
+
+test('the service worker and the web app manifest load from our own origin', () => {
+  const policy = contentSecurityPolicy('test-nonce').split('; ')
+  expect(policy).toContain("worker-src 'self' blob:")
+  expect(policy).toContain("manifest-src 'self'")
+})

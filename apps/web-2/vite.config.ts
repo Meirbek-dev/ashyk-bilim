@@ -14,7 +14,7 @@ import { playwright } from 'vite-plus/test/browser-playwright'
 import { fmt } from './fmt.config.ts'
 import { forbiddenElements, forbiddenExceptA, LINK_COMPOSITES, rendererOverrides } from './gates/lint-elements.ts'
 import { paraglideOptions } from './gates/codegen.ts'
-import { CODE_SPLITTING, ROUTE_SPLIT, stripResponseValidators } from './gates/bundle.ts'
+import { buildPlugins, CODE_SPLITTING, ROUTE_SPLIT } from './gates/bundle.ts'
 
 const app = import.meta.dirname
 const fs = { allow: [searchForWorkspaceRoot(app), realpathSync(resolve(app, 'node_modules'))] }
@@ -43,7 +43,7 @@ const plugins = lazyPlugins(() => [
     presets: [reactCompilerPreset()],
     exclude: [/[/\\](node_modules|paraglide|gen)[/\\]|^\0rolldown\/runtime\.js$/],
   }),
-  stripResponseValidators,
+  ...buildPlugins,
 ])
 
 const unit = {

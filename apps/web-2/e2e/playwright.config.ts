@@ -29,6 +29,8 @@ export default defineConfig({
     // E2E_INSECURE=1: the stand's self-signed certificate (https, so the Secure session cookie works; spec 9).
     // The fixtures' Node fetch trusts it through NODE_EXTRA_CA_CERTS (`just web2-e2e`).
     ignoreHTTPSErrors: process.env['E2E_INSECURE'] === '1',
+    // `page.route` does not see what a service worker answers (/sw.js: assets, autosaves); pwa.spec.ts allows it.
+    serviceWorkers: 'block',
   },
   projects: [
     { name: 'chromium', use: devices['Desktop Chrome'] },

@@ -5,9 +5,11 @@ import { hydrateRoot } from 'react-dom/client'
 import { ApiError } from '#/shared/api/errors'
 import { definePrintedLocaleStrategy } from '#/shared/i18n/printed-locale'
 import { installClientErrorReporting, reportClientError } from '#/shared/lib/client-errors'
+import { registerServiceWorker } from '#/shared/pwa/register'
 
 definePrintedLocaleStrategy()
 installClientErrorReporting()
+registerServiceWorker()
 
 hydrateRoot(
   document,

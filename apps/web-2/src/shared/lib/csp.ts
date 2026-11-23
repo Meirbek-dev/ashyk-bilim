@@ -20,7 +20,9 @@ export function contentSecurityPolicy(nonce: string): string {
     "media-src 'self' blob:",
     // 'self': uploaded PDFs are framed from our own origin (http in dev); https: covers embed providers.
     "frame-src 'self' https:",
+    // 'self': /sw.js (shared/pwa/sw.ts) and /site.webmanifest.
     "worker-src 'self' blob:",
+    "manifest-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

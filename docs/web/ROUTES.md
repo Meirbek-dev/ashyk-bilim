@@ -23,6 +23,10 @@ Read before touching `src/routes/`, `shared/auth/`, the shell, live data or hydr
   `assessment-import`: a DOT .xlsx into a new test of `chapter`, or replaced/appended into the draft test of activity
   `test`; `import` is the previewed upload, kept 24 h). Its loader is the workspace guard (`ensureWorkspace`: authors
   only); entry points are the chapter's «Тест из Excel (DOT)» and the builder's «Excel» menu (also the export link).
+- Service worker `/sw.js` (`shared/pwa/sw.ts`, built by `gates/bundle.ts`, registered from `client.tsx` in
+  production builds; REWRITE 7.8): hashed `/assets/*` cache-first (the entry shell and all CSS precached), and a
+  queue of offline exam autosaves (`draft-queue.ts`). Pages (SSR, per-request nonce) and `/api` are never cached:
+  nothing is readable offline. Manifest: `public/site.webmanifest`. e2e blocks workers except `pwa.spec.ts`.
 - No stub routes (ast-grep rule `under-construction`). `bun gates/gates.ts api-coverage` reports API usage without
   blocking changes: operations may serve integrations or clients outside web-2.
 - Live data: `GET /me/events` (`shared/api/events.ts`) -> `shared/api/event-invalidations.ts` (event -> keys); the
