@@ -9,8 +9,7 @@ SET LOCAL lock_timeout = '5s';
 CREATE TABLE core.personal_access_tokens (
     id           uuid PRIMARY KEY DEFAULT uuidv7(),
     user_id      uuid NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    name         text NOT NULL CONSTRAINT personal_access_tokens_name_check
-                     CHECK (char_length(btrim(name)) BETWEEN 1 AND 100),
+    name         text NOT NULL,
     token_hash   bytea NOT NULL CONSTRAINT personal_access_tokens_token_hash_key UNIQUE
                      CONSTRAINT personal_access_tokens_token_hash_check CHECK (octet_length(token_hash) = 32),
     scope        text NOT NULL CONSTRAINT personal_access_tokens_scope_check CHECK (scope IN ('read', 'draft')),
@@ -18,6 +17,7 @@ CREATE TABLE core.personal_access_tokens (
     last_used_at timestamptz,
     expires_at   timestamptz,
     revoked_at   timestamptz,
+    CONSTRAINT personal_access_tokens_name_check CHECK (char_length(btrim(name)) BETWEEN 1 AND 100),
     CONSTRAINT personal_access_tokens_expiry_check CHECK (expires_at IS NULL OR expires_at > created_at)
 );
 CREATE INDEX personal_access_tokens_user_idx ON personal_access_tokens (user_id, created_at DESC);
