@@ -742,12 +742,12 @@ agent workflow: root `AGENTS.md`; server-only details: `apps/server/docs/DEVELOP
 
 ### 5.2 Worktrees
 
-`just wt new <name>` -> `../ashyq-wt/<name>` on `wt/<name>` from main with its own `bun install` (root,
-apps/web-2, from bun's cache), its own cargo target `<base>-<name>` (cargo names artifacts the same in every
-checkout, so a shared dir runs another tree's code; `just server`, `just check`, `just stack` and `.cargo/config.toml`
-apply it, plain `cargo` with `CARGO_TARGET_DIR` set does not), Paraglide generated. Commit there; `just wt
-land <name>` rebases onto main, runs `just check`, fast-forwards main in the main checkout and removes
-the worktree. `just wt ls` shows every worktree; `just wt rm <name> [--force]` drops one. Run the
+`just wt new <name>` -> `../ashyq-wt/<name>` on `wt/<name>` from main with its own `bun install` (the root
+bun workspace, apps/web-2 included; from bun's cache), its own cargo target `<base>-<name>` (cargo names
+artifacts the same in every checkout, so a shared dir runs another tree's code; `just server`, `just check`,
+`just stack` and `.cargo/config.toml` apply it, plain `cargo` with `CARGO_TARGET_DIR` set does not), Paraglide
+generated. Commit there; `just wt land <name>` rebases onto main, runs `just check`, fast-forwards main in the
+main checkout and removes the worktree. `just wt ls` shows every worktree; `just wt rm <name> [--force]` drops one. Run the
 worktree's apps in their own slot (`just stack up 1`).
 
 ### 5.3 Dev stack

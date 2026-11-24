@@ -370,10 +370,10 @@ line floor (`just cov`) nightly.
 
 | Job | When | What |
 | --- | --- | --- |
-| changes | always | path filters `server`, `web2` (`apps/web-2/**`, `openapi.v2.json`, `.node-version`, `compose.web2.yaml`, `justfile`, `ci.yaml`), `infra`; all true on `main` and `release/**`; `sha` = first 8 chars of the commit |
+| changes | always | path filters `server`, `web2` (`apps/web-2/**`, root `package.json` and `bun.lock`, `openapi.v2.json`, `.node-version`, `compose.web2.yaml`, `justfile`, `ci.yaml`), `infra`; all true on `main` and `release/**`; `sha` = first 8 chars of the commit |
 | server-lint | server or infra changed | `apps/server` recipes against the committed `.sqlx`: `fmt-check`, `clippy`, `deny`, `shear`, `openapi-check`; links with `wild` (clang `--ld-path`) |
 | server-test | server or infra changed | `wild` as in server-lint; `just dev-up` (Postgres with `DEV_PG_ARGS`: fsync off), then `migrate`, `sqlx-check`, `test --partition hash:N/2` in two jobs (`sqlx-check` in the first only); nextest profile `ci`, JUnit report uploaded on failure. The line floor (`just cov`) runs nightly in `coverage.yaml` |
-| web2-gates | web2 changed | in the Playwright image, `apps/web-2`: `bun install`, `codegen messages`, `verify` (check, tests, gates; its codegen gate diffs the committed SDK and route tree), `build`, `g15` (contrast of every theme and mode) |
+| web2-gates | web2 changed | in the Playwright image: `bun install` at the root (one bun workspace), then in `apps/web-2` `codegen messages`, `verify` (check, tests, gates; its codegen gate diffs the committed SDK and route tree), `build`, `g15` (contrast of every theme and mode) |
 | infra-gates | always | `just ci-infra` (compose config for dev/prod/smoke/web2/restore, `bash -n`, rollback rule, `nginx -t`, Redis persistence, Zitadel database move), `just test-dev`, shellcheck, actionlint, gitleaks |
 | images | push, in parallel with the gates | `ci-<sha>` of `ashyq-server` and `ashyq-runner` always, `ashyq-web-2` when `web2` changed (always on `main` and `release/**`); BuildKit registry cache `<image>:buildcache` in GHCR, written by `main` only |
 | stack-smoke | after images | `just stack-up` with `IMAGE_TAG=ci-<sha>`, `just smoke`, then web swapped for `infra/smoke/stub-web` (`WEB_IMAGE`) and `just smoke` again; without an `ashyq-web-2` build the stub web from the start |

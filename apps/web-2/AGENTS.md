@@ -1,7 +1,8 @@
 # apps/web-2
 
 The web frontend (the only one; image `ashyq-web-2`): React 19 + TanStack Start, Router, Query, Form + Paraglide,
-served by srvx on Node from `.node-version`. Standalone bun project (own `bun.lock`, not in the root workspace).
+served by srvx on Node from `.node-version`. A member of the root bun workspace: one `bun.lock` and `bun install`
+at the repo root, whose `package.json` holds the `catalog` (vite-plus, vite, vitest) and the `overrides`.
 What is left of the cutover: `docs/STAGE-2-CUTOVER.md`; open work: `BACKLOG.md`.
 
 ## Map
@@ -31,7 +32,7 @@ inside a feature use relative paths; across layers use `#/`. Lint enforces all o
 
 | Command                          | Does                                                                                                        |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `bun install && bun run codegen` | first run in a fresh tree or worktree (paraglide is gitignored)                                             |
+| `bun install && bun run codegen` | first run in a fresh tree or worktree (paraglide is gitignored); installs the whole workspace               |
 | `vp dev`                         | dev server on :3000; proxies `/api/v2` etc. to `API_PROXY_TARGET` (:8000)                                   |
 | `vp check`                       | format + lint + types (G-01); run once after an edit batch                                                  |
 | `vp test run`                    | vitest: `unit` (node) and `browser` (Chromium) projects                                                     |

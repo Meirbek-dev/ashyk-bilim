@@ -39,6 +39,8 @@ const isWeb2 = (f: string) => f.startsWith('apps/web-2/')
 const isInfra = (f: string) =>
   f.startsWith('infra/') || /^compose[^/]*\.yaml$/.test(f) || f === 'justfile' || f.startsWith('.github/')
 const isContract = (f: string) => f === 'apps/server/openapi.v2.json'
+// The one bun workspace: web-2's catalog, overrides and resolved versions live in the root manifest and lockfile.
+const isWorkspace = (f: string) => f === 'package.json' || f === 'bun.lock' || f === 'apps/web-2/package.json'
 const isTs = (f: string) => /\.(ts|tsx|mts|js|mjs|jsx)$/.test(f)
 // ast-grep (sgconfig.yml): the rules, their tests, the pinned CLI, and every file a rule can read.
 const isRules = (f: string) =>
@@ -102,11 +104,13 @@ export function plan(files: string[], all: boolean, fast = false): Record<string
 
   const contract = all || files.some(isContract)
   const web2Files = files.filter(isWeb2).map(f => f.slice('apps/web-2/'.length))
-  if (all || contract || web2Files.length > 0) {
+  // A dependency change can break any file or test: the whole app, as with `all`.
+  const whole = all || files.some(isWorkspace)
+  if (whole || contract || web2Files.length > 0) {
     const checkable = web2Files.filter(f => existsSync(resolve(web2, f)) && /\.(ts|tsx|js|mjs|json|css)$/.test(f))
     const tests = web2Files.filter(f => existsSync(resolve(web2, f)) && isTs(f) && !f.startsWith('e2e/'))
     areas.web2 = [
-      all || checkable.length === 0
+      whole || checkable.length === 0
         ? { name: 'web2:check', cwd: web2, cmd: ['bunx', 'vp', 'check'] }
         : // A JSON-only list leaves lint nothing to match, which vp treats as an error.
           {
@@ -114,7 +118,7 @@ export function plan(files: string[], all: boolean, fast = false): Record<string
             cwd: web2,
             cmd: ['bunx', 'vp', 'check', '--no-error-on-unmatched-pattern', ...checkable],
           },
-      ...(all
+      ...(whole
         ? [
             {
               name: 'web2:test',

@@ -7,7 +7,7 @@ Learning platform: Rust API and a TanStack Start web app.
 | Path | What |
 | --- | --- |
 | `apps/server/` | Rust API (axum + sqlx), `/api/v2`, plus the job worker |
-| `apps/web-2/` | TanStack Start frontend (standalone Bun project) |
+| `apps/web-2/` | TanStack Start frontend (member of the root Bun workspace, one `bun.lock`) |
 | `infra/` | nginx, Postgres init, code runner (go-judge), storage, env templates, ops scripts |
 | `compose*.yaml` | Stack definitions: shared, dev, prod, smoke, e2e stand |
 | `justfile` | Single entry point for every task |

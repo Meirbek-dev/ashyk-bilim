@@ -34,9 +34,9 @@ setup-server: _setup-repo
 # Chromium of the pinned playwright (apps/web-2/node_modules): vitest's browser projects in verify run locally
 # (Playwright e2e may need more browsers; Linux may also need `playwright install-deps chromium`).
 setup-web2: _setup-repo
-    cd apps/web-2 && bun install --frozen-lockfile && bun run codegen messages && node_modules/.bin/playwright install chromium
+    cd apps/web-2 && bun run codegen messages && node_modules/.bin/playwright install chromium
 
-# The root workspace holds only the formatter (vite.config.ts) the hooks and `just fmt` run.
+# One bun workspace (root + apps/web-2), one bun.lock: the install covers the repo tools (formatter, ast-grep) and web-2.
 _setup-repo: skills-sync
     git config --local core.hooksPath .vite-hooks
     bun install --frozen-lockfile
@@ -246,8 +246,9 @@ web2-e2e *args:
         pw=$(sed -n 's/.*"@playwright\/test": "\(.*\)".*/\1/p' apps/web-2/package.json)
         e2e_env+=(E2E_API_LOG=/stand/web2/server.log E2E_LEARNERS_DIR=/learners
             NODE_EXTRA_CA_CERTS=/stand/smoke/certs/cert.pem)
+        # The whole checkout: apps/web-2/node_modules links into the root node_modules (one bun workspace).
         "$CTR" run --rm --init --network "${COMPOSE_PROJECT_NAME}_edge-net" --ipc host \
-            -v "$root/apps/web-2:/app" -v "$root/tmp:/stand:ro" -v "$root/tmp/web2/learners:/learners" -w /app \
+            -v "$root:/repo" -v "$root/tmp:/stand:ro" -v "$root/tmp/web2/learners:/learners" -w /repo/apps/web-2 \
             $(printf -- '-e %s ' "${e2e_env[@]}") \
             -e CI -e PWTEST_SHARD_WEIGHTS -e PLAYWRIGHT_HTML_OPEN \
             "mcr.microsoft.com/playwright:v$pw-noble" \

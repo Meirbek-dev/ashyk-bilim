@@ -110,3 +110,12 @@ test('a failed native process start is logged and completes the gate', async () 
     rmSync(dir, { recursive: true, force: true })
   }
 })
+
+test('a dependency change (one bun workspace) checks and tests the whole web app', () => {
+  for (const file of ['bun.lock', 'package.json', 'apps/web-2/package.json']) {
+    const web2 = plan([file], false).web2
+    expect(web2.map(g => g.name)).toEqual(['web2:check', 'web2:test', 'web2:gates'])
+    expect(web2[0].cmd).toEqual(['bunx', 'vp', 'check'])
+    expect(web2[1].cmd).toContain('run')
+  }
+})

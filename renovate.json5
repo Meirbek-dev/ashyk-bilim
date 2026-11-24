@@ -52,7 +52,8 @@
       groupName: 'rust crates',
     },
     {
-      // The root package.json holds only the formatter (vite-plus), which moves with web-2's.
+      // One bun workspace and one bun.lock: the root package.json holds the catalog (vite-plus, vite, vitest), the
+      // overrides and the repo tools; apps/web-2/package.json the app. They update together.
       matchManagers: ['bun'],
       matchFileNames: ['package.json', 'apps/web-2/package.json'],
       matchUpdateTypes: ['minor', 'patch'],

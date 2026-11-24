@@ -1651,7 +1651,10 @@ and nothing else breaks.
 - Vendored third-party skills (`.agents/skills`, 95k lines, `skills-lock.json`,
   `skills-sync`) are deleted; project-written skills stay in `.agents/skills` (at most a
   few), third-party ones are installed per user.
-- One lockfile: web-2 joins the root workspace (or the root `package.json` goes).
+- One lockfile: web-2 joins the root workspace (or the root `package.json` goes). Done 2026-11-24: the root
+  `package.json` is the bun workspace (`apps/web-2`) with the catalog, overrides and `trustedDependencies`; one
+  `bun.lock` (the resolved versions of both old lockfiles, unchanged), isolated linker; the image installs
+  `--filter web-2`.
 - Owner review 2026-11-23:
   - ast-grep rules (YAML, Rust and TS) replace the structural checks in `apps/web-2/gates/*.ts`
     and the pattern checks of `infra/dev/agent-guard.ts`; agents add a rule instead of a script.

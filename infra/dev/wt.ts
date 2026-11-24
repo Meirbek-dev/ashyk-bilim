@@ -1,18 +1,10 @@
 // `just wt new|ls|land|rm <name>`: one git worktree per parallel task, next to the main checkout.
-//   new <name>   ../ashyq-wt/<name> on branch wt/<name> from main: its own `bun install` (root, apps/web-2; from bun's
-//                cache), its own cargo target dir, Paraglide output generated.
+//   new <name>   ../ashyq-wt/<name> on branch wt/<name> from main: its own `bun install` (the root bun workspace,
+//                apps/web-2 included; from bun's cache), its own cargo target dir, Paraglide output generated.
 //   ls           worktrees with their branch, commits ahead of main and uncommitted files
 //   land <name>  rebase onto main, `just check --fast`, fast-forward main (the main checkout), remove the worktree
 //   rm <name>    remove the worktree and branch (refuses unlanded or uncommitted work without --force)
-import {
-  appendFileSync,
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+import { appendFileSync, existsSync, lstatSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { cargoTargetDir } from './cargo-target.ts'
@@ -48,29 +40,15 @@ function target(name: string | undefined): { name: string; path: string; branch:
   return { name, path: join(root, name), branch: `wt/${name}` }
 }
 
-async function create(name?: string): Promise<void> {
+function create(name?: string): void {
   const wt = target(name)
   if (existsSync(wt.path)) fail(`${wt.path} exists`)
   mkdirSync(root, { recursive: true })
   const add = git('worktree', 'add', '-b', wt.branch, wt.path, 'main')
   if (add.code !== 0) fail(add.out)
-  const installs = await Promise.all(
-    ['.', 'apps/web-2'].map(async dir => {
-      const p = Bun.spawn(['bun', 'install', '--frozen-lockfile'], {
-        cwd: join(wt.path, dir),
-        stdout: 'pipe',
-        stderr: 'pipe',
-      })
-      const [out, err, code] = await Promise.all([
-        new Response(p.stdout).text(),
-        new Response(p.stderr).text(),
-        p.exited,
-      ])
-      return { dir, code, out: `${out}${err}` }
-    }),
-  )
-  for (const install of installs)
-    if (install.code !== 0) fail(`bun install in ${install.dir} failed:\n${install.out.slice(-1500)}`)
+  // One bun workspace (root + apps/web-2), one bun.lock: one install at the root.
+  const install = sh(['bun', 'install', '--frozen-lockfile'], wt.path)
+  if (install.code !== 0) fail(`bun install failed:\n${install.out.slice(-1500)}`)
   // Own cargo target (shared dirs run each other's code): the config covers plain cargo when CARGO_TARGET_DIR is unset;
   // just/check/stack apply the same rule over an env value. Untracked, excluded for every worktree (info/exclude).
   const cargoDir = cargoTargetDir(wt.path)
@@ -164,7 +142,7 @@ function drop(name?: string, force = false): void {
 }
 
 const [command, name, flag] = process.argv.slice(2)
-if (command === 'new') await create(name)
+if (command === 'new') create(name)
 else if (command === 'ls') list()
 else if (command === 'land') land(name)
 else if (command === 'rm') drop(name, flag === '--force')

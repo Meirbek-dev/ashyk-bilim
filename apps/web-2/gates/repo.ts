@@ -6,10 +6,20 @@ import { basename, relative, resolve } from 'node:path'
 import * as v from 'valibot'
 
 import { generateApi, generateRouteTree } from './codegen.ts'
-import { appDir, type Finding } from './lib.ts'
+import { appDir, repoDir, type Finding } from './lib.ts'
 
+// From the repository root: the bun workspace root holds the catalog and overrides knip checks (gates/knip.jsonc).
 export function knip(): Finding[] {
-  const result = spawnSync('bunx', ['knip', '--config', 'gates/knip.jsonc', '--no-progress', '--reporter', 'json'], {
+  const args = [
+    '--directory',
+    repoDir,
+    '--config',
+    'apps/web-2/gates/knip.jsonc',
+    '--no-progress',
+    '--reporter',
+    'json',
+  ]
+  const result = spawnSync('bunx', ['knip', ...args], {
     cwd: appDir,
     encoding: 'utf8',
     shell: process.platform === 'win32',
@@ -22,7 +32,8 @@ export function knip(): Finding[] {
     return [{ file: 'gates/knip.jsonc', rule: 'knip', fix: `knip did not run: ${result.stderr.slice(0, 300)}` }]
   const findings: Finding[] = []
   for (const issue of parsed.output.issues) {
-    const file = String(issue['file'])
+    // Paths as every gate prints them: relative to apps/web-2 (the root manifest is ../../package.json).
+    const file = relative(appDir, resolve(repoDir, String(issue['file']))).replaceAll('\\', '/')
     for (const [kind, list] of Object.entries(issue)) {
       if (!Array.isArray(list)) continue
       for (const item of list) {
