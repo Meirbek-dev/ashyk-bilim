@@ -8,7 +8,12 @@ import { expect, ru, test } from './attempt-fixture'
 
 // The service worker (src/shared/pwa, REWRITE 7.8) against the production build. The rest of the suite blocks service
 // workers (playwright.config.ts): `page.route` does not see requests a worker answers.
-test.use({ serviceWorkers: 'allow' })
+// E2E_INSECURE=1 (the CI stand's self-signed certificate): `ignoreHTTPSErrors` covers pages only, and Chromium refuses
+// to fetch a worker script over a certificate error, so this file's browser ignores them as a whole.
+test.use({
+  serviceWorkers: 'allow',
+  ...(process.env['E2E_INSECURE'] === '1' && { launchOptions: { args: ['--ignore-certificate-errors'] } }),
+})
 test.describe.configure({ timeout: 90_000 })
 
 const status = (page: Page) => page.getByRole('banner').locator('output')
