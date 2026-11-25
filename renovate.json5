@@ -65,6 +65,11 @@
       allowedVersions: '<7',
     },
     {
+      // @tiptap/markdown takes our marked instance (features/markdown): marked stays on the major its range names.
+      matchDepNames: ['marked'],
+      allowedVersions: '<18',
+    },
+    {
       matchManagers: ['github-actions'],
       groupName: 'github actions',
     },

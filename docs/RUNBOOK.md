@@ -650,7 +650,8 @@ just backup            # the first PITR base backup of the new clusters
 `pg-upgrade` builds a one-off image (`infra/postgres/upgrade.Dockerfile`: the new image plus the old server
 packages), stops the stack, runs `pg_upgrade --check` and then `--copy` on each data volume
 (`infra/postgres/pg-upgrade.sh`), renames the old directory to `18/docker.before-pg19` in the same volume, starts
-db and zitadel-db and fills the statistics pg_upgrade does not carry. The WAL archives and base backups of the old
+db and zitadel-db and fills the statistics pg_upgrade does not carry (rehearsed on the production files by
+`just pg-upgrade-test`, in `just ci-infra`). The WAL archives and base backups of the old
 clusters move to `pitr*/wal.before-pg19`, `pitr*/base.before-pg19`: point-in-time recovery cannot replay them into
 the new major, older points come from the restic dumps (3.4). Copy mode needs free disk equal to the clusters
 (`docker system df -v`). Logs of a failed run stay in `<volume>/19/docker/pg_upgrade_output.d`; the old cluster

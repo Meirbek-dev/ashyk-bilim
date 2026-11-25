@@ -25,7 +25,7 @@ infra/
   host/               backup.service, backup.timer (nightly systemd timer)
   smoke/stub-web/     stand-in web image for the edge-independence smoke (R-09)
   compose.*-check.yaml  overlays for the ci-infra nginx and Redis checks
-  tests/              redis-persistence.sh, db-roles.sh, pitr.sh, zitadel-db-move.sh, rollback-rule.sh, restore
+  tests/              redis-persistence.sh, db-roles.sh, pitr.sh, zitadel-db-move.sh, pg-upgrade.sh, rollback-rule.sh, restore
                       fixtures, development.test.mjs
   scripts/            lib.sh, bootstrap, deploy, rollback, preflight, smoke, backup, restore, pitr-restore,
                       zitadel-db-move, restore-drill, restore-test, renew-certificate, split-env, doctor
@@ -34,7 +34,7 @@ infra/
 ```
 
 Ops recipes: `bootstrap`, `preflight`, `deploy`, `rollback`, `backup`, `restic`, `restore`, `pitr-restore`,
-`zitadel-db-move`, `restore-drill`; rehearsals `pitr-test`, `zitadel-db-move-test`. Stacks: `dev-up`, `dev-down`, `dev-reset`, `dev-runner`, `stack-up`, `stack-down`,
+`zitadel-db-move`, `restore-drill`; rehearsals `pitr-test`, `zitadel-db-move-test`, `pg-upgrade-test`. Stacks: `dev-up`, `dev-down`, `dev-reset`, `dev-runner`, `stack-up`, `stack-down`,
 `smoke`, `web2-stand-up`/`-seed`/`-e2e`/`-stand-down`, `restore-test [down]`, `ci-infra`.
 App recipes: `server *args` (`apps/server/justfile`, with `TEST_REDIS_URL` from `dev.env`), `web2 *args`.
 

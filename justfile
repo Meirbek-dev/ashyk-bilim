@@ -304,6 +304,7 @@ ci-infra:
     [[ $status == 0 ]]
     {{ bash_bin }} infra/tests/redis-persistence.sh
     {{ bash_bin }} infra/tests/zitadel-db-move.sh
+    {{ bash_bin }} infra/tests/pg-upgrade.sh
 
 preflight *args:
     {{ bash_bin }} infra/scripts/preflight.sh "$@"
@@ -341,6 +342,10 @@ zitadel-db-move *args:
 # Major upgrade of the Postgres clusters in place (RUNBOOK 3.15); `STACK=dev just pg-upgrade` for the dev containers.
 pg-upgrade *args:
     {{ bash_bin }} infra/scripts/pg-upgrade.sh "$@"
+
+# Rehearse the upgrade from the previous major on a throwaway project (production files, no ports).
+pg-upgrade-test:
+    {{ bash_bin }} infra/tests/pg-upgrade.sh
 
 # Rehearse the move, the way back and a fresh install on a throwaway project (production files, no ports).
 zitadel-db-move-test:
