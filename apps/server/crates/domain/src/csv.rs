@@ -61,7 +61,7 @@ pub fn csv_datetime(unix: i64, language: CsvLanguage) -> String {
         CsvLanguage::Ru | CsvLanguage::Kk => "%d.%m.%Y %H:%M:%S",
         CsvLanguage::En => "%Y-%m-%d %H:%M:%S",
     };
-    ts.to_zoned(jiff::tz::TimeZone::fixed(KAZAKHSTAN))
+    ts.to_zoned_datetime(jiff::tz::TimeZone::fixed(KAZAKHSTAN))
         .strftime(format)
         .to_string()
 }

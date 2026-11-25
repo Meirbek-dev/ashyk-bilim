@@ -34,7 +34,7 @@ networks:
 services:
   # --- Database: one image everywhere (trixie: glibc collation of the prod cluster)
   db:
-    image: &pg-image docker.io/pgvector/pgvector:0.8.7-pg18-trixie@sha256:ab49524d18df7200b74ac9a475e1db6297fc1eb57da4c214c63d10ecc4b754fa
+    image: &pg-image docker.io/pgvector/pgvector:0.8.7-pg19-trixie@sha256:ace863afa68a13560603dc7366fad0adb4f5ddd0a21c8f06418195f32e03fa08
     # Settings: infra/postgres/postgresql.conf. compose.dev.yaml and compose.prod.yaml repeat this command
     # with their own flags.
     command: >-
@@ -124,7 +124,7 @@ services:
 
   # --- Cache
   redis:
-    image: docker.io/library/redis:8.10.3-alpine
+    image: docker.io/library/redis:8.12.0-alpine
     restart: unless-stopped
     command: ['redis-server', '--requirepass', '${REDIS_PASSWORD:?}']
     environment:
@@ -232,7 +232,7 @@ services:
 
   # Buckets, public-read policy, CORS, smoke probe object. Idempotent.
   storage-init:
-    image: docker.io/amazon/aws-cli:2.40.3
+    image: docker.io/amazon/aws-cli:2.42.3
     entrypoint: ['bash', '/storage/init.sh']
     environment:
       AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:?}

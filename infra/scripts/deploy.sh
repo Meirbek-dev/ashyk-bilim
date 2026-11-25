@@ -116,6 +116,8 @@ done
 
 export IMAGE_TAG=$sha
 "$ROOT/infra/scripts/preflight.sh"
+# A new Postgres major refuses the old data directory: upgrade it in a quiet hour first.
+! "$ROOT/infra/scripts/pg-upgrade.sh" --pending || die "this release runs a new Postgres major: just backup, just pg-upgrade, then deploy (RUNBOOK 3.15)"
 
 prev=$(deployed 1)
 log "deploying $sha (previous: ${prev:-none})"

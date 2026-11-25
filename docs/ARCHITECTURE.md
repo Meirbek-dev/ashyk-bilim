@@ -41,7 +41,7 @@ Companion documents:
                     │   ├─ /ab-public|ab-private ─► rustfs  (presigned S3 URLs)               │
                     │   └─ /*                   ──► web                                       │
                     │                                                                         │
-                    │ server ◄─ data-net ─► postgres 18 (app db: FTS, job queue; pgvector ext)│
+                    │ server ◄─ data-net ─► postgres 19 (app db: FTS, job queue; pgvector ext)│
                     │ server ◄───────────► redis 8      (sessions, SSE streams, rate limits)  │
                     │ server ◄───────────► zitadel      (authN; own db in same PG cluster)    │
                     │ server ◄───────────► rustfs       (S3 API: uploads, media, artifacts)   │
@@ -75,7 +75,7 @@ base image matches it); `apps/server/tools.env` pins the cargo tools.
 | Config | own `AB__*` env parser (std::env + serde) + `secrecy` | `AB__*` namespace, §16 |
 | Errors | `thiserror` (libs) / `anyhow` (bin edges only) | one `Error` enum, §5 |
 | Time | `jiff` | `ab_core::time`; columns are `timestamptz`, rows carry epoch seconds |
-| IDs | `uuid` v7 | Postgres 18 native `uuidv7()` as column default |
+| IDs | `uuid` v7 | Postgres 18+ native `uuidv7()` as column default |
 | OpenAPI | `utoipa` 6, `utoipa-axum`, `utoipa-scalar` | routes and schemas registered together — no drift |
 | Observability | `tracing`, `tracing-subscriber` (JSON logs) | §13 |
 | HTTP client | `reqwest` (rustls, json, form, stream) | retries and circuit breakers per client |
@@ -341,7 +341,7 @@ contract (`ab_api::app::dev_login_enabled`).
 
 One migration set for the database `ashyq`. Rules:
 
-1. **A new entity table**: `id uuid PRIMARY KEY DEFAULT uuidv7()` (Postgres 18 native),
+1. **A new entity table**: `id uuid PRIMARY KEY DEFAULT uuidv7()` (Postgres 18+ native),
    `created_at timestamptz NOT NULL DEFAULT now()`. Join tables, projections and rollups key on what they join and
    may have neither (`schema_docs` lists each table's real columns). `updated_at` (and a versioned table's `version`) is maintained
    by the one `touch_row()` BEFORE UPDATE trigger (`<table>_touch`; `'version'` and the columns that count as
@@ -912,7 +912,7 @@ go-judge, Resend and the LLM providers (`crates/clients/tests`, `crates/testkit/
 
 Run on pushes to `main`, `ci/**` and `release/**` and on pull requests, when `apps/server/**` or infra files
 change (release branches run every gate). `server-lint`: `fmt-check -> clippy -> deny -> shear ->
-openapi-check` (offline `.sqlx`, no services). `server-test`: `just dev-up` (Postgres 18 + pgvector, Redis,
+openapi-check` (offline `.sqlx`, no services). `server-test`: `just dev-up` (Postgres 19 + pgvector, Redis,
 Zitadel, RustFS), then `migrate -> sqlx-check -> test`, the suite split into two jobs (`--partition hash:N/2`, no
 instrumentation). The coverage floor runs nightly (`.github/workflows/coverage.yaml`, `just cov`), off the deploy path.
 `just ci-server` runs all of it locally, `cov` included. The server image is built by the `images` job in parallel and

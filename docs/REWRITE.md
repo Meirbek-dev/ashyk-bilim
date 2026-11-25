@@ -108,7 +108,7 @@ browser ─► university proxy (TLS, 4 KiB response headers, ~100 MiB bodies)
                      ├─ /api/*               ashyq :8000
                      └─ everything else      web (web-2 SSR on Node)
                    ashyq (one binary: HTTP, worker loop, scheduler, SSE fan-out)
-                     ├─ Postgres 18  (app data, sessions, jobs, LISTEN/NOTIFY)
+                     ├─ Postgres 19  (app data, sessions, jobs, LISTEN/NOTIFY)
                      ├─ /data/ashyq/media  (local disk, nginx reads it)
                      ├─ Resend  (email, called from jobs only)
                      ├─ Google OAuth

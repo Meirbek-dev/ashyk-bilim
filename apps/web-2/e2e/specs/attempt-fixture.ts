@@ -99,7 +99,7 @@ export const test = base.extend<{
     const api = createClient(createConfig({ baseUrl: String(baseURL) }))
     const { name, value } = seed.accounts.teacher.cookie
     const headers = { cookie: `${name}=${value}` }
-    await use(async ({ kind = 'quiz', policy, questions = [items.single] } = {}) => {
+    await use(async ({ kind = 'quiz', policy, questions = [items.single] }: QuizSpec = {}) => {
       const course = await makeCourse({ activities: 1 })
       const { data: curriculum } = await getCurriculum({
         client: api,

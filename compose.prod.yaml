@@ -54,7 +54,7 @@ services:
   # Edge
   # ---------------------------------------------------------------------------
   nginx:
-    image: docker.io/library/nginx:1.31.9-alpine
+    image: docker.io/library/nginx:1.31.10-alpine
     restart: unless-stopped
     ports:
       - '${HTTP_PORT:-80}:80'
@@ -240,7 +240,7 @@ services:
 
   # The WAL archives belong to the instances' postgres user (the backup directory is root's).
   pitr-init:
-    image: docker.io/pgvector/pgvector:0.8.7-pg18-trixie@sha256:ab49524d18df7200b74ac9a475e1db6297fc1eb57da4c214c63d10ecc4b754fa
+    image: docker.io/pgvector/pgvector:0.8.7-pg19-trixie@sha256:ace863afa68a13560603dc7366fad0adb4f5ddd0a21c8f06418195f32e03fa08
     entrypoint:
       - sh
       - -c
@@ -264,7 +264,7 @@ services:
   # are), the code runner (stateless), nginx cache. Never started by `up` (profile).
   # ---------------------------------------------------------------------------
   backup:
-    image: &restic-image docker.io/restic/restic:0.19.1
+    image: &restic-image docker.io/restic/restic:0.20.0
     profiles: [backup]
     environment:
       RESTIC_REPOSITORY: /repo

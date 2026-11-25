@@ -125,6 +125,8 @@ const paths = [
   { name: '@tanstack/react-start', importNames: ['createServerFn'], message: `The web server serves no data. ${SDK}` },
   { name: 'date-fns', message: FORMAT },
 ]
+// oxlint's regex engine has no look-ahead: a gitignore group with a negation keeps `#/features/<f>/route`.
+const featureIndex = { group: ['#/features/*/**', '!#/features/*/route'], message: FEATURE_INDEX }
 const layerPatterns = {
   any: [
     { regex: '^(\\.\\./)+(shared|features|routes)/', message: 'Cross-layer imports use the #/ alias.' },
@@ -138,10 +140,10 @@ const layerPatterns = {
   ],
   features: [
     { regex: '^#/routes/', message: 'features/ must not import routes/ (one-way: routes -> features -> shared).' },
-    { regex: '^#/features/[^/]+/(?!route$).', message: FEATURE_INDEX },
+    featureIndex,
     { regex: '^@tanstack/react-start/server$', message: 'Server request APIs stay in src/server.ts and shared/.' },
   ],
-  routes: [{ regex: '^#/features/[^/]+/(?!route$).', message: FEATURE_INDEX }],
+  routes: [featureIndex],
 }
 const restrictImports = (layer: keyof typeof layerPatterns): Rules['no-restricted-imports'] => [
   'error',

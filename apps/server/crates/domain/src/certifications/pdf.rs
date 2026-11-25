@@ -100,7 +100,7 @@ fn type_label(language: Language, key: &str) -> Option<&'static str> {
 /// `12.09.2026` (ru/kk) or `2026-09-12` (en), in Kazakhstan time (UTC+5).
 fn issued_date(language: Language, unix: i64) -> String {
     let date = jiff::Timestamp::from_second(unix).map_or_default(|ts| {
-        ts.to_zoned(jiff::tz::TimeZone::fixed(crate::csv::KAZAKHSTAN))
+        ts.to_zoned_datetime(jiff::tz::TimeZone::fixed(crate::csv::KAZAKHSTAN))
             .date()
     });
     match language {

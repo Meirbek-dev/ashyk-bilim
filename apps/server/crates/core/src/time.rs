@@ -74,7 +74,7 @@ impl Day {
     /// The platform day containing `ts`.
     #[must_use]
     pub fn of(ts: Timestamp) -> Self {
-        Self(ts.to_zoned(time_zone().clone()).date())
+        Self(ts.to_zoned_datetime(time_zone().clone()).date())
     }
 
     /// The platform day containing epoch second `unix` (clamped to the
@@ -97,7 +97,7 @@ impl Day {
     #[must_use]
     pub fn start(self) -> Option<i64> {
         self.0
-            .to_zoned(time_zone().clone())
+            .to_zoned_datetime(time_zone().clone())
             .ok()
             .map(|z| z.timestamp().as_second())
     }

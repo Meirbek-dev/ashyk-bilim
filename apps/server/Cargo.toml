@@ -39,7 +39,7 @@ tower-http = { version = "0.7.1", features = [
 ] }
 
 # Data
-sqlx = { version = "0.9.0", features = [
+sqlx = { version = "0.9.1", features = [
   "runtime-tokio",
   "tls-rustls-ring",
   "postgres",
@@ -48,19 +48,19 @@ sqlx = { version = "0.9.0", features = [
   "migrate",
   "macros",
 ] }
-uuid = { version = "1.29.2", features = ["v4", "v7", "serde"] }
-redis = { version = "1.8.1", features = ["tokio-comp", "connection-manager"] }
+uuid = { version = "1.29.3", features = ["v4", "v7", "serde"] }
+redis = { version = "1.8.3", features = ["tokio-comp", "connection-manager"] }
 sha2 = "0.11.1"
 hmac = "0.13.0"
 base64 = "0.23.1"
 object_store = { version = "0.14.2", features = ["aws"] }
-jiff = { version = "0.2.43", features = ["serde", "tzdb-bundle-always"] }
+jiff = { version = "1.0.3", features = ["serde", "tzdb-bundle-always"] }
 
 # Document text extraction (AI pre-grading of submitted files)
-zip = { version = "9.5.1", default-features = false, features = ["deflate"] }
+zip = { version = "9.8.2", default-features = false, features = ["deflate"] }
 quick-xml = "0.42.0"
 # DOT test spreadsheets (crates/xlsx): writer, picture dimensions
-rust_xlsxwriter = { version = "=0.102.0", default-features = false }
+rust_xlsxwriter = { version = "=0.104.0", default-features = false }
 imagesize = { version = "=0.15.0", default-features = false, features = ["png", "jpeg", "gif", "webp"] }
 pdf-extract = "0.12.1"
 # Image previews (crates/images): decode, resize, lossless WebP; pure-Rust codecs only
@@ -76,7 +76,7 @@ garde = { version = "0.23.0", features = ["derive", "email", "url"] }
 secrecy = { version = "0.10.3", features = ["serde"] }
 thiserror = "2.0.21"
 unicode-properties = "0.1.5"
-anyhow = "1.0.104"
+anyhow = "1.0.105"
 
 # Telemetry
 tracing = "0.1.44"
@@ -91,7 +91,7 @@ utoipa-scalar = { version = "0.4.0", features = ["axum"] }
 rmcp = { version = "3.11.0", default-features = false, features = ["server", "transport-streamable-http-server"] }
 
 # Bin
-clap = { version = "4.6.7", features = ["derive", "env"] }
+clap = { version = "4.6.10", features = ["derive", "env"] }
 dotenvy = "0.15.7"
 mimalloc = "0.1.52"
 
@@ -111,9 +111,9 @@ lettre = { version = "0.11.24", default-features = false, features = [
 # AI (P8): token estimates for the budget ledger; regex for secret redaction
 # of model output. The chat-completions client itself is hand-rolled on
 # reqwest (DECISIONS.md, "AI subsystem").
-regex = "=1.13.1"
+regex = "=1.13.2"
 # D-01: the new web's URL rules (WHATWG parsing, as `new URL()`)
-url = "2.5.8"
+url = "2.5.9"
 
 # Certificate PDF (no headless browser): typst's low-level writer and
 # subsetter, plus Google's skrifa for glyph lookup and advance widths.

@@ -9,7 +9,7 @@ use ab_core::id::{CourseId, UserId, UsergroupId};
 use ab_core::time::EPOCH_MAX;
 use ab_core::{Error, FieldError, Result};
 use jiff::tz::TimeZone;
-use jiff::{Timestamp, ToSpan, Zoned};
+use jiff::{Timestamp, ToSpan, ZonedDateTime};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -304,10 +304,10 @@ impl AnalyticsFilters {
         self.supports_rollup_reads() && self.course_ids.is_empty()
     }
 
-    fn zoned(&self, ts: i64) -> Option<Zoned> {
+    fn zoned(&self, ts: i64) -> Option<ZonedDateTime> {
         Timestamp::from_second(ts)
             .ok()
-            .map(|t| t.to_zoned(self.timezone.clone()))
+            .map(|t| t.to_zoned_datetime(self.timezone.clone()))
     }
 
     /// Local midnight of the day (or of the Monday of the week) containing

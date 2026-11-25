@@ -15,7 +15,7 @@ Learning platform: Rust API and a TanStack Start web app.
 
 ## Quick start
 
-Needs Git, `just` 1.59.0, Bun 1.4.4, Node from `.node-version`, Rustup and Docker or Podman.
+Needs Git, `just` 1.59.0, Bun 1.4.5, Node from `.node-version`, Rustup and Docker or Podman.
 On Windows, put Git Bash's `sh` on PATH; recipes use it rather than WSL's `bash.exe`.
 
 ```sh

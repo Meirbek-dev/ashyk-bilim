@@ -5,7 +5,7 @@
 # apps/web-2 is a member of the root bun workspace: the root package.json (catalog, overrides) and the one bun.lock
 # come along, and `--filter web-2` installs only this app (not the root tools).
 
-FROM oven/bun:1.4.4-alpine AS deps
+FROM oven/bun:1.4.5-alpine AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
 COPY apps/web-2/package.json apps/web-2/

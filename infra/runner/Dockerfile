@@ -15,7 +15,7 @@ WORKDIR /typescript
 RUN go get golang.org/x/net@v0.63.0 golang.org/x/text@v0.44.0 \
     && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/tsc ./cmd/tsgo
 
-FROM docker.io/library/debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS fetch
+FROM docker.io/library/debian:trixie-slim@sha256:8aa5a7bf5a1955bddbe7d74fcdd0b91ab30e74362a8b73af672b0481b35b44a0 AS fetch
 ARG KOTLIN_VERSION=2.4.21
 ARG KOTLIN_SHA256=7cc140e76daf416a0424a5557f99afd7ca89ebd463ea1101261e3e01c33e75cd
 ARG TYPESCRIPT_VERSION=7.0.2
@@ -55,7 +55,7 @@ RUN curl -fsSLo kotlin.zip "https://github.com/JetBrains/kotlin/releases/downloa
 COPY --from=native-tools /out/tsc /fetch/tsc
 RUN find /fetch/node_modules/@typescript -path "*/lib/tsc" -type f -exec cp /fetch/tsc {} \;
 
-FROM docker.io/library/debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS runtime
+FROM docker.io/library/debian:trixie-slim@sha256:8aa5a7bf5a1955bddbe7d74fcdd0b91ab30e74362a8b73af672b0481b35b44a0 AS runtime
 RUN apt-get update && apt-get upgrade -y --no-install-recommends && apt-get install -y --no-install-recommends \
         gcc g++ libc6-dev \
         python3 \

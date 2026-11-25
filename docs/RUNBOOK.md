@@ -579,7 +579,7 @@ PITR_SERVICE=zitadel-db just pitr-restore '<time>'   # Zitadel's own instance on
 ```
 
 It picks the newest base finished before the target, keeps the current data directory in the volume as
-`/var/lib/postgresql/18/docker.before-pitr-<stamp>`, replays and promotes (a new timeline; archiving continues),
+`/var/lib/postgresql/19/docker.before-pitr-<stamp>`, replays and promotes (a new timeline; archiving continues),
 starts the stack and runs smoke. Undo it the same way: stop db, swap the directories back in a one-off container
 (`dc run --rm --no-deps --entrypoint sh db -c 'mv $PGDATA $PGDATA.pitr-failed && mv $PGDATA.before-pitr-<stamp> $PGDATA'`),
 start db. Remove the kept directory once the result is confirmed (it holds a full copy of the cluster).
@@ -631,6 +631,41 @@ dc exec -T db sh -c 'psql -U "$POSTGRES_USER" -d postgres -c "DROP DATABASE zita
 The `zitadel` role stays in db (it owns nothing there any more); restores of older snapshots still work: their
 `zitadel.dump` loads into zitadel-db. Rolling compose/`infra/` back to a release without zitadel-db (3.2) needs
 `--back` first, while `zitadel_moved_*` still exists.
+
+### 3.15 Postgres major upgrade
+
+The db image (compose.yaml) names the major (`-pg19-`). Its entrypoint refuses to start beside a data directory
+of another major (`/var/lib/postgresql/18/docker`), so a release that moves the major does not deploy until the
+clusters are upgraded: `just deploy` stops with "runs a new Postgres major". In a quiet hour (the stack is down
+from the upgrade until the deploy; minutes per GB):
+
+```bash
+git pull --ff-only
+just backup
+just pg-upgrade        # asks first; db and zitadel-db, pg_upgrade in copy mode
+just deploy
+just backup            # the first PITR base backup of the new clusters
+```
+
+`pg-upgrade` builds a one-off image (`infra/postgres/upgrade.Dockerfile`: the new image plus the old server
+packages), stops the stack, runs `pg_upgrade --check` and then `--copy` on each data volume
+(`infra/postgres/pg-upgrade.sh`), renames the old directory to `18/docker.before-pg19` in the same volume, starts
+db and zitadel-db and fills the statistics pg_upgrade does not carry. The WAL archives and base backups of the old
+clusters move to `pitr*/wal.before-pg19`, `pitr*/base.before-pg19`: point-in-time recovery cannot replay them into
+the new major, older points come from the restic dumps (3.4). Copy mode needs free disk equal to the clusters
+(`docker system df -v`). Logs of a failed run stay in `<volume>/19/docker/pg_upgrade_output.d`; the old cluster
+is untouched, remove `19/docker` before retrying.
+
+Going back (before new writes matter): check out the previous release's compose files, then in each volume rename
+`18/docker.before-pg19` to `18/docker` and remove `19/docker`, and deploy that release. After a week without
+problems, remove the old directories and archives:
+
+```bash
+dc stop db && docker run --rm -v ashyq_postgres_data:/v alpine rm -rf /v/18 && dc up -d --wait db
+```
+
+(the same for `zitadel_pg_data` and zitadel-db; the volume prefix is the compose project name). Dev containers:
+`STACK=dev just pg-upgrade`, then `just dev-up`; or `just dev-reset` and `just dev-data` for a fresh copy.
 
 ## 4. Troubleshooting
 
@@ -758,7 +793,7 @@ Containers (`just dev-up`; `dev-down` stops, keeps data; `dev-reset` drops the v
 
 | Service | Port | Credentials |
 | --- | --- | --- |
-| Postgres 18 + pgvector | 5433 | role `ashyq` / `ashyq` (CREATEDB, not superuser); databases `ashyq_dev`, `ashyq_test` |
+| Postgres 19 + pgvector | 5433 | role `ashyq` / `ashyq` (CREATEDB, not superuser); databases `ashyq_dev`, `ashyq_test` |
 | Redis | 6380 | password `ashyq-dev` |
 | Zitadel | 8081 | PAT written to `tmp/dev/zitadel-pat.txt` |
 | RustFS | 9002 | `ashyq-dev` / `ashyq-dev-secret`; buckets `ab-public`, `ab-private` |

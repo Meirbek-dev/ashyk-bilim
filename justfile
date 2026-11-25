@@ -338,6 +338,10 @@ pitr-test:
 zitadel-db-move *args:
     {{ bash_bin }} infra/scripts/zitadel-db-move.sh "$@"
 
+# Major upgrade of the Postgres clusters in place (RUNBOOK 3.15); `STACK=dev just pg-upgrade` for the dev containers.
+pg-upgrade *args:
+    {{ bash_bin }} infra/scripts/pg-upgrade.sh "$@"
+
 # Rehearse the move, the way back and a fresh install on a throwaway project (production files, no ports).
 zitadel-db-move-test:
     {{ bash_bin }} infra/tests/zitadel-db-move.sh
