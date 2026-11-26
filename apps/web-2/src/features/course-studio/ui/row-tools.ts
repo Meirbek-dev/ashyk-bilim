@@ -10,9 +10,10 @@ export const QUIET =
  * The drag handle: the row's first column at every width, so it stays inside the page's left edge (it hung in the
  * margin, outside the row's own hover ground) and the icons and names after it keep one line down the page. Narrow,
  * its dots stand on the page's edge (the button's own inset is taken back) and the columns are tighter: a phone's
- * name column is all the room a long chapter name has.
+ * name column is all the room a long chapter name has. It stands above the row's stretched link itself: faint, it is
+ * a stacking context of its own, and the button's `z-1` inside it would lose to the link painted after it.
  */
-export const HANDLE = 'shrink-0 -ms-1.5 @3xl:ms-0 [&_button]:size-7'
+export const HANDLE = 'relative z-1 shrink-0 touch-none -ms-1.5 @3xl:ms-0 [&_button]:size-7'
 
 /** The column after the handle: a chapter's numeral, an activity's type icon. */
 export const LEAD = 'w-6 @3xl:w-7'

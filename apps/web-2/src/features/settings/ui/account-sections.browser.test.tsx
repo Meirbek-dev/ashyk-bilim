@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
+import { page } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import type { UserProfile } from '#/shared/api/gen/types.gen'
@@ -95,7 +96,9 @@ describe('DeleteAccountSection', () => {
     await screen.getByRole('button', { name: m.settings_delete_button() }).click()
     await screen.getByLabelText(m.settings_field_username()).fill('someone')
     await screen.getByRole('button', { name: m.settings_delete_submit() }).click()
-    await expect.element(screen.getByText(m.settings_delete_mismatch({ username: 'aigerim' }))).toBeInTheDocument()
+    // In the dialog's field, not ui-sdk's page-wide live region, which repeats the error for a while.
+    const mismatch = page.getByRole('dialog').getByText(m.settings_delete_mismatch({ username: 'aigerim' }))
+    await expect.element(mismatch).toBeInTheDocument()
     expect(requests).toHaveLength(0)
   })
 })

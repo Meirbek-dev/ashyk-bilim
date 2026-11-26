@@ -70,5 +70,13 @@
         "countPlural=other": "{count} results"
       }
     }
-  ]
+  ],
+  "ui_drag_role": "movable item",
+  "ui_drag_instructions": "To pick up an item, press Space. Move it with the arrow keys and press Space again to drop it in its new place; Escape cancels.",
+  "ui_drag_place": "position {position} of {total}",
+  "ui_drag_place_in": "“{list}”, position {position} of {total}",
+  "ui_drag_picked": "Picked up “{name}”, {place}.",
+  "ui_drag_moved": "“{name}”, {place}.",
+  "ui_drag_dropped": "Dropped “{name}”, {place}.",
+  "ui_drag_canceled": "Moving “{name}” was canceled, {place}."
 }

@@ -5,7 +5,7 @@ import { courseLifecycle, getCurriculum } from '#/shared/api/gen/sdk.gen'
 import type { CourseLifecycleRequest } from '#/shared/api/gen/types.gen'
 
 import { cookieOf, expect, ru, test } from './course-studio-fixture'
-import { toast } from '../fixtures/test'
+import { gotoLive, toast } from '../fixtures/test'
 
 // The `content` tab: chapters, activities, create, rename, delete, drag and drop (slice 4.1).
 
@@ -16,11 +16,8 @@ const content = (courseId: string) => `/teach/courses/${courseId}/content`
  * has settled when focus is back on the handle: only then can the next drag start.
  */
 async function dragByKeyboard(handle: Locator, arrow: 'ArrowUp' | 'ArrowDown') {
-  // A pick-up during the previous drop's animation is ignored by dnd-kit: press again until it takes.
-  await expect(async () => {
-    await handle.press('Space')
-    await expect(handle).toHaveAttribute('aria-pressed', 'true', { timeout: 1000 })
-  }).toPass()
+  await handle.press('Space')
+  await expect(handle).toHaveAttribute('aria-pressed', 'true')
   await handle.press(arrow)
   await handle.press('Space')
   await expect(handle).toHaveAttribute('aria-pressed', 'false')
@@ -178,6 +175,34 @@ test('B-CST-11 the keyboard moves an activity and a chapter; the order survives 
   ])
   await page.reload()
   await expect(links).toHaveText(['Второй', 'Первый'])
+})
+
+test('B-CST-55 a pointer drags an activity by its handle into an empty chapter', async ({ page, studio, seed }) => {
+  const made = await studio.course({
+    chapters: [{ name: 'Глава 1', pages: [{ name: 'Первый' }] }, { name: 'Глава 2' }],
+  })
+  // A press before hydration (SSR page) or under the navigation's view transition would start nothing.
+  await gotoLive(page, content(made.course.id))
+  await page.waitForFunction(() => !document.documentElement.matches(':active-view-transition'))
+  const handle = page.getByRole('button', { name: m.studio_drag_named({ name: 'Первый' }, ru) })
+  const from = await handle.boundingBox()
+  const to = await page.getByText(m.studio_chapter_empty({}, ru)).boundingBox()
+  if (!from || !to) throw new Error('the handle and the empty chapter are on screen')
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(to.x + 40, to.y + to.height / 2, { steps: 12 })
+  await page.mouse.up()
+  const headers = cookieOf(seed, 'teacher')
+  const order = async () => {
+    const path = { course_id: made.course.id }
+    const { data } = await getCurriculum({ client: studio.api, path, headers, throwOnError: true })
+    return data.chapters.map(c => [c.name, c.activities.map(a => a.name)])
+  }
+  await expect.poll(order).toEqual([
+    ['Глава 1', []],
+    ['Глава 2', ['Первый']],
+  ])
+  await expect(page.locator('[data-drag-preview]')).toHaveCount(0)
 })
 
 test('B-CST-12 an archived course shows its content without any action', async ({ page, studio, seed }) => {

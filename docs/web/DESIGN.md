@@ -198,6 +198,11 @@ Every data region renders exactly one of the kit's four states:
   `?ai=chat`) opens once hydrated, so it never moves and remounts under the user's typing. Tests find popups with
   `page`, not the render's `screen`; e2e finds a toast with `toast(page, text)` and an alert with `alerts(page)`
   (`e2e/fixtures/test.ts`): ui-sdk's page-wide live region repeats their text.
+- Drag and drop is `shared/ui/sortable.tsx` (`createReorder` for one list, `createTransfer` for rows moving between
+  lists): a row moves by its handle, an `IconButton` as the handle's `render`. The keyboard works on the handle (Space
+  picks up, arrows move, Space drops, Escape puts back; `aria-pressed` says it is up), screen readers hear each step
+  with the row's name and place in the interface language (`ui_drag_*`). The page shows the draft while a row moves;
+  `onValueChange` gets the drop, and the feature writes it into its cache there (the draft stays until it does).
 - ui-sdk is a beta: each release waits as a Renovate PR (`renovate.json5`) and moves with its skill.
 - `src/shared/components/` is ours, under every lint and token rule: templates, form fields (`useAppForm`), data
   regions, `IconButton`, `StatusBadge`, `ErrorAlert`, `SheetPanel`, menus. A look the stock kit lacks (status

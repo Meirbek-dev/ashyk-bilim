@@ -230,6 +230,16 @@ div.font-heading,
   border-radius: 2px;
 }
 
+/* The copy of a row being dragged (sortable.tsx) floats above the page, out of the list it came from: a lifted card,
+   and a container of its own, so its `@3xl:` cells keep the row's wide layout away from the page's container. */
+[data-drag-preview] {
+  container-type: inline-size;
+  border-radius: var(--radius-md);
+  background: var(--background);
+  box-shadow: var(--shadow-lg);
+  cursor: grabbing;
+}
+
 /* Phones: toasts come in at the top, clear of the bottom bar and the player's «Продолжить» row (the stock kit
    stacks them at the bottom). Unlayered, so it wins over the kit's utilities; the stack mirrors the kit's: older
    toasts peek below the front one. */

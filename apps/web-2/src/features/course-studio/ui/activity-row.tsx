@@ -1,4 +1,3 @@
-import { useSortable } from '@dnd-kit/react/sortable'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { GripVertical, Pencil } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -7,6 +6,7 @@ import { m } from '#/paraglide/messages'
 import type { Activity, ActivityAction } from '#/shared/api/gen/types.gen'
 import { ActivityIcon } from '#/shared/components/activity-icon'
 import { IconButton } from '#/shared/components/icon-button'
+import { TransferHandle, TransferItem } from '#/shared/ui/sortable'
 import { toast } from '#/shared/ui/toast'
 
 import { updateActivityOptions } from '../curriculum-queries'
@@ -17,7 +17,7 @@ import { QuickPublish } from './quick-publish'
 import { RenameForm } from './rename-form'
 import { HANDLE, LEAD, QUIET, ROW_TOOLS } from './row-tools'
 
-type ActivityRowProps = { courseId: string; activity: Activity; index: number }
+type ActivityRowProps = { courseId: string; activity: Activity }
 
 /** Renaming in place; focus goes back to the rename button after Save or Escape (UX-214). */
 function useRename(courseId: string, activity: Activity) {
@@ -43,31 +43,21 @@ function useRename(courseId: string, activity: Activity) {
 }
 
 /** One activity of a chapter: type, name (into its studio), status; sortable within and across chapters. */
-export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
+export function ActivityRow({ courseId, activity }: ActivityRowProps) {
   const allowed = (action: ActivityAction) => activity.allowed_actions.includes(action)
-  const { ref, handleRef, isDragging } = useSortable({
-    id: activity.id,
-    index,
-    group: activity.chapter_id,
-    type: 'activity',
-    accept: 'activity',
-    disabled: !allowed('move'),
-  })
   const { renaming, setRenaming, renameButton, rename, done, save } = useRename(courseId, activity)
   const status = <ActivityStatusBadge published={activity.published} />
   return (
-    // Without `move` the row is not a sortable at all: dnd-kit would make the row itself a button.
-    <li
-      ref={allowed('move') ? ref : undefined}
-      className={`group/row relative flex min-h-row flex-wrap items-center gap-x-1 rounded-md py-1.5 transition-colors duration-150 hover:bg-muted/60 @3xl:flex-nowrap @3xl:gap-x-2 [&_button]:relative [&_button]:z-1 [&_form]:relative [&_form]:z-1 ${isDragging ? 'z-10 bg-background opacity-60' : ''}`}
+    <TransferItem
+      value={activity.id}
+      className="group/row relative flex min-h-row flex-wrap items-center gap-x-1 rounded-md py-1.5 transition-colors duration-150 hover:bg-muted/60 data-moving:opacity-60 @3xl:flex-nowrap @3xl:gap-x-2 [&_button]:relative [&_button]:z-1 [&_form]:relative [&_form]:z-1"
     >
       {allowed('move') ? (
         <div className={`${HANDLE} ${QUIET}`}>
-          <IconButton
-            ref={handleRef}
-            aria-roledescription={m.studio_drag_role()}
-            label={m.studio_drag_named({ name: activity.name })}
-            icon={<GripVertical aria-hidden />}
+          <TransferHandle
+            render={
+              <IconButton label={m.studio_drag_named({ name: activity.name })} icon={<GripVertical aria-hidden />} />
+            }
           />
         </div>
       ) : null}
@@ -105,6 +95,6 @@ export function ActivityRow({ courseId, activity, index }: ActivityRowProps) {
           {allowed('delete') || allowed('update') ? <DeleteActivity courseId={courseId} activity={activity} /> : null}
         </div>
       </div>
-    </li>
+    </TransferItem>
   )
 }

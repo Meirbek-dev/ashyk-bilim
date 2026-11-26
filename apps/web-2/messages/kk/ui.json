@@ -70,5 +70,13 @@
         "countPlural=other": "{count} нұсқа"
       }
     }
-  ]
+  ],
+  "ui_drag_role": "жылжытылатын элемент",
+  "ui_drag_instructions": "Элементті алу үшін бос орын пернесін басыңыз. Оны көрсеткілермен жылжытып, бос орын пернесімен жаңа орынға қойыңыз; Escape болдырмайды.",
+  "ui_drag_place": "{total} ішінен {position}-орын",
+  "ui_drag_place_in": "«{list}», {total} ішінен {position}-орын",
+  "ui_drag_picked": "«{name}» алынды, {place}.",
+  "ui_drag_moved": "«{name}», {place}.",
+  "ui_drag_dropped": "«{name}» қойылды, {place}.",
+  "ui_drag_canceled": "«{name}» жылжытуы болдырылмады, {place}."
 }

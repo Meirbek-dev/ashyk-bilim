@@ -72,5 +72,13 @@
         "countPlural=other": "{count} варианта"
       }
     }
-  ]
+  ],
+  "ui_drag_role": "перемещаемый элемент",
+  "ui_drag_instructions": "Чтобы взять элемент, нажмите пробел. Стрелками переместите его, пробелом опустите на новое место. Escape — отмена.",
+  "ui_drag_place": "место {position} из {total}",
+  "ui_drag_place_in": "«{list}», место {position} из {total}",
+  "ui_drag_picked": "Взят элемент «{name}», {place}.",
+  "ui_drag_moved": "«{name}», {place}.",
+  "ui_drag_dropped": "Элемент «{name}» опущен, {place}.",
+  "ui_drag_canceled": "Перемещение «{name}» отменено, {place}."
 }

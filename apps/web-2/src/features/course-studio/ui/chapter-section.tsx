@@ -1,4 +1,3 @@
-import { useSortable } from '@dnd-kit/react/sortable'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { GripVertical, Pencil } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -7,6 +6,7 @@ import { m } from '#/paraglide/messages'
 import type { CurriculumChapter } from '#/shared/api/gen/types.gen'
 import { IconButton } from '#/shared/components/icon-button'
 import { ConflictDialog } from '#/shared/components/templates/conflict-dialog'
+import { SortableHandle, SortableItem, TransferList } from '#/shared/ui/sortable'
 import { toast } from '#/shared/ui/toast'
 
 import { chapterVersion, updateChapterOptions } from '../curriculum-queries'
@@ -49,30 +49,19 @@ function useRename(courseId: string, chapter: CurriculumChapter) {
   return { renaming, setRenaming, renameButton, rename, done, save, dialog: write.dialog() }
 }
 
-/** One chapter: a sortable block (by its handle) that also takes activities dropped onto it, even when empty. */
+/** One chapter: a sortable block (by its handle) whose list takes activities moved into it, even when empty. */
 export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps) {
   const allowed = (action: CurriculumChapter['allowed_actions'][number]) => chapter.allowed_actions.includes(action)
-  const { ref, handleRef, isDragging } = useSortable({
-    id: chapter.id,
-    index,
-    type: 'chapter',
-    accept: ['chapter', 'activity'],
-    // CollisionPriority.Low: an activity row under the pointer wins over its chapter.
-    collisionPriority: 1,
-    disabled: !allowed('move'),
-  })
   const { renaming, setRenaming, renameButton, rename, done, save, dialog } = useRename(courseId, chapter)
   return (
-    // Without `move` the row is not a sortable at all: dnd-kit would make the row itself a button.
-    <li ref={allowed('move') ? ref : undefined} className={`flex flex-col ${isDragging ? 'opacity-60' : ''}`}>
+    <SortableItem value={chapter.id} className="flex flex-col data-moving:opacity-60">
       <div className="group/row relative flex flex-wrap items-center gap-x-1 border-b pb-1.5 @3xl:gap-x-2">
         {allowed('move') ? (
           <div className={`${HANDLE} ${QUIET}`}>
-            <IconButton
-              ref={handleRef}
-              aria-roledescription={m.studio_drag_role()}
-              label={m.studio_drag_named({ name: chapter.name })}
-              icon={<GripVertical aria-hidden />}
+            <SortableHandle
+              render={
+                <IconButton label={m.studio_drag_named({ name: chapter.name })} icon={<GripVertical aria-hidden />} />
+              }
             />
           </div>
         ) : null}
@@ -107,18 +96,21 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
         </div>
         <ConflictDialog {...dialog} />
       </div>
+      {/* An empty chapter's list is its note: an activity can still be moved into it. */}
       {chapter.activities.length === 0 ? (
-        <p
+        <TransferList
+          value={chapter.id}
+          render={<p />}
           className={`border-b py-3 text-sm text-muted-foreground ${allowed('move') ? UNDER_NAMES : UNDER_NAMES_FIXED}`}
         >
           {m.studio_chapter_empty()}
-        </p>
+        </TransferList>
       ) : (
-        <ol className="flex flex-col divide-y border-b">
-          {chapter.activities.map((activity, at) => (
-            <ActivityRow key={activity.id} courseId={courseId} activity={activity} index={at} />
+        <TransferList value={chapter.id} className="flex flex-col divide-y border-b">
+          {chapter.activities.map(activity => (
+            <ActivityRow key={activity.id} courseId={courseId} activity={activity} />
           ))}
-        </ol>
+        </TransferList>
       )}
       {allowed('add_activity') ? (
         // Under the rows' icons: the row a new activity will take (the button's own inset is taken back).
@@ -126,6 +118,6 @@ export function ChapterSection({ courseId, chapter, index }: ChapterSectionProps
           <AddToChapter courseId={courseId} chapter={chapter} />
         </div>
       ) : null}
-    </li>
+    </SortableItem>
   )
 }

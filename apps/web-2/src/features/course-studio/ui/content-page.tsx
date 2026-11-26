@@ -1,13 +1,10 @@
-import { DragDropProvider, type DragEndEvent, type DragOverEvent } from '@dnd-kit/react'
-import { move } from '@dnd-kit/helpers'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useParams } from '@tanstack/react-router'
-import { useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { ErrorAlert } from '#/shared/components/error-alert'
 import { presentError } from '#/shared/i18n/errors'
-import { accessibleDrag } from '#/shared/lib/drag-accessibility'
+import { Sortable, Transfer } from '#/shared/ui/sortable'
 
 import { curriculumOptions, moveActivityOptions, moveChapterOptions, placeCurriculum } from '../curriculum-queries'
 import { applyLayout, layoutMove, layoutOf, type Layout } from '../model/curriculum'
@@ -19,43 +16,22 @@ import { EmptyProgram } from './empty-program'
 import { ProgramHeader } from './program-header'
 
 /**
- * `content`: chapters and their activities in order. Dragging (pointer or keyboard on a handle) rearranges a
- * temporary layout; on drop the one move it amounts to goes into the cache and to the server, and a refusal puts
- * the server order back.
+ * `content`: chapters and their activities in order. A chapter moves among chapters, an activity within its chapter
+ * and into others (an empty one too), by pointer or keyboard on a handle. While one moves the page shows the draft;
+ * on drop the one move it amounts to goes into the cache and to the server, and a refusal puts the server order back.
  */
 export function ContentPage() {
   const { courseId } = useParams({ from: '/_authed/teach/courses/$courseId/content' })
   const queryClient = useQueryClient()
   const { data: curriculum } = useSuspenseQuery(curriculumOptions(courseId))
   const { data: course } = useSuspenseQuery(courseOptions(courseId))
-  // The layout being dragged: a ref for the handlers (a fast keyboard drop can come before a re-render), state for
-  // the render.
-  const layout = useRef<Layout | null>(null)
-  const [dragged, setDragged] = useState<Layout | null>(null)
-  const place = (next: Layout | null) => {
-    layout.current = next
-    setDragged(next)
-  }
   const moveChapter = useMutation(moveChapterOptions(courseId))
   const moveActivity = useMutation(moveActivityOptions())
-  const shown = dragged ? applyLayout(curriculum, dragged) : curriculum
   const failed = moveChapter.error ?? moveActivity.error
+  const layout = layoutOf(curriculum)
 
-  // Activities follow the pointer across chapters while dragging; chapters are reordered on drop.
-  const over = (event: DragOverEvent) => {
-    const current = layout.current
-    if (event.operation.source?.type !== 'activity' || !current) return
-    place({ ...current, activities: move(current.activities, event) })
-  }
-  const drop = (event: DragEndEvent) => {
-    const source = event.operation.source
-    const before = layoutOf(curriculum)
-    const current = layout.current
-    const after =
-      current && source?.type === 'chapter' ? { ...current, chapters: move(current.chapters, event) } : current
-    place(null)
-    if (event.canceled || !after || !source) return
-    const step = layoutMove(before, after, String(source.id))
+  const commit = (after: Layout, id: string) => {
+    const step = layoutMove(layout, after, id)
     if (!step) return
     placeCurriculum(queryClient, courseId, applyLayout(curriculum, after))
     const restore = { onError: () => placeCurriculum(queryClient, courseId, curriculum) }
@@ -73,28 +49,40 @@ export function ContentPage() {
       ...chapter.activities.map(activity => [activity.id, activity.name] as const),
     ]),
   )
-  const plugins = accessibleDrag(id => names.get(id))
+  const name = (id: string) => names.get(id)
 
   const create = can(course, 'update') ? <CreateChapterDialog courseId={courseId} /> : null
   return (
     <section aria-label={m.studio_content_label()} className="@container flex flex-col gap-gutter">
-      {shown.chapters.length > 0 ? <ProgramHeader courseId={courseId} curriculum={curriculum} create={create} /> : null}
+      {curriculum.chapters.length > 0 ? (
+        <ProgramHeader courseId={courseId} curriculum={curriculum} create={create} />
+      ) : null}
       {failed ? <ErrorAlert>{presentError(failed)}</ErrorAlert> : null}
-      {shown.chapters.length === 0 ? (
+      {curriculum.chapters.length === 0 ? (
         <EmptyProgram create={create} />
       ) : (
-        <DragDropProvider
-          plugins={plugins}
-          onDragStart={() => place(layoutOf(curriculum))}
-          onDragOver={over}
-          onDragEnd={drop}
+        <Transfer
+          value={layout.activities}
+          onValueChange={(activities, { key }) => commit({ ...layout, activities }, key)}
+          label={name}
+          listLabel={name}
         >
-          <ol className="flex flex-col gap-10">
-            {shown.chapters.map((chapter, index) => (
-              <ChapterSection key={chapter.id} courseId={courseId} chapter={chapter} index={index} />
-            ))}
-          </ol>
-        </DragDropProvider>
+          {activities => (
+            <Sortable
+              value={layout.chapters}
+              onValueChange={(chapters, { key }) => commit({ ...layout, chapters }, key)}
+              label={name}
+            >
+              {chapters => (
+                <ol className="flex flex-col gap-10">
+                  {applyLayout(curriculum, { chapters, activities }).chapters.map((chapter, index) => (
+                    <ChapterSection key={chapter.id} courseId={courseId} chapter={chapter} index={index} />
+                  ))}
+                </ol>
+              )}
+            </Sortable>
+          )}
+        </Transfer>
       )}
     </section>
   )
