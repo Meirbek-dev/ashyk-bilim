@@ -36,7 +36,7 @@ export function AutoDrafts({ courseId, settings }: { courseId: CourseId; setting
           onCheckedChange={on =>
             toggle.mutate(
               { path: { course_id: courseId }, body: { auto_grade_drafts: on } },
-              { onSuccess: () => toast.add({ title: on ? m.ai_grading_auto_on() : m.ai_grading_auto_off() }) },
+              { onSuccess: () => toast({ title: on ? m.ai_grading_auto_on() : m.ai_grading_auto_off() }) },
             )
           }
         />

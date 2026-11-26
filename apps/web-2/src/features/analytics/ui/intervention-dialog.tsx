@@ -42,7 +42,7 @@ export function InterventionDialog({ learnerId, courseId }: { learnerId: UserId;
             idempotency.settle()
             setOpen(false)
             form.reset()
-            toast.add({ title: m.analytics_intervention_created() })
+            toast({ title: m.analytics_intervention_created() })
           },
           onError: error => idempotency.settle(error),
         },

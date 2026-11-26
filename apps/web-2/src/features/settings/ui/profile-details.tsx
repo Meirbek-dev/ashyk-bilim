@@ -23,7 +23,7 @@ export function ProfileDetails({ profile }: { profile: UserProfile }) {
   const form = useAppForm(vProfileDetailsForm, {
     leaveGuard: true,
     defaultValues,
-    onSubmit: body => update.mutateAsync({ body }, { onSuccess: () => toast.add({ title: m.settings_saved() }) }),
+    onSubmit: body => update.mutateAsync({ body }, { onSuccess: () => toast({ title: m.settings_saved() }) }),
   })
   return (
     <TypesetSection

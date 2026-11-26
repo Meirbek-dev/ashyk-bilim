@@ -1,4 +1,4 @@
-import { expectFailure as allowFailure } from '../fixtures/test'
+import { expectFailure as allowFailure, toast } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
@@ -87,7 +87,7 @@ test('B-ANL-10 B-ANL-11 B-ANL-26 the learner panel: history, a new intervention,
   const posted = page.waitForRequest(request => request.method() === 'POST' && request.url().includes('/interventions'))
   await dialog.getByRole('button', { name: m.analytics_intervention_submit({}, ru) }).click()
   expect((await posted).headers()['idempotency-key']).toMatch(/^[0-9a-f-]{36}$/)
-  await expect(page.getByText(m.analytics_intervention_created({}, ru))).toBeVisible()
+  await expect(toast(page, m.analytics_intervention_created({}, ru))).toBeVisible()
   const entry = page.getByRole('listitem').filter({ hasText: note })
   await expect(entry).toContainText(m.analytics_intervention_meeting_scheduled({}, ru))
   await expect(entry).toContainText(m.analytics_intervention_status_planned({}, ru))
@@ -108,7 +108,7 @@ test('B-ANL-10 B-ANL-11 B-ANL-26 the learner panel: history, a new intervention,
     .getByRole('alertdialog')
     .getByRole('button', { name: m.ui_conflict_retry({}, ru) })
     .click()
-  await expect(page.getByText(m.analytics_intervention_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.analytics_intervention_saved({}, ru))).toBeVisible()
   expect(sent).toEqual([expect.stringMatching(/^\d+$/), expect.stringMatching(/^\d+$/)])
   const outcome = m.analytics_outcome_improved({}, ru)
   await expect(entry).toContainText(m.analytics_intervention_outcome_is({ outcome }, ru))
@@ -191,7 +191,7 @@ test('B-ANL-17 a saved view keeps the tab and filters, applies them, and is dele
     await expect(dialog.getByText(m.validation_required({}, ru))).toBeVisible()
     await dialog.getByLabel(m.analytics_view_name({}, ru)).fill(name)
     await dialog.getByRole('button', { name: m.ui_save({}, ru) }).click()
-    await expect(page.getByText(m.analytics_view_saved({}, ru))).toBeVisible()
+    await expect(toast(page, m.analytics_view_saved({}, ru))).toBeVisible()
     await page.goto('/teach/analytics/overview')
     await page
       .getByRole('region', { name: m.analytics_views_title({}, ru) })
@@ -201,7 +201,7 @@ test('B-ANL-17 a saved view keeps the tab and filters, applies them, and is dele
     await page.getByRole('button', { name: m.analytics_view_delete({ name }, ru) }).click()
     const confirm = page.getByRole('alertdialog').or(page.getByRole('dialog'))
     await confirm.getByRole('button', { name: m.analytics_view_delete_confirm({}, ru) }).click()
-    await expect(page.getByText(m.analytics_view_deleted({}, ru))).toBeVisible()
+    await expect(toast(page, m.analytics_view_deleted({}, ru))).toBeVisible()
     await expect(page.getByRole('link', { name })).toHaveCount(0)
   } finally {
     const views = await listSavedViews({ client: api, headers: cookie(seed, 'teacher'), throwOnError: true })

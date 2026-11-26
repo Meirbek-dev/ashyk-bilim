@@ -1,4 +1,4 @@
-import { finishPages, expectFailure, gotoLive } from '../fixtures/test'
+import { finishPages, expectFailure, gotoLive, toast } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
@@ -54,7 +54,7 @@ test('B-ADM-17 a teacher lists groups and makes one in the dialog', async ({ pag
   await dialog.getByLabel(m.admin_field_name({}, ru)).fill(name)
   await dialog.getByRole('button', { name: m.admin_create_submit({}, ru) }).click()
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
-  await expect(page.getByText(m.admin_group_created({}, ru))).toBeVisible()
+  await expect(toast(page, m.admin_group_created({}, ru))).toBeVisible()
   const id = new URL(page.url()).pathname.split('/').at(-1) ?? ''
   await deleteGroup({
     client: api,
@@ -73,7 +73,7 @@ test('B-ADM-18 the group page edits its name; an unknown group is not found', as
   const renamed = `${own.name} (изм.)`
   await general.getByLabel(m.admin_field_name({}, ru)).fill(renamed)
   await general.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  await expect(page.getByText(m.admin_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.admin_saved({}, ru))).toBeVisible()
   await page.reload()
   await expect(page.getByRole('heading', { level: 1, name: renamed })).toBeVisible()
   for (const id of ['00000000-0000-4000-8000-000000000000', 'nope']) {
@@ -128,7 +128,7 @@ test('B-ADM-19 members are added by search and removed; without manage_members t
   await page.getByRole('option', { name: /@e2e-student1\)/ }).click()
   await page.keyboard.press('Escape')
   await page.getByRole('button', { name: m.admin_add({}, ru), exact: true }).click()
-  const added = page.getByText(m.admin_group_members_added({}, ru))
+  const added = toast(page, m.admin_group_members_added({}, ru))
   await expect(added).toBeVisible()
   // The toast sits over the row's actions at the bottom right, and a pointer resting on it holds it open (the click
   // below would wait on it for good): let it go first.
@@ -140,7 +140,7 @@ test('B-ADM-19 members are added by search and removed; without manage_members t
     .getByRole('alertdialog')
     .getByRole('button', { name: m.admin_group_member_remove_confirm({}, ru) })
     .click()
-  await expect(page.getByText(m.admin_group_member_removed({}, ru))).toBeVisible()
+  await expect(toast(page, m.admin_group_member_removed({}, ru))).toBeVisible()
   await expect(page.getByText(m.admin_group_members_empty({}, ru))).toBeVisible()
 
   // Someone else's group: the teacher reads it, the API lists no actions for them.
@@ -174,7 +174,7 @@ test('B-ADM-20 B-ADM-24 deleting a group asks with its name, is sent with If-Mat
   const sent = page.waitForRequest(request => request.method() === 'DELETE')
   await confirm.getByRole('button', { name: m.admin_delete({}, ru) }).click()
   expect((await sent).headers()['if-match']).toMatch(/^\d+$/)
-  await expect(page.getByText(m.admin_group_deleted({}, ru))).toBeVisible()
+  await expect(toast(page, m.admin_group_deleted({}, ru))).toBeVisible()
   await expect(page).toHaveURL(/\/teach\/groups$/)
   const left = await listGroups({ client: api, query: { limit: 100 }, headers: cookie(seed, 'teacher') })
   expect(left.data?.items.some(item => item.id === own.id)).toBe(false)

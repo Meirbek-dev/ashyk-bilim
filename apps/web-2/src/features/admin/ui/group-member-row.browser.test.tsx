@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
+import { page } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import type { Usergroup, UsergroupMember } from '#/shared/api/gen/types.gen'
@@ -43,7 +44,7 @@ describe('GroupMemberRow', () => {
       </QueryClientProvider>,
     )
     await screen.getByRole('button', { name: m.admin_group_member_remove({ name: member.display_name }) }).click()
-    const dialog = screen.getByRole('alertdialog')
+    const dialog = page.getByRole('alertdialog')
     await expect
       .element(dialog.getByText(m.admin_group_member_remove_title({ name: member.display_name, group: group.name })))
       .toBeVisible()

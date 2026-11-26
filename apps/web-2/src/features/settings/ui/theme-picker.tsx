@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useId, useLayoutEffect, useRef, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
@@ -20,9 +20,9 @@ export function ThemePicker({ themes, value, onChange }: ThemePickerProps) {
   const needle = query.trim().toLocaleLowerCase()
   const locale = getLocale()
   const shown = themes.filter(theme => theme.slug === value || theme.name[locale].toLocaleLowerCase().includes(needle))
-  // The box opens on the chosen theme, wherever it is in the list (the box is the cards' offset parent).
+  // The box opens on the chosen theme, wherever it is in the list (the box is the cards' offset parent), before paint.
   const box = useRef<HTMLDivElement>(null)
-  useEffect(() => {
+  useLayoutEffect(() => {
     const card = box.current?.querySelector('[data-checked]')?.closest('label')
     if (box.current && card) box.current.scrollTop = card.offsetTop - 4
   }, [])
@@ -42,7 +42,7 @@ export function ThemePicker({ themes, value, onChange }: ThemePickerProps) {
         ref={box}
         name="theme"
         value={value}
-        onValueChange={next => onChange(String(next))}
+        onValueChange={next => next !== null && onChange(next)}
         aria-labelledby={`${id}-legend`}
         className="relative grid max-h-80 grid-cols-1 gap-x-6 gap-y-0 overflow-y-auto border-y pr-1 @md:grid-cols-2"
       >

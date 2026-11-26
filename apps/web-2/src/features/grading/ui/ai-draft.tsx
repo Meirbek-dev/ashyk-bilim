@@ -32,7 +32,7 @@ export function AiDraft({ ids, onTransfer }: AiDraftProps) {
       onDiscard={() =>
         discard.mutate(
           { path: { draft_id: draft.id } },
-          { onSuccess: () => toast.add({ title: m.grading_ai_discarded() }) },
+          { onSuccess: () => toast({ title: m.grading_ai_discarded() }) },
         )
       }
     />

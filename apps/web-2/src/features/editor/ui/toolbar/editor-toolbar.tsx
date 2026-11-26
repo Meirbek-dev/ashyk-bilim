@@ -20,7 +20,7 @@ type EditorToolbarProps = {
   onInsert?: ((anchor: Element) => void) | undefined
 }
 
-const gap = <Separator orientation="vertical" className="mx-1 h-5 data-vertical:self-center" />
+const gap = <Separator orientation="vertical" className="mx-1 h-5 data-[orientation=vertical]:self-center" />
 
 // The tools scroll sideways; the scroller clips what leaves it, so its own padding keeps their focus rings whole.
 const TOOLS =

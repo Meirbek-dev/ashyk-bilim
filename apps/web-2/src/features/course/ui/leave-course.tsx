@@ -22,7 +22,7 @@ export function LeaveCourse({ course }: { course: Course }) {
       {
         onSuccess: () => {
           setOpen(false)
-          toast.add({ title: m.course_left() })
+          toast({ title: m.course_left() })
         },
       },
     )

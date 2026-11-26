@@ -43,13 +43,13 @@ export function PostItem({ item, open = false }: PostItemProps) {
   const save = (content: string, uploadIds: string[]) =>
     update.mutateAsync(
       { path: { discussion_id: item.id }, body: { content, upload_ids: uploadIds } },
-      { onSuccess: () => (setEditing(false), toast.add({ title: m.discussions_saved() })) },
+      { onSuccess: () => (setEditing(false), toast({ title: m.discussions_saved() })) },
     )
   // A moderator's status change only (BUG-115): the owner's content is not sent back.
   const moderate = () =>
     update.mutate(
       { path: { discussion_id: item.id }, body: { status: hidden ? 'active' : 'hidden' } },
-      { onSuccess: () => toast.add({ title: hidden ? m.discussions_restored() : m.discussions_hidden_done() }) },
+      { onSuccess: () => toast({ title: hidden ? m.discussions_restored() : m.discussions_hidden_done() }) },
     )
   const cancel = () => (setEditing(false), update.reset())
   return (

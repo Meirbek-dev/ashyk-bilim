@@ -69,7 +69,9 @@ describe('EmailSection', () => {
     await screen.getByLabelText(m.settings_field_new_email()).fill('new@example.com')
     await screen.getByLabelText(m.settings_field_current_password()).fill('wrong')
     await screen.getByRole('button', { name: m.settings_email_send() }).click()
-    await expect.element(screen.getByText(m.settings_current_password_wrong())).toBeInTheDocument()
+    await expect
+      .element(screen.getByLabelText(m.settings_field_current_password()))
+      .toHaveAccessibleDescription(expect.stringContaining(m.settings_current_password_wrong()))
     await expect.element(screen.getByLabelText(m.settings_field_email_code())).not.toBeInTheDocument()
   })
 })

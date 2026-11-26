@@ -143,12 +143,14 @@ describe('concept: prerequisites and activities', () => {
         { status: 409, headers: { 'content-type': 'application/problem+json' } },
       ),
     )
-    await page.getByLabelText(m.concepts_prerequisites_label()).click()
+    await page.getByRole('combobox', { name: m.concepts_prerequisites_label() }).click()
     await userEvent.keyboard('Dec')
     await page.getByRole('option', { name: 'Decimals' }).click()
     await userEvent.keyboard('{Escape}')
     await page.getByRole('button', { name: m.concepts_prerequisites_save() }).click()
-    await expect.element(page.getByText(m.errors_concept_cycle())).toBeVisible()
+    await expect
+      .element(page.getByRole('combobox', { name: m.concepts_prerequisites_label() }))
+      .toHaveAccessibleDescription(expect.stringContaining(m.errors_concept_cycle()))
     expect(await sent(requests[0])).toEqual({
       method: 'PUT',
       path: `/api/v2/courses/${courseId}/concepts/${ids.fractions}/prerequisites`,

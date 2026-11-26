@@ -108,7 +108,7 @@ export function EntryAction({ assessment, state, next = null }: EntryActionProps
       ) : null}
       {rules.length ? (
         <Field orientation="horizontal">
-          <Checkbox id={consentId} checked={agreed} onCheckedChange={checked => setAgreed(checked)} />
+          <Checkbox id={consentId} checked={agreed} onCheckedChange={checked => setAgreed(checked === true)} />
           <FieldLabel htmlFor={consentId}>{m.attempt_consent()}</FieldLabel>
         </Field>
       ) : null}

@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import { Button } from '#/shared/ui/button'
 
 import { clock } from '../../model/file-blocks'
-import { ON_STAGE } from './player-button'
+import { ON_STAGE } from './stage-tooltip'
 
 /** «Продолжаем с 3:12» after the saved position was restored, with a way back to the start. */
 export function ResumeNotice({ at, onRestart }: { at: number; onRestart: () => void }) {

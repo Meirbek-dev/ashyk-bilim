@@ -41,7 +41,7 @@ export function ReturnSelected({ work, courseId, rows, onDone }: ReturnSelectedP
             onSuccess: result => {
               setOpen(false)
               if (result.done_count > 0)
-                toast.add({ title: m.grading_return_done({ count: formatNumber(result.done_count) }) })
+                toast({ title: m.grading_return_done({ count: formatNumber(result.done_count) }) })
               onDone()
             },
           })

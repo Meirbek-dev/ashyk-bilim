@@ -33,7 +33,7 @@ export function RemediationSessionView({ session, userId, invalidates = [] }: Se
       options.onSuccess(result)
       // Behind a gate (`invalidates`: the host's attempt state) passing lifts it and the host takes this block away
       // at once: the learner is told why it went and what is open now (a callback of the mutation, not of this view).
-      if (result.status === 'passed' && invalidates.length > 0) toast.add({ title: m.ai_remediation_gate_lifted() })
+      if (result.status === 'passed' && invalidates.length > 0) toast({ title: m.ai_remediation_gate_lifted() })
     },
   })
   const { lecture } = session

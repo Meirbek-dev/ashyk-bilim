@@ -36,7 +36,7 @@ export function useGradeSave<Body extends { action: GradeAction }>(
     setPending(body.action)
     try {
       base.current = (await send(body, current)).version
-      toast.add({ title: done[body.action]() })
+      toast({ title: done[body.action]() })
       if (body.action !== 'save') onDone?.()
     } finally {
       setPending(null)

@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import type { AdminRun, AdminSettings, FeatureSetting, LectureReview } from '#/shared/api/gen/types.gen'
 
 import { expect as baseExpect, test } from '../fixtures/learning'
-import { gotoLive } from '../fixtures/test'
+import { gotoLive, toast } from '../fixtures/test'
 import { analysis, caps, json, markNavigation, mockCapabilities, mockRun, RUN, ru } from './ai-fixture'
 
 // The teacher's and the admin's AI (slice 6.3). Model answers are `page.route` fixtures (tag @ai); the admin
@@ -44,7 +44,7 @@ test(
     await expect(page.getByRole('button', { name: m.ai_reanalyze({}, ru) })).toBeVisible()
     await page.getByRole('button', { name: m.ai_finding_accepted({}, ru) }).click()
     expect(await reviewed.promise).toEqual({ action: 'accepted', finding_id: 'finding-0' })
-    await expect(page.getByText(m.ai_finding_saved({}, ru))).toBeVisible()
+    await expect(toast(page, m.ai_finding_saved({}, ru))).toBeVisible()
     await page.getByRole('button', { name: m.ai_publish({}, ru) }).click()
     await page
       .getByRole('alertdialog')

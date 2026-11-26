@@ -1,4 +1,4 @@
-import { expectFailure as allowFailure, gotoLive } from '../fixtures/test'
+import { expectFailure as allowFailure, gotoLive, toast } from '../fixtures/test'
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
@@ -119,7 +119,7 @@ test('B-FSB-03 B-FSB-04 B-FSB-05 B-FSB-06 B-FSB-11 a learner attaches files and 
   const headers = (await sent).headers()
   expect(headers['idempotency-key']).toMatch(/^[\da-f-]{36}$/)
   expect(headers['if-match']).toMatch(/^\d+$/)
-  await expect(page.getByText(m.submission_submitted({}, ru), { exact: true })).toBeVisible()
+  await expect(toast(page, m.submission_submitted({}, ru), { exact: true })).toBeVisible()
   const work = region(page, m.submission_your_work({}, ru))
   await expect(work.getByText(m.submission_awaiting_review({}, ru))).toBeVisible()
   await expect(work.getByRole('button', { name: 'essay.pdf', exact: true })).toBeVisible()
@@ -163,7 +163,7 @@ test('B-FSB-07 B-FSB-10 B-FSB-11 a released grade with feedback and criteria; ow
   await (await popup).close()
 
   await result.getByRole('button', { name: m.submission_new_attempt({}, ru) }).click()
-  await expect(page.getByText(m.submission_attempt_started({}, ru))).toBeVisible()
+  await expect(toast(page, m.submission_attempt_started({}, ru))).toBeVisible()
   await expect(fileField(page)).toBeEnabled()
   const history = region(page, m.submission_history({}, ru))
   await expect(history.getByRole('listitem')).toHaveCount(2)

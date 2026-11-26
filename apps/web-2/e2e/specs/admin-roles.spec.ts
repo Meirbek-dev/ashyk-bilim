@@ -1,4 +1,4 @@
-import { finishPages, expectFailure } from '../fixtures/test'
+import { finishPages, expectFailure, toast } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
@@ -110,7 +110,7 @@ test('B-ADM-11 a custom role saves its name and its permissions, picked part by 
   const general = page.getByRole('form', { name: m.admin_section_general({}, ru) })
   await general.getByLabel(m.admin_field_name({}, ru)).fill('E2E ассистент')
   await general.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  await expect(page.getByText(m.admin_saved({}, ru)).first()).toBeVisible()
+  await expect(toast(page, m.admin_saved({}, ru)).first()).toBeVisible()
   await expect(page.getByRole('heading', { level: 1, name: 'E2E ассистент' })).toBeVisible()
 
   const grants = page.getByRole('form', { name: m.admin_role_permissions({}, ru) })
@@ -176,6 +176,7 @@ test("B-ADM-23 a role save over someone else's change asks, keeps the input and 
   const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
   await expect(conflict).toBeVisible()
   await conflict.getByRole('button', { name: m.ui_cancel({}, ru) }).click()
+  await expect(conflict).toBeHidden()
   await expect(name).toHaveValue('E2E мой вариант')
   // Nothing was saved: leaving the page still asks (a refused 412 is not a save).
   const leave = page.getByRole('alertdialog', { name: m.ui_unsaved_leave({}, ru) })
@@ -206,7 +207,7 @@ test('B-ADM-12 B-ADM-24 deleting a role asks with its name, is sent with If-Matc
   const sent = page.waitForRequest(request => request.method() === 'DELETE')
   await confirm.getByRole('button', { name: m.admin_delete({}, ru) }).click()
   expect((await sent).headers()['if-match']).toMatch(/^\d+$/)
-  await expect(page.getByText(m.admin_role_deleted({}, ru))).toBeVisible()
+  await expect(toast(page, m.admin_role_deleted({}, ru))).toBeVisible()
   await expect(page).toHaveURL(/\/admin\/roles$/)
   await expect(page.getByRole('link', { name })).toHaveCount(0)
 })

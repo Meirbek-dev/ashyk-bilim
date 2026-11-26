@@ -20,7 +20,7 @@ export function RemoveLearner({ courseId, learner }: { courseId: string; learner
       {
         onSuccess: () => {
           setOpen(false)
-          toast.add({ title: m.studio_learner_removed() })
+          toast({ title: m.studio_learner_removed() })
         },
       },
     )

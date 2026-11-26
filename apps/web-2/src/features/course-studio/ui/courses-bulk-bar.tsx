@@ -69,7 +69,7 @@ export function CoursesBulkBar({ selected, onDone }: BulkBarProps) {
               onSuccess: result => {
                 setAction(null)
                 setAcknowledged(false)
-                toast.add({
+                toast({
                   title: m.studio_bulk_done({ done: formatNumber(result.done), failed: formatNumber(result.failed) }),
                 })
                 onDone()

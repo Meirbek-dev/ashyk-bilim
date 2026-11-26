@@ -51,9 +51,9 @@ export function useCommitForm({ courseId, imported, destination, chapterId }: Co
         path: { course_id: courseId },
         body: destination.into === 'new' ? { chapter_id: value.chapter_id } : {},
       })
-      toast.add({ title: m.assessment_import_concepts_queued() })
+      toast({ title: m.assessment_import_concepts_queued() })
     } catch (error) {
-      toast.add({ title: m.assessment_import_concepts_failed({ reason: presentError(error) }) })
+      toast.error({ title: m.assessment_import_concepts_failed({ reason: presentError(error) }) })
     }
   }
   const form = useAppForm<CommitForm>(commitFormSchema(destination, imported.items.length), {
@@ -68,7 +68,7 @@ export function useCommitForm({ courseId, imported, destination, chapterId }: Co
         {
           onSuccess: async done => {
             idempotency.settle()
-            toast.add({ title: m.assessment_import_imported({ count: imported.items.length }) })
+            toast({ title: m.assessment_import_imported({ count: imported.items.length }) })
             if (value.map_concepts) await mapConcepts(value)
             if (done.result)
               void navigate({

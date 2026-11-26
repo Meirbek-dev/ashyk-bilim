@@ -33,7 +33,7 @@ export function NotificationsPage() {
               onSuccess: () => {
                 // The button goes with the last unread one: the keyboard moves to the filter, not back to the top.
                 filters.current?.querySelector<HTMLElement>('a[href]')?.focus()
-                toast.add({ title: m.notifications_marked_all() })
+                toast({ title: m.notifications_marked_all() })
               },
             },
           )

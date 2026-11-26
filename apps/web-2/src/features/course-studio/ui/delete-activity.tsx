@@ -23,7 +23,7 @@ export function DeleteActivity({ courseId, activity }: { courseId: string; activ
   const locked = !activity.allowed_actions.includes('delete') || learnerWorkRefusal(remove.error)
   const done = (title: string) => {
     setOpen(false)
-    toast.add({ title })
+    toast({ title })
   }
   const request = { path: { activity_id: activity.id }, headers: { 'If-Match': activity.version } }
   const confirm = () =>

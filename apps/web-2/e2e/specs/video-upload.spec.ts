@@ -4,7 +4,7 @@ import { m } from '#/paraglide/messages'
 import { createActivity, getActivity, listBlocks } from '#/shared/api/gen/sdk.gen'
 
 import { cookieOf, expect, ru, test } from './course-studio-fixture'
-import { expectFailure, expectReread } from '../fixtures/test'
+import { expectFailure, expectReread, toast } from '../fixtures/test'
 
 // A 0.5 s H.264 MP4 made with ffmpeg's color source: real metadata and bytes, no external media service.
 const video = {
@@ -34,7 +34,7 @@ test('B-CST-29 a hosted video uploads, is attached, plays, and can be replaced a
   await page.goto(`/teach/courses/${made.course.id}/activities/${activity.id}/edit`)
   const input = page.getByLabel(m.studio_video_file_field({}, ru))
   await input.setInputFiles(video)
-  await expect(page.getByText(m.studio_media_uploaded({}, ru), { exact: true })).toBeVisible()
+  await expect(toast(page, m.studio_media_uploaded({}, ru), { exact: true })).toBeVisible()
   const path = { activity_id: activity.id }
   const first = await getActivity({ client: studio.api, path, headers, throwOnError: true })
   expect(first.data.content).toMatchObject({ file_name: video.name })
@@ -74,7 +74,7 @@ test('B-CST-29 a hosted video uploads, is attached, plays, and can be replaced a
   await expect(link).toBeVisible()
   await page.unroute(`**/activities/${activity.id}`)
   await page.getByRole('button', { name: m.ui_file_retry({}, ru) }).click()
-  await expect(page.getByText(m.studio_media_replaced({}, ru), { exact: true })).toBeVisible()
+  await expect(toast(page, m.studio_media_replaced({}, ru), { exact: true })).toBeVisible()
   expect(claims).toBe(1)
   const second = await getActivity({ client: studio.api, path, headers, throwOnError: true })
   expect(second.data.content).toMatchObject({ file_name: 'replacement.mp4' })
@@ -114,5 +114,5 @@ test('B-CST-29 corrupt video bytes are refused before any upload; a valid video 
   await expect(page.getByText(m.studio_media_none({}, ru))).toBeVisible()
   await page.unroute('**/ab-public/**')
   await page.getByRole('button', { name: m.ui_file_retry({}, ru) }).click()
-  await expect(page.getByText(m.studio_media_uploaded({}, ru), { exact: true })).toBeVisible()
+  await expect(toast(page, m.studio_media_uploaded({}, ru), { exact: true })).toBeVisible()
 })

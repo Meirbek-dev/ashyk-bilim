@@ -24,7 +24,7 @@ export function ResolveDialog({ report }: { report: MessageReport }) {
           onSuccess: () => {
             setOpen(false)
             form.reset()
-            toast.add({ title: m.conversations_resolved_toast() })
+            toast({ title: m.conversations_resolved_toast() })
           },
         },
       ),

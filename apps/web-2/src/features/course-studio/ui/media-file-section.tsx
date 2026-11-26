@@ -39,7 +39,7 @@ export function MediaFileSection({ courseId, activity }: { courseId: string; act
       },
       {
         onSuccess: () =>
-          toast.add({ title: source.kind === 'file' ? m.studio_media_replaced() : m.studio_media_uploaded() }),
+          toast({ title: source.kind === 'file' ? m.studio_media_replaced() : m.studio_media_uploaded() }),
       },
     )
   const replace = async (upload: FinalizedUpload, file: File) => {

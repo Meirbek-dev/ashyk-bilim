@@ -29,43 +29,31 @@ export function RadioGroupField({ label, options }: RadioGroupFieldProps) {
   const cards = options.some(option => option.description)
   return (
     <FieldSet data-invalid={error !== undefined || undefined}>
-      <FieldLegend id={`${id}-legend`} variant="label">
-        {label}
-      </FieldLegend>
+      <FieldLegend variant="label">{label}</FieldLegend>
       <RadioGroup
         name={field.name}
         value={field.state.value}
-        onValueChange={value => field.handleChange(String(value))}
-        aria-labelledby={`${id}-legend`}
+        onValueChange={value => field.handleChange(value ?? '')}
         aria-invalid={error !== undefined || undefined}
         className={cards ? 'grid gap-2 sm:grid-cols-2' : undefined}
       >
         {options.map(option =>
           cards ? (
-            <FieldLabel key={option.value} htmlFor={`${id}-${option.value}`}>
+            <FieldLabel key={option.value}>
               <Field orientation="horizontal">
                 {option.icon}
                 <FieldContent>
                   <FieldTitle id={`${id}-${option.value}-title`}>{option.label}</FieldTitle>
-                  {option.description ? (
-                    <FieldDescription id={`${id}-${option.value}-hint`}>{option.description}</FieldDescription>
-                  ) : null}
+                  {option.description ? <FieldDescription>{option.description}</FieldDescription> : null}
                 </FieldContent>
-                {/* Named by the title alone; the purpose line is its description. */}
-                <RadioGroupItem
-                  id={`${id}-${option.value}`}
-                  value={option.value}
-                  aria-labelledby={`${id}-${option.value}-title`}
-                  aria-describedby={option.description ? `${id}-${option.value}-hint` : undefined}
-                />
+                {/* Named by the title alone; its field makes the purpose line the description. */}
+                <RadioGroupItem value={option.value} aria-labelledby={`${id}-${option.value}-title`} />
               </Field>
             </FieldLabel>
           ) : (
             <Field key={option.value} orientation="horizontal">
-              <RadioGroupItem id={`${id}-${option.value}`} value={option.value} />
-              <FieldLabel htmlFor={`${id}-${option.value}`} className="font-normal">
-                {option.label}
-              </FieldLabel>
+              <RadioGroupItem value={option.value} />
+              <FieldLabel className="font-normal">{option.label}</FieldLabel>
             </Field>
           ),
         )}

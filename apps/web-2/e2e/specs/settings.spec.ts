@@ -1,4 +1,4 @@
-import { expectFailure, clickUntil } from '../fixtures/test'
+import { expectFailure, clickUntil, toast, alerts } from '../fixtures/test'
 import type { Locator, Page } from '@playwright/test'
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
@@ -70,7 +70,7 @@ test('B-SET-02 the profile saves name and bio, shows them in the shell, and keep
   await name.fill('Айгерим Тестова')
   await details.getByLabel(m.settings_field_bio({}, ru)).fill('Учусь программировать.')
   await save(details)
-  await expect(page.getByText(m.settings_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.settings_saved({}, ru))).toBeVisible()
   await page.getByRole('button', { name: m.platform_profile_menu({}, ru) }).click()
   await expect(page.getByRole('menu').getByText('Айгерим Тестова')).toBeVisible()
   await page.keyboard.press('Escape')
@@ -95,7 +95,7 @@ test('B-SET-03 a file that is not an image is refused before any upload', async 
     mimeType: 'text/plain',
     buffer: Buffer.from('not a photo'),
   })
-  await expect(page.getByRole('alert').getByText(m.settings_avatar_wrong_type({}, ru))).toBeVisible()
+  await expect(alerts(page).getByText(m.settings_avatar_wrong_type({}, ru))).toBeVisible()
   expect(uploads).toEqual([])
 })
 
@@ -152,7 +152,7 @@ test('B-SET-08 this device is marked and another session ends; B-SET-07 a passwo
   )
   await expect(confirm.getByRole('button', { name: m.ui_cancel({}, ru) })).toBeFocused()
   await confirm.getByRole('button', { name: m.settings_session_revoke({}, ru) }).click()
-  await expect(page.getByText(m.settings_session_revoked({}, ru))).toBeVisible()
+  await expect(toast(page, m.settings_session_revoked({}, ru))).toBeVisible()
   await expect(firefox).toHaveCount(0)
   const password = form(page, m.settings_password_title({}, ru))
   const current = password.getByLabel(m.settings_field_current_password({}, ru))
@@ -163,7 +163,7 @@ test('B-SET-08 this device is marked and another session ends; B-SET-07 a passwo
   await expect(password.getByText(m.settings_current_password_wrong({}, ru))).toBeVisible()
   await current.fill(me.account.password)
   await save(password)
-  await expect(page.getByText(m.settings_password_changed({}, ru))).toBeVisible({ timeout: 20_000 }) // Zitadel is slow
+  await expect(toast(page, m.settings_password_changed({}, ru))).toBeVisible({ timeout: 20_000 }) // Zitadel is slow
   await expect(current).toHaveValue('')
   await expect(safari).toHaveCount(0)
 })
@@ -191,7 +191,7 @@ test('B-SET-09 2FA turns on with the code from the QR key; B-SET-10 it turns off
   await expect(section.getByText(m.errors_invalid_totp_code({}, ru))).toBeVisible()
   await code.fill(totp(secret))
   await section.getByRole('button', { name: m.settings_totp_confirm({}, ru) }).click()
-  await expect(page.getByText(m.settings_totp_enabled({}, ru))).toBeVisible()
+  await expect(toast(page, m.settings_totp_enabled({}, ru))).toBeVisible()
   await expect(section.getByText(m.settings_totp_on({}, ru))).toBeVisible()
 
   const confirm = page.getByRole('dialog', { name: m.settings_totp_disable_title({}, ru) })
@@ -202,7 +202,7 @@ test('B-SET-09 2FA turns on with the code from the QR key; B-SET-10 it turns off
   await expect(confirm.getByText(m.errors_invalid_totp_code({}, ru))).toBeVisible()
   await confirm.getByLabel(m.settings_totp_code({}, ru)).fill(totp(secret))
   await confirm.getByRole('button', { name: m.settings_totp_disable({}, ru) }).click()
-  await expect(page.getByText(m.settings_totp_disabled({}, ru))).toBeVisible()
+  await expect(toast(page, m.settings_totp_disabled({}, ru))).toBeVisible()
   await expect(section.getByRole('button', { name: m.settings_totp_enable({}, ru) })).toBeVisible()
   await expect.poll(async () => (await profileOf(me))?.mfa_enabled).toBe(false)
 })
@@ -216,7 +216,7 @@ test('B-SET-11 theme and mode apply without a reload; B-SET-12 the language swit
   await appearance.getByText('Слива', { exact: true }).click() // t3-chat, named by its palette
   await appearance.getByText(m.ui_mode_dark({}, ru), { exact: true }).click()
   await save(appearance)
-  await expect(page.getByText(m.settings_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.settings_saved({}, ru))).toBeVisible()
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark')
   await expect(page.locator('link[href="/themes/t3-chat.css"]')).toHaveCount(1)
   await expect.poll(async () => (await profileOf(me))?.theme).toBe('t3-chat')
@@ -240,7 +240,7 @@ test('B-SET-13 the gamification switches are saved and read back', async ({ page
   await xp.click()
   await leaderboard.click()
   await save(section)
-  await expect(page.getByText(m.settings_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.settings_saved({}, ru))).toBeVisible()
   await page.reload()
   await expect(xp).not.toBeChecked()
   await expect(leaderboard).not.toBeChecked()

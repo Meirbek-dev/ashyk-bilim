@@ -23,12 +23,12 @@ export function ContributorApplication({ course, userId }: { course: Course; use
   const state = application(course, roster.data, userId)
   if (!state) return null
   const path = { course_id: course.id }
-  const onApply = () => apply.mutate({ path }, { onSuccess: () => toast.add({ title: m.course_applied() }) })
+  const onApply = () => apply.mutate({ path }, { onSuccess: () => toast({ title: m.course_applied() }) })
   const onWithdraw = () =>
     withdraw.mutate(
       { path: { ...path, user_id: userId } },
       {
-        onSuccess: () => toast.add({ title: m.course_withdrawn() }),
+        onSuccess: () => toast({ title: m.course_withdrawn() }),
         // The creator already decided (UX-050): rejected is 404, approved is 403. The fresh roster shows which.
         onError: error => {
           if (isDecided(error)) void roster.refetch()

@@ -50,7 +50,7 @@ export function GroupMemberRow({ group, member, manage }: GroupMemberRowProps) {
               {
                 onSuccess: () => {
                   setConfirming(false)
-                  toast.add({ title: m.admin_group_member_removed() })
+                  toast({ title: m.admin_group_member_removed() })
                 },
               },
             )

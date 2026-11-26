@@ -1,0 +1,15 @@
+# Features and routes build UI from the kit (#/shared/ui, composites in #/shared/components), which carries the look
+# (docs/web/DESIGN.md 8). A ui-sdk part a screen needs gets a wrapper in src/shared/ui first.
+id: ui-sdk-in-shared
+language: tsx
+severity: error
+message: 'Import the kit (#/shared/ui/<name>) instead of @ui-sdk; add a wrapper in src/shared/ui when the part has none.'
+files: ['apps/web-2/src/**']
+ignores: ['apps/web-2/src/shared/**']
+rule:
+  kind: import_statement
+  has:
+    field: source
+    has:
+      kind: string_fragment
+      regex: '^@ui-sdk/'

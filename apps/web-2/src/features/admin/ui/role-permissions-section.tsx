@@ -26,7 +26,7 @@ export function RolePermissionsSection({ role, base }: { role: Role; base: BaseV
     (permissions: string[], version: number) =>
       save.mutateAsync(
         { path: { slug: role.slug }, body: { permissions }, ...roleWrite(version) },
-        { onSuccess: () => toast.add({ title: m.admin_saved() }) },
+        { onSuccess: () => toast({ title: m.admin_saved() }) },
       ),
     () => roleVersion(queryClient, role.slug),
   )

@@ -47,5 +47,9 @@ test('dialog, confirm and sheet triggers render disabled and marked data-hydrati
       </SheetPanel>,
     ),
   ]
-  for (const markup of html) expect(markup).toMatch(/<button[^>]*disabled=""[^>]*data-hydrating="true"/)
+  for (const markup of html) {
+    const button = markup.match(/<button[^>]*>/)?.[0]
+    expect(button).toContain('disabled=""')
+    expect(button).toContain('data-hydrating="true"')
+  }
 })

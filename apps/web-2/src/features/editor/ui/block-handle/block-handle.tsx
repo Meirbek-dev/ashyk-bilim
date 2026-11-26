@@ -26,7 +26,8 @@ function addBelow(editor: Editor, pos: number, onInsert: (anchor: MenuAnchor) =>
   if (!block) return
   const empty = block.node.type.name === 'paragraph' && block.node.content.size === 0
   const caret = empty ? pos + 1 : pos + block.node.nodeSize + 1
-  const chain = editor.chain().focus()
+  // No focus(): its deferred focus would land after the menu's and close it; the menu focuses the text when it closes.
+  const chain = editor.chain()
   if (!empty) chain.insertContentAt(pos + block.node.nodeSize, { type: 'paragraph' })
   chain.setTextSelection(caret).run()
   const at = editor.view.coordsAtPos(caret)

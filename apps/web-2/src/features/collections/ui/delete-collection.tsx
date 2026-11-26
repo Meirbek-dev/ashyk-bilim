@@ -24,7 +24,7 @@ export function DeleteCollection({ collection }: { collection: Collection }) {
           setOpen(false)
           // Toast on the list page: one added before the navigation was dropped in the transition (prod build).
           await navigate({ to: '/collections' })
-          toast.add({ title: m.collections_deleted() })
+          toast({ title: m.collections_deleted() })
         },
       },
     )

@@ -37,7 +37,7 @@ export function useCodeItemForm({ activityId, challenge, code }: Ids) {
         // A 412 (someone else saved the challenge) shows as the save's error text.
         headers: { 'If-Match': queryClient.getQueryData(challengeOptions(activityId).queryKey)?.version },
       },
-      { onSuccess: () => toast.add({ title: m.code_saved() }) },
+      { onSuccess: () => toast({ title: m.code_saved() }) },
     ),
   )
   const unsaved = (values: CodeForm, stored: CodeItem | null) =>

@@ -32,7 +32,7 @@ export function ContributorRow({ courseId, row, manage }: ContributorRowProps) {
   const patch = (body: UpdateContributorRequest, done: string) =>
     update.mutate(
       { path: { course_id: courseId, user_id: row.user_id }, body },
-      { onSuccess: () => toast.add({ title: done }) },
+      { onSuccess: () => toast({ title: done }) },
     )
   const roleChoice = {
     label: m.studio_role_of({ name: memberName(row) }),

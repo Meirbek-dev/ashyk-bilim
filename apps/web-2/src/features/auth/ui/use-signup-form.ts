@@ -47,17 +47,17 @@ export function useSignupForm() {
                 .then(() => true)
                 .catch(() => false)
               if (signedIn) {
-                toast.add({ title: profile.email_verified ? m.auth_signup_welcome() : m.auth_signup_done() })
+                toast({ title: profile.email_verified ? m.auth_signup_welcome() : m.auth_signup_done() })
                 await navigate({ href: redirect ?? '/home' })
                 return
               }
               // Without email delivery the server reports the address as confirmed: straight to sign-in.
               if (profile.email_verified) {
-                toast.add({ title: m.auth_signup_done_signin() })
+                toast({ title: m.auth_signup_done_signin() })
                 await navigate({ to: '/login' })
                 return
               }
-              toast.add({ title: m.auth_signup_done() })
+              toast({ title: m.auth_signup_done() })
               await navigate({ to: '/verify-email', search: { email: body.email } })
             },
             onError: error => idempotency.settle(error),

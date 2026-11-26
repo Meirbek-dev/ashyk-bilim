@@ -1,11 +1,11 @@
-# G-11: Colors stay tokens (docs/web/DESIGN.md); stock shadcn output in src/shared/ui/ is the generator's and exempt. CSS outside src/styles/.
+# G-11: Colors stay tokens (docs/web/DESIGN.md). CSS outside src/styles/.
 # Any text the class or color can be written in: values, selectors, strings, comments.
 id: tokens-dark-variant-css
 language: css
 severity: error
 message: 'dark mode comes from light-dark() tokens: drop the dark: variant'
 files: ['apps/web-2/src/**/*.css']
-ignores: ['apps/web-2/src/styles/**', 'apps/web-2/src/shared/ui/**']
+ignores: ['apps/web-2/src/styles/**']
 rule:
   regex: '\bdark:[\w\[!-]'
   any:

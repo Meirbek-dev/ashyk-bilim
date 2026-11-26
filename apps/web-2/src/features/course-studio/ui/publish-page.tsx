@@ -25,7 +25,7 @@ export function PublishPage() {
   const go = () =>
     publish.mutate(
       { path: { course_id: courseId }, body: { action: 'publish' } },
-      { onSuccess: () => toast.add({ title: m.studio_published() }) },
+      { onSuccess: () => toast({ title: m.studio_published() }) },
     )
   return (
     <div className="flex max-w-prose flex-col gap-10">

@@ -33,7 +33,7 @@ export function RevokeAccessToken({ id, name }: { id: string; name: string }) {
           {
             onSuccess: () => {
               setOpen(false)
-              toast.add({ title: m.settings_token_revoked() })
+              toast({ title: m.settings_token_revoked() })
             },
           },
         )

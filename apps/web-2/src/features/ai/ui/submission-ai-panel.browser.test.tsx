@@ -1,6 +1,6 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
-import { userEvent } from 'vite-plus/test/browser'
+import { page, userEvent } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import { createQueryClient } from '#/shared/api/query-client'
@@ -119,7 +119,7 @@ describe('SubmissionAiPanel (the grader slot of slice 6.1)', () => {
     await expect.element(screen.getByText('Условие выхода')).toBeVisible()
     await expect.element(screen.getByText('Повторить тему циклов')).toBeVisible()
     await userEvent.click(screen.getByRole('button', { name: m.ai_gate_assign() }))
-    await userEvent.click(screen.getByRole('alertdialog').getByRole('button', { name: m.ai_gate_assign() }))
+    await userEvent.click(page.getByRole('alertdialog').getByRole('button', { name: m.ai_gate_assign() }))
     await expect.element(screen.getByText(m.ai_gate_assigned())).toBeVisible()
     // B-AI-30: the assigned lesson is there for the grader to read.
     await expect.element(screen.getByText(m.ai_gate_lesson({ title: 'Циклы' }))).toBeVisible()

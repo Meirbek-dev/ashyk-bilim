@@ -1,6 +1,6 @@
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { useId, useRef, useState } from 'react'
+import { useId, useState } from 'react'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
@@ -37,7 +37,6 @@ export function DeleteCourse({ course }: { course: Course }) {
   const [open, setOpen] = useState(false)
   const [typed, setTyped] = useState('')
   const [acknowledged, setAcknowledged] = useState(false)
-  const cancel = useRef<HTMLButtonElement>(null)
   const id = useId()
   const navigate = useNavigate()
   const { data: preview, refetch, isFetching } = useSuspenseQuery(deletionPreviewOptions(course.id))
@@ -53,7 +52,7 @@ export function DeleteCourse({ course }: { course: Course }) {
       },
       {
         onSuccess: () => {
-          toast.add({ title: m.studio_course_deleted() })
+          toast({ title: m.studio_course_deleted() })
           void navigate({ to: '/teach/courses' })
         },
         onError: error => {
@@ -77,7 +76,7 @@ export function DeleteCourse({ course }: { course: Course }) {
       <AlertDialogTrigger render={<Button variant="destructive" />}>{m.studio_course_delete()}</AlertDialogTrigger>
       {/* With the learner-work warning the dialog is taller than a phone: it scrolls inside itself, so its title and
           «Отмена» stay in reach (the stock popup grew past both edges of the screen). */}
-      <AlertDialogContent initialFocus={cancel} className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
+      <AlertDialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <AlertDialogHeader>
           <AlertDialogTitle>{m.studio_course_delete_confirm_title({ name: course.name })}</AlertDialogTitle>
           <AlertDialogDescription>{m.studio_course_delete_hint()}</AlertDialogDescription>
@@ -91,9 +90,7 @@ export function DeleteCourse({ course }: { course: Course }) {
         </Field>
         {remove.error ? <ErrorAlert>{presentError(remove.error)}</ErrorAlert> : null}
         <AlertDialogFooter>
-          <AlertDialogCancel ref={cancel} variant="ghost">
-            {m.ui_cancel()}
-          </AlertDialogCancel>
+          <AlertDialogCancel variant="ghost">{m.ui_cancel()}</AlertDialogCancel>
           <SubmitButton
             variant="destructive"
             pending={remove.isPending}

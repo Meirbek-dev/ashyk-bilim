@@ -41,7 +41,7 @@ export function ExtendDeadline({ work, courseId, rows }: ExtendDeadlineProps) {
             if (state === 'failed') return
             setOpen(false)
             form.reset()
-            toast.add({
+            toast({
               title:
                 state === 'done' ? m.grading_extend_done({ count: formatNumber(count) }) : m.grading_extend_queued(),
             })

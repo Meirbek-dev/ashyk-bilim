@@ -49,7 +49,7 @@ describe('Combobox (multi-select) and MultiSelectField', () => {
   test('arrows and Enter pick several, typing filters, chips show and remove them, the field holds the ids', async () => {
     const submit = vi.fn<(ids: readonly string[]) => void>()
     const screen = await renderInRouter(<Picker submit={submit} />)
-    const input = screen.getByLabelText(text.label)
+    const input = screen.getByRole('combobox', { name: text.label })
 
     await input.click()
     await userEvent.keyboard('{ArrowDown}{Enter}{ArrowDown}{Enter}')
@@ -70,7 +70,7 @@ describe('Combobox (multi-select) and MultiSelectField', () => {
     const submit = vi.fn<(ids: readonly string[]) => void>()
     const screen = await renderInRouter(<Picker submit={submit} search />)
 
-    await screen.getByLabelText(text.label).click()
+    await screen.getByRole('combobox', { name: text.label }).click()
     await userEvent.keyboard('{ArrowUp}{Enter}')
     await screen.getByRole('option', { name: 'Drawing' }).click()
     await expect.element(screen.getByRole('option', { name: m.ui_show_more() })).not.toBeInTheDocument()
@@ -89,7 +89,7 @@ describe('Combobox (multi-select) and MultiSelectField', () => {
     const submit = vi.fn<(ids: readonly string[]) => void>()
     const screen = await renderInRouter(<Picker submit={submit} />)
 
-    await screen.getByLabelText(text.label).click()
+    await screen.getByRole('combobox', { name: text.label }).click()
     await userEvent.keyboard('{ArrowDown}{Enter}{ArrowDown}{Enter}')
     await userEvent.keyboard('{Escape}{Escape}{Escape}')
     for (const name of ['Algebra', 'Biology'])

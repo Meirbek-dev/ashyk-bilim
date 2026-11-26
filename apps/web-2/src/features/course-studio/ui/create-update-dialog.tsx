@@ -25,7 +25,7 @@ export function CreateUpdateDialog({ courseId }: { courseId: string }) {
         {
           onSuccess: () => {
             changeOpen(false)
-            toast.add({ title: m.studio_update_created() })
+            toast({ title: m.studio_update_created() })
           },
         },
       ),

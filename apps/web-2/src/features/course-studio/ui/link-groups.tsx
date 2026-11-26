@@ -50,7 +50,7 @@ export function LinkGroups({
       {
         onSuccess: () => {
           setPicked([])
-          toast.add({ title: m.studio_group_linked() })
+          toast({ title: m.studio_group_linked() })
         },
       },
     )

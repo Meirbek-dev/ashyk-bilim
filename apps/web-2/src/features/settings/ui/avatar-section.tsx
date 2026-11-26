@@ -25,13 +25,13 @@ export function AvatarSection({ profile }: { profile: UserProfile }) {
   const pick = (file: File) => {
     const refused = avatarProblem(file)
     setProblem(refused)
-    if (!refused) replace.mutate(file, { onSuccess: () => toast.add({ title: m.settings_avatar_saved() }) })
+    if (!refused) replace.mutate(file, { onSuccess: () => toast({ title: m.settings_avatar_saved() }) })
   }
   const confirmRemove = () =>
     remove.mutate(null, {
       onSuccess: () => {
         setConfirming(false)
-        toast.add({ title: m.settings_avatar_removed() })
+        toast({ title: m.settings_avatar_removed() })
       },
     })
   return (

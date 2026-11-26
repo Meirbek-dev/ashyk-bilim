@@ -1,4 +1,4 @@
-import { expectFailure, clickUntil } from '../fixtures/test'
+import { expectFailure, clickUntil, toast } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 import { m } from '#/paraglide/messages'
 import {
@@ -39,7 +39,7 @@ test('B-CRS-03 B-CRS-16 a guest enrols after signing in', async ({ page, signInA
   const back = new URL(page.url()).searchParams.get('redirect') ?? ''
   await signInAs('student')
   await page.goto(back)
-  await expect(page.getByText(m.course_enrolled({}, ru))).toBeVisible()
+  await expect(toast(page, m.course_enrolled({}, ru))).toBeVisible()
   await expect(page).toHaveURL(new RegExp(`${about(made)}$`))
   await expect(page.getByRole('link', { name: m.course_next_start({}, ru) })).toBeVisible()
 })
@@ -63,7 +63,7 @@ test('B-CRS-04 a student enrols and the header offers to start', async ({ page, 
   await signInAs('student')
   await page.goto(about(made))
   await clickUntil(page.getByRole('button', { name: m.course_enroll({}, ru) }), () =>
-    expect(page.getByText(m.course_enrolled({}, ru))).toBeVisible({ timeout: 2000 }),
+    expect(toast(page, m.course_enrolled({}, ru))).toBeVisible({ timeout: 2000 }),
   )
   await expect(page.getByRole('link', { name: m.course_next_start({}, ru) })).toHaveAttribute(
     'href',
@@ -119,7 +119,7 @@ test('B-CRS-07 leaving asks with the course name, starts on Cancel, then offers 
   )
   await expect(confirm.getByRole('button', { name: m.ui_cancel({}, ru) })).toBeFocused()
   await confirm.getByRole('button', { name: m.course_leave({}, ru) }).click()
-  await expect(page.getByText(m.course_left({}, ru))).toBeVisible()
+  await expect(toast(page, m.course_left({}, ru))).toBeVisible()
   await expect(page.getByRole('button', { name: m.course_enroll({}, ru) })).toBeVisible()
 })
 
@@ -179,10 +179,10 @@ test('B-CRS-11 a user applies to co-author, withdraws, and learns when it was al
   await signInAs('student')
   await page.goto(about(made))
   await clickUntil(page.getByRole('button', { name: m.course_apply({}, ru) }), () =>
-    expect(page.getByText(m.course_applied({}, ru))).toBeVisible({ timeout: 2000 }),
+    expect(toast(page, m.course_applied({}, ru))).toBeVisible({ timeout: 2000 }),
   )
   await page.getByRole('button', { name: m.course_withdraw({}, ru) }).click()
-  await expect(page.getByText(m.course_withdrawn({}, ru))).toBeVisible()
+  await expect(toast(page, m.course_withdrawn({}, ru))).toBeVisible()
 
   await page.getByRole('button', { name: m.course_apply({}, ru) }).click()
   await expect(page.getByRole('button', { name: m.course_withdraw({}, ru) })).toBeVisible()

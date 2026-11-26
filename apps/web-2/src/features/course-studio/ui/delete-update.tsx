@@ -19,7 +19,7 @@ export function DeleteUpdate({ courseId, update }: { courseId: string; update: C
       {
         onSuccess: () => {
           setOpen(false)
-          toast.add({ title: m.studio_deleted() })
+          toast({ title: m.studio_deleted() })
         },
       },
     )

@@ -30,7 +30,7 @@ export function ThumbnailSection({ course }: { course: Course }) {
         { path: { course_id: course.id }, body, headers: { 'If-Match': version } },
         {
           onSuccess: () =>
-            toast.add({ title: body.thumbnail_upload_id === null ? m.studio_thumbnail_removed() : m.studio_saved() }),
+            toast({ title: body.thumbnail_upload_id === null ? m.studio_thumbnail_removed() : m.studio_saved() }),
         },
       ),
     () => courseVersion(queryClient, course.id),

@@ -53,7 +53,7 @@ export function InterventionEditDialog({ item }: { item: Intervention }) {
         {
           onSuccess: () => {
             setOpen(false)
-            toast.add({ title: m.analytics_intervention_saved() })
+            toast({ title: m.analytics_intervention_saved() })
           },
           onError: error => setConflict(isStale(error)),
         },

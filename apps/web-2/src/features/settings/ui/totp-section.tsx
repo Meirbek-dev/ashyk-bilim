@@ -34,7 +34,7 @@ export function TotpSection({ profile }: { profile: UserProfile }) {
         await verify.mutateAsync({ body })
         enroll.reset()
         form.reset()
-        toast.add({ title: m.settings_totp_enabled() })
+        toast({ title: m.settings_totp_enabled() })
       } catch (error) {
         // A wrong code belongs under the code field (BUG-083).
         if (!hasCode(error, 'invalid-totp-code')) throw error

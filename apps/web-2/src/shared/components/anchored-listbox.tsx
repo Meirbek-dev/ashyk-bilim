@@ -1,14 +1,8 @@
 import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from '#/shared/ui/combobox'
+import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from '#/shared/ui/command'
+import { Popover, PopoverContent } from '#/shared/ui/popover'
 
 import type { ComboboxOption } from './multi-combobox'
 
@@ -33,8 +27,8 @@ type AnchoredListboxProps = {
 }
 
 /**
- * A searchable list anchored to anything (the "/" menu of the editor at the caret) on the stock combobox: focus moves
- * into its search input, the list filters by label as the user types, arrows move, Enter picks and closes.
+ * A searchable list anchored to anything (the "/" menu of the editor at the caret) : the stock popover around the stock
+ * command list. Focus moves into its search input, the list filters by label as the user types, arrows move, Enter picks and closes.
  */
 export function AnchoredListbox({
   label,
@@ -45,32 +39,35 @@ export function AnchoredListbox({
   onSelect,
   onClosed,
 }: AnchoredListboxProps) {
+  const pick = (value: string) => {
+    const option = options.find(item => item.value === value)
+    if (option) onSelect(option)
+    onOpenChange(false)
+  }
   return (
-    <Combobox
-      items={options}
+    <Popover
       open={open}
       onOpenChange={next => onOpenChange(next)}
       onOpenChangeComplete={next => (next ? undefined : onClosed?.())}
-      value={null}
-      onValueChange={(option: ListboxOption | null) => {
-        if (option) onSelect(option)
-        onOpenChange(false)
-      }}
-      itemToStringLabel={(option: ListboxOption) => option.label}
-      autoHighlight
     >
-      <ComboboxContent anchor={anchor} aria-label={label} className="w-72">
-        <ComboboxInput aria-label={label} placeholder={label} showTrigger={false} />
-        <ComboboxEmpty>{m.ui_options_empty()}</ComboboxEmpty>
-        <ComboboxList>
-          {(option: ListboxOption) => (
-            <ComboboxItem key={option.value} value={option}>
-              {option.icon}
-              {option.label}
-            </ComboboxItem>
-          )}
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
+      <PopoverContent anchor={anchor} align="start" sideOffset={6} aria-label={label} className="w-72 gap-0 p-0">
+        <Command filter="contains" autoHighlight onAction={pick} className="gap-0">
+          <CommandInput
+            aria-label={label}
+            placeholder={label}
+            className="m-1 mb-0 h-8 w-auto border-border bg-muted shadow-none"
+          />
+          <CommandEmpty>{m.ui_options_empty()}</CommandEmpty>
+          <CommandList aria-label={label} className="max-h-80 p-1">
+            {options.map(option => (
+              <CommandItem key={option.value} value={option.value} label={option.label}>
+                {option.icon}
+                {option.label}
+              </CommandItem>
+            ))}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   )
 }

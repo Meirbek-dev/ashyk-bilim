@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
+import { page } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import type { Course, CourseDeletionPreview } from '#/shared/api/gen/types.gen'
@@ -55,7 +56,7 @@ async function openDelete(previews: (CourseDeletionPreview | null)[]) {
     </QueryClientProvider>,
   )
   await screen.getByRole('button', { name: `${m.studio_bulk_delete()} (2)` }).click()
-  const dialog = screen.getByRole('alertdialog', {
+  const dialog = page.getByRole('alertdialog', {
     name: m.studio_bulk_confirm({ action: m.studio_bulk_delete(), count: '2' }),
   })
   const deletes = () => requests.filter(request => request.method === 'DELETE')

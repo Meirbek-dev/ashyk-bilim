@@ -30,7 +30,7 @@ export function YoutubeSection({ courseId, activity }: { courseId: string; activ
           body: { content: youtubeContent(uri) },
           headers: { 'If-Match': activity.version },
         },
-        { onSuccess: () => toast.add({ title: m.studio_saved() }) },
+        { onSuccess: () => toast({ title: m.studio_saved() }) },
       ),
   })
   return (

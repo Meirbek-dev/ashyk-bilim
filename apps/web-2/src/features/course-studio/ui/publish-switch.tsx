@@ -42,7 +42,7 @@ export function PublishSwitch({ courseId, activity }: PublishSwitchProps) {
       {
         onSuccess: () => {
           setConfirming(false)
-          toast.add({ title: published ? m.studio_activity_published() : m.studio_activity_unpublished() })
+          toast({ title: published ? m.studio_activity_published() : m.studio_activity_unpublished() })
         },
       },
     )

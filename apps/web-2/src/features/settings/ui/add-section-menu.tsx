@@ -20,9 +20,9 @@ export function AddSectionMenu({ finalFocus, onOpen, onAdd }: AddSectionMenuProp
     <div>
       <DropdownMenu onOpenChange={open => open && onOpen()}>
         <DropdownMenuTrigger render={<Button variant="outline">{m.settings_builder_add()}</Button>} />
-        <DropdownMenuContent align="end" finalFocus={finalFocus}>
+        <DropdownMenuContent align="end" finalFocus={() => finalFocus.current}>
           {ADDABLE_SECTIONS.map(type => (
-            <DropdownMenuItem key={type} onClick={() => onAdd(type)}>
+            <DropdownMenuItem key={type} onSelect={() => onAdd(type)}>
               {sectionTypeLabels[type]()}
             </DropdownMenuItem>
           ))}

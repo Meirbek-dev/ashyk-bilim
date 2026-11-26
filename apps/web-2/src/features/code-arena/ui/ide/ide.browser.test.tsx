@@ -117,11 +117,11 @@ describe('B-COD-29 B-COD-30 B-COD-31 the workspace', () => {
         />
       </div>,
     )
-    const divider = screen.getByRole('slider', { name: m.code_split() })
+    const divider = screen.getByRole('separator', { name: m.code_split() })
     await expect.element(divider).toHaveAttribute('aria-valuetext', m.code_split_value({ percent: 60 }))
     divider.element().focus()
     await userEvent.keyboard('{ArrowDown}')
-    // Down gives the editor more room: the slider counts the console's share from the bottom.
+    // Down moves the divider down: the editor above it grows.
     await expect.poll(() => onShare.mock.lastCall?.[0]).toBeCloseTo(0.65)
     await screen.getByRole('button', { name: m.code_settings() }).click()
     await screen.getByRole('button', { name: m.code_font_large() }).click()

@@ -40,7 +40,7 @@ export function PublishAll({ work, courseId, held }: PublishAllProps) {
         publish.mutate(undefined, {
           onSuccess: outcome => {
             setOpen(false)
-            toast.add({ title: doneText(outcome) })
+            toast({ title: doneText(outcome) })
           },
         })
       }

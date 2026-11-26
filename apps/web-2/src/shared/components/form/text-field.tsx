@@ -1,11 +1,11 @@
 import { Search } from 'lucide-react'
-import { type ChangeEvent, type ComponentProps, useId, useLayoutEffect, useRef } from 'react'
+import { type ComponentProps, useLayoutEffect, useRef } from 'react'
 
 import { Input } from '#/shared/ui/input'
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from '#/shared/ui/input-group'
 
 import { errorText } from './field-errors'
-import { describedBy, FieldShell } from './field-shell'
+import { FieldShell } from './field-shell'
 import { PasswordInput } from './password-input'
 import { useFieldContext } from './form-context'
 
@@ -26,7 +26,6 @@ type TextFieldProps = Pick<
  */
 export function TextField({ label, description, suffix, ...input }: TextFieldProps) {
   const field = useFieldContext<string | null | undefined>()
-  const id = useId()
   const error = errorText(field.state.meta.errors)
   const ref = useRef<HTMLInputElement>(null)
   // On a server-rendered page, text typed before hydration is in the input but not in the form: take it over. Later
@@ -38,17 +37,14 @@ export function TextField({ label, description, suffix, ...input }: TextFieldPro
   const search = input.type === 'search'
   const control = {
     ref,
-    id,
     name: field.name,
     value: field.state.value ?? '',
-    onChange: (event: ChangeEvent<HTMLInputElement>) => field.handleChange(event.target.value),
+    onValueChange: (value: string) => field.handleChange(value),
     onBlur: field.handleBlur,
-    'aria-invalid': error !== undefined || undefined,
-    'aria-describedby': describedBy(id, description, error),
     ...input,
   }
   return (
-    <FieldShell id={id} label={label} description={description} error={error} labelHidden={search}>
+    <FieldShell label={label} description={description} error={error} labelHidden={search}>
       {search ? (
         <InputGroup className="h-control bg-card">
           <InputGroupInput placeholder={label} {...control} />

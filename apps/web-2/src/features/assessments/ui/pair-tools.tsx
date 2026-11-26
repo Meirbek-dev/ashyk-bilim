@@ -31,7 +31,7 @@ export function PairTools({
           aria-label={m.assessments_pair_unpaired({ number })}
           checked={unpaired}
           disabled={!editable}
-          onCheckedChange={onUnpaired}
+          onCheckedChange={checked => onUnpaired(checked === true)}
         />
         {m.assessments_pair_none()}
       </Label>

@@ -23,7 +23,7 @@ export function EmailBannerForm({ email, onHide }: { email: string; onHide: () =
     defaultValues: { email, code: '' },
     onSubmit: body =>
       verify
-        .mutateAsync({ body }, { onSuccess: () => toast.add({ title: m.auth_verify_done() }) })
+        .mutateAsync({ body }, { onSuccess: () => toast({ title: m.auth_verify_done() }) })
         .catch((error: unknown) => {
           if (!isWrongCode(error)) throw error
           const text = m.auth_verify_error_code()

@@ -14,7 +14,8 @@ test('B-COL-18 the old /collections/new opens the list with the create dialog; c
   await page.goto('/ru/collections/new')
   await expect(page).toHaveURL(/\/collections\?create=true$/)
   const dialog = page.getByRole('dialog', { name: m.collections_new({}, ru) })
-  await expect(dialog).toBeVisible()
+  // It opens once hydrated, with the focus on the first field.
+  await expect(dialog.getByLabel(m.collections_field_name({}, ru))).toBeFocused()
   await page.keyboard.press('Escape')
   await expect(dialog).toBeHidden()
   await expect(page).toHaveURL(/\/collections$/)

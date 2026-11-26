@@ -36,7 +36,7 @@ export function useAccessForm(activityId: string, assessment: AssessmentDetail, 
         onSuccess: () => {
           setConflict(false)
           setConfirming(false)
-          toast.add({ title: m.assessments_access_saved() })
+          toast({ title: m.assessments_access_saved() })
         },
         onError: error => setConflict(isStale(error)),
       },

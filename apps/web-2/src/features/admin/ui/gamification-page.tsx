@@ -30,7 +30,7 @@ export function GamificationPage() {
     async (body: UpdateGamificationConfigRequest, version: number) => {
       const saved = await update.mutateAsync(
         { body, headers: { 'If-Match': version } },
-        { onSuccess: () => toast.add({ title: m.admin_saved() }) },
+        { onSuccess: () => toast({ title: m.admin_saved() }) },
       )
       return { version: saved.version ?? version }
     },

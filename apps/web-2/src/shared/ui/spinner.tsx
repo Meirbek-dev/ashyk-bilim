@@ -1,11 +1,18 @@
-import { cn } from "cn"
+import { cn } from 'cn'
 
-import { m } from "#/paraglide/messages"
-import { Loader2Icon } from "lucide-react"
+import { m } from '#/paraglide/messages'
+import { Loader2Icon } from 'lucide-react'
 
-function Spinner({ className, ...props }: React.ComponentProps<"svg">) {
+function Spinner({ className, ...props }: React.ComponentProps<'svg'>) {
   return (
-    <Loader2Icon data-slot="spinner" role="status" aria-label={m.ui_loading()} className={cn("size-4 animate-spin", className)} {...props} />
+    <Loader2Icon
+      data-slot="spinner"
+      // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- an icon has no tag of its own; <output> is a form element
+      role="status"
+      aria-label={m.ui_loading()}
+      className={cn('size-4 animate-spin', className)}
+      {...props}
+    />
   )
 }
 

@@ -23,7 +23,7 @@ export function GroupMembersAdd({ group }: { group: Usergroup }) {
       {
         onSuccess: () => {
           setPicked([])
-          toast.add({ title: m.admin_group_members_added() })
+          toast({ title: m.admin_group_members_added() })
         },
       },
     )

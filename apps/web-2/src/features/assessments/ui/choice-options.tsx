@@ -75,7 +75,7 @@ export function ChoiceOptions({ variant, options, onChange, mode }: ChoiceOption
       aria-label={m.assessments_option_correct({ number: at + 1 })}
       checked={option.is_correct === true}
       disabled={!editable}
-      onCheckedChange={checked => patch(at, { is_correct: checked })}
+      onCheckedChange={checked => patch(at, { is_correct: checked === true })}
     />
   )
 

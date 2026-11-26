@@ -29,19 +29,22 @@ export function UserAvatar({ name, avatarKey, size = 'default' }: UserAvatarProp
   const [noPreview, setNoPreview] = useState<string | null>(null)
   const preview = avatarKey && noPreview !== avatarKey ? contentPreviews(avatarKey, 'avatar') : null
   return (
-    <Avatar aria-hidden className={large ? 'size-24' : undefined}>
+    <Avatar
+      aria-hidden
+      className={large ? 'size-24' : undefined}
+      onLoadingStatusChange={status => {
+        if (status === 'error' && preview) setNoPreview(avatarKey ?? null)
+      }}
+    >
       {preview ? (
         <AvatarImage
-          // A new element for the original: Base UI keeps the failed status of the one it replaces otherwise.
+          // A new element for the original, so its loading status starts over.
           key="preview"
           src={preview.src}
           srcSet={preview.srcSet}
           // The drawn size (size-8 / size-24): the browser takes the preview that covers it at the screen's density.
           sizes={large ? '96px' : '32px'}
           alt=""
-          onLoadingStatusChange={status => {
-            if (status === 'error') setNoPreview(avatarKey ?? null)
-          }}
         />
       ) : avatarKey ? (
         <AvatarImage key="original" src={contentUrl(avatarKey)} alt="" referrerPolicy="no-referrer" />

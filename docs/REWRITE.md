@@ -1405,15 +1405,16 @@ bitflags! { pub struct Caps: u32 {
      families go after a check that each kept one covers ә ғ қ ң ө ұ ү һ і.
    - PWA: a manifest and a hand-written service worker (assets plus a queue for exam
      autosaves), no new dependencies; courses are not readable offline.
-   - Kept: `cn`, the new `@dnd-kit/react` API, `@tanstack/charts`, React Compiler (babel
-     plugin until oxc supports it), `If-Match` instead of Yjs collaboration, Kazakh in
-     Cyrillic only. TanStack DB is not used.
+   - Kept: `cn`, `@tanstack/charts`, React Compiler (babel plugin until oxc supports it),
+     `If-Match` instead of Yjs collaboration, Kazakh in Cyrillic only. TanStack DB is not used.
+   - UI behavior (2026-11-26): one library, ui-sdk (`@ui-sdk/react`, beta), replaces Base UI,
+     the shadcn registry and `@dnd-kit` (DESIGN 8).
 
 Items 3–8 land in phases 1–3 as they become possible.
 
 Kept as they are: generated client from OpenAPI (hey-api), loader prefetch +
 `useSuspenseQuery`, `meta.invalidates`, the routes → features → shared import rule,
-shadcn, Paraglide with the ru/kk/en catalogs, `allowed_actions`-driven UI.
+the kit in `src/shared/ui`, Paraglide with the ru/kk/en catalogs, `allowed_actions`-driven UI.
 
 ## 8. Contract during the migration
 

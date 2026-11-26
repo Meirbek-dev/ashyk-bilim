@@ -34,7 +34,7 @@ export function AwardXp({ user }: { user: AdminUser }) {
         {
           onSuccess: result => {
             idempotency.settle()
-            toast.add({ title: m.admin_award_done({ total: result.profile.total_xp }) })
+            toast({ title: m.admin_award_done({ total: result.profile.total_xp }) })
             form.reset()
           },
           onError: error => idempotency.settle(error),

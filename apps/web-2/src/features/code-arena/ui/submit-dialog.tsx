@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import {
@@ -32,11 +32,12 @@ type SubmitDialogProps = {
  * Not the destructive ConfirmDialog: submitting is the page's primary step, not a loss.
  */
 export function SubmitDialog({ number, max, trigger, disabled, onConfirm, open, onOpenChange }: SubmitDialogProps) {
-  const cancel = useRef<HTMLButtonElement>(null)
   return (
     <AlertDialog open={open} onOpenChange={next => onOpenChange(next)}>
-      <AlertDialogTrigger render={<Button disabled={disabled} />}>{trigger}</AlertDialogTrigger>
-      <AlertDialogContent initialFocus={cancel}>
+      <AlertDialogTrigger disabled={disabled} render={<Button />}>
+        {trigger}
+      </AlertDialogTrigger>
+      <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{m.code_submit_title()}</AlertDialogTitle>
           <AlertDialogDescription>
@@ -44,17 +45,8 @@ export function SubmitDialog({ number, max, trigger, disabled, onConfirm, open, 
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel ref={cancel} variant="ghost">
-            {m.ui_cancel()}
-          </AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => {
-              onOpenChange(false)
-              onConfirm()
-            }}
-          >
-            {m.code_submit()}
-          </AlertDialogAction>
+          <AlertDialogCancel variant="ghost">{m.ui_cancel()}</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>{m.code_submit()}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

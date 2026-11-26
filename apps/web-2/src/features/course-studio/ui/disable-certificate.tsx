@@ -19,7 +19,7 @@ export function DisableCertificate({ course, certification }: { course: Course; 
       {
         onSuccess: () => {
           setOpen(false)
-          toast.add({ title: m.studio_certificate_disabled() })
+          toast({ title: m.studio_certificate_disabled() })
         },
       },
     )

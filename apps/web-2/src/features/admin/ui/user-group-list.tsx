@@ -64,7 +64,7 @@ export function UserGroupList({ user, member }: { user: AdminUser; member: Userg
             {
               onSuccess: () => {
                 setRemoving(null)
-                toast.add({ title: m.admin_user_group_removed() })
+                toast({ title: m.admin_user_group_removed() })
               },
             },
           )

@@ -217,3 +217,16 @@ export async function clickUntil(target: Locator, outcome: () => Promise<void>):
     await outcome()
   }).toPass()
 }
+
+/**
+ * A toast's text, looked up in the toasts' region: ui-sdk also writes it into its page-wide live region, where a
+ * plain `getByText` finds it a second time.
+ */
+export function toast(page: Page, text: string, options?: { exact?: boolean }): Locator {
+  return page.locator('[data-slot="toast-region"]').getByText(text, options)
+}
+
+/** The page's alerts (`Alert`, form errors), without ui-sdk's always-present assertive live region. */
+export function alerts(page: Page): Locator {
+  return page.getByRole('alert').and(page.locator(':not([data-ui-sdk-announcer])'))
+}

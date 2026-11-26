@@ -5,6 +5,7 @@ import { m } from '#/paraglide/messages'
 import { clock } from '../../model/file-blocks'
 import { SKIP_SECONDS } from '../../model/video-player'
 import { PlayerButton } from './player-button'
+import { PlayerToggle } from './player-toggle'
 import { SpeedMenu } from './speed-menu'
 import type { Player } from './use-player'
 import { VolumeControl } from './volume-control'
@@ -52,12 +53,12 @@ export function ControlRow({ player }: { player: Player }) {
       <SpeedMenu rate={state.rate} onRate={player.setRate} onOpenChange={player.setMenuOpen} />
       {pip.supported ? (
         <span className="hidden @sm:contents">
-          <PlayerButton
+          <PlayerToggle
             label={m.editor_video_pip()}
             shortcut="I"
-            aria-pressed={pip.active}
+            pressed={pip.active}
             icon={<PictureInPicture2 aria-hidden />}
-            onClick={pip.toggle}
+            onPressedChange={() => pip.toggle()}
           />
         </span>
       ) : null}

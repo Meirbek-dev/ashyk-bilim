@@ -50,7 +50,7 @@ export function useAttemptActions({ courseId, assessmentId, itemId, draftId }: A
       {
         onSuccess: sent => {
           submitKey.settle()
-          toast.add({ title: m.code_submitted() })
+          toast({ title: m.code_submitted() })
           void navigate({ search: { submission: sent.id } })
         },
         onError: error => submitKey.settle(error),

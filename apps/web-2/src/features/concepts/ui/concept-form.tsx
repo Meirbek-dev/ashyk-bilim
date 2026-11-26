@@ -24,7 +24,7 @@ export function ConceptForm({ courseId, concept }: { courseId: CourseId; concept
     onSubmit: body =>
       update.mutateAsync(
         { path: { course_id: courseId, concept_id: concept.id }, body },
-        { onSuccess: () => toast.add({ title: m.concepts_saved() }) },
+        { onSuccess: () => toast({ title: m.concepts_saved() }) },
       ),
   })
   return (

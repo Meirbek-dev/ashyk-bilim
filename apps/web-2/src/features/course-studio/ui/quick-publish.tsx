@@ -29,7 +29,7 @@ export function QuickPublish({ courseId, activity, onPublished }: QuickPublishPr
       { path: { activity_id: activity.id }, body: { published: true }, headers: { 'If-Match': activity.version } },
       {
         onSuccess: () => {
-          toast.add({ title: m.studio_activity_published() })
+          toast({ title: m.studio_activity_published() })
           onPublished?.()
         },
       },

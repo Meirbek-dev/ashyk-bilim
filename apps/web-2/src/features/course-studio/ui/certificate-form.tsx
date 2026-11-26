@@ -50,7 +50,7 @@ export function CertificateForm({ course, certification }: CertificateFormProps)
           body: { config: certificateConfig(certification.config, fields) },
           headers: { 'If-Match': version },
         },
-        { onSuccess: () => toast.add({ title: m.studio_saved() }) },
+        { onSuccess: () => toast({ title: m.studio_saved() }) },
       ),
     () => certificationVersion(queryClient, course.id, certification),
   )

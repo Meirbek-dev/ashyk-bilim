@@ -16,9 +16,9 @@ What is left of the cutover: `docs/STAGE-2-CUTOVER.md`; open work: `BACKLOG.md`.
 | `src/shared/auth/`                  | `session.ts` (session query, guards), `access.ts` (workspaces, capabilities) |
 | `src/shared/i18n/`                  | `format.ts` (dates, numbers), `errors.ts` (`presentError`), `validation.ts`  |
 | `src/shared/lib/`                   | `env.server.ts`, `storage.ts`, `appearance.ts`, `csp.ts`, `client-errors.ts` |
-| `src/shared/ui/`                    | kit: shadcn (`bunx shadcn@4.23.0 add <name>`), restyled in place (DESIGN 8)  |
+| `src/shared/ui/`                    | kit: ui-sdk parts in the house look; skill `ui-sdk` (DESIGN 8)               |
 | `src/shared/components/`            | ours on top: `templates/` (DESIGN 6), `form/` (`useAppForm` + fields), rest  |
-| `src/shared/hooks/`, `lib/utils.ts` | `useUpload`, `useSwapFocus`; `cn` (shadcn's `cn` package)                    |
+| `src/shared/hooks/`, `lib/utils.ts` | `useUpload`, `useSwapFocus`; `cn` (the `cn` package)                         |
 | `src/server.ts`                     | request chain: `/healthz`, `/_client-error`, locale, request id, CSP         |
 | `serve.ts`                          | production entry: srvx static files + the Start handler                      |
 | `messages/<locale>/<feature>.json`  | catalogs (ru base, kk, en); `glossary.json` = required terms                 |
@@ -67,7 +67,7 @@ does not fit the default, say why next to the code.
 | Screens         | a template from `#/shared/components/templates`; lists through `ListState`                                                                                                                                                            |
 | UI elements     | stock `#/shared/ui/<name>` (`variant`, `size`, `render`) or a composite; layout classes only, tokens                                                                                                                                  |
 | Button looks    | route: router `Link` + `className={buttonVariants({ variant })}` from `#/shared/components/button-variants` (merged); pending: `disabled` + `<Spinner />`                                                                             |
-| Toast           | `toast.add({ title })` from `#/shared/ui/toast`, only in a mutation's `onSuccess`                                                                                                                                                     |
+| Toast           | `toast({ title })` from `#/shared/ui/toast`, only in a mutation's `onSuccess`                                                                                                                                                         |
 | API errors      | `ApiError` (branch on `code`) + route `errorComponent`; text `presentError`                                                                                                                                                           |
 | Browser storage | `storageItem()` / `cookieItem()` from `#/shared/lib/storage`                                                                                                                                                                          |
 | Memoization     | none: React Compiler                                                                                                                                                                                                                  |

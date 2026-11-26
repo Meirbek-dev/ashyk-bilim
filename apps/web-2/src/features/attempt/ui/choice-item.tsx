@@ -42,8 +42,8 @@ export function ChoiceItem({ body, assessmentId, answer, onChange, disabled }: C
       <FieldSet className="gap-0">
         {legend}
         <RadioGroup
-          value={selected[0] ?? ''}
-          onValueChange={value => pick([String(value)])}
+          value={selected[0] ?? null}
+          onValueChange={value => value !== null && pick([value])}
           aria-labelledby={`${id}-legend`}
           disabled={disabled}
           className="gap-0 divide-y border-y"

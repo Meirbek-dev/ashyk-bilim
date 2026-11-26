@@ -22,7 +22,7 @@ export function TableMenu({ editor }: { editor: Editor }) {
       <DropdownMenuTrigger render={<IconButton label={m.editor_table()} icon={<Table aria-hidden />} />} />
       <DropdownMenuContent align="end">
         {ACTIONS.map(action => (
-          <DropdownMenuItem key={action.label()} onClick={() => action.run(editor.chain().focus()).run()}>
+          <DropdownMenuItem key={action.label()} onSelect={() => action.run(editor.chain().focus()).run()}>
             {action.label()}
           </DropdownMenuItem>
         ))}

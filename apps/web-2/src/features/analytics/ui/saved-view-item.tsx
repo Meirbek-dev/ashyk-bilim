@@ -25,7 +25,7 @@ export function SavedViewItem({ view }: { view: SavedView }) {
       {
         onSuccess: () => {
           setOpen(false)
-          toast.add({ title: m.analytics_view_deleted() })
+          toast({ title: m.analytics_view_deleted() })
         },
       },
     )

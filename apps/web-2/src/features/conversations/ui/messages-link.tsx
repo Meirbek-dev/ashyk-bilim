@@ -16,9 +16,8 @@ export function MessagesLink() {
   const count = data.conversations
   const label = count > 0 ? m.conversations_link_unread({ count }) : m.conversations_title()
   return (
-    <Tooltip>
+    <Tooltip delay={300}>
       <TooltipTrigger
-        delay={300}
         render={
           <RouterLink
             to="/conversations"

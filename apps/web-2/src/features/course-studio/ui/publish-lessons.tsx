@@ -19,8 +19,7 @@ export function PublishLessons({ courseId, curriculum }: { courseId: string; cur
     ...options,
     onSuccess: result => {
       options.onSuccess(result)
-      if (result.published.length > 0)
-        toast.add({ title: m.studio_lessons_published({ count: result.published.length }) })
+      if (result.published.length > 0) toast({ title: m.studio_lessons_published({ count: result.published.length }) })
     },
   })
   // A lesson the last run could not publish (no video, link or document) is not offered again until it changes.

@@ -20,7 +20,7 @@ export function ResendCode({ email, onBadEmail }: { email: () => string; onBadEm
     resend.mutate(
       { body: { email: email().trim() }, headers: { 'Accept-Language': getLocale() } },
       {
-        onSuccess: () => toast.add({ title: m.auth_verify_resent() }),
+        onSuccess: () => toast({ title: m.auth_verify_resent() }),
         onError: error => (isBadEmail(error) ? onBadEmail?.() : undefined),
       },
     )

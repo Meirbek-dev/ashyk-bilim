@@ -55,7 +55,7 @@ export function OverrideRow({ assessmentId, row, name, editable }: OverrideRowPr
             onConfirm={() =>
               remove.mutate(
                 { path: { assessment_id: assessmentId, user_id: row.user_id } },
-                { onSuccess: () => toast.add({ title: m.assessments_exception_removed() }) },
+                { onSuccess: () => toast({ title: m.assessments_exception_removed() }) },
               )
             }
             pending={remove.isPending}

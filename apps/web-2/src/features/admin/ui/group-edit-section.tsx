@@ -25,7 +25,7 @@ export function GroupEditSection({ group }: { group: Usergroup }) {
     (body: UpdateUsergroupRequest, version: number) =>
       update.mutateAsync(
         { path: { group_id: group.id }, body, headers: { 'If-Match': version } },
-        { onSuccess: () => toast.add({ title: m.admin_saved() }) },
+        { onSuccess: () => toast({ title: m.admin_saved() }) },
       ),
     () => groupVersion(queryClient, group.id),
   )

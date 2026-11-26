@@ -1,7 +1,7 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Suspense } from 'react'
 import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
-import { userEvent } from 'vite-plus/test/browser'
+import { page, userEvent } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import type { GradeDraftView } from '#/shared/api/gen/types.gen'
@@ -136,7 +136,7 @@ describe('the review «Черновик ИИ» card', () => {
     const screen = await card({ onDiscard })
     await userEvent.click(screen.getByRole('button', { name: m.grading_ai_discard() }))
     expect(onDiscard).not.toHaveBeenCalled()
-    await userEvent.click(screen.getByRole('alertdialog').getByRole('button', { name: m.grading_ai_discard() }))
+    await userEvent.click(page.getByRole('alertdialog').getByRole('button', { name: m.grading_ai_discard() }))
     expect(onDiscard).toHaveBeenCalledOnce()
   })
 

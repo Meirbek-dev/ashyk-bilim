@@ -46,7 +46,7 @@ export function EnrollLearners({ courseId }: { courseId: string }) {
           onSuccess: result => {
             check.reset()
             form.reset()
-            toast.add({ title: m.studio_roster_done({ count: summarize(result.results).counts.enrolled }) })
+            toast({ title: m.studio_roster_done({ count: summarize(result.results).counts.enrolled }) })
           },
         },
       ),

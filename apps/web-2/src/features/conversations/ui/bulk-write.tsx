@@ -66,7 +66,7 @@ export function BulkWrite({ courseId, people, intervention = false, label }: Bul
     if (!result) return
     setOpen(false)
     reset()
-    toast.add({ title: bulkSummary(result) })
+    toast({ title: bulkSummary(result) })
   }
   return (
     <FormDialog
@@ -84,7 +84,8 @@ export function BulkWrite({ courseId, people, intervention = false, label }: Bul
       title={label}
       submitLabel={m.conversations_bulk_send({ count: picks.size })}
       onSubmit={submit}
-      pending={send.isPending}
+      // A file still uploading holds «Отправить» as pending: a press then would send nothing and say nothing.
+      pending={send.isPending || sendBlocker(text, files.files) === 'uploading'}
       error={send.error}
     >
       <BulkPeople people={people} picks={picks} onChange={setPicks} />

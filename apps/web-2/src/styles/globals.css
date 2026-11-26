@@ -1,6 +1,12 @@
+/* ui-sdk adds the CSS its behaviors need (closed popups hidden, the page dimmed under a sheet) in this layer; declared
+   first so every other rule wins over it. */
+@layer ui-sdk;
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import 'shadcn/tailwind.css';
+/* ui-sdk's default look as base.ui-sdk, under Tailwind's preflight (ui-sdk suggests components): it also styles bare
+   a, code, kbd and hr app-wide, which the preflight keeps reset; what it gives parts the kit leaves unstyled still
+   shows. Its --ui-* tokens follow ours (tokens.css), so all 63 themes reach it. */
+@import '@ui-sdk/core/web.css' layer(base);
 @import '@fontsource-variable/geist-mono/wght.css';
 /* The [data-font] sets (tokens.css): a face is downloaded only when the page uses it. */
 @import '@fontsource-variable/inter/wght.css';
@@ -11,18 +17,26 @@
 @import '@fontsource-variable/literata/opsz-italic.css';
 @import './tokens.css';
 
-/* The stock kit's dark: follows the mode attribute, not only the media query: an explicit data-mode="dark", or the
-   system setting when data-mode is absent or "system"; never under data-mode="light". Our code never writes dark:
-   (G-11): light-dark() tokens carry the mode. */
-@custom-variant dark {
-  &:where([data-mode='dark'], [data-mode='dark'] *) {
-    @slot;
-  }
-  @media (prefers-color-scheme: dark) {
-    &:where(:root:not([data-mode]), :root:not([data-mode]) *, [data-mode='system'], [data-mode='system'] *) {
-      @slot;
-    }
-  }
+/* web.css reads these; the kit's own classes paint over most of it, the rest (icons, sizes it sets) follows the theme. */
+:root {
+  --ui-background: var(--popover);
+  --ui-foreground: var(--popover-foreground);
+  --ui-muted: var(--muted);
+  --ui-muted-foreground: var(--muted-foreground);
+  --ui-border: var(--border);
+  --ui-input: var(--input);
+  --ui-primary: var(--highlight);
+  --ui-primary-foreground: var(--highlight-foreground);
+  --ui-destructive: var(--destructive);
+  --ui-ring: var(--ring);
+  --ui-ring-border: var(--ring);
+  --ui-shadow: var(--shadow-md);
+  --ui-overlay: var(--scrim);
+  --ui-radius: var(--radius-md);
+  --ui-font-size: var(--text-sm);
+  --ui-line-height: var(--text-sm--line-height);
+  --ui-font-sans: var(--font-sans);
+  --ui-font-mono: var(--font-mono);
 }
 
 /* TanStack Router marks the link of the current route with aria-current="page" (tab links, nav); the attempt's
@@ -216,34 +230,30 @@ div.font-heading,
   border-radius: 2px;
 }
 
-/* Toasts are the top layer. The kit gives the viewport z-50, like sheets and dialogs, which portal after it: a toast
-   from an action inside a sheet («Роль добавлена», «Начислено…», «Учащиеся добавлены») drew behind the sheet. */
-[data-slot='toast-viewport'] {
-  z-index: 60;
-}
-
 /* Phones: toasts come in at the top, clear of the bottom bar and the player's «Продолжить» row (the stock kit
    stacks them at the bottom). Unlayered, so it wins over the kit's utilities; the stack mirrors the kit's: older
    toasts peek below the front one. */
 @media (width < 40rem) {
-  [data-slot='toast-viewport'] {
+  [data-slot='toast-region'] {
     top: calc(env(safe-area-inset-top) + 1rem);
     bottom: auto;
   }
   [data-slot='toast'] {
-    --offset-y: calc(var(--toast-offset-y) + var(--toast-index) * var(--gap) + var(--toast-swipe-movement-y));
+    --offset-y: calc(var(--toast-offset) + var(--toast-index) * var(--gap) + var(--toast-swipe-y, 0px));
     top: 0;
     bottom: auto;
     transform-origin: top;
-    transform: translateX(var(--toast-swipe-movement-x))
-      translateY(calc(var(--toast-swipe-movement-y) + var(--toast-index) * var(--peek) + var(--shrink) * var(--height)))
+    transform: translateX(var(--toast-swipe-x, 0px))
+      translateY(calc(var(--toast-swipe-y, 0px) + var(--toast-index) * var(--peek) + var(--shrink) * var(--height)))
       scale(var(--scale));
   }
   [data-slot='toast'][data-expanded] {
-    transform: translateX(var(--toast-swipe-movement-x)) translateY(var(--offset-y));
+    transform: translateX(var(--toast-swipe-x, 0px)) translateY(var(--offset-y));
   }
+}
+@media (width < 40rem) and (prefers-reduced-motion: no-preference) {
   [data-slot='toast'][data-starting-style],
-  [data-slot='toast'][data-ending-style]:not([data-limited], [data-swipe-direction]) {
+  [data-slot='toast'][data-ending-style][data-front]:not([data-swipe-direction]) {
     transform: translateY(-150%);
   }
 }
@@ -260,22 +270,28 @@ div.font-heading,
   }
 }
 
-/* Menus fit their longest item: the stock popup is exactly as wide as its trigger (`w-(--anchor-width)`) and clips
-   the rest («Администрирова» under a narrow switch, long role names under a filter). Never narrower than the
-   trigger; past 24rem (a long course name) the items wrap. Unlayered, so it wins over the kit's utilities. */
-[data-slot='dropdown-menu-content'] {
-  width: max-content;
-  min-width: max(8rem, var(--anchor-width));
-  max-width: min(var(--available-width), max(24rem, var(--anchor-width)));
-}
-
-/* A disabled checkbox or radio is dimmed with its label: the stock kit dims them with `disabled:` and `peer-disabled:`,
-   which never match, since Base UI renders these controls as spans with `data-disabled` (a locked challenge's
-   languages read as live). Unlayered, so it wins over the kit's utilities. */
-:is([data-slot='checkbox'], [data-slot='radio-group-item'])[data-disabled] {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-:is([data-slot='checkbox'], [data-slot='radio-group-item'])[data-disabled] ~ [data-slot='label'] {
-  opacity: 0.5;
+/* web.css draws a bordered button on popup triggers; ours take the look of what they render (a tab link, the bar's
+   item, a Button) or none. Outside web.css's sublayer, so it wins over it and loses to the utilities. */
+@layer components {
+  :is([data-slot='menu-trigger'], [data-slot='popover-trigger'], [data-slot='tooltip-trigger']):not(
+    [data-slot='menu-content'] *
+  ) {
+    display: revert;
+    align-items: revert;
+    justify-content: revert;
+    gap: revert;
+    width: revert;
+    height: revert;
+    padding: 0;
+    border: 0 solid;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    white-space: revert;
+    cursor: revert;
+    user-select: revert;
+    opacity: revert;
+  }
 }

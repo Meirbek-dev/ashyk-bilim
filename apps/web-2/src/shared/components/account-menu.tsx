@@ -45,7 +45,7 @@ export function AccountMenu({ trigger, title, detail, choice, actions, submenus,
             <span className="truncate">{detail}</span>
           </DropdownMenuLabel>
           {actions.map(action => (
-            <DropdownMenuItem key={action.label} onClick={action.onSelect}>
+            <DropdownMenuItem key={action.label} onSelect={action.onSelect}>
               {action.label}
             </DropdownMenuItem>
           ))}
@@ -71,7 +71,7 @@ export function AccountMenu({ trigger, title, detail, choice, actions, submenus,
           </DropdownMenuGroup>
         ) : null}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={final.onSelect}>{final.label}</DropdownMenuItem>
+        <DropdownMenuItem onSelect={final.onSelect}>{final.label}</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

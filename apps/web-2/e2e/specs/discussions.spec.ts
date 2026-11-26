@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test'
 import { m } from '#/paraglide/messages'
 
 import { expect } from '../fixtures/seed'
-import { clickUntil } from '../fixtures/test'
+import { clickUntil, toast } from '../fixtures/test'
 import { article, tab, test } from './discussions-fixture'
 
 const ru = { locale: 'ru' } as const
@@ -89,7 +89,7 @@ test('B-DSC-03 B-DSC-19 a post needs text, carries an Idempotency-Key and lands 
   const request = page.waitForRequest(sent => sent.method() === 'POST' && sent.url().endsWith('/discussions'))
   await publish.click()
   expect((await request).headers()['idempotency-key']).toMatch(/^[0-9a-f-]{36}$/)
-  await expect(page.getByText(m.discussions_published({}, ru))).toBeVisible()
+  await expect(toast(page, m.discussions_published({}, ru))).toBeVisible()
   await expect(page.locator('main article').first()).toContainText(text)
   await expect(composer.getByRole('textbox')).toHaveText('')
 })
@@ -171,7 +171,7 @@ test('B-DSC-05 a reply goes to the end of the open thread', async ({ page, signI
   await expect(thread.getByRole('textbox')).toBeVisible()
   await thread.getByRole('textbox').fill(text)
   await thread.getByRole('button', { name: m.discussions_reply({}, ru) }).click()
-  await expect(page.getByText(m.discussions_replied({}, ru))).toBeVisible()
+  await expect(toast(page, m.discussions_replied({}, ru))).toBeVisible()
   await expect(thread.locator('article').last()).toContainText(text)
 })
 
@@ -190,7 +190,7 @@ test('B-DSC-06 the author edits a post in place', async ({ page, signInAs, cours
   await item.getByRole('textbox').fill('Исправленный текст.')
   // The old text is gone from the article now: the one Save on the page is this form's.
   await page.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  await expect(page.getByText(m.discussions_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.discussions_saved({}, ru))).toBeVisible()
   await expect(article(page, 'Исправленный текст.')).toBeVisible()
 })
 
@@ -207,7 +207,7 @@ test('B-DSC-07 B-DSC-13 delete asks, sends If-Match, the post is gone', async ({
   const sent = page.waitForRequest(request => request.method() === 'DELETE')
   await confirm.getByRole('button', { name: m.discussions_delete({}, ru) }).click()
   expect((await sent).headers()['if-match']).toMatch(/^\d+$/)
-  await expect(page.getByRole('heading', { name: m.discussions_deleted({}, ru), exact: true })).toBeVisible()
+  await expect(toast(page, m.discussions_deleted({}, ru), { exact: true })).toBeVisible()
   await expect(article(page, 'Удаляемый пост.')).toHaveCount(0)
 })
 

@@ -22,7 +22,7 @@ export function DeleteRole({ role }: { role: Role }) {
       {
         onSuccess: async () => {
           setOpen(false)
-          toast.add({ title: m.admin_role_deleted() })
+          toast({ title: m.admin_role_deleted() })
           await navigate({ to: '/admin/roles' })
         },
       },

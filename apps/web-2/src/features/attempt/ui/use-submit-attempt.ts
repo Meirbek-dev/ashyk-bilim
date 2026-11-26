@@ -57,7 +57,7 @@ export function useSubmitAttempt(attempt: StudentSubmission, courseId: CourseId)
           idempotency.settle()
           clearQueue(attempt.id)
           queryClient.setQueryData(key, fresh)
-          toast.add({ title: m.attempt_submitted() })
+          toast({ title: m.attempt_submitted() })
           onClose?.()
         },
         onError: error => {

@@ -4,6 +4,7 @@ import type { CreateItemRequest } from '#/shared/api/gen/types.gen'
 
 import { makeAssessment, readyChoice, studioUrl } from './assessments-fixture'
 import { expect, ru, test } from './course-studio-fixture'
+import { toast } from '../fixtures/test'
 
 // The question builder of quizzes, exams and code challenges (slice 5.1): `edit` of the activity studio.
 
@@ -132,14 +133,14 @@ test('B-ASM-12 B-ASM-13 B-ASM-14 questions are duplicated, deleted and reordered
   const { courseId, assessment, headers } = await makeAssessment(studio, seed, { items })
   await page.goto(studioUrl(courseId, assessment.activity_id))
   await page.getByRole('button', { name: m.assessments_item_duplicate({}, ru) }).click()
-  await expect(page.getByText(m.assessments_item_duplicated({}, ru))).toBeVisible()
+  await expect(toast(page, m.assessments_item_duplicated({}, ru))).toBeVisible()
   await expect(page.getByRole('heading', { name: '4. Альфа (копия)' })).toBeVisible()
   await page.getByRole('button', { name: m.assessments_item_delete({}, ru) }).click()
   const confirm = page.getByRole('alertdialog', {
     name: m.assessments_item_delete_title({ title: 'Альфа (копия)' }, ru),
   })
   await confirm.getByRole('button', { name: m.assessments_delete({}, ru) }).click()
-  await expect(page.getByText(m.assessments_item_deleted({}, ru))).toBeVisible()
+  await expect(toast(page, m.assessments_item_deleted({}, ru))).toBeVisible()
   await expect(page.getByRole('link', { name: /Альфа \(копия\)/ })).toHaveCount(0)
   const handle = page.getByRole('button', { name: m.assessments_item_drag({ title: 'Гамма' }, ru) })
   await handle.focus()

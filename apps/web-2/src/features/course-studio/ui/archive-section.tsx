@@ -17,7 +17,7 @@ export function ArchiveSection({ course }: { course: Course }) {
   const back = () =>
     restore.mutate(
       { path: { course_id: course.id }, body: { action: 'restore' } },
-      { onSuccess: () => toast.add({ title: m.studio_restored() }) },
+      { onSuccess: () => toast({ title: m.studio_restored() }) },
     )
   return (
     <section aria-label={m.studio_archive_title()} className="flex max-w-prose flex-col items-start gap-4">

@@ -1,8 +1,8 @@
 /*
  * Ashyq Bilim design tokens - the contract between themes, the kit and features. Rules: docs/web/DESIGN.md.
  *
- * Imported by globals.css after tailwindcss, tw-animate-css, shadcn/tailwind.css and the fonts. Tailwind's own
- * namespaces stay intact (the stock shadcn kit in shared/ui uses them); our code is held to the tokens by G-11.
+ * Imported by globals.css after tailwindcss, tw-animate-css, ui-sdk's web.css and the fonts. Tailwind's own
+ * namespaces stay intact; all code, the kit in shared/ui included, is held to the tokens by G-11.
  *
  * Values below are the DEFAULT theme (slug `modern-minimal`). A theme is public/themes/<slug>.css and
  * overrides ONLY the "theme" section (colors, --radius, --shadow-*) on html[data-theme="<slug>"].
@@ -11,7 +11,7 @@
  */
 
 @theme inline {
-  /* shadcn base-nova color set */
+  /* The kit's color set */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -67,6 +67,7 @@
   /* Media stage (the video player): fixed like the brand artwork */
   --color-media: var(--media);
   --color-media-foreground: var(--media-foreground);
+  --color-scrim: var(--scrim);
 
   /* Type: the [data-font] set below for reading, UI and headings, one mono; seven sizes, three weights */
   --font-sans: var(--typeface-sans);
@@ -225,6 +226,9 @@
      sit on `bg-media/70` over the picture: white ink on it stays >= 4.5:1 over any frame. */
   --media: oklch(0.145 0 0);
   --media-foreground: oklch(0.985 0 0);
+
+  /* The page dimmed under a dialog, an alert or a sheet: dark in every theme and mode. */
+  --scrim: oklch(0 0 0 / 0.4);
 
   /* Derived meaning: a fixed hue anchor pulled 25% toward the theme's ink, so contrast follows the theme.
      Text/icon on background, card and on its own /10 tint is >= 4.5:1 in every theme (G-15). */

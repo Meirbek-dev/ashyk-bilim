@@ -29,7 +29,7 @@ export function UserStatus({ user }: { user: AdminUser }) {
       {
         onSuccess: () => {
           setConfirming(false)
-          toast.add({ title: disabled ? m.admin_user_disabled() : m.admin_user_enabled() })
+          toast({ title: disabled ? m.admin_user_disabled() : m.admin_user_enabled() })
         },
       },
     )

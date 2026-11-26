@@ -53,7 +53,7 @@ export function FindingRow({ courseId, analysisId, findingId, recommendation, re
               onClick={() =>
                 verdict.mutate(
                   { path: { analysis_id: analysisId }, body: { action, finding_id: findingId } },
-                  { onSuccess: () => toast.add({ title: m.ai_finding_saved() }) },
+                  { onSuccess: () => toast({ title: m.ai_finding_saved() }) },
                 )
               }
             >

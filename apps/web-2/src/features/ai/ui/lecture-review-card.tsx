@@ -57,7 +57,7 @@ export function LectureReviewCard({ courseId, review }: { courseId: CourseId; re
                   onClick={() =>
                     dismiss.mutate(
                       { path: { review_id: review.id }, body: { suggestion_id: item.suggestion_id } },
-                      { onSuccess: () => toast.add({ title: m.ai_suggestion_hidden() }) },
+                      { onSuccess: () => toast({ title: m.ai_suggestion_hidden() }) },
                     )
                   }
                 >

@@ -5,7 +5,7 @@ import type { Browser, Page } from '@playwright/test'
 import { m } from '#/paraglide/messages'
 import { currentSession, enroll, reportMessage, sendMessage } from '#/shared/api/gen/sdk.gen'
 
-import { gotoLive } from '../fixtures/test'
+import { gotoLive, toast } from '../fixtures/test'
 import { expect, test } from '../fixtures/learning'
 
 // Personal messages (docs/DIALOGS.md 11): a fresh learner of a made course and the seed teacher who made it. The
@@ -47,8 +47,12 @@ test('a learner writes to the teacher from the course page; the teacher sees it 
   await expect(page).toHaveURL(/\/conversations\/[0-9a-f-]{36}$/)
   await expect(feed(page).getByText(question)).toBeVisible()
 
-  // The teacher's open list gets the conversation from the event stream, unread, without a reload.
-  const row = teacherTab.page.getByRole('link', { name: learner.displayName, exact: true })
+  // The teacher's open list gets the conversation from the event stream, unread, without a reload. Found by its
+  // address: every fixture learner has the same name, and parallel tests write to the same teacher.
+  const conversation = new URL(page.url()).pathname
+  const row = teacherTab.page
+    .getByRole('link', { name: learner.displayName, exact: true })
+    .and(teacherTab.page.locator(`[href="${conversation}"]`))
   await expect(row).toBeVisible()
   await expect(
     teacherTab.page.getByRole('link', { name: new RegExp(`^${m.conversations_title({}, ru)}: \\d+`) }),
@@ -169,6 +173,7 @@ test('a report reaches the admin with the text; a ban stops sending at once and 
     .getByRole('alertdialog')
     .getByRole('button', { name: m.conversations_unban({}, ru) })
     .click()
+  await expect(admin.page.getByRole('alertdialog')).toBeHidden()
   await expect(unban).toBeHidden()
   await page.reload()
   await expect(composer(page)).toBeVisible()
@@ -239,7 +244,7 @@ test('the teacher writes to several learners of the course at once, with a file'
   const sendAll = dialog.getByRole('button', { name: m.conversations_bulk_send({ count: 2 }, ru) })
   await expect(sendAll).toBeEnabled()
   await sendAll.click()
-  await expect(teacherTab.page.getByText(m.conversations_bulk_sent({ count: 2 }, ru))).toBeVisible()
+  await expect(toast(teacherTab.page, m.conversations_bulk_sent({ count: 2 }, ru))).toBeVisible()
 
   // The learner has it in their own conversation with the teacher, with the file.
   await learner.signIn()

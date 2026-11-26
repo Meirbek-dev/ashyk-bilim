@@ -36,7 +36,7 @@ export function PlatformBranding({ platform, base }: { platform: Platform; base:
         { body, headers: { 'If-Match': version } },
         {
           onSuccess: () => {
-            toast.add({ title: m.admin_saved() })
+            toast({ title: m.admin_saved() })
             reset()
           },
         },

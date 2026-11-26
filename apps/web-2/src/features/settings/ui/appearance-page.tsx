@@ -38,7 +38,7 @@ const modeLabels = { system: m.ui_mode_system, light: m.ui_mode_light, dark: m.u
 
 /** A short choice runs along one line, as words on a page; the stock field stacks it. */
 const choices =
-  'py-2 [&_[data-slot=radio-group]]:flex [&_[data-slot=radio-group]]:flex-wrap [&_[data-slot=radio-group]]:gap-x-8 [&_[data-slot=radio-group]]:gap-y-2 [&_[data-slot=radio-group]>*]:w-auto'
+  'py-2 [&_[data-slot=radio-group]]:flex [&_[data-slot=radio-group]]:flex-row [&_[data-slot=radio-group]]:flex-wrap [&_[data-slot=radio-group]]:gap-x-8 [&_[data-slot=radio-group]]:gap-y-2 [&_[data-slot=radio-group]>*]:w-auto'
 
 type Shown = { theme: string; mode: Mode; font: Font; size: Size }
 
@@ -88,7 +88,7 @@ export function AppearancePage() {
       saveSize(size)
       saved.current = { theme, mode, font, size }
       // Paraglide stores the new language and reloads the page in it.
-      if (locale === getLocale()) toast.add({ title: m.settings_saved() })
+      if (locale === getLocale()) toast({ title: m.settings_saved() })
       else await setLocale(locale)
     },
   })

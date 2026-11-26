@@ -25,7 +25,7 @@ export function DeleteChapter({ courseId, chapter }: { courseId: string; chapter
   const published = chapter.activities.filter(activity => activity.published)
   const done = (title: string) => {
     setOpen(false)
-    toast.add({ title })
+    toast({ title })
   }
   const hideAll = async () => {
     setHiding(true)

@@ -74,8 +74,7 @@ export function FocusPage({
               trigger={<IconButton label={m.ui_contents()} icon={<PanelLeft aria-hidden />} />}
               // On a phone the sheet opens on the current item (focus scrolls it into view), not at the top.
               initialFocus={() =>
-                sheetContents.current?.querySelector<HTMLElement>('[aria-current="page"], [aria-current="step"]') ??
-                true
+                sheetContents.current?.querySelector<HTMLElement>('[aria-current="page"], [aria-current="step"]')
               }
             >
               <div ref={sheetContents}>{contents}</div>

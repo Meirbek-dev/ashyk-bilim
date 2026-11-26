@@ -1,10 +1,14 @@
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import { cn } from '#/shared/lib/utils'
 import { Button } from '#/shared/ui/button'
 import { Spinner } from '#/shared/ui/spinner'
 
-type SubmitButtonProps = Omit<ComponentProps<typeof Button>, 'className'> & { pending: boolean; className?: string }
+type SubmitButtonProps = Omit<ComponentProps<typeof Button>, 'className' | 'children'> & {
+  pending: boolean
+  className?: string
+  children?: ReactNode
+}
 
 /**
  * A button that sends a request. While `pending` it is aria-disabled with a spinner and keeps keyboard focus (a

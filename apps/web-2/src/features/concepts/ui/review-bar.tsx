@@ -21,7 +21,7 @@ export function ReviewBar({ courseId, selected, onDone }: ReviewBarProps) {
       { path: { course_id: courseId }, body: { status, concept_ids: [...selected] } },
       {
         onSuccess: () => {
-          toast.add({ title: status === 'approved' ? m.concepts_approved_done() : m.concepts_rejected_done() })
+          toast({ title: status === 'approved' ? m.concepts_approved_done() : m.concepts_rejected_done() })
           onDone()
         },
       },

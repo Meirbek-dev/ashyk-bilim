@@ -39,7 +39,7 @@ export function ResetConfirmForm({ login, code, onRestart }: ResetConfirmFormPro
           { body },
           {
             onSuccess: async () => {
-              toast.add({ title: m.auth_reset_done() })
+              toast({ title: m.auth_reset_done() })
               // The name goes along in history state, never the URL: the sign-in form opens filled in (B-AUTH-13).
               await navigate({ to: '/login', state: { login } })
             },

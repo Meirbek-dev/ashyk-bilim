@@ -30,7 +30,7 @@ export function DeleteMessage({ message }: { message: Message }) {
           {
             onSuccess: () => {
               setOpen(false)
-              toast.add({ title: m.conversations_deleted() })
+              toast({ title: m.conversations_deleted() })
             },
           },
         )

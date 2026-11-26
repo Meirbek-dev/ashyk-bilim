@@ -25,7 +25,7 @@ export function SaveViewDialog({ tab, filters }: { tab: Tab; filters: Filters })
           onSuccess: () => {
             setOpen(false)
             form.reset()
-            toast.add({ title: m.analytics_view_saved() })
+            toast({ title: m.analytics_view_saved() })
           },
         },
       ),

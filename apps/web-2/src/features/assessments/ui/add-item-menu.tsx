@@ -44,7 +44,7 @@ export function AddItemMenu({ activityId, assessment }: AddItemMenuProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           {newItemKinds(assessment.kind).map(kind => (
-            <DropdownMenuItem key={kind} onClick={() => add(kind)}>
+            <DropdownMenuItem key={kind} onSelect={() => add(kind)}>
               {kindLabels[kind]()}
             </DropdownMenuItem>
           ))}

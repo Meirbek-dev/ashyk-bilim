@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
+import { page } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import type { Activity } from '#/shared/api/gen/types.gen'
@@ -49,7 +50,7 @@ describe('DeleteActivity: learner work is hidden, never deleted (owner decision 
       request.method === 'DELETE' ? refusal() : Response.json({ ...activity, published: false, version: 5 }),
     )
     await screen.getByRole('button', { name: m.studio_delete() }).click()
-    const dialog = screen.getByRole('alertdialog', { name: m.studio_activity_locked_title({ name: activity.name }) })
+    const dialog = page.getByRole('alertdialog', { name: m.studio_activity_locked_title({ name: activity.name }) })
     await expect.element(dialog).toHaveAccessibleDescription(m.studio_activity_locked_consequence())
     await dialog.getByRole('button', { name: m.studio_hide() }).click()
     await expect.poll(() => requests.length).toBe(2)
@@ -60,8 +61,8 @@ describe('DeleteActivity: learner work is hidden, never deleted (owner decision 
 
   test('an already hidden one only explains: nothing to confirm', async () => {
     const hidden = { ...activity, published: false, allowed_actions: ['update' as const, 'move' as const] }
-    const { screen, requests } = await open(hidden, refusal)
-    const dialog = screen.getByRole('alertdialog', { name: m.studio_activity_locked_title({ name: hidden.name }) })
+    const { requests } = await open(hidden, refusal)
+    const dialog = page.getByRole('alertdialog', { name: m.studio_activity_locked_title({ name: hidden.name }) })
     await expect.element(dialog).toHaveAccessibleDescription(m.studio_activity_locked_hidden())
     await expect.element(dialog.getByRole('button', { name: m.studio_hide() })).not.toBeInTheDocument()
     await dialog.getByRole('button', { name: m.ui_close() }).click()

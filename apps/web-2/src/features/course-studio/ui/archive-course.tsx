@@ -21,7 +21,7 @@ export function ArchiveCourse({ course }: { course: Course }) {
       {
         onSuccess: () => {
           setOpen(false)
-          toast.add({ title: m.studio_archived() })
+          toast({ title: m.studio_archived() })
         },
       },
     )

@@ -60,7 +60,7 @@ export function PlayerPage({ aside }: { aside?: { label: string; content: ReactN
   // A hosted video watched to the end marks its lesson done, as on the old web (B-PLY-06); not in an open view.
   const videoEnded = () => {
     if (entry.complete || mark.isPending || staffPreview(state) || open) return
-    mark.mutate({ path: { activity_id: entry.id } }, { onSuccess: () => toast.add({ title: m.player_marked() }) })
+    mark.mutate({ path: { activity_id: entry.id } }, { onSuccess: () => toast({ title: m.player_marked() }) })
   }
   return (
     <FocusPage

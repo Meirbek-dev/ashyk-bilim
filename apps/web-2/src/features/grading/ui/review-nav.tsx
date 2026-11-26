@@ -31,9 +31,8 @@ export function ReviewNav({ work }: { work: Work }) {
   // who know them (the tooltip says so).
   const step = (submissionId: string | null | undefined, label: string, keys: 'J' | 'K', side: 'prev' | 'next') =>
     submissionId ? (
-      <Tooltip>
+      <Tooltip delay={300}>
         <TooltipTrigger
-          delay={300}
           render={
             <RouterLink
               className={`${buttonVariants({ variant: 'outline' })} max-@3xl:w-control max-@3xl:px-0`}

@@ -17,7 +17,7 @@ const SessionExpiredNotice = lazy(() =>
  * The HTML shell. Rendered even when the root route fails, so errors keep the document intact.
  * Theme, mode and font come from cookies during SSR: the first paint has the right colors, no script needed. A signed-in
  * user's theme is the account's (the session the root route read; absent when that read failed).
- * The Toaster mounts eagerly on the client so its provider subscribes before the first action emits a toast; the
+ * The Toaster mounts eagerly on the client so its region is in place before the first action emits a toast; the
  * leave-page question (`confirmLeave`) is drawn here too, and so is the region that says each new page's title.
  */
 export function RootDocument({ children }: { children: ReactNode }) {

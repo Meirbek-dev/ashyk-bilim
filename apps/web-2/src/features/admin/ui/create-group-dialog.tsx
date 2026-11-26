@@ -28,7 +28,7 @@ export function CreateGroupDialog() {
           onSuccess: async group => {
             setOpen(false)
             form.reset()
-            toast.add({ title: m.admin_group_created() })
+            toast({ title: m.admin_group_created() })
             await navigate({ to: '/teach/groups/$groupId', params: { groupId: group.id } })
           },
         },

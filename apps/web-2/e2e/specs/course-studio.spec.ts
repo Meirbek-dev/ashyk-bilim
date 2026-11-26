@@ -1,4 +1,4 @@
-import { expectFailure, inspectPage } from '../fixtures/test'
+import { expectFailure, inspectPage, toast } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
@@ -48,7 +48,7 @@ test('B-CST-03 a new course: the name is required, then its content opens', asyn
   await inspectPage(page)
   await dialog.getByRole('textbox', { name: m.studio_field_name({}, ru) }).fill(name)
   await dialog.getByRole('button', { name: m.studio_create_submit({}, ru) }).click()
-  await expect(page.getByText(m.studio_course_created({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_course_created({}, ru))).toBeVisible()
   await expect(page).toHaveURL(/\/teach\/courses\/[\w-]+\/content$/)
   studio.track(new URL(page.url()).pathname.split('/')[3] ?? '')
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
@@ -147,7 +147,7 @@ test('B-CST-23 publish is offered only without blockers and marks the course pub
   const ready = await studio.course({ chapters: [{ pages: [{ published: true }] }] })
   await page.goto(tab(ready.course.id, 'publish'))
   await page.getByRole('button', { name: m.studio_publish({}, ru) }).click()
-  await expect(page.getByText(m.studio_published({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_published({}, ru))).toBeVisible()
   await expect(page.getByText(m.studio_status_published({}, ru)).first()).toBeVisible()
   await expect(page.getByRole('button', { name: m.studio_publish({}, ru) })).toHaveCount(0)
   // Live now: where learners find it, no "ready to publish" (B-CST-05).
@@ -170,7 +170,7 @@ test('B-CST-24 unpublishing asks first (learners lose access) and returns the co
   await expect(confirm.getByText(m.studio_unpublish_consequence({}, ru))).toBeVisible()
   await expect(confirm.getByRole('button', { name: m.ui_cancel({}, ru) })).toBeFocused()
   await confirm.getByRole('button', { name: m.studio_unpublish({}, ru) }).click()
-  await expect(page.getByText(m.studio_unpublished({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_unpublished({}, ru))).toBeVisible()
   await expect(page.getByText(m.studio_status_draft({}, ru)).first()).toBeVisible()
 })
 

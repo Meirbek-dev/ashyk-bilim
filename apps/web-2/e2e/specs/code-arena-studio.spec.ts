@@ -1,4 +1,4 @@
-import { expectFailure as allowFailure } from '../fixtures/test'
+import { expectFailure as allowFailure, toast } from '../fixtures/test'
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
@@ -67,7 +67,7 @@ test('B-COD-13 B-COD-14 B-COD-15 B-COD-16 B-COD-17 B-COD-18 the author fills a n
   await expect(editor.getByText(m.validation_min_value({ min: '1' }, ru))).toBeVisible()
   await time.fill('2')
   await save.click()
-  await expect(page.getByText(m.code_saved({}, ru), { exact: true })).toBeVisible()
+  await expect(toast(page, m.code_saved({}, ru), { exact: true })).toBeVisible()
   await expect(save).toBeDisabled()
 
   const path = { assessment_id: made.assessment.id }
@@ -164,7 +164,7 @@ test('B-COD-23 a runner that is down keeps the editor and Save; Check reference 
   await expect(editor.getByRole('button', { name: m.code_check({}, ru) })).toBeDisabled()
   await editor.getByLabel(m.code_field_input_spec({}, ru)).fill('a b')
   await editor.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  await expect(page.getByText(m.code_saved({}, ru), { exact: true })).toBeVisible()
+  await expect(toast(page, m.code_saved({}, ru), { exact: true })).toBeVisible()
 
   await page.unroute('**/api/v2/code/runner')
   await routeLanguages(page)

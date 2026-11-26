@@ -49,7 +49,7 @@ export function PrerequisitesEditor({ courseId, graph, conceptId }: Prerequisite
                 path: { course_id: courseId, concept_id: conceptId },
                 body: { requires: value.map(option => option.value) },
               },
-              { onSuccess: () => toast.add({ title: m.concepts_saved() }) },
+              { onSuccess: () => toast({ title: m.concepts_saved() }) },
             )
           }
         >

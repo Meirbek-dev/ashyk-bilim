@@ -21,7 +21,7 @@ import { searchResultsOptions } from '../queries'
 import { searchKindLabels } from './kind-labels'
 
 /** One choice of the palette: arrows highlight it, Enter or a click runs `onSelect`. */
-export type PaletteEntry = {
+type PaletteEntry = {
   /** Unique within the list: the React key. */
   id: string
   label: string

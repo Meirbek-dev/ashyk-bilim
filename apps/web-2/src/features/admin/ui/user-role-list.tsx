@@ -22,7 +22,7 @@ export function RoleList({ user, manage, nameOf }: RoleListProps) {
       {
         onSuccess: () => {
           setRemoving(null)
-          toast.add({ title: m.admin_user_role_removed() })
+          toast({ title: m.admin_user_role_removed() })
         },
       },
     )

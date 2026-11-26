@@ -1,4 +1,4 @@
-import { expectFailure } from '../fixtures/test'
+import { expectFailure, toast } from '../fixtures/test'
 import { m } from '#/paraglide/messages'
 import {
   createCertificateTemplate,
@@ -43,7 +43,7 @@ test('B-CST-19 B-CST-42 details save with their own button; an empty name stays 
   await section.getByRole('switch', { name: m.studio_field_open({}, ru) }).click()
   await section.getByRole('switch', { name: m.studio_field_enrolled_only({}, ru) }).click()
   await section.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  await expect(page.getByText(m.studio_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_saved({}, ru))).toBeVisible()
   await expect(page.getByRole('heading', { level: 1, name: `${course.name} (новое)` })).toBeVisible()
   const headers = cookieOf(seed, 'teacher')
   const { data } = await getCourse({ client: studio.api, path: { course_id: course.id }, headers, throwOnError: true })
@@ -79,7 +79,7 @@ test('B-CST-32 a details save over someone else’s opens the conflict dialog; r
   await section.getByRole('button', { name: m.ui_save({}, ru) }).click()
   const dialog = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
   await dialog.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
-  await expect(page.getByText(m.studio_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_saved({}, ru))).toBeVisible()
   await expect(dialog).toBeHidden()
   const { data } = await getCourse({ client: studio.api, path, headers, throwOnError: true })
   expect(data.about).toBe('Моя правка')
@@ -111,7 +111,7 @@ test('B-CST-20 the cover is shown and can be removed', async ({ page, studio, se
   await expect(page.getByRole('img', { name: m.studio_thumbnail_alt({}, ru) })).toBeVisible()
   await expect(page.getByText(m.studio_thumbnail_types({}, ru))).toBeVisible()
   await page.getByRole('button', { name: m.studio_thumbnail_remove({}, ru) }).click()
-  await expect(page.getByText(m.studio_thumbnail_removed({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_thumbnail_removed({}, ru))).toBeVisible()
   await expect(page.getByText(m.studio_thumbnail_none({}, ru))).toBeVisible()
   // A picked image is the cover at once: no Save to miss.
   await page
@@ -124,20 +124,20 @@ test('B-CST-21 the certificate is switched on, configured, and switched off', as
   const { course } = await studio.course()
   await page.goto(tab(course.id, 'settings'))
   await page.getByRole('button', { name: m.studio_certificate_enable({}, ru) }).click()
-  await expect(page.getByText(m.studio_certificate_enabled({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_certificate_enabled({}, ru))).toBeVisible()
   const form = page.getByRole('form', { name: m.studio_certificate_title({}, ru) })
   await form.getByRole('textbox', { name: m.studio_certificate_name({}, ru) }).fill('Сертификат e2e')
   await form.getByRole('combobox', { name: m.studio_certificate_type({}, ru) }).selectOption('mastery')
   await form.getByRole('textbox', { name: m.studio_certificate_instructor({}, ru) }).fill('Мейірбек')
   await form.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  await expect(page.getByText(m.studio_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_saved({}, ru))).toBeVisible()
   await page.reload()
   await expect(form.getByRole('textbox', { name: m.studio_certificate_name({}, ru) })).toHaveValue('Сертификат e2e')
   await expect(form.getByRole('combobox', { name: m.studio_certificate_type({}, ru) })).toHaveValue('mastery')
   await page.getByRole('button', { name: m.studio_certificate_disable({}, ru) }).click()
   const confirm = page.getByRole('alertdialog')
   await confirm.getByRole('button', { name: m.studio_certificate_disable({}, ru) }).click()
-  await expect(page.getByText(m.studio_certificate_disabled({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_certificate_disabled({}, ru))).toBeVisible()
   await expect(page.getByRole('button', { name: m.studio_certificate_enable({}, ru) })).toBeVisible()
 })
 
@@ -152,7 +152,7 @@ test('B-CST-22 B-CST-44 archiving names what stays behind; an archived course sa
   await expect(confirm.getByText(/Записано учащихся: 0/)).toBeVisible()
   await expect(confirm.getByRole('button', { name: m.ui_cancel({}, ru) })).toBeFocused()
   await confirm.getByRole('button', { name: m.studio_archive({}, ru) }).click()
-  await expect(page.getByText(m.studio_archived({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_archived({}, ru))).toBeVisible()
   await expect(page.getByText(m.studio_status_archived({}, ru)).first()).toBeVisible()
   await expect(page.getByText(/^В архиве с /)).toBeVisible()
   await expect(page.getByRole('link', { name: m.studio_restore({}, ru) })).toHaveAttribute(
@@ -160,7 +160,7 @@ test('B-CST-22 B-CST-44 archiving names what stays behind; an archived course sa
     tab(course.id, 'settings'),
   )
   await page.getByRole('button', { name: m.studio_restore({}, ru) }).click()
-  await expect(page.getByText(m.studio_restored({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_restored({}, ru))).toBeVisible()
   await expect(page.getByText(m.studio_status_draft({}, ru)).first()).toBeVisible()
 })
 
@@ -176,7 +176,7 @@ test('B-CST-25 B-CST-38 announcements are created, edited in place and deleted w
   await dialog.getByRole('textbox', { name: m.studio_update_field_title({}, ru) }).fill('Старт курса')
   await dialog.getByRole('textbox', { name: m.studio_update_field_content({}, ru) }).fill('Начинаем **в понедельник**')
   await dialog.getByRole('button', { name: m.studio_create_submit({}, ru) }).click()
-  await expect(page.getByText(m.studio_update_created({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_update_created({}, ru))).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Старт курса' })).toBeVisible()
   await expect(page.locator('strong', { hasText: 'в понедельник' })).toBeVisible()
   await page.getByRole('button', { name: m.studio_update_edit_named({ title: 'Старт курса' }, ru) }).click()
@@ -212,7 +212,7 @@ test('B-CST-36 B-CST-38 deleting the course asks for its name, is sent with If-M
   const sent = page.waitForRequest(request => request.method() === 'DELETE')
   await submit.click()
   expect((await sent).headers()['if-match']).toMatch(/^\d+$/)
-  await expect(page.getByText(m.studio_course_deleted({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_course_deleted({}, ru))).toBeVisible()
   await expect(page).toHaveURL(/\/teach\/courses$/)
   const headers = cookieOf(seed, 'teacher')
   const gone = await getCourse({ client: studio.api, path: { course_id: course.id }, headers })

@@ -59,7 +59,7 @@ export function TagActions({ courseId, tag }: { courseId: CourseId; tag: TagRow 
               {
                 onSuccess: () => {
                   setRemoving(false)
-                  toast.add({ title: m.concepts_tag_removed() })
+                  toast({ title: m.concepts_tag_removed() })
                 },
               },
             )

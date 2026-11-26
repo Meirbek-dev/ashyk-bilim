@@ -62,8 +62,8 @@ export function ApproveSelected({ work, courseId, activityId, drafts, rows, onKe
           }
         />
         <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={() => setAction('save')}>{m.grading_ai_approve_save()}</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setAction('publish')}>{m.grading_ai_approve_publish()}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setAction('save')}>{m.grading_ai_approve_save()}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setAction('publish')}>{m.grading_ai_approve_publish()}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <ConfirmDialog
@@ -87,7 +87,7 @@ export function ApproveSelected({ work, courseId, activityId, drafts, rows, onKe
                 const failed = approveFailures(outcomes, drafts)
                 setFailures(failed)
                 const applied = outcomes.length - failed.length
-                if (applied > 0) toast.add({ title: m.grading_ai_approved({ count: formatNumber(applied) }) })
+                if (applied > 0) toast({ title: m.grading_ai_approved({ count: formatNumber(applied) }) })
                 onKeep(failed.flatMap(failure => (failure.subjectId ? [failure.subjectId] : [])))
               },
             },

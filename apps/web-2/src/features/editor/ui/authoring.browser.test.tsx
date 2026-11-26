@@ -117,7 +117,9 @@ describe('block fields', () => {
     await expect.element(screen.getByLabelText(m.editor_field_url())).toHaveFocus()
     await screen.getByLabelText(m.editor_field_url()).fill('javascript:alert(1)')
     await screen.getByRole('button', { name: m.editor_apply() }).click()
-    await expect.element(screen.getByText(m.validation_invalid())).toBeVisible()
+    await expect
+      .element(screen.getByLabelText(m.editor_field_url()))
+      .toHaveAccessibleDescription(expect.stringContaining(m.validation_invalid()))
     await screen.getByLabelText(m.editor_field_url()).fill('https://youtu.be/dQw4w9WgXcQ')
     await screen.getByRole('button', { name: m.editor_apply() }).click()
     await expect
@@ -258,7 +260,9 @@ test('B-EDT-28 an embed takes a height; a link card takes alignment and a button
   await screen.getByLabelText(m.editor_field_url()).fill('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
   await screen.getByLabelText(m.editor_field_height()).fill('50')
   await screen.getByRole('button', { name: m.editor_apply() }).click()
-  await expect.element(screen.getByText(m.editor_height_range())).toBeVisible()
+  await expect
+    .element(screen.getByLabelText(m.editor_field_height()))
+    .toHaveAccessibleDescription(expect.stringContaining(m.editor_height_range()))
   await screen.getByLabelText(m.editor_field_height()).fill('720')
   await screen.getByRole('button', { name: m.editor_apply() }).click()
   await expect.poll(() => find(last(onChange), 'embedBlock')?.attrs?.['height']).toBe(720)

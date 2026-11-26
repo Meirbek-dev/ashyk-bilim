@@ -32,7 +32,7 @@ export function DetailsSection({ activityId, assessment }: DetailsSectionProps) 
     onSubmit: values =>
       update.mutateAsync(
         { path: { assessment_id: assessment.id }, body: detailsBody(values), headers: version.headers() },
-        { onSuccess: () => toast.add({ title: m.assessments_saved() }), onError: version.onError },
+        { onSuccess: () => toast({ title: m.assessments_saved() }), onError: version.onError },
       ),
   })
   const mode = editMode(assessment)

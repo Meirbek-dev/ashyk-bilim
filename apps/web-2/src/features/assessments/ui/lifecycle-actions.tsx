@@ -48,7 +48,7 @@ export function LifecycleActions({ activityId, title, assessment }: LifecycleAct
       {
         onSuccess: () => {
           setArchiving(false)
-          toast.add({
+          toast({
             title: from === 'scheduled' && to === 'draft' ? m.assessments_toast_unscheduled() : toasts[to](),
           })
         },

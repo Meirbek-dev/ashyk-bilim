@@ -58,7 +58,7 @@ export function IndexCard({ courseId }: { courseId: CourseId }) {
           onClick={() =>
             reindex.mutate(
               { path: { course_id: courseId } },
-              { onSuccess: () => toast.add({ title: m.ai_grading_reindexed() }) },
+              { onSuccess: () => toast({ title: m.ai_grading_reindexed() }) },
             )
           }
         >

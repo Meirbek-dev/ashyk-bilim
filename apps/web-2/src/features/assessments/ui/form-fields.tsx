@@ -67,7 +67,7 @@ export function FormFields({ body, onChange, mode }: FormFieldsProps) {
                   aria-label={m.assessments_form_field_required({ number: at + 1 })}
                   checked={field.required === true}
                   disabled={!editable}
-                  onCheckedChange={checked => patch(at, { required: checked })}
+                  onCheckedChange={checked => patch(at, { required: checked === true })}
                 />
                 {m.assessments_form_required()}
               </Label>

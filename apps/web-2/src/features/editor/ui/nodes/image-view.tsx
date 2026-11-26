@@ -15,7 +15,7 @@ export function ImageView({ src, width, editable }: ImageViewProps) {
     <Dialog>
       <DialogTrigger
         aria-label={m.editor_image_expand()}
-        className="group relative cursor-zoom-in rounded-lg focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+        className="group relative inline-block h-auto cursor-zoom-in rounded-lg border-0 bg-transparent p-0 hover:bg-transparent focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
       >
         {image}
         <Maximize2

@@ -20,8 +20,5 @@ export const fmt = {
     'BACKLOG.md',
     // Generated from the legacy theme store (phase 1.1); byte-stable generator output.
     'public/themes/',
-    // Stock shadcn output: kept as the CLI writes it, so `shadcn add --diff` shows only real changes.
-    'src/shared/ui/',
-    'components.json',
   ],
 }

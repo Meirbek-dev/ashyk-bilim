@@ -19,7 +19,7 @@ export function EmailConfirmStep({ email, onRestart }: { email: string; onRestar
         { body },
         {
           onSuccess: () => {
-            toast.add({ title: m.settings_email_changed() })
+            toast({ title: m.settings_email_changed() })
             onRestart()
           },
         },

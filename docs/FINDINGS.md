@@ -51,14 +51,6 @@ assembly/finalize, ownership, replay, cancellation, reaping and the exact 2 GiB 
 
 ## Low
 
-### 33. shadcn CLI retains an unpatched deepmerge dependency
-
-`apps/web-2`'s development dependency chain `shadcn -> @shadcn/registry -> deepmerge` includes
-`deepmerge@4.3.1`. [GHSA-gcqx-w48m-w2h4](https://github.com/advisories/GHSA-gcqx-w48m-w2h4) rates prototype
-poisoning of returned objects low; the latest upstream release remains affected as of 2026-11-14. It is used by
-tooling, not the application runtime. Process only trusted registry inputs with the CLI. Remove this finding
-when shadcn drops the dependency or a patched version becomes available; do not suppress the audit.
-
 ### 34. Tiptap mathematics has not declared KaTeX 0.19 compatibility
 
 `apps/web-2` pins `katex@0.19.1`, but `@tiptap/extension-mathematics@3.35.0` declares

@@ -29,7 +29,7 @@ export function AddTag({ courseId, conceptId, activities }: AddTagProps) {
         {
           onSuccess: () => {
             form.reset()
-            toast.add({ title: m.concepts_tag_added() })
+            toast({ title: m.concepts_tag_added() })
           },
         },
       ),

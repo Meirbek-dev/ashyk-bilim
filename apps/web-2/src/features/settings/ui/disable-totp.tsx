@@ -29,7 +29,7 @@ export function DisableTotp({ onDisable }: { onDisable: () => void }) {
         onDisable()
         await remove.mutateAsync({ body })
         setOpen(false)
-        toast.add({ title: m.settings_totp_disabled() })
+        toast({ title: m.settings_totp_disabled() })
       } catch (error) {
         // A wrong code belongs under the code field, like turning it on (BUG-083).
         if (!hasCode(error, 'invalid-totp-code')) throw error

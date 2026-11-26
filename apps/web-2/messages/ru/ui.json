@@ -59,5 +59,18 @@
   "ui_file_checking": "Проверяем файл…",
   "ui_pdf_open": "Открыть PDF в новой вкладке",
   "ui_options_empty": "Ничего не найдено",
-  "ui_option_remove": "Убрать «{label}»"
+  "ui_option_remove": "Убрать «{label}»",
+  "ui_option_removed": "«{label}» убрано",
+  "ui_results": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} вариант",
+        "countPlural=few": "{count} варианта",
+        "countPlural=many": "{count} вариантов",
+        "countPlural=other": "{count} варианта"
+      }
+    }
+  ]
 }

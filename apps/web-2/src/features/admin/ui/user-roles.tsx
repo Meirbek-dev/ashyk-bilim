@@ -34,7 +34,7 @@ export function UserRoles({ user }: { user: AdminUser }) {
         { path: { user_id: user.id }, body: { role } },
         {
           onSuccess: () => {
-            toast.add({ title: m.admin_user_role_added() })
+            toast({ title: m.admin_user_role_added() })
             form.reset()
           },
         },

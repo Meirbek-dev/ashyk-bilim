@@ -1,4 +1,4 @@
-import { expectFailure } from '../fixtures/test'
+import { expectFailure, toast } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 import type { Page } from '@playwright/test'
 import { m } from '#/paraglide/messages'
@@ -131,7 +131,7 @@ test('B-PLY-03 B-PLY-05 B-PLY-06 B-PLY-07 B-PLY-08 a learner reads, marks a page
   await expect(neighbours(page).getByRole('link')).toHaveText([m.player_prev({}, ru)])
 
   await page.getByRole('button', { name: m.player_mark({}, ru) }).click()
-  await expect(page.getByText(m.player_marked({}, ru))).toBeVisible()
+  await expect(toast(page, m.player_marked({}, ru))).toBeVisible()
   await expect(contents(page).getByText(m.player_progress({ done: 1, total: 2 }, ru))).toBeVisible()
   await expect(contents(page).getByRole('link', { name: new RegExp(`Вторая.*${m.player_done({}, ru)}`) })).toBeVisible()
   const onward = page.getByRole('link', { name: m.player_next_step({ title: 'Page 1' }, ru) }) // server's next step
@@ -179,7 +179,7 @@ test('B-PLY-06 B-PLY-14 a done page can be unmarked; an unfinished course summar
   await learner.signIn()
   await page.goto(play(course))
   await page.getByRole('button', { name: m.player_unmark({}, ru) }).click()
-  await expect(page.getByText(m.player_unmarked({}, ru))).toBeVisible()
+  await expect(toast(page, m.player_unmarked({}, ru))).toBeVisible()
   await expect(page.getByRole('button', { name: m.player_mark({}, ru) })).toBeVisible()
 
   await page.goto(`/learn/${course.id}/complete`)
@@ -251,7 +251,7 @@ test('B-PLY-04 B-PLY-13 shortcuts move between activities, mark one done and ope
   }).toPass()
   await expect(page.getByRole('heading', { level: 1, name: 'Page 2' })).toBeVisible()
   await page.keyboard.press('m')
-  await expect(page.getByText(m.player_marked({}, ru))).toBeVisible()
+  await expect(toast(page, m.player_marked({}, ru))).toBeVisible()
   await page.keyboard.press('ArrowLeft')
   await expect(page.getByRole('heading', { level: 1, name: 'Page 1' })).toBeVisible()
   const help = page.getByRole('dialog', { name: m.catalog_help_title({}, ru) })

@@ -95,13 +95,13 @@ describe('RemediationGate (where the gate blocks the learner)', () => {
     await expect.element(screen.getByRole('heading', { name: 'Работа по этому занятию' })).toBeVisible()
     await expect.element(screen.getByText('Работа по другому занятию')).not.toBeInTheDocument()
     const before = reads
-    const added = vi.spyOn(toast, 'add')
     await userEvent.fill(screen.getByRole('textbox', { name: m.ai_remediation_answer({ number: 1 }) }), 'Ответ')
     await userEvent.click(screen.getByRole('button', { name: m.ai_remediation_complete() }))
     await expect.element(screen.getByText(m.ai_remediation_result_passed({ score: formatPercent(100) }))).toBeVisible()
     await expect.poll(() => reads).toBeGreaterThan(before)
     // The host takes the block away once the gate is lifted: the learner is told so.
-    expect(added).toHaveBeenCalledWith({ title: m.ai_remediation_gate_lifted() })
+    expect(toast.toasts().map(shown => shown.title)).toContain(m.ai_remediation_gate_lifted())
+    toast.dismiss()
   })
 
   test('B-AI-26 two generated questions with the same prompt are both asked', async () => {

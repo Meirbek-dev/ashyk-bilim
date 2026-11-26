@@ -19,7 +19,7 @@ export function EnrollButton({ courseId }: { courseId: CourseId }) {
   const enroll = useMutation(enrollOptions(useQueryClient(), courseId))
   const hydrated = useHydrated()
   const submit = () =>
-    enroll.mutate({ path: { course_id: courseId } }, { onSuccess: () => toast.add({ title: m.course_enrolled() }) })
+    enroll.mutate({ path: { course_id: courseId } }, { onSuccess: () => toast({ title: m.course_enrolled() }) })
   const { enroll: asked } = useSearch({ strict: false })
   const navigate = useNavigate()
   const ran = useRef(false)

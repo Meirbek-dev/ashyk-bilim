@@ -44,8 +44,7 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
   const path = { path: { activity_id: entry.id } }
   const pending = mark.isPending || unmark.isPending
   const submit = () => {
-    if (action?.kind === 'mark' && !pending)
-      mark.mutate(path, { onSuccess: () => toast.add({ title: m.player_marked() }) })
+    if (action?.kind === 'mark' && !pending) mark.mutate(path, { onSuccess: () => toast({ title: m.player_marked() }) })
   }
   useHotkey(shortcuts.mark.hotkey, submit)
   const error = mark.error ?? unmark.error
@@ -98,7 +97,7 @@ export function PlayerAction({ state, entry }: { state: LearnerCourseState; entr
             variant="ghost"
             pending={unmark.isPending}
             disabled={pending}
-            onClick={() => unmark.mutate(path, { onSuccess: () => toast.add({ title: m.player_unmarked() }) })}
+            onClick={() => unmark.mutate(path, { onSuccess: () => toast({ title: m.player_unmarked() }) })}
           >
             {m.player_unmark()}
           </SubmitButton>

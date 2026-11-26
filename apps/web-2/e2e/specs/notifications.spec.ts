@@ -13,7 +13,7 @@ import {
 } from '#/shared/api/gen/sdk.gen'
 import { formatPercent } from '#/shared/i18n/format'
 
-import { expectReread } from '../fixtures/test'
+import { expectReread, toast } from '../fixtures/test'
 import type { MadeCourse } from '../fixtures/learning'
 import { expect, ru, test } from './file-submissions-fixture'
 
@@ -128,7 +128,7 @@ test2(
     )
     await expect(updateLink(page, 'Новость 20', course)).toHaveCount(0)
     await page.getByRole('button', { name: m.notifications_mark_all({}, ru) }).click()
-    await expect(page.getByText(m.notifications_marked_all({}, ru))).toBeVisible()
+    await expect(toast(page, m.notifications_marked_all({}, ru))).toBeVisible()
     await expect(bell(page)).toBeVisible()
     await page.reload()
     await expect(page.getByText(m.notifications_empty_unread({}, ru))).toBeVisible()
@@ -165,7 +165,7 @@ test2('B-NOT-09 the per-type switches are saved and read back', async ({ page, a
   await expect(update).toBeChecked()
   await update.click()
   await section.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  await expect(page.getByText(m.notifications_prefs_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.notifications_prefs_saved({}, ru))).toBeVisible()
   await page.reload()
   await expect(update).not.toBeChecked()
   await expect(section.getByRole('switch', { name: m.notifications_type_grade_published({}, ru) })).toBeChecked()

@@ -37,7 +37,7 @@ function useRename(courseId: string, chapter: CurriculumChapter) {
         { path: { chapter_id: chapter.id }, body: { name }, headers: { 'If-Match': version } },
         {
           onSuccess: () => {
-            toast.add({ title: m.studio_saved() })
+            toast({ title: m.studio_saved() })
             done()
           },
         },

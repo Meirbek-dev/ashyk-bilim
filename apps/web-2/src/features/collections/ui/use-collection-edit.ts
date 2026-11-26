@@ -14,7 +14,7 @@ import { collectionOptions, updateCollectionOptions } from '../queries'
 /** «Сохранено», with a warning when nobody else will see the collection (B-COL-16). */
 const savedToast = (saved: Collection) =>
   hiddenFromOthers(saved)
-    ? { title: m.collections_saved(), description: m.collections_hidden_warning(), type: 'warning' }
+    ? { title: m.collections_saved(), description: m.collections_hidden_warning(), type: 'warning' as const }
     : { title: m.collections_saved() }
 
 /** The edit form of a collection with its save: `If-Match: version`, and a 412 raises `conflict`. */
@@ -36,7 +36,7 @@ export function useCollectionEdit(collectionId: string) {
   const callbacks = {
     onSuccess: async (saved: Collection) => {
       setConflict(false)
-      toast.add(savedToast(saved))
+      toast(savedToast(saved))
       await navigate({ to: '/collections/$collectionId', params: { collectionId } })
     },
     onError: (error: unknown) => setConflict(isStale(error)),

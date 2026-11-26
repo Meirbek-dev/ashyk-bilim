@@ -33,7 +33,7 @@ export function RevokeSession({ handle, device }: { handle: string; device: stri
           {
             onSuccess: () => {
               setOpen(false)
-              toast.add({ title: m.settings_session_revoked() })
+              toast({ title: m.settings_session_revoked() })
             },
           },
         )

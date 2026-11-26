@@ -25,7 +25,7 @@ export function RoleEditSection({ role, base }: { role: Role; base: BaseVersion 
     (body: UpdateRoleRequest, version: number) =>
       update.mutateAsync(
         { path: { slug: role.slug }, body, ...roleWrite(version) },
-        { onSuccess: () => toast.add({ title: m.admin_saved() }) },
+        { onSuccess: () => toast({ title: m.admin_saved() }) },
       ),
     () => roleVersion(queryClient, role.slug),
   )

@@ -59,7 +59,7 @@ export function CreateUserDialog({ withRoles }: { withRoles: boolean }) {
             onSuccess: async user => {
               setOpen(false)
               form.reset()
-              toast.add({ title: m.admin_user_created() })
+              toast({ title: m.admin_user_created() })
               await navigate({ to: '/admin/users', search: { user: user.id } })
             },
           },

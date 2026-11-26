@@ -1,4 +1,4 @@
-import { expectFailure as allowFailure } from '../fixtures/test'
+import { expectFailure as allowFailure, toast } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import { m } from '#/paraglide/messages'
@@ -38,7 +38,7 @@ test('B-COD-10 B-COD-11 a learner hands in the code and reads it back in the his
   const dialog = page.getByRole('alertdialog')
   await expect(dialog.getByText(m.code_submit_text_unlimited({ number: 1 }, ru))).toBeVisible()
   await dialog.getByRole('button', { name: m.code_submit({}, ru) }).click()
-  await expect(page.getByText(m.code_submitted({}, ru), { exact: true })).toBeVisible()
+  await expect(toast(page, m.code_submitted({}, ru), { exact: true })).toBeVisible()
   await expect(page).toHaveURL(/[?&]submission=/)
 
   const history = region(page, m.code_history({}, ru))

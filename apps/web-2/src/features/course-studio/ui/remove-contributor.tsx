@@ -40,7 +40,7 @@ export function RemoveContributor({ courseId, row, applying }: RemoveContributor
       {
         onSuccess: () => {
           setOpen(false)
-          toast.add({ title: texts.done })
+          toast({ title: texts.done })
         },
       },
     )

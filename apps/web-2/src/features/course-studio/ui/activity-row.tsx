@@ -34,7 +34,7 @@ function useRename(courseId: string, activity: Activity) {
       { path: { activity_id: activity.id }, body: { name }, headers: { 'If-Match': activity.version } },
       {
         onSuccess: () => {
-          toast.add({ title: m.studio_saved() })
+          toast({ title: m.studio_saved() })
           done()
         },
       },

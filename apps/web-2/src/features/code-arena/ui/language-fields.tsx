@@ -46,7 +46,7 @@ export function LanguageFields({ form, runner, readOnly }: LanguageFieldsProps) 
                             id={`code-language-${id}`}
                             checked={chosen.includes(id)}
                             disabled={readOnly}
-                            onCheckedChange={on => field.handleChange(toggle(chosen, id, on))}
+                            onCheckedChange={on => field.handleChange(toggle(chosen, id, on === true))}
                           />
                           <Label htmlFor={`code-language-${id}`}>
                             {languageOf(languages, id)?.name ?? m.code_language_unknown({ id })}

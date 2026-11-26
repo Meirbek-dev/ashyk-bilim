@@ -33,7 +33,7 @@ export function CreateCollectionDialog({ initiallyOpen = false }: { initiallyOpe
           onSuccess: async collection => {
             idempotency.settle()
             setOpen(false)
-            toast.add({ title: m.collections_created() })
+            toast({ title: m.collections_created() })
             await navigate({ to: '/collections/$collectionId', params: { collectionId: collection.id } })
           },
           onError: error => idempotency.settle(error),

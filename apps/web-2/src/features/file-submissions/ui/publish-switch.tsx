@@ -33,7 +33,7 @@ function TaskPublishSwitch({ activity }: { activity: ActivityDetail }) {
   const run = () =>
     publish.mutate(
       { path: { file_submission_id: task.id } },
-      { onSuccess: () => toast.add({ title: m.submission_published_toast() }) },
+      { onSuccess: () => toast({ title: m.submission_published_toast() }) },
     )
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -62,7 +62,7 @@ function TaskPublishSwitch({ activity }: { activity: ActivityDetail }) {
             {
               onSuccess: () => {
                 setConfirming(false)
-                toast.add({ title: m.submission_unpublished_toast() })
+                toast({ title: m.submission_unpublished_toast() })
               },
             },
           )

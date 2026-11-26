@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { expectFailure } from '../fixtures/test'
+import { expectFailure, toast } from '../fixtures/test'
 
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
@@ -42,7 +42,7 @@ test('B-ADM-13 the platform texts save and survive a reload; a blank name is ref
     const about = `E2E о платформе ${randomUUID().slice(0, 8)}`
     await general.getByLabel(m.admin_platform_about({}, ru), { exact: true }).fill(about)
     await general.getByRole('button', { name: m.ui_save({}, ru) }).click()
-    await expect(page.getByText(m.admin_saved({}, ru))).toBeVisible()
+    await expect(toast(page, m.admin_saved({}, ru))).toBeVisible()
     await page.reload()
     await expect(general.getByLabel(m.admin_platform_about({}, ru), { exact: true })).toHaveValue(about)
 
@@ -109,7 +109,7 @@ test('B-ADM-14 a link cover uploads with its purpose and becomes the cover at on
   expect((await created).postDataJSON()).toMatchObject({ purpose: 'platform-thumbnail', mime: 'image/png' })
   expect((await finalized).ok()).toBe(true)
   expect((await saved).postDataJSON()).toMatchObject({ thumbnail_upload_id: expect.stringMatching(/^[0-9a-f-]{36}$/) })
-  await expect(page.getByText(m.admin_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.admin_saved({}, ru))).toBeVisible()
   await expect(branding.getByRole('img', { name: m.admin_platform_thumbnail({}, ru) })).toBeVisible()
   // OPEN-C-1: the shell keeps the fixed artwork, so no logo is offered.
   await expect(branding.getByText('Логотип')).toHaveCount(0)
@@ -153,7 +153,7 @@ test('B-ADM-15 B-ADM-24 the XP rules save over a newer version after the conflic
     const sent = page.waitForRequest(request => request.method() === 'PUT' && request.url().endsWith('/config'))
     await conflict.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
     expect((await sent).postDataJSON()).toMatchObject({ rewards: { admin_award: 4, course_completion: 250 } })
-    await expect(page.getByText(m.admin_saved({}, ru))).toBeVisible()
+    await expect(toast(page, m.admin_saved({}, ru))).toBeVisible()
     await page.reload()
     await expect(course).toHaveValue('250')
   } finally {

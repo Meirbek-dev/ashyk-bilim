@@ -27,7 +27,7 @@ export function MoreMenu({ sections }: { sections: readonly Section[] }) {
             key={section.to}
             aria-current={open(section) ? 'page' : undefined}
             className="current:font-semibold"
-            onClick={() => void navigate({ to: section.to })}
+            onSelect={() => void navigate({ to: section.to })}
           >
             <section.icon aria-hidden />
             {section.label()}

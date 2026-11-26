@@ -152,7 +152,7 @@ const restrictImports = (layer: keyof typeof layerPatterns): Rules['no-restricte
 
 const lint: OxlintConfig = {
   plugins: ['eslint', 'typescript', 'oxc', 'react', 'jsx-a11y', 'import', 'promise', 'unicorn', 'vitest'],
-  jsPlugins: [{ name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' }, '@shadcn/lint'],
+  jsPlugins: [{ name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin' }],
   categories: { correctness: 'error', suspicious: 'error' },
   options: { typeAware: true, typeCheck: true },
   ignorePatterns: ['src/shared/api/gen*/**', 'src/paraglide*/**', 'src/routeTree.*.ts', 'dist/**'],
@@ -182,12 +182,6 @@ const lint: OxlintConfig = {
     'react/no-danger': 'error',
     'react/no-multi-comp': 'error',
     'react/forbid-elements': ['error', { forbid: forbiddenElements }],
-    // Colors stay tokens (ast-grep tokens-* scan the same in CSS and plain strings); geometry may be dynamic: arbitrary
-    // values and inline styles are allowed. Off: `no-restyle` (the kit's own files and 28 deliberate looks fail its
-    // contracts), `no-unknown-classes` (prose.css classes), `require-static-classes` (status tones come from a Record).
-    'shadcn/no-raw-colors': 'error',
-    'shadcn/no-arbitrary-values': 'off',
-    'shadcn/no-inline-styles': 'off',
     'no-restricted-globals': restrictGlobals(),
     'no-restricted-properties': restrictProperties(),
     'no-restricted-imports': restrictImports('any'),
@@ -229,19 +223,12 @@ const lint: OxlintConfig = {
     // The two link composites are the one place that renders <a> (routes through createLink, other URLs plainly).
     { files: LINK_COMPOSITES, rules: { 'react/forbid-elements': ['error', { forbid: forbiddenExceptA }] } },
     {
-      // Stock shadcn output (`bunx shadcn add`), owned by the generator: named relaxations for this folder only.
+      // The kit: the one place that renders raw elements, and a file exports one component's parts together.
       files: ['src/shared/ui/**'],
       rules: {
         'react/forbid-elements': 'off',
         'react/no-multi-comp': 'off',
         'no-restricted-imports': ['error', { patterns: [...layerPatterns.any, ...layerPatterns.shared] }],
-        'jsx-a11y/prefer-tag-over-role': 'off',
-        'jsx-a11y/no-noninteractive-element-interactions': 'off',
-        'jsx-a11y/click-events-have-key-events': 'off',
-        'jsx-a11y/label-has-associated-control': 'off',
-        'typescript/no-unsafe-type-assertion': 'off',
-        'no-underscore-dangle': 'off',
-        'shadcn/no-arbitrary-values': 'off',
       },
     },
     // Chromium shows no PDF in a sandboxed frame; the component frames same-origin paths only.

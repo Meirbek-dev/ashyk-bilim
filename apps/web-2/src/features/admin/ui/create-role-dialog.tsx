@@ -29,7 +29,7 @@ export function CreateRoleDialog() {
             onSuccess: async () => {
               setOpen(false)
               form.reset()
-              toast.add({ title: m.admin_role_created() })
+              toast({ title: m.admin_role_created() })
               await navigate({ to: '/admin/roles/$roleSlug', params: { roleSlug: rest.slug } })
             },
           },

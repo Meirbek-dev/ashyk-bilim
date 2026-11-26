@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
+import { page } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import type { Course, CourseDeletionPreview } from '#/shared/api/gen/types.gen'
@@ -65,7 +66,7 @@ async function open(cached: CourseDeletionPreview, previews: CourseDeletionPrevi
     </QueryClientProvider>,
   )
   await screen.getByRole('button', { name: m.studio_course_delete() }).click()
-  const dialog = screen.getByRole('alertdialog', { name: m.studio_course_delete_confirm_title({ name: course.name }) })
+  const dialog = page.getByRole('alertdialog', { name: m.studio_course_delete_confirm_title({ name: course.name }) })
   await dialog.getByRole('textbox', { name: m.studio_course_delete_name() }).fill(course.name)
   return { dialog, requests, deletes: () => requests.filter(request => request.method === 'DELETE') }
 }

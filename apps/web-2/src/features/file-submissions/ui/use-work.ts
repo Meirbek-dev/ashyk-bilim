@@ -45,7 +45,7 @@ export function useWork(ids: WorkIds) {
       // FileInput waits for the updated draft and keeps a refused upload available for retry.
       return draft.mutateAsync(
         { path, body, headers: versionHeader(current) },
-        { onSuccess: () => toast.add({ title: done }), onError: onError(action) },
+        { onSuccess: () => toast({ title: done }), onError: onError(action) },
       )
     } else if (action.kind === 'submit') {
       send.mutate(
@@ -53,7 +53,7 @@ export function useWork(ids: WorkIds) {
         {
           onSuccess: () => {
             idempotency.settle()
-            toast.add({ title: m.submission_submitted() })
+            toast({ title: m.submission_submitted() })
           },
           onError: error => {
             idempotency.settle(error)
@@ -64,7 +64,7 @@ export function useWork(ids: WorkIds) {
     } else {
       start.mutate(
         { path },
-        { onSuccess: () => toast.add({ title: m.submission_attempt_started() }), onError: onError(action) },
+        { onSuccess: () => toast({ title: m.submission_attempt_started() }), onError: onError(action) },
       )
     }
     return undefined

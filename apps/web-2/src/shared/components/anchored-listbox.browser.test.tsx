@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { describe, expect, test, vi } from 'vite-plus/test'
 import { userEvent } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
+import { Button } from '#/shared/ui/button'
 
 import { AnchoredListbox, type ListboxOption } from './anchored-listbox'
 import { renderInRouter } from './testing'
@@ -15,19 +17,22 @@ const options = [
 // The caret of an editor, as `view.coordsAtPos()` would give it.
 const caret = { getBoundingClientRect: () => new DOMRect(40, 120, 0, 20) }
 
+/** Opened by a button, as the editor's toolbar opens it: a popup rendered open from the start keeps focus where it is. */
+function Opened(props: { onSelect: (option: ListboxOption) => void; onOpenChange: (open: boolean) => void }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>{label}</Button>
+      <AnchoredListbox label={label} options={options} anchor={caret} open={open} {...props} />
+    </>
+  )
+}
+
 async function renderListbox() {
   const onSelect = vi.fn<(option: ListboxOption) => void>()
   const onOpenChange = vi.fn<(open: boolean) => void>()
-  const screen = await renderInRouter(
-    <AnchoredListbox
-      label={label}
-      options={options}
-      anchor={caret}
-      open
-      onOpenChange={onOpenChange}
-      onSelect={onSelect}
-    />,
-  )
+  const screen = await renderInRouter(<Opened onOpenChange={onOpenChange} onSelect={onSelect} />)
+  await screen.getByRole('button', { name: label }).click()
   return { screen, onSelect, onOpenChange }
 }
 
@@ -47,11 +52,15 @@ describe('AnchoredListbox', () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(false)
   })
 
-  test('a search that matches nothing says so; Escape asks to close without a pick', async () => {
+  test('a search that matches nothing says so; Escape clears the text, the next one asks to close without a pick', async () => {
     const { screen, onSelect, onOpenChange } = await renderListbox()
-    await expect.element(screen.getByRole('combobox', { name: label })).toHaveFocus()
+    const search = screen.getByRole('combobox', { name: label })
+    await expect.element(search).toHaveFocus()
     await userEvent.keyboard('zzz')
     await expect.element(screen.getByText(m.ui_options_empty())).toBeVisible()
+    await userEvent.keyboard('{Escape}')
+    await expect.element(search).toHaveValue('')
+    expect(onOpenChange).not.toHaveBeenCalledWith(false)
     await userEvent.keyboard('{Escape}')
     expect(onOpenChange).toHaveBeenLastCalledWith(false)
     expect(onSelect).not.toHaveBeenCalled()

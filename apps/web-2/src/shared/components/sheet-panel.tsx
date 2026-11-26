@@ -11,8 +11,8 @@ type SheetPanelProps = {
   onOpenChange?: (open: boolean) => void
   title: string
   side: 'left' | 'right'
-  /** Where focus lands on open (Base UI's `initialFocus`); default: the first focusable element. */
-  initialFocus?: () => HTMLElement | null | boolean
+  /** Where focus lands on open (ui-sdk's `initialFocus`); default: the first focusable element. */
+  initialFocus?: () => HTMLElement | null | undefined
   children: ReactNode
 }
 
@@ -22,11 +22,11 @@ export function SheetPanel({ trigger, open, onOpenChange, title, side, initialFo
   const hydrated = useHydrated()
   const density = use(DensityContext)
   return (
-    <Sheet open={open} onOpenChange={next => onOpenChange?.(next)}>
+    <Sheet side={side} open={open} onOpenChange={next => onOpenChange?.(next)}>
       {trigger ? (
         <SheetTrigger render={trigger} disabled={!hydrated || undefined} data-hydrating={hydrated ? undefined : true} />
       ) : null}
-      <SheetContent side={side} initialFocus={initialFocus} data-density={density}>
+      <SheetContent initialFocus={initialFocus} data-density={density}>
         {/* Clear of the stock close button (absolute, top right): a long name wraps before it, a long login too. */}
         <SheetHeader className="pr-12">
           <SheetTitle className="wrap-anywhere">{title}</SheetTitle>

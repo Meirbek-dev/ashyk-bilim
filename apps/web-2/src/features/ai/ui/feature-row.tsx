@@ -35,7 +35,7 @@ export function FeatureRow({ feature, canSwitch, showSource }: FeatureRowProps) 
       { path: { key: feature.key }, body: { enabled } },
       {
         onSuccess: () =>
-          toast.add({
+          toast({
             title: (enabled ? m.ai_feature_switched_on : m.ai_feature_switched_off)({
               name: featureLabel(feature.key),
             }),

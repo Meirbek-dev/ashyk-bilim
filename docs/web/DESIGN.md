@@ -181,11 +181,24 @@ Every data region renders exactly one of the kit's four states:
 3. No matches: shown when a filter is in the URL. One sentence plus a "Reset filters" action.
 4. Error / no access: the `ApiError` message from the code map plus "Retry"; a 403 is shown in place, same URL.
 
-## 8. Kit: shadcn base-nova + our composites
+## 8. Kit: ui-sdk parts in the house look + our composites
 
-- `src/shared/ui/` started as shadcn (`components.json`, `base-nova` on Base UI; how to add: `apps/web-2/AGENTS.md`) and is
-  restyled in place to the house look (control height, radius, table typesetting). A kit file is edited for a look every
-  screen shares, never for one screen.
+- `src/shared/ui/` wraps ui-sdk parts (`@ui-sdk/react/<name>`: keyboard, focus, dismissal, popups, ARIA, drag and drop)
+  in the house look (control height, radius, table typesetting). One behavior library: no Base UI, no shadcn registry;
+  a part a screen needs gets a wrapper here first (ast-grep `ui-sdk-in-shared` keeps `@ui-sdk` out of features). A kit
+  file is edited for a look every screen shares, never for one screen. Agents read the `ui-sdk` skill and the docs of
+  the installed version (`node_modules/@ui-sdk/react/docs/`).
+- `@ui-sdk/core/web.css` is the fallback look under the kit, imported as `layer(base)` beneath Tailwind's preflight
+  (it also styles bare `a`, `code`, `kbd`, `hr` app-wide, which the preflight keeps reset); its `--ui-*` tokens follow
+  ours (top of `globals.css`), so every theme reaches what it draws. Style parts by `data-slot` and state attributes
+  (`data-open`, `data-checked`, `data-starting-style` / `data-ending-style` for motion), never by generated ids.
+- Every popup (dialog, sheet, popover, menu, combobox, tooltip) renders into `<body>` once hydrated
+  (`shared/ui/body-container.ts`), not in place: in place it would take the styles of prose, a table cell or the
+  editor's `contenteditable` around its trigger, and nest a form in a form. A popup a URL opens (`?create=true`,
+  `?ai=chat`) opens once hydrated, so it never moves and remounts under the user's typing. Tests find popups with
+  `page`, not the render's `screen`; e2e finds a toast with `toast(page, text)` and an alert with `alerts(page)`
+  (`e2e/fixtures/test.ts`): ui-sdk's page-wide live region repeats their text.
+- ui-sdk is a beta: each release waits as a Renovate PR (`renovate.json5`) and moves with its skill.
 - `src/shared/components/` is ours, under every lint and token rule: templates, form fields (`useAppForm`), data
   regions, `IconButton`, `StatusBadge`, `ErrorAlert`, `SheetPanel`, menus. A look the stock kit lacks (status
   tones, link looks, a dialog width) is a variant there; features pass layout classes only, never restyle.

@@ -29,7 +29,7 @@ export function CopySection({ title, assessment }: { title: string; assessment: 
         {
           onSuccess: copy => {
             setOpen(false)
-            toast.add({ title: m.assessments_copied() })
+            toast({ title: m.assessments_copied() })
             void navigate({
               to: '/teach/courses/$courseId/activities/$activityId/edit',
               params: { courseId: copy.course_id, activityId: copy.activity_id },

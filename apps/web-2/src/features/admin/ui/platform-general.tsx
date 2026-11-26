@@ -24,7 +24,7 @@ export function PlatformGeneral({ platform, base }: { platform: Platform; base: 
     (body: UpdatePlatformRequest, version: number) =>
       update.mutateAsync(
         { body, headers: { 'If-Match': version } },
-        { onSuccess: () => toast.add({ title: m.admin_saved() }) },
+        { onSuccess: () => toast({ title: m.admin_saved() }) },
       ),
     () => platformVersion(queryClient),
   )

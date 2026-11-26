@@ -37,7 +37,7 @@ export function ProfileBuilder() {
       {
         onSuccess: () => {
           setConflict(false)
-          toast.add({ title: m.settings_saved() })
+          toast({ title: m.settings_saved() })
         },
         onError: error => setConflict(isStale(error)),
       },

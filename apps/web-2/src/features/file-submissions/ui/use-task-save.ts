@@ -23,7 +23,7 @@ export function useTaskSave(task: FileSubmission) {
     try {
       await update.mutateAsync(
         { path: { file_submission_id: task.id }, body, headers: { 'If-Match': version ?? null } },
-        { onSuccess: () => toast.add({ title: m.submission_saved() }) },
+        { onSuccess: () => toast({ title: m.submission_saved() }) },
       )
       setStale(null)
     } catch (error) {

@@ -24,9 +24,8 @@ type IconButtonProps = Omit<
  */
 export function IconButton({ label, icon, keys, ...props }: IconButtonProps) {
   return (
-    <Tooltip>
+    <Tooltip delay={300}>
       <TooltipTrigger
-        delay={300}
         render={
           <Button
             variant="ghost"

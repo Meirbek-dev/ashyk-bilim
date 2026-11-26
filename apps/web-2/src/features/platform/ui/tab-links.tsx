@@ -41,7 +41,7 @@ export function TabLinks({ tabs }: { tabs: Tabs }) {
                 aria-current={tab === current ? 'page' : undefined}
                 className="current:font-semibold"
                 // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the layout's own params fill every tab
-                onClick={() => void navigate({ to: tab.to, params: params as never })}
+                onSelect={() => void navigate({ to: tab.to, params: params as never })}
               >
                 {tab.label()}
               </DropdownMenuItem>

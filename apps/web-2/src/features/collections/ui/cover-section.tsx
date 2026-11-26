@@ -32,7 +32,7 @@ export function CoverSection({ collection, base }: CoverSectionProps) {
       {
         onSuccess: saved => {
           base.current = saved.version
-          toast.add({ title: cover ? m.collections_saved() : m.collections_cover_removed() })
+          toast({ title: cover ? m.collections_saved() : m.collections_cover_removed() })
         },
       },
     )

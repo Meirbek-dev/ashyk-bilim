@@ -28,6 +28,6 @@ export function startLive(queryClient: QueryClient): () => void {
     if (event.event === 'notification.read')
       applyRead(queryClient, event.payload.notification_id, { unread_count: event.payload.unread_count })
     if (event.event === 'xp.awarded')
-      void xpToasts(queryClient, event.payload).then(titles => titles.map(title => toast.add({ title })))
+      void xpToasts(queryClient, event.payload).then(titles => titles.map(title => toast({ title })))
   })
 }

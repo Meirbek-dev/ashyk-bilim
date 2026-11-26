@@ -32,7 +32,7 @@ export function UserGroup({ user }: { user: AdminUser }) {
         { group, members: [member] },
         {
           onSuccess: () => {
-            toast.add({ title: m.admin_user_group_added() })
+            toast({ title: m.admin_user_group_added() })
             form.reset()
           },
         },

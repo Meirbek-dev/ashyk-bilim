@@ -25,7 +25,7 @@ export function CreateChapterDialog({ courseId }: { courseId: string }) {
         {
           onSuccess: () => {
             changeOpen(false)
-            toast.add({ title: m.studio_chapter_created() })
+            toast({ title: m.studio_chapter_created() })
           },
         },
       ),

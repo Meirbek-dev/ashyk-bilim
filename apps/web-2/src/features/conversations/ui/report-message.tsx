@@ -23,7 +23,7 @@ export function ReportMessage({ message }: { message: Message }) {
           onSuccess: () => {
             setOpen(false)
             form.reset()
-            toast.add({ title: m.conversations_reported_toast() })
+            toast({ title: m.conversations_reported_toast() })
           },
         },
       ),

@@ -60,6 +60,13 @@
       groupName: 'web-2 dependencies',
     },
     {
+      // The kit's behavior layer is a beta: any release may change part APIs that src/shared/ui wraps, so each one
+      // waits as a PR, with its agent skill (skills-lock.json) bumped to the same release.
+      matchPackageNames: ['@ui-sdk/**'],
+      groupName: 'ui-sdk',
+      automerge: false,
+    },
+    {
       // gates/ and codegen run the TypeScript 6 compiler API through this alias (TypeScript 7 has none).
       matchDepNames: ['typescript-6'],
       allowedVersions: '<7',

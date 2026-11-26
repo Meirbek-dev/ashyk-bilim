@@ -1,0 +1,11 @@
+id: ui-sdk-in-shared
+valid:
+  - |-
+    import { Button } from '#/shared/ui/button'
+  - |-
+    import { Slider } from '#/shared/ui/slider'
+invalid:
+  - |-
+    import { Slider } from '@ui-sdk/react/slider'
+  - |-
+    import type { SliderState } from '@ui-sdk/core/slider'

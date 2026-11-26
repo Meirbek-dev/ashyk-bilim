@@ -36,7 +36,7 @@ export function NotificationsPage() {
             display: { showGamification, showStreaks },
           },
         },
-        { onSuccess: () => toast.add({ title: m.settings_saved() }) },
+        { onSuccess: () => toast({ title: m.settings_saved() }) },
       ),
   })
   return (

@@ -4,7 +4,7 @@ import { login } from '#/shared/api/gen/sdk.gen'
 
 import { type NewAccount, registerAccount } from '../fixtures/accounts'
 import { expect, test as base } from '../fixtures/seed'
-import { clickUntil } from '../fixtures/test'
+import { clickUntil, toast } from '../fixtures/test'
 
 const ru = { locale: 'ru' } as const
 const FIREFOX_WINDOWS = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0'
@@ -48,7 +48,7 @@ test('B-SET-17 every other session ends at once after one confirmation', async (
   )
   await expect(confirm.getByRole('button', { name: m.ui_cancel({}, ru) })).toBeFocused()
   await confirm.getByRole('button', { name: m.settings_sessions_revoke_others_confirm({}, ru) }).click()
-  await expect(page.getByText(m.settings_sessions_revoked_others({}, ru))).toBeVisible()
+  await expect(toast(page, m.settings_sessions_revoked_others({}, ru))).toBeVisible()
   await expect(sessions.getByRole('listitem')).toHaveCount(1)
   await expect(sessions.getByText(m.settings_session_current({}, ru))).toBeVisible()
   await page.reload()

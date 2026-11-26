@@ -1,4 +1,4 @@
-import { expectFailure as allowFailure, finishPages, gotoLive } from '../fixtures/test'
+import { expectFailure as allowFailure, finishPages, gotoLive, toast, alerts } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 import type { Page } from '@playwright/test'
 import { m } from '#/paraglide/messages'
@@ -64,7 +64,7 @@ test('B-AUTH-02 an outside redirect lands on /home', async ({ page }) => {
 test('B-AUTH-03 a wrong password is reported in place and the login stays', async ({ page }) => {
   await page.goto('/login')
   await signIn(page, STUDENT, 'not-the-password')
-  await expect(page.getByRole('alert')).toHaveText(m.auth_login_error_credentials({}, ru))
+  await expect(alerts(page)).toHaveText(m.auth_login_error_credentials({}, ru))
   await expect(page.getByLabel(m.auth_login_field_login({}, ru))).toHaveValue(STUDENT)
 })
 
@@ -78,7 +78,7 @@ test('B-AUTH-04 an account with 2FA signs in with the code step', async ({ page,
 
   await code.fill('000000')
   await page.getByRole('button', { name: m.auth_login_submit({}, ru) }).click()
-  await expect(page.getByRole('alert')).toHaveText(m.auth_login_error_totp({}, ru))
+  await expect(alerts(page)).toHaveText(m.auth_login_error_totp({}, ru))
 
   await page.getByRole('button', { name: m.auth_login_back({}, ru) }).click()
   await expect(page.getByLabel(m.auth_login_field_login({}, ru))).toHaveValue(account.username)
@@ -96,9 +96,9 @@ test('B-AUTH-05 the Google button links to the API with the checked return path'
     '/api/v2/auth/google?callback=%2Flogin%3Fredirect%3D%252Fcollections',
   )
   await page.goto('/login?error=google-cancelled')
-  await expect(page.getByRole('alert')).toHaveText(m.auth_login_error_google_cancelled({}, ru))
+  await expect(alerts(page)).toHaveText(m.auth_login_error_google_cancelled({}, ru))
   await page.goto('/login?error=google-oauth-expired')
-  await expect(page.getByRole('alert')).toHaveText(m.errors_google_oauth_expired({}, ru))
+  await expect(alerts(page)).toHaveText(m.errors_google_oauth_expired({}, ru))
 })
 
 test('B-AUTH-06 B-AUTH-07 a guest signs up, is signed in at once and goes where they were headed', async ({ page }) => {
@@ -136,7 +136,7 @@ test('B-AUTH-06 B-AUTH-07 a guest signs up, is signed in at once and goes where 
   expect((await created).status()).toBe(201)
   // Signed in at once, back where the guest was headed. The stand has no mailer: the address counts as confirmed.
   await expect(page).toHaveURL(/\/collections$/)
-  await expect(page.getByText(m.auth_signup_welcome({}, ru))).toBeVisible()
+  await expect(toast(page, m.auth_signup_welcome({}, ru))).toBeVisible()
   await expect(page.getByRole('banner').getByRole('link', { name: m.platform_nav_login({}, ru) })).toHaveCount(0)
 })
 test('B-AUTH-08 the emailed code confirms the address; a wrong one keeps the input', async ({ page, baseURL }) => {
@@ -147,13 +147,13 @@ test('B-AUTH-08 the emailed code confirms the address; a wrong one keeps the inp
   const codeField = page.getByLabel(m.auth_verify_field_code({}, ru))
   await codeField.fill('WRONG1')
   await page.getByRole('button', { name: m.auth_verify_submit({}, ru) }).click()
-  await expect(page.getByText(m.auth_verify_error_code({}, ru))).toBeVisible()
+  await expect(page.locator('[data-slot=field-error]', { hasText: m.auth_verify_error_code({}, ru) })).toBeVisible()
   await expect(page.getByLabel(m.auth_signup_field_email({}, ru))).toHaveValue(account.email)
   // Typed in lower case: the same code (UX-205).
   await codeField.fill(code.toLowerCase())
   await page.getByRole('button', { name: m.auth_verify_submit({}, ru) }).click()
   await expect(page).toHaveURL(/\/login$/)
-  await expect(page.getByText(m.auth_verify_done({}, ru))).toBeVisible()
+  await expect(toast(page, m.auth_verify_done({}, ru))).toBeVisible()
 })
 test('B-AUTH-15 without email delivery a new account is never asked to confirm its address', async ({
   page,
@@ -166,7 +166,7 @@ test('B-AUTH-15 without email delivery a new account is never asked to confirm i
   await expect(page).toHaveURL(/\/home$/)
   const session: unknown = await (await page.request.get('/api/v2/auth/session')).json()
   expect(session).toMatchObject({ user: { email_verified: true } })
-  await expect(page.getByRole('alert').filter({ hasText: m.auth_banner_title({}, ru) })).toHaveCount(0)
+  await expect(alerts(page).filter({ hasText: m.auth_banner_title({}, ru) })).toHaveCount(0)
 })
 /** The emailed reset code: without a mailer the API logs it like the verification code (accounts.ts). The latest. */
 async function resetCode(email: string): Promise<string> {
@@ -208,7 +208,7 @@ test('B-AUTH-12 B-AUTH-13 a forgotten password is reset with the emailed code; t
   await codeField.fill(code)
   await submit.click()
   await expect(page).toHaveURL(/\/login$/)
-  const done = page.getByText(m.auth_reset_done({}, ru))
+  const done = toast(page, m.auth_reset_done({}, ru))
   await expect(done).toBeVisible()
   await expect(page.getByLabel(m.auth_login_field_login({}, ru))).toHaveValue(account.username)
   // A toast still leaving while the next page renders trips axe (aria-hidden-focus): let it go first.
@@ -238,7 +238,7 @@ test('B-AUTH-14 the verification code is sent again; a throttled resend names th
   const sent = page.waitForRequest(request => request.url().endsWith('/api/v2/auth/verify-email/resend'))
   await resend.click()
   expect((await sent).postDataJSON()).toEqual({ email: account.email })
-  await expect(page.getByText(m.auth_verify_resent({}, ru))).toBeVisible()
+  await expect(toast(page, m.auth_verify_resent({}, ru))).toBeVisible()
   // The local API runs with the per-address limit lifted (api-env), so the 429 comes from the route.
   const problem = { type: 'about:blank', status: 429, code: 'rate-limited', title: 'Too many requests' }
   await page.route('**/api/v2/auth/verify-email/resend', route =>
@@ -250,7 +250,7 @@ test('B-AUTH-14 the verification code is sent again; a throttled resend names th
     }),
   )
   await resend.click()
-  await expect(page.getByRole('alert')).toHaveText(m.auth_login_error_retry_in({ minutes: 3 }, ru))
+  await expect(alerts(page)).toHaveText(m.auth_login_error_retry_in({ minutes: 3 }, ru))
 })
 test('B-AUTH-10 a guest on a closed page signs in and returns; guest pages send a signed-in user home', async ({
   page,

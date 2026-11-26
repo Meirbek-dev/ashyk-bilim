@@ -53,7 +53,7 @@ export function OverrideDialog({ assessmentId, trigger, row, learners }: Overrid
           onSuccess: () => {
             setOpen(false)
             if (!row) form.reset()
-            toast.add({ title: m.assessments_exception_saved() })
+            toast({ title: m.assessments_exception_saved() })
           },
         },
       ),

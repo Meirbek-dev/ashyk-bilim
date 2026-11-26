@@ -36,7 +36,7 @@ export function PublishSection({ task }: { task: FileSubmission }) {
     publish.mutate(
       { path: { file_submission_id: task.id } },
       {
-        onSuccess: () => toast.add({ title: m.submission_published_toast() }),
+        onSuccess: () => toast({ title: m.submission_published_toast() }),
         onError: () => setRefusedAt(task.version),
       },
     )
@@ -76,7 +76,7 @@ export function PublishSection({ task }: { task: FileSubmission }) {
               {
                 onSuccess: () => {
                   setConfirming(false)
-                  toast.add({ title: m.submission_unpublished_toast() })
+                  toast({ title: m.submission_unpublished_toast() })
                 },
               },
             )

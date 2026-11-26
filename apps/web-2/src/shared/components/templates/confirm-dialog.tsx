@@ -53,10 +53,10 @@ const lineage = (node: Element | null): HTMLElement[] => {
  * removed row), the first control of the nearest container still there, not whatever the browser picks (even a row
  * behind a sheet).
  */
-const returnTo = ([trigger, ...containers]: HTMLElement[]): HTMLElement | true => {
+const returnTo = ([trigger, ...containers]: HTMLElement[]): HTMLElement | undefined => {
   if (trigger?.isConnected) return trigger
   const live = containers.filter(container => container.isConnected)
-  return live.map(container => container.querySelector<HTMLElement>(CONTROLS)).find(Boolean) ?? true
+  return live.map(container => container.querySelector<HTMLElement>(CONTROLS)).find(Boolean) ?? undefined
 }
 
 /**
@@ -66,7 +66,6 @@ const returnTo = ([trigger, ...containers]: HTMLElement[]): HTMLElement | true =
  */
 export function ConfirmDialog(props: ConfirmDialogProps) {
   const { open, onOpenChange, trigger, title, consequence, confirmLabel, onConfirm, pending, error } = props
-  const cancel = useRef<HTMLButtonElement>(null)
   const opener = useRef<HTMLElement[]>([])
   const confirmed = useRef(false)
   // Opened by the app (a «×» that sets the state), not the trigger: what had the focus is the opener. Read before the
@@ -88,7 +87,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
       if (!confirmed.current) return
       requestAnimationFrame(() => {
         const target = returnTo(opener.current)
-        if (target !== true && (document.activeElement ?? document.body) === document.body) target.focus()
+        if (target && (document.activeElement ?? document.body) === document.body) target.focus()
       })
     },
     [],
@@ -100,7 +99,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
       open={open}
       onOpenChange={(next, details) => {
         // The trigger pressed (Safari does not focus a clicked button).
-        const target = details.event.target
+        const target = details.event?.target
         if (next && target instanceof Element) {
           opener.current = lineage(target.closest(CONTROLS) ?? target)
           byTrigger.current = true
@@ -115,7 +114,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
           data-hydrating={hydrated ? undefined : true}
         />
       ) : null}
-      <AlertDialogContent initialFocus={cancel} finalFocus={() => returnTo(opener.current)}>
+      <AlertDialogContent finalFocus={() => returnTo(opener.current)}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{consequence}</AlertDialogDescription>
@@ -123,9 +122,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
         {props.children}
         {error ? <ErrorAlert>{presentError(error)}</ErrorAlert> : null}
         <AlertDialogFooter>
-          <AlertDialogCancel ref={cancel} variant="ghost">
-            {onConfirm ? m.ui_cancel() : m.ui_close()}
-          </AlertDialogCancel>
+          <AlertDialogCancel variant="ghost">{onConfirm ? m.ui_cancel() : m.ui_close()}</AlertDialogCancel>
           {onConfirm ? (
             <SubmitButton
               variant="destructive"

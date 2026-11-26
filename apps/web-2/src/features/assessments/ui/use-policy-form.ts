@@ -26,7 +26,7 @@ export function usePolicyForm(activityId: string, assessment: AssessmentDetail) 
           body: policyBody(values, assessment.policy, assessment.kind),
           headers: version.headers(),
         },
-        { onSuccess: () => toast.add({ title: m.assessments_saved() }), onError: version.onError },
+        { onSuccess: () => toast({ title: m.assessments_saved() }), onError: version.onError },
       ),
   })
   return { form, save, version }

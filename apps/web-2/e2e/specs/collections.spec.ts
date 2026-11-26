@@ -1,4 +1,4 @@
-import { expectFailure, finishPages, clickUntil } from '../fixtures/test'
+import { expectFailure, finishPages, clickUntil, toast } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 import { m } from '#/paraglide/messages'
 import { createClient, createConfig } from '#/shared/api/gen/client'
@@ -131,7 +131,7 @@ test('B-COL-06 a teacher creates a collection in the dialog and lands on its pag
   expect((await request).headers()['idempotency-key']).toMatch(/^[0-9a-f-]{36}$/)
 
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
-  await expect(page.getByText(m.collections_created({}, ru))).toBeVisible()
+  await expect(toast(page, m.collections_created({}, ru))).toBeVisible()
   await expect(page.getByText(m.collections_visibility_private({}, ru))).toBeVisible()
   const path = { collection_id: new URL(page.url()).pathname.split('/').at(-1) ?? '' }
   await finishPages(page.context())
@@ -186,7 +186,7 @@ test('B-COL-09 the edit page saves with If-Match and returns to the collection',
   expect((await request).headers()['if-match']).toBe(String(own.version))
   await expect(page).toHaveURL(new RegExp(`/collections/${own.id}$`))
   await expect(page.getByRole('heading', { level: 1, name: `${own.name} v2` })).toBeVisible()
-  await expect(page.getByText(m.collections_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.collections_saved({}, ru))).toBeVisible()
 })
 
 test("B-COL-10 a save over someone else's change asks, keeps the input and retries", async ({
@@ -213,6 +213,7 @@ test("B-COL-10 a save over someone else's change asks, keeps the input and retri
   const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
   await expect(conflict).toBeVisible()
   await conflict.getByRole('button', { name: m.ui_cancel({}, ru) }).click()
+  await expect(conflict).toBeHidden()
   await expect(description).toHaveValue('Мой вариант описания')
 
   await page.getByRole('button', { name: m.ui_save({}, ru) }).click()
@@ -255,7 +256,7 @@ test('B-COL-12 delete asks with the name, starts on Cancel, then shows the list'
   // No 404 from reading the deleted collection again: its live `collection.updated` names it deleted (OPEN-6).
   await confirm.getByRole('button', { name: m.collections_action_delete({}, ru) }).click()
   await expect(page).toHaveURL(/\/collections$/)
-  await expect(page.getByText(m.collections_deleted({}, ru))).toBeVisible()
+  await expect(toast(page, m.collections_deleted({}, ru))).toBeVisible()
   const gone = await getCollection({ client: api, path: { collection_id: own.id }, headers: cookie(seed, 'teacher') })
   expect(gone.response?.status).toBe(404)
 })

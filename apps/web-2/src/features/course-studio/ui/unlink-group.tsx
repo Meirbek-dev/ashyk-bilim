@@ -17,7 +17,7 @@ export function UnlinkGroup({ courseId, group }: { courseId: string; group: User
     unlink.mutate(group, {
       onSuccess: () => {
         setOpen(false)
-        toast.add({ title: m.studio_group_unlinked() })
+        toast({ title: m.studio_group_unlinked() })
       },
     })
   return (

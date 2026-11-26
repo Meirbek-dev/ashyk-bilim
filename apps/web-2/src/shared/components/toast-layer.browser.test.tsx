@@ -26,15 +26,15 @@ describe('toast layer', () => {
     await page.viewport(1440, 900)
     // As in the app: the Toaster is mounted (root document) before any sheet opens and portals after it.
     await renderInRouter(<Toaster />)
-    toast.add({ title: 'Открыто' })
-    await expect.poll(() => document.querySelector('[data-slot="toast-viewport"]')).not.toBeNull()
+    toast({ title: 'Открыто' })
+    await expect.poll(() => document.querySelector('[data-slot="toast-region"]')).not.toBeNull()
     await renderInRouter(
       <SheetPanel open side="right" title={sheetTitle}>
         <p>{sheetBody}</p>
       </SheetPanel>,
     )
     await expect.poll(() => document.querySelector('[role="dialog"]:not([data-slot="toast"])')).not.toBeNull()
-    toast.add({ title: 'Начислено' })
+    toast({ title: 'Начислено' })
     await expect.poll(() => onTop('Начислено')).toBe(true)
   })
 })

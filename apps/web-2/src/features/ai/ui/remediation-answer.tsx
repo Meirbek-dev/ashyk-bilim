@@ -26,7 +26,7 @@ export function RemediationAnswer({ question, number, value, onChange, showKey =
     <li className="flex flex-col gap-2 border-b pb-4 last:border-b-0">
       <MarkdownView content={question.prompt} />
       {question.choices && question.choices.length > 0 ? (
-        <RadioGroup aria-label={label} value={value} onValueChange={next => onChange(String(next))}>
+        <RadioGroup aria-label={label} value={value} onValueChange={next => next !== null && onChange(next)}>
           {question.choices.map((choice, index) => (
             <Field key={choice} orientation="horizontal">
               <RadioGroupItem id={`${id}-${index}`} value={choice} />

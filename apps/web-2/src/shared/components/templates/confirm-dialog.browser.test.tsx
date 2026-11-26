@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { describe, expect, test, vi } from 'vite-plus/test'
+import { page } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import { Button } from '#/shared/ui/button'
@@ -48,7 +49,7 @@ describe('ConfirmDialog', () => {
   test('names the object, starts on Cancel, and confirms only on the destructive verb', async () => {
     const onConfirm = vi.fn<() => void>()
     const onOpenChange = vi.fn<(open: boolean) => void>()
-    const screen = await renderInRouter(
+    await renderInRouter(
       <ConfirmDialog
         open
         onOpenChange={onOpenChange}
@@ -61,7 +62,7 @@ describe('ConfirmDialog', () => {
         error={null}
       />,
     )
-    const dialog = screen.getByRole('alertdialog', { name: text.title })
+    const dialog = page.getByRole('alertdialog', { name: text.title })
     await expect.element(dialog).toHaveAccessibleDescription(text.consequence)
     const cancel = dialog.getByRole('button', { name: m.ui_cancel() })
     await expect.element(cancel).toHaveFocus()
@@ -75,7 +76,7 @@ describe('ConfirmDialog', () => {
   test('when the confirmed action removes its trigger, focus goes to the list it was in, not off the page', async () => {
     const screen = await renderInRouter(<Roles />)
     await screen.getByRole('button', { name: 'Remove Moderator' }).click()
-    await screen.getByRole('alertdialog').getByRole('button', { name: roleText.verb }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: roleText.verb }).click()
     await expect.element(screen.getByRole('button', { name: 'Remove User' })).toHaveFocus()
   })
 })

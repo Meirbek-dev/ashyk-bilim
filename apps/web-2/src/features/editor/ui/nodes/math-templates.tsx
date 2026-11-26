@@ -35,7 +35,7 @@ export function MathTemplates({ onPick }: { onPick: (latex: string) => void }) {
       />
       <DropdownMenuContent align="start">
         {TEMPLATES.map(template => (
-          <DropdownMenuItem key={template.latex} onClick={() => onPick(template.latex)}>
+          <DropdownMenuItem key={template.latex} onSelect={() => onPick(template.latex)}>
             {template.label()}
           </DropdownMenuItem>
         ))}

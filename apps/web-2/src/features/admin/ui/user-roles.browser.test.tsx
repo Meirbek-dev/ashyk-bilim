@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Suspense } from 'react'
 import { afterEach, describe, expect, test, vi } from 'vite-plus/test'
+import { page } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import type { AdminUser, Role } from '#/shared/api/gen/types.gen'
@@ -54,7 +55,7 @@ describe('UserRoles', () => {
     )
     const instructor = m.admin_role_instructor()
     await screen.getByRole('button', { name: m.admin_user_role_remove({ role: instructor }) }).click()
-    const dialog = screen.getByRole('alertdialog')
+    const dialog = page.getByRole('alertdialog')
     await expect
       .element(dialog.getByText(m.admin_user_role_remove_title({ role: instructor, name: user.display_name })))
       .toBeVisible()

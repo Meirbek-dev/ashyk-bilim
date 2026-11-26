@@ -31,7 +31,7 @@ export function VerifyEmailPage() {
           { body },
           {
             onSuccess: async () => {
-              toast.add({ title: m.auth_verify_done() })
+              toast({ title: m.auth_verify_done() })
               await navigate({ to: '/login' })
             },
           },

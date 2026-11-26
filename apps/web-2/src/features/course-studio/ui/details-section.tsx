@@ -27,7 +27,7 @@ export function DetailsSection({ course }: { course: Course }) {
     (body: UpdateCourseRequest, version: number) =>
       update.mutateAsync(
         { path: { course_id: course.id }, body, headers: { 'If-Match': version } },
-        { onSuccess: () => toast.add({ title: m.studio_saved() }) },
+        { onSuccess: () => toast({ title: m.studio_saved() }) },
       ),
     () => courseVersion(queryClient, course.id),
   )

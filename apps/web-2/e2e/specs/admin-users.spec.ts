@@ -1,4 +1,4 @@
-import { expectFailure } from '../fixtures/test'
+import { expectFailure, toast } from '../fixtures/test'
 import { randomUUID } from 'node:crypto'
 
 import type { Page } from '@playwright/test'
@@ -89,7 +89,7 @@ test('B-ADM-04 roles are added and removed in the panel; the table follows', asy
   const teacher = m.admin_role_instructor({}, ru)
   await sheet.getByLabel(m.admin_user_role_add({}, ru)).selectOption({ label: teacher })
   await sheet.getByRole('button', { name: m.admin_add({}, ru), exact: true }).click()
-  await expect(page.getByText(m.admin_user_role_added({}, ru))).toBeVisible()
+  await expect(toast(page, m.admin_user_role_added({}, ru))).toBeVisible()
   // The panel is modal: the table behind it is out of the accessibility tree, so it is found by element.
   await expect(page.locator('table').getByText(teacher)).toBeVisible()
   await sheet.getByRole('button', { name: m.admin_user_role_remove({ role: teacher }, ru) }).click()
@@ -97,7 +97,7 @@ test('B-ADM-04 roles are added and removed in the panel; the table follows', asy
     .getByRole('alertdialog')
     .getByRole('button', { name: m.admin_user_role_remove_confirm({}, ru) })
     .click()
-  await expect(page.getByText(m.admin_user_role_removed({}, ru))).toBeVisible()
+  await expect(toast(page, m.admin_user_role_removed({}, ru))).toBeVisible()
   await expect(sheet.getByRole('listitem').filter({ hasText: teacher })).toHaveCount(0)
 })
 
@@ -107,12 +107,12 @@ test('B-ADM-05 disable asks first, enable does not', async ({ page, account, api
   const confirm = page.getByRole('alertdialog', { name: m.admin_user_disable_title({ name: 'E2E Account' }, ru) })
   await expect(confirm.getByRole('button', { name: m.ui_cancel({}, ru) })).toBeFocused()
   await confirm.getByRole('button', { name: m.admin_user_disable({}, ru) }).click()
-  await expect(page.getByText(m.admin_user_disabled({}, ru))).toBeVisible()
+  await expect(toast(page, m.admin_user_disabled({}, ru))).toBeVisible()
   await expect(sheet.getByText(m.admin_status_disabled({}, ru))).toBeVisible()
   const users = await listUsers({ client: api, query: { q: account.username }, headers: cookie(seed) })
   expect(users.data?.items[0]?.status).toBe('disabled')
   await sheet.getByRole('button', { name: m.admin_user_enable({}, ru) }).click()
-  await expect(page.getByText(m.admin_user_enabled({}, ru))).toBeVisible()
+  await expect(toast(page, m.admin_user_enabled({}, ru))).toBeVisible()
   await expect(sheet.getByRole('button', { name: m.admin_user_disable({}, ru) })).toBeVisible()
 })
 
@@ -128,7 +128,7 @@ test('B-ADM-06 the panel lists the user’s groups; «Add to group» puts the us
     const sheet = await openPanel(page, account.username)
     await sheet.getByLabel(m.admin_user_group_field({}, ru)).selectOption({ label: name })
     await sheet.getByRole('button', { name: m.admin_user_group_add({}, ru) }).click()
-    await expect(page.getByText(m.admin_user_group_added({}, ru))).toBeVisible()
+    await expect(toast(page, m.admin_user_group_added({}, ru))).toBeVisible()
     const members = await listGroupMembersPage({
       client: api,
       path: { group_id: group.data.id },
@@ -142,7 +142,7 @@ test('B-ADM-06 the panel lists the user’s groups; «Add to group» puts the us
       .getByRole('alertdialog')
       .getByRole('button', { name: m.admin_group_member_remove_confirm({}, ru) })
       .click()
-    await expect(page.getByText(m.admin_user_group_removed({}, ru))).toBeVisible()
+    await expect(toast(page, m.admin_user_group_removed({}, ru))).toBeVisible()
     await expect(sheet.getByRole('link', { name })).toHaveCount(0)
   } finally {
     await deleteGroup({ client: api, path: { group_id: group.data.id }, headers: cookie(seed) })
@@ -177,7 +177,7 @@ test('B-ADM-07 a new user is made in the dialog with extra roles; a taken userna
   // The list stays open for more picks; Escape closes it, not the dialog.
   await page.keyboard.press('Escape')
   await create.click()
-  await expect(page.getByText(m.admin_user_created({}, ru))).toBeVisible()
+  await expect(toast(page, m.admin_user_created({}, ru))).toBeVisible()
   await expect(page).toHaveURL(userParam)
   await expect(panel(page, 'Новый Пользователь').getByText(`${username}@e2e.test`)).toBeVisible()
   await expect(panel(page, 'Новый Пользователь').getByText(m.admin_role_moderator({}, ru)).first()).toBeVisible()
@@ -194,5 +194,5 @@ test('B-ADM-16 "Award XP" sends its idempotency key in the body', async ({ page,
   await award.click()
   const body: unknown = (await request).postDataJSON()
   expect(body).toMatchObject({ amount: 15, reason: 'e2e', idempotency_key: expect.stringMatching(/^[0-9a-f-]{36}$/) })
-  await expect(page.getByText(m.admin_award_done({ total: 15 }, ru))).toBeVisible()
+  await expect(toast(page, m.admin_award_done({ total: 15 }, ru))).toBeVisible()
 })

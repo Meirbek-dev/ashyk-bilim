@@ -53,7 +53,7 @@ export function ListPage(props: ListPageProps) {
                 />
                 <DropdownMenuContent align="end">
                   {secondaryActions.map(action => (
-                    <DropdownMenuItem key={action.label} onClick={action.onSelect}>
+                    <DropdownMenuItem key={action.label} onSelect={action.onSelect}>
                       {action.label}
                     </DropdownMenuItem>
                   ))}

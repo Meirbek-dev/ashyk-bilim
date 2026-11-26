@@ -32,7 +32,7 @@ export function LearnerWorkWarning({ preview, acknowledged, onAcknowledge }: Pro
         </AlertDescription>
       </Alert>
       <Field orientation="horizontal">
-        <Checkbox id={id} checked={acknowledged} onCheckedChange={checked => onAcknowledge(checked)} />
+        <Checkbox id={id} checked={acknowledged} onCheckedChange={checked => onAcknowledge(checked === true)} />
         <FieldLabel htmlFor={id} className="font-normal">
           {m.studio_course_delete_acknowledge()}
         </FieldLabel>

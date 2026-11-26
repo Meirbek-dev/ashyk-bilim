@@ -34,7 +34,7 @@ export function ActivitySettingsPage({ lock = null }: { lock?: string | null }) 
   const callbacks = {
     onSuccess: () => {
       setConflict(false)
-      toast.add({ title: m.studio_saved() })
+      toast({ title: m.studio_saved() })
     },
     onError: (error: unknown) => setConflict(isStale(error)),
   }

@@ -67,7 +67,7 @@ export function OpenTextFields({ body, onChange, mode }: OpenTextFieldsProps) {
             <Checkbox
               checked={body.case_sensitive === true}
               disabled={!editable}
-              onCheckedChange={checked => onChange({ ...body, case_sensitive: checked })}
+              onCheckedChange={checked => onChange({ ...body, case_sensitive: checked === true })}
             />
             {m.assessments_case_sensitive()}
           </Label>

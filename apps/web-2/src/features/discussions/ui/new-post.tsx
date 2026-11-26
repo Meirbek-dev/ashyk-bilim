@@ -37,7 +37,7 @@ export function NewPost({
       {
         onSuccess: () => {
           idempotency.settle()
-          toast.add({ title: parentId ? m.discussions_replied() : m.discussions_published() })
+          toast({ title: parentId ? m.discussions_replied() : m.discussions_published() })
         },
         onError: error => idempotency.settle(error),
       },

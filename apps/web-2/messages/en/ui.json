@@ -59,5 +59,16 @@
   "ui_file_checking": "Checking the file…",
   "ui_pdf_open": "Open the PDF in a new tab",
   "ui_options_empty": "Nothing found",
-  "ui_option_remove": "Remove “{label}”"
+  "ui_option_remove": "Remove “{label}”",
+  "ui_option_removed": "“{label}” removed",
+  "ui_results": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} result",
+        "countPlural=other": "{count} results"
+      }
+    }
+  ]
 }

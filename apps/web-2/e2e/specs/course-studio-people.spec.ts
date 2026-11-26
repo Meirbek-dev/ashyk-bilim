@@ -2,6 +2,7 @@ import { m } from '#/paraglide/messages'
 import { applyContributor, enroll, updateCourse } from '#/shared/api/gen/sdk.gen'
 
 import { cookieOf, expect, ru, test } from './course-studio-fixture'
+import { toast } from '../fixtures/test'
 
 // The `learners` and `team` tabs (slice 4.1): access, linked groups, co-authors and applications.
 
@@ -44,7 +45,7 @@ test('B-CST-35 learners lists who enrolled, found by a search; one is removed af
   const confirm = page.getByRole('alertdialog', { name: /^Исключить «/ })
   await expect(confirm.getByText(m.studio_learner_remove_consequence({}, ru))).toBeVisible()
   await confirm.getByRole('button', { name: m.studio_learner_remove({}, ru) }).click()
-  await expect(page.getByText(m.studio_learner_removed({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_learner_removed({}, ru))).toBeVisible()
   await expect(learners.getByText(m.ui_no_matches({}, ru))).toBeVisible()
   await page.goto(tab(course.id, 'learners'))
   await expect(learners.getByText(m.studio_learners_empty({}, ru))).toBeVisible()
@@ -58,13 +59,13 @@ test('B-CST-14 a group is linked from the choices and unlinked after a confirmat
   await page.getByRole('option', { name: 'E2E seed group' }).first().click()
   await page.keyboard.press('Escape')
   await page.getByRole('button', { name: m.studio_group_link_submit({}, ru) }).click()
-  await expect(page.getByText(m.studio_group_linked({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_group_linked({}, ru))).toBeVisible()
   const card = page.getByRole('listitem').filter({ hasText: 'E2E seed group' }).first()
   await expect(card.getByText(/участник/)).toBeVisible()
   await card.getByRole('button', { name: m.studio_group_unlink({}, ru) }).click()
   const confirm = page.getByRole('alertdialog', { name: m.studio_group_unlink_title({ name: 'E2E seed group' }, ru) })
   await confirm.getByRole('button', { name: m.studio_group_unlink({}, ru) }).click()
-  await expect(page.getByText(m.studio_group_unlinked({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_group_unlinked({}, ru))).toBeVisible()
   await expect(page.getByText(m.studio_groups_empty({}, ru))).toBeVisible()
 })
 
@@ -92,13 +93,13 @@ test('B-CST-16 B-CST-17 co-authors are added by search with a role, re-roled and
   await page.keyboard.press('Escape')
   await page.getByRole('combobox', { name: m.studio_role_label({}, ru) }).selectOption('reporter')
   await page.getByRole('button', { name: m.studio_team_add_submit({}, ru) }).click()
-  await expect(page.getByText(m.studio_team_added({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_team_added({}, ru))).toBeVisible()
   const row = page.getByRole('listitem').filter({ hasText: '@e2e-student2' })
   const role = row.getByRole('button', { name: /^Роль: / })
   await expect(role).toHaveText(m.studio_role_reporter({}, ru))
   await role.click()
   await page.getByRole('menuitemradio', { name: m.studio_role_maintainer({}, ru) }).click()
-  await expect(page.getByText(m.studio_role_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_role_saved({}, ru))).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(role).toHaveText(m.studio_role_maintainer({}, ru))
   await row.getByRole('button', { name: /^Убрать «/ }).click()

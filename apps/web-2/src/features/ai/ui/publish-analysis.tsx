@@ -31,7 +31,7 @@ export function PublishAnalysis({ courseId, analysisId }: { courseId: CourseId; 
           {
             onSuccess: () => {
               setOpen(false)
-              toast.add({ title: m.ai_published() })
+              toast({ title: m.ai_published() })
             },
           },
         )

@@ -20,7 +20,7 @@ export function DeletePost({ item }: { item: Discussion }) {
       {
         onSuccess: () => {
           setOpen(false)
-          toast.add({ title: m.discussions_deleted() })
+          toast({ title: m.discussions_deleted() })
         },
       },
     )

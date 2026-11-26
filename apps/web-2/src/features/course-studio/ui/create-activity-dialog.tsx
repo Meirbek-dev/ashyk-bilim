@@ -76,7 +76,7 @@ export function CreateActivityDialog({ courseId, chapter }: { courseId: string; 
     onSubmit: async value => {
       const activityId = await create(value)
       changeOpen(false)
-      toast.add({ title: m.studio_activity_created() })
+      toast({ title: m.studio_activity_created() })
       await navigate({ to: '/teach/courses/$courseId/activities/$activityId/edit', params: { courseId, activityId } })
     },
   })

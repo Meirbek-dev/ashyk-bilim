@@ -5,6 +5,7 @@ import { courseLifecycle, getCurriculum } from '#/shared/api/gen/sdk.gen'
 import type { CourseLifecycleRequest } from '#/shared/api/gen/types.gen'
 
 import { cookieOf, expect, ru, test } from './course-studio-fixture'
+import { toast } from '../fixtures/test'
 
 // The `content` tab: chapters, activities, create, rename, delete, drag and drop (slice 4.1).
 
@@ -55,7 +56,7 @@ test('B-CST-07 a new chapter is appended last at once', async ({ page, studio })
   const dialog = page.getByRole('dialog', { name: m.studio_chapter_new({}, ru) })
   await dialog.getByRole('textbox', { name: m.studio_field_name({}, ru) }).fill('Вторая глава')
   await dialog.getByRole('button', { name: m.studio_create_submit({}, ru) }).click()
-  await expect(page.getByText(m.studio_chapter_created({}, ru))).toBeVisible()
+  await expect(toast(page, m.studio_chapter_created({}, ru))).toBeVisible()
   await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Первая глава', 'Вторая глава'])
 })
 

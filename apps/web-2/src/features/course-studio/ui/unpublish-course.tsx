@@ -19,7 +19,7 @@ export function UnpublishCourse({ course }: { course: Course }) {
       {
         onSuccess: () => {
           setOpen(false)
-          toast.add({ title: m.studio_unpublished() })
+          toast({ title: m.studio_unpublished() })
         },
       },
     )

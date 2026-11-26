@@ -68,7 +68,7 @@ export function BlockMenu({ editor, pos, onOpenChange }: BlockMenuProps) {
               {TURN_INTO.map(item => (
                 <DropdownMenuItem
                   key={item.value}
-                  onClick={() =>
+                  onSelect={() =>
                     item
                       .run(
                         editor
@@ -87,22 +87,22 @@ export function BlockMenu({ editor, pos, onOpenChange }: BlockMenuProps) {
             <DropdownMenuSeparator />
           </>
         ) : null}
-        <DropdownMenuItem onClick={() => run(state => duplicateBlock(state, pos))}>
+        <DropdownMenuItem onSelect={() => run(state => duplicateBlock(state, pos))}>
           <Copy aria-hidden />
           {m.editor_block_duplicate()}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => run(state => moveBlock(state, pos, -1))}>
+        <DropdownMenuItem onSelect={() => run(state => moveBlock(state, pos, -1))}>
           <ArrowUp aria-hidden />
           {m.editor_block_move_up()}
           <DropdownMenuShortcut aria-hidden>{printedKeys('Mod-Shift-ArrowUp')}</DropdownMenuShortcut>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => run(state => moveBlock(state, pos, 1))}>
+        <DropdownMenuItem onSelect={() => run(state => moveBlock(state, pos, 1))}>
           <ArrowDown aria-hidden />
           {m.editor_block_move_down()}
           <DropdownMenuShortcut aria-hidden>{printedKeys('Mod-Shift-ArrowDown')}</DropdownMenuShortcut>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => run(state => deleteBlock(state, pos))}>
+        <DropdownMenuItem onSelect={() => run(state => deleteBlock(state, pos))}>
           <Trash2 aria-hidden />
           {m.editor_block_delete()}
         </DropdownMenuItem>

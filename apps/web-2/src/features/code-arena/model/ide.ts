@@ -17,7 +17,10 @@ export type EditorPrefs = v.InferOutput<typeof prefsSchema>
 export const DEFAULT_PREFS: EditorPrefs = { fontSize: 'md', tabSize: 4, wrap: false, split: 0.62 }
 
 /** Neither pane can be dragged away: the editor keeps 30-85% of the height. */
-export const clampSplit = (share: number) => Math.min(0.85, Math.max(0.3, Number.isFinite(share) ? share : 0.62))
+export const SPLIT_MIN = 0.3
+export const SPLIT_MAX = 0.85
+export const clampSplit = (share: number) =>
+  Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, Number.isFinite(share) ? share : 0.62))
 
 /** One step of the divider from the keyboard (arrows), as a share of the height. */
 export const SPLIT_STEP = 0.05

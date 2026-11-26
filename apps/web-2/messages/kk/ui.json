@@ -59,5 +59,16 @@
   "ui_file_checking": "Файл тексерілуде…",
   "ui_pdf_open": "PDF-ті жаңа қойындыда ашу",
   "ui_options_empty": "Ештеңе табылмады",
-  "ui_option_remove": "«{label}» алып тастау"
+  "ui_option_remove": "«{label}» алып тастау",
+  "ui_option_removed": "«{label}» алып тасталды",
+  "ui_results": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} нұсқа",
+        "countPlural=other": "{count} нұсқа"
+      }
+    }
+  ]
 }

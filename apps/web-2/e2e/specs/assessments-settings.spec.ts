@@ -1,4 +1,4 @@
-import { expectFailure as allowFailure } from '../fixtures/test'
+import { expectFailure as allowFailure, toast, alerts } from '../fixtures/test'
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
@@ -34,7 +34,7 @@ test('B-ASM-16 B-ASM-17 B-ASM-18 an exam saves its basics and rules, with its pr
   const details = section(page, m.assessments_nav_details({}, ru))
   await details.getByLabel(m.assessments_field_weight({}, ru)).fill('25')
   await details.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  await expect(page.getByText(m.assessments_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.assessments_saved({}, ru))).toBeVisible()
   const rules = section(page, m.assessments_nav_rules({}, ru))
   await expect(rules.getByText(m.assessments_anti_cheat_title({}, ru))).toBeVisible()
   await rules.getByLabel(m.assessments_field_attempts({}, ru)).fill('2')
@@ -85,7 +85,7 @@ test('B-ASM-19 B-ASM-20 access: nobody chosen asks first; a stale save opens the
   await access.getByRole('button', { name: m.ui_save({}, ru) }).click()
   const confirm = page.getByRole('alertdialog', { name: m.assessments_access_empty_title({}, ru) })
   await confirm.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  await expect(page.getByText(m.assessments_access_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.assessments_access_saved({}, ru))).toBeVisible()
   const path = { assessment_id: assessment.id }
   await expect.poll(async () => (await getAccess({ client: studio.api, path, headers })).data?.mode).toBe('restricted')
   // Someone else opens it to everyone meanwhile.
@@ -108,7 +108,7 @@ test('B-ASM-19 B-ASM-20 access: nobody chosen asks first; a stale save opens the
   const dialog = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
   await dialog.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
   await expect(dialog).toBeHidden()
-  await expect(page.getByText(m.assessments_access_saved({}, ru)).first()).toBeVisible()
+  await expect(toast(page, m.assessments_access_saved({}, ru)).first()).toBeVisible()
 })
 
 test('B-ASM-21 B-ASM-29 a learner gets an exception, it is changed (If-Match, a 412 asks and retries) and removed', async ({
@@ -131,7 +131,7 @@ test('B-ASM-21 B-ASM-29 a learner gets an exception, it is changed (If-Match, a 
   await dialog.getByLabel(m.assessments_field_learner({}, ru)).selectOption({ label: `${name} (@${username})` })
   await dialog.getByLabel(m.assessments_field_attempts_override({}, ru)).fill('3')
   await dialog.getByRole('button', { name: m.ui_save({}, ru) }).click()
-  await expect(page.getByText(m.assessments_exception_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.assessments_exception_saved({}, ru))).toBeVisible()
   await expect(page.getByText(m.assessments_exception_attempts({ count: '3' }, ru))).toBeVisible()
   await page.getByRole('button', { name: m.assessments_exception_edit({ name }, ru) }).click()
   const edit = page.getByRole('dialog', { name: m.assessments_exception_edit({ name }, ru) })
@@ -148,13 +148,14 @@ test('B-ASM-21 B-ASM-29 a learner gets an exception, it is changed (If-Match, a 
   await edit.getByRole('button', { name: m.ui_save({}, ru) }).click()
   const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
   await conflict.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
+  await expect(conflict).toBeHidden()
   await expect.poll(() => versions).toEqual([expect.stringMatching(/^\d+$/), expect.stringMatching(/^\d+$/)])
   await expect(page.getByText(m.assessments_exception_attempts({ count: '4' }, ru))).toBeVisible()
   await page.getByRole('button', { name: m.assessments_exception_remove({ name }, ru) }).click()
   const removing = m.assessments_exception_remove_title({ name: `${name} (@${username})` }, ru)
   const confirm = page.getByRole('alertdialog', { name: removing })
   await confirm.getByRole('button', { name: m.assessments_exception_remove_confirm({}, ru) }).click()
-  await expect(page.getByText(m.assessments_exception_removed({}, ru))).toBeVisible()
+  await expect(toast(page, m.assessments_exception_removed({}, ru))).toBeVisible()
   await expect(page.getByText(m.assessments_exceptions_empty({}, ru))).toBeVisible()
 })
 
@@ -173,7 +174,7 @@ test('B-ASM-22 B-ASM-24 readiness links to the question; the header switch publi
   const published = page.getByRole('switch', { name: m.assessments_published_switch({}, ru) })
   allowFailure(page, new RegExp(`^/api/v2/assessments/${assessment.id}/lifecycle$`), 422)
   await published.click()
-  await expect(page.getByRole('alert').filter({ hasText: m.assessments_not_ready({}, ru) })).toBeVisible()
+  await expect(alerts(page).filter({ hasText: m.assessments_not_ready({}, ru) })).toBeVisible()
   await expect(published).not.toBeChecked()
   await publishing(page)
     .getByRole('link', { name: m.assessments_issue_open({ title: 'Пустой' }, ru) })
@@ -182,12 +183,12 @@ test('B-ASM-22 B-ASM-24 readiness links to the question; the header switch publi
   await page.getByRole('textbox', { name: m.assessments_field_prompt({}, ru) }).fill('Сколько?')
   await expect(page.getByText(m.studio_save_saved({}, ru), { exact: true })).toBeVisible({ timeout: 10_000 })
   await published.click()
-  await expect(page.getByText(m.assessments_toast_published({}, ru)).first()).toBeVisible()
+  await expect(toast(page, m.assessments_toast_published({}, ru)).first()).toBeVisible()
   await expect(published).toBeChecked()
   await published.click()
   const confirm = page.getByRole('alertdialog', { name: m.assessments_unpublish_title({ title: 'Тест E2E' }, ru) })
   await confirm.getByRole('button', { name: m.assessments_unpublish({}, ru) }).click()
-  await expect(page.getByText(m.assessments_toast_unpublished({}, ru))).toBeVisible()
+  await expect(toast(page, m.assessments_toast_unpublished({}, ru))).toBeVisible()
   await expect(published).not.toBeChecked()
 })
 
@@ -200,7 +201,7 @@ test('B-ASM-23 schedule, unschedule, archive and restore', async ({ page, studio
   await expect(page.getByText(m.assessments_toast_scheduled({}, ru), { exact: true })).toBeVisible()
   await expect(area.getByText(m.assessments_lifecycle_scheduled({}, ru), { exact: true })).toBeVisible()
   await area.getByRole('button', { name: m.assessments_unschedule({}, ru) }).click()
-  await expect(page.getByText(m.assessments_toast_unscheduled({}, ru))).toBeVisible()
+  await expect(toast(page, m.assessments_toast_unscheduled({}, ru))).toBeVisible()
   await area.getByRole('button', { name: m.assessments_archive({}, ru) }).click()
   const confirm = page.getByRole('alertdialog', { name: m.assessments_archive_title({ title: 'Тест E2E' }, ru) })
   await confirm.getByRole('button', { name: m.assessments_archive({}, ru) }).click()
@@ -273,7 +274,7 @@ test('B-ASM-25 B-ASM-26 a copy opens its own studio; the log names the transitio
   const dialog = page.getByRole('dialog', { name: m.assessments_copy({}, ru) })
   await expect(dialog.getByLabel(m.assessments_copy_field({}, ru))).toHaveValue('Тест E2E (копия)')
   await dialog.getByRole('button', { name: m.assessments_copy({}, ru) }).click()
-  await expect(page.getByText(m.assessments_copied({}, ru))).toBeVisible()
+  await expect(toast(page, m.assessments_copied({}, ru))).toBeVisible()
   await expect(page).not.toHaveURL(new RegExp(assessment.activity_id))
   await expect(page).toHaveURL(/\/edit$/)
   await expect(page.getByRole('link', { name: '1. Один' })).toBeVisible()

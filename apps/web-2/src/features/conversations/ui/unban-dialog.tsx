@@ -29,7 +29,7 @@ export function UnbanDialog({ report }: { report: MessageReport }) {
           {
             onSuccess: () => {
               setOpen(false)
-              toast.add({ title: m.conversations_unbanned_toast() })
+              toast({ title: m.conversations_unbanned_toast() })
             },
           },
         )

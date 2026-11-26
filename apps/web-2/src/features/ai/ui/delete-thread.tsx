@@ -34,7 +34,7 @@ export function DeleteThread({ courseId, thread, title, onDeleted }: DeleteThrea
           {
             onSuccess: () => {
               setOpen(false)
-              toast.add({ title: m.ai_thread_deleted() })
+              toast({ title: m.ai_thread_deleted() })
               onDeleted()
             },
           },

@@ -21,7 +21,7 @@ export function DeleteGroup({ group }: { group: Usergroup }) {
       {
         onSuccess: async () => {
           setOpen(false)
-          toast.add({ title: m.admin_group_deleted() })
+          toast({ title: m.admin_group_deleted() })
           await navigate({ to: '/teach/groups' })
         },
       },

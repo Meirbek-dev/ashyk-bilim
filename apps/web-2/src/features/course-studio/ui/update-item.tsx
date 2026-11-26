@@ -32,7 +32,7 @@ export function UpdateItem({ courseId, update, editable }: UpdateItemProps) {
         {
           onSuccess: () => {
             setEditing(false)
-            toast.add({ title: m.studio_saved() })
+            toast({ title: m.studio_saved() })
           },
         },
       ),

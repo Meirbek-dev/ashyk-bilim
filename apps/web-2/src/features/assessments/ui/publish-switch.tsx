@@ -35,7 +35,7 @@ export function AssessmentPublishSwitch({ activity }: { activity: ActivityDetail
       {
         onSuccess: () => {
           setConfirming(false)
-          toast.add({ title: to === 'published' ? m.assessments_toast_published() : m.assessments_toast_unpublished() })
+          toast({ title: to === 'published' ? m.assessments_toast_published() : m.assessments_toast_unpublished() })
         },
       },
     )

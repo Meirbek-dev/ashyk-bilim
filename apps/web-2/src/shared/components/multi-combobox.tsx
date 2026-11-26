@@ -1,5 +1,3 @@
-import { useId } from 'react'
-
 import { m } from '#/paraglide/messages'
 import {
   Combobox,
@@ -10,10 +8,9 @@ import {
   ComboboxEmpty,
   ComboboxItem,
   ComboboxList,
-  useComboboxAnchor,
 } from '#/shared/ui/combobox'
 
-import { describedBy, FieldShell } from './form/field-shell'
+import { FieldShell } from './form/field-shell'
 
 /** One choice of a combobox or an anchored listbox. `value` is the id the caller keeps. */
 export type ComboboxOption = { value: string; label: string }
@@ -36,7 +33,6 @@ type MultiComboboxProps = {
   onMore?: (() => void) | undefined
 }
 
-const sameOption = (item: ComboboxOption, selected: ComboboxOption) => item.value === selected.value
 // The value of the "Show more" row: no id is empty.
 const MORE = ''
 
@@ -48,56 +44,45 @@ const MORE = ''
 export function MultiCombobox(props: MultiComboboxProps) {
   const { label, description, error, placeholder, options, value, onValueChange, onQueryChange } = props
   const { pending = false, hasMore = false, onMore } = props
-  const id = useId()
-  const anchor = useComboboxAnchor()
-  const kept = value.filter(selected => !options.some(item => sameOption(item, selected)))
+  const kept = value.filter(selected => !options.some(item => item.value === selected.value))
   const more = onMore && hasMore ? [{ value: MORE, label: m.ui_show_more() }] : []
+  const listed = [...options, ...kept, ...more]
+  const labelOf = (id: string) => [...value, ...listed].find(option => option.value === id)?.label ?? id
   return (
-    <FieldShell id={id} label={label} description={description} error={error}>
+    <FieldShell label={label} description={description} error={error}>
       <Combobox
         multiple
-        items={[...options, ...kept, ...more]}
-        value={[...value]}
-        onValueChange={(next, details) => {
-          // Escape on the closed list clears every choice in the stock combobox: a dozen picked courses or people
-          // gone at a keystroke meant to close the popup. Here it only closes: with the list already shut it goes on
-          // to the dialog or sheet around the field. A chip's cross removes one choice.
-          if (details.reason === 'escape-key') {
-            details.allowPropagation()
-            return
-          }
-          if (next.some(option => option.value === MORE)) onMore?.()
-          else onValueChange(next)
+        value={value.map(option => option.value)}
+        onValueChange={next => {
+          if (next.includes(MORE)) onMore?.()
+          else onValueChange(next.map(chosen => ({ value: chosen, label: labelOf(chosen) })))
         }}
-        itemToStringLabel={(item: ComboboxOption) => item.label}
-        isItemEqualToValue={sameOption}
-        filter={onQueryChange ? null : undefined}
-        onInputValueChange={query => onQueryChange?.(query)}
-        onOpenChange={(open, details) => {
-          if (!open && details.reason === 'item-press') details.cancel()
-        }}
+        itemToLabel={labelOf}
+        // Server search: the caller's options are already the matches.
+        {...(onQueryChange ? { filter: false } : {})}
+        status={pending ? 'loading' : 'idle'}
+        onQueryChange={query => onQueryChange?.(query)}
       >
-        <ComboboxChips ref={anchor}>
+        <ComboboxChips>
           {value.map(option => (
-            <ComboboxChip key={option.value} removeLabel={m.ui_option_remove({ label: option.label })}>
+            <ComboboxChip
+              key={option.value}
+              value={option.value}
+              removeLabel={m.ui_option_remove({ label: option.label })}
+            >
               {option.label}
             </ComboboxChip>
           ))}
-          <ComboboxChipsInput
-            id={id}
-            placeholder={value.length === 0 ? placeholder : undefined}
-            aria-invalid={error !== undefined || undefined}
-            aria-describedby={describedBy(id, description, error)}
-          />
+          <ComboboxChipsInput placeholder={value.length === 0 ? placeholder : undefined} />
         </ComboboxChips>
-        <ComboboxContent anchor={anchor} aria-busy={pending || undefined}>
+        <ComboboxContent>
           <ComboboxEmpty>{pending ? m.ui_loading() : m.ui_options_empty()}</ComboboxEmpty>
           <ComboboxList>
-            {(option: ComboboxOption) => (
-              <ComboboxItem key={option.value} value={option}>
+            {listed.map(option => (
+              <ComboboxItem key={option.value} value={option.value} label={option.label}>
                 {option.label}
               </ComboboxItem>
-            )}
+            ))}
           </ComboboxList>
         </ComboboxContent>
       </Combobox>

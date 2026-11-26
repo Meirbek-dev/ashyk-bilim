@@ -34,7 +34,7 @@ export function DeleteConcept({ courseId, concept, onDeleted }: DeleteConceptPro
           {
             onSuccess: () => {
               setOpen(false)
-              toast.add({ title: m.concepts_deleted() })
+              toast({ title: m.concepts_deleted() })
               onDeleted()
             },
           },

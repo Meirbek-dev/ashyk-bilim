@@ -22,7 +22,7 @@ export function PasswordSection({ hasPassword }: { hasPassword: boolean }) {
       try {
         await change.mutateAsync({ body })
         form.reset()
-        toast.add({ title: m.settings_password_changed() })
+        toast({ title: m.settings_password_changed() })
       } catch (error) {
         // A wrong current password is that field's error, not the form's (BUG-094).
         if (!hasCode(error, 'invalid-credentials')) throw error

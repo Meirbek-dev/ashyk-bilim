@@ -1,4 +1,4 @@
-import { expectFailure } from '../fixtures/test'
+import { expectFailure, toast, alerts } from '../fixtures/test'
 import type { Page } from '@playwright/test'
 
 import { m } from '#/paraglide/messages'
@@ -53,16 +53,17 @@ test('B-FSB-13 B-FSB-14 B-FSB-21 B-FSB-24 a draft task gets its instructions, is
   const instructions = form(page, m.submission_instructions({}, ru))
   await instructions.getByRole('textbox', { name: m.submission_instructions({}, ru) }).fill('Опишите опыт')
   await save(page, m.submission_instructions({}, ru))
-  await expect(page.getByText(m.submission_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.submission_saved({}, ru))).toBeVisible()
   await publishing.getByRole('button', { name: m.submission_publish({}, ru) }).click()
-  await expect(page.getByText(m.submission_published_toast({}, ru), { exact: true })).toBeVisible()
+  await expect(toast(page, m.submission_published_toast({}, ru), { exact: true })).toBeVisible()
   await expect(publishing).toHaveCount(0)
   await expect(page.getByRole('switch', { name: m.studio_published_switch({}, ru) })).toBeChecked()
 
   await page.getByRole('switch', { name: m.studio_published_switch({}, ru) }).click()
   const confirm = page.getByRole('alertdialog', { name: m.submission_unpublish_title({}, ru) })
   await confirm.getByRole('button', { name: m.submission_unpublish({}, ru) }).click()
-  await expect(page.getByText(m.submission_unpublished_toast({}, ru))).toBeVisible()
+  await expect(confirm).toBeHidden()
+  await expect(toast(page, m.submission_unpublished_toast({}, ru))).toBeVisible()
   await expect(publishing.getByText(m.submission_lifecycle_draft({}, ru), { exact: true })).toBeVisible()
   await expect(page.getByRole('switch', { name: m.studio_published_switch({}, ru) })).not.toBeChecked()
   await publishing.getByRole('button', { name: m.submission_publish({}, ru) }).click()
@@ -91,21 +92,21 @@ test('B-FSB-13 the header switch publishes and unpublishes the task, not the bar
   const publishing = page.getByRole('region', { name: m.submission_publishing({}, ru) })
   const toggle = page.getByRole('switch', { name: m.studio_published_switch({}, ru) })
   await toggle.click()
-  await expect(page.getByRole('alert').getByText(m.submission_publish_needs_instructions({}, ru))).toBeVisible()
+  await expect(alerts(page).getByText(m.submission_publish_needs_instructions({}, ru))).toBeVisible()
 
   const instructions = form(page, m.submission_instructions({}, ru))
   await instructions.getByRole('textbox', { name: m.submission_instructions({}, ru) }).fill('Опишите опыт')
   await save(page, m.submission_instructions({}, ru))
-  await expect(page.getByText(m.submission_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.submission_saved({}, ru))).toBeVisible()
   await toggle.click()
-  await expect(page.getByText(m.submission_published_toast({}, ru), { exact: true })).toBeVisible()
+  await expect(toast(page, m.submission_published_toast({}, ru), { exact: true })).toBeVisible()
   await expect(publishing).toHaveCount(0)
   await expect(toggle).toBeChecked()
 
   await toggle.click()
   const confirm = page.getByRole('alertdialog', { name: m.submission_unpublish_title({}, ru) })
   await confirm.getByRole('button', { name: m.submission_unpublish({}, ru) }).click()
-  await expect(page.getByText(m.submission_unpublished_toast({}, ru))).toBeVisible()
+  await expect(toast(page, m.submission_unpublished_toast({}, ru))).toBeVisible()
   await expect(publishing.getByText(m.submission_lifecycle_draft({}, ru), { exact: true })).toBeVisible()
   await expect(toggle).not.toBeChecked()
 })
@@ -128,7 +129,7 @@ test('B-FSB-15 rubric criteria are added, checked, saved and removed', async ({ 
   await name(2).fill('Стиль')
   await points.nth(1).fill('5')
   await save(page, m.submission_rubric_title({}, ru))
-  await expect(page.getByText(m.submission_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.submission_saved({}, ru))).toBeVisible()
   await expect
     .poll(async () => (await stored(api, tasks, task))?.rubric.criteria?.map(criterion => criterion.label))
     .toEqual(['Структура', 'Стиль'])
@@ -159,7 +160,7 @@ test('B-FSB-16 file rules: count, size and types; a number out of range is refus
   await files.getByRole('checkbox', { name: m.submission_type_pdf({}, ru) }).click()
   await files.getByRole('checkbox', { name: m.submission_type_images({}, ru) }).click()
   await save(page, m.submission_files_title({}, ru))
-  await expect(page.getByText(m.submission_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.submission_saved({}, ru))).toBeVisible()
   const data = await stored(api, tasks, task)
   expect(data).toMatchObject({ max_files: 3, max_file_size_mb: 5 })
   expect(data?.allowed_mime_types).toEqual(expect.arrayContaining(['application/pdf', 'image/png']))
@@ -185,7 +186,7 @@ test('B-FSB-17 deadline, late penalty, attempts and grade release are saved', as
   await deadlines.getByRole('textbox', { name: m.submission_field_max_attempts({}, ru) }).fill('2')
   await deadlines.getByRole('radio', { name: m.submission_release_batch({}, ru) }).click()
   await save(page, m.submission_deadlines_title({}, ru))
-  await expect(page.getByText(m.submission_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.submission_saved({}, ru))).toBeVisible()
   expect(await stored(api, tasks, task)).toMatchObject({
     due_at_unix: fromDateTimeInput('2030-05-01T18:00'),
     allow_late: true,
@@ -231,6 +232,6 @@ test('B-FSB-20 a save over a change made elsewhere opens the conflict dialog; th
   await save(page, m.submission_instructions({}, ru))
   const conflict = page.getByRole('alertdialog', { name: m.ui_conflict_title({}, ru) })
   await conflict.getByRole('button', { name: m.ui_conflict_retry({}, ru) }).click()
-  await expect(page.getByText(m.submission_saved({}, ru))).toBeVisible()
+  await expect(toast(page, m.submission_saved({}, ru))).toBeVisible()
   expect(await stored(api, tasks, task)).toMatchObject({ instructions: 'Новое условие', max_files: 3 })
 })

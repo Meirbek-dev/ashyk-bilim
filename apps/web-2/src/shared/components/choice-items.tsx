@@ -10,13 +10,13 @@ export type MenuChoice = {
 
 /**
  * The radio items of a MenuChoice inside a stock `DropdownMenuContent`; the current one is checked. A pick closes the
- * menu (Base UI keeps a radio menu open by default, and its overlay then swallows the next click on the page).
+ * menu (a radio menu stays open by default).
  */
 export function ChoiceItems({ choice }: { choice: MenuChoice }) {
   return (
-    <DropdownMenuRadioGroup value={choice.value} onValueChange={value => choice.onValueChange(String(value))}>
+    <DropdownMenuRadioGroup value={choice.value} onValueChange={value => choice.onValueChange(value)}>
       {choice.options.map(option => (
-        <DropdownMenuRadioItem key={option.value} value={option.value} lang={option.lang} closeOnClick>
+        <DropdownMenuRadioItem key={option.value} value={option.value} lang={option.lang} closeOnSelect>
           {option.label}
         </DropdownMenuRadioItem>
       ))}

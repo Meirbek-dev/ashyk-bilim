@@ -27,7 +27,7 @@ export function RevokeOtherSessions({ handles }: { handles: readonly string[] })
         revoke.mutate(handles, {
           onSuccess: () => {
             setOpen(false)
-            toast.add({ title: m.settings_sessions_revoked_others() })
+            toast({ title: m.settings_sessions_revoked_others() })
           },
         })
       }

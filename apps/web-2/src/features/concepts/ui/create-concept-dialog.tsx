@@ -25,7 +25,7 @@ export function CreateConceptDialog({ courseId }: { courseId: CourseId }) {
         {
           onSuccess: () => {
             changeOpen(false)
-            toast.add({ title: m.concepts_created() })
+            toast({ title: m.concepts_created() })
           },
         },
       ),

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import * as v from 'valibot'
 import { describe, expect, test, vi } from 'vite-plus/test'
+import { page } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import { ApiError } from '#/shared/api/errors'
@@ -53,8 +54,8 @@ const unprocessable = new ApiError({
 describe('FormDialog', () => {
   test('the schema blocks an empty submit and says why under the field', async () => {
     const submit = vi.fn<(body: Body) => Promise<void>>()
-    const screen = await renderInRouter(<CreateDialog submit={submit} />)
-    const dialog = screen.getByRole('dialog', { name: text.title })
+    await renderInRouter(<CreateDialog submit={submit} />)
+    const dialog = page.getByRole('dialog', { name: text.title })
     await dialog.getByRole('button', { name: text.create }).click()
     await expect.element(dialog.getByText(m.validation_required())).toBeVisible()
     await expect.element(dialog.getByLabelText(text.name)).toHaveAttribute('aria-invalid', 'true')
@@ -63,8 +64,8 @@ describe('FormDialog', () => {
 
   test('submits the values; a 422 puts field_errors under the field and the code text in the dialog', async () => {
     const submit = vi.fn<(body: Body) => Promise<void>>().mockRejectedValue(unprocessable)
-    const screen = await renderInRouter(<CreateDialog submit={submit} />)
-    const dialog = screen.getByRole('dialog', { name: text.title })
+    await renderInRouter(<CreateDialog submit={submit} />)
+    const dialog = page.getByRole('dialog', { name: text.title })
     await dialog.getByLabelText(text.name).fill('Algebra')
     await dialog.getByLabelText(text.slug).fill('algebra')
     await dialog.getByRole('button', { name: text.create }).click()
@@ -81,8 +82,8 @@ describe('FormDialog', () => {
   test('a double click submits once: the second submit lands while the first is in flight', async () => {
     const held = Promise.withResolvers<undefined>()
     const submit = vi.fn<(body: Body) => Promise<void>>().mockReturnValue(held.promise)
-    const screen = await renderInRouter(<CreateDialog submit={submit} />)
-    const dialog = screen.getByRole('dialog', { name: text.title })
+    await renderInRouter(<CreateDialog submit={submit} />)
+    const dialog = page.getByRole('dialog', { name: text.title })
     await dialog.getByLabelText(text.name).fill('Algebra')
     await dialog.getByRole('button', { name: text.create }).dblClick()
     await vi.waitFor(() => expect(submit).toHaveBeenCalled())

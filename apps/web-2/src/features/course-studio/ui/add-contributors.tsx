@@ -30,7 +30,7 @@ export function AddContributors({ courseId }: { courseId: string }) {
         {
           onSuccess: () => {
             setPeople([])
-            toast.add({ title: m.studio_team_added() })
+            toast({ title: m.studio_team_added() })
           },
         },
       ),

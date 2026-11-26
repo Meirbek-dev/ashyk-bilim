@@ -44,7 +44,7 @@ export function ItemActions({ activityId, assessmentId, item, items, lastOfLive 
       },
       {
         onSuccess: created => {
-          toast.add({ title: m.assessments_item_duplicated() })
+          toast({ title: m.assessments_item_duplicated() })
           void open(created.id)
         },
       },
@@ -55,7 +55,7 @@ export function ItemActions({ activityId, assessmentId, item, items, lastOfLive 
       {
         onSuccess: () => {
           setConfirming(false)
-          toast.add({ title: m.assessments_item_deleted() })
+          toast({ title: m.assessments_item_deleted() })
           void open(neighborOf(items, item.id))
         },
       },

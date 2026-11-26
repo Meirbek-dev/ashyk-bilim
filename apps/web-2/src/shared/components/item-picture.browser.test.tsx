@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vite-plus/test'
+import { page } from 'vite-plus/test/browser'
 
 import { m } from '#/paraglide/messages'
 import { renderInRouter } from '#/shared/components/testing'
@@ -23,7 +24,7 @@ describe('ItemPicture', () => {
   test('a click opens the picture full size in a dialog', async () => {
     const screen = await renderInRouter(<ItemPicture picture={picture} url={PIXEL} zoom />)
     await screen.getByRole('button', { name: m.ui_picture_zoom() }).click()
-    const dialog = screen.getByRole('dialog')
+    const dialog = page.getByRole('dialog')
     await expect.element(dialog.getByRole('img', { name: 'Код' })).toHaveAttribute('src', PIXEL)
   })
 })

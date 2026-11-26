@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 import { m } from '#/paraglide/messages'
 import {
@@ -33,15 +33,16 @@ type SubmitDialogProps = {
  */
 export function SubmitDialog(props: SubmitDialogProps) {
   const { open, onOpenChange, number, max, trigger, disabled, onConfirm } = props
-  const cancel = useRef<HTMLButtonElement>(null)
   return (
     <AlertDialog open={open} onOpenChange={next => onOpenChange(next)}>
       <AlertDialogTrigger
-        render={<Button disabled={disabled} focusableWhenDisabled className="aria-disabled:opacity-50" />}
+        disabled={disabled}
+        focusableWhenDisabled
+        render={<Button className="aria-disabled:opacity-50" />}
       >
         {trigger}
       </AlertDialogTrigger>
-      <AlertDialogContent initialFocus={cancel}>
+      <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{m.submission_submit_title()}</AlertDialogTitle>
           <AlertDialogDescription>
@@ -49,9 +50,7 @@ export function SubmitDialog(props: SubmitDialogProps) {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel ref={cancel} variant="ghost">
-            {m.ui_cancel()}
-          </AlertDialogCancel>
+          <AlertDialogCancel variant="ghost">{m.ui_cancel()}</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm}>{m.submission_submit()}</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

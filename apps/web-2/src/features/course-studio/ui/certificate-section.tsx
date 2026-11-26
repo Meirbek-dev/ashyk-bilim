@@ -20,7 +20,7 @@ export function CertificateSection({ course }: { course: Course }) {
   const enable = () =>
     create.mutate(
       { body: { course_id: course.id, config: certificateConfig({}, certificateFields({})) } },
-      { onSuccess: () => toast.add({ title: m.studio_certificate_enabled() }) },
+      { onSuccess: () => toast({ title: m.studio_certificate_enabled() }) },
     )
   return (
     <section aria-label={m.studio_certificate_title()} className="flex max-w-prose flex-col items-start gap-4">
