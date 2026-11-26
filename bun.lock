@@ -112,7 +112,7 @@
   "overrides": {
     "js-yaml": "5.5.0",
     "katex": "0.19.1",
-    "minimatch": "11.0.8",
+    "minimatch": "11.0.9",
     "vite": "catalog:",
     "vitest": "catalog:",
   },
