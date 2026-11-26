@@ -40,7 +40,7 @@ jobs:
       just-tool: ${{ steps.tools.outputs.just-tool }}
       playwright-image: ${{ steps.tools.outputs.playwright-image }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - id: tools
         run: |
           source apps/server/tools.env
@@ -51,7 +51,7 @@ jobs:
             echo "just-tool=$JUST_TOOL"
             echo "playwright-image=mcr.microsoft.com/playwright:v$pw-noble"
           } >> "$GITHUB_OUTPUT"
-      - uses: dorny/paths-filter@v4
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4
         id: filter
         with:
           filters: |
@@ -102,12 +102,12 @@ jobs:
       CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: clang
       CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: -Clink-arg=--ld-path=wild
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Toolchain from rust-toolchain.toml
         run: rustup toolchain install
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: apps/server
           save-if: ${{ github.ref == 'refs/heads/main' }}
@@ -164,14 +164,14 @@ jobs:
       # .config/nextest.toml: per-test timeouts and the JUnit report uploaded below.
       NEXTEST_PROFILE: ci
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Toolchain from rust-toolchain.toml
         run: rustup toolchain install
 
       # Own key: the cache under the job's default key held -C instrument-coverage artifacts
       # (the old `just cov`), so every plain build recompiled the dependencies.
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: apps/server
           key: plain
@@ -196,7 +196,7 @@ jobs:
       - name: Tests (nextest partition ${{ matrix.partition }}/2)
         run: just test --partition hash:${{ matrix.partition }}/2
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
           name: server-junit-${{ needs.changes.outputs.sha }}-${{ matrix.partition }}
@@ -209,7 +209,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0 # gitleaks scans the pushed commit range
 
@@ -221,7 +221,7 @@ jobs:
         run: just ci-infra
 
       # The git hooks (infra/dev/hooks.ts) are bun scripts; test-dev runs the pre-commit hook.
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: package.json
 
@@ -234,7 +234,7 @@ jobs:
       - name: actionlint
         run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
 
-      - uses: gitleaks/gitleaks-action@v3
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -252,7 +252,7 @@ jobs:
       run:
         working-directory: apps/web-2
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
@@ -261,11 +261,11 @@ jobs:
         working-directory: .
         run: apt-get update -qq && apt-get install -y -qq --no-install-recommends unzip
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: package.json
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .node-version
 
@@ -310,7 +310,7 @@ jobs:
           ${{ fromJSON(format('["server","runner"{0}]',
           needs.changes.outputs.web2 == 'true' && ',"web-2"' || '')) }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       # The release compile ran out of disk on stock runners (runs #45/#46). Today's runners
       # have ~75 GB free and the rm costs ~3 min, so only when short.
@@ -322,15 +322,15 @@ jobs:
             sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
               /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" || true
 
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/build-push-action@v7
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
           context: ${{ matrix.image == 'runner' && 'infra/runner' || '.' }}
           file: ${{ matrix.image == 'runner' && 'infra/runner/Dockerfile' || format('apps/{0}/Dockerfile', matrix.image) }}
@@ -361,7 +361,7 @@ jobs:
             --scanners vuln --severity CRITICAL,HIGH --ignore-unfixed --exit-code 1 \
             --format json --output /out/image.json "$SCAN_IMAGE"
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: image-security-${{ matrix.image }}
@@ -384,13 +384,13 @@ jobs:
       # No web image built (apps/web-2 unchanged off main): the stub web from the start.
       WEB_IMAGE: ${{ needs.changes.outputs.web2 != 'true' && 'ashyq-stub-web:ci' || '' }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - uses: taiki-e/install-action@v2
         with:
           tool: ${{ needs.changes.outputs.just-tool }}
 
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -443,21 +443,21 @@ jobs:
       WEB2_RUNNER_URL: ${{ matrix.shard == 'runner' && 'http://runner:5050' || '' }}
       E2E_LEARNERS: ${{ matrix.shard == 'runner' && '8' || '250' }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - uses: taiki-e/install-action@v2
         with:
           tool: ${{ needs.changes.outputs.just-tool }}
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: package.json
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version-file: .node-version
 
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -522,7 +522,7 @@ jobs:
           bash -c 'source infra/scripts/lib.sh && use_web2 && compose ps -a && compose logs --no-color --timestamps --tail 500' > tmp/web2/compose.log 2>&1
           tail -c 12000 tmp/web2/compose.log
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
           name: web2-e2e-${{ needs.changes.outputs.sha }}-${{ matrix.shard }}
@@ -554,18 +554,18 @@ jobs:
       IMAGE_TAG: ci-${{ needs.changes.outputs.sha }}
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: taiki-e/install-action@v2
         with:
           tool: ${{ needs.changes.outputs.just-tool }}
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Backup and restore integrity
         run: just restore-test
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: failure()
         with:
           name: restore-test-${{ needs.changes.outputs.sha }}
@@ -592,9 +592,9 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
